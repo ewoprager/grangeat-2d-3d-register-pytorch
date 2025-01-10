@@ -128,16 +128,16 @@ if __name__ == "__main__":
     print(d)
 
     e = torch.tensor([
-        [0., 0., 1., 0., 0.],
-        [0., 1., 1., 1., 0.],
-        [1., 1., 1., 1., 1.],
-        [0., 1., 1., 1., 0.],
+        [0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0.],
+        [1., 0., 0., 0., 1.],
+        [0., 0., 0., 0., 0.],
         [0., 0., 1., 0., 0.]
-    ])
+    ], device="cuda")
     _, axesStart = plt.subplots()
-    axesStart.pcolormesh(e)
-    f = torch.tensor([2000, 2000], dtype=torch.int)
+    axesStart.pcolormesh(e.cpu())
+    f = torch.tensor([2000, 2000], dtype=torch.int, device="cpu")
     g = torch.ops.ExtensionTest.radon2d(e, f)
     _, axesResult = plt.subplots()
-    axesResult.pcolormesh(g)
+    axesResult.pcolormesh(g.cpu())
     plt.show()
