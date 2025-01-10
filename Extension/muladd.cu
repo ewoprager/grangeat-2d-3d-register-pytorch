@@ -28,15 +28,12 @@ __host__ at::Tensor mymuladd_cuda(const at::Tensor &a, const at::Tensor &b, doub
 }
 
 
-__global__ void radon2d_kernel(int heightIn, int widthIn, const float *arrayIn, int heightOut, int widthOut,
-                               float *arrayOut) {
+__global__ void radon2d_kernel(const Texture2D textureIn, int heightOut, int widthOut, float *arrayOut,
+                               float rayLength) {
 	const int col = blockIdx.x * blockDim.x + threadIdx.x;
 	const int row = blockIdx.y * blockDim.y + threadIdx.y;
 	if (col >= widthOut || row >= heightOut) return;
 	const int index = row * widthOut + col;
-	const Texture2D textureIn{arrayIn, heightIn, widthIn};
-	const float rayLength = sqrt(
-		textureIn.SizeXWorld() * textureIn.SizeXWorld() + textureIn.SizeYWorld() * textureIn.SizeYWorld());
 	arrayOut[index] = textureIn.IntegrateRay(
 		3.1415926535f * (-.5f + static_cast<float>(row) / static_cast<float>(heightOut)),
 		rayLength * (-.5f + static_cast<float>(col) / static_cast<float>(widthOut - 1)), .1f);
@@ -55,6 +52,7 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &a, const at::Tensor &outputDi
 
 	at::Tensor aContiguous = a.contiguous();
 	const float *a_ptr = aContiguous.data_ptr<float>();
+	const Texture2D texture{a_ptr, a.sizes()[0], a.sizes()[1]};
 
 	at::Tensor outputDims_contig = outputDims.contiguous();
 	const int *outputDims_ptr = outputDims_contig.data_ptr<int>();
@@ -64,9 +62,12 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &a, const at::Tensor &outputDi
 	at::Tensor result = torch::zeros(at::IntArrayRef({height, width}), aContiguous.options());
 	float *result_ptr = result.data_ptr<float>();
 
+	const float rayLength = sqrt(
+		texture.SizeXWorld() * texture.SizeXWorld() + texture.SizeYWorld() * texture.SizeYWorld());
+
 	const dim3 blockSize{16, 16};
 	const dim3 gridSize{(width + blockSize.x - 1) / blockSize.x, (height + blockSize.y - 1) / blockSize.y};
-	radon2d_kernel<<<gridSize, blockSize>>>(a.sizes()[0], a.sizes()[1], a_ptr, height, width, result_ptr);
+	radon2d_kernel<<<gridSize, blockSize>>>(texture, height, width, result_ptr, rayLength);
 
 	return result;
 }
