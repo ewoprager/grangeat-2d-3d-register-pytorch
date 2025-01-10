@@ -5,28 +5,28 @@
 
 namespace ExtensionTest {
 
-at::Tensor mymuladd_cpu(at::Tensor a, const at::Tensor &b, double c) {
+at::Tensor mymuladd_cpu(const at::Tensor &a, const at::Tensor &b, double c) {
 	TORCH_CHECK(a.sizes() == b.sizes());
 	TORCH_CHECK(a.dtype() == at::kFloat);
 	TORCH_CHECK(b.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(a.device().type() == at::DeviceType::CPU);
 	TORCH_INTERNAL_ASSERT(b.device().type() == at::DeviceType::CPU);
-	at::Tensor a_contig = a.contiguous();
-	at::Tensor b_contig = b.contiguous();
-	at::Tensor result = torch::empty(a_contig.sizes(), a_contig.options());
-	const float *a_ptr = a_contig.data_ptr<float>();
-	const float *b_ptr = b_contig.data_ptr<float>();
+	const at::Tensor aContiguous = a.contiguous();
+	const at::Tensor bContiguous = b.contiguous();
+	const at::Tensor result = torch::empty(aContiguous.sizes(), aContiguous.options());
+	const float *a_ptr = aContiguous.data_ptr<float>();
+	const float *b_ptr = bContiguous.data_ptr<float>();
 	float *result_ptr = result.data_ptr<float>();
 	for (int64_t i = 0; i < result.numel(); i++) {
-		result_ptr[i] = a_ptr[i] * b_ptr[i] + c;
+		result_ptr[i] = a_ptr[i] * b_ptr[i] + static_cast<float>(c);
 	}
 	return result;
 }
 
 struct Texture2D {
-	const float *ptr;
-	int64_t height;
-	int64_t width;
+	const float *ptr{};
+	int64_t height{};
+	int64_t width{};
 	float ySpacing = 1.f;
 	float xSpacing = 1.f;
 
@@ -43,7 +43,7 @@ struct Texture2D {
 		return In(row, col) ? ptr[row * width + col] : 0.0f;
 	}
 
-	[[nodiscard]] float InWorld(float y, float x) const {
+	[[nodiscard]] bool InWorld(float y, float x) const {
 		return y >= -.5f * SizeYWorld() && y < .5f * SizeYWorld() && x >= -.5f * SizeXWorld() && x < .5f * SizeXWorld();
 	}
 
@@ -85,7 +85,7 @@ struct Texture2D {
 	}
 };
 
-at::Tensor radon2d_cpu(at::Tensor a, const at::Tensor &outputDims) {
+at::Tensor radon2d_cpu(const at::Tensor &a, const at::Tensor &outputDims) {
 	// a should be a 2D array of floats on the CPU
 	TORCH_CHECK(a.sizes().size() == 2);
 	TORCH_CHECK(a.dtype() == at::kFloat);
@@ -96,14 +96,14 @@ at::Tensor radon2d_cpu(at::Tensor a, const at::Tensor &outputDims) {
 	TORCH_CHECK(outputDims.dtype() == at::kInt);
 	TORCH_INTERNAL_ASSERT(outputDims.device().type() == at::DeviceType::CPU);
 
-	at::Tensor a_contig = a.contiguous();
-	const float *a_ptr = a_contig.data_ptr<float>();
+	at::Tensor aContiguous = a.contiguous();
+	const float *a_ptr = aContiguous.data_ptr<float>();
 	const Texture2D aTexture{a_ptr, a.sizes()[0], a.sizes()[1]};
 
 	at::Tensor outputDims_contig = outputDims.contiguous();
 	const int *outputDims_ptr = outputDims_contig.data_ptr<int>();
 
-	at::Tensor result = torch::zeros(at::IntArrayRef({outputDims_ptr[0], outputDims_ptr[1]}), a_contig.options());
+	at::Tensor result = torch::zeros(at::IntArrayRef({outputDims_ptr[0], outputDims_ptr[1]}), aContiguous.options());
 	float *result_ptr = result.data_ptr<float>();
 
 	const float rayLength = std::sqrt(
