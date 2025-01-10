@@ -2,7 +2,6 @@ import torch
 from setuptools import setup, Extension
 from torch.utils import cpp_extension
 
-
 setup(name="ExtensionTest",
       ext_modules=[cpp_extension.CppExtension(name="ExtensionTest",
                                               sources=["mymuladd.cpp"],

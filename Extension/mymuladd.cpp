@@ -70,7 +70,7 @@ struct Texture2D {
 			const float y = yCentreWorld + static_cast<float>(i) * yDeltaWorld;
 			const float x = xCentreWorld + static_cast<float>(i) * xDeltaWorld;
 			if (!InWorld(y, x)) break;
-			ret += SampleBilinear(y, x);
+			ret += SampleBilinear(WorldToImageY(y), WorldToImageX(x));
 			++i;
 		}
 		i = 1;
@@ -106,12 +106,13 @@ at::Tensor radon2d_cpu(at::Tensor a, const at::Tensor &outputDims) {
 	at::Tensor result = torch::zeros(at::IntArrayRef({outputDims_ptr[0], outputDims_ptr[1]}), a_contig.options());
 	float *result_ptr = result.data_ptr<float>();
 
+	const float rayLength = std::sqrt(
+		aTexture.SizeXWorld() * aTexture.SizeXWorld() + aTexture.SizeYWorld() * aTexture.SizeYWorld());
 	for (int row = 0; row < outputDims_ptr[0]; ++row) {
 		for (int col = 0; col < outputDims_ptr[1]; ++col) {
 			result_ptr[row * outputDims_ptr[1] + col] = aTexture.IntegrateRay(
 				std::numbers::pi_v<float> * (-.5f + static_cast<float>(row) / static_cast<float>(outputDims_ptr[0])),
-				std::max(aTexture.SizeXWorld(), aTexture.SizeYWorld()) * (
-					-.5f + static_cast<float>(col) / static_cast<float>(outputDims_ptr[1] - 1)));
+				rayLength * (-.5f + static_cast<float>(col) / static_cast<float>(outputDims_ptr[1] - 1)), .1f);
 		}
 	}
 
