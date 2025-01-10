@@ -1,5 +1,7 @@
 #include <cmath>
+#if __cplusplus >= 202002L
 #include <numbers>
+#endif
 
 #include <torch/extension.h>
 
@@ -111,7 +113,12 @@ at::Tensor radon2d_cpu(const at::Tensor &a, const at::Tensor &outputDims) {
 	for (int row = 0; row < outputDims_ptr[0]; ++row) {
 		for (int col = 0; col < outputDims_ptr[1]; ++col) {
 			result_ptr[row * outputDims_ptr[1] + col] = aTexture.IntegrateRay(
-				std::numbers::pi_v<float> * (-.5f + static_cast<float>(row) / static_cast<float>(outputDims_ptr[0])),
+#if __cplusplus >= 202002L
+				std::numbers::pi_v<float>
+#else
+				3.1415926535f
+#endif
+				* (-.5f + static_cast<float>(row) / static_cast<float>(outputDims_ptr[0])),
 				rayLength * (-.5f + static_cast<float>(col) / static_cast<float>(outputDims_ptr[1] - 1)), .1f);
 		}
 	}

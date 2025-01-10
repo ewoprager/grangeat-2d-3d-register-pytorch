@@ -1,3 +1,4 @@
+muladd.cu
 mymuladd.cpp
 setup.py
 ExtensionTest.egg-info/PKG-INFO

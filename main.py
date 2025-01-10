@@ -120,8 +120,8 @@ def reference_muladd(a, b, c):
 if __name__ == "__main__":
     # unittest.main()
 
-    a = torch.tensor([1., 2., 3.])
-    b = torch.tensor([1., 2., 3.])
+    a = torch.tensor([1., 2., 3.], device="cuda")
+    b = torch.tensor([1., 2., 3.], device="cuda")
     c = 2.
 
     d = torch.ops.ExtensionTest.mymuladd(a, b, c)
