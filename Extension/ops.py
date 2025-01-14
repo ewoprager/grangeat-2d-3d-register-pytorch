@@ -1,9 +1,9 @@
 import torch
 
 
-def mymuladd(a: torch.Tensor, b: torch.Tensor, c: float) -> torch.Tensor:
-    return torch.ops.ExtensionTest.mymuladd.default(a, b, c)
+def radon2d(a: torch.Tensor, height: int, width: int, samples_per_line: int) -> torch.Tensor:
+    return torch.ops.ExtensionTest.radon2d.default(a, height, width, samples_per_line)
 
 
-def radon2d(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    return torch.ops.ExtensionTest.radon2d.default(a, b)
+def radon2d_v2(a: torch.Tensor, height: int, width: int, samples_per_line: int) -> torch.Tensor:
+    return torch.ops.ExtensionTest.radon2d_v2.default(a, height, width, samples_per_line)

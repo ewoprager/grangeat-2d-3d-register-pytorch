@@ -35,7 +35,11 @@ string(REPLACE "," ";" TORCH_INCLUDE_DIRS ${TORCH_INCLUDE_DIRS})
 include_directories(${TORCH_INCLUDE_DIRS}
                     "${CUDA_HOME}/include")
 
-add_library(${PROJECT_NAME} SHARED mymuladd.cpp muladd.cu
-            Texture2D.h)
+add_library(${PROJECT_NAME} SHARED
+            radon.cpp
+            radonCUDA.cu
+            include/Texture2DCPU.h
+            include/Texture2DCUDA.h
+            include/Common.h)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)

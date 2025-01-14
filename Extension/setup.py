@@ -5,8 +5,8 @@ from torch.utils.cpp_extension import CppExtension, CUDAExtension, BuildExtensio
 
 extension_name: str = "ExtensionTest"
 cpp_version: str = "-std=c++17"
-cpu_source_files: list[str] = ["mymuladd.cpp"]
-cuda_source_files: list[str] = ["muladd.cu"]
+cpu_source_files: list[str] = ["radon.cpp"]
+cuda_source_files: list[str] = ["radonCUDA.cu"]
 
 debug: bool = "--debug" in sys.argv
 if debug:
