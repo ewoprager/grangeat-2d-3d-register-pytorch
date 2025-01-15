@@ -19,26 +19,26 @@ at::Tensor radon2d_cpu(const at::Tensor &a, long heightOut, long widthOut, long 
 
 	const float rayLength = sqrtf(
 		aTexture.WidthWorld() * aTexture.WidthWorld() + aTexture.HeightWorld() * aTexture.HeightWorld());
-	const Linear mappingIToOffset{-.5f * rayLength, rayLength / static_cast<float>(samplesPerLine - 1)};
-	for (int row = 0; row < heightOut; ++row) {
-		for (int col = 0; col < widthOut; ++col) {
-			resultPtr[row * widthOut + col] = Radon2D<Texture2DCPU>::Integrate(
-				aTexture, 3.1415926535f * (-.5f + static_cast<float>(row) / static_cast<float>(heightOut)),
-				rayLength * (-.5f + static_cast<float>(col) / static_cast<float>(widthOut - 1)), mappingIToOffset,
-				samplesPerLine);
+	const auto constMappings = Radon2D<Texture2DCPU>::GetConstMappings(widthOut, heightOut, rayLength, samplesPerLine);
+	for (long row = 0; row < heightOut; ++row) {
+		for (long col = 0; col < widthOut; ++col) {
+			const Radon2D<Texture2DCPU>::IndexMappings indexMappings = Radon2D<Texture2DCPU>::GetIndexMappings(
+				aTexture, col, row, constMappings);
+			resultPtr[row * widthOut + col] = Radon2D<Texture2DCPU>::IntegrateLooped(
+				aTexture, indexMappings, samplesPerLine);
 		}
 	}
 
 	return result;
 }
 
-void radon_v2_kernel_synchronous(const Texture2DCPU &textureIn, long samplesPerLine, const Linear mappingIToX,
-                                 const Linear mappingIToY, float *ret) {
+void radon_v2_kernel_synchronous(const Texture2DCPU &textureIn, long samplesPerLine,
+                                 const Radon2D<Texture2DCPU>::IndexMappings indexMappings, float *ret) {
 	float *buffer = static_cast<float *>(malloc(samplesPerLine * sizeof(float)));
 
 	for (int i = 0; i < samplesPerLine; ++i) {
 		const float iF = static_cast<float>(i);
-		buffer[i] = textureIn.Sample(mappingIToX(iF), mappingIToY(iF));
+		buffer[i] = textureIn.Sample(indexMappings.mappingIToX(iF), indexMappings.mappingIToY(iF));
 	}
 
 	for (long cutoff = samplesPerLine / 2; cutoff > 0; cutoff /= 2) {
@@ -68,22 +68,11 @@ at::Tensor radon2d_v2_cpu(const at::Tensor &a, long heightOut, long widthOut, lo
 
 	const float rayLength = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld());
-	const Linear mappingIToOffset{-.5f * rayLength, rayLength / static_cast<float>(samplesPerLine - 1)};
-	for (unsigned row = 0; row < heightOut; ++row) {
-		for (unsigned col = 0; col < widthOut; ++col) {
-			const float r = rayLength * (-.5f + static_cast<float>(col) / static_cast<float>(widthOut - 1));
-
-			const float phi = 3.1415926535f * (-.5f + static_cast<float>(row) / static_cast<float>(heightOut));
-			const float c = cosf(phi);
-			const float s = sinf(phi);
-
-			const Linear mappingOffsetToWorldX{r * c, -s};
-			const Linear mappingOffsetToWorldY{r * s, c};
-			const Linear mappingIToX = texture.MappingXWorldToNormalised()(mappingOffsetToWorldX(mappingIToOffset));
-			const Linear mappingIToY = texture.MappingYWorldToNormalised()(mappingOffsetToWorldY(mappingIToOffset));
-
-			radon_v2_kernel_synchronous(texture, samplesPerLine, mappingIToX, mappingIToY,
-			                            &resultPtr[row * widthOut + col]);
+	const auto constMappings = Radon2D<Texture2DCPU>::GetConstMappings(widthOut, heightOut, rayLength, samplesPerLine);
+	for (long row = 0; row < heightOut; ++row) {
+		for (long col = 0; col < widthOut; ++col) {
+			const auto indexMappings = Radon2D<Texture2DCPU>::GetIndexMappings(texture, col, row, constMappings);
+			radon_v2_kernel_synchronous(texture, samplesPerLine, indexMappings, &resultPtr[row * widthOut + col]);
 		}
 	}
 

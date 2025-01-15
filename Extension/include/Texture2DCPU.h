@@ -22,17 +22,19 @@ public:
 
 	Texture2DCPU &operator=(Texture2DCPU &&) = default;
 
-	__host__ __device__ [[nodiscard]] float At(int row, int col) const {
+	__host__ __device__ [[nodiscard]] float At(long row, long col) const {
 		return In(row, col) ? ptr[row * Width() + col] : 0.0f;
 	}
 
-	__host__ __device__ [[nodiscard]] float Sample(const float x, const float y) const {
-		const float xUnnormalised = x * static_cast<float>(Width() - 1);
-		const float yUnnormalised = y * static_cast<float>(Height() - 1);
-		const int col = static_cast<int>(floorf(xUnnormalised));
-		const int row = static_cast<int>(floorf(yUnnormalised));
-		const float fHorizontal = xUnnormalised - static_cast<float>(col);
-		const float fVertical = yUnnormalised - static_cast<float>(row);
+	__host__ __device__ [[nodiscard]] float Sample(float x, float y) const {
+		x = -.5f + x * static_cast<float>(Width());
+		y = -.5f + y * static_cast<float>(Height());
+		const float xFloored = floorf(x);
+		const float yFloored = floorf(y);
+		const long col = static_cast<long>(xFloored);
+		const long row = static_cast<long>(yFloored);
+		const float fHorizontal = x - xFloored;
+		const float fVertical = y - yFloored;
 		const float r0 = (1.f - fHorizontal) * At(row, col) + fHorizontal * At(row, col + 1);
 		const float r1 = (1.f - fHorizontal) * At(row + 1, col) + fHorizontal * At(row + 1, col + 1);
 		return (1.f - fVertical) * r0 + fVertical * r1;

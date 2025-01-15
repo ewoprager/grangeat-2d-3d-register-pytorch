@@ -24,8 +24,8 @@ public:
 	__host__ __device__ [[nodiscard]] float YSpacing() const { return ySpacing; }
 	__host__ __device__ [[nodiscard]] float WidthWorld() const { return static_cast<float>(width) * xSpacing; }
 	__host__ __device__ [[nodiscard]] float HeightWorld() const { return static_cast<float>(height) * ySpacing; }
-	__host__ __device__ [[nodiscard]] static float In(const float x, const float y) {
-		return x >= 0.f && x < 1.f && y >= 0.f && y < 1.f;
+	__host__ __device__ [[nodiscard]] bool In(const long row, const long col) const {
+		return row >= 0 && row < height && col >= 0 && col < width;
 	}
 
 	__host__ __device__ [[nodiscard]] Linear MappingXWorldToNormalised() const { return {.5f, 1.f / WidthWorld()}; }
@@ -56,21 +56,49 @@ private:
 };
 
 template <typename texture_t> struct Radon2D {
-	__host__ __device__ static float Integrate(const texture_t &texture, const float phi, const float r,
-	                                           const Linear &mappingIToOffset, const long samplesPerLine) {
+	struct ConstMappings {
+		Linear mappingIToOffset;
+		Linear mappingColToR;
+		Linear mappingRowToPhi;
+	};
+
+	__host__ __device__ [[nodiscard]] static ConstMappings GetConstMappings(
+		long widthOut, long heightOut, float rayLength, long samplesPerLine) {
+
+		return {{-.5f * rayLength, rayLength / static_cast<float>(samplesPerLine - 1)},
+		        {-.5f * rayLength, rayLength / static_cast<float>(widthOut - 1)},
+		        {-.5f * 3.1415926535f, 3.1415926535f / static_cast<float>(heightOut)}};
+	}
+
+	struct IndexMappings {
+		Linear mappingIToX;
+		Linear mappingIToY;
+	};
+
+	__host__ __device__ [[nodiscard]] static IndexMappings GetIndexMappings(
+		const texture_t &textureIn, long colOut, long rowOut, const ConstMappings &constMappings) {
+
+		const float phi = constMappings.mappingRowToPhi(rowOut);
+		const float r = constMappings.mappingColToR(colOut);
 		const float s = sinf(phi);
 		const float c = cosf(phi);
 		const Linear mappingOffsetToWorldX{r * c, -s};
 		const Linear mappingOffsetToWorldY{r * s, c};
-		const Linear mappingIToX = texture.MappingXWorldToNormalised()(mappingOffsetToWorldX(mappingIToOffset));
-		const Linear mappingIToY = texture.MappingYWorldToNormalised()(mappingOffsetToWorldY(mappingIToOffset));
+		return {textureIn.MappingXWorldToNormalised()(mappingOffsetToWorldX(constMappings.mappingIToOffset)),
+		        textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(constMappings.mappingIToOffset))};
+	}
+
+	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
+	                                                               const IndexMappings &indexMappings,
+	                                                               long samplesPerLine) {
 		float ret = 0.f;
-		for (int i = 0; i < samplesPerLine; ++i) {
+		for (long i = 0; i < samplesPerLine; ++i) {
 			const float iF = static_cast<float>(i);
-			ret += texture.Sample(mappingIToX(iF), mappingIToY(iF));
+			ret += texture.Sample(indexMappings.mappingIToX(iF), indexMappings.mappingIToY(iF));
 		}
 		return ret;
 	}
+
 };
 
 } // namespace ExtensionTest
