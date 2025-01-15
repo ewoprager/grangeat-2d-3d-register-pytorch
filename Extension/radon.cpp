@@ -22,8 +22,8 @@ at::Tensor radon2d_cpu(const at::Tensor &a, long heightOut, long widthOut, long 
 	const Linear mappingIToOffset{-.5f * rayLength, rayLength / static_cast<float>(samplesPerLine - 1)};
 	for (int row = 0; row < heightOut; ++row) {
 		for (int col = 0; col < widthOut; ++col) {
-			resultPtr[row * widthOut + col] = aTexture.IntegrateRay(
-				3.1415926535f * (-.5f + static_cast<float>(row) / static_cast<float>(heightOut)),
+			resultPtr[row * widthOut + col] = Radon2D<Texture2DCPU>::Integrate(
+				aTexture, 3.1415926535f * (-.5f + static_cast<float>(row) / static_cast<float>(heightOut)),
 				rayLength * (-.5f + static_cast<float>(col) / static_cast<float>(widthOut - 1)), mappingIToOffset,
 				samplesPerLine);
 		}
@@ -38,7 +38,7 @@ void radon_v2_kernel_synchronous(const Texture2DCPU &textureIn, long samplesPerL
 
 	for (int i = 0; i < samplesPerLine; ++i) {
 		const float iF = static_cast<float>(i);
-		buffer[i] = textureIn.SampleBilinear(mappingIToX(iF), mappingIToY(iF));
+		buffer[i] = textureIn.Sample(mappingIToX(iF), mappingIToY(iF));
 	}
 
 	for (long cutoff = samplesPerLine / 2; cutoff > 0; cutoff /= 2) {

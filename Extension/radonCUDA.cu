@@ -10,9 +10,11 @@ __global__ void radon2d_kernel(const Texture2DCUDA textureIn, int heightOut, int
 	const int row = blockIdx.y * blockDim.y + threadIdx.y;
 	if (col >= widthOut || row >= heightOut) return;
 	const int index = row * widthOut + col;
-	arrayOut[index] = textureIn.Radon(3.1415926535f * (-.5f + static_cast<float>(row) / static_cast<float>(heightOut)),
-	                                  rayLength * (-.5f + static_cast<float>(col) / static_cast<float>(widthOut - 1)),
-	                                  rayLength, samplesPerLine);
+	const Linear mappingItoOffset{-.5f * rayLength, rayLength / static_cast<float>(samplesPerLine - 1)};
+	arrayOut[index] = Radon2D<Texture2DCUDA>::Integrate(
+		textureIn, 3.1415926535f * (-.5f + static_cast<float>(row) / static_cast<float>(heightOut)),
+		rayLength * (-.5f + static_cast<float>(col) / static_cast<float>(widthOut - 1)), mappingItoOffset,
+		samplesPerLine);
 }
 
 __host__ at::Tensor radon2d_cuda(const at::Tensor &a, long heightOut, long widthOut, long samplesPerLine) {
@@ -83,6 +85,7 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, long heightOut, long wi
 	const float rayLength = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld());
 
+	const Linear mappingIToOffset{-.5f * rayLength, rayLength / static_cast<float>(samplesPerLine - 1)};
 	for (unsigned row = 0; row < heightOut; ++row) {
 		for (unsigned col = 0; col < widthOut; ++col) {
 			const float r = rayLength * (-.5f + static_cast<float>(col) / static_cast<float>(widthOut - 1));
@@ -93,7 +96,6 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, long heightOut, long wi
 
 			const Linear mappingOffsetToWorldX{r * c, -s};
 			const Linear mappingOffsetToWorldY{r * s, c};
-			const Linear mappingIToOffset{-.5f * rayLength, rayLength / static_cast<float>(samplesPerLine - 1)};
 			const Linear mappingIToX = texture.MappingXWorldToNormalised()(mappingOffsetToWorldX(mappingIToOffset));
 			const Linear mappingIToY = texture.MappingYWorldToNormalised()(mappingOffsetToWorldY(mappingIToOffset));
 

@@ -4,14 +4,15 @@
 #include <cuda_runtime.h>
 
 namespace ExtensionTest {
+
 struct Linear {
 	float intercept;
 	float gradient;
 
-	__host__ __device__ [[nodiscard]] float operator()(const float x) const { return intercept + gradient * x; }
+	__host__ __device__ [[nodiscard]] float operator()(const float x) const { return fmaf(gradient, x, intercept); }
 
 	__host__ __device__ [[nodiscard]] Linear operator()(const Linear &other) const {
-		return {intercept + gradient * other.intercept, gradient * other.gradient};
+		return {fmaf(gradient, other.intercept, intercept), gradient * other.gradient};
 	}
 };
 
@@ -52,6 +53,24 @@ private:
 	long height{};
 	float xSpacing{};
 	float ySpacing{};
+};
+
+template <typename texture_t> struct Radon2D {
+	__host__ __device__ static float Integrate(const texture_t &texture, const float phi, const float r,
+	                                           const Linear &mappingIToOffset, const long samplesPerLine) {
+		const float s = sinf(phi);
+		const float c = cosf(phi);
+		const Linear mappingOffsetToWorldX{r * c, -s};
+		const Linear mappingOffsetToWorldY{r * s, c};
+		const Linear mappingIToX = texture.MappingXWorldToNormalised()(mappingOffsetToWorldX(mappingIToOffset));
+		const Linear mappingIToY = texture.MappingYWorldToNormalised()(mappingOffsetToWorldY(mappingIToOffset));
+		float ret = 0.f;
+		for (int i = 0; i < samplesPerLine; ++i) {
+			const float iF = static_cast<float>(i);
+			ret += texture.Sample(mappingIToX(iF), mappingIToY(iF));
+		}
+		return ret;
+	}
 };
 
 } // namespace ExtensionTest
