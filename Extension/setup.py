@@ -36,7 +36,7 @@ extra_compile_args = {
 extra_link_args = []
 if debug:
     extra_compile_args["cxx"].append("-g")
-    extra_compile_args["nvcc"].extend(["-g", "-G"])
+    extra_compile_args["nvcc"].extend(["-g", "-G", "-DTORCH_USE_CUDA_DSA=1", "-DCUDA_LAUNCH_BLOCKING=1"])
     extra_link_args.extend(["-O0", "-g"])
 
 setup(name=extension_name,

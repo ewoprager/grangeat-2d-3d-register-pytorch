@@ -40,6 +40,16 @@ def benchmark_radon3d():
 
     outputs: list[torch.Tensor] = []
 
+    print("Running on CUDA...")
+    tic = time.time()
+    summary = task_radon3d(torch.ops.ExtensionTest.radon3d, "V1", "cuda", image)
+    toc = time.time()
+    print("Done; took {:.3f}s. Plotting summary...".format(toc - tic))
+    plot_task_radon3d(summary)
+    print("Done.")
+    outputs.append(summary[1])
+
+
     print("Running on CPU...")
     tic = time.time()
     summary = task_radon3d(torch.ops.ExtensionTest.radon3d, "V1", "cpu", image)
@@ -49,18 +59,10 @@ def benchmark_radon3d():
     print("Done.")
     outputs.append(summary[1])
 
-    # print("Running on CUDA...")
-    # tic = time.time()
-    # summary = task_radon3d(torch.ops.ExtensionTest.radon2d, "V1", "cuda", image)
-    # toc = time.time()
-    # print("Done; took {:.3f}s. Plotting summary...".format(toc - tic))
-    # plot_task_radon3d(summary)
-    # print("Done.")
-    # outputs.append(summary[1])
     #
     # print("Running V2 on CPU...")
     # tic = time.time()
-    # summary = task_radon3d(torch.ops.ExtensionTest.radon2d_v2, "V2", "cpu", image)
+    # summary = task_radon3d(torch.ops.ExtensionTest.radon3d_v2, "V2", "cpu", image)
     # toc = time.time()
     # print("Done; took {:.3f}s. Plotting summary...".format(toc - tic))
     # plot_task_radon3d(summary)
@@ -69,7 +71,7 @@ def benchmark_radon3d():
     #
     # print("Running V2 on CUDA...")
     # tic = time.time()
-    # summary = task_radon3d(torch.ops.ExtensionTest.radon2d_v2, "V2", "cuda", image)
+    # summary = task_radon3d(torch.ops.ExtensionTest.radon3d_v2, "V2", "cuda", image)
     # toc = time.time()
     # print("Done; took {:.3f}s. Plotting summary...".format(toc - tic))
     # plot_task_radon3d(summary)
