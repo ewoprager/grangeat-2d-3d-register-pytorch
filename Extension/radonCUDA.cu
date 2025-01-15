@@ -5,13 +5,14 @@
 namespace ExtensionTest {
 
 __global__ void radon2d_kernel(Texture2DCUDA textureIn, long heightOut, long widthOut, float *arrayOut,
-                               Radon2D<Texture2DCUDA>::ConstMappings constMappings, long samplesPerLine) {
+                               Radon2D<Texture2DCUDA>::ConstMappings constMappings, long samplesPerLine,
+                               float scaleFactor) {
 	const long col = blockIdx.x * blockDim.x + threadIdx.x;
 	const long row = blockIdx.y * blockDim.y + threadIdx.y;
 	if (col >= widthOut || row >= heightOut) return;
 	const long index = row * widthOut + col;
 	const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(textureIn, col, row, constMappings);
-	arrayOut[index] = Radon2D<Texture2DCUDA>::IntegrateLooped(textureIn, indexMappings, samplesPerLine);
+	arrayOut[index] = scaleFactor * Radon2D<Texture2DCUDA>::IntegrateLooped(textureIn, indexMappings, samplesPerLine);
 }
 
 __host__ at::Tensor radon2d_cuda(const at::Tensor &a, long heightOut, long widthOut, long samplesPerLine) {
@@ -32,17 +33,20 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &a, long heightOut, long width
 
 	const auto constMappings = Radon2D<Texture2DCUDA>::GetConstMappings(widthOut, heightOut, rayLength, samplesPerLine);
 
+	const float scaleFactor = rayLength / static_cast<float>(samplesPerLine);
+
 	const dim3 blockSize{16, 16};
 	const dim3 gridSize{(static_cast<unsigned>(widthOut) + blockSize.x - 1) / blockSize.x,
 	                    (static_cast<unsigned>(heightOut) + blockSize.y - 1) / blockSize.y};
 	radon2d_kernel<<<gridSize, blockSize>>>(std::move(texture), heightOut, widthOut, resultPtr, constMappings,
-	                                        samplesPerLine);
+	                                        samplesPerLine, scaleFactor);
 
 	return result;
 }
 
 __global__ void radon2d_v2_kernel(const Texture2DCUDA *textureIn, long samplesPerLine,
-                                  const Radon2D<Texture2DCUDA>::IndexMappings indexMappings, float *ret) {
+                                  const Radon2D<Texture2DCUDA>::IndexMappings indexMappings, float scaleFactor,
+                                  float *ret) {
 
 	extern __shared__ float buffer[];
 
@@ -62,7 +66,7 @@ __global__ void radon2d_v2_kernel(const Texture2DCUDA *textureIn, long samplesPe
 
 		__syncthreads();
 	}
-	if (i == 0) *ret = buffer[0];
+	if (i == 0) *ret = scaleFactor * buffer[0];
 }
 
 __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, long heightOut, long widthOut, long samplesPerLine) {
@@ -83,7 +87,7 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, long heightOut, long wi
 
 	const float rayLength = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld());
-
+	const float scaleFactor = rayLength / static_cast<float>(samplesPerLine);
 	const auto constMappings = Radon2D<Texture2DCUDA>::GetConstMappings(widthOut, heightOut, rayLength, samplesPerLine);
 	for (unsigned row = 0; row < heightOut; ++row) {
 		for (unsigned col = 0; col < widthOut; ++col) {
@@ -91,7 +95,7 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, long heightOut, long wi
 
 			constexpr unsigned blockSize = 1024;
 			radon2d_v2_kernel<<<1, blockSize, blockSize * sizeof(float)>>>(
-				&texture, samplesPerLine, indexMappings, &resultPtr[row * widthOut + col]);
+				&texture, samplesPerLine, indexMappings, scaleFactor, &resultPtr[row * widthOut + col]);
 
 		}
 	}

@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
 
+file(GLOB HEADERS
+     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+     CONFIGURE_DEPENDS
+     "include/*.h"
+)
+
 # Get the location of CUDA
 execute_process(COMMAND ${Python3_EXECUTABLE} -c "import torch; from torch.utils import cpp_extension; print(cpp_extension.CUDA_HOME)"
                 OUTPUT_VARIABLE CUDA_HOME
@@ -38,8 +44,6 @@ include_directories(${TORCH_INCLUDE_DIRS}
 add_library(${PROJECT_NAME} SHARED
             radon.cpp
             radonCUDA.cu
-            include/Texture2DCPU.h
-            include/Texture2DCUDA.h
-            include/Common.h)
+            ${HEADERS})
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)

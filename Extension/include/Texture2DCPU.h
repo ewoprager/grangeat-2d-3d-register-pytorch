@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Common.h"
+#include "Radon2D.h"
 
 namespace ExtensionTest {
 
