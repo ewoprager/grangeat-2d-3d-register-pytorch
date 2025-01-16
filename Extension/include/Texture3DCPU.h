@@ -8,8 +8,8 @@ class Texture3DCPU : public Texture3D {
 public:
 	Texture3DCPU() = default;
 
-	Texture3DCPU(const float *_ptr, long _width, long _height, long _depth, float _xSpacing, float _ySpacing,
-	             float _zSpacing) : Texture3D(_width, _height, _depth, _xSpacing, _ySpacing, _zSpacing), ptr(_ptr) {
+	Texture3DCPU(const float *_ptr, long _width, long _height, long _depth, double _xSpacing, double _ySpacing,
+	             double _zSpacing) : Texture3D(_width, _height, _depth, _xSpacing, _ySpacing, _zSpacing), ptr(_ptr) {
 	}
 
 	// yes copy

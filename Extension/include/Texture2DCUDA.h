@@ -8,7 +8,7 @@ class Texture2DCUDA : public Texture2D {
 public:
 	Texture2DCUDA() = default;
 
-	Texture2DCUDA(const float *data, long _width, long _height, float _xSpacing, float _ySpacing)
+	Texture2DCUDA(const float *data, long _width, long _height, double _xSpacing, double _ySpacing)
 		: Texture2D(_width, _height, _xSpacing, _ySpacing) {
 
 		// Copy the given data into a CUDA array

@@ -9,9 +9,9 @@ public:
 	__host__ __device__ [[nodiscard]] long Width() const { return width; }
 	__host__ __device__ [[nodiscard]] long Height() const { return height; }
 	__host__ __device__ [[nodiscard]] long Depth() const { return depth; }
-	__host__ __device__ [[nodiscard]] float XSpacing() const { return xSpacing; }
-	__host__ __device__ [[nodiscard]] float YSpacing() const { return ySpacing; }
-	__host__ __device__ [[nodiscard]] float ZSpacing() const { return zSpacing; }
+	__host__ __device__ [[nodiscard]] double XSpacing() const { return xSpacing; }
+	__host__ __device__ [[nodiscard]] double YSpacing() const { return ySpacing; }
+	__host__ __device__ [[nodiscard]] double ZSpacing() const { return zSpacing; }
 	__host__ __device__ [[nodiscard]] float WidthWorld() const { return static_cast<float>(width) * xSpacing; }
 	__host__ __device__ [[nodiscard]] float HeightWorld() const { return static_cast<float>(height) * ySpacing; }
 	__host__ __device__ [[nodiscard]] float DepthWorld() const { return static_cast<float>(depth) * zSpacing; }
@@ -26,9 +26,9 @@ public:
 protected:
 	Texture3D() = default;
 
-	Texture3D(long _width, long _height, long _depth, float _xSpacing, float _ySpacing,
-	          float _zSpacing) : width(_width), height(_height), depth(_depth), xSpacing(_xSpacing),
-	                             ySpacing(_ySpacing), zSpacing(_zSpacing) {
+	Texture3D(long _width, long _height, long _depth, double _xSpacing, double _ySpacing,
+	          double _zSpacing) : width(_width), height(_height), depth(_depth), xSpacing(_xSpacing),
+	                              ySpacing(_ySpacing), zSpacing(_zSpacing) {
 	}
 
 	// yes copy
@@ -45,9 +45,9 @@ private:
 	long width{};
 	long height{};
 	long depth{};
-	float xSpacing{};
-	float ySpacing{};
-	float zSpacing{};
+	double xSpacing{};
+	double ySpacing{};
+	double zSpacing{};
 };
 
 template <typename texture_t> struct Radon3D {

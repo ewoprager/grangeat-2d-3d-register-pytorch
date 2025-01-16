@@ -8,8 +8,8 @@ class Texture2DCPU : public Texture2D {
 public:
 	Texture2DCPU() = default;
 
-	Texture2DCPU(const float *_ptr, long _width, long _height, float _xSpacing,
-	             float _ySpacing) : Texture2D(_width, _height, _xSpacing, _ySpacing), ptr(_ptr) {
+	Texture2DCPU(const float *_ptr, long _width, long _height, double _xSpacing,
+	             double _ySpacing) : Texture2D(_width, _height, _xSpacing, _ySpacing), ptr(_ptr) {
 	}
 
 	// yes copy

@@ -8,8 +8,8 @@ class Texture2D {
 public:
 	__host__ __device__ [[nodiscard]] long Width() const { return width; }
 	__host__ __device__ [[nodiscard]] long Height() const { return height; }
-	__host__ __device__ [[nodiscard]] float XSpacing() const { return xSpacing; }
-	__host__ __device__ [[nodiscard]] float YSpacing() const { return ySpacing; }
+	__host__ __device__ [[nodiscard]] double XSpacing() const { return xSpacing; }
+	__host__ __device__ [[nodiscard]] double YSpacing() const { return ySpacing; }
 	__host__ __device__ [[nodiscard]] float WidthWorld() const { return static_cast<float>(width) * xSpacing; }
 	__host__ __device__ [[nodiscard]] float HeightWorld() const { return static_cast<float>(height) * ySpacing; }
 	__host__ __device__ [[nodiscard]] bool In(const long row, const long col) const {
@@ -22,8 +22,9 @@ public:
 protected:
 	Texture2D() = default;
 
-	Texture2D(long _width, long _height, float _xSpacing, float _ySpacing) : width(_width), height(_height),
-																			 xSpacing(_xSpacing), ySpacing(_ySpacing) {
+	Texture2D(long _width, long _height, double _xSpacing, double _ySpacing) : width(_width), height(_height),
+	                                                                           xSpacing(_xSpacing),
+	                                                                           ySpacing(_ySpacing) {
 	}
 
 	// yes copy
@@ -39,8 +40,8 @@ protected:
 private:
 	long width{};
 	long height{};
-	float xSpacing{};
-	float ySpacing{};
+	double xSpacing{};
+	double ySpacing{};
 };
 
 template <typename texture_t> struct Radon2D {
@@ -54,8 +55,8 @@ template <typename texture_t> struct Radon2D {
 		long widthOut, long heightOut, float rayLength, long samplesPerLine) {
 
 		return {{-.5f * rayLength, rayLength / static_cast<float>(samplesPerLine - 1)},
-				{-.5f * rayLength, rayLength / static_cast<float>(widthOut - 1)},
-				{-.5f * 3.1415926535f, 3.1415926535f / static_cast<float>(heightOut)}};
+		        {-.5f * rayLength, rayLength / static_cast<float>(widthOut - 1)},
+		        {-.5f * 3.1415926535f, 3.1415926535f / static_cast<float>(heightOut)}};
 	}
 
 	struct IndexMappings {
@@ -73,12 +74,12 @@ template <typename texture_t> struct Radon2D {
 		const Linear mappingOffsetToWorldX{r * c, -s};
 		const Linear mappingOffsetToWorldY{r * s, c};
 		return {textureIn.MappingXWorldToNormalised()(mappingOffsetToWorldX(constMappings.mappingIToOffset)),
-				textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(constMappings.mappingIToOffset))};
+		        textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(constMappings.mappingIToOffset))};
 	}
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
-																   const IndexMappings &indexMappings,
-																   long samplesPerLine) {
+	                                                               const IndexMappings &indexMappings,
+	                                                               long samplesPerLine) {
 		float ret = 0.f;
 		for (long i = 0; i < samplesPerLine; ++i) {
 			const float iF = static_cast<float>(i);

@@ -8,8 +8,8 @@ class Texture3DCUDA : public Texture3D {
 public:
 	Texture3DCUDA() = default;
 
-	Texture3DCUDA(const float *data, long _width, long _height, long _depth, float _xSpacing, float _ySpacing,
-	              float _zSpacing)
+	Texture3DCUDA(const float *data, long _width, long _height, long _depth, double _xSpacing, double _ySpacing,
+	              double _zSpacing)
 		: Texture3D(_width, _height, _depth, _xSpacing, _ySpacing, _zSpacing) {
 
 		const cudaExtent extent = {.width = static_cast<size_t>(_width), .height = static_cast<size_t>(_height),
