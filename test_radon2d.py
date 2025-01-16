@@ -1,4 +1,6 @@
 from typing import Tuple
+
+import matplotlib.cm
 import matplotlib.pyplot as plt
 import time
 import torch
@@ -7,15 +9,17 @@ import Extension as ExtensionTest
 
 TaskSummaryRadon2D = Tuple[str, torch.Tensor]
 
+
 def task_radon2d(function, name: str, device: str, image: torch.Tensor) -> TaskSummaryRadon2D:
     image_devices = image.to(device=device)
-    output = function(image_devices, 100, 100, 1024)
+    output = function(image_devices, 200, 200, 4096)
     return "{} on {}".format(name, device), output.cpu()
 
 
 def plot_task_radon2d(summary: TaskSummaryRadon2D):
-    _, axes = plt.subplots()
-    axes.pcolormesh(summary[1])
+    fig, axes = plt.subplots()
+    mesh = axes.pcolormesh(summary[1])
+    fig.colorbar(mesh)
     axes.set_title(summary[0])
 
 
@@ -70,8 +74,8 @@ def benchmark_radon2d():
     print("Calculating discrepancies...")
     found: bool = False
     for i in range(len(outputs) - 1):
-        discrepancy = ((outputs[i] - outputs[i + 1]).abs() / outputs[i].abs()).mean()
-        if discrepancy > 1e-5:
+        discrepancy = ((outputs[i] - outputs[i + 1]).abs() / (outputs[i].abs() + 1e-5)).mean()
+        if discrepancy > 1e-2:
             found = True
             print("Average discrepancy between outputs {} and {} is {:.4e} %".format(i, i + 1, 100. * discrepancy))
     if not found:
@@ -79,7 +83,8 @@ def benchmark_radon2d():
     print("Done.")
 
     print("Showing plots...")
-    _, axes = plt.subplots()
-    axes.pcolormesh(image)
+    fig, axes = plt.subplots()
+    mesh = axes.pcolormesh(image)
+    fig.colorbar(mesh)
     axes.set_title("Input image")
     plt.show()

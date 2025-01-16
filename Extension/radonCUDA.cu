@@ -47,33 +47,32 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &a, long heightOut, long width
 
 __global__ void radon2d_v2_kernel(const Texture2DCUDA *textureIn, long samplesPerLine,
                                   const Radon2D<Texture2DCUDA>::IndexMappings indexMappings, float scaleFactor,
-                                  float *ret) {
-
+                                  float *patchSumArray) {
 	extern __shared__ float buffer[];
 
 	const long i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i >= samplesPerLine) return;
+	if (i >= samplesPerLine) {
+		buffer[threadIdx.x] = 0.f;
+		return;
+	}
 
 	const float iF = static_cast<float>(i);
 
-	buffer[i] = textureIn->Sample(indexMappings.mappingIToX(iF), indexMappings.mappingIToY(iF));
+	buffer[threadIdx.x] = textureIn->Sample(indexMappings.mappingIToX(iF), indexMappings.mappingIToY(iF));
 
 	__syncthreads();
 
-	for (long cutoff = samplesPerLine / 2; cutoff > 0; cutoff /= 2) {
-		if (i < cutoff) {
-			buffer[i] += buffer[i + cutoff];
+	for (long cutoff = blockDim.x / 2; cutoff > 0; cutoff /= 2) {
+		if (threadIdx.x < cutoff) {
+			buffer[threadIdx.x] += buffer[threadIdx.x + cutoff];
 		}
 
 		__syncthreads();
 	}
-	if (i == 0) *ret = scaleFactor * buffer[0];
+	if (threadIdx.x == 0) patchSumArray[blockIdx.x] = scaleFactor * buffer[0];
 }
 
 __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, long heightOut, long widthOut, long samplesPerLine) {
-	// samplesPerLine should be no more than 1024
-	TORCH_CHECK(samplesPerLine <= 1024);
-
 	// a should be a 2D array of floats on the GPU
 	TORCH_CHECK(a.sizes().size() == 2);
 	TORCH_CHECK(a.dtype() == at::kFloat);
@@ -81,23 +80,28 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, long heightOut, long wi
 
 	const at::Tensor aContiguous = a.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	Texture2DCUDA texture{aPtr, a.sizes()[1], a.sizes()[0], 1.f, 1.f};
+	const Texture2DCUDA texture{aPtr, a.sizes()[1], a.sizes()[0], 1.f, 1.f};
 
 	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
-	float *resultPtr = result.data_ptr<float>();
+
+	constexpr unsigned blockSize = 1024;
+	constexpr size_t bufferSize = blockSize * sizeof(float);
+	const unsigned gridSize = (samplesPerLine + blockSize - 1) / blockSize;
+	at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize}), result.options());
+	float *patchSumsPtr = patchSums.data_ptr<float>();
 
 	const float rayLength = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld());
 	const float scaleFactor = rayLength / static_cast<float>(samplesPerLine);
 	const auto constMappings = Radon2D<Texture2DCUDA>::GetConstMappings(widthOut, heightOut, rayLength, samplesPerLine);
-	for (unsigned row = 0; row < heightOut; ++row) {
-		for (unsigned col = 0; col < widthOut; ++col) {
+	for (long row = 0; row < heightOut; ++row) {
+		for (long col = 0; col < widthOut; ++col) {
 			const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(texture, col, row, constMappings);
 
-			constexpr unsigned blockSize = 1024;
-			radon2d_v2_kernel<<<1, blockSize, blockSize * sizeof(float)>>>(
-				&texture, samplesPerLine, indexMappings, scaleFactor, &resultPtr[row * widthOut + col]);
+			radon2d_v2_kernel<<<gridSize, blockSize, bufferSize>>>(&texture, samplesPerLine, indexMappings, scaleFactor,
+			                                                       patchSumsPtr);
 
+			result.index_put_({row, col}, patchSums.sum());
 		}
 	}
 

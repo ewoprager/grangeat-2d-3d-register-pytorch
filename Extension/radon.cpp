@@ -34,29 +34,31 @@ at::Tensor radon2d_cpu(const at::Tensor &a, long heightOut, long widthOut, long 
 	return result;
 }
 
-void radon_v2_kernel_synchronous(const Texture2DCPU &textureIn, long samplesPerLine,
+void radon_v2_kernel_synchronous(const Texture2DCPU &textureIn, size_t blockSize, size_t blockId, long samplesPerLine,
                                  const Radon2D<Texture2DCPU>::IndexMappings indexMappings, float scaleFactor,
-                                 float *ret) {
-	float *buffer = static_cast<float *>(malloc(samplesPerLine * sizeof(float)));
+                                 float *patchSumsPtr) {
+	float *buffer = static_cast<float *>(malloc(blockSize * sizeof(float)));
 
-	for (int i = 0; i < samplesPerLine; ++i) {
+	for (size_t j = 0; j < blockSize; ++j) {
+		const int i = blockSize * blockId + j;
+		if (i >= samplesPerLine) {
+			buffer[j] = 0.f;
+			break;
+		}
 		const float iF = static_cast<float>(i);
-		buffer[i] = textureIn.Sample(indexMappings.mappingIToX(iF), indexMappings.mappingIToY(iF));
+		buffer[j] = textureIn.Sample(indexMappings.mappingIToX(iF), indexMappings.mappingIToY(iF));
 	}
 
-	for (long cutoff = samplesPerLine / 2; cutoff > 0; cutoff /= 2) {
+	for (long cutoff = blockSize / 2; cutoff > 0; cutoff /= 2) {
 		for (int i = 0; i < cutoff; ++i) {
 			buffer[i] += buffer[i + cutoff];
 		}
 	}
-	*ret = scaleFactor * buffer[0];
+	patchSumsPtr[blockId] = scaleFactor * buffer[0];
 	free(buffer);
 }
 
 at::Tensor radon2d_v2_cpu(const at::Tensor &a, long heightOut, long widthOut, long samplesPerLine) {
-	// samplesPerLine should be no more than 1024
-	TORCH_CHECK(samplesPerLine <= 1024);
-
 	// a should be a 2D array of floats on the CPU
 	TORCH_CHECK(a.sizes().size() == 2);
 	TORCH_CHECK(a.dtype() == at::kFloat);
@@ -64,10 +66,15 @@ at::Tensor radon2d_v2_cpu(const at::Tensor &a, long heightOut, long widthOut, lo
 
 	const at::Tensor aContiguous = a.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	Texture2DCPU texture{aPtr, a.sizes()[1], a.sizes()[0], 1.f, 1.f};
+	const Texture2DCPU texture{aPtr, a.sizes()[1], a.sizes()[0], 1.f, 1.f};
 
 	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
-	float *resultPtr = result.data_ptr<float>();
+
+	constexpr unsigned blockSize = 1024;
+	constexpr size_t bufferSize = blockSize * sizeof(float);
+	const unsigned gridSize = (samplesPerLine + blockSize - 1) / blockSize;
+	at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize}), result.options());
+	float *patchSumsPtr = patchSums.data_ptr<float>();
 
 	const float rayLength = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld());
@@ -76,8 +83,11 @@ at::Tensor radon2d_v2_cpu(const at::Tensor &a, long heightOut, long widthOut, lo
 	for (long row = 0; row < heightOut; ++row) {
 		for (long col = 0; col < widthOut; ++col) {
 			const auto indexMappings = Radon2D<Texture2DCPU>::GetIndexMappings(texture, col, row, constMappings);
-			radon_v2_kernel_synchronous(texture, samplesPerLine, indexMappings, scaleFactor,
-			                            &resultPtr[row * widthOut + col]);
+			for (size_t i = 0; i < gridSize; ++i) {
+				radon_v2_kernel_synchronous(texture, blockSize, i, samplesPerLine, indexMappings, scaleFactor,
+				                            patchSumsPtr);
+			}
+			result.index_put_({row, col}, patchSums.sum());
 		}
 	}
 
