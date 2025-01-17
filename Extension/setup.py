@@ -1,12 +1,13 @@
 import sys
+import glob
 import torch
 from setuptools import setup, Extension
 from torch.utils.cpp_extension import CppExtension, CUDAExtension, BuildExtension, CUDA_HOME
 
 extension_name: str = "ExtensionTest"
 cpp_version: str = "-std=c++17"
-cpu_source_files: list[str] = ["radon.cpp"]
-cuda_source_files: list[str] = ["radonCUDA.cu"]
+cpu_source_files: list[str] = glob.glob("src/*.cpp")
+cuda_source_files: list[str] = glob.glob("src/*.cu")
 
 debug: bool = "--debug" in sys.argv
 if debug:

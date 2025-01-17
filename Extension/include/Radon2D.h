@@ -90,4 +90,16 @@ template <typename texture_t> struct Radon2D {
 
 };
 
+at::Tensor radon2d_cpu(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
+                       long samplesPerLine);
+
+at::Tensor radon2d_v2_cpu(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
+                          long samplesPerLine);
+
+__host__ at::Tensor radon2d_cuda(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
+								 long samplesPerLine);
+
+__host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut,
+									long widthOut, long samplesPerLine);
+
 } // namespace ExtensionTest

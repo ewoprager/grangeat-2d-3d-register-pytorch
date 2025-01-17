@@ -1,2 +1,3 @@
 import torch
-from . import ExtensionTest, ops
+from . import ExtensionTest
+from ops import *

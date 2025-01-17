@@ -9,11 +9,11 @@ import Extension as ExtensionTest
 
 TaskSummaryRadon3D = Tuple[str, torch.Tensor]
 
-size = [50, 50, 50]
+size = [100, 100, 100]
 spacing = torch.tensor([1., 1., 1.])
 bounds = [0., 1.]
 
-downsample_factor = 4
+downsample_factor = 5
 
 
 def task_radon3d(function, name: str, device: str, image: torch.Tensor) -> TaskSummaryRadon3D:
@@ -38,10 +38,18 @@ def benchmark_radon3d(path: str):
     data, header = nrrd.read(path)
     print("Done.")
     print("Processing CT data...")
+    sizes = header['sizes']
+    print("\tVolume size = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
     data = torch.tensor(data, device="cpu")
     image = torch.maximum(data.type(torch.float32) + 1000., torch.tensor([0.], device=data.device))
-    down_sampler = torch.nn.AvgPool3d(downsample_factor)
-    image = down_sampler(image[None, :, :, :])[0]
+    global downsample_factor
+    if downsample_factor > 1:
+        down_sampler = torch.nn.AvgPool3d(downsample_factor)
+        image = down_sampler(image[None, :, :, :])[0]
+    else:
+        downsample_factor = 1
+    sizes = image.size()
+    print("\tVolume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
     global bounds
     bounds = [image.min().item(), image.max().item()]
     print("\tValue range = ({:.3f}, {:.3f})".format(bounds[0], bounds[1]))
@@ -49,7 +57,7 @@ def benchmark_radon3d(path: str):
     directions = torch.tensor(header['space directions'])
     global spacing
     spacing = float(downsample_factor) * directions.norm(dim=1)
-    print("\tCT voxel spacing = [{} x {} x {}]".format(spacing[0], spacing[1], spacing[2]))
+    print("\tCT voxel spacing = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
     print("Done.")
     # image = torch.tensor([
     #     [0.1, 0., 0.2, 0.4, 0.3, 0., .8],

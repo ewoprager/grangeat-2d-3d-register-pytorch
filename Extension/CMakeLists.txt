@@ -6,6 +6,18 @@ file(GLOB HEADERS
      "include/*.h"
 )
 
+file(GLOB SOURCES
+     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+     CONFIGURE_DEPENDS
+     "src/*.cpp"
+)
+
+file(GLOB CUDA_SOURCES
+     RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+     CONFIGURE_DEPENDS
+     "src/*.cu"
+)
+
 # Get the location of CUDA
 execute_process(COMMAND ${Python3_EXECUTABLE} -c "import torch; from torch.utils import cpp_extension; print(cpp_extension.CUDA_HOME)"
                 OUTPUT_VARIABLE CUDA_HOME
@@ -42,8 +54,8 @@ include_directories(${TORCH_INCLUDE_DIRS}
                     "${CUDA_HOME}/include")
 
 add_library(${PROJECT_NAME} SHARED
-            radon.cpp
-            radonCUDA.cu
+            ${SOURCES}
+            ${CUDA_SOURCES}
             ${HEADERS})
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)

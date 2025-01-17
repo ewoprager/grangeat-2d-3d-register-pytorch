@@ -34,7 +34,7 @@ def benchmark_radon2d():
 
     print("Running on CPU...")
     tic = time.time()
-    summary = task_radon2d(torch.ops.ExtensionTest.radon2d, "V1", "cpu", image)
+    summary = task_radon2d(ExtensionTest.radon2d, "V1", "cpu", image)
     toc = time.time()
     print("Done; took {:.3f}s. Plotting summary...".format(toc - tic))
     plot_task_radon2d(summary)
@@ -43,7 +43,7 @@ def benchmark_radon2d():
 
     print("Running on CUDA...")
     tic = time.time()
-    summary = task_radon2d(torch.ops.ExtensionTest.radon2d, "V1", "cuda", image)
+    summary = task_radon2d(ExtensionTest.radon2d, "V1", "cuda", image)
     toc = time.time()
     print("Done; took {:.3f}s. Plotting summary...".format(toc - tic))
     plot_task_radon2d(summary)
@@ -52,7 +52,7 @@ def benchmark_radon2d():
 
     print("Running V2 on CPU...")
     tic = time.time()
-    summary = task_radon2d(torch.ops.ExtensionTest.radon2d_v2, "V2", "cpu", image)
+    summary = task_radon2d(ExtensionTest.radon2d_v2, "V2", "cpu", image)
     toc = time.time()
     print("Done; took {:.3f}s. Plotting summary...".format(toc - tic))
     plot_task_radon2d(summary)
@@ -61,7 +61,7 @@ def benchmark_radon2d():
 
     print("Running V2 on CUDA...")
     tic = time.time()
-    summary = task_radon2d(torch.ops.ExtensionTest.radon2d_v2, "V2", "cuda", image)
+    summary = task_radon2d(ExtensionTest.radon2d_v2, "V2", "cuda", image)
     toc = time.time()
     print("Done; took {:.3f}s. Plotting summary...".format(toc - tic))
     plot_task_radon2d(summary)
