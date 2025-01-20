@@ -29,6 +29,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("radon2d", &radon2d_cuda);
 	m.impl("radon2d_v2", &radon2d_v2_cuda);
+	m.impl("dRadon2dDR", &dRadon2dDR_cuda);
 	m.impl("radon3d", &radon3d_cuda);
 	m.impl("radon3d_v2", &radon3d_v2_cuda);
 }

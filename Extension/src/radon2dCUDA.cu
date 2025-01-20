@@ -45,6 +45,47 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &image, double xSpacing, doubl
 	return result;
 }
 
+__global__ void dRadon2dDR_kernel(Texture2DCUDA textureIn, long heightOut, long widthOut, float *arrayOut,
+                                  Radon2D<Texture2DCUDA>::ConstMappings constMappings, long samplesPerLine,
+                                  float scaleFactor) {
+	const long col = blockIdx.x * blockDim.x + threadIdx.x;
+	const long row = blockIdx.y * blockDim.y + threadIdx.y;
+	if (col >= widthOut || row >= heightOut) return;
+	const long index = row * widthOut + col;
+	const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(textureIn, col, row, constMappings);
+	const auto dIndexMappingsDR = Radon2D<Texture2DCUDA>::GetDIndexMappingsDR(textureIn, row, constMappings);
+	arrayOut[index] = scaleFactor * Radon2D<Texture2DCUDA>::DIntegrateLoopedDMappingParameter(
+		                  textureIn, indexMappings, dIndexMappingsDR, samplesPerLine);
+}
+
+at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, double ySpacing, long heightOut, long widthOut,
+                           long samplesPerLine) {
+	// image should be a 2D array of floats on the GPU
+	TORCH_CHECK(image.sizes().size() == 2);
+	TORCH_CHECK(image.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(image.device().type() == at::DeviceType::CUDA);
+
+	at::Tensor aContiguous = image.contiguous();
+	const float *aPtr = aContiguous.data_ptr<float>();
+	Texture2DCUDA texture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
+
+	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
+	float *resultPtr = result.data_ptr<float>();
+
+	const float rayLength = sqrtf(
+		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld());
+	const auto constMappings = Radon2D<Texture2DCUDA>::GetConstMappings(widthOut, heightOut, rayLength, samplesPerLine);
+	const float scaleFactor = rayLength / static_cast<float>(samplesPerLine);
+
+	const dim3 blockSize{16, 16};
+	const dim3 gridSize{(static_cast<unsigned>(widthOut) + blockSize.x - 1) / blockSize.x,
+	                    (static_cast<unsigned>(heightOut) + blockSize.y - 1) / blockSize.y};
+	dRadon2dDR_kernel<<<gridSize, blockSize>>>(std::move(texture), heightOut, widthOut, resultPtr, constMappings,
+	                                           samplesPerLine, scaleFactor);
+
+	return result;
+}
+
 struct Radon2DV2Consts {
 	cudaTextureObject_t textureHandle{};
 	long samplesPerLine{};
