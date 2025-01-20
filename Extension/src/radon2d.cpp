@@ -70,7 +70,7 @@ at::Tensor radon2d_v2_cpu(const at::Tensor &image, double xSpacing, double ySpac
 
 	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
 
-	constexpr unsigned blockSize = 1024;
+	constexpr unsigned blockSize = 256;
 	const unsigned gridSize = (samplesPerLine + blockSize - 1) / blockSize;
 	at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize}), result.options());
 	float *patchSumsPtr = patchSums.data_ptr<float>();

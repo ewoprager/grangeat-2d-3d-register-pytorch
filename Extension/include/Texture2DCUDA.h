@@ -54,6 +54,8 @@ public:
 		if (arrayHandle) cudaFreeArray(arrayHandle);
 	}
 
+	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
+
 	__device__ [[nodiscard]] float Sample(const float x, const float y) const {
 		return tex2D<float>(textureHandle, x, y);
 	}
