@@ -18,16 +18,16 @@ __global__ void radon3d_kernel(Texture3DCUDA textureIn, long depthOut, long heig
 		                  textureIn, indexMappings, samplesPerDirection);
 }
 
-__host__ at::Tensor radon3d_cuda(const at::Tensor &a, double xSpacing, double ySpacing, double zSpacing, long depthOut,
-                                 long heightOut, long widthOut, long samplesPerDirection) {
-	// a should be a 3D array of floats on the GPU
-	TORCH_CHECK(a.sizes().size() == 3);
-	TORCH_CHECK(a.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(a.device().type() == at::DeviceType::CUDA);
+__host__ at::Tensor radon3d_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
+                                 long depthOut, long heightOut, long widthOut, long samplesPerDirection) {
+	// volume should be a 3D array of floats on the GPU
+	TORCH_CHECK(volume.sizes().size() == 3);
+	TORCH_CHECK(volume.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CUDA);
 
-	const at::Tensor aContiguous = a.contiguous();
+	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	Texture3DCUDA texture{aPtr, a.sizes()[2], a.sizes()[1], a.sizes()[0], xSpacing, ySpacing, zSpacing};
+	Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing, zSpacing};
 
 	at::Tensor result = torch::zeros(at::IntArrayRef({depthOut, heightOut, widthOut}), aContiguous.options());
 	float *resultPtr = result.data_ptr<float>();
@@ -128,16 +128,16 @@ __global__ void radon3d_v3_kernel(Radon3D<Texture3DCUDA>::IndexMappings indexMap
 	}
 }
 
-__host__ at::Tensor radon3d_v2_cuda(const at::Tensor &a, double xSpacing, double ySpacing, double zSpacing,
+__host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
                                     long depthOut, long heightOut, long widthOut, long samplesPerDirection) {
-	// a should be a 3D array of floats on the GPU
-	TORCH_CHECK(a.sizes().size() == 3);
-	TORCH_CHECK(a.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(a.device().type() == at::DeviceType::CUDA);
+	// volume should be a 3D array of floats on the GPU
+	TORCH_CHECK(volume.sizes().size() == 3);
+	TORCH_CHECK(volume.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CUDA);
 
-	const at::Tensor aContiguous = a.contiguous();
+	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	Texture3DCUDA texture{aPtr, a.sizes()[2], a.sizes()[1], a.sizes()[0], xSpacing, ySpacing, zSpacing};
+	Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing, zSpacing};
 
 	at::Tensor result = torch::zeros(at::IntArrayRef({depthOut, heightOut, widthOut}), aContiguous.options());
 

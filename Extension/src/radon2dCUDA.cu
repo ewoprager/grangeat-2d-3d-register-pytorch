@@ -15,16 +15,16 @@ __global__ void radon2d_kernel(Texture2DCUDA textureIn, long heightOut, long wid
 	arrayOut[index] = scaleFactor * Radon2D<Texture2DCUDA>::IntegrateLooped(textureIn, indexMappings, samplesPerLine);
 }
 
-__host__ at::Tensor radon2d_cuda(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
-                                 long samplesPerLine) {
-	// a should be a 2D array of floats on the GPU
-	TORCH_CHECK(a.sizes().size() == 2);
-	TORCH_CHECK(a.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(a.device().type() == at::DeviceType::CUDA);
+__host__ at::Tensor radon2d_cuda(const at::Tensor &image, double xSpacing, double ySpacing, long heightOut,
+                                 long widthOut, long samplesPerLine) {
+	// image should be a 2D array of floats on the GPU
+	TORCH_CHECK(image.sizes().size() == 2);
+	TORCH_CHECK(image.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(image.device().type() == at::DeviceType::CUDA);
 
-	const at::Tensor aContiguous = a.contiguous();
+	const at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	Texture2DCUDA texture{aPtr, a.sizes()[1], a.sizes()[0], xSpacing, ySpacing};
+	Texture2DCUDA texture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
 
 	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
 	float *resultPtr = result.data_ptr<float>();
@@ -72,16 +72,16 @@ __global__ void radon2d_v2_kernel(const Texture2DCUDA *textureIn, long samplesPe
 	if (threadIdx.x == 0) patchSumArray[blockIdx.x] = scaleFactor * buffer[0];
 }
 
-__host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut,
+__host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, double xSpacing, double ySpacing, long heightOut,
                                     long widthOut, long samplesPerLine) {
-	// a should be a 2D array of floats on the GPU
-	TORCH_CHECK(a.sizes().size() == 2);
-	TORCH_CHECK(a.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(a.device().type() == at::DeviceType::CUDA);
+	// image should be a 2D array of floats on the GPU
+	TORCH_CHECK(image.sizes().size() == 2);
+	TORCH_CHECK(image.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(image.device().type() == at::DeviceType::CUDA);
 
-	const at::Tensor aContiguous = a.contiguous();
+	const at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	const Texture2DCUDA texture{aPtr, a.sizes()[1], a.sizes()[0], xSpacing, ySpacing};
+	const Texture2DCUDA texture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
 
 	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
 

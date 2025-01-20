@@ -66,7 +66,6 @@ template <typename texture_t> struct Radon2D {
 
 	__host__ __device__ [[nodiscard]] static IndexMappings GetIndexMappings(
 		const texture_t &textureIn, long colOut, long rowOut, const ConstMappings &constMappings) {
-
 		const float phi = constMappings.mappingRowToPhi(rowOut);
 		const float r = constMappings.mappingColToR(colOut);
 		const float s = sinf(phi);
@@ -75,6 +74,17 @@ template <typename texture_t> struct Radon2D {
 		const Linear mappingOffsetToWorldY{r * s, c};
 		return {textureIn.MappingXWorldToNormalised()(mappingOffsetToWorldX(constMappings.mappingIToOffset)),
 		        textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(constMappings.mappingIToOffset))};
+	}
+
+	__host__ __device__ [[nodiscard]] static IndexMappings GetDIndexMappingsDR(
+		const texture_t &textureIn, long rowOut, const ConstMappings &constMappings) {
+		const float phi = constMappings.mappingRowToPhi(rowOut);
+		const float s = sinf(phi);
+		const float c = cosf(phi);
+		const Linear dMappingOffsetToWorldXDR{c, 0.f};
+		const Linear dMappingOffsetToWorldYDR{s, 0.f};
+		return {textureIn.MappingXWorldToNormalised()(dMappingOffsetToWorldXDR(constMappings.mappingIToOffset)),
+		        textureIn.MappingYWorldToNormalised()(dMappingOffsetToWorldYDR(constMappings.mappingIToOffset))};
 	}
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
@@ -88,6 +98,19 @@ template <typename texture_t> struct Radon2D {
 		return ret;
 	}
 
+	__host__ __device__ [[nodiscard]] static float DIntegrateLoopedDMappingParameter(const texture_t &texture,
+		const IndexMappings &indexMappings, const IndexMappings &dIndexMappingsDParameter, long samplesPerLine) {
+		float ret = 0.f;
+		for (long i = 0; i < samplesPerLine; ++i) {
+			const float iF = static_cast<float>(i);
+			const float x = indexMappings.mappingIToX(iF);
+			const float y = indexMappings.mappingIToY(iF);
+			ret += texture.SampleXDerivative(x, y) * dIndexMappingsDParameter.mappingIToX(iF) + texture.
+				SampleYDerivative(x, y) * dIndexMappingsDParameter.mappingIToY(iF);
+		}
+		return ret;
+	}
+
 };
 
 at::Tensor radon2d_cpu(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
@@ -96,10 +119,13 @@ at::Tensor radon2d_cpu(const at::Tensor &a, double xSpacing, double ySpacing, lo
 at::Tensor radon2d_v2_cpu(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
                           long samplesPerLine);
 
+at::Tensor dRadon2dDR_cpu(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
+                          long samplesPerLine);
+
 __host__ at::Tensor radon2d_cuda(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
-								 long samplesPerLine);
+                                 long samplesPerLine);
 
 __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut,
-									long widthOut, long samplesPerLine);
+                                    long widthOut, long samplesPerLine);
 
 } // namespace ExtensionTest
