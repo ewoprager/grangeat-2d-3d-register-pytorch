@@ -29,3 +29,9 @@ def radon3d_v2(volume: torch.Tensor, x_spacing: float, y_spacing: float, z_spaci
                output_height: int, output_width: int, samples_per_direction: int) -> torch.Tensor:
     return torch.ops.ExtensionTest.radon3d_v2.default(volume, x_spacing, y_spacing, z_spacing, output_depth,
                                                       output_height, output_width, samples_per_direction)
+
+
+def dRadon3dDR(volume: torch.Tensor, x_spacing: float, y_spacing: float, z_spacing: float, output_depth: int,
+               output_height: int, output_width: int, samples_per_direction: int) -> torch.Tensor:
+    return torch.ops.ExtensionTest.dRadon3dDR.default(volume, x_spacing, y_spacing, z_spacing, output_depth,
+                                                      output_height, output_width, samples_per_direction)

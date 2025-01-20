@@ -16,6 +16,7 @@ TORCH_LIBRARY(ExtensionTest, m) {
 	m.def("dRadon2dDR(Tensor a, float xs, float ys, int b, int c, int d) -> Tensor");
 	m.def("radon3d(Tensor a, float xs, float ys, float zs, int b, int c, int d, int e) -> Tensor");
 	m.def("radon3d_v2(Tensor a, float xs, float ys, float zs, int b, int c, int d, int e) -> Tensor");
+	m.def("dRadon3dDR(Tensor a, float xs, float ys, float zs, int b, int c, int d, int e) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
@@ -24,6 +25,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 	m.impl("dRadon2dDR", &dRadon2dDR_cpu);
 	m.impl("radon3d", &radon3d_cpu);
 	m.impl("radon3d_v2", &radon3d_cpu);
+	m.impl("dRadon3dDR", &dRadon3dDR_cpu);
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {

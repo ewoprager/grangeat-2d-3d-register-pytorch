@@ -49,6 +49,63 @@ public:
 		return (1.f - fInward) * l0 + fInward * l1;
 	}
 
+	__host__ __device__ [[nodiscard]] float SampleXDerivative(float x, float y, float z) const {
+		x = -.5f + x * static_cast<float>(Width());
+		y = -.5f + y * static_cast<float>(Height());
+		z = -.5f + z * static_cast<float>(Depth());
+		const float xFloored = floorf(x);
+		const float yFloored = floorf(y);
+		const float zFloored = floorf(z);
+		const long col = static_cast<long>(xFloored);
+		const long row = static_cast<long>(yFloored);
+		const long layer = static_cast<long>(zFloored);
+		const float fVertical = y - yFloored;
+		const float fInward = z - zFloored;
+		const float l0 = (1.f - fVertical) * (At(layer, row, col + 1) - At(layer, row, col)) + fVertical * (
+			                 At(layer, row + 1, col + 1) - At(layer, row + 1, col));
+		const float l1 = (1.f - fVertical) * (At(layer + 1, row, col + 1) - At(layer + 1, row, col)) + fVertical * (
+			                 At(layer + 1, row + 1, col + 1) - At(layer + 1, row + 1, col));
+		return (1.f - fInward) * l0 + fInward * l1;
+	}
+
+	__host__ __device__ [[nodiscard]] float SampleYDerivative(float x, float y, float z) const {
+		x = -.5f + x * static_cast<float>(Width());
+		y = -.5f + y * static_cast<float>(Height());
+		z = -.5f + z * static_cast<float>(Depth());
+		const float xFloored = floorf(x);
+		const float yFloored = floorf(y);
+		const float zFloored = floorf(z);
+		const long col = static_cast<long>(xFloored);
+		const long row = static_cast<long>(yFloored);
+		const long layer = static_cast<long>(zFloored);
+		const float fHorizontal = x - xFloored;
+		const float fInward = z - zFloored;
+		const float l0 = (1.f - fHorizontal) * (At(layer, row + 1, col) - At(layer, row, col)) + fHorizontal * (
+			                 At(layer, row + 1, col + 1) - At(layer, row, col + 1));
+		const float l1 = (1.f - fHorizontal) * (At(layer + 1, row + 1, col) - At(layer + 1, row, col)) + fHorizontal * (
+			                 At(layer + 1, row + 1, col + 1) - At(layer + 1, row, col + 1));
+		return (1.f - fInward) * l0 + fInward * l1;
+	}
+
+	__host__ __device__ [[nodiscard]] float SampleZDerivative(float x, float y, float z) const {
+		x = -.5f + x * static_cast<float>(Width());
+		y = -.5f + y * static_cast<float>(Height());
+		z = -.5f + z * static_cast<float>(Depth());
+		const float xFloored = floorf(x);
+		const float yFloored = floorf(y);
+		const float zFloored = floorf(z);
+		const long col = static_cast<long>(xFloored);
+		const long row = static_cast<long>(yFloored);
+		const long layer = static_cast<long>(zFloored);
+		const float fHorizontal = x - xFloored;
+		const float fVertical = y - yFloored;
+		const float r0 = (1.f - fHorizontal) * (At(layer + 1, row, col) - At(layer, row, col)) + fHorizontal * (
+			                 At(layer + 1, row, col + 1) - At(layer, row, col + 1));
+		const float r1 = (1.f - fHorizontal) * (At(layer + 1, row + 1, col) - At(layer, row + 1, col)) + fHorizontal * (
+			                 At(layer + 1, row + 1, col + 1) - At(layer, row + 1, col + 1));
+		return (1.f - fVertical) * r0 + fVertical * r1;
+	}
+
 private:
 	const float *ptr{};
 };

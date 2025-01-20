@@ -42,6 +42,9 @@ def task_radon2d(function, name: str, device: str, image: torch.Tensor, spacing:
 
 
 def plot_task_radon2d(summary: TaskSummaryRadon2D):
+    # hist = torch.histogram(summary[1].flatten(), 100)
+    # plt.hist(hist.hist, hist.bin_edges)
+    # plt.show()
     fig, axes = plt.subplots()
     mesh = axes.pcolormesh(summary[1])
     fig.colorbar(mesh)
@@ -69,10 +72,10 @@ def benchmark_radon2d(path: str):
     image, spacing = read_dicom(path, 1)
 
     outputs: list[TaskSummaryRadon2D] = [
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "V1", "cpu", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "V1", "cuda", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d_v2, "V2", "cpu", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d_v2, "V2", "cuda", image, spacing)]
+        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "RT2 V1", "cpu", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "RT2 V1", "cuda", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d_v2, "RT2 V2", "cpu", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d_v2, "RT2 V2", "cuda", image, spacing)]
 
     print("Calculating discrepancies...")
     found: bool = False
@@ -101,8 +104,8 @@ def benchmark_dRadon2dDR(path: str):
     image, spacing = read_dicom(path, 1)
 
     outputs: list[TaskSummaryRadon2D] = [
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.dRadon2dDR, "V1", "cpu", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.dRadon2dDR, "V1", "cuda", image, spacing)]
+        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.dRadon2dDR, "dRT2-dR V1", "cpu", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.dRadon2dDR, "dRT2-dR V1", "cuda", image, spacing)]
 
     print("Calculating discrepancies...")
     found: bool = False

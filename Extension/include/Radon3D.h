@@ -75,7 +75,6 @@ template <typename texture_t> struct Radon3D {
 
 	__host__ __device__ [[nodiscard]] static IndexMappings GetIndexMappings(
 		const texture_t &textureIn, long colOut, long rowOut, long layerOut, const ConstMappings &constMappings) {
-
 		const float theta = constMappings.mappingLayerToTheta(layerOut);
 		const float phi = constMappings.mappingRowToPhi(rowOut);
 		const float r = constMappings.mappingColToR(colOut);
@@ -89,6 +88,22 @@ template <typename texture_t> struct Radon3D {
 		return {textureIn.MappingXWorldToNormalised()(mappingOffsetToWorldX(constMappings.mappingIndexToOffset)),
 		        textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(constMappings.mappingIndexToOffset)),
 		        textureIn.MappingZWorldToNormalised()(mappingOffsetToWorldZ(constMappings.mappingIndexToOffset))};
+	}
+
+	__host__ __device__ [[nodiscard]] static IndexMappings GetDIndexMappingsDR(
+		const texture_t &textureIn, long rowOut, long layerOut, const ConstMappings &constMappings) {
+		const float theta = constMappings.mappingLayerToTheta(layerOut);
+		const float phi = constMappings.mappingRowToPhi(rowOut);
+		const float sp = sinf(phi);
+		const float cp = cosf(phi);
+		const float st = sinf(theta);
+		const float ct = cosf(theta);
+		const Linear2 dMappingOffsetToWorldXDR{ct * cp, 0.f, 0.f};
+		const Linear2 dMappingOffsetToWorldYDR{ct * sp, 0.f, 0.f};
+		const Linear2 dMappingOffsetToWorldZDR{st, 0.f, 0.f};
+		return {textureIn.MappingXWorldToNormalised()(dMappingOffsetToWorldXDR(constMappings.mappingIndexToOffset)),
+		        textureIn.MappingYWorldToNormalised()(dMappingOffsetToWorldYDR(constMappings.mappingIndexToOffset)),
+		        textureIn.MappingZWorldToNormalised()(dMappingOffsetToWorldZDR(constMappings.mappingIndexToOffset))};
 	}
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
@@ -106,10 +121,31 @@ template <typename texture_t> struct Radon3D {
 		return ret;
 	}
 
+	__host__ __device__ [[nodiscard]] static float DIntegrateLoopedDMappingParameter(const texture_t &texture,
+		const IndexMappings &indexMappings, const IndexMappings &dIndexMappingsDParameter, long samplesPerDirection) {
+		float ret = 0.f;
+		for (long j = 0; j < samplesPerDirection; ++j) {
+			for (long i = 0; i < samplesPerDirection; ++i) {
+				const float iF = static_cast<float>(i);
+				const float jF = static_cast<float>(j);
+				const float x = indexMappings.mappingIJToX(iF, jF);
+				const float y = indexMappings.mappingIJToY(iF, jF);
+				const float z = indexMappings.mappingIJToZ(iF, jF);
+				ret += texture.SampleXDerivative(x, y, z) * dIndexMappingsDParameter.mappingIJToX(iF, jF) + texture.
+					SampleYDerivative(x, y, z) * dIndexMappingsDParameter.mappingIJToY(iF, jF) + texture.
+					SampleZDerivative(x, y, z) * dIndexMappingsDParameter.mappingIJToZ(iF, jF);
+			}
+		}
+		return ret;
+	}
+
 };
 
 at::Tensor radon3d_cpu(const at::Tensor &a, double xSpacing, double ySpacing, double zSpacing, long depthOut,
                        long heightOut, long widthOut, long samplesPerDirection);
+
+at::Tensor dRadon3dDR_cpu(const at::Tensor &a, double xSpacing, double ySpacing, double zSpacing, long depthOut,
+					   long heightOut, long widthOut, long samplesPerDirection);
 
 __host__ at::Tensor radon3d_cuda(const at::Tensor &a, double xSpacing, double ySpacing, double zSpacing, long depthOut,
                                  long heightOut, long widthOut, long samplesPerDirection);
