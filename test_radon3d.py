@@ -109,19 +109,21 @@ def benchmark_radon3d(path: str):
 def benchmark_dRadon3dDR(path: str):
     print("----- Benchmarking dRadon3dDR -----")
 
-    # image, spacing, bounds = read_nrrd(path, 1)
+    image, spacing, bounds = read_nrrd(path, 1)
 
-    image = torch.zeros((5, 5, 5))
-    image[0, 0, 0] = 1.
-    image[4, 3, 2] = .5
+    # image = torch.zeros((5, 5, 5))
+    # image[0, 0, 0] = 1.
+    # image[4, 3, 2] = .5
+    #
+    # spacing = torch.tensor([1., 1., 1.])
+    # bounds = torch.tensor([-2. * image.max(), 2. * image.max()])
 
-    spacing = torch.tensor([1., 1., 1.])
-    bounds = torch.tensor([-2. * image.max(), 2. * image.max()])
-
-    output_size = torch.tensor([32, 32, 32])
+    output_size = torch.tensor([100, 100, 100])
 
     outputs: list[TaskSummaryRadon3D] = [
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR, "dRT3-dR V1", "cpu", image, spacing,
+        # run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR, "dRT3-dR V1", "cpu", image, spacing,
+        #          output_size, bounds),
+        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR, "dRT3-dR V1", "cuda", image, spacing,
                  output_size, bounds)]
 
     print("Calculating discrepancies...")

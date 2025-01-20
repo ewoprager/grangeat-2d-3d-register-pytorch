@@ -52,6 +52,55 @@ __host__ at::Tensor radon3d_cuda(const at::Tensor &volume, double xSpacing, doub
 	return result;
 }
 
+__global__ void dRadon3dDR_kernel(Texture3DCUDA textureIn, long depthOut, long heightOut, long widthOut,
+                                  float *arrayOut, Radon3D<Texture3DCUDA>::ConstMappings constMappings,
+                                  long samplesPerDirection, float scaleFactor) {
+	const long col = blockIdx.x * blockDim.x + threadIdx.x;
+	const long row = blockIdx.y * blockDim.y + threadIdx.y;
+	const long layer = blockIdx.z * blockDim.z + threadIdx.z;
+	if (col >= widthOut || row >= heightOut || layer >= depthOut) return;
+
+	const long index = layer * widthOut * heightOut + row * widthOut + col;
+	const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(textureIn, col, row, layer, constMappings);
+	const auto dIndexMappingsDR = Radon3D<Texture3DCUDA>::GetDIndexMappingsDR(textureIn, row, layer, constMappings);
+	arrayOut[index] = scaleFactor * Radon3D<Texture3DCUDA>::DIntegrateLoopedDMappingParameter(
+		                  textureIn, indexMappings, dIndexMappingsDR, samplesPerDirection);
+}
+
+__host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
+                                    long depthOut, long heightOut, long widthOut, long samplesPerDirection) {
+	// volume should be a 3D array of floats on the GPU
+	TORCH_CHECK(volume.sizes().size() == 3);
+	TORCH_CHECK(volume.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CUDA);
+
+	const at::Tensor aContiguous = volume.contiguous();
+	const float *aPtr = aContiguous.data_ptr<float>();
+	Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing, zSpacing};
+
+	at::Tensor result = torch::zeros(at::IntArrayRef({depthOut, heightOut, widthOut}), aContiguous.options());
+	float *resultPtr = result.data_ptr<float>();
+
+	const float planeSize = sqrtf(
+		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld() + texture.
+		DepthWorld() * texture.DepthWorld());
+
+	const auto constMappings = Radon3D<Texture3DCUDA>::GetConstMappings(widthOut, heightOut, depthOut, planeSize,
+	                                                                    samplesPerDirection);
+
+	const float rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
+	const float scaleFactor = rootScaleFactor * rootScaleFactor;
+
+	constexpr dim3 blockSize{10, 10, 10};
+	const dim3 gridSize{(static_cast<unsigned>(widthOut) + blockSize.x - 1) / blockSize.x,
+	                    (static_cast<unsigned>(heightOut) + blockSize.y - 1) / blockSize.y,
+	                    (static_cast<unsigned>(depthOut) + blockSize.z - 1) / blockSize.z};
+	dRadon3dDR_kernel<<<gridSize, blockSize>>>(std::move(texture), depthOut, heightOut, widthOut, resultPtr,
+	                                           constMappings, samplesPerDirection, scaleFactor);
+
+	return result;
+}
+
 struct Radon3DV2Consts {
 	cudaTextureObject_t textureHandle{};
 	long samplesPerDirection{};

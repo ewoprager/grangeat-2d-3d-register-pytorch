@@ -145,10 +145,13 @@ at::Tensor radon3d_cpu(const at::Tensor &a, double xSpacing, double ySpacing, do
                        long heightOut, long widthOut, long samplesPerDirection);
 
 at::Tensor dRadon3dDR_cpu(const at::Tensor &a, double xSpacing, double ySpacing, double zSpacing, long depthOut,
-					   long heightOut, long widthOut, long samplesPerDirection);
+                          long heightOut, long widthOut, long samplesPerDirection);
 
 __host__ at::Tensor radon3d_cuda(const at::Tensor &a, double xSpacing, double ySpacing, double zSpacing, long depthOut,
                                  long heightOut, long widthOut, long samplesPerDirection);
+
+__host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &a, double xSpacing, double ySpacing, double zSpacing,
+                                    long depthOut, long heightOut, long widthOut, long samplesPerDirection);
 
 __host__ at::Tensor radon3d_v2_cuda(const at::Tensor &a, double xSpacing, double ySpacing, double zSpacing,
                                     long depthOut, long heightOut, long widthOut, long samplesPerDirection);
