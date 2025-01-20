@@ -39,7 +39,7 @@ def task_radon3d(function, name: str, device: str, image: torch.Tensor, spacing:
                  output_size: torch.Tensor) -> TaskSummaryRadon3D:
     image_devices = image.to(device=device)
     output = function(image_devices, spacing[0], spacing[1], spacing[2], output_size[0], output_size[1], output_size[2],
-                      512)
+                      64)
     name: str = "{}_on_{}".format(name, device)
     return name, output.cpu()
 
@@ -109,20 +109,20 @@ def benchmark_radon3d(path: str):
 def benchmark_dRadon3dDR(path: str):
     print("----- Benchmarking dRadon3dDR -----")
 
-    image, spacing, bounds = read_nrrd(path, 1)
+    # image, spacing, bounds = read_nrrd(path, 1)
 
-    # image = torch.zeros((5, 5, 5))
-    # image[0, 0, 0] = 1.
-    # image[4, 3, 2] = .5
-    #
-    # spacing = torch.tensor([1., 1., 1.])
-    # bounds = torch.tensor([-2. * image.max(), 2. * image.max()])
+    image = torch.zeros((5, 5, 5))
+    image[0, 0, 0] = 1.
+    image[4, 3, 2] = .5
+
+    spacing = torch.tensor([1., 1., 1.])
+    bounds = torch.tensor([-2. * image.max(), 2. * image.max()])
 
     output_size = torch.tensor([100, 100, 100])
 
     outputs: list[TaskSummaryRadon3D] = [
-        # run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR, "dRT3-dR V1", "cpu", image, spacing,
-        #          output_size, bounds),
+        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR, "dRT3-dR V1", "cpu", image, spacing,
+                 output_size, bounds),
         run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR, "dRT3-dR V1", "cuda", image, spacing,
                  output_size, bounds)]
 
