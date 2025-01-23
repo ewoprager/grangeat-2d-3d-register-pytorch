@@ -76,9 +76,9 @@ def benchmark_radon3d(path: str):
     # spacing = torch.tensor([1., 1., 1.])
     # bounds = torch.tensor([image.min(), 5. * image.max()])
 
-    image, spacing, bounds = read_nrrd(path, 1)
+    image, spacing, bounds = read_nrrd(path, 8)
 
-    output_size = torch.tensor([100, 100, 100])
+    output_size = torch.tensor([100, 100, 4029])
 
     outputs: list[TaskSummaryRadon3D] = [
         # run_task(task_radon3d, plot_task_radon3d, ExtensionTest.radon3d, "RT3 V1", "cpu", image, spacing, output_size,

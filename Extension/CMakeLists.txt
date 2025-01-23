@@ -58,4 +58,4 @@ add_library(${PROJECT_NAME} SHARED
             ${CUDA_SOURCES}
             ${HEADERS})
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
