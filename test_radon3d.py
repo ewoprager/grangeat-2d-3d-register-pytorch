@@ -39,7 +39,7 @@ def task_radon3d(function, name: str, device: str, image: torch.Tensor, spacing:
                  output_size: torch.Tensor) -> TaskSummaryRadon3D:
     image_devices = image.to(device=device)
     output = function(image_devices, spacing[0], spacing[1], spacing[2], output_size[0], output_size[1], output_size[2],
-                      64)
+                      512)
     name: str = "{}_on_{}".format(name, device)
     return name, output.cpu()
 
