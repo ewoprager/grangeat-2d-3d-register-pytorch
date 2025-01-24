@@ -45,18 +45,9 @@ private:
 };
 
 template <typename texture_t> struct Radon2D {
-	struct ConstMappings {
-		Linear mappingIToOffset;
-		Linear mappingColToR;
-		Linear mappingRowToPhi;
-	};
 
-	__host__ __device__ [[nodiscard]] static ConstMappings GetConstMappings(
-		long widthOut, long heightOut, float rayLength, long samplesPerLine) {
-
-		return {{-.5f * rayLength, rayLength / static_cast<float>(samplesPerLine - 1)},
-		        {-.5f * rayLength, rayLength / static_cast<float>(widthOut - 1)},
-		        {-.5f * 3.1415926535f, 3.1415926535f / static_cast<float>(heightOut)}};
+	__host__ __device__ [[nodiscard]] static Linear GetMappingIToOffset(float lineLength, long samplesPerLine) {
+		return {-.5f * lineLength, lineLength / static_cast<float>(samplesPerLine - 1)};
 	}
 
 	struct IndexMappings {
@@ -65,26 +56,23 @@ template <typename texture_t> struct Radon2D {
 	};
 
 	__host__ __device__ [[nodiscard]] static IndexMappings GetIndexMappings(
-		const texture_t &textureIn, long colOut, long rowOut, const ConstMappings &constMappings) {
-		const float phi = constMappings.mappingRowToPhi(rowOut);
-		const float r = constMappings.mappingColToR(colOut);
+		const texture_t &textureIn, float phi, float r, const Linear &mappingIToOffset) {
 		const float s = sinf(phi);
 		const float c = cosf(phi);
 		const Linear mappingOffsetToWorldX{r * c, -s};
 		const Linear mappingOffsetToWorldY{r * s, c};
-		return {textureIn.MappingXWorldToNormalised()(mappingOffsetToWorldX(constMappings.mappingIToOffset)),
-		        textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(constMappings.mappingIToOffset))};
+		return {textureIn.MappingXWorldToNormalised()(mappingOffsetToWorldX(mappingIToOffset)),
+		        textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(mappingIToOffset))};
 	}
 
 	__host__ __device__ [[nodiscard]] static IndexMappings GetDIndexMappingsDR(
-		const texture_t &textureIn, long rowOut, const ConstMappings &constMappings) {
-		const float phi = constMappings.mappingRowToPhi(rowOut);
+		const texture_t &textureIn, float phi, const Linear &mappingIToOffset) {
 		const float s = sinf(phi);
 		const float c = cosf(phi);
 		const Linear dMappingOffsetToWorldXDR{c, 0.f};
 		const Linear dMappingOffsetToWorldYDR{s, 0.f};
-		return {textureIn.MappingXWorldToNormalised()(dMappingOffsetToWorldXDR(constMappings.mappingIToOffset)),
-		        textureIn.MappingYWorldToNormalised()(dMappingOffsetToWorldYDR(constMappings.mappingIToOffset))};
+		return {textureIn.MappingXWorldToNormalised()(dMappingOffsetToWorldXDR(mappingIToOffset)),
+		        textureIn.MappingYWorldToNormalised()(dMappingOffsetToWorldYDR(mappingIToOffset))};
 	}
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
@@ -113,22 +101,22 @@ template <typename texture_t> struct Radon2D {
 
 };
 
-at::Tensor radon2d_cpu(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
-                       long samplesPerLine);
+at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+                       const at::Tensor &sValues, long samplesPerLine);
 
-at::Tensor radon2d_v2_cpu(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
-                          long samplesPerLine);
+at::Tensor radon2d_v2_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+                          const at::Tensor &sValues, long samplesPerLine);
 
-at::Tensor dRadon2dDR_cpu(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
-                          long samplesPerLine);
+at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+                          const at::Tensor &sValues, long samplesPerLine);
 
-__host__ at::Tensor radon2d_cuda(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut, long widthOut,
-                                 long samplesPerLine);
+__host__ at::Tensor radon2d_cuda(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+                                 const at::Tensor &sValues, long samplesPerLine);
 
-__host__ at::Tensor radon2d_v2_cuda(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut,
-                                    long widthOut, long samplesPerLine);
+__host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, double xSpacing, double ySpacing,
+                                    const at::Tensor &phiValues, const at::Tensor &sValues, long samplesPerLine);
 
-__host__ at::Tensor dRadon2dDR_cuda(const at::Tensor &a, double xSpacing, double ySpacing, long heightOut,
-                                    long widthOut, long samplesPerLine);
+__host__ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, double ySpacing,
+                                    const at::Tensor &phiValues, const at::Tensor &sValues, long samplesPerLine);
 
 } // namespace ExtensionTest
