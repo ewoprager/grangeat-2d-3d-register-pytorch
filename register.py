@@ -16,7 +16,8 @@ from diffdrr.pose import RigidTransform, make_matrix
 import Extension as ExtensionTest
 
 
-def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, device):
+def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, sampled_per_direction: int = 128,
+                           device):
     phi_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 64, device=device)
     theta_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 64, device=device)
     image_depth: torch.Tensor = 1. * torch.tensor(volume_data.size()[0], dtype=torch.float32)
@@ -26,11 +27,12 @@ def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Te
     r_values = torch.linspace(-.5 * image_diag, .5 * image_diag, 64, device=device)
 
     return ExtensionTest.dRadon3dDR(volume_data, voxel_spacing[2].item(), voxel_spacing[1].item(),
-                                    voxel_spacing[0].item(), phi_values, theta_values, r_values, 64)
+                                    voxel_spacing[0].item(), phi_values, theta_values, r_values, sampled_per_direction)
 
 
 def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, detector_spacing: float,
-                          phi_values: torch.Tensor, r_values: torch.Tensor) -> torch.Tensor:
+                          phi_values: torch.Tensor, r_values: torch.Tensor,
+                          samples_per_line: int = 128) -> torch.Tensor:
     img_width = drr_image.size()[1]
     img_height = drr_image.size()[0]
 
@@ -44,7 +46,7 @@ def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, de
     fixed_scaling = (r_values * r_values / (source_distance * source_distance)) + 1.
 
     return fixed_scaling * ExtensionTest.dRadon2dDR(g_tilde, detector_spacing, detector_spacing, phi_values, r_values,
-                                                    64)
+                                                    samples_per_line)
 
 
 def deb_brief(name: str, tensor: torch.Tensor):
@@ -58,33 +60,36 @@ def deb_brief(name: str, tensor: torch.Tensor):
                                                                                                                       tensor.var()).item()))
 
 
+def fixed_polar_to_moving_cartesian(phis: torch.Tensor, rs: torch.tensor, *, source_distance: float,
+                                    ct_origin_distance: float):
+    hypotenuses = torch.sqrt(rs.square() + source_distance * source_distance)
+    sin_alphas = rs / hypotenuses
+    ys = sin_alphas.square() * (source_distance - ct_origin_distance)
+    scaled_rs = (source_distance - ct_origin_distance - ys) * rs / source_distance
+    xs = -scaled_rs * torch.cos(phis)
+    zs = scaled_rs * torch.sin(phis)
+    return xs, ys, zs
+
+
+def moving_cartesian_to_moving_spherical(xs: torch.Tensor, ys: torch.Tensor, zs: torch.Tensor):
+    phis = torch.atan2(ys, xs)
+    thetas = torch.atan2(zs, torch.sqrt(xs.square() + ys.square()))
+    rs = torch.sqrt(xs.square() + ys.square() + zs.square())
+    return phis, thetas, rs
+
+
 def resample_slice(volume: torch.Tensor, *, volume_size: torch.Tensor, voxel_spacing: torch.Tensor,
                    rotation: torch.Tensor, translation: torch.Tensor, source_distance: float, ct_origin_distance: float,
                    phi_values: torch.Tensor, r_values: torch.Tensor):
-    # R = torch.from_numpy(Rotation.from_rotvec(rotation).as_matrix()).to(torch.float32)
-    # transform = RigidTransform(make_matrix(R, translation))
-    deb_brief("phi_values", phi_values)
-    deb_brief("r_values", r_values)
     phi_values, r_values = torch.meshgrid(phi_values, r_values)
-    hypoteneuses = torch.sqrt(r_values.square() + source_distance * source_distance)
-    deb_brief("hypoteneuses", hypoteneuses)
-    sin_alphas = r_values / hypoteneuses
-    deb_brief("sin_alphas", sin_alphas)
-    ys = sin_alphas.square() * (source_distance - ct_origin_distance)
-    deb_brief("ys", ys)
-    scaled_rs = (source_distance - ct_origin_distance - ys) * r_values / source_distance
-    deb_brief("scaled_rs", scaled_rs)
-    xs = scaled_rs * torch.cos(phi_values)
-    deb_brief("xs", xs)
-    zs = -scaled_rs * torch.sin(phi_values)
-    deb_brief("zs", zs)
-    # cartesian_positions = torch.stack((xs, ys, zs), dim=-1)
 
-    spherical_phis = torch.atan2(xs, ys)
-    spherical_thetas = torch.atan2(-zs, torch.sqrt(xs.square() + ys.square()))
-    spherical_rs = torch.sqrt(xs.square() + ys.square() + zs.square())
+    spherical_phis, spherical_thetas, spherical_rs = moving_cartesian_to_moving_spherical(
+        *fixed_polar_to_moving_cartesian(phi_values, r_values, source_distance=source_distance,
+                                         ct_origin_distance=ct_origin_distance))
+
     a = torch.tensor([-1., 0., 0.], device=volume.device)
-    b = torch.tensor([2. / (volume_size * voxel_spacing).mean().item(), 2. / torch.pi, 2. / torch.pi], device=volume.device)
+    b = torch.tensor([2. / (volume_size * voxel_spacing).mean().item(), 2. / torch.pi, 2. / torch.pi],
+                     device=volume.device)
     grid = a + b * torch.stack((spherical_rs, spherical_thetas, spherical_phis), dim=-1)
     deb_brief("grid rs", grid[:, :, 0])
     deb_brief("grid thetas", grid[:, :, 1])
@@ -100,12 +105,13 @@ def register():
     voxel_spacing = torch.Tensor([10., 10., 10.])  # [mm]
     ct_origin_distance: float = 100.  ## [mm]; distance in the positive y-direction from the centre of the detector array
 
-    vol_size = torch.Size([30, 30, 30])
+    vol_size = torch.Size([20, 20, 20])
     # vol_data = torch.rand(vol_size, device=device)
     vol_data = torch.zeros(vol_size, device=device)
-    vol_data[5, 12, 15] = 2.
-    vol_data[0, 0, 0] = 1.
-    vol_data[15, 15, 15] = .5
+    vol_data[0, 0, 0] = 4.
+    vol_data[0, 0, 19] = 2.
+    vol_data[0, 19, 0] = 1.
+    vol_data[19, 0, 0] = .5
     vol_image = ScalarImage(tensor=vol_data[None, :, :, :])
     vol_subject = read(vol_image, spacing=voxel_spacing)
 
@@ -126,11 +132,13 @@ def register():
     plot_drr(drr_image, ticks=False)
     drr_image = drr_image[0, 0]
 
-    phi_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 32, device=device)
+    rhs_size = 64
+
+    phi_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, rhs_size, device=device)
     image_height: torch.Tensor = detector_spacing * torch.tensor(drr_image.size()[0], dtype=torch.float32)
     image_width: torch.Tensor = detector_spacing * torch.tensor(drr_image.size()[1], dtype=torch.float32)
     image_diag = torch.sqrt(image_height.square() + image_width.square()).item()
-    r_values = torch.linspace(-.5 * image_diag, .5 * image_diag, 32, device=device)
+    r_values = torch.linspace(-.5 * image_diag, .5 * image_diag, rhs_size, device=device)
 
     rhs = calculate_fixed_image(drr_image, source_distance=source_distance, detector_spacing=detector_spacing,
                                 phi_values=phi_values, r_values=r_values)

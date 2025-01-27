@@ -44,6 +44,19 @@ private:
 	double ySpacing{};
 };
 
+/**
+ * Cartesian coordinates:
+ *	- Origin at centre of image
+ *	- x is to the right
+ *	- y is up
+ *
+ * Radial coordinates:
+ *	- Origin at centre of image
+ *	- r is distance from origin
+ *	- phi is radians anticlockwise from the positive x-direction
+ *
+ * @tparam texture_t
+ */
 template <typename texture_t> struct Radon2D {
 
 	__host__ __device__ [[nodiscard]] static Linear GetMappingIToOffset(float lineLength, long samplesPerLine) {

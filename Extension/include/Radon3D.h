@@ -50,6 +50,19 @@ private:
 	double zSpacing{};
 };
 
+/**
+ * Cartesian coordinates:
+ *	- Origin at centre of volume
+ *	- x, y and z are right-handed
+ *
+ * Radial coordinates:
+ *	- Origin at centre of image
+ *	- r is distance from origin
+ *	- theta is radians left-hand-rule around y-axis from the positive x-direction
+ *	- phi is radians right-hand-rule around z-axis from the positive x-direction
+ *
+ * @tparam texture_t
+ */
 template <typename texture_t> struct Radon3D {
 
 	__host__ __device__ [[nodiscard]] static Linear GetMappingIToOffset(float planeSize, long samplesPerDirection) {
