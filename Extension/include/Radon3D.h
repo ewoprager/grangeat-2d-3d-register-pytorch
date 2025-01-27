@@ -51,20 +51,10 @@ private:
 };
 
 template <typename texture_t> struct Radon3D {
-	struct ConstMappings {
-		Linear mappingIndexToOffset;
-		Linear mappingColToR;
-		Linear mappingRowToPhi;
-		Linear mappingLayerToTheta;
-	};
 
-	__host__ __device__ [[nodiscard]] static ConstMappings GetConstMappings(
-		long widthOut, long heightOut, long depthOut, float planeSize, long samplesPerDirection) {
+	__host__ __device__ [[nodiscard]] static Linear GetMappingIToOffset(float planeSize, long samplesPerDirection) {
 
-		return {{-.5f * planeSize, planeSize / static_cast<float>(samplesPerDirection - 1)},
-		        {-.5f * planeSize, planeSize / static_cast<float>(widthOut - 1)},
-		        {-.5f * 3.1415926535f, 3.1415926535f / static_cast<float>(heightOut)},
-		        {-.5f * 3.1415926535f, 3.1415926535f / static_cast<float>(depthOut)}};
+		return {-.5f * planeSize, planeSize / static_cast<float>(samplesPerDirection - 1)};
 	}
 
 	struct IndexMappings {
@@ -74,10 +64,7 @@ template <typename texture_t> struct Radon3D {
 	};
 
 	__host__ __device__ [[nodiscard]] static IndexMappings GetIndexMappings(
-		const texture_t &textureIn, long colOut, long rowOut, long layerOut, const ConstMappings &constMappings) {
-		const float theta = constMappings.mappingLayerToTheta(layerOut);
-		const float phi = constMappings.mappingRowToPhi(rowOut);
-		const float r = constMappings.mappingColToR(colOut);
+		const texture_t &textureIn, float phi, float theta, float r, const Linear &mappingIToOffset) {
 		const float sp = sinf(phi);
 		const float cp = cosf(phi);
 		const float st = sinf(theta);
@@ -85,15 +72,13 @@ template <typename texture_t> struct Radon3D {
 		const Linear2 mappingOffsetToWorldX{r * ct * cp, -sp, -st * cp};
 		const Linear2 mappingOffsetToWorldY{r * ct * sp, cp, -st * sp};
 		const Linear2 mappingOffsetToWorldZ{r * st, 0.f, ct};
-		return {textureIn.MappingXWorldToNormalised()(mappingOffsetToWorldX(constMappings.mappingIndexToOffset)),
-		        textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(constMappings.mappingIndexToOffset)),
-		        textureIn.MappingZWorldToNormalised()(mappingOffsetToWorldZ(constMappings.mappingIndexToOffset))};
+		return {textureIn.MappingXWorldToNormalised()(mappingOffsetToWorldX(mappingIToOffset)),
+		        textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(mappingIToOffset)),
+		        textureIn.MappingZWorldToNormalised()(mappingOffsetToWorldZ(mappingIToOffset))};
 	}
 
 	__host__ __device__ [[nodiscard]] static IndexMappings GetDIndexMappingsDR(
-		const texture_t &textureIn, long rowOut, long layerOut, const ConstMappings &constMappings) {
-		const float theta = constMappings.mappingLayerToTheta(layerOut);
-		const float phi = constMappings.mappingRowToPhi(rowOut);
+		const texture_t &textureIn, float phi, float theta, const Linear &mappingIToOffset) {
 		const float sp = sinf(phi);
 		const float cp = cosf(phi);
 		const float st = sinf(theta);
@@ -101,9 +86,9 @@ template <typename texture_t> struct Radon3D {
 		const Linear2 dMappingOffsetToWorldXDR{ct * cp, 0.f, 0.f};
 		const Linear2 dMappingOffsetToWorldYDR{ct * sp, 0.f, 0.f};
 		const Linear2 dMappingOffsetToWorldZDR{st, 0.f, 0.f};
-		return {textureIn.MappingXWorldToNormalised()(dMappingOffsetToWorldXDR(constMappings.mappingIndexToOffset)),
-		        textureIn.MappingYWorldToNormalised()(dMappingOffsetToWorldYDR(constMappings.mappingIndexToOffset)),
-		        textureIn.MappingZWorldToNormalised()(dMappingOffsetToWorldZDR(constMappings.mappingIndexToOffset))};
+		return {textureIn.MappingXWorldToNormalised()(dMappingOffsetToWorldXDR(mappingIToOffset)),
+		        textureIn.MappingYWorldToNormalised()(dMappingOffsetToWorldYDR(mappingIToOffset)),
+		        textureIn.MappingZWorldToNormalised()(dMappingOffsetToWorldZDR(mappingIToOffset))};
 	}
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
@@ -141,19 +126,24 @@ template <typename texture_t> struct Radon3D {
 
 };
 
-at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing, long depthOut,
-                       long heightOut, long widthOut, long samplesPerDirection);
+at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
+                       const at::Tensor &phiValues, const at::Tensor &thetaValues, const at::Tensor &rValues,
+                       long samplesPerDirection);
 
-at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing, long depthOut,
-                          long heightOut, long widthOut, long samplesPerDirection);
+at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
+                          const at::Tensor &phiValues, const at::Tensor &thetaValues, const at::Tensor &rValues,
+                          long samplesPerDirection);
 
 __host__ at::Tensor radon3d_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
-                                 long depthOut, long heightOut, long widthOut, long samplesPerDirection);
+                                 const at::Tensor &phiValues, const at::Tensor &thetaValues, const at::Tensor &rValues,
+                                 long samplesPerDirection);
 
 __host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
-                                    long depthOut, long heightOut, long widthOut, long samplesPerDirection);
+                                    const at::Tensor &phiValues, const at::Tensor &thetaValues,
+                                    const at::Tensor &rValues, long samplesPerDirection);
 
 __host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
-                                    long depthOut, long heightOut, long widthOut, long samplesPerDirection);
+                                    const at::Tensor &phiValues, const at::Tensor &thetaValues,
+                                    const at::Tensor &rValues, long samplesPerDirection);
 
 } // namespace ExtensionTest

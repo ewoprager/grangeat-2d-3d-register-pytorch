@@ -102,21 +102,21 @@ template <typename texture_t> struct Radon2D {
 };
 
 at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
-                       const at::Tensor &sValues, long samplesPerLine);
+                       const at::Tensor &rValues, long samplesPerLine);
 
 at::Tensor radon2d_v2_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
-                          const at::Tensor &sValues, long samplesPerLine);
+                          const at::Tensor &rValues, long samplesPerLine);
 
 at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
-                          const at::Tensor &sValues, long samplesPerLine);
+                          const at::Tensor &rValues, long samplesPerLine);
 
 __host__ at::Tensor radon2d_cuda(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
-                                 const at::Tensor &sValues, long samplesPerLine);
+                                 const at::Tensor &rValues, long samplesPerLine);
 
 __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, double xSpacing, double ySpacing,
-                                    const at::Tensor &phiValues, const at::Tensor &sValues, long samplesPerLine);
+                                    const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine);
 
 __host__ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, double ySpacing,
-                                    const at::Tensor &phiValues, const at::Tensor &sValues, long samplesPerLine);
+                                    const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine);
 
 } // namespace ExtensionTest

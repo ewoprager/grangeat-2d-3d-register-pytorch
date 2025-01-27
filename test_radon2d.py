@@ -39,11 +39,11 @@ def task_radon2d(function, name: str, device: str, image: torch.Tensor, spacing:
     image_devices = image.to(device=device)
     phi_count = 1000
     r_count = 1000
-    phi_values = torch.pi * (
-            -.5 + torch.arange(0, phi_count, 1, dtype=torch.float32, device=device) / float(phi_count - 1))
-    r_values = torch.linspace(0., .5 * torch.sqrt(torch.tensor(
-        [float(image.size()[0]) * float(image.size()[0]) + float(image.size()[1]) * float(image.size()[1])])).item(),
-                              r_count, device=device)
+    phi_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, phi_count, device=device)
+    image_height: torch.Tensor = spacing[0] * float(image.size()[0])
+    image_width: torch.Tensor = spacing[1] * float(image.size()[1])
+    image_diag = torch.sqrt(image_height.square() + image_width.square()).item()
+    r_values = torch.linspace(-.5 * image_diag, .5 * image_diag, r_count, device=device)
     output = function(image_devices, spacing[0], spacing[1], phi_values, r_values, 1024)
     return "{} on {}".format(name, device), output.cpu()
 

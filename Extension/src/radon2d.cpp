@@ -5,7 +5,7 @@
 namespace ExtensionTest {
 
 at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
-                       const at::Tensor &sValues, long samplesPerLine) {
+                       const at::Tensor &rValues, long samplesPerLine) {
 	// image should be a 2D array of floats on the CPU
 	TORCH_CHECK(image.sizes().size() == 2);
 	TORCH_CHECK(image.dtype() == at::kFloat);
@@ -14,17 +14,17 @@ at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing
 	TORCH_CHECK(phiValues.sizes().size() == 1);
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
-	// sValues should be a 1D array of floats on the CPU
-	TORCH_CHECK(sValues.sizes().size() == 1);
-	TORCH_CHECK(sValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(sValues.device().type() == at::DeviceType::CPU);
+	// rValues should be a 1D array of floats on the CPU
+	TORCH_CHECK(rValues.sizes().size() == 1);
+	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CPU);
 
 	at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	const Texture2DCPU aTexture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
 
 	const long heightOut = phiValues.sizes()[0];
-	const long widthOut = sValues.sizes()[0];
+	const long widthOut = rValues.sizes()[0];
 	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
 	float *resultPtr = result.data_ptr<float>();
 
@@ -35,7 +35,7 @@ at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing
 	for (long row = 0; row < heightOut; ++row) {
 		for (long col = 0; col < widthOut; ++col) {
 			const auto indexMappings = Radon2D<Texture2DCPU>::GetIndexMappings(
-				aTexture, phiValues[row].item().toFloat(), sValues[col].item().toFloat(), mappingIToOffset);
+				aTexture, phiValues[row].item().toFloat(), rValues[col].item().toFloat(), mappingIToOffset);
 			resultPtr[row * widthOut + col] = scaleFactor * Radon2D<Texture2DCPU>::IntegrateLooped(
 				                                  aTexture, indexMappings, samplesPerLine);
 		}
@@ -105,7 +105,7 @@ at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing
 // }
 
 at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
-                          const at::Tensor &sValues, long samplesPerLine) {
+                          const at::Tensor &rValues, long samplesPerLine) {
 	// image should be a 2D array of floats on the CPU
 	TORCH_CHECK(image.sizes().size() == 2);
 	TORCH_CHECK(image.dtype() == at::kFloat);
@@ -114,16 +114,16 @@ at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpac
 	TORCH_CHECK(phiValues.sizes().size() == 1);
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
-	// sValues should be a 1D array of floats on the CPU
-	TORCH_CHECK(sValues.sizes().size() == 1);
-	TORCH_CHECK(sValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(sValues.device().type() == at::DeviceType::CPU);
+	// rValues should be a 1D array of floats on the CPU
+	TORCH_CHECK(rValues.sizes().size() == 1);
+	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CPU);
 
 	at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	const Texture2DCPU aTexture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
 
-	const long widthOut = sValues.sizes()[0];
+	const long widthOut = rValues.sizes()[0];
 	const long heightOut = phiValues.sizes()[0];
 	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
 	float *resultPtr = result.data_ptr<float>();
@@ -136,7 +136,7 @@ at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpac
 		for (long col = 0; col < widthOut; ++col) {
 			const float phi = phiValues[row].item().toFloat();
 			const auto indexMappings = Radon2D<Texture2DCPU>::GetIndexMappings(
-				aTexture, phi, sValues[col].item().toFloat(), constMappings);
+				aTexture, phi, rValues[col].item().toFloat(), constMappings);
 			const auto dIndexMappingsDR = Radon2D<Texture2DCPU>::GetDIndexMappingsDR(aTexture, phi, constMappings);
 			resultPtr[row * widthOut + col] = scaleFactor * Radon2D<Texture2DCPU>::DIntegrateLoopedDMappingParameter(
 				                                  aTexture, indexMappings, dIndexMappingsDR, samplesPerLine);

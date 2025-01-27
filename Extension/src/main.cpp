@@ -14,17 +14,19 @@ TORCH_LIBRARY(ExtensionTest, m) {
 	m.def("radon2d(Tensor img, float xs, float ys, Tensor phis, Tensor rs, int sc) -> Tensor");
 	m.def("radon2d_v2(Tensor img, float xs, float ys, Tensor phis, Tensor rs, int sc) -> Tensor");
 	m.def("dRadon2dDR(Tensor img, float xs, float ys, Tensor phis, Tensor rs, int sc) -> Tensor");
-	m.def("radon3d(Tensor a, float xs, float ys, float zs, int b, int c, int d, int e) -> Tensor");
-	m.def("radon3d_v2(Tensor a, float xs, float ys, float zs, int b, int c, int d, int e) -> Tensor");
-	m.def("dRadon3dDR(Tensor a, float xs, float ys, float zs, int b, int c, int d, int e) -> Tensor");
+	m.def("radon3d(Tensor vol, float xs, float ys, float zs, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
+	m.def(
+		"radon3d_v2(Tensor vol, float xs, float ys, float zs, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
+	m.def(
+		"dRadon3dDR(Tensor vol, float xs, float ys, float zs, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 	m.impl("radon2d", &radon2d_cpu);
-	m.impl("radon2d_v2", &radon2d_cpu);
+	m.impl("radon2d_v2", &radon2d_cpu); // doesn't have its own cpu version
 	m.impl("dRadon2dDR", &dRadon2dDR_cpu);
 	m.impl("radon3d", &radon3d_cpu);
-	m.impl("radon3d_v2", &radon3d_cpu);
+	m.impl("radon3d_v2", &radon3d_cpu); // doesn't have its own cpu version
 	m.impl("dRadon3dDR", &dRadon3dDR_cpu);
 }
 

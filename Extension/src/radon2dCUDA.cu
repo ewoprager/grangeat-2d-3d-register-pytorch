@@ -26,7 +26,7 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &image, double xSpacing, doubl
 	TORCH_CHECK(phiValues.sizes().size() == 1);
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// sValues should be a 1D array of floats on the GPU
+	// rValues should be a 1D array of floats on the GPU
 	TORCH_CHECK(rValues.sizes().size() == 1);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
@@ -86,7 +86,7 @@ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, double ySpa
 	TORCH_CHECK(phiValues.sizes().size() == 1);
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// sValues should be a 1D array of floats on the GPU
+	// rValues should be a 1D array of floats on the GPU
 	TORCH_CHECK(rValues.sizes().size() == 1);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
@@ -164,7 +164,7 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, double xSpacing, do
 	TORCH_CHECK(phiValues.sizes().size() == 1);
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// sValues should be a 1D array of floats on the GPU
+	// rValues should be a 1D array of floats on the GPU
 	TORCH_CHECK(rValues.sizes().size() == 1);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
