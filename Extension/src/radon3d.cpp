@@ -98,13 +98,13 @@ at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpa
 			for (long col = 0; col < widthOut; ++col) {
 				const float phi = phiValues[layer].item().toFloat();
 				const float theta = thetaValues[row].item().toFloat();
+				const float r = rValues[col].item().toFloat();
 				const auto indexMappings = Radon3D<Texture3DCPU>::GetIndexMappings(
-					aTexture, phi, theta, rValues[col].item().toFloat(), mappingIToOffset);
-				const auto dIndexMappingsDR = Radon3D<Texture3DCPU>::GetDIndexMappingsDR(
-					aTexture, phi, theta, mappingIToOffset);
+					aTexture, phi, theta, r, mappingIToOffset);
+				const auto derivativeWRTR = Radon3D<Texture3DCPU>::GetDerivativeWRTR(aTexture, phi, theta, r);
 				resultPtr[layer * widthOut * heightOut + row * widthOut + col] =
 					scaleFactor * Radon3D<Texture3DCPU>::DIntegrateLoopedDMappingParameter(
-						aTexture, indexMappings, dIndexMappingsDR, samplesPerDirection);
+						aTexture, indexMappings, derivativeWRTR, samplesPerDirection);
 			}
 		}
 	}

@@ -135,11 +135,11 @@ at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpac
 	for (long row = 0; row < heightOut; ++row) {
 		for (long col = 0; col < widthOut; ++col) {
 			const float phi = phiValues[row].item().toFloat();
-			const auto indexMappings = Radon2D<Texture2DCPU>::GetIndexMappings(
-				aTexture, phi, rValues[col].item().toFloat(), constMappings);
-			const auto dIndexMappingsDR = Radon2D<Texture2DCPU>::GetDIndexMappingsDR(aTexture, phi, constMappings);
+			const float r = rValues[col].item().toFloat();
+			const auto indexMappings = Radon2D<Texture2DCPU>::GetIndexMappings(aTexture, phi, r, constMappings);
+			const auto derivativeWRTR = Radon2D<Texture2DCPU>::GetDerivativeWRTR(aTexture, phi, r);
 			resultPtr[row * widthOut + col] = scaleFactor * Radon2D<Texture2DCPU>::DIntegrateLoopedDMappingParameter(
-				                                  aTexture, indexMappings, dIndexMappingsDR, samplesPerLine);
+				                                  aTexture, indexMappings, derivativeWRTR, samplesPerLine);
 		}
 	}
 

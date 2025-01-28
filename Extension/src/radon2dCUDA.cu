@@ -70,10 +70,9 @@ __global__ void dRadon2dDR_kernel(Texture2DCUDA textureIn, long heightOut, long 
 	const long index = row * widthOut + col;
 	const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(textureIn, phiValues[row], rValues[col],
 	                                                                    mappingIToOffset);
-	const auto dIndexMappingsDR = Radon2D<Texture2DCUDA>::GetDIndexMappingsDR(textureIn, phiValues[row],
-	                                                                          mappingIToOffset);
+	const auto derivativeWRTR = Radon2D<Texture2DCUDA>::GetDerivativeWRTR(textureIn, phiValues[row], rValues[col]);
 	arrayOut[index] = scaleFactor * Radon2D<Texture2DCUDA>::DIntegrateLoopedDMappingParameter(
-		                  textureIn, indexMappings, dIndexMappingsDR, samplesPerLine);
+		                  textureIn, indexMappings, derivativeWRTR, samplesPerLine);
 }
 
 at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,

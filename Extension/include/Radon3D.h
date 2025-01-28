@@ -76,6 +76,12 @@ template <typename texture_t> struct Radon3D {
 		Linear2 mappingIJToZ;
 	};
 
+	struct DerivativeWRTR {
+		float dXdR;
+		float dYdR;
+		float dZdR;
+	};
+
 	__host__ __device__ [[nodiscard]] static IndexMappings GetIndexMappings(
 		const texture_t &textureIn, float phi, float theta, float r, const Linear &mappingIToOffset) {
 		const float sp = sinf(phi);
@@ -90,18 +96,16 @@ template <typename texture_t> struct Radon3D {
 		        textureIn.MappingZWorldToNormalised()(mappingOffsetToWorldZ(mappingIToOffset))};
 	}
 
-	__host__ __device__ [[nodiscard]] static IndexMappings GetDIndexMappingsDR(
-		const texture_t &textureIn, float phi, float theta, const Linear &mappingIToOffset) {
+	__host__ __device__ [[nodiscard]] static DerivativeWRTR GetDerivativeWRTR(
+		const texture_t &textureIn, float phi, float theta, float r) {
+		const float sign = static_cast<float>(r > 0.f) - static_cast<float>(r < 0.f);
 		const float sp = sinf(phi);
 		const float cp = cosf(phi);
 		const float st = sinf(theta);
 		const float ct = cosf(theta);
-		const Linear2 dMappingOffsetToWorldXDR{ct * cp, 0.f, 0.f};
-		const Linear2 dMappingOffsetToWorldYDR{ct * sp, 0.f, 0.f};
-		const Linear2 dMappingOffsetToWorldZDR{st, 0.f, 0.f};
-		return {textureIn.MappingXWorldToNormalised()(dMappingOffsetToWorldXDR(mappingIToOffset)),
-		        textureIn.MappingYWorldToNormalised()(dMappingOffsetToWorldYDR(mappingIToOffset)),
-		        textureIn.MappingZWorldToNormalised()(dMappingOffsetToWorldZDR(mappingIToOffset))};
+		return {textureIn.MappingXWorldToNormalised().gradient * sign * ct * cp,
+		        textureIn.MappingYWorldToNormalised().gradient * sign * ct * sp,
+		        textureIn.MappingZWorldToNormalised().gradient * sign * st};
 	}
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
@@ -120,7 +124,7 @@ template <typename texture_t> struct Radon3D {
 	}
 
 	__host__ __device__ [[nodiscard]] static float DIntegrateLoopedDMappingParameter(const texture_t &texture,
-		const IndexMappings &indexMappings, const IndexMappings &dIndexMappingsDParameter, long samplesPerDirection) {
+		const IndexMappings &indexMappings, const DerivativeWRTR &derivativeWRTR, long samplesPerDirection) {
 		float ret = 0.f;
 		for (long j = 0; j < samplesPerDirection; ++j) {
 			for (long i = 0; i < samplesPerDirection; ++i) {
@@ -129,9 +133,8 @@ template <typename texture_t> struct Radon3D {
 				const float x = indexMappings.mappingIJToX(iF, jF);
 				const float y = indexMappings.mappingIJToY(iF, jF);
 				const float z = indexMappings.mappingIJToZ(iF, jF);
-				ret += texture.SampleXDerivative(x, y, z) * dIndexMappingsDParameter.mappingIJToX(iF, jF) + texture.
-					SampleYDerivative(x, y, z) * dIndexMappingsDParameter.mappingIJToY(iF, jF) + texture.
-					SampleZDerivative(x, y, z) * dIndexMappingsDParameter.mappingIJToZ(iF, jF);
+				ret += texture.SampleXDerivative(x, y, z) * derivativeWRTR.dXdR + texture.SampleYDerivative(x, y, z) *
+					derivativeWRTR.dYdR + texture.SampleZDerivative(x, y, z) * derivativeWRTR.dZdR;
 			}
 		}
 		return ret;

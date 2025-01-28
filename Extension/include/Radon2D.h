@@ -68,6 +68,11 @@ template <typename texture_t> struct Radon2D {
 		Linear mappingIToY;
 	};
 
+	struct DerivativeWRTR {
+		float dXdR;
+		float dYdR;
+	};
+
 	__host__ __device__ [[nodiscard]] static IndexMappings GetIndexMappings(
 		const texture_t &textureIn, float phi, float r, const Linear &mappingIToOffset) {
 		const float s = sinf(phi);
@@ -78,14 +83,13 @@ template <typename texture_t> struct Radon2D {
 		        textureIn.MappingYWorldToNormalised()(mappingOffsetToWorldY(mappingIToOffset))};
 	}
 
-	__host__ __device__ [[nodiscard]] static IndexMappings GetDIndexMappingsDR(
-		const texture_t &textureIn, float phi, const Linear &mappingIToOffset) {
+	__host__ __device__ [[nodiscard]] static DerivativeWRTR GetDerivativeWRTR(
+		const texture_t &textureIn, float phi, float r) {
+		const float sign = static_cast<float>(r > 0.f) - static_cast<float>(r < 0.f);
 		const float s = sinf(phi);
 		const float c = cosf(phi);
-		const Linear dMappingOffsetToWorldXDR{c, 0.f};
-		const Linear dMappingOffsetToWorldYDR{s, 0.f};
-		return {textureIn.MappingXWorldToNormalised()(dMappingOffsetToWorldXDR(mappingIToOffset)),
-		        textureIn.MappingYWorldToNormalised()(dMappingOffsetToWorldYDR(mappingIToOffset))};
+		return {textureIn.MappingXWorldToNormalised().gradient * sign * c,
+		        textureIn.MappingYWorldToNormalised().gradient * sign * s};
 	}
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
@@ -100,14 +104,14 @@ template <typename texture_t> struct Radon2D {
 	}
 
 	__host__ __device__ [[nodiscard]] static float DIntegrateLoopedDMappingParameter(const texture_t &texture,
-		const IndexMappings &indexMappings, const IndexMappings &dIndexMappingsDParameter, long samplesPerLine) {
+		const IndexMappings &indexMappings, const DerivativeWRTR &derivativeWRTR, long samplesPerLine) {
 		float ret = 0.f;
 		for (long i = 0; i < samplesPerLine; ++i) {
 			const float iF = static_cast<float>(i);
 			const float x = indexMappings.mappingIToX(iF);
 			const float y = indexMappings.mappingIToY(iF);
-			ret += texture.SampleXDerivative(x, y) * dIndexMappingsDParameter.mappingIToX(iF) + texture.
-				SampleYDerivative(x, y) * dIndexMappingsDParameter.mappingIToY(iF);
+			ret += texture.SampleXDerivative(x, y) * derivativeWRTR.dXdR + texture.SampleYDerivative(x, y) *
+				derivativeWRTR.dYdR;
 		}
 		return ret;
 	}

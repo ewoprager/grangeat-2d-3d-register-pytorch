@@ -88,11 +88,11 @@ __global__ void dRadon3dDR_kernel(Texture3DCUDA textureIn, long depthOut, long h
 	const long index = layer * widthOut * heightOut + row * widthOut + col;
 	const float phi = phiValues[layer];
 	const float theta = thetaValues[row];
-	const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(textureIn, phi, theta, rValues[col],
-	                                                                    mappingIToOffset);
-	const auto dIndexMappingsDR = Radon3D<Texture3DCUDA>::GetDIndexMappingsDR(textureIn, phi, theta, mappingIToOffset);
+	const float r = rValues[col];
+	const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(textureIn, phi, theta, r, mappingIToOffset);
+	const auto derivativeWRTR = Radon3D<Texture3DCUDA>::GetDerivativeWRTR(textureIn, phi, theta, r);
 	arrayOut[index] = scaleFactor * Radon3D<Texture3DCUDA>::DIntegrateLoopedDMappingParameter(
-		                  textureIn, indexMappings, dIndexMappingsDR, samplesPerDirection);
+		                  textureIn, indexMappings, derivativeWRTR, samplesPerDirection);
 }
 
 __host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
