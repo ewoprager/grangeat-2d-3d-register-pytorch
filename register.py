@@ -6,6 +6,8 @@ import time
 import torch
 import nrrd
 from scipy.spatial.transform import Rotation
+import kornia
+from tqdm import tqdm
 
 from diffdrr.drr import DRR
 from diffdrr.data import read
@@ -121,24 +123,24 @@ def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, de
     fixed_scaling = (r_values / source_distance).square() + 1.
 
     ##
-    no_derivative = ExtensionTest.radon2d(g_tilde, detector_spacing, detector_spacing, phi_values, r_values,
-                                          samples_per_line)
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(no_derivative.cpu())
-    axes.axis('square')
-    axes.set_title("R2 [g^tilde]")
-    axes.set_xlabel("r_pol")
-    axes.set_ylabel("phi_pol")
-    plt.colorbar(mesh)
-    post_derivative = no_derivative.diff(dim=-1) / torch.abs(r_values[1] - r_values[0])
-    post_derivative[:, :(post_derivative.size()[1] // 2)] *= -1.
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(post_derivative.cpu())
-    axes.axis('square')
-    axes.set_title("diff/ds R2 [g^tilde]")
-    axes.set_xlabel("r_pol")
-    axes.set_ylabel("phi_pol")
-    plt.colorbar(mesh)
+    # no_derivative = ExtensionTest.radon2d(g_tilde, detector_spacing, detector_spacing, phi_values, r_values,
+    #                                       samples_per_line)
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(no_derivative.cpu())
+    # axes.axis('square')
+    # axes.set_title("R2 [g^tilde]")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
+    # post_derivative = no_derivative.diff(dim=-1) / torch.abs(r_values[1] - r_values[0])
+    # post_derivative[:, :(post_derivative.size()[1] // 2)] *= -1.
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(post_derivative.cpu())
+    # axes.axis('square')
+    # axes.set_title("diff/ds R2 [g^tilde]")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
     ##
 
     return fixed_scaling * ExtensionTest.dRadon2dDR(g_tilde, detector_spacing, detector_spacing, phi_values, r_values,
@@ -180,6 +182,15 @@ def moving_cartesian_to_moving_spherical(xs: torch.Tensor, ys: torch.Tensor, zs:
     return phis, thetas, rs
 
 
+def transform(xs: torch.Tensor, ys: torch.Tensor, zs: torch.Tensor, rotation: torch.Tensor,
+              translation: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(rotation[None, :])[0].to(device=xs.device)
+    vectors = torch.stack((xs, ys, zs), dim=-1)
+    vectors = torch.einsum('kl,ijl->ijk', r, vectors)
+    vectors = vectors + translation.to(device=vectors.device)
+    return vectors[:, :, 0], vectors[:, :, 1], vectors[:, :, 2]
+
+
 def resample_slice(volume: torch.Tensor, *, rotation: torch.Tensor, translation: torch.Tensor, source_distance: float,
                    ct_origin_distance: float, phi_values_pol: torch.Tensor, r_values_pol: torch.Tensor,
                    phi_range_sph: LinearRange, theta_range_sph: LinearRange, r_range_sph: LinearRange):
@@ -188,30 +199,32 @@ def resample_slice(volume: torch.Tensor, *, rotation: torch.Tensor, translation:
     xs, ys, zs = fixed_polar_to_moving_cartesian(phi_values_pol, r_values_pol, source_distance=source_distance,
                                                  ct_origin_distance=ct_origin_distance)
 
+    xs, ys, zs = transform(xs, ys, zs, rotation, translation)
+
     phi_values_sph, theta_values_sph, r_values_sph = moving_cartesian_to_moving_spherical(xs, ys, zs)
 
     ##
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(phi_values_sph.cpu())
-    axes.axis('square')
-    axes.set_title("phi_sph resampling values")
-    axes.set_xlabel("r_pol")
-    axes.set_ylabel("phi_pol")
-    plt.colorbar(mesh)
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(theta_values_sph.cpu())
-    axes.axis('square')
-    axes.set_title("theta_sph resampling values")
-    axes.set_xlabel("r_pol")
-    axes.set_ylabel("phi_pol")
-    plt.colorbar(mesh)
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(r_values_sph.cpu())
-    axes.axis('square')
-    axes.set_title("r_sph resampling values")
-    axes.set_xlabel("r_pol")
-    axes.set_ylabel("phi_pol")
-    plt.colorbar(mesh)
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(phi_values_sph.cpu())
+    # axes.axis('square')
+    # axes.set_title("phi_sph resampling values")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(theta_values_sph.cpu())
+    # axes.axis('square')
+    # axes.set_title("theta_sph resampling values")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(r_values_sph.cpu())
+    # axes.axis('square')
+    # axes.set_title("r_sph resampling values")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
     ##
 
     grid_range = LinearRange(-1., 1.)
@@ -221,13 +234,47 @@ def resample_slice(volume: torch.Tensor, *, rotation: torch.Tensor, translation:
     k_mapping: LinearMapping = grid_range.get_mapping_from(phi_range_sph)
 
     grid = torch.stack((i_mapping(r_values_sph), j_mapping(theta_values_sph), k_mapping(phi_values_sph)), dim=-1)
-    deb_brief("grid rs", grid[:, :, 0])
-    deb_brief("grid thetas", grid[:, :, 1])
-    deb_brief("grid phis", grid[:, :, 2])
+    # deb_brief("grid rs", grid[:, :, 0])
+    # deb_brief("grid thetas", grid[:, :, 1])
+    # deb_brief("grid phis", grid[:, :, 2])
     return torch.nn.functional.grid_sample(volume[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
 
 
-def register(path: str):
+def zncc(xs: torch.Tensor, ys: torch.Tensor) -> float:
+    n = xs.numel()
+    assert (ys.size() == xs.size())
+    n = float(n)
+    sum_x = xs.sum()
+    sum_y = ys.sum()
+    sum_x2 = xs.square().sum()
+    sum_y2 = ys.square().sum()
+    sum_prod = (xs * ys).sum()
+    num = n * sum_prod - sum_x * sum_y
+    den = (n * sum_x2 - sum_x.square()).sqrt() * (n * sum_y2 - sum_y.square()).sqrt()
+    return (num / den).item()
+
+
+def evaluate(rhs: torch.Tensor, r_mu: torch.Tensor, *, rotation: torch.Tensor, translation: torch.Tensor,
+             source_distance, ct_origin_distance, phi_values_pol: torch.Tensor, r_values_pol: torch.Tensor,
+             phi_range_sph: LinearRange, theta_range_sph: LinearRange, r_range_sph: LinearRange,
+             plot: bool = False) -> float:
+    resampled = resample_slice(r_mu, rotation=rotation.cpu(), translation=translation.cpu(),
+                               source_distance=source_distance, ct_origin_distance=ct_origin_distance,
+                               phi_values_pol=phi_values_pol, r_values_pol=r_values_pol, phi_range_sph=phi_range_sph,
+                               theta_range_sph=theta_range_sph, r_range_sph=r_range_sph)
+    if plot:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(resampled.cpu())
+        axes.axis('square')
+        axes.set_title("d/dr R3 [mu] resampled")
+        axes.set_xlabel("r")
+        axes.set_ylabel("phi")
+        plt.colorbar(mesh)
+
+    return zncc(rhs, resampled)
+
+
+def register(path: str, *, cache_directory: str, load_cached: bool = True):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # cal_image = torch.zeros((10, 10))
@@ -263,70 +310,102 @@ def register(path: str):
     # vol_data[-1, -1, -1] = 0.2
     # vol_data[0, 0, 0] = 1.
 
-    vol_data, voxel_spacing, bounds = read_nrrd(path, downsample_factor=8)
-    vol_data = vol_data.to(device=device, dtype=torch.float32)
-    vol_size = vol_data.size()
+    if load_cached:
+        cached_path = torch.load(cache_directory + "/path.pt")
+        if path != cached_path:
+            load_cached = False
 
-    vol_image = ScalarImage(tensor=vol_data[None, :, :, :])
-    vol_subject = read(vol_image, spacing=voxel_spacing)
+    if load_cached:
+        print("Loading cached images...")
+        r_mu = torch.load(cache_directory + "/r_mu.pt")
+        rhs = torch.load(cache_directory + "/rhs.pt")
+        drr_image = torch.load(cache_directory + "/drr.pt")
+        phi_range_sph = torch.load(cache_directory + "/phi_range_sph.pt")
+        theta_range_sph = torch.load(cache_directory + "/theta_range_sph.pt")
+        r_range_sph = torch.load(cache_directory + "/r_range_sph.pt")
+        phi_values_pol = torch.load(cache_directory + "/phi_values_pol.pt")
+        r_values_pol = torch.load(cache_directory + "/r_values_pol.pt")
+        rotation_gt = torch.load(cache_directory + "/rotation_gt.pt")
+        translation_gt = torch.load(cache_directory + "/translation_gt.pt")
+        print("Done.")
+    else:
+        print("Generating and saving images...")
+        torch.save(path, cache_directory + "/path.pt")
+        vol_data, voxel_spacing, bounds = read_nrrd(path, downsample_factor=4)
+        vol_data = vol_data.to(device=device, dtype=torch.float32)
+        vol_size = vol_data.size()
 
-    phi_range_sph = LinearRange(-.5 * torch.pi, .5 * torch.pi)
-    theta_range_sph = LinearRange(-.5 * torch.pi, .5 * torch.pi)
-    vol_size_world = voxel_spacing * torch.tensor(vol_size, dtype=torch.float32)
-    vol_diag: float = vol_size_world.square().sum().sqrt().item()
-    r_range_sph = LinearRange(-.5 * vol_diag, .5 * vol_diag)
+        vol_image = ScalarImage(tensor=vol_data[None, :, :, :])
+        vol_subject = read(vol_image, spacing=voxel_spacing)
 
-    vol_counts = 192
-    r_mu = calculate_radon_volume(vol_data, voxel_spacing=voxel_spacing, phi_range=phi_range_sph,
-                                  theta_range=theta_range_sph, r_range=r_range_sph, counts=vol_counts,
-                                  samples_per_direction=vol_counts, device=device)
+        phi_range_sph = LinearRange(-.5 * torch.pi, .5 * torch.pi)
+        theta_range_sph = LinearRange(-.5 * torch.pi, .5 * torch.pi)
+        vol_size_world = voxel_spacing * torch.tensor(vol_size, dtype=torch.float32)
+        vol_diag: float = vol_size_world.square().sum().sqrt().item()
+        r_range_sph = LinearRange(-.5 * vol_diag, .5 * vol_diag)
+        torch.save(phi_range_sph, cache_directory + "/phi_range_sph.pt")
+        torch.save(theta_range_sph, cache_directory + "/theta_range_sph.pt")
+        torch.save(r_range_sph, cache_directory + "/r_range_sph.pt")
 
-    # X, Y, Z = torch.meshgrid(
-    #     [torch.arange(0, vol_counts, 1), torch.arange(0, vol_counts, 1), torch.arange(0, vol_counts, 1)])
-    # fig = pgo.Figure(data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=r_mu.cpu().flatten(),
-    #                                  isomin=r_mu.min().item(), isomax=r_mu.max().item(), opacity=.2, surface_count=21))
-    # fig.show()
+        vol_counts = 256
+        r_mu = calculate_radon_volume(vol_data, voxel_spacing=voxel_spacing, phi_range=phi_range_sph,
+                                      theta_range=theta_range_sph, r_range=r_range_sph, counts=vol_counts,
+                                      samples_per_direction=vol_counts, device=device)
+        torch.save(r_mu, cache_directory + "/r_mu.pt")
 
-    # I believe that the detector array lies on the x-z plane, with x down, and z to the left (and so y outward)
-    # drr_generator = DRR(vol_subject,  # An object storing the CT volume, origin, and voxel spacing
-    #                     sdd=source_distance,  # Source-to-detector distance (i.e., focal length)
-    #                     height=int(torch.ceil(
-    #                         1.1 * voxel_spacing.mean() * torch.tensor(vol_size).max() / detector_spacing).item()),
-    #                     # Image height (if width is not provided, the generated DRR is square)
-    #                     delx=detector_spacing,  # Pixel spacing (in mm)
-    #                     ).to(device)
-    #
-    rotations = torch.tensor([[0.0, 0.0, 0.0]], device=device)
-    translations = torch.tensor([[0.0, 0.0, ct_origin_distance]], device=device)
-    #
-    # drr_image = drr_generator(rotations, translations, parameterization="euler_angles", convention="ZXY")
-    # # plot_drr(drr_image, ticks=False)
-    # drr_image = drr_image[0, 0]
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(drr_image.cpu())
-    # axes.axis('square')
-    # plt.colorbar(mesh)
+        # X, Y, Z = torch.meshgrid(
+        #     [torch.arange(0, vol_counts, 1), torch.arange(0, vol_counts, 1), torch.arange(0, vol_counts, 1)])
+        # fig = pgo.Figure(data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=r_mu.cpu().flatten(),
+        #                                  isomin=r_mu.min().item(), isomax=r_mu.max().item(), opacity=.2, surface_count=21))
+        # fig.show()
 
-    drr_image = generate_drr(vol_data, voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
-                             source_distance=source_distance, ct_origin_distance=ct_origin_distance,
-                             output_size=torch.Size([1000, 1000]), sample_count=500)
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(drr_image.cpu())
-    axes.axis('square')
-    axes.set_title("g")
-    axes.set_xlabel("x")
-    axes.set_ylabel("y")
-    plt.colorbar(mesh)
+        # I believe that the detector array lies on the x-z plane, with x down, and z to the left (and so y outward)
+        # drr_generator = DRR(vol_subject,  # An object storing the CT volume, origin, and voxel spacing
+        #                     sdd=source_distance,  # Source-to-detector distance (i.e., focal length)
+        #                     height=int(torch.ceil(
+        #                         1.1 * voxel_spacing.mean() * torch.tensor(vol_size).max() / detector_spacing).item()),
+        #                     # Image height (if width is not provided, the generated DRR is square)
+        #                     delx=detector_spacing,  # Pixel spacing (in mm)
+        #                     ).to(device)
+        #
+        rotation_gt = torch.tensor([0.0, 0.0, 0.0], device=device)
+        translation_gt = torch.tensor([0.0, 0.0, 0.0], device=device)
+        torch.save(rotation_gt, cache_directory + "/rotation_gt.pt")
+        torch.save(translation_gt, cache_directory + "/translation_gt.pt")
+        #
+        # drr_image = drr_generator(rotations, translations, parameterization="euler_angles", convention="ZXY")
+        # # plot_drr(drr_image, ticks=False)
+        # drr_image = drr_image[0, 0]
+        # _, axes = plt.subplots()
+        # mesh = axes.pcolormesh(drr_image.cpu())
+        # axes.axis('square')
+        # plt.colorbar(mesh)
 
-    rhs_size = 512
+        drr_image = generate_drr(vol_data, voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
+                                 source_distance=source_distance, ct_origin_distance=ct_origin_distance,
+                                 output_size=torch.Size([1000, 1000]), sample_count=500)
+        torch.save(drr_image, cache_directory + "/drr.pt")
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(drr_image.cpu())
+        axes.axis('square')
+        axes.set_title("g")
+        axes.set_xlabel("x")
+        axes.set_ylabel("y")
+        plt.colorbar(mesh)
 
-    phi_values_pol = torch.linspace(-.5 * torch.pi, .5 * torch.pi, rhs_size, device=device)
-    image_diag: float = (
-            detector_spacing * torch.tensor(drr_image.size(), dtype=torch.float32)).square().sum().sqrt().item()
-    r_values_pol = torch.linspace(-.5 * image_diag, .5 * image_diag, rhs_size, device=device)
+        rhs_size = 1024
 
-    rhs = calculate_fixed_image(drr_image, source_distance=source_distance, detector_spacing=detector_spacing,
-                                phi_values=phi_values_pol, r_values=r_values_pol)
+        phi_values_pol = torch.linspace(-.5 * torch.pi, .5 * torch.pi, rhs_size, device=device)
+        image_diag: float = (
+                detector_spacing * torch.tensor(drr_image.size(), dtype=torch.float32)).square().sum().sqrt().item()
+        r_values_pol = torch.linspace(-.5 * image_diag, .5 * image_diag, rhs_size, device=device)
+        torch.save(phi_values_pol, cache_directory + "/phi_values_pol.pt")
+        torch.save(r_values_pol, cache_directory + "/r_values_pol.pt")
+
+        rhs = calculate_fixed_image(drr_image, source_distance=source_distance, detector_spacing=detector_spacing,
+                                    phi_values=phi_values_pol, r_values=r_values_pol)
+        torch.save(rhs, cache_directory + "/rhs.pt")
+        print("Done.")
 
     _, axes = plt.subplots()
     mesh = axes.pcolormesh(rhs.cpu())
@@ -336,16 +415,30 @@ def register(path: str):
     axes.set_ylabel("phi")
     plt.colorbar(mesh)
 
+    print("{:.4e}".format(evaluate(rhs, r_mu, rotation=rotation_gt.cpu(), translation=translation_gt.cpu(),
+                                   source_distance=source_distance, ct_origin_distance=ct_origin_distance,
+                                   phi_values_pol=phi_values_pol, r_values_pol=r_values_pol,
+                                   phi_range_sph=phi_range_sph, theta_range_sph=theta_range_sph,
+                                   r_range_sph=r_range_sph, plot=True)))
+
+    n = 100
+    angle0s = torch.linspace(-torch.pi, torch.pi, n)
+    angle1s = torch.linspace(-torch.pi, torch.pi, n)
+    nznccs = torch.zeros((n, n))
+    for i in tqdm(range(nznccs.numel())):
+        i0 = i % n
+        i1 = i // n
+        nznccs[i1, i0] = -evaluate(rhs, r_mu, rotation=torch.tensor([angle0s[i0], angle1s[i1], 0.]),
+                                   translation=torch.zeros(3), source_distance=source_distance,
+                                   ct_origin_distance=ct_origin_distance, phi_values_pol=phi_values_pol,
+                                   r_values_pol=r_values_pol, phi_range_sph=phi_range_sph,
+                                   theta_range_sph=theta_range_sph, r_range_sph=r_range_sph)
     _, axes = plt.subplots()
-    resampled = resample_slice(r_mu, rotation=rotations[0].cpu(), translation=translations[0].cpu(),
-                               source_distance=source_distance, ct_origin_distance=ct_origin_distance,
-                               phi_values_pol=phi_values_pol, r_values_pol=r_values_pol, phi_range_sph=phi_range_sph,
-                               theta_range_sph=theta_range_sph, r_range_sph=r_range_sph)
-    mesh = axes.pcolormesh(resampled.cpu())
+    mesh = axes.pcolormesh(nznccs)
+    axes.set_title("landscape over angle about x axis")
+    axes.set_xlabel("angle0")
+    axes.set_ylabel("angle1")
     axes.axis('square')
-    axes.set_title("d/dr R3 [mu] resampled")
-    axes.set_xlabel("r")
-    axes.set_ylabel("phi")
     plt.colorbar(mesh)
 
     plt.show()
