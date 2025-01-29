@@ -41,27 +41,29 @@ public:
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleXDerivative(float x, float y) const {
-		x = -.5f + x * static_cast<float>(Width());
+		const float widthF = static_cast<float>(Width());
+		x = -.5f + x * widthF;
 		y = -.5f + y * static_cast<float>(Height());
 		const float xFloored = floorf(x);
 		const float yFloored = floorf(y);
 		const long col = static_cast<long>(xFloored);
 		const long row = static_cast<long>(yFloored);
 		const float fVertical = y - yFloored;
-		return (1.f - fVertical) * (At(row, col + 1) - At(row, col)) + fVertical * (
-			       At(row + 1, col + 1) - At(row + 1, col));
+		return widthF * ((1.f - fVertical) * (At(row, col + 1) - At(row, col)) + fVertical * (
+			                 At(row + 1, col + 1) - At(row + 1, col)));
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleYDerivative(float x, float y) const {
+		const float heightF = static_cast<float>(Height());
 		x = -.5f + x * static_cast<float>(Width());
-		y = -.5f + y * static_cast<float>(Height());
+		y = -.5f + y * heightF;
 		const float xFloored = floorf(x);
 		const float yFloored = floorf(y);
 		const long col = static_cast<long>(xFloored);
 		const long row = static_cast<long>(yFloored);
 		const float fHorizontal = x - xFloored;
-		return (1.f - fHorizontal) * (At(row + 1, col) - At(row, col)) + fHorizontal * (
-			       At(row + 1, col + 1) - At(row, col + 1));
+		return heightF * ((1.f - fHorizontal) * (At(row + 1, col) - At(row, col)) + fHorizontal * (
+			                  At(row + 1, col + 1) - At(row, col + 1)));
 	}
 
 private:

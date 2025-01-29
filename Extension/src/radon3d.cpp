@@ -52,7 +52,6 @@ at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacin
 			}
 		}
 	}
-
 	return result;
 }
 

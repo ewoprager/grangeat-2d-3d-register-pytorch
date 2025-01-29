@@ -50,7 +50,8 @@ public:
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleXDerivative(float x, float y, float z) const {
-		x = -.5f + x * static_cast<float>(Width());
+		const float widthF = static_cast<float>(Width());
+		x = -.5f + x * widthF;
 		y = -.5f + y * static_cast<float>(Height());
 		z = -.5f + z * static_cast<float>(Depth());
 		const float xFloored = floorf(x);
@@ -65,12 +66,13 @@ public:
 			                 At(layer, row + 1, col + 1) - At(layer, row + 1, col));
 		const float l1 = (1.f - fVertical) * (At(layer + 1, row, col + 1) - At(layer + 1, row, col)) + fVertical * (
 			                 At(layer + 1, row + 1, col + 1) - At(layer + 1, row + 1, col));
-		return (1.f - fInward) * l0 + fInward * l1;
+		return widthF * ((1.f - fInward) * l0 + fInward * l1);
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleYDerivative(float x, float y, float z) const {
+		const float heightF = static_cast<float>(Height());
 		x = -.5f + x * static_cast<float>(Width());
-		y = -.5f + y * static_cast<float>(Height());
+		y = -.5f + y * heightF;
 		z = -.5f + z * static_cast<float>(Depth());
 		const float xFloored = floorf(x);
 		const float yFloored = floorf(y);
@@ -84,13 +86,14 @@ public:
 			                 At(layer, row + 1, col + 1) - At(layer, row, col + 1));
 		const float l1 = (1.f - fHorizontal) * (At(layer + 1, row + 1, col) - At(layer + 1, row, col)) + fHorizontal * (
 			                 At(layer + 1, row + 1, col + 1) - At(layer + 1, row, col + 1));
-		return (1.f - fInward) * l0 + fInward * l1;
+		return heightF * ((1.f - fInward) * l0 + fInward * l1);
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleZDerivative(float x, float y, float z) const {
+		const float depthF = static_cast<float>(Depth());
 		x = -.5f + x * static_cast<float>(Width());
 		y = -.5f + y * static_cast<float>(Height());
-		z = -.5f + z * static_cast<float>(Depth());
+		z = -.5f + z * depthF;
 		const float xFloored = floorf(x);
 		const float yFloored = floorf(y);
 		const float zFloored = floorf(z);
@@ -103,7 +106,7 @@ public:
 			                 At(layer + 1, row, col + 1) - At(layer, row, col + 1));
 		const float r1 = (1.f - fHorizontal) * (At(layer + 1, row + 1, col) - At(layer, row + 1, col)) + fHorizontal * (
 			                 At(layer + 1, row + 1, col + 1) - At(layer, row + 1, col + 1));
-		return (1.f - fVertical) * r0 + fVertical * r1;
+		return depthF * ((1.f - fVertical) * r0 + fVertical * r1);
 	}
 
 private:

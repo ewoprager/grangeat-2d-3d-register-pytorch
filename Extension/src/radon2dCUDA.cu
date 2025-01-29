@@ -114,7 +114,6 @@ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, double ySpa
 	                    (static_cast<unsigned>(heightOut) + blockSize.y - 1) / blockSize.y};
 	dRadon2dDR_kernel<<<gridSize, blockSize>>>(std::move(texture), heightOut, widthOut, resultPtr, mappingIToOffset,
 	                                           phisPtr, rsPtr, samplesPerLine, scaleFactor);
-
 	return result;
 }
 

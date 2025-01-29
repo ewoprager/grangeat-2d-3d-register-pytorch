@@ -142,7 +142,6 @@ at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpac
 				                                  aTexture, indexMappings, derivativeWRTR, samplesPerLine);
 		}
 	}
-
 	return result;
 }
 

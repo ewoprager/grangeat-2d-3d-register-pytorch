@@ -65,7 +65,7 @@ public:
 		x = floorf(-.5f + x * widthF);
 		const float x0 = (x + .5f) / widthF;
 		const float x1 = (x + 1.5f) / widthF;
-		return tex2D<float>(textureHandle, x1, y) - tex2D<float>(textureHandle, x0, y);
+		return widthF * (tex2D<float>(textureHandle, x1, y) - tex2D<float>(textureHandle, x0, y));
 	}
 
 	__device__ [[nodiscard]] float SampleYDerivative(const float x, float y) const {
@@ -73,9 +73,8 @@ public:
 		y = floorf(-.5f + y * heightF);
 		const float y0 = (y + .5f) / heightF;
 		const float y1 = (y + 1.5f) / heightF;
-		return tex2D<float>(textureHandle, x, y1) - tex2D<float>(textureHandle, x, y0);
+		return heightF * (tex2D<float>(textureHandle, x, y1) - tex2D<float>(textureHandle, x, y0));
 	}
-
 
 private:
 	cudaArray_t arrayHandle = nullptr;

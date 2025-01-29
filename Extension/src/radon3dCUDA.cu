@@ -148,7 +148,6 @@ __host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, double xSpacing, d
 	dRadon3dDR_kernel<<<gridSize, blockSize>>>(std::move(texture), depthOut, heightOut, widthOut, resultPtr,
 	                                           mappingIToOffset, phisPtr, thetasPtr, rsPtr, samplesPerDirection,
 	                                           scaleFactor);
-
 	return result;
 }
 
