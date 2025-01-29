@@ -5,3 +5,4 @@
 **/cmake-build-*/
 Extension/ExtensionTest.*
 cache/
+**/__pycache__
