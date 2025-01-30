@@ -2,118 +2,22 @@ import copy
 from typing import Tuple
 import matplotlib.pyplot as plt
 import numpy as np
-import plotly.graph_objects as pgo
 import time
 import torch
 import nrrd
-from scipy.spatial.transform import Rotation
-import kornia
-from torch.nn.parameter import Parameter
 from tqdm import tqdm
-from typing import NamedTuple
 import scipy
 
-from diffdrr.drr import DRR
-from diffdrr.data import read
-from sympy.solvers.solvers import det_perm
-from torchio.data.image import ScalarImage
-from diffdrr.visualization import plot_drr
-from diffdrr.pose import RigidTransform, make_matrix
+# from diffdrr.drr import DRR
+# from diffdrr.data import read
+# from sympy.solvers.solvers import det_perm
+# from torchio.data.image import ScalarImage
+# from diffdrr.visualization import plot_drr
+# from diffdrr.pose import RigidTransform, make_matrix
 
-import Extension as ExtensionTest
-
-
-class LinearMapping:
-    def __init__(self, a: float | torch.Tensor, b: float | torch.Tensor):
-        self.a = a
-        self.b = b
-
-    def __call__(self, x: float | torch.Tensor) -> float | torch.Tensor:
-        return self.a + self.b * x
-
-
-class LinearRange:
-    def __init__(self, low: float, high: float, ):
-        self.low = low
-        self.high = high
-
-    def generate_range(self, count: int, *, device) -> torch.Tensor:
-        return torch.linspace(self.low, self.high, count, device=device)
-
-    def get_mapping_from(self, other: 'LinearRange') -> LinearMapping:
-        frac: float = (self.high - self.low) / (other.high - other.low)
-        return LinearMapping(self.low - frac * other.low, frac)
-
-
-class Transformation(NamedTuple):
-    rotation: torch.Tensor
-    translation: torch.Tensor
-
-    def inverse(self) -> 'Transformation':
-        return Transformation(-self.rotation, -self.translation)
-
-
-class SceneGeometry(NamedTuple):
-    source_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array
-    ct_origin_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array)
-
-
-class Sinogram2dGrid(NamedTuple):
-    phi: torch.Tensor
-    r: torch.Tensor
-
-    def device_consistent(self) -> bool:
-        return self.phi.device == self.r.device
-
-
-class Sinogram3dGrid(NamedTuple):
-    phi: torch.Tensor
-    theta: torch.Tensor
-    r: torch.Tensor
-
-    def device_consistent(self) -> bool:
-        return self.phi.device == self.theta.device and self.theta.device == self.r.device
-
-
-class Sinogram2dRange(NamedTuple):
-    phi: LinearRange
-    r: LinearRange
-
-    def generate_linear_grid(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device("cpu")):
-        if isinstance(counts, int):
-            counts = (counts, counts)
-        return Sinogram2dGrid(torch.linspace(self.phi.low, self.phi.high, counts[0], device=device),
-                              torch.linspace(self.r.low, self.r.high, counts[1], device=device))
-
-
-class Sinogram3dRange(NamedTuple):
-    phi: LinearRange
-    theta: LinearRange
-    r: LinearRange
-
-    def generate_linear_grid(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device("cpu")):
-        if isinstance(counts, int):
-            counts = (counts, counts, counts)
-        return Sinogram3dGrid(torch.linspace(self.phi.low, self.phi.high, counts[0], device=device),
-                              torch.linspace(self.theta.low, self.theta.high, counts[1], device=device),
-                              torch.linspace(self.r.low, self.r.high, counts[2], device=device))
-
-
-class VolumeSpec(NamedTuple):
-    ct_volume_path: str
-    downsample_factor: int
-    sinogram: torch.Tensor
-    sinogram_range: Sinogram3dRange
-
-
-class DrrSpec(NamedTuple):
-    ct_volume_path: str
-    detector_spacing: torch.Tensor  # [mm] distances between the detectors: (vertical, horizontal)
-    scene_geometry: SceneGeometry
-    image: torch.Tensor
-    sinogram: torch.Tensor
-    sinogram_range: Sinogram2dRange
-    transformation: Transformation
+from registration.common import *
+import registration.grangeat as grangeat
+import registration.geometry as geometry
 
 
 def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -141,176 +45,6 @@ def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tenso
     return image, spacing, bounds
 
 
-def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, samples_per_direction: int = 128,
-                           output_grid: Sinogram3dGrid):
-    assert (output_grid.device_consistent())
-    assert (volume_data.device == output_grid.phi.device)
-    return ExtensionTest.dRadon3dDR(volume_data, voxel_spacing[2].item(), voxel_spacing[1].item(),
-                                    voxel_spacing[0].item(), output_grid.phi.to(device=volume_data.device),
-                                    output_grid.theta.to(device=volume_data.device),
-                                    output_grid.r.to(device=volume_data.device), samples_per_direction)
-
-
-def transform(positions_cartesian: torch.Tensor, transformation: Transformation,
-              exclude_translation: bool = False) -> torch.Tensor:
-    r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(transformation.rotation[None, :])[0].to(
-        device=positions_cartesian.device, dtype=torch.float32)
-    positions_cartesian = torch.einsum('kl,...l->...k', r, positions_cartesian.to(dtype=torch.float32))
-    if not exclude_translation:
-        positions_cartesian = positions_cartesian + transformation.translation.to(device=positions_cartesian.device,
-                                                                                  dtype=torch.float32)
-    return positions_cartesian
-
-
-def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
-                 detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size,
-                 samples_per_ray: int = 64) -> torch.Tensor:
-    img_width: int = output_size[1]
-    img_height: int = output_size[0]
-    source_position: torch.Tensor = torch.tensor([0., 0., scene_geometry.source_distance])
-    detector_xs: torch.Tensor = detector_spacing[1] * (
-            torch.arange(0, img_width, 1, dtype=torch.float32) - 0.5 * float(img_width - 1))
-    detector_ys: torch.Tensor = detector_spacing[0] * (
-            torch.arange(img_height, 0, -1, dtype=torch.float32) - 0.5 * float(img_height - 1))
-    detector_ys, detector_xs = torch.meshgrid(detector_ys, detector_xs)
-    directions: torch.Tensor = torch.nn.functional.normalize(
-        torch.stack((detector_xs, detector_ys, torch.zeros_like(detector_xs)), dim=-1) - source_position, dim=-1)
-    volume_depth: float = volume_data.size()[2] * voxel_spacing[2].item()
-    volume_diag: torch.Tensor = (torch.tensor(volume_data.size(), dtype=torch.float32) * voxel_spacing).flip(dims=(0,))
-    lambda_start: float = scene_geometry.source_distance - scene_geometry.ct_origin_distance - .5 * volume_depth
-    lambda_end: float = torch.linalg.vector_norm(torch.tensor(
-        [0., 0., scene_geometry.ct_origin_distance - scene_geometry.source_distance]) - .5 * volume_diag).item()
-    step_size: float = (lambda_end - lambda_start) / float(samples_per_ray)
-    deltas = directions * step_size
-    deltas = transform(deltas, transformation, exclude_translation=True)
-    starts = source_position + lambda_start * directions - torch.tensor([0., 0., scene_geometry.ct_origin_distance])
-    starts = transform(starts, transformation)
-
-    deltas_texture = (2. * deltas / volume_diag).to(device=volume_data.device, dtype=torch.float32)
-    grid = (2. * starts / volume_diag).to(device=volume_data.device, dtype=torch.float32)
-    ret = torch.zeros(output_size, device=volume_data.device)
-    for i in range(samples_per_ray):
-        ret += torch.nn.functional.grid_sample(volume_data[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
-        grid += deltas_texture
-    return step_size * ret
-
-
-def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, detector_spacing: torch.Tensor,
-                          output_grid: Sinogram2dGrid, samples_per_line: int = 128) -> torch.Tensor:
-    assert (output_grid.device_consistent())
-    assert (output_grid.phi.device == drr_image.device)
-
-    img_width = drr_image.size()[1]
-    img_height = drr_image.size()[0]
-
-    xs = detector_spacing[1] * (torch.arange(0, img_width, 1, dtype=torch.float32) - 0.5 * float(img_width - 1))
-    ys = detector_spacing[0] * (torch.arange(0, img_height, 1, dtype=torch.float32) - 0.5 * float(img_height - 1))
-    ys, xs = torch.meshgrid(ys, xs)
-    cos_gamma = source_distance / torch.sqrt(xs.square() + ys.square() + source_distance * source_distance)
-    g_tilde = cos_gamma.to('cuda') * drr_image
-
-    fixed_scaling = (output_grid.r / source_distance).square() + 1.
-
-    ##
-    # no_derivative = ExtensionTest.radon2d(g_tilde, detector_spacing, detector_spacing, phi_values, r_values,
-    #                                       samples_per_line)
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(no_derivative.cpu())
-    # axes.axis('square')
-    # axes.set_title("R2 [g^tilde]")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
-    # post_derivative = no_derivative.diff(dim=-1) / torch.abs(r_values[1] - r_values[0])
-    # post_derivative[:, :(post_derivative.size()[1] // 2)] *= -1.
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(post_derivative.cpu())
-    # axes.axis('square')
-    # axes.set_title("diff/ds R2 [g^tilde]")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
-    ##
-
-    return fixed_scaling * ExtensionTest.dRadon2dDR(g_tilde, detector_spacing[1].item(), detector_spacing[0].item(),
-                                                    output_grid.phi, output_grid.r, samples_per_line)
-
-
-def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, scene_geometry: SceneGeometry) -> torch.Tensor:
-    hypotenuses = torch.sqrt(input_grid.r.square() + scene_geometry.source_distance * scene_geometry.source_distance)
-    sin_alphas = input_grid.r / hypotenuses
-    zs = sin_alphas.square() * (scene_geometry.source_distance - scene_geometry.ct_origin_distance)
-    scaled_rs = ((
-                         scene_geometry.source_distance - scene_geometry.ct_origin_distance - zs) * input_grid.r / scene_geometry.source_distance)
-    xs = scaled_rs * torch.cos(input_grid.phi)
-    ys = scaled_rs * torch.sin(input_grid.phi)
-    return torch.stack((xs, ys, zs), dim=-1)
-
-
-def moving_cartesian_to_moving_spherical(positions_cartesian: torch.Tensor) -> Sinogram3dGrid:
-    xs = positions_cartesian[..., 0]
-    ys = positions_cartesian[..., 1]
-    zs = positions_cartesian[..., 2]
-    phis = torch.atan2(ys, xs)
-    phis_over = phis > .5 * torch.pi
-    phis_under = phis < -.5 * torch.pi
-    phis[phis_over] -= torch.pi
-    phis[phis_under] += torch.pi
-    thetas = torch.atan2(zs, torch.sqrt(xs.square() + ys.square()))
-    rs = torch.sqrt(xs.square() + ys.square() + zs.square())
-    rs[torch.logical_or(phis_over, phis_under)] *= -1.
-    return Sinogram3dGrid(phis, thetas, rs)
-
-
-def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, transformation: Transformation,
-                   scene_geometry: SceneGeometry, output_grid: Sinogram2dGrid):
-    assert (output_grid.device_consistent())
-    assert (output_grid.phi.device == sinogram3d.device)
-
-    output_grid_2d = Sinogram2dGrid(*torch.meshgrid(output_grid.phi, output_grid.r))
-
-    output_grid_cartesian_2d = fixed_polar_to_moving_cartesian(output_grid_2d, scene_geometry=scene_geometry)
-
-    output_grid_cartesian_2d = transform(output_grid_cartesian_2d, transformation)
-
-    output_grid_sph_2d = moving_cartesian_to_moving_spherical(output_grid_cartesian_2d)
-
-    ##
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(phi_values_sph.cpu())
-    # axes.axis('square')
-    # axes.set_title("phi_sph resampling values")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(theta_values_sph.cpu())
-    # axes.axis('square')
-    # axes.set_title("theta_sph resampling values")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(r_values_sph.cpu())
-    # axes.axis('square')
-    # axes.set_title("r_sph resampling values")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
-    ##
-
-    grid_range = LinearRange(-1., 1.)
-
-    i_mapping: LinearMapping = grid_range.get_mapping_from(input_range.r)
-    j_mapping: LinearMapping = grid_range.get_mapping_from(input_range.theta)
-    k_mapping: LinearMapping = grid_range.get_mapping_from(input_range.phi)
-
-    grid = torch.stack(
-        (i_mapping(output_grid_sph_2d.r), j_mapping(output_grid_sph_2d.theta), k_mapping(output_grid_sph_2d.phi)),
-        dim=-1)
-    return torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
-
-
 def zncc(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
     n = xs.numel()
     assert (ys.size() == xs.size())
@@ -328,8 +62,8 @@ def zncc(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
 def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformation: Transformation,
              scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, sinogram3d_range: Sinogram3dRange,
              plot: bool = False) -> torch.Tensor:
-    resampled = resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
-                               output_grid=fixed_image_grid, input_range=sinogram3d_range)
+    resampled = grangeat.resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
+                                        output_grid=fixed_image_grid, input_range=sinogram3d_range)
     if plot:
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(resampled.cpu())
@@ -366,8 +100,8 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
 
     vol_counts = 256
     sinogram3d_grid = sinogram3d_range.generate_linear_grid(vol_counts, device=device)
-    sinogram3d = calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
-                                        samples_per_direction=vol_counts)
+    sinogram3d = grangeat.calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
+                                                 samples_per_direction=vol_counts)
 
     torch.save(VolumeSpec(ct_volume_path, volume_downsample_factor, sinogram3d, sinogram3d_range),
                cache_directory + "/volume_spec.pt")
@@ -418,9 +152,9 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     detector_spacing = torch.tensor([.25, .25])
     scene_geometry = SceneGeometry(source_distance=1000., ct_origin_distance=100.)
 
-    drr_image = generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
-                             detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                             output_size=torch.Size([1000, 1000]), samples_per_ray=500)
+    drr_image = geometry.generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
+                                      detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                      output_size=torch.Size([1000, 1000]), samples_per_ray=500)
 
     print("Done.")
 
@@ -433,8 +167,8 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
                                        LinearRange(-.5 * image_diag, .5 * image_diag))
     sinogram2d_grid = sinogram2d_range.generate_linear_grid(sinogram2d_counts, device=device)
 
-    fixed_image = calculate_fixed_image(drr_image, source_distance=scene_geometry.source_distance,
-                                        detector_spacing=detector_spacing, output_grid=sinogram2d_grid)
+    fixed_image = grangeat.calculate_fixed_image(drr_image, source_distance=scene_geometry.source_distance,
+                                                 detector_spacing=detector_spacing, output_grid=sinogram2d_grid)
 
     torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range,
                        transformation), cache_directory + "/drr_spec.pt")
@@ -521,7 +255,7 @@ def register(path: str, *, cache_directory: str, load_cached: bool = True, regen
         evaluate(fixed_image, sinogram3d, transformation=transformation_ground_truth, scene_geometry=scene_geometry,
                  fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range, plot=True)))
 
-    if False:
+    if True:
         n = 100
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -537,13 +271,13 @@ def register(path: str, *, cache_directory: str, load_cached: bool = True, regen
                                        fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(nznccs)
-        axes.set_title("landscape over angle about x axis")
-        axes.set_xlabel("angle0")
-        axes.set_ylabel("angle1")
+        axes.set_title("landscape over two angle components")
+        axes.set_xlabel("x-component of rotation vector")
+        axes.set_ylabel("y-component of rotation vector")
         axes.axis('square')
         plt.colorbar(mesh)
 
-    if True:
+    if False:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -evaluate(fixed_image, sinogram3d, transformation=Transformation(params[0:3], params[3:6]),
                              scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
@@ -583,14 +317,15 @@ def register(path: str, *, cache_directory: str, load_cached: bool = True, regen
 
         # print("Final value = {:.3f} at params = {}".format(value_history[-1], param_history[-1]))
 
-        final_image = generate_drr(vol_data,
-                                   transformation=Transformation(torch.tensor(res.x[0:3]), torch.tensor(res.x[3:6])),
-                                   voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
-                                   scene_geometry=scene_geometry, output_size=drr_image.size(), samples_per_ray=512)
+        final_image = geometry.generate_drr(vol_data, transformation=Transformation(torch.tensor(res.x[0:3]),
+                                                                                    torch.tensor(res.x[3:6])),
+                                            voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
+                                            scene_geometry=scene_geometry, output_size=drr_image.size(),
+                                            samples_per_ray=512)
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(final_image.cpu())
         axes.axis('square')
-        axes.set_title("drr final")
+        axes.set_title("DRR at final transformation")
         axes.set_xlabel("x")
         axes.set_ylabel("y")
         plt.colorbar(mesh)
@@ -599,18 +334,21 @@ def register(path: str, *, cache_directory: str, load_cached: bool = True, regen
         value_history = torch.tensor(value_history)
 
         _, axes = plt.subplots()
-        axes.plot(param_history[:, 0])
-        axes.plot(param_history[:, 1])
-        axes.plot(param_history[:, 2])
-        axes.plot(param_history[:, 3])
-        axes.plot(param_history[:, 4])
-        axes.plot(param_history[:, 5])
+        axes.plot(param_history[:, 0], label="r0")
+        axes.plot(param_history[:, 1], label="r1")
+        axes.plot(param_history[:, 2], label="r2")
+        axes.plot(param_history[:, 3], label="t0")
+        axes.plot(param_history[:, 4], label="t1")
+        axes.plot(param_history[:, 5], label="t2")
+        axes.legend()
         axes.set_xlabel("iteration")
-        axes.set_ylabel("param value")
+        axes.set_ylabel("param value [rad or mm]")
+        axes.set_title("transformation parameter values over optimisation iterations")
 
         _, axes = plt.subplots()
         axes.plot(value_history)
         axes.set_xlabel("iteration")
         axes.set_ylabel("-zncc")
+        axes.set_title("loss over optimisation iterations")
 
-        plt.show()
+    plt.show()

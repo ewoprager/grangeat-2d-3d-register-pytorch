@@ -1,0 +1,106 @@
+import torch
+
+from registration.common import *
+import registration.geometry as geometry
+
+import Extension as ExtensionTest
+
+
+def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, samples_per_direction: int = 128,
+                           output_grid: Sinogram3dGrid):
+    assert (output_grid.device_consistent())
+    assert (volume_data.device == output_grid.phi.device)
+    return ExtensionTest.dRadon3dDR(volume_data, voxel_spacing[2].item(), voxel_spacing[1].item(),
+                                    voxel_spacing[0].item(), output_grid.phi.to(device=volume_data.device),
+                                    output_grid.theta.to(device=volume_data.device),
+                                    output_grid.r.to(device=volume_data.device), samples_per_direction)
+
+
+def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, detector_spacing: torch.Tensor,
+                          output_grid: Sinogram2dGrid, samples_per_line: int = 128) -> torch.Tensor:
+    assert (output_grid.device_consistent())
+    assert (output_grid.phi.device == drr_image.device)
+
+    img_width = drr_image.size()[1]
+    img_height = drr_image.size()[0]
+
+    xs = detector_spacing[1] * (torch.arange(0, img_width, 1, dtype=torch.float32) - 0.5 * float(img_width - 1))
+    ys = detector_spacing[0] * (torch.arange(0, img_height, 1, dtype=torch.float32) - 0.5 * float(img_height - 1))
+    ys, xs = torch.meshgrid(ys, xs)
+    cos_gamma = source_distance / torch.sqrt(xs.square() + ys.square() + source_distance * source_distance)
+    g_tilde = cos_gamma.to('cuda') * drr_image
+
+    fixed_scaling = (output_grid.r / source_distance).square() + 1.
+
+    ##
+    # no_derivative = ExtensionTest.radon2d(g_tilde, detector_spacing, detector_spacing, phi_values, r_values,
+    #                                       samples_per_line)
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(no_derivative.cpu())
+    # axes.axis('square')
+    # axes.set_title("R2 [g^tilde]")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
+    # post_derivative = no_derivative.diff(dim=-1) / torch.abs(r_values[1] - r_values[0])
+    # post_derivative[:, :(post_derivative.size()[1] // 2)] *= -1.
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(post_derivative.cpu())
+    # axes.axis('square')
+    # axes.set_title("diff/ds R2 [g^tilde]")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
+    ##
+
+    return fixed_scaling * ExtensionTest.dRadon2dDR(g_tilde, detector_spacing[1].item(), detector_spacing[0].item(),
+                                                    output_grid.phi, output_grid.r, samples_per_line)
+
+
+def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, transformation: Transformation,
+                   scene_geometry: SceneGeometry, output_grid: Sinogram2dGrid):
+    assert (output_grid.device_consistent())
+    assert (output_grid.phi.device == sinogram3d.device)
+
+    output_grid_2d = Sinogram2dGrid(*torch.meshgrid(output_grid.phi, output_grid.r))
+
+    output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian(output_grid_2d, scene_geometry=scene_geometry)
+
+    output_grid_cartesian_2d = geometry.transform(output_grid_cartesian_2d, transformation)
+
+    output_grid_sph_2d = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian_2d)
+
+    ##
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(phi_values_sph.cpu())
+    # axes.axis('square')
+    # axes.set_title("phi_sph resampling values")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(theta_values_sph.cpu())
+    # axes.axis('square')
+    # axes.set_title("theta_sph resampling values")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(r_values_sph.cpu())
+    # axes.axis('square')
+    # axes.set_title("r_sph resampling values")
+    # axes.set_xlabel("r_pol")
+    # axes.set_ylabel("phi_pol")
+    # plt.colorbar(mesh)
+    ##
+
+    grid_range = LinearRange(-1., 1.)
+
+    i_mapping: LinearMapping = grid_range.get_mapping_from(input_range.r)
+    j_mapping: LinearMapping = grid_range.get_mapping_from(input_range.theta)
+    k_mapping: LinearMapping = grid_range.get_mapping_from(input_range.phi)
+
+    grid = torch.stack(
+        (i_mapping(output_grid_sph_2d.r), j_mapping(output_grid_sph_2d.theta), k_mapping(output_grid_sph_2d.phi)),
+        dim=-1)
+    return torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
