@@ -135,10 +135,9 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
                      *, device):
-    rotation = torch.rand(3)
-    translation = torch.rand(3)
-    print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(rotation, translation))
-    transformation = Transformation(rotation, translation)
+    transformation = Transformation.random()
+    print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
+                                                                            transformation.translation))
 
     #
     # drr_image = drr_generator(rotations, translations, parameterization="euler_angles", convention="ZXY")
@@ -277,7 +276,7 @@ def register(path: str, *, cache_directory: str, load_cached: bool = True, regen
         axes.axis('square')
         plt.colorbar(mesh)
 
-    if False:
+    if True:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -evaluate(fixed_image, sinogram3d, transformation=Transformation(params[0:3], params[3:6]),
                              scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,

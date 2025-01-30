@@ -47,7 +47,8 @@ The associated fixed image (= 1/cos^2 alpha * d/ds R2\[cos gamma * g\])
 
 ![dds_R2_gtilde_ground_truth.png](figures/dds_R2_gtilde_ground_truth.png)
 
-The 3D Radon transform of the volume data (= R3\[mu\]), resampled according to the ground truth transformation (this should roughly
+The 3D Radon transform of the volume data (= R3\[mu\]), resampled according to the ground truth transformation (this
+should roughly
 match the above image):
 
 ![ddr_R3_mu_resampled_ground_truth.png](figures/ddr_R3_mu_resampled_ground_truth.png)
@@ -57,7 +58,8 @@ the resampled Radon-transformed volume, with the ground truth transformation at 
 
 ![landscape.png](figures/landscape.png)
 
-Starting from a different random transformation, optimising over the ZNCC between these images using the Nelder-Mead
+Starting from a different random transformation, optimising the ZNCC between these images over the transformation using
+the Nelder-Mead
 algorithm:
 
 ![params_against_iteration.png](figures/params_against_iteration.png)
@@ -67,6 +69,8 @@ algorithm:
 DRR generated at the converged transformation:
 
 ![converged_drr.png](figures/converged_drr.png)
+
+Optimisation completed in 2.280 seconds, performing a total of 586 function evaluations.
 
 ## IDE integration
 

@@ -2,6 +2,7 @@ from typing import NamedTuple, Tuple
 
 import torch
 
+
 class LinearMapping:
     def __init__(self, a: float | torch.Tensor, b: float | torch.Tensor):
         self.a = a
@@ -30,6 +31,10 @@ class Transformation(NamedTuple):
 
     def inverse(self) -> 'Transformation':
         return Transformation(-self.rotation, -self.translation)
+
+    @classmethod
+    def random(cls) -> 'Transformation':
+        return Transformation(torch.pi * (-1. + 2. * torch.rand(3)), 25. * (-1. + 2. * torch.rand(3)))
 
 
 class SceneGeometry(NamedTuple):
