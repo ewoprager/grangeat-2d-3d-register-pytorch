@@ -150,7 +150,7 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     # plt.colorbar(mesh)
 
     detector_spacing = torch.tensor([.25, .25])
-    scene_geometry = SceneGeometry(source_distance=1000., ct_origin_distance=100.)
+    scene_geometry = SceneGeometry(source_distance=1000.)
 
     drr_image = geometry.generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
                                       detector_spacing=detector_spacing, scene_geometry=scene_geometry,
@@ -255,7 +255,7 @@ def register(path: str, *, cache_directory: str, load_cached: bool = True, regen
         evaluate(fixed_image, sinogram3d, transformation=transformation_ground_truth, scene_geometry=scene_geometry,
                  fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range, plot=True)))
 
-    if True:
+    if False:
         n = 100
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -277,7 +277,7 @@ def register(path: str, *, cache_directory: str, load_cached: bool = True, regen
         axes.axis('square')
         plt.colorbar(mesh)
 
-    if True:
+    if False:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -evaluate(fixed_image, sinogram3d, transformation=Transformation(params[0:3], params[3:6]),
                              scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,

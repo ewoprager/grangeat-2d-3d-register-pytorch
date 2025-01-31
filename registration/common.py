@@ -1,6 +1,8 @@
 from typing import NamedTuple, Tuple
 
 import torch
+from scipy.spatial.transform import Rotation
+import kornia
 
 
 class LinearMapping:
@@ -34,20 +36,32 @@ class Transformation(NamedTuple):
     translation: torch.Tensor
 
     def inverse(self) -> 'Transformation':
-        return Transformation(-self.rotation, -self.translation)
+        r_inverse = kornia.geometry.conversions.axis_angle_to_rotation_matrix(-self.rotation.unsqueeze(0))[0].to(
+            dtype=torch.float32)
+        r_inverse_t = torch.einsum('kl,...l->...k', r_inverse, self.translation.unsqueeze(0))
+        return Transformation(-self.rotation, -r_inverse_t)
 
     @classmethod
     def zero(cls) -> 'Transformation':
-        return Transformation(torch.zeros(3), torch.zeros(3))
+        return Transformation(torch.zeros(3), torch.tensor([0., 0., 100.]))
 
     @classmethod
     def random(cls) -> 'Transformation':
-        return Transformation(torch.pi * (-1. + 2. * torch.rand(3)), 25. * (-1. + 2. * torch.rand(3)))
+        return Transformation(torch.pi * (-1. + 2. * torch.rand(3)),
+                              25. * (-1. + 2. * torch.rand(3)) + torch.tensor([0., 0., 100.]))
+
+    def __call__(self, positions_cartesian: torch.Tensor, exclude_translation: bool = False) -> torch.Tensor:
+        device = positions_cartesian.device
+        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation[None, :])[0].to(device=device,
+                                                                                                    dtype=torch.float32)
+        positions_cartesian = torch.einsum('kl,...l->...k', r, positions_cartesian.to(dtype=torch.float32))
+        if not exclude_translation:
+            positions_cartesian = positions_cartesian + self.translation.to(device=device, dtype=torch.float32)
+        return positions_cartesian
 
 
 class SceneGeometry(NamedTuple):
     source_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array
-    ct_origin_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array)
 
 
 class Sinogram2dGrid(NamedTuple):
