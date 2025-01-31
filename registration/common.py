@@ -4,12 +4,12 @@ import torch
 
 
 class LinearMapping:
-    def __init__(self, a: float | torch.Tensor, b: float | torch.Tensor):
-        self.a = a
-        self.b = b
+    def __init__(self, intercept: float | torch.Tensor, gradient: float | torch.Tensor):
+        self.intercept = intercept
+        self.gradient = gradient
 
     def __call__(self, x: float | torch.Tensor) -> float | torch.Tensor:
-        return self.a + self.b * x
+        return self.intercept + self.gradient * x
 
 
 class LinearRange:
@@ -24,6 +24,10 @@ class LinearRange:
         frac: float = (self.high - self.low) / (other.high - other.low)
         return LinearMapping(self.low - frac * other.low, frac)
 
+    @classmethod
+    def grid_sample_range(cls):
+        return LinearRange(-1., 1.)
+
 
 class Transformation(NamedTuple):
     rotation: torch.Tensor
@@ -31,6 +35,10 @@ class Transformation(NamedTuple):
 
     def inverse(self) -> 'Transformation':
         return Transformation(-self.rotation, -self.translation)
+
+    @classmethod
+    def zero(cls) -> 'Transformation':
+        return Transformation(torch.zeros(3), torch.zeros(3))
 
     @classmethod
     def random(cls) -> 'Transformation':

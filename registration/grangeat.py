@@ -94,7 +94,7 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
     # plt.colorbar(mesh)
     ##
 
-    grid_range = LinearRange(-1., 1.)
+    grid_range = LinearRange.grid_sample_range()
 
     i_mapping: LinearMapping = grid_range.get_mapping_from(input_range.r)
     j_mapping: LinearMapping = grid_range.get_mapping_from(input_range.theta)

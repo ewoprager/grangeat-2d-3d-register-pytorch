@@ -17,7 +17,7 @@ public:
 	}
 
 	__host__ __device__ [[nodiscard]] Linear MappingXWorldToNormalised() const { return {.5f, 1.f / WidthWorld()}; }
-	__host__ __device__ [[nodiscard]] Linear MappingYWorldToNormalised() const { return {.5f, -1.f / HeightWorld()}; }
+	__host__ __device__ [[nodiscard]] Linear MappingYWorldToNormalised() const { return {.5f, 1.f / HeightWorld()}; }
 
 protected:
 	Texture2D() = default;

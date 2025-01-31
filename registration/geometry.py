@@ -4,6 +4,7 @@ import kornia
 
 from registration.common import *
 
+
 def transform(positions_cartesian: torch.Tensor, transformation: Transformation,
               exclude_translation: bool = False) -> torch.Tensor:
     r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(transformation.rotation[None, :])[0].to(
@@ -16,11 +17,11 @@ def transform(positions_cartesian: torch.Tensor, transformation: Transformation,
 
 
 def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, scene_geometry: SceneGeometry) -> torch.Tensor:
-    hypotenuses = torch.sqrt(input_grid.r.square() + scene_geometry.source_distance * scene_geometry.source_distance)
+    hypotenuses = (input_grid.r.square() + scene_geometry.source_distance * scene_geometry.source_distance).sqrt()
     sin_alphas = input_grid.r / hypotenuses
     zs = sin_alphas.square() * (scene_geometry.source_distance - scene_geometry.ct_origin_distance)
-    scaled_rs = ((
-                         scene_geometry.source_distance - scene_geometry.ct_origin_distance - zs) * input_grid.r / scene_geometry.source_distance)
+    scaled_rs = (
+                            scene_geometry.source_distance - scene_geometry.ct_origin_distance - zs) * input_grid.r / scene_geometry.source_distance
     xs = scaled_rs * torch.cos(input_grid.phi)
     ys = scaled_rs * torch.sin(input_grid.phi)
     return torch.stack((xs, ys, zs), dim=-1)
@@ -35,8 +36,9 @@ def moving_cartesian_to_moving_spherical(positions_cartesian: torch.Tensor) -> S
     phis_under = phis < -.5 * torch.pi
     phis[phis_over] -= torch.pi
     phis[phis_under] += torch.pi
-    thetas = torch.atan2(zs, torch.sqrt(xs.square() + ys.square()))
-    rs = torch.sqrt(xs.square() + ys.square() + zs.square())
+    r2s_x_y = xs.square() + ys.square()
+    thetas = torch.atan2(zs, r2s_x_y.sqrt())
+    rs = (r2s_x_y + zs.square()).sqrt()
     rs[torch.logical_or(phis_over, phis_under)] *= -1.
     return Sinogram3dGrid(phis, thetas, rs)
 
@@ -50,7 +52,7 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     detector_xs: torch.Tensor = detector_spacing[1] * (
             torch.arange(0, img_width, 1, dtype=torch.float32) - 0.5 * float(img_width - 1))
     detector_ys: torch.Tensor = detector_spacing[0] * (
-            torch.arange(img_height, 0, -1, dtype=torch.float32) - 0.5 * float(img_height - 1))
+            torch.arange(0, img_height, 1, dtype=torch.float32) - 0.5 * float(img_height - 1))
     detector_ys, detector_xs = torch.meshgrid(detector_ys, detector_xs)
     directions: torch.Tensor = torch.nn.functional.normalize(
         torch.stack((detector_xs, detector_ys, torch.zeros_like(detector_xs)), dim=-1) - source_position, dim=-1)

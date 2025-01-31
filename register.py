@@ -135,7 +135,8 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
                      *, device):
-    transformation = Transformation.random()
+    transformation = Transformation.zero()
+    # transformation = Transformation.random()
     print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                             transformation.translation))
 
