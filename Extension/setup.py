@@ -1,3 +1,4 @@
+import os.path
 import sys
 import glob
 import torch
@@ -28,7 +29,7 @@ extra_compile_args = {
     "cxx": [
         cpp_version,
         "-O0" if debug else "-O3",
-        "-fdiagnostics-color=always",
+        "-fdiagnostics-color=always"
     ],
     "nvcc": [
         "-O0" if debug else "-O3",

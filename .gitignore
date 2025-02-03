@@ -6,3 +6,4 @@
 Extension/ExtensionTest.*
 cache/
 **/__pycache__
+**/*.so
