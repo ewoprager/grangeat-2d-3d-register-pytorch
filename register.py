@@ -77,14 +77,20 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformat
 
 
 def load_cached_volume(cache_directory: str):
-    print("Loading cached volume spec...")
-    volume_spec = torch.load(cache_directory + "/volume_spec.pt")
-    assert (isinstance(volume_spec, VolumeSpec))
+    file: str = cache_directory + "/volume_spec.pt"
+    try:
+        volume_spec = torch.load(file)
+    except:
+        print("No cache file '{}' found.".format(file))
+        return None
+    if not isinstance(volume_spec, VolumeSpec):
+        print("Cache file '{}' invalid.".format(file))
+        return None
     path = volume_spec.ct_volume_path
     volume_downsample_factor = volume_spec.downsample_factor
     sinogram3d = volume_spec.sinogram
     sinogram3d_range = volume_spec.sinogram_range
-    print("Done.")
+    print("Loaded cached volume spec from '{}'".format(file))
     return path, volume_downsample_factor, sinogram3d, sinogram3d_range
 
 
@@ -116,21 +122,28 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
 
 
 def load_cached_drr(cache_directory: str, ct_volume_path: str):
-    print("Loading cached drr spec...")
-    drr_spec = torch.load(cache_directory + "/drr_spec.pt")
-    assert (isinstance(drr_spec, DrrSpec))
-    if drr_spec.ct_volume_path == ct_volume_path:
-        detector_spacing = drr_spec.detector_spacing
-        scene_geometry = drr_spec.scene_geometry
-        drr_image = drr_spec.image
-        fixed_image = drr_spec.sinogram
-        sinogram2d_range = drr_spec.sinogram_range
-        transformation_ground_truth = drr_spec.transformation
-        print("Done.")
-        return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth
-    else:
-        print("Cached drr is from different volume, so generating a new one.")
+    file: str = cache_directory + "/drr_spec.pt"
+    try:
+        drr_spec = torch.load(file)
+    except:
+        print("No cache file '{}' found.".format(file))
         return None
+    if not isinstance(drr_spec, DrrSpec):
+        print("Cache file '{}' invalid.".format(file))
+        return None
+    if drr_spec.ct_volume_path != ct_volume_path:
+        print("Cached drr '{}' is from different volume = '{}'; required volume = {}.".format(file,
+                                                                                              drr_spec.ct_volume_path,
+                                                                                              ct_volume_path))
+        return None
+    detector_spacing = drr_spec.detector_spacing
+    scene_geometry = drr_spec.scene_geometry
+    drr_image = drr_spec.image
+    fixed_image = drr_spec.sinogram
+    sinogram2d_range = drr_spec.sinogram_range
+    transformation_ground_truth = drr_spec.transformation
+    print("Loaded cached drr spec from '{}'".format(file))
+    return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth
 
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
@@ -210,12 +223,16 @@ def register(path: str, *, cache_directory: str, load_cached: bool = True, regen
     # vol_data[0, 0, 0] = 1.
     # voxel_spacing = torch.Tensor([10., 10., 10.])  # [mm]
 
+    volume_spec = None
     sinogram3d = None
     sinogram3d_range = None
     if load_cached:
-        path, volume_downsample_factor, sinogram3d, sinogram3d_range = load_cached_volume(cache_directory)
-    else:
+        volume_spec = load_cached_volume(cache_directory)
+
+    if volume_spec is None:
         volume_downsample_factor: int = 4
+    else:
+        path, volume_downsample_factor, sinogram3d, sinogram3d_range = volume_spec
 
     vol_data, voxel_spacing, bounds = read_nrrd(path, downsample_factor=volume_downsample_factor)
     vol_data = vol_data.to(device=device, dtype=torch.float32)
