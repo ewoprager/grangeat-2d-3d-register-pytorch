@@ -162,4 +162,8 @@ __host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, double xSpacing, d
                                     const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                     const at::Tensor &rValues, long samplesPerDirection);
 
+__host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
+                                       const at::Tensor &phiValues, const at::Tensor &thetaValues,
+                                       const at::Tensor &rValues, long samplesPerDirection);
+
 } // namespace ExtensionTest

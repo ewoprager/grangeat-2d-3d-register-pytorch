@@ -47,9 +47,10 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     directions: torch.Tensor = torch.nn.functional.normalize(
         torch.stack((detector_xs, detector_ys, torch.zeros_like(detector_xs)), dim=-1) - source_position, dim=-1)
     volume_diag: torch.Tensor = (torch.tensor(volume_data.size(), dtype=torch.float32) * voxel_spacing).flip(dims=(0,))
-    lambda_start: float = .8 * scene_geometry.source_distance
-    lambda_end: float = scene_geometry.source_distance
-    step_size: float = (lambda_end - lambda_start) / float(samples_per_ray)
+    volume_diag_length: torch.Tensor = volume_diag.norm()
+    lambda_start: torch.Tensor = (source_position - transformation.translation).norm() - .5 * volume_diag_length
+    lambda_end: torch.Tensor = lambda_start + volume_diag_length
+    step_size: float = (lambda_end - lambda_start).item() / float(samples_per_ray)
     deltas = directions * step_size
     deltas = transformation.inverse()(deltas, exclude_translation=True)
     starts = source_position + lambda_start * directions

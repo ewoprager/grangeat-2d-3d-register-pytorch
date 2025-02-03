@@ -104,7 +104,7 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
                                        LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * vol_diag, .5 * vol_diag))
 
-    vol_counts = 256
+    vol_counts = 512
     sinogram3d_grid = sinogram3d_range.generate_linear_grid(vol_counts, device=device)
     sinogram3d = grangeat.calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
                                                  samples_per_direction=vol_counts)

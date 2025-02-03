@@ -70,28 +70,43 @@ public:
 		return tex3D<float>(textureHandle, x, y, z);
 	}
 
-	__device__ [[nodiscard]] float SampleXDerivative(float x, const float y, const float z) const {
-		const float widthF = static_cast<float>(Width());
+	__device__ [[nodiscard]] static float SampleXDerivative(long width, cudaTextureObject_t textureHandle, float x,
+	                                                        const float y, const float z) {
+		const float widthF = static_cast<float>(width);
 		x = floorf(-.5f + x * widthF);
 		const float x0 = (x + .5f) / widthF;
 		const float x1 = (x + 1.5f) / widthF;
 		return widthF * (tex3D<float>(textureHandle, x1, y, z) - tex3D<float>(textureHandle, x0, y, z));
 	}
 
-	__device__ [[nodiscard]] float SampleYDerivative(const float x, float y, const float z) const {
-		const float heightF = static_cast<float>(Height());
+	__device__ [[nodiscard]] static float SampleYDerivative(long height, cudaTextureObject_t textureHandle,
+	                                                        const float x, float y, const float z) {
+		const float heightF = static_cast<float>(height);
 		y = floorf(-.5f + y * heightF);
 		const float y0 = (y + .5f) / heightF;
 		const float y1 = (y + 1.5f) / heightF;
 		return heightF * (tex3D<float>(textureHandle, x, y1, z) - tex3D<float>(textureHandle, x, y0, z));
 	}
 
-	__device__ [[nodiscard]] float SampleZDerivative(const float x, const float y, float z) const {
-		const float depthF = static_cast<float>(Depth());
+	__device__ [[nodiscard]] static float SampleZDerivative(long depth, cudaTextureObject_t textureHandle,
+	                                                        const float x, const float y, float z) {
+		const float depthF = static_cast<float>(depth);
 		z = floorf(-.5f + z * depthF);
 		const float z0 = (z + .5f) / depthF;
 		const float z1 = (z + 1.5f) / depthF;
 		return depthF * (tex3D<float>(textureHandle, x, y, z1) - tex3D<float>(textureHandle, x, y, z0));
+	}
+
+	__device__ [[nodiscard]] float SampleXDerivative(float x, const float y, const float z) const {
+		return SampleXDerivative(Width(), textureHandle, x, y, z);
+	}
+
+	__device__ [[nodiscard]] float SampleYDerivative(float x, const float y, const float z) const {
+		return SampleYDerivative(Height(), textureHandle, x, y, z);
+	}
+
+	__device__ [[nodiscard]] float SampleZDerivative(float x, const float y, const float z) const {
+		return SampleZDerivative(Depth(), textureHandle, x, y, z);
 	}
 
 private:

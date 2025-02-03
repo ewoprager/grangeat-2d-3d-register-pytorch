@@ -40,3 +40,9 @@ def dRadon3dDR(volume: torch.Tensor, x_spacing: float, y_spacing: float, z_spaci
                theta_values: torch.Tensor, r_values: torch.Tensor, samples_per_direction: int) -> torch.Tensor:
     return torch.ops.ExtensionTest.dRadon3dDR.default(volume, x_spacing, y_spacing, z_spacing, phi_values, theta_values,
                                                       r_values, samples_per_direction)
+
+
+def dRadon3dDR_v2(volume: torch.Tensor, x_spacing: float, y_spacing: float, z_spacing: float, phi_values: torch.Tensor,
+                  theta_values: torch.Tensor, r_values: torch.Tensor, samples_per_direction: int) -> torch.Tensor:
+    return torch.ops.ExtensionTest.dRadon3dDR_v2.default(volume, x_spacing, y_spacing, z_spacing, phi_values,
+                                                         theta_values, r_values, samples_per_direction)

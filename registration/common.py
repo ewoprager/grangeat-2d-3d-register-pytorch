@@ -43,7 +43,7 @@ class Transformation(NamedTuple):
 
     @classmethod
     def zero(cls) -> 'Transformation':
-        return Transformation(torch.zeros(3), torch.tensor([0., 0., 100.]))
+        return Transformation(torch.zeros(3), torch.tensor([0., 0., 0.]))
 
     @classmethod
     def random(cls) -> 'Transformation':
