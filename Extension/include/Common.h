@@ -45,4 +45,11 @@ __host__ __device__ [[nodiscard]] inline Linear2 Linear::operator()(const Linear
 	return {fmaf(gradient, other.intercept, intercept), gradient * other.gradient1, gradient * other.gradient2};
 }
 
+
+template <typename T>
+__host__ cudaError_t CudaMemcpyToObjectSymbol(const T &symbol, T &src,
+                                                           cudaMemcpyKind kind = cudaMemcpyHostToDevice) {
+	return cudaMemcpyToSymbol(symbol, &src, sizeof(T), 0, kind);
+}
+
 } // namespace ExtensionTest

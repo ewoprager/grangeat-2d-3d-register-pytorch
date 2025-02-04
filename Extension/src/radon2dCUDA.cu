@@ -187,7 +187,7 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, double xSpacing, do
 	const auto mappingIToOffset = Radon2D<Texture2DCUDA>::GetMappingIToOffset(lineLength, samplesPerLine);
 
 	Radon2DV2Consts constants{texture.GetHandle(), samplesPerLine, scaleFactor, patchSumsPtr};
-	cudaMemcpyToSymbol(radon2DV2Consts, &constants, sizeof(Radon2DV2Consts));
+	CudaMemcpyToObjectSymbol(radon2DV2Consts, constants);
 
 	for (long row = 0; row < heightOut; ++row) {
 		for (long col = 0; col < widthOut; ++col) {

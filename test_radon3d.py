@@ -48,7 +48,8 @@ def task_radon3d(function, name: str, device: str, image: torch.Tensor, spacing:
     image_width: torch.Tensor = spacing[2] * float(image.size()[2])
     image_diag = torch.sqrt(image_depth.square() + image_height.square() + image_width.square()).item()
     r_values = torch.linspace(-.5 * image_diag, .5 * image_diag, r_count, device=device)
-    output = function(image_devices, spacing[0], spacing[1], spacing[2], phi_values, theta_values, r_values, 64)
+    output = function(image_devices, spacing[0].item(), spacing[1].item(), spacing[2].item(), phi_values, theta_values,
+                      r_values, 64)
     name: str = "{}_on_{}".format(name, device)
     return name, output.cpu()
 
@@ -116,21 +117,22 @@ def benchmark_radon3d(path: str):
 def benchmark_dRadon3dDR(path: str):
     print("----- Benchmarking dRadon3dDR -----")
 
-    # image, spacing, bounds = read_nrrd(path, 1)
+    image, spacing, bounds = read_nrrd(path, 1)
 
-    image = torch.zeros((5, 5, 5))
-    image[0, 0, 0] = 1.
-    image[4, 3, 2] = .5
+    # image = torch.zeros((5, 5, 5))
+    # image[0, 0, 0] = 1.
+    # image[4, 3, 2] = .5
+    #
+    # spacing = torch.tensor([1., 1., 1.])
+    # bounds = torch.tensor([-2. * image.max(), 2. * image.max()])
 
-    spacing = torch.tensor([1., 1., 1.])
-    bounds = torch.tensor([-2. * image.max(), 2. * image.max()])
-
-    output_size = torch.tensor([100, 100, 100])
+    output_size = torch.tensor([50, 50, 50])
+    # output_size = torch.tensor([100, 100, 100])
 
     outputs: list[TaskSummaryRadon3D] = [
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR_v2, "dRT3-dR V2", "cuda", image, spacing,
-                 output_size, bounds),
         run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR, "dRT3-dR V1", "cuda", image, spacing,
+                 output_size, bounds),
+        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR_v2, "dRT3-dR V2", "cuda", image, spacing,
                  output_size, bounds)]
 
     print("Calculating discrepancies...")

@@ -249,7 +249,8 @@ __host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, double xSpacing, d
 
 	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing, zSpacing};
+	const Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing,
+	                            zSpacing};
 
 	const long depthOut = phiValues.sizes()[0];
 	const long heightOut = thetaValues.sizes()[0];
@@ -273,7 +274,7 @@ __host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, double xSpacing, d
 	float *patchSumsPtr = patchSums.data_ptr<float>();
 
 	Radon3DV2Consts constants{texture.GetHandle(), samplesPerDirection, scaleFactor, patchSumsPtr};
-	cudaMemcpyToSymbol(radon3DV2Consts, &constants, sizeof(Radon3DV2Consts));
+	CudaMemcpyToObjectSymbol(radon3DV2Consts, constants);
 
 	for (long layer = 0; layer < depthOut; ++layer) {
 		for (long row = 0; row < heightOut; ++row) {
@@ -396,7 +397,7 @@ __host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, double xSpacing
 
 	DRadon3DDRV2Consts constants{texture.GetHandle(), samplesPerDirection, scaleFactor, patchSumsPtr, volume.sizes()[2],
 	                             volume.sizes()[1], volume.sizes()[0]};
-	cudaMemcpyToSymbol(radon3DV2Consts, &constants, sizeof(DRadon3DDRV2Consts));
+	CudaMemcpyToObjectSymbol(dRadon3DDRV2Consts, constants);
 
 	for (long layer = 0; layer < depthOut; ++layer) {
 		for (long row = 0; row < heightOut; ++row) {

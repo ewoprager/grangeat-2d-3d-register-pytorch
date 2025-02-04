@@ -3,7 +3,6 @@
 **/.DS_Store
 **/build/
 **/cmake-build-*/
-Extension/ExtensionTest.*
 cache/
 **/__pycache__
 **/*.so
