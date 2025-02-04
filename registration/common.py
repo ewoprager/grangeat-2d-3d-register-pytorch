@@ -1,7 +1,6 @@
 from typing import NamedTuple, Tuple
 
 import torch
-from scipy.spatial.transform import Rotation
 import kornia
 
 
@@ -71,6 +70,9 @@ class Sinogram2dGrid(NamedTuple):
     def device_consistent(self) -> bool:
         return self.phi.device == self.r.device
 
+    def size_consistent(self) -> bool:
+        return self.phi.size() == self.r.size()
+
 
 class Sinogram3dGrid(NamedTuple):
     phi: torch.Tensor
@@ -79,6 +81,9 @@ class Sinogram3dGrid(NamedTuple):
 
     def device_consistent(self) -> bool:
         return self.phi.device == self.theta.device and self.theta.device == self.r.device
+
+    def size_consistent(self) -> bool:
+        return self.phi.size() == self.theta.size() and self.theta.size() == self.r.size()
 
 
 class Sinogram2dRange(NamedTuple):

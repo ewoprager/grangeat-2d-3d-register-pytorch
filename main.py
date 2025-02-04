@@ -6,8 +6,8 @@ import sys
 
 import Extension as ExtensionTest
 
-import test_radon2d
-import test_radon3d
+import benchmark_radon2d
+import benchmark_radon3d
 from register import register
 
 if __name__ == "__main__":
