@@ -95,7 +95,7 @@ def load_cached_volume(cache_directory: str):
 
 
 def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
-                              ct_volume_path: str, volume_downsample_factor: int, *, device):
+                              ct_volume_path: str, volume_downsample_factor: int, *, device, save_to_cache=True):
     print("Calculating 3D sinogram (the volume to resample)...")
 
     vol_diag: float = (
@@ -104,13 +104,14 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
                                        LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * vol_diag, .5 * vol_diag))
 
-    vol_counts = 512
+    vol_counts = 112
     sinogram3d_grid = sinogram3d_range.generate_linear_grid(vol_counts, device=device)
     sinogram3d = grangeat.calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
                                                  samples_per_direction=vol_counts)
 
-    torch.save(VolumeSpec(ct_volume_path, volume_downsample_factor, sinogram3d, sinogram3d_range),
-               cache_directory + "/volume_spec.pt")
+    if save_to_cache:
+        torch.save(VolumeSpec(ct_volume_path, volume_downsample_factor, sinogram3d, sinogram3d_range),
+                   cache_directory + "/volume_spec.pt")
 
     print("Done and saved.")
 
@@ -147,7 +148,7 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
 
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
-                     *, device):
+                     *, device, save_to_cache=True):
     transformation = Transformation.zero()
     # transformation = Transformation.random()
     print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
@@ -183,15 +184,17 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     fixed_image = grangeat.calculate_fixed_image(drr_image, source_distance=scene_geometry.source_distance,
                                                  detector_spacing=detector_spacing, output_grid=sinogram2d_grid)
 
-    torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range,
-                       transformation), cache_directory + "/drr_spec.pt")
+    if save_to_cache:
+        torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range,
+                           transformation), cache_directory + "/drr_spec.pt")
 
     print("Done and saved.")
 
     return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation
 
 
-def register(path: str, *, cache_directory: str, load_cached: bool = True, regenerate_drr: bool = False):
+def register(path: str | None, *, cache_directory: str, load_cached: bool = True, regenerate_drr: bool = False,
+             save_to_cache=True):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # cal_image = torch.zeros((10, 10))
@@ -234,19 +237,27 @@ def register(path: str, *, cache_directory: str, load_cached: bool = True, regen
     else:
         path, volume_downsample_factor, sinogram3d, sinogram3d_range = volume_spec
 
-    vol_data, voxel_spacing, bounds = read_nrrd(path, downsample_factor=volume_downsample_factor)
-    vol_data = vol_data.to(device=device, dtype=torch.float32)
+    if path is None:
+        save_to_cache = False
+        vol_data = torch.zeros((3, 3, 3), device=device)
+        vol_data[1, 1, 1] = 1.
+        voxel_spacing = torch.tensor([10., 10., 10.])
+    else:
+        vol_data, voxel_spacing, bounds = read_nrrd(path, downsample_factor=volume_downsample_factor)
+        vol_data = vol_data.to(device=device, dtype=torch.float32)
 
     if sinogram3d is None or sinogram3d_range is None:
         sinogram3d, sinogram3d_range = calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
-                                                                 volume_downsample_factor, device=device)
+                                                                 volume_downsample_factor, device=device,
+                                                                 save_to_cache=save_to_cache)
 
     drr_spec = None
     if not regenerate_drr:
         drr_spec = load_cached_drr(cache_directory, path)
 
     if drr_spec is None:
-        drr_spec = generate_new_drr(cache_directory, path, vol_data, voxel_spacing, device=device)
+        drr_spec = generate_new_drr(cache_directory, path, vol_data, voxel_spacing, device=device,
+                                    save_to_cache=save_to_cache)
 
     detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth = drr_spec
 

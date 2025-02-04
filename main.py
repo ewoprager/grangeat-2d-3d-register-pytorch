@@ -19,3 +19,4 @@ if __name__ == "__main__":
     # test_radon3d.benchmark_radon3d(sys.argv[1])
     # test_radon3d.benchmark_dRadon3dDR(sys.argv[1])
     register(sys.argv[1], cache_directory=cache_directory, load_cached=True, regenerate_drr=True)
+    # register(None, cache_directory=cache_directory, load_cached=False, regenerate_drr=True, save_to_cache=False)

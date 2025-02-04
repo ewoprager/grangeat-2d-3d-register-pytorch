@@ -51,16 +51,31 @@ class Transformation(NamedTuple):
 
     def __call__(self, positions_cartesian: torch.Tensor, exclude_translation: bool = False) -> torch.Tensor:
         device = positions_cartesian.device
-        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation[None, :])[0].to(device=device,
-                                                                                                    dtype=torch.float32)
+        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
+                                                                                                        dtype=torch.float32)
         positions_cartesian = torch.einsum('kl,...l->...k', r, positions_cartesian.to(dtype=torch.float32))
         if not exclude_translation:
             positions_cartesian = positions_cartesian + self.translation.to(device=device, dtype=torch.float32)
         return positions_cartesian
 
+    def get_h(self, *, device=torch.device('cpu')) -> torch.Tensor:
+        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
+                                                                                                        dtype=torch.float32)
+        rt = torch.hstack([r, self.translation.to(device=device).t().unsqueeze(-1)])
+        return torch.vstack([rt, torch.tensor([0., 0., 0., 1.], device=device).unsqueeze(0)])
+
 
 class SceneGeometry(NamedTuple):
     source_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array
+
+    def source_position(self, *, device=torch.device('cpu')):
+        return torch.tensor([0., 0., self.source_distance], device=device)
+
+    @classmethod
+    def projection_matrix(cls, source_position: torch.Tensor) -> torch.Tensor:
+        return torch.tensor(
+            [[-source_position[2], 0., source_position[0], 0.], [0., -source_position[2], source_position[1], 0.],
+             [0., 0., 0., 0.], [0., 0., 1., -source_position[2]]], device=source_position.device)
 
 
 class Sinogram2dGrid(NamedTuple):

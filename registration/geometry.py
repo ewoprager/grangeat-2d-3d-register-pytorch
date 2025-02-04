@@ -17,6 +17,21 @@ def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, scene_geometr
     return closest_points_moving
 
 
+def fixed_polar_to_moving_cartesian2(input_grid: Sinogram2dGrid, *, scene_geometry: SceneGeometry,
+                                     transformation: Transformation) -> torch.Tensor:
+    device = input_grid.phi.device
+    source_position = scene_geometry.source_position(device=device)
+    p = SceneGeometry.projection_matrix(source_position=source_position)
+    ph = torch.matmul(p, transformation.get_h(device=device))
+    mt = ph[:, 0:3].t()
+    intermediates = torch.stack(
+        (torch.cos(input_grid.phi), torch.sin(input_grid.phi), torch.zeros_like(input_grid.phi), -input_grid.r), dim=-1)
+    ns = torch.einsum('ij,...j->...i', mt, intermediates)
+    n_hats = torch.nn.functional.normalize(ns, dim=-1)
+    ds = torch.einsum('i,...i->...', source_position, n_hats)
+    return ds.unsqueeze(-1) * n_hats
+
+
 def moving_cartesian_to_moving_spherical(positions_cartesian: torch.Tensor) -> Sinogram3dGrid:
     xs = positions_cartesian[..., 0]
     ys = positions_cartesian[..., 1]
@@ -36,6 +51,7 @@ def moving_cartesian_to_moving_spherical(positions_cartesian: torch.Tensor) -> S
 def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
                  detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size,
                  samples_per_ray: int = 500) -> torch.Tensor:
+    assert (len(output_size) == 2)
     img_width: int = output_size[1]
     img_height: int = output_size[0]
     source_position: torch.Tensor = torch.tensor([0., 0., scene_geometry.source_distance])

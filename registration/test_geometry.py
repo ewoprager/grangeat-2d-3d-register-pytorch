@@ -79,3 +79,20 @@ def test_moving_cartesian_to_moving_spherical():
     assert ret.phi.item() == pytest.approx(0., abs=1e-4)
     assert ret.theta.item() == pytest.approx(0., abs=1e-4)
     assert ret.r.item() == pytest.approx(-1., abs=1e-4)
+
+
+def test_generate_drr():
+    device = torch.device('cpu')
+    volume_data = torch.zeros((3, 3, 3), device=device)
+    volume_data[1, 1, 1] = 1.
+    transformation = Transformation(rotation=torch.zeros(3), translation=torch.tensor([0., 0., 1.5]))
+    voxel_spacing = torch.tensor([1., 1., 1.])
+    detector_spacing = torch.tensor([1., 1.])
+    scene_geometry = SceneGeometry(source_distance=3.)
+    output_size = torch.Size([3, 3])
+    ret = generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
+                 detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
+    assert isinstance(ret, torch.Tensor)
+    assert ret.size() == output_size
+    assert ret.device == device
+
