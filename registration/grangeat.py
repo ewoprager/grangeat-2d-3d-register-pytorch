@@ -1,4 +1,5 @@
 import torch
+from tqdm import tqdm
 
 from registration.common import *
 import registration.geometry as geometry
@@ -57,8 +58,40 @@ def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, de
                                                     output_grid.phi, output_grid.r, samples_per_line)
 
 
+def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor,
+                                   transformation: Transformation, scene_geometry: SceneGeometry,
+                                   output_grid: Sinogram2dGrid) -> torch.Tensor:
+    assert (len(volume_data.size()) == 3)
+    assert (len(voxel_spacing.size()) == 1)
+    assert (voxel_spacing.size()[0] == 3)
+    assert (output_grid.device_consistent())
+    assert (output_grid.phi.device == volume_data.device)
+
+    output_grid_2d = Sinogram2dGrid(*torch.meshgrid(output_grid.phi, output_grid.r))
+
+    output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian(output_grid_2d, scene_geometry=scene_geometry,
+                                                                        transformation=transformation)
+
+    # output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian2(output_grid_2d, scene_geometry=scene_geometry,
+    #                                                                      transformation=transformation)
+
+    output_grid_sph_2d = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian_2d)
+
+    rows = output_grid_sph_2d.phi.size()[0]
+    cols = output_grid_sph_2d.phi.size()[1]
+    ret = torch.zeros_like(output_grid_sph_2d.phi)
+    for n in tqdm(range(rows * cols)):
+        i = n % cols
+        j = n // cols
+        ret[j, i] = ExtensionTest.dRadon3dDR_v2(volume_data, voxel_spacing[2].item(), voxel_spacing[1].item(),
+                                                voxel_spacing[0].item(), output_grid_sph_2d.phi[j, i].unsqueeze(0),
+                                                output_grid_sph_2d.theta[j, i].unsqueeze(0),
+                                                output_grid_sph_2d.r[j, i].unsqueeze(0), 500)
+    return ret
+
+
 def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, transformation: Transformation,
-                   scene_geometry: SceneGeometry, output_grid: Sinogram2dGrid):
+                   scene_geometry: SceneGeometry, output_grid: Sinogram2dGrid) -> torch.Tensor:
     assert (output_grid.device_consistent())
     assert (output_grid.phi.device == sinogram3d.device)
 

@@ -76,6 +76,24 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformat
     return zncc(fixed_image, resampled)
 
 
+def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, transformation: Transformation,
+                    scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, voxel_spacing: torch.Tensor,
+                    plot: bool = False) -> torch.Tensor:
+    direct = grangeat.directly_calculate_radon_slice(volume_data, transformation=transformation,
+                                                     scene_geometry=scene_geometry, output_grid=fixed_image_grid,
+                                                     voxel_spacing=voxel_spacing)
+    if plot:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(direct.cpu())
+        axes.axis('square')
+        axes.set_title("d/dr R3 [mu] calculated directly")
+        axes.set_xlabel("r")
+        axes.set_ylabel("phi")
+        plt.colorbar(mesh)
+
+    return zncc(fixed_image, direct)
+
+
 def load_cached_volume(cache_directory: str):
     file: str = cache_directory + "/volume_spec.pt"
     try:
@@ -269,6 +287,8 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     axes.set_ylabel("y")
     plt.colorbar(mesh)
 
+    # nrrd.write("/home/eprager/Desktop/projection_image.nrrd", drr_image.cpu().unsqueeze(0).numpy())
+
     _, axes = plt.subplots()
     mesh = axes.pcolormesh(fixed_image.cpu())
     axes.axis('square')
@@ -281,7 +301,11 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
 
     print("{:.4e}".format(
         evaluate(fixed_image, sinogram3d, transformation=transformation_ground_truth, scene_geometry=scene_geometry,
-                 fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range, plot=True)))
+                 fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range, plot=True)
+        # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
+        #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
+        #                 plot=True)
+    ))
 
     if False:
         n = 100
