@@ -122,7 +122,7 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
                                        LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * vol_diag, .5 * vol_diag))
 
-    vol_counts = 112
+    vol_counts = 256
     sinogram3d_grid = sinogram3d_range.generate_linear_grid(vol_counts, device=device)
     sinogram3d = grangeat.calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
                                                  samples_per_direction=vol_counts)
@@ -167,8 +167,7 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
                      *, device, save_to_cache=True):
-    transformation = Transformation.zero()
-    # transformation = Transformation.random()
+    transformation = Transformation.random()
     print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                             transformation.translation))
 
@@ -307,7 +306,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         #                 plot=True)
     ))
 
-    if False:
+    if True:
         n = 100
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -329,7 +328,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.axis('square')
         plt.colorbar(mesh)
 
-    if False:
+    if True:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -evaluate(fixed_image, sinogram3d, transformation=Transformation(params[0:3], params[3:6]),
                              scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,

@@ -1,3 +1,11 @@
+# Build
+
+## Directly with setuptools:
+`python setup.py develop`
+- In debug: `--debug`
+- Without CUDA: `--no-cuda`
+
+
 # Radon Transforms
 
 The $n$-dimensional Radon Transform $\mathcal{R}_n$ maps from one scalar field to another:

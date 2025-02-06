@@ -16,9 +16,9 @@ at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacin
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
 	// thetaValues should be a 1D array of floats on the CPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
-	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
+	TORCH_CHECK(thetaValues.sizes().size() == 1);
+	TORCH_CHECK(thetaValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(thetaValues.device().type() == at::DeviceType::CPU);
 	// rValues should be a 1D array of floats on the CPU
 	TORCH_CHECK(rValues.sizes().size() == 1);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);

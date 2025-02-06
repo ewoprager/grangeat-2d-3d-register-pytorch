@@ -1,5 +1,7 @@
 import pytest
+import torch
 
+import Extension as ExtensionTest
 from registration.geometry import *
 
 
@@ -91,8 +93,42 @@ def test_generate_drr():
     scene_geometry = SceneGeometry(source_distance=3.)
     output_size = torch.Size([3, 3])
     ret = generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
-                 detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
+                       detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
     assert isinstance(ret, torch.Tensor)
     assert ret.size() == output_size
     assert ret.device == device
 
+
+def test_plane_integrals():
+    device = torch.device('cpu')
+    volume_data = torch.zeros((3, 3, 3), device=device)
+    volume_data[1, 1, 1] = 1.
+    voxel_spacing = torch.tensor([1., 1., 1.])
+    phi_values = torch.tensor([0.1])
+    # phi_values = torch.tensor([torch.pi * .25])
+    theta_values = torch.tensor([0.1])
+    # theta_values = torch.tensor([torch.pi * .25])
+    r_values = torch.tensor([0.])
+    from_extension = ExtensionTest.radon3d(volume_data, voxel_spacing[2].item(), voxel_spacing[1].item(),
+                                           voxel_spacing[0].item(), phi_values, theta_values, r_values,
+                                           samples_per_direction=10)
+    phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
+    from_python = plane_integrals(volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values,
+                                  theta_values=theta_values, r_values=r_values, samples_per_direction=10)
+    assert from_extension.item() == pytest.approx(from_python.item())
+
+    volume_data = torch.zeros((10, 10, 10), device=device)
+    volume_data[0, :, :] = 1.
+    voxel_spacing = torch.tensor([1., 1., 1.])
+    volume_size = (torch.tensor(volume_data.size(), dtype=torch.float32) * voxel_spacing).square().sum().sqrt()
+    phi_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 4, device=device)
+    theta_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 4, device=device)
+    r_values = torch.linspace(-.5 * volume_size, .5 * volume_size, 4, device=device)
+    radon = ExtensionTest.radon3d(volume_data, voxel_spacing[2].item(), voxel_spacing[1].item(),
+                                  voxel_spacing[0].item(), phi_values, theta_values, r_values,
+                                  samples_per_direction=500)
+    phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
+    radon_python = plane_integrals(volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values,
+                                   theta_values=theta_values, r_values=r_values, samples_per_direction=500)
+    assert ((radon_python - radon).abs() / (.5 * (radon_python.abs() + radon.abs()) + 1e-5)).mean() == pytest.approx(0.,
+                                                                                                                     abs=1e-5)

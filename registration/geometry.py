@@ -51,7 +51,8 @@ def moving_cartesian_to_moving_spherical(positions_cartesian: torch.Tensor) -> S
 def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
                  detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size,
                  samples_per_ray: int = 500) -> torch.Tensor:
-    assert (len(output_size) == 2)
+    assert len(output_size) == 2
+    assert voxel_spacing.size() == torch.Size([3])
     img_width: int = output_size[1]
     img_height: int = output_size[0]
     source_position: torch.Tensor = torch.tensor([0., 0., scene_geometry.source_distance])
@@ -79,3 +80,47 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
         ret += torch.nn.functional.grid_sample(volume_data[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
         grid += deltas_texture
     return step_size * ret
+
+
+def plane_integrals(volume_data: torch.Tensor, *, phi_values: torch.Tensor, theta_values: torch.Tensor,
+                    r_values: torch.Tensor, voxel_spacing: torch.Tensor,
+                    samples_per_direction: int = 500) -> torch.Tensor:
+    assert voxel_spacing.size() == torch.Size([3])
+    # devices consistent
+    assert volume_data.device == phi_values.device
+    assert phi_values.device == theta_values.device
+    assert theta_values.device == r_values.device
+    # sizes consistent
+    assert phi_values.size() == theta_values.size()
+    assert theta_values.size() == r_values.size()
+
+    vol_size_world = torch.tensor(volume_data.size(), dtype=torch.float32) * voxel_spacing
+    plane_size = vol_size_world.square().sum().sqrt()
+
+    def integrate_plane(phi: torch.Tensor, theta: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
+        cp = torch.cos(phi)
+        sp = torch.sin(phi)
+        ct = torch.cos(theta)
+        st = torch.sin(theta)
+
+        u_vector = torch.linspace(-.5 * plane_size, .5 * plane_size, samples_per_direction)
+        v_grid, u_grid = torch.meshgrid(u_vector, u_vector)
+        x_grid = 2. * (r * ct * cp - sp * u_grid - st * cp * v_grid) / vol_size_world[2]
+        y_grid = 2. * (r * ct * sp + cp * u_grid - st * sp * v_grid) / vol_size_world[1]
+        z_grid = 2. * (r * st + ct * v_grid) / vol_size_world[0]
+        grid = torch.stack((x_grid, y_grid, z_grid), dim=-1)
+        all_samples = torch.nn.functional.grid_sample(volume_data[None, None, :, :, :], grid[None, None, :, :, :])[
+            0, 0, 0]
+        return (plane_size / samples_per_direction).square() * all_samples.sum()
+
+    phi_flat = phi_values.flatten()
+    theta_flat = theta_values.flatten()
+    r_flat = r_values.flatten()
+
+    ret = torch.zeros_like(phi_values)
+    ret_flat = ret.flatten()
+
+    for i in range(ret_flat.numel()):
+        ret_flat[i] = integrate_plane(phi_flat[i], theta_flat[i], r_flat[i])
+
+    return ret

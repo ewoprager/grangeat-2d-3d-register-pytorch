@@ -10,14 +10,20 @@ cpp_version: str = "-std=c++17"
 cpu_source_files: list[str] = glob.glob("src/*.cpp")
 cuda_source_files: list[str] = glob.glob("src/*.cu")
 
-debug: bool = "--debug" in sys.argv
+debug: bool = ("--debug" in sys.argv)
 if debug:
     sys.argv.remove("--debug")
     print("Building in debug mode")
 
-use_cuda: bool = torch.cuda.is_available() and (CUDA_HOME is not None)
+no_cuda: bool = ("--no-cuda" in sys.argv)
+if no_cuda:
+    sys.argv.remove("--no-cuda")
+
+use_cuda: bool = (no_cuda == False) and torch.cuda.is_available() and (CUDA_HOME is not None)
 if use_cuda:
     print("Building with CUDA")
+elif no_cuda:
+    print("Building without CUDA")
 else:
     print("CUDA not available, building without")
 

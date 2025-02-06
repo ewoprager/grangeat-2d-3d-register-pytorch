@@ -1,7 +1,12 @@
 #pragma once
 
+#ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#else
+#define __host__
+#define __device__
+#endif
 
 namespace ExtensionTest {
 
@@ -30,8 +35,8 @@ struct Linear2 {
 	}
 
 	__host__ __device__ [[nodiscard]] Linear2 operator()(const Linear &other) const {
-		const float gradientSum = gradient1 + gradient2;
-		return {fmaf(gradientSum, other.intercept, intercept), gradientSum * other.gradient};
+		return {fmaf(gradient1 + gradient2, other.intercept, intercept), gradient1 * other.gradient,
+		        gradient2 * other.gradient};
 	}
 
 	__host__ __device__ [[nodiscard]] Linear2 operator()(const Linear2 &other) const {
@@ -46,10 +51,13 @@ __host__ __device__ [[nodiscard]] inline Linear2 Linear::operator()(const Linear
 }
 
 
-template <typename T>
-__host__ cudaError_t CudaMemcpyToObjectSymbol(const T &symbol, T &src,
-                                                           cudaMemcpyKind kind = cudaMemcpyHostToDevice) {
+#ifdef __CUDACC__
+
+template <typename T> __host__ cudaError_t CudaMemcpyToObjectSymbol(const T &symbol, T &src,
+                                                                    cudaMemcpyKind kind = cudaMemcpyHostToDevice) {
 	return cudaMemcpyToSymbol(symbol, &src, sizeof(T), 0, kind);
 }
+
+#endif
 
 } // namespace ExtensionTest
