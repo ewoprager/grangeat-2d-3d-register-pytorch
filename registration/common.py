@@ -2,6 +2,8 @@ from typing import NamedTuple, Tuple
 
 import torch
 import kornia
+import scipy
+import numpy
 
 
 class LinearMapping:
@@ -62,6 +64,16 @@ class Transformation(NamedTuple):
 
     def device_consistent(self) -> bool:
         return self.rotation.device == self.translation.device
+
+    def distance(self, other: 'Transformation') -> float:
+        device = self.translation.device
+        r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
+                                                                                                         dtype=torch.float32)
+        r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(other.rotation.unsqueeze(0))[0].to(device=device,
+                                                                                                          dtype=torch.float32)
+        return (((self.translation - other.translation) / 100.).square().sum() + torch.tensor(
+            [numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))],
+            device=device).square().sum()).sqrt().item()
 
     @classmethod
     def zero(cls, *, device=torch.device('cpu')) -> 'Transformation':

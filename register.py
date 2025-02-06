@@ -113,7 +113,8 @@ def load_cached_volume(cache_directory: str):
 
 
 def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
-                              ct_volume_path: str, volume_downsample_factor: int, *, device, save_to_cache=True):
+                              ct_volume_path: str, volume_downsample_factor: int, *, device, save_to_cache=True,
+                              vol_counts=256):
     print("Calculating 3D sinogram (the volume to resample)...")
 
     vol_diag: float = (
@@ -122,7 +123,6 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
                                        LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * vol_diag, .5 * vol_diag))
 
-    vol_counts = 256
     sinogram3d_grid = sinogram3d_range.generate_linear_grid(vol_counts, device=device)
     sinogram3d = grangeat.calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
                                                  samples_per_direction=vol_counts)
@@ -167,6 +167,8 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
                      *, device, save_to_cache=True):
+    # transformation = Transformation(torch.tensor([0., 0., 0.]),
+    #                                 torch.tensor([10., 0., 0.]) + Transformation.zero().translation).to(device=device)
     transformation = Transformation.random(device=volume_data.device)
     print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                             transformation.translation))
@@ -266,7 +268,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     if sinogram3d is None or sinogram3d_range is None:
         sinogram3d, sinogram3d_range = calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
                                                                  volume_downsample_factor, device=device,
-                                                                 save_to_cache=save_to_cache)
+                                                                 save_to_cache=save_to_cache, vol_counts=96)
 
     voxel_spacing = voxel_spacing.to(device=device)
 
@@ -308,7 +310,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         #                 plot=True)
     ))
 
-    if False:
+    if True:
         n = 100
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -319,7 +321,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
             i0 = i % n
             i1 = i // n
             nznccs[i1, i0] = -evaluate(fixed_image, sinogram3d, transformation=Transformation(
-                torch.tensor([angle0s[i0], angle1s[i1], transformation_ground_truth.rotation[2]]),
+                torch.tensor([angle0s[i0], angle1s[i1], transformation_ground_truth.rotation[2]], device=device),
                 transformation_ground_truth.translation), scene_geometry=scene_geometry,
                                        fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)
         _, axes = plt.subplots()
@@ -329,6 +331,22 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.set_ylabel("y-component of rotation vector")
         axes.axis('square')
         plt.colorbar(mesh)
+
+    if True:
+        n = 1000
+        nznccs = torch.zeros(n)
+        distances = torch.zeros(n)
+        for i in tqdm(range(n)):
+            transformation = Transformation.random(device=device)
+            distances[i] = transformation_ground_truth.distance(transformation)
+            nznccs[i] = -evaluate(fixed_image, sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
+                                       fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)
+
+        _, axes = plt.subplots()
+        axes.scatter(distances, nznccs)
+        axes.set_xlabel("distance in SE3")
+        axes.set_ylabel("-ZNCC")
+        axes.set_title("Relationship between similarity measure and distance in SE3")
 
     if True:
         def objective(params: torch.Tensor) -> torch.Tensor:
@@ -398,20 +416,29 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         param_history = torch.stack(param_history, dim=0)
         value_history = torch.tensor(value_history)
 
-        _, axes = plt.subplots()
         its = np.arange(param_history.size()[0])
         its2 = np.array([its[0], its[-1]])
+
+        # rotations
+        _, axes = plt.subplots()
         axes.plot(its2, np.full(2, 0.), ls='dashed')
         axes.plot(its, param_history[:, 0] - transformation_ground_truth.rotation[0].item(), label="r0 - r0*")
         axes.plot(its, param_history[:, 1] - transformation_ground_truth.rotation[1].item(), label="r1 - r1*")
         axes.plot(its, param_history[:, 2] - transformation_ground_truth.rotation[2].item(), label="r2 - r2*")
+        axes.legend()
+        axes.set_xlabel("iteration")
+        axes.set_ylabel("param value [rad]")
+        axes.set_title("rotation parameter values over optimisation iterations")
+        # translations
+        _, axes = plt.subplots()
+        axes.plot(its2, np.full(2, 0.), ls='dashed')
         axes.plot(its, param_history[:, 3] - transformation_ground_truth.translation[0].item(), label="t0 - t0*")
         axes.plot(its, param_history[:, 4] - transformation_ground_truth.translation[1].item(), label="t1 - t1*")
         axes.plot(its, param_history[:, 5] - transformation_ground_truth.translation[2].item(), label="t2 - t2*")
         axes.legend()
         axes.set_xlabel("iteration")
-        axes.set_ylabel("param value [rad or mm]")
-        axes.set_title("transformation parameter values over optimisation iterations")
+        axes.set_ylabel("param value [mm]")
+        axes.set_title("translation parameter values over optimisation iterations")
 
         _, axes = plt.subplots()
         axes.plot(value_history)

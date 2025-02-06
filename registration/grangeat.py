@@ -9,8 +9,8 @@ import Extension as ExtensionTest
 
 def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, samples_per_direction: int = 128,
                            output_grid: Sinogram3dGrid):
-    assert (output_grid.device_consistent())
-    assert (volume_data.device == output_grid.phi.device)
+    assert output_grid.device_consistent()
+    assert volume_data.device == output_grid.phi.device
     return ExtensionTest.dRadon3dDR(volume_data, voxel_spacing[2].item(), voxel_spacing[1].item(),
                                     voxel_spacing[0].item(), output_grid.phi.to(device=volume_data.device),
                                     output_grid.theta.to(device=volume_data.device),
@@ -19,8 +19,8 @@ def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Te
 
 def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, detector_spacing: torch.Tensor,
                           output_grid: Sinogram2dGrid, samples_per_line: int = 128) -> torch.Tensor:
-    assert (output_grid.device_consistent())
-    assert (output_grid.phi.device == drr_image.device)
+    assert output_grid.device_consistent()
+    assert output_grid.phi.device == drr_image.device
 
     img_width = drr_image.size()[1]
     img_height = drr_image.size()[0]
@@ -61,11 +61,12 @@ def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, de
 def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor,
                                    transformation: Transformation, scene_geometry: SceneGeometry,
                                    output_grid: Sinogram2dGrid) -> torch.Tensor:
-    assert (len(volume_data.size()) == 3)
-    assert (len(voxel_spacing.size()) == 1)
-    assert (voxel_spacing.size()[0] == 3)
-    assert (output_grid.device_consistent())
-    assert (output_grid.phi.device == volume_data.device)
+    assert len(volume_data.size()) == 3
+    assert len(voxel_spacing.size()) == 1
+    assert voxel_spacing.size()[0] == 3
+    assert output_grid.device_consistent()
+    assert output_grid.phi.device == volume_data.device
+    assert transformation.device_consistent()
 
     output_grid_2d = Sinogram2dGrid(*torch.meshgrid(output_grid.phi, output_grid.r))
 
@@ -92,8 +93,9 @@ def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: 
 
 def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, transformation: Transformation,
                    scene_geometry: SceneGeometry, output_grid: Sinogram2dGrid) -> torch.Tensor:
-    assert (output_grid.device_consistent())
-    assert (output_grid.phi.device == sinogram3d.device)
+    assert output_grid.device_consistent()
+    assert output_grid.phi.device == sinogram3d.device
+    assert transformation.device_consistent()
 
     output_grid_2d = Sinogram2dGrid(*torch.meshgrid(output_grid.phi, output_grid.r))
 
@@ -104,6 +106,15 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
     #                                                                      transformation=transformation)
 
     output_grid_sph_2d = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian_2d)
+
+    ## sign changes
+    moving_origin_projected = -scene_geometry.source_distance * transformation.translation[0:2] / (
+            transformation.translation[2] - scene_geometry.source_distance)
+    square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+    need_sign_change = ((output_grid_2d.r.unsqueeze(-1) * torch.stack(
+        (torch.cos(output_grid_2d.phi), torch.sin(output_grid_2d.phi)),
+        dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
+    ##
 
     ##
     # _, axes = plt.subplots()
@@ -138,4 +149,6 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
     grid = torch.stack(
         (i_mapping(output_grid_sph_2d.r), j_mapping(output_grid_sph_2d.theta), k_mapping(output_grid_sph_2d.phi)),
         dim=-1)
-    return torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
+    ret = torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
+    ret[need_sign_change] *= -1.
+    return ret
