@@ -52,18 +52,22 @@ the resampled Radon-transformed volume, with the ground truth transformation at 
 ![landscape.png](figures/landscape.png)
 
 Starting from a different random transformation, optimising the ZNCC between these images over the transformation using
-the Nelder-Mead
-algorithm:
+the Nelder-Mead algorithm:
 
-![params_against_iteration.png](figures/params_against_iteration.png)
-
+![rotation_params_against_iteration.png](figures/rotation_params_against_iteration.png)
+![translation_params_against_iteration.png](figures/translation_params_against_iteration.png)
 ![loss_against_iteration.png](figures/loss_against_iteration.png)
 
 DRR generated at the converged transformation:
 
 ![converged_drr.png](figures/converged_drr.png)
 
-Optimisation completed in 2.280 seconds, performing a total of 586 function evaluations.
+Optimisation completed in 5.942 seconds, performing a total of 779 function evaluations.
+
+Here is a plot of the -ZNCC similarity between the fixed image and the resampled moving image against the distance in SE3
+between the transformation and the ground truth transformation for 1000 random transformations:
+
+![loss_vs_distance.png](figures/loss_vs_distance.png)
 
 ## IDE integration
 
