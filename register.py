@@ -66,7 +66,7 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformat
                                         output_grid=fixed_image_grid, input_range=sinogram3d_range)
     if plot:
         _, axes = plt.subplots()
-        mesh = axes.pcolormesh(resampled.cpu())
+        mesh = axes.pcolormesh(resampled.clone().cpu())
         axes.axis('square')
         axes.set_title("d/dr R3 [mu] resampled")
         axes.set_xlabel("r")
@@ -167,7 +167,7 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
                      *, device, save_to_cache=True):
-    transformation = Transformation.random()
+    transformation = Transformation.random(device=volume_data.device)
     print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                             transformation.translation))
 
@@ -268,6 +268,8 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
                                                                  volume_downsample_factor, device=device,
                                                                  save_to_cache=save_to_cache)
 
+    voxel_spacing = voxel_spacing.to(device=device)
+
     drr_spec = None
     if not regenerate_drr:
         drr_spec = load_cached_drr(cache_directory, path)
@@ -299,14 +301,14 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     sinogram2d_grid = sinogram2d_range.generate_linear_grid(fixed_image.size(), device=device)
 
     print("{:.4e}".format(
-        evaluate(fixed_image, sinogram3d, transformation=transformation_ground_truth, scene_geometry=scene_geometry,
-                 fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range, plot=True)
-        # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
+        evaluate(fixed_image, sinogram3d, transformation=transformation_ground_truth.to(device=device),
+                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range,
+                 plot=True)  # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
         #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
         #                 plot=True)
     ))
 
-    if True:
+    if False:
         n = 100
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -330,46 +332,58 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
 
     if True:
         def objective(params: torch.Tensor) -> torch.Tensor:
-            return -evaluate(fixed_image, sinogram3d, transformation=Transformation(params[0:3], params[3:6]),
+            return -evaluate(fixed_image, sinogram3d,
+                             transformation=Transformation(params[0:3], params[3:6]).to(device=device),
                              scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                              sinogram3d_range=sinogram3d_range)
 
         print("Optimising...")
-        n = 1000
         param_history = []
         value_history = []
-        params_: torch.Tensor = torch.rand(6)
+        transformation_start = Transformation.random()
+        start_params: torch.Tensor = transformation_start.vectorised()
 
-        # optimiser = torch.optim.SGD([params_], lr=0.01)
+        converged_params: torch.Tensor | None = None
+        if False:
+            n = 1000
+            iterated_params = start_params.clone().to(device=sinogram3d.device)
+            iterated_params.requires_grad_(True)
+            torch.autograd.set_detect_anomaly(True)
+            optimiser = torch.optim.SGD([iterated_params], lr=0.01)
+            optimiser.zero_grad()
+            tic = time.time()
 
-        def objective_scipy(params: np.ndarray) -> float:
-            params = torch.tensor(copy.deepcopy(params))
-            param_history.append(params)
-            value = objective(params)
-            value_history.append(value)
-            return value.item()
+            def closure():
+                param_history.append(iterated_params.clone().cpu())
+                value = objective(iterated_params)
+                value.backward(torch.zeros_like(value))
+                value_history.append(value.clone().cpu())
+                return value
 
-        tic = time.time()
+            for i in range(n):
+                iterated_params = optimiser.step(closure)
 
-        # for i in range(n):
-        #     def closure():
-        #         param_history[i] = copy.deepcopy(params_)
-        #         value = objective(params_)
-        #         value_history[i] = value
-        #         return value
-        #
-        #     optimiser.step(closure)
-        res = scipy.optimize.minimize(objective_scipy, params_.numpy(), method='Nelder-Mead')
+            toc = time.time()
+            print("Done. Took {:.3f}s.".format(toc - tic))
+            print("Final value = {:.3f} at params = {}".format(value_history[-1], param_history[-1]))
+            converged_params = param_history[-1]
+        else:
+            def objective_scipy(params: np.ndarray) -> float:
+                params = torch.tensor(copy.deepcopy(params))
+                param_history.append(params)
+                value = objective(params)
+                value_history.append(value)
+                return value.item()
 
-        toc = time.time()
-        print("Done. Took {:.3f}s.".format(toc - tic))
+            tic = time.time()
+            res = scipy.optimize.minimize(objective_scipy, start_params.numpy(), method='Nelder-Mead')
+            toc = time.time()
+            print("Done. Took {:.3f}s.".format(toc - tic))
+            print(res)
+            converged_params = torch.from_numpy(res.x)
 
-        print(res)
-
-        # print("Final value = {:.3f} at params = {}".format(value_history[-1], param_history[-1]))
-
-        final_image = geometry.generate_drr(vol_data, transformation=Transformation(torch.tensor(res.x[0:3]),
-                                                                                    torch.tensor(res.x[3:6])),
+        final_image = geometry.generate_drr(vol_data, transformation=Transformation(
+            torch.tensor(converged_params[0:3], device=device), torch.tensor(converged_params[3:6], device=device)),
                                             voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
                                             scene_geometry=scene_geometry, output_size=drr_image.size(),
                                             samples_per_ray=512)
@@ -385,12 +399,15 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         value_history = torch.tensor(value_history)
 
         _, axes = plt.subplots()
-        axes.plot(param_history[:, 0], label="r0")
-        axes.plot(param_history[:, 1], label="r1")
-        axes.plot(param_history[:, 2], label="r2")
-        axes.plot(param_history[:, 3], label="t0")
-        axes.plot(param_history[:, 4], label="t1")
-        axes.plot(param_history[:, 5], label="t2")
+        its = np.arange(param_history.size()[0])
+        its2 = np.array([its[0], its[-1]])
+        axes.plot(its2, np.full(2, 0.), ls='dashed')
+        axes.plot(its, param_history[:, 0] - transformation_ground_truth.rotation[0].item(), label="r0 - r0*")
+        axes.plot(its, param_history[:, 1] - transformation_ground_truth.rotation[1].item(), label="r1 - r1*")
+        axes.plot(its, param_history[:, 2] - transformation_ground_truth.rotation[2].item(), label="r2 - r2*")
+        axes.plot(its, param_history[:, 3] - transformation_ground_truth.translation[0].item(), label="t0 - t0*")
+        axes.plot(its, param_history[:, 4] - transformation_ground_truth.translation[1].item(), label="t1 - t1*")
+        axes.plot(its, param_history[:, 5] - transformation_ground_truth.translation[2].item(), label="t2 - t2*")
         axes.legend()
         axes.set_xlabel("iteration")
         axes.set_ylabel("param value [rad or mm]")

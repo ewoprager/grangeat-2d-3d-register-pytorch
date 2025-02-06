@@ -35,19 +35,9 @@ class Transformation(NamedTuple):
     translation: torch.Tensor
 
     def inverse(self) -> 'Transformation':
-        r_inverse = kornia.geometry.conversions.axis_angle_to_rotation_matrix(-self.rotation.unsqueeze(0))[0].to(
-            dtype=torch.float32)
+        r_inverse = kornia.geometry.conversions.axis_angle_to_rotation_matrix(-self.rotation.unsqueeze(0))[0]
         r_inverse_t = torch.einsum('kl,...l->...k', r_inverse, self.translation.unsqueeze(0))
         return Transformation(-self.rotation, -r_inverse_t)
-
-    @classmethod
-    def zero(cls) -> 'Transformation':
-        return Transformation(torch.zeros(3), torch.tensor([0., 0., 0.]))
-
-    @classmethod
-    def random(cls) -> 'Transformation':
-        return Transformation(torch.pi * (-1. + 2. * torch.rand(3)),
-                              25. * (-1. + 2. * torch.rand(3)) + torch.tensor([0., 0., 100.]))
 
     def __call__(self, positions_cartesian: torch.Tensor, exclude_translation: bool = False) -> torch.Tensor:
         device = positions_cartesian.device
@@ -63,6 +53,25 @@ class Transformation(NamedTuple):
                                                                                                         dtype=torch.float32)
         rt = torch.hstack([r, self.translation.to(device=device).t().unsqueeze(-1)])
         return torch.vstack([rt, torch.tensor([0., 0., 0., 1.], device=device).unsqueeze(0)])
+
+    def vectorised(self) -> torch.Tensor:
+        return torch.cat((self.rotation, self.translation), dim=0)
+
+    def to(self, **kwargs) -> 'Transformation':
+        return Transformation(self.rotation.to(**kwargs), self.translation.to(**kwargs))
+
+    def device_consistent(self) -> bool:
+        return self.rotation.device == self.translation.device
+
+    @classmethod
+    def zero(cls, *, device=torch.device('cpu')) -> 'Transformation':
+        return Transformation(torch.zeros(3, device=device), torch.tensor([0., 0., 100.], device=device))
+
+    @classmethod
+    def random(cls, *, device=torch.device('cpu')) -> 'Transformation':
+        return Transformation(torch.pi * (-1. + 2. * torch.rand(3, device=device)),
+                              25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
+                                  device=device).translation)
 
 
 class SceneGeometry(NamedTuple):
