@@ -68,15 +68,19 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     directions: torch.Tensor = torch.nn.functional.normalize(
         torch.stack((detector_xs, detector_ys, torch.zeros_like(detector_xs)), dim=-1) - source_position, dim=-1)
     volume_diag: torch.Tensor = (
-                torch.tensor(volume_data.size(), dtype=torch.float32, device=device) * voxel_spacing).flip(dims=(0,))
+            torch.tensor(volume_data.size(), dtype=torch.float32, device=device) * voxel_spacing).flip(dims=(0,))
     volume_diag_length: torch.Tensor = volume_diag.norm()
     lambda_start: torch.Tensor = (source_position - transformation.translation).norm() - .5 * volume_diag_length
     lambda_end: torch.Tensor = lambda_start + volume_diag_length
     step_size: float = (lambda_end - lambda_start).item() / float(samples_per_ray)
+
+    h_matrix_inv = transformation.inverse().get_h(device=device)
     deltas = directions * step_size
-    deltas = transformation.inverse()(deltas, exclude_translation=True)
+    deltas_homogeneous = torch.cat((deltas, torch.zeros_like(deltas[..., 0], device=device).unsqueeze(-1)), dim=-1)
+    deltas = torch.einsum('ji,...i->...j', h_matrix_inv, deltas_homogeneous)[..., 0:3]
     starts = source_position + lambda_start * directions
-    starts = transformation.inverse()(starts)
+    starts_homogeneous = torch.cat((starts, torch.ones_like(starts[..., 0], device=device).unsqueeze(-1)), dim=-1)
+    starts = torch.einsum('ji,...i->...j', h_matrix_inv, starts_homogeneous)[..., 0:3]
 
     deltas_texture = 2. * deltas / volume_diag
     grid = (2. * starts / volume_diag).to(dtype=torch.float32)

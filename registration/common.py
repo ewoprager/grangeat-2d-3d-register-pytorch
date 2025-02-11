@@ -38,7 +38,7 @@ class Transformation(NamedTuple):
 
     def inverse(self) -> 'Transformation':
         r_inverse = kornia.geometry.conversions.axis_angle_to_rotation_matrix(-self.rotation.unsqueeze(0))[0]
-        r_inverse_t = torch.einsum('kl,...l->...k', r_inverse, self.translation.unsqueeze(0))
+        r_inverse_t = torch.einsum('kl,...l->...k', r_inverse, self.translation.unsqueeze(0))[0]
         return Transformation(-self.rotation, -r_inverse_t)
 
     def __call__(self, positions_cartesian: torch.Tensor, exclude_translation: bool = False) -> torch.Tensor:
@@ -116,7 +116,7 @@ class SceneGeometry(NamedTuple):
         assert central_ray.size() == torch.Size([3])
 
         m_matrix: torch.Tensor = torch.outer(torch.hstack((source_position, torch.tensor([1.], device=device))),
-                                             central_ray) + central_ray.norm() * torch.vstack(
+                                             central_ray) + torch.dot(central_ray, central_ray) * torch.vstack(
             (torch.eye(3, device=device), torch.zeros((1, 3), device=device)))
 
         return torch.hstack((m_matrix, -torch.matmul(m_matrix, source_position.unsqueeze(-1))))
