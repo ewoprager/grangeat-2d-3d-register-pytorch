@@ -99,10 +99,7 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
 
     output_grid_2d = Sinogram2dGrid(*torch.meshgrid(output_grid.phi, output_grid.r))
 
-    # output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian(output_grid_2d, scene_geometry=scene_geometry,
-    #                                                                     transformation=transformation)
-
-    output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian2(output_grid_2d, scene_geometry=scene_geometry,
+    output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian(output_grid_2d, scene_geometry=scene_geometry,
                                                                          transformation=transformation)
 
     output_grid_sph_2d = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian_2d)

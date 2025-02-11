@@ -4,21 +4,6 @@ from registration.common import *
 
 
 def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, scene_geometry: SceneGeometry,
-                                    transformation: Transformation) -> torch.Tensor:
-    device = input_grid.r.device
-    assert transformation.translation.device == device
-    source_position = torch.tensor([0., 0., scene_geometry.source_distance], device=device)
-    fixed_cartesian = torch.stack((input_grid.r * torch.cos(input_grid.phi), input_grid.r * torch.sin(input_grid.phi),
-                                   torch.zeros_like(input_grid.r)), dim=-1)
-    from_source = fixed_cartesian - source_position
-    lambdas = torch.einsum('i,...i->...', transformation.translation - source_position, from_source) / torch.einsum(
-        '...i,...i->...', from_source, from_source)
-    closest_points_fixed = source_position + lambdas.unsqueeze(-1) * from_source
-    closest_points_moving = transformation.inverse()(closest_points_fixed)
-    return closest_points_moving
-
-
-def fixed_polar_to_moving_cartesian2(input_grid: Sinogram2dGrid, *, scene_geometry: SceneGeometry,
                                      transformation: Transformation) -> torch.Tensor:
     device = input_grid.phi.device
     source_position = scene_geometry.source_position(device=device)

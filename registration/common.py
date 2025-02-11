@@ -41,15 +41,6 @@ class Transformation(NamedTuple):
         r_inverse_t = torch.einsum('kl,...l->...k', r_inverse, self.translation.unsqueeze(0))[0]
         return Transformation(-self.rotation, -r_inverse_t)
 
-    def __call__(self, positions_cartesian: torch.Tensor, exclude_translation: bool = False) -> torch.Tensor:
-        device = positions_cartesian.device
-        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
-                                                                                                        dtype=torch.float32)
-        positions_cartesian = torch.einsum('kl,...l->...k', r, positions_cartesian.to(dtype=torch.float32))
-        if not exclude_translation:
-            positions_cartesian = positions_cartesian + self.translation.to(device=device, dtype=torch.float32)
-        return positions_cartesian
-
     def get_h(self, *, device=torch.device('cpu')) -> torch.Tensor:
         """
         :param device:
