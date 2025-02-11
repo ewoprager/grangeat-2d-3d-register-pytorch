@@ -51,6 +51,10 @@ class Transformation(NamedTuple):
         return positions_cartesian
 
     def get_h(self, *, device=torch.device('cpu')) -> torch.Tensor:
+        """
+        :param device:
+        :return: [(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation
+        """
         r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
                                                                                                         dtype=torch.float32)
         rt = torch.hstack([r, self.translation.to(device=device).t().unsqueeze(-1)])
@@ -93,10 +97,29 @@ class SceneGeometry(NamedTuple):
         return torch.tensor([0., 0., self.source_distance], device=device)
 
     @classmethod
-    def projection_matrix(cls, source_position: torch.Tensor) -> torch.Tensor:
-        return torch.tensor(
-            [[-source_position[2], 0., source_position[0], 0.], [0., -source_position[2], source_position[1], 0.],
-             [0., 0., 0., 0.], [0., 0., 1., -source_position[2]]], device=source_position.device)
+    def projection_matrix(cls, source_position: torch.Tensor, central_ray: torch.Tensor | None = None) -> torch.Tensor:
+        """
+
+        :param source_position: [(3,) tensor] the position of the X-ray source
+        :param central_ray: [(3,) tensor or None] the vector from the X-ray source to the closest point on the
+        detector array. If none, the detector array is assumed to be the x-y plane.
+        :return: [(4, 4) tensor] The projection matrix P that projects points in homogeneous coordinates away from
+        the given source position onto the plane of the detector array, as given by the central ray.
+        """
+        device = source_position.device
+
+        if central_ray is None:
+            central_ray = torch.tensor([0., 0., - source_position[2]], device=device)
+
+        assert central_ray.device == device
+        assert source_position.size() == torch.Size([3])
+        assert central_ray.size() == torch.Size([3])
+
+        m_matrix: torch.Tensor = torch.outer(torch.hstack((source_position, torch.tensor([1.], device=device))),
+                                             central_ray) + central_ray.norm() * torch.vstack(
+            (torch.eye(3, device=device), torch.zeros((1, 3), device=device)))
+
+        return torch.hstack((m_matrix, -torch.matmul(m_matrix, source_position.unsqueeze(-1))))
 
 
 class Sinogram2dGrid(NamedTuple):

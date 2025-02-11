@@ -169,7 +169,8 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
                      *, device, save_to_cache=True):
     # transformation = Transformation(torch.tensor([0., 0., 0.]),
     #                                 torch.tensor([10., 0., 0.]) + Transformation.zero().translation).to(device=device)
-    transformation = Transformation.random(device=volume_data.device)
+    transformation = Transformation.zero(device=volume_data.device)
+    # transformation = Transformation.random(device=volume_data.device)
     print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                             transformation.translation))
 
@@ -310,7 +311,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         #                 plot=True)
     ))
 
-    if True:
+    if False:
         n = 100
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -332,7 +333,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.axis('square')
         plt.colorbar(mesh)
 
-    if True:
+    if False:
         n = 1000
         nznccs = torch.zeros(n)
         distances = torch.zeros(n)
@@ -348,7 +349,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.set_ylabel("-ZNCC")
         axes.set_title("Relationship between similarity measure and distance in SE3")
 
-    if True:
+    if False:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -evaluate(fixed_image, sinogram3d,
                              transformation=Transformation(params[0:3], params[3:6]).to(device=device),

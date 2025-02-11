@@ -1,5 +1,4 @@
 import torch
-from torch.xpu import device
 
 from registration.common import *
 
@@ -23,15 +22,14 @@ def fixed_polar_to_moving_cartesian2(input_grid: Sinogram2dGrid, *, scene_geomet
                                      transformation: Transformation) -> torch.Tensor:
     device = input_grid.phi.device
     source_position = scene_geometry.source_position(device=device)
-    p = SceneGeometry.projection_matrix(source_position=source_position)
-    ph = torch.matmul(p, transformation.get_h(device=device))
-    mt = ph[:, 0:3].t()
+    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device))
     intermediates = torch.stack(
         (torch.cos(input_grid.phi), torch.sin(input_grid.phi), torch.zeros_like(input_grid.phi), -input_grid.r), dim=-1)
-    ns = torch.einsum('ij,...j->...i', mt, intermediates)
-    n_hats = torch.nn.functional.normalize(ns, dim=-1)
-    ds = torch.einsum('i,...i->...', source_position, n_hats)
-    return ds.unsqueeze(-1) * n_hats
+    n_tildes = torch.einsum('ij,...j->...i', ph_matrix.t(), intermediates)
+    ns = n_tildes[..., 0:3]
+    n_sqmags = torch.einsum('...i,...i->...', ns, ns) + 1e-8
+    return -n_tildes[..., 3].unsqueeze(-1) * ns / n_sqmags.unsqueeze(-1)
 
 
 def moving_cartesian_to_moving_spherical(positions_cartesian: torch.Tensor) -> Sinogram3dGrid:
