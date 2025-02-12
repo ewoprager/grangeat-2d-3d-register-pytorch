@@ -11,29 +11,28 @@ at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacin
 	TORCH_CHECK(volume.sizes().size() == 3);
 	TORCH_CHECK(volume.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CPU);
-	// phiValues should be a 1D array of floats on the CPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
+	// phiValues, thetaValues and rValues should have matching sizes, contain floats, and be on the CPU
+	TORCH_CHECK(phiValues.sizes() == thetaValues.sizes());
+	TORCH_CHECK(thetaValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
-	// thetaValues should be a 1D array of floats on the CPU
-	TORCH_CHECK(thetaValues.sizes().size() == 1);
 	TORCH_CHECK(thetaValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(thetaValues.device().type() == at::DeviceType::CPU);
-	// rValues should be a 1D array of floats on the CPU
-	TORCH_CHECK(rValues.sizes().size() == 1);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
+	TORCH_INTERNAL_ASSERT(thetaValues.device().type() == at::DeviceType::CPU);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CPU);
 
-	at::Tensor aContiguous = volume.contiguous();
+	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	const Texture3DCPU aTexture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing,
 	                            zSpacing};
 
-	const long depthOut = phiValues.sizes()[0];
-	const long heightOut = thetaValues.sizes()[0];
-	const long widthOut = rValues.sizes()[0];
-	at::Tensor result = torch::zeros(at::IntArrayRef({depthOut, heightOut, widthOut}), aContiguous.options());
-	float *resultPtr = result.data_ptr<float>();
+	const at::Tensor phiFlat = phiValues.flatten();
+	const at::Tensor thetaFlat = thetaValues.flatten();
+	const at::Tensor rFlat = rValues.flatten();
+
+	const long numelOut = phiValues.numel();
+	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
+	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
 	const float planeSize = sqrtf(
 		aTexture.WidthWorld() * aTexture.WidthWorld() + aTexture.HeightWorld() * aTexture.HeightWorld() + aTexture.
@@ -41,18 +40,14 @@ at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacin
 	const Linear mappingIToOffset = Radon3D<Texture3DCPU>::GetMappingIToOffset(planeSize, samplesPerDirection);
 	const float rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
 	const float scaleFactor = rootScaleFactor * rootScaleFactor;
-	for (long layer = 0; layer < depthOut; ++layer) {
-		for (long row = 0; row < heightOut; ++row) {
-			for (long col = 0; col < widthOut; ++col) {
-				const auto indexMappings = Radon3D<Texture3DCPU>::GetIndexMappings(
-					aTexture, phiValues[layer].item().toFloat(), thetaValues[row].item().toFloat(),
-					rValues[col].item().toFloat(), mappingIToOffset);
-				resultPtr[layer * widthOut * heightOut + row * widthOut + col] =
-					scaleFactor * Radon3D<Texture3DCPU>::IntegrateLooped(aTexture, indexMappings, samplesPerDirection);
-			}
-		}
+	for (long i = 0; i < numelOut; ++i) {
+		const auto indexMappings = Radon3D<Texture3DCPU>::GetIndexMappings(
+			aTexture, phiFlat[i].item().toFloat(), thetaFlat[i].item().toFloat(), rFlat[i].item().toFloat(),
+			mappingIToOffset);
+		resultFlatPtr[i] = scaleFactor * Radon3D<Texture3DCPU>::IntegrateLooped(
+			                   aTexture, indexMappings, samplesPerDirection);
 	}
-	return result;
+	return resultFlat.view(phiValues.sizes());
 }
 
 at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
@@ -62,29 +57,28 @@ at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpa
 	TORCH_CHECK(volume.sizes().size() == 3);
 	TORCH_CHECK(volume.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CPU);
-	// phiValues should be a 1D array of floats on the CPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
+	// phiValues, thetaValues and rValues should have matching sizes, contain floats, and be on the CPU
+	TORCH_CHECK(phiValues.sizes() == thetaValues.sizes());
+	TORCH_CHECK(thetaValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
-	// thetaValues should be a 1D array of floats on the CPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
-	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
-	// rValues should be a 1D array of floats on the CPU
-	TORCH_CHECK(rValues.sizes().size() == 1);
+	TORCH_CHECK(thetaValues.dtype() == at::kFloat);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
+	TORCH_INTERNAL_ASSERT(thetaValues.device().type() == at::DeviceType::CPU);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CPU);
 
-	at::Tensor aContiguous = volume.contiguous();
+	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	const Texture3DCPU aTexture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing,
 	                            zSpacing};
 
-	const long depthOut = phiValues.sizes()[0];
-	const long heightOut = thetaValues.sizes()[0];
-	const long widthOut = rValues.sizes()[0];
-	at::Tensor result = torch::zeros(at::IntArrayRef({depthOut, heightOut, widthOut}), aContiguous.options());
-	float *resultPtr = result.data_ptr<float>();
+	const at::Tensor phiFlat = phiValues.flatten();
+	const at::Tensor thetaFlat = thetaValues.flatten();
+	const at::Tensor rFlat = rValues.flatten();
+
+	const long numelOut = phiValues.numel();
+	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
+	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
 	const float planeSize = sqrtf(
 		aTexture.WidthWorld() * aTexture.WidthWorld() + aTexture.HeightWorld() * aTexture.HeightWorld() + aTexture.
@@ -92,23 +86,17 @@ at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpa
 	const Linear mappingIToOffset = Radon3D<Texture3DCPU>::GetMappingIToOffset(planeSize, samplesPerDirection);
 	const float rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
 	const float scaleFactor = rootScaleFactor * rootScaleFactor;
-	for (long layer = 0; layer < depthOut; ++layer) {
-		for (long row = 0; row < heightOut; ++row) {
-			for (long col = 0; col < widthOut; ++col) {
-				const float phi = phiValues[layer].item().toFloat();
-				const float theta = thetaValues[row].item().toFloat();
-				const float r = rValues[col].item().toFloat();
-				const auto indexMappings = Radon3D<Texture3DCPU>::GetIndexMappings(
-					aTexture, phi, theta, r, mappingIToOffset);
-				const auto derivativeWRTR = Radon3D<Texture3DCPU>::GetDerivativeWRTR(aTexture, phi, theta, r);
-				resultPtr[layer * widthOut * heightOut + row * widthOut + col] =
-					scaleFactor * Radon3D<Texture3DCPU>::DIntegrateLoopedDMappingParameter(
-						aTexture, indexMappings, derivativeWRTR, samplesPerDirection);
-			}
-		}
-	}
+	for (long i = 0; i < numelOut; ++i) {
+		const float phi = phiFlat[i].item().toFloat();
+		const float theta = thetaFlat[i].item().toFloat();
+		const float r = rFlat[i].item().toFloat();
+		const auto indexMappings = Radon3D<Texture3DCPU>::GetIndexMappings(aTexture, phi, theta, r, mappingIToOffset);
+		const auto derivativeWRTR = Radon3D<Texture3DCPU>::GetDerivativeWRTR(aTexture, phi, theta, r);
+		resultFlatPtr[i] = scaleFactor * Radon3D<Texture3DCPU>::DIntegrateLoopedDMappingParameter(
+			                   aTexture, indexMappings, derivativeWRTR, samplesPerDirection);
 
-	return result;
+	}
+	return resultFlat.view(phiValues.sizes());
 }
 
 } // namespace ExtensionTest

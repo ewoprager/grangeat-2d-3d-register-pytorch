@@ -143,8 +143,10 @@ class Sinogram2dRange(NamedTuple):
     def generate_linear_grid(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device("cpu")):
         if isinstance(counts, int):
             counts = (counts, counts)
-        return Sinogram2dGrid(torch.linspace(self.phi.low, self.phi.high, counts[0], device=device),
-                              torch.linspace(self.r.low, self.r.high, counts[1], device=device))
+        phis = torch.linspace(self.phi.low, self.phi.high, counts[0], device=device)
+        rs = torch.linspace(self.r.low, self.r.high, counts[1], device=device)
+        phis, rs = torch.meshgrid(phis, rs)
+        return Sinogram2dGrid(phis, rs)
 
 
 class Sinogram3dRange(NamedTuple):
@@ -155,9 +157,11 @@ class Sinogram3dRange(NamedTuple):
     def generate_linear_grid(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device("cpu")):
         if isinstance(counts, int):
             counts = (counts, counts, counts)
-        return Sinogram3dGrid(torch.linspace(self.phi.low, self.phi.high, counts[0], device=device),
-                              torch.linspace(self.theta.low, self.theta.high, counts[1], device=device),
-                              torch.linspace(self.r.low, self.r.high, counts[2], device=device))
+        phis = torch.linspace(self.phi.low, self.phi.high, counts[0], device=device)
+        thetas = torch.linspace(self.theta.low, self.theta.high, counts[1], device=device)
+        rs = torch.linspace(self.r.low, self.r.high, counts[2], device=device)
+        phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
+        return Sinogram3dGrid(phis, thetas, rs)
 
 
 class VolumeSpec(NamedTuple):

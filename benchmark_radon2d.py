@@ -44,6 +44,7 @@ def task_radon2d(function, name: str, device: str, image: torch.Tensor, spacing:
     image_width: torch.Tensor = spacing[1] * float(image.size()[1])
     image_diag = torch.sqrt(image_height.square() + image_width.square()).item()
     r_values = torch.linspace(-.5 * image_diag, .5 * image_diag, r_count, device=device)
+    phi_values, r_values = torch.meshgrid(phi_values, r_values)
     output = function(image_devices, spacing[0], spacing[1], phi_values, r_values, 1024)
     return "{} on {}".format(name, device), output.cpu()
 

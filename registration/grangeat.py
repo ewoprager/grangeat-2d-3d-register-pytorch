@@ -97,20 +97,18 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
     assert output_grid.phi.device == sinogram3d.device
     assert transformation.device_consistent()
 
-    output_grid_2d = Sinogram2dGrid(*torch.meshgrid(output_grid.phi, output_grid.r))
+    output_grid_cartesian = geometry.fixed_polar_to_moving_cartesian(output_grid, scene_geometry=scene_geometry,
+                                                                     transformation=transformation)
 
-    output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian(output_grid_2d, scene_geometry=scene_geometry,
-                                                                         transformation=transformation)
-
-    output_grid_sph_2d = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian_2d)
+    output_grid_sph = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian)
 
     ## sign changes
     moving_origin_projected = -scene_geometry.source_distance * transformation.translation[0:2] / (
             transformation.translation[2] - scene_geometry.source_distance)
     square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
-    need_sign_change = ((output_grid_2d.r.unsqueeze(-1) * torch.stack(
-        (torch.cos(output_grid_2d.phi), torch.sin(output_grid_2d.phi)),
-        dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
+    need_sign_change = ((output_grid.r.unsqueeze(-1) * torch.stack(
+        (torch.cos(output_grid.phi), torch.sin(output_grid.phi)), dim=-1) - .5 * moving_origin_projected).square().sum(
+        dim=-1) < square_radius)
     ##
 
     ##
@@ -143,8 +141,7 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
     j_mapping: LinearMapping = grid_range.get_mapping_from(input_range.theta)
     k_mapping: LinearMapping = grid_range.get_mapping_from(input_range.phi)
 
-    grid = torch.stack(
-        (i_mapping(output_grid_sph_2d.r), j_mapping(output_grid_sph_2d.theta), k_mapping(output_grid_sph_2d.phi)),
+    grid = torch.stack((i_mapping(output_grid_sph.r), j_mapping(output_grid_sph.theta), k_mapping(output_grid_sph.phi)),
         dim=-1)
     ret = torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
     ret[need_sign_change] *= -1.

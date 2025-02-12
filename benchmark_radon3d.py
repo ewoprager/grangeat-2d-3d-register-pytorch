@@ -48,6 +48,7 @@ def task_radon3d(function, name: str, device: str, image: torch.Tensor, spacing:
     image_width: torch.Tensor = spacing[2] * float(image.size()[2])
     image_diag = torch.sqrt(image_depth.square() + image_height.square() + image_width.square()).item()
     r_values = torch.linspace(-.5 * image_diag, .5 * image_diag, r_count, device=device)
+    phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
     output = function(image_devices, spacing[0].item(), spacing[1].item(), spacing[2].item(), phi_values, theta_values,
                       r_values, 64)
     name: str = "{}_on_{}".format(name, device)

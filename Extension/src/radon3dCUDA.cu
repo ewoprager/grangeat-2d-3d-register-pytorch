@@ -4,19 +4,16 @@
 
 namespace ExtensionTest {
 
-__global__ void radon3d_kernel(Texture3DCUDA textureIn, long depthOut, long heightOut, long widthOut, float *arrayOut,
-                               Linear mappingIToOffset, const float *phiValues, const float *thetaValues,
-                               const float *rValues, long samplesPerDirection, float scaleFactor) {
-	const long col = blockIdx.x * blockDim.x + threadIdx.x;
-	const long row = blockIdx.y * blockDim.y + threadIdx.y;
-	const long layer = blockIdx.z * blockDim.z + threadIdx.z;
-	if (col >= widthOut || row >= heightOut || layer >= depthOut) return;
-
-	const long index = layer * widthOut * heightOut + row * widthOut + col;
-	const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(textureIn, phiValues[layer], thetaValues[row],
-	                                                                    rValues[col], mappingIToOffset);
-	arrayOut[index] = scaleFactor * Radon3D<Texture3DCUDA>::IntegrateLooped(
-		                  textureIn, indexMappings, samplesPerDirection);
+__global__ void radon3d_kernel(Texture3DCUDA textureIn, long numelOut, float *arrayOut, Linear mappingIToOffset,
+                               const float *phiValues, const float *thetaValues, const float *rValues,
+                               long samplesPerDirection, float scaleFactor) {
+	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+	if (threadIndex >= numelOut) return;
+	const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(textureIn, phiValues[threadIndex],
+	                                                                    thetaValues[threadIndex], rValues[threadIndex],
+	                                                                    mappingIToOffset);
+	arrayOut[threadIndex] = scaleFactor * Radon3D<Texture3DCUDA>::IntegrateLooped(
+		                        textureIn, indexMappings, samplesPerDirection);
 }
 
 __host__ at::Tensor radon3d_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
@@ -26,73 +23,57 @@ __host__ at::Tensor radon3d_cuda(const at::Tensor &volume, double xSpacing, doub
 	TORCH_CHECK(volume.sizes().size() == 3);
 	TORCH_CHECK(volume.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CUDA);
-	// phiValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
+	// phiValues, thetaValues and rValues should have matching sizes, contain floats, and be on the GPU
+	TORCH_CHECK(phiValues.sizes() == thetaValues.sizes());
+	TORCH_CHECK(thetaValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// thetaValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
-	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// rValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(rValues.sizes().size() == 1);
+	TORCH_CHECK(thetaValues.dtype() == at::kFloat);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
+	TORCH_INTERNAL_ASSERT(thetaValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
 	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing, zSpacing};
 
-	const long depthOut = phiValues.sizes()[0];
-	const long heightOut = thetaValues.sizes()[0];
-	const long widthOut = rValues.sizes()[0];
-	at::Tensor result = torch::zeros(at::IntArrayRef({depthOut, heightOut, widthOut}), aContiguous.options());
-	float *resultPtr = result.data_ptr<float>();
+	const long numelOut = phiValues.numel();
+	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
+	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
-	const at::Tensor phisContiguous = phiValues.contiguous();
-	const float *phisPtr = phisContiguous.data_ptr<float>();
-	const at::Tensor thetasContiguous = thetaValues.contiguous();
-	const float *thetasPtr = thetasContiguous.data_ptr<float>();
-	const at::Tensor rsContiguous = rValues.contiguous();
-	const float *rsPtr = rsContiguous.data_ptr<float>();
+	const at::Tensor phiFlatContiguous = phiValues.flatten().contiguous();
+	const float *phiFlatPtr = phiFlatContiguous.data_ptr<float>();
+	const at::Tensor thetaFlatContiguous = thetaValues.flatten().contiguous();
+	const float *thetaFlatPtr = thetaFlatContiguous.data_ptr<float>();
+	const at::Tensor rFlatContiguous = rValues.flatten().contiguous();
+	const float *rFlatPtr = rFlatContiguous.data_ptr<float>();
 
 	const float planeSize = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld() + texture.
 		DepthWorld() * texture.DepthWorld());
-
 	const Linear mappingIToOffset = Radon3D<Texture3DCUDA>::GetMappingIToOffset(planeSize, samplesPerDirection);
-
 	const float rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
 	const float scaleFactor = rootScaleFactor * rootScaleFactor;
 
-	constexpr dim3 blockSize{10, 10, 10};
-	const dim3 gridSize{(static_cast<unsigned>(widthOut) + blockSize.x - 1) / blockSize.x,
-	                    (static_cast<unsigned>(heightOut) + blockSize.y - 1) / blockSize.y,
-	                    (static_cast<unsigned>(depthOut) + blockSize.z - 1) / blockSize.z};
-	radon3d_kernel<<<gridSize, blockSize>>>(std::move(texture), depthOut, heightOut, widthOut, resultPtr,
-	                                        mappingIToOffset, phisPtr, thetasPtr, rsPtr, samplesPerDirection,
-	                                        scaleFactor);
-
-	return result;
+	constexpr int blockSize = 512;
+	const int gridSize = (static_cast<unsigned>(numelOut) + blockSize - 1) / blockSize;
+	radon3d_kernel<<<gridSize, blockSize>>>(std::move(texture), numelOut, resultFlatPtr, mappingIToOffset, phiFlatPtr,
+	                                        thetaFlatPtr, rFlatPtr, samplesPerDirection, scaleFactor);
+	return resultFlat.view(phiValues.sizes());
 }
 
-__global__ void dRadon3dDR_kernel(Texture3DCUDA textureIn, long depthOut, long heightOut, long widthOut,
-                                  float *arrayOut, Linear mappingIToOffset, const float *phiValues,
-                                  const float *thetaValues, const float *rValues, long samplesPerDirection,
-                                  float scaleFactor) {
-	const long col = blockIdx.x * blockDim.x + threadIdx.x;
-	const long row = blockIdx.y * blockDim.y + threadIdx.y;
-	const long layer = blockIdx.z * blockDim.z + threadIdx.z;
-	if (col >= widthOut || row >= heightOut || layer >= depthOut) return;
-
-	const long index = layer * widthOut * heightOut + row * widthOut + col;
-	const float phi = phiValues[layer];
-	const float theta = thetaValues[row];
-	const float r = rValues[col];
+__global__ void dRadon3dDR_kernel(Texture3DCUDA textureIn, long numelOut, float *arrayOut, Linear mappingIToOffset,
+                                  const float *phiValues, const float *thetaValues, const float *rValues,
+                                  long samplesPerDirection, float scaleFactor) {
+	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+	if (threadIndex >= numelOut) return;
+	const float phi = phiValues[threadIndex];
+	const float theta = thetaValues[threadIndex];
+	const float r = rValues[threadIndex];
 	const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(textureIn, phi, theta, r, mappingIToOffset);
 	const auto derivativeWRTR = Radon3D<Texture3DCUDA>::GetDerivativeWRTR(textureIn, phi, theta, r);
-	arrayOut[index] = scaleFactor * Radon3D<Texture3DCUDA>::DIntegrateLoopedDMappingParameter(
-		                  textureIn, indexMappings, derivativeWRTR, samplesPerDirection);
+	arrayOut[threadIndex] = scaleFactor * Radon3D<Texture3DCUDA>::DIntegrateLoopedDMappingParameter(
+		                        textureIn, indexMappings, derivativeWRTR, samplesPerDirection);
 }
 
 __host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
@@ -102,53 +83,43 @@ __host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, double xSpacing, d
 	TORCH_CHECK(volume.sizes().size() == 3);
 	TORCH_CHECK(volume.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CUDA);
-	// phiValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
+	// phiValues, thetaValues and rValues should have matching sizes, contain floats, and be on the GPU
+	TORCH_CHECK(phiValues.sizes() == thetaValues.sizes());
+	TORCH_CHECK(thetaValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// thetaValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
-	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// rValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(rValues.sizes().size() == 1);
+	TORCH_CHECK(thetaValues.dtype() == at::kFloat);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
+	TORCH_INTERNAL_ASSERT(thetaValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
 	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing, zSpacing};
 
-	const long depthOut = phiValues.sizes()[0];
-	const long heightOut = thetaValues.sizes()[0];
-	const long widthOut = rValues.sizes()[0];
-	at::Tensor result = torch::zeros(at::IntArrayRef({depthOut, heightOut, widthOut}), aContiguous.options());
-	float *resultPtr = result.data_ptr<float>();
+	const long numelOut = phiValues.numel();
+	at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
+	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
-	const at::Tensor phisContiguous = phiValues.contiguous();
-	const float *phisPtr = phisContiguous.data_ptr<float>();
-	const at::Tensor thetasContiguous = thetaValues.contiguous();
-	const float *thetasPtr = thetasContiguous.data_ptr<float>();
-	const at::Tensor rsContiguous = rValues.contiguous();
-	const float *rsPtr = rsContiguous.data_ptr<float>();
+	const at::Tensor phiFlatContiguous = phiValues.flatten().contiguous();
+	const float *phiFlatPtr = phiFlatContiguous.data_ptr<float>();
+	const at::Tensor thetaFlatContiguous = thetaValues.flatten().contiguous();
+	const float *thetaFlatPtr = thetaFlatContiguous.data_ptr<float>();
+	const at::Tensor rFlatContiguous = rValues.flatten().contiguous();
+	const float *rFlatPtr = rFlatContiguous.data_ptr<float>();
 
 	const float planeSize = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld() + texture.
 		DepthWorld() * texture.DepthWorld());
-
 	const Linear mappingIToOffset = Radon3D<Texture3DCUDA>::GetMappingIToOffset(planeSize, samplesPerDirection);
-
 	const float rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
 	const float scaleFactor = rootScaleFactor * rootScaleFactor;
 
-	constexpr dim3 blockSize{10, 10, 10};
-	const dim3 gridSize{(static_cast<unsigned>(widthOut) + blockSize.x - 1) / blockSize.x,
-	                    (static_cast<unsigned>(heightOut) + blockSize.y - 1) / blockSize.y,
-	                    (static_cast<unsigned>(depthOut) + blockSize.z - 1) / blockSize.z};
-	dRadon3dDR_kernel<<<gridSize, blockSize>>>(std::move(texture), depthOut, heightOut, widthOut, resultPtr,
-	                                           mappingIToOffset, phisPtr, thetasPtr, rsPtr, samplesPerDirection,
-	                                           scaleFactor);
-	return result;
+	constexpr int blockSize = 512;
+	const int gridSize = (static_cast<unsigned>(numelOut) + blockSize - 1) / blockSize;
+	dRadon3dDR_kernel<<<gridSize, blockSize>>>(std::move(texture), numelOut, resultFlatPtr, mappingIToOffset,
+	                                           phiFlatPtr, thetaFlatPtr, rFlatPtr, samplesPerDirection, scaleFactor);
+	return resultFlat.view(phiValues.sizes());
 }
 
 struct Radon3DV2Consts {
@@ -234,17 +205,14 @@ __host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, double xSpacing, d
 	TORCH_CHECK(volume.sizes().size() == 3);
 	TORCH_CHECK(volume.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CUDA);
-	// phiValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
+	// phiValues, thetaValues and rValues should have matching sizes, contain floats, and be on the GPU
+	TORCH_CHECK(phiValues.sizes() == thetaValues.sizes());
+	TORCH_CHECK(thetaValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// thetaValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
-	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// rValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(rValues.sizes().size() == 1);
+	TORCH_CHECK(thetaValues.dtype() == at::kFloat);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
+	TORCH_INTERNAL_ASSERT(thetaValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
 	const at::Tensor aContiguous = volume.contiguous();
@@ -252,17 +220,17 @@ __host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, double xSpacing, d
 	const Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing,
 	                            zSpacing};
 
-	const long depthOut = phiValues.sizes()[0];
-	const long heightOut = thetaValues.sizes()[0];
-	const long widthOut = rValues.sizes()[0];
-	at::Tensor result = torch::zeros(at::IntArrayRef({depthOut, heightOut, widthOut}), aContiguous.options());
+	const at::Tensor phiFlat = phiValues.flatten();
+	const at::Tensor thetaFlat = thetaValues.flatten();
+	const at::Tensor rFlat = rValues.flatten();
+
+	const long numelOut = phiValues.numel();
+	at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
 
 	const float planeSize = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld() + texture.
 		DepthWorld() * texture.DepthWorld());
-
 	const Linear mappingIToOffset = Radon3D<Texture3DCUDA>::GetMappingIToOffset(planeSize, samplesPerDirection);
-
 	const float rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
 	const float scaleFactor = rootScaleFactor * rootScaleFactor;
 
@@ -270,27 +238,22 @@ __host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, double xSpacing, d
 	constexpr size_t bufferSize = blockSize.x * blockSize.y * sizeof(float);
 	const dim3 gridSize = {(static_cast<unsigned>(samplesPerDirection) + blockSize.x - 1) / blockSize.x,
 	                       (static_cast<unsigned>(samplesPerDirection) + blockSize.y - 1) / blockSize.y};
-	at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize.y, gridSize.x}), result.options());
+	const at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize.y, gridSize.x}), resultFlat.options());
 	float *patchSumsPtr = patchSums.data_ptr<float>();
 
 	Radon3DV2Consts constants{texture.GetHandle(), samplesPerDirection, scaleFactor, patchSumsPtr};
 	CudaMemcpyToObjectSymbol(radon3DV2Consts, constants);
 
-	for (long layer = 0; layer < depthOut; ++layer) {
-		for (long row = 0; row < heightOut; ++row) {
-			for (long col = 0; col < widthOut; ++col) {
-				const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(
-					texture, phiValues[layer].item().toFloat(), thetaValues[row].item().toFloat(),
-					rValues[col].item().toFloat(), mappingIToOffset);
+	for (long i = 0; i < numelOut; ++i) {
+		const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(
+			texture, phiFlat[i].item().toFloat(), thetaFlat[i].item().toFloat(), rFlat[i].item().toFloat(),
+			mappingIToOffset);
 
-				radon3d_v3_kernel<<<gridSize, blockSize, bufferSize>>>(indexMappings);
+		radon3d_v3_kernel<<<gridSize, blockSize, bufferSize>>>(indexMappings);
 
-				result.index_put_({layer, row, col}, patchSums.sum());
-			}
-		}
+		resultFlat.index_put_({i}, patchSums.sum());
 	}
-
-	return result;
+	return resultFlat.view(phiValues.sizes());
 }
 
 struct DRadon3DDRV2Consts {
@@ -357,27 +320,27 @@ __host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, double xSpacing
 	TORCH_CHECK(volume.sizes().size() == 3);
 	TORCH_CHECK(volume.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CUDA);
-	// phiValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
+	// phiValues, thetaValues and rValues should have matching sizes, contain floats, and be on the GPU
+	TORCH_CHECK(phiValues.sizes() == thetaValues.sizes());
+	TORCH_CHECK(thetaValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// thetaValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
-	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// rValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(rValues.sizes().size() == 1);
+	TORCH_CHECK(thetaValues.dtype() == at::kFloat);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
+	TORCH_INTERNAL_ASSERT(thetaValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
 	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing, zSpacing};
+	const Texture3DCUDA texture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing,
+	                            zSpacing};
 
-	const long depthOut = phiValues.sizes()[0];
-	const long heightOut = thetaValues.sizes()[0];
-	const long widthOut = rValues.sizes()[0];
-	at::Tensor result = torch::zeros(at::IntArrayRef({depthOut, heightOut, widthOut}), aContiguous.options());
+	const at::Tensor phiFlat = phiValues.flatten();
+	const at::Tensor thetaFlat = thetaValues.flatten();
+	const at::Tensor rFlat = rValues.flatten();
+
+	const long numelOut = phiValues.numel();
+	at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
 
 	const float planeSize = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld() + texture.
@@ -392,31 +355,25 @@ __host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, double xSpacing
 	constexpr size_t bufferSize = blockSize.x * blockSize.y * sizeof(float);
 	const dim3 gridSize = {(static_cast<unsigned>(samplesPerDirection) + blockSize.x - 1) / blockSize.x,
 	                       (static_cast<unsigned>(samplesPerDirection) + blockSize.y - 1) / blockSize.y};
-	at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize.y, gridSize.x}), result.options());
+	const at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize.y, gridSize.x}), resultFlat.options());
 	float *patchSumsPtr = patchSums.data_ptr<float>();
 
 	DRadon3DDRV2Consts constants{texture.GetHandle(), samplesPerDirection, scaleFactor, patchSumsPtr, volume.sizes()[2],
 	                             volume.sizes()[1], volume.sizes()[0]};
 	CudaMemcpyToObjectSymbol(dRadon3DDRV2Consts, constants);
 
-	for (long layer = 0; layer < depthOut; ++layer) {
-		for (long row = 0; row < heightOut; ++row) {
-			for (long col = 0; col < widthOut; ++col) {
-				const float phi = phiValues[layer].item().toFloat();
-				const float theta = thetaValues[row].item().toFloat();
-				const float r = rValues[col].item().toFloat();
-				const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(
-					texture, phi, theta, r, mappingIToOffset);
-				const auto derivativeWRTR = Radon3D<Texture3DCUDA>::GetDerivativeWRTR(texture, phi, theta, r);
+	for (long i = 0; i < numelOut; ++i) {
+		const float phi = phiFlat[i].item().toFloat();
+		const float theta = thetaFlat[i].item().toFloat();
+		const float r = rFlat[i].item().toFloat();
+		const auto indexMappings = Radon3D<Texture3DCUDA>::GetIndexMappings(texture, phi, theta, r, mappingIToOffset);
+		const auto derivativeWRTR = Radon3D<Texture3DCUDA>::GetDerivativeWRTR(texture, phi, theta, r);
 
-				dRadon3dDR_v2_kernel<<<gridSize, blockSize, bufferSize>>>(indexMappings, derivativeWRTR);
+		dRadon3dDR_v2_kernel<<<gridSize, blockSize, bufferSize>>>(indexMappings, derivativeWRTR);
 
-				result.index_put_({layer, row, col}, patchSums.sum());
-			}
-		}
+		resultFlat.index_put_({i}, patchSums.sum());
 	}
-
-	return result;
+	return resultFlat.view(phiValues.sizes());
 }
 
 } // namespace ExtensionTest

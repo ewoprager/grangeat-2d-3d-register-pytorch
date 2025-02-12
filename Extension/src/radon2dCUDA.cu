@@ -4,16 +4,14 @@
 
 namespace ExtensionTest {
 
-__global__ void radon2d_kernel(Texture2DCUDA textureIn, long heightOut, long widthOut, float *arrayOut,
-                               Linear mappingIToOffset, const float *phiValues, const float *rValues,
-                               long samplesPerLine, float scaleFactor) {
-	const long col = blockIdx.x * blockDim.x + threadIdx.x;
-	const long row = blockIdx.y * blockDim.y + threadIdx.y;
-	if (col >= widthOut || row >= heightOut) return;
-	const long index = row * widthOut + col;
-	const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(textureIn, phiValues[row], rValues[col],
-	                                                                    mappingIToOffset);
-	arrayOut[index] = scaleFactor * Radon2D<Texture2DCUDA>::IntegrateLooped(textureIn, indexMappings, samplesPerLine);
+__global__ void radon2d_kernel(Texture2DCUDA textureIn, long numelOut, float *arrayOut, Linear mappingIToOffset,
+                               const float *phiValues, const float *rValues, long samplesPerLine, float scaleFactor) {
+	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+	if (threadIndex >= numelOut) return;
+	const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(textureIn, phiValues[threadIndex],
+	                                                                    rValues[threadIndex], mappingIToOffset);
+	arrayOut[threadIndex] = scaleFactor * Radon2D<Texture2DCUDA>::IntegrateLooped(
+		                        textureIn, indexMappings, samplesPerLine);
 }
 
 __host__ at::Tensor radon2d_cuda(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
@@ -22,57 +20,49 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &image, double xSpacing, doubl
 	TORCH_CHECK(image.sizes().size() == 2);
 	TORCH_CHECK(image.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(image.device().type() == at::DeviceType::CUDA);
-	// phiValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
+	// phiValues and rValues should have the same sizes, should contain floats, and be on the GPU
+	TORCH_CHECK(phiValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// rValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(rValues.sizes().size() == 1);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
 	const at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	Texture2DCUDA texture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
 
-	const at::Tensor phisContiguous = phiValues.contiguous();
-	const float *phisPtr = phisContiguous.data_ptr<float>();
-	const at::Tensor rsContiguous = rValues.contiguous();
-	const float *rsPtr = rsContiguous.data_ptr<float>();
+	const at::Tensor phiFlatContiguous = phiValues.flatten().contiguous();
+	const float *phiFlatPtr = phiFlatContiguous.data_ptr<float>();
+	const at::Tensor rFlatContiguous = rValues.flatten().contiguous();
+	const float *rFlatPtr = rFlatContiguous.data_ptr<float>();
 
-	const long heightOut = phiValues.sizes()[0];
-	const long widthOut = rValues.sizes()[0];
-	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
-	float *resultPtr = result.data_ptr<float>();
+	const long numelOut = phiValues.numel();
+	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
+	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
 	const float lineLength = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld());
-
 	const auto mappingIToOffset = Radon2D<Texture2DCUDA>::GetMappingIToOffset(lineLength, samplesPerLine);
-
 	const float scaleFactor = lineLength / static_cast<float>(samplesPerLine);
 
-	const dim3 blockSize{16, 16};
-	const dim3 gridSize{(static_cast<unsigned>(widthOut) + blockSize.x - 1) / blockSize.x,
-	                    (static_cast<unsigned>(heightOut) + blockSize.y - 1) / blockSize.y};
-	radon2d_kernel<<<gridSize, blockSize>>>(std::move(texture), heightOut, widthOut, resultPtr, mappingIToOffset,
-	                                        phisPtr, rsPtr, samplesPerLine, scaleFactor);
-
-	return result;
+	constexpr int blockSize = 256;
+	const int gridSize = (static_cast<int>(numelOut) + blockSize - 1) / blockSize;
+	radon2d_kernel<<<gridSize, blockSize>>>(std::move(texture), numelOut, resultFlatPtr, mappingIToOffset, phiFlatPtr,
+	                                        rFlatPtr, samplesPerLine, scaleFactor);
+	return resultFlat.view(phiValues.sizes());
 }
 
-__global__ void dRadon2dDR_kernel(Texture2DCUDA textureIn, long heightOut, long widthOut, float *arrayOut,
-                                  Linear mappingIToOffset, const float *phiValues, const float *rValues,
-                                  long samplesPerLine, float scaleFactor) {
-	const long col = blockIdx.x * blockDim.x + threadIdx.x;
-	const long row = blockIdx.y * blockDim.y + threadIdx.y;
-	if (col >= widthOut || row >= heightOut) return;
-	const long index = row * widthOut + col;
-	const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(textureIn, phiValues[row], rValues[col],
-	                                                                    mappingIToOffset);
-	const auto derivativeWRTR = Radon2D<Texture2DCUDA>::GetDerivativeWRTR(textureIn, phiValues[row], rValues[col]);
-	arrayOut[index] = scaleFactor * Radon2D<Texture2DCUDA>::DIntegrateLoopedDMappingParameter(
-		                  textureIn, indexMappings, derivativeWRTR, samplesPerLine);
+__global__ void dRadon2dDR_kernel(Texture2DCUDA textureIn, long numelOut, float *arrayOut, Linear mappingIToOffset,
+                                  const float *phiValues, const float *rValues, long samplesPerLine,
+                                  float scaleFactor) {
+	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+	if (threadIndex >= numelOut) return;
+	const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(textureIn, phiValues[threadIndex],
+	                                                                    rValues[threadIndex], mappingIToOffset);
+	const auto derivativeWRTR = Radon2D<Texture2DCUDA>::GetDerivativeWRTR(
+		textureIn, phiValues[threadIndex], rValues[threadIndex]);
+	arrayOut[threadIndex] = scaleFactor * Radon2D<Texture2DCUDA>::DIntegrateLoopedDMappingParameter(
+		                        textureIn, indexMappings, derivativeWRTR, samplesPerLine);
 }
 
 at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
@@ -81,40 +71,36 @@ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, double ySpa
 	TORCH_CHECK(image.sizes().size() == 2);
 	TORCH_CHECK(image.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(image.device().type() == at::DeviceType::CUDA);
-	// phiValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
+	// phiValues and rValues should have the same sizes, should contain floats, and be on the GPU
+	TORCH_CHECK(phiValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// rValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(rValues.sizes().size() == 1);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
-	at::Tensor aContiguous = image.contiguous();
+	const at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	Texture2DCUDA texture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
 
-	const at::Tensor phisContiguous = phiValues.contiguous();
-	const float *phisPtr = phisContiguous.data_ptr<float>();
-	const at::Tensor rsContiguous = rValues.contiguous();
-	const float *rsPtr = rsContiguous.data_ptr<float>();
+	const at::Tensor phiFlatContiguous = phiValues.contiguous();
+	const float *phiFlatPtr = phiFlatContiguous.data_ptr<float>();
+	const at::Tensor rFlatContiguous = rValues.contiguous();
+	const float *rFlatPtr = rFlatContiguous.data_ptr<float>();
 
-	const long heightOut = phiValues.sizes()[0];
-	const long widthOut = rValues.sizes()[0];
-	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
-	float *resultPtr = result.data_ptr<float>();
+	const long numelOut = phiValues.numel();
+	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
+	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
 	const float lineLength = sqrtf(
 		texture.WidthWorld() * texture.WidthWorld() + texture.HeightWorld() * texture.HeightWorld());
 	const auto mappingIToOffset = Radon2D<Texture2DCUDA>::GetMappingIToOffset(lineLength, samplesPerLine);
 	const float scaleFactor = lineLength / static_cast<float>(samplesPerLine);
 
-	const dim3 blockSize{16, 16};
-	const dim3 gridSize{(static_cast<unsigned>(widthOut) + blockSize.x - 1) / blockSize.x,
-	                    (static_cast<unsigned>(heightOut) + blockSize.y - 1) / blockSize.y};
-	dRadon2dDR_kernel<<<gridSize, blockSize>>>(std::move(texture), heightOut, widthOut, resultPtr, mappingIToOffset,
-	                                           phisPtr, rsPtr, samplesPerLine, scaleFactor);
-	return result;
+	constexpr int blockSize = 256;
+	const int gridSize = (static_cast<int>(numelOut) + blockSize - 1) / blockSize;
+	dRadon2dDR_kernel<<<gridSize, blockSize>>>(std::move(texture), numelOut, resultFlatPtr, mappingIToOffset,
+	                                           phiFlatPtr, rFlatPtr, samplesPerLine, scaleFactor);
+	return resultFlat.view(phiValues.sizes());
 }
 
 struct Radon2DV2Consts {
@@ -158,27 +144,27 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, double xSpacing, do
 	TORCH_CHECK(image.sizes().size() == 2);
 	TORCH_CHECK(image.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(image.device().type() == at::DeviceType::CUDA);
-	// phiValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(phiValues.sizes().size() == 1);
+	// phiValues and rValues should have the same sizes, should contain floats, and be on the GPU
+	TORCH_CHECK(phiValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
-	// rValues should be a 1D array of floats on the GPU
-	TORCH_CHECK(rValues.sizes().size() == 1);
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
 	const at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	const Texture2DCUDA texture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
 
-	const long heightOut = phiValues.sizes()[0];
-	const long widthOut = phiValues.sizes()[0];
-	at::Tensor result = torch::zeros(at::IntArrayRef({heightOut, widthOut}), aContiguous.options());
+	const at::Tensor phiFlat = phiValues.flatten();
+	const at::Tensor rFlat = rValues.flatten();
 
-	constexpr unsigned blockSize = 256;
+	const long numelOut = phiValues.numel();
+	at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
+
+	constexpr int blockSize = 256;
 	constexpr size_t bufferSize = blockSize * sizeof(float);
-	const unsigned gridSize = (samplesPerLine + blockSize - 1) / blockSize;
-	at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize}), result.options());
+	const int gridSize = (static_cast<int>(samplesPerLine) + blockSize - 1) / blockSize;
+	const at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize}), resultFlat.options());
 	float *patchSumsPtr = patchSums.data_ptr<float>();
 
 	const float lineLength = sqrtf(
@@ -189,18 +175,16 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, double xSpacing, do
 	Radon2DV2Consts constants{texture.GetHandle(), samplesPerLine, scaleFactor, patchSumsPtr};
 	CudaMemcpyToObjectSymbol(radon2DV2Consts, constants);
 
-	for (long row = 0; row < heightOut; ++row) {
-		for (long col = 0; col < widthOut; ++col) {
-			const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(
-				texture, phiValues[row].item().toFloat(), rValues[col].item().toFloat(), mappingIToOffset);
+	for (long i = 0; i < numelOut; ++i) {
+		const auto indexMappings = Radon2D<Texture2DCUDA>::GetIndexMappings(
+			texture, phiFlat[i].item().toFloat(), rFlat[i].item().toFloat(), mappingIToOffset);
 
-			radon2d_v2_kernel<<<gridSize, blockSize, bufferSize>>>(indexMappings);
+		radon2d_v2_kernel<<<gridSize, blockSize, bufferSize>>>(indexMappings);
 
-			result.index_put_({row, col}, patchSums.sum());
-		}
+		resultFlat.index_put_({i}, patchSums.sum());
 	}
 
-	return result;
+	return resultFlat.view(phiValues.sizes());
 }
 
 } // namespace ExtensionTest
