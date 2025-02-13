@@ -19,8 +19,9 @@ def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Te
 
 def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, detector_spacing: torch.Tensor,
                           output_grid: Sinogram2dGrid, samples_per_line: int = 128) -> torch.Tensor:
+    device = drr_image.device
     assert output_grid.device_consistent()
-    assert output_grid.phi.device == drr_image.device
+    assert output_grid.phi.device == device
 
     img_width = drr_image.size()[1]
     img_height = drr_image.size()[0]
@@ -29,7 +30,7 @@ def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, de
     ys = detector_spacing[0] * (torch.arange(0, img_height, 1, dtype=torch.float32) - 0.5 * float(img_height - 1))
     ys, xs = torch.meshgrid(ys, xs)
     cos_gamma = source_distance / torch.sqrt(xs.square() + ys.square() + source_distance * source_distance)
-    g_tilde = cos_gamma.to('cuda') * drr_image
+    g_tilde = cos_gamma.to(device=device) * drr_image
 
     fixed_scaling = (output_grid.r / source_distance).square() + 1.
 
@@ -142,7 +143,7 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
     k_mapping: LinearMapping = grid_range.get_mapping_from(input_range.phi)
 
     grid = torch.stack((i_mapping(output_grid_sph.r), j_mapping(output_grid_sph.theta), k_mapping(output_grid_sph.phi)),
-        dim=-1)
+                       dim=-1)
     ret = torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
     ret[need_sign_change] *= -1.
     return ret

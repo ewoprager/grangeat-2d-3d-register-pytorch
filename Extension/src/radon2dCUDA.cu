@@ -1,6 +1,7 @@
 #include <torch/extension.h>
 
 #include "../include/Texture2DCUDA.h"
+#include "../include/Radon2D.h"
 
 namespace ExtensionTest {
 

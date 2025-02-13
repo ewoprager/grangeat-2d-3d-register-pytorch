@@ -1,15 +1,21 @@
 #pragma once
 
-#include "Radon3D.h"
+#include "Texture3D.h"
 
 namespace ExtensionTest {
+
+at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, double phiMinS, double phiMaxS, double thetaMinS,
+                                   double thetaMaxS, double rMinS, double rMaxS, const at::Tensor &projectionMatrix,
+                                   const at::Tensor &phiGrid, const at::Tensor &rGrid);
 
 class Texture3DCPU : public Texture3D {
 public:
 	Texture3DCPU() = default;
 
 	Texture3DCPU(const float *_ptr, long _width, long _height, long _depth, double _xSpacing, double _ySpacing,
-	             double _zSpacing) : Texture3D(_width, _height, _depth, _xSpacing, _ySpacing, _zSpacing), ptr(_ptr) {
+	             double _zSpacing, double _centreX = 0.0, double _centreY = 0.0,
+	             double _centreZ = 0.0) : Texture3D(_width, _height, _depth, _xSpacing, _ySpacing, _zSpacing, _centreX,
+	                                                _centreY, _centreZ), ptr(_ptr) {
 	}
 
 	// yes copy
@@ -26,6 +32,13 @@ public:
 		return In(layer, row, col) ? ptr[layer * Width() * Height() + row * Width() + col] : 0.0f;
 	}
 
+	/**
+	 * @brief Sample the texture using linear interpolation.
+	 * @param x sampling coordinate x in texture coordinates (0, 1)
+	 * @param y sampling coordinate y in texture coordinates (0, 1)
+	 * @param z sampling coordinate z in texture coordinates (0, 1)
+	 * @return sample from texture at given coordinate
+	 */
 	__host__ __device__ [[nodiscard]] float Sample(float x, float y, float z) const {
 		x = -.5f + x * static_cast<float>(Width());
 		y = -.5f + y * static_cast<float>(Height());

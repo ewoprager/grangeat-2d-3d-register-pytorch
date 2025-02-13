@@ -8,46 +8,49 @@
 #define __device__
 #endif
 
+#include "Vec.h"
+
 namespace ExtensionTest {
 
-struct Linear2;
+template <typename T> struct Linear2;
 
-struct Linear {
-	float intercept;
-	float gradient;
+template <typename T> struct Linear {
+	T intercept;
+	T gradient;
 
-	__host__ __device__ [[nodiscard]] float operator()(const float x) const { return fmaf(gradient, x, intercept); }
+	__host__ __device__ [[nodiscard]] T operator()(const T x) const { return gradient * x + intercept; }
 
 	__host__ __device__ [[nodiscard]] Linear operator()(const Linear &other) const {
-		return {fmaf(gradient, other.intercept, intercept), gradient * other.gradient};
+		return {gradient * other.intercept + intercept, gradient * other.gradient};
 	}
 
-	__host__ __device__ [[nodiscard]] Linear2 operator()(const Linear2 &other) const;
+	__host__ __device__ [[nodiscard]] Linear2<T> operator()(const Linear2<T> &other) const;
 };
 
-struct Linear2 {
-	float intercept;
-	float gradient1;
-	float gradient2;
+template <typename T> struct Linear2 {
+	T intercept;
+	T gradient1;
+	T gradient2;
 
-	__host__ __device__ [[nodiscard]] float operator()(const float x, const float y) const {
-		return fmaf(gradient1, x, fmaf(gradient2, y, intercept));
+	__host__ __device__ [[nodiscard]] T operator()(const T x, const T y) const {
+		return gradient1 * x + gradient2 * y + intercept;
 	}
 
-	__host__ __device__ [[nodiscard]] Linear2 operator()(const Linear &other) const {
-		return {fmaf(gradient1 + gradient2, other.intercept, intercept), gradient1 * other.gradient,
+	__host__ __device__ [[nodiscard]] Linear2 operator()(const Linear<T> &other) const {
+		return {(gradient1 + gradient2) * other.intercept + intercept, gradient1 * other.gradient,
 		        gradient2 * other.gradient};
 	}
 
 	__host__ __device__ [[nodiscard]] Linear2 operator()(const Linear2 &other) const {
-		const float gradientSum = gradient1 + gradient2;
-		return {fmaf(gradientSum, other.intercept, intercept), gradientSum * other.gradient1,
+		const T gradientSum = gradient1 + gradient2;
+		return {gradientSum * other.intercept + intercept, gradientSum * other.gradient1,
 		        gradientSum * other.gradient2};
 	}
 };
 
-__host__ __device__ [[nodiscard]] inline Linear2 Linear::operator()(const Linear2 &other) const {
-	return {fmaf(gradient, other.intercept, intercept), gradient * other.gradient1, gradient * other.gradient2};
+template <typename T> __host__ __device__ [[nodiscard]] Linear2<T> Linear<T>::operator(
+)(const Linear2<T> &other) const {
+	return {gradient * other.intercept + intercept, gradient * other.gradient1, gradient * other.gradient2};
 }
 
 

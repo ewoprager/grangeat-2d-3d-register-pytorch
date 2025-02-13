@@ -8,6 +8,7 @@ import nrrd
 from tqdm import tqdm
 import scipy
 
+import Extension
 # from diffdrr.drr import DRR
 # from diffdrr.data import read
 # from sympy.solvers.solvers import det_perm
@@ -62,8 +63,17 @@ def zncc(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
 def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformation: Transformation,
              scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, sinogram3d_range: Sinogram3dRange,
              plot: bool = False) -> torch.Tensor:
-    resampled = grangeat.resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
-                                        output_grid=fixed_image_grid, input_range=sinogram3d_range)
+    # resampled = grangeat.resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
+    #                                     output_grid=fixed_image_grid, input_range=sinogram3d_range)
+    device = sinogram3d.device
+    source_position = scene_geometry.source_position(device=device)
+    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+    resampled = Extension.resample_radon_volume(sinogram3d, sinogram3d_range.phi.low, sinogram3d_range.phi.high,
+                                                sinogram3d_range.theta.low, sinogram3d_range.theta.high,
+                                                sinogram3d_range.r.low, sinogram3d_range.r.high, ph_matrix,
+                                                fixed_image_grid.phi, fixed_image_grid.r)
+
     if plot:
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(resampled.clone().cpu())
@@ -215,7 +225,8 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
 
 def register(path: str | None, *, cache_directory: str, load_cached: bool = True, regenerate_drr: bool = False,
              save_to_cache=True):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cpu"
 
     # cal_image = torch.zeros((10, 10))
     # cal_image[0, 0] = 1.
@@ -269,7 +280,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     if sinogram3d is None or sinogram3d_range is None:
         sinogram3d, sinogram3d_range = calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
                                                                  volume_downsample_factor, device=device,
-                                                                 save_to_cache=save_to_cache, vol_counts=512)
+                                                                 save_to_cache=save_to_cache, vol_counts=64)
 
     voxel_spacing = voxel_spacing.to(device=device)
 
@@ -341,7 +352,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
             transformation = Transformation.random(device=device)
             distances[i] = transformation_ground_truth.distance(transformation)
             nznccs[i] = -evaluate(fixed_image, sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
-                                       fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)
+                                  fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)
 
         _, axes = plt.subplots()
         axes.scatter(distances, nznccs)

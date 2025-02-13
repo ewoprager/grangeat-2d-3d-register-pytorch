@@ -2,10 +2,12 @@
 
 #include "../include/Radon3D.h"
 #include "../include/Radon2D.h"
+#include "../include/Texture3DCPU.h"
 
 namespace ExtensionTest {
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+	VecPythonBindings(m);
 }
 
 TORCH_LIBRARY(ExtensionTest, m) {
@@ -21,6 +23,8 @@ TORCH_LIBRARY(ExtensionTest, m) {
 		"dRadon3dDR(Tensor vol, float xs, float ys, float zs, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def(
 		"dRadon3dDR_v2(Tensor vol, float xs, float ys, float zs, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
+	m.def(
+		"resample_radon_volume(Tensor sin, float pmi, float pma, float tmi, float tma, float rmi, float rma, Tensor projMat, Tensor phiGrid, Tensor rGrid) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
@@ -31,7 +35,10 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 	m.impl("radon3d_v2", &radon3d_cpu); // doesn't have its own cpu version
 	m.impl("dRadon3dDR", &dRadon3dDR_cpu);
 	m.impl("dRadon3dDR_v2", &dRadon3dDR_cpu); // doesn't have its own cpu version
+	m.impl("resample_radon_volume", &ResampleRadonVolume_cpu);
 }
+
+#ifdef __CUDACC__
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("radon2d", &radon2d_cuda);
@@ -42,5 +49,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("dRadon3dDR", &dRadon3dDR_cuda);
 	m.impl("dRadon3dDR_v2", &dRadon3dDR_v2_cuda);
 }
+
+#endif
 
 } // namespace ExtensionTest

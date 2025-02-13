@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Radon3D.h"
+#include "Texture3D.h"
 
 namespace ExtensionTest {
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Radon2D.h"
+#include "Texture2D.h"
 
 namespace ExtensionTest {
 
@@ -8,13 +8,13 @@ class Texture2DCUDA : public Texture2D {
 public:
 	Texture2DCUDA() = default;
 
-	Texture2DCUDA(const float *data, long _width, long _height, double _xSpacing, double _ySpacing)
-		: Texture2D(_width, _height, _xSpacing, _ySpacing) {
+	Texture2DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {}) : Texture2D(
+		_size, _spacing, _centrePosition) {
 
 		// Copy the given data into a CUDA array
 		const cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-		cudaMallocArray(&arrayHandle, &channelDesc, _width, _height);
-		cudaMemcpy2DToArray(arrayHandle, 0, 0, data, _width * sizeof(float), _width * sizeof(float), _height,
+		cudaMallocArray(&arrayHandle, &channelDesc, _size.X(), _size.Y());
+		cudaMemcpy2DToArray(arrayHandle, 0, 0, data, _size.X() * sizeof(float), _size.X() * sizeof(float), _size.Y(),
 		                    cudaMemcpyHostToDevice);
 
 		// Create the texture object from the CUDA array
@@ -56,24 +56,25 @@ public:
 
 	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
 
-	__device__ [[nodiscard]] float Sample(const float x, const float y) const {
-		return tex2D<float>(textureHandle, x, y);
+	__device__ [[nodiscard]] float Sample(const VectorType &texCoord) const {
+		return tex2D<float>(textureHandle, texCoord.X(), texCoord.Y());
 	}
 
-	__device__ [[nodiscard]] float SampleXDerivative(float x, const float y) const {
-		const float widthF = static_cast<float>(Width());
-		x = floorf(-.5f + x * widthF);
+	__device__ [[nodiscard]] float SampleXDerivative(const VectorType &texCoord) const {
+		const float widthF = static_cast<float>(Size().X());
+		const float x = floorf(-.5f + texCoord.X() * widthF);
 		const float x0 = (x + .5f) / widthF;
 		const float x1 = (x + 1.5f) / widthF;
-		return widthF * (tex2D<float>(textureHandle, x1, y) - tex2D<float>(textureHandle, x0, y));
+		return widthF * (tex2D<float>(textureHandle, x1, texCoord.Y()) - tex2D<float>(textureHandle, x0, texCoord.Y()));
 	}
 
-	__device__ [[nodiscard]] float SampleYDerivative(const float x, float y) const {
-		const float heightF = static_cast<float>(Height());
-		y = floorf(-.5f + y * heightF);
+	__device__ [[nodiscard]] float SampleYDerivative(const VectorType &texCoord) const {
+		const float heightF = static_cast<float>(Size().Y());
+		const float y = floorf(-.5f + texCoord.Y() * heightF);
 		const float y0 = (y + .5f) / heightF;
 		const float y1 = (y + 1.5f) / heightF;
-		return heightF * (tex2D<float>(textureHandle, x, y1) - tex2D<float>(textureHandle, x, y0));
+		return heightF * (tex2D<float>(textureHandle, texCoord.X(), y1) - tex2D<
+			                  float>(textureHandle, texCoord.X(), y0));
 	}
 
 private:

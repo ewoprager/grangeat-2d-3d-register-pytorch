@@ -1,6 +1,9 @@
 #include <torch/extension.h>
 
 #include "../include/Texture2DCPU.h"
+#include "../include/Radon2D.h"
+
+#include "../include/Vec.h"
 
 namespace ExtensionTest {
 
@@ -16,6 +19,10 @@ at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing
 	TORCH_CHECK(rValues.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CPU);
+
+	Vec<float, 2> a = {{1.f, 2.f}};
+	Vec<float, 2> b = {{1.f, 2.f}};
+	Vec<float, 2> c = a + b;
 
 	const at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();

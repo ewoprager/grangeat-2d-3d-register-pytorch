@@ -46,3 +46,10 @@ def dRadon3dDR_v2(volume: torch.Tensor, x_spacing: float, y_spacing: float, z_sp
                   theta_values: torch.Tensor, r_values: torch.Tensor, samples_per_direction: int) -> torch.Tensor:
     return torch.ops.ExtensionTest.dRadon3dDR_v2.default(volume, x_spacing, y_spacing, z_spacing, phi_values,
                                                          theta_values, r_values, samples_per_direction)
+
+
+def resample_radon_volume(sinogram3d: torch.Tensor, phi_min: float, phi_max: float, theta_min: float, theta_max: float,
+                          r_min: float, r_max: float, projection_matrix: torch.Tensor, phi_grid: torch.Tensor,
+                          r_grid: torch.Tensor) -> torch.Tensor:
+    return torch.ops.ExtensionTest.resample_radon_volume.default(sinogram3d, phi_min, phi_max, theta_min, theta_max,
+                                                                 r_min, r_max, projection_matrix, phi_grid, r_grid)
