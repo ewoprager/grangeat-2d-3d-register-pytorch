@@ -4,12 +4,14 @@
 
 namespace ExtensionTest {
 
-class Texture2DCPU : public Texture2D {
+class Texture2DCPU : public Texture<Vec<int, 2>, Vec<float, 2>> {
 public:
+  	using Base = Texture<Vec<int, 2>, Vec<float, 2>>;
+
 	Texture2DCPU() = default;
 
 	Texture2DCPU(const float *_ptr, SizeType _size, VectorType _spacing,
-	             VectorType _centrePosition = {}) : Texture2D(_size, _spacing, _centrePosition), ptr(_ptr) {
+	             VectorType _centrePosition = {}) : Base(_size, _spacing, _centrePosition), ptr(_ptr) {
 	}
 
 	// yes copy

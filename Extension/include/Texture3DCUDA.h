@@ -4,16 +4,17 @@
 
 namespace ExtensionTest {
 
-class Texture3DCUDA : public Texture3D {
+class Texture3DCUDA : public Texture<Vec<int, 3>, Vec<float, 3>> {
 public:
+  	using Base = Texture<Vec<int, 3>, Vec<float, 3>>;
+
 	Texture3DCUDA() = default;
 
-	Texture3DCUDA(const float *data, long _width, long _height, long _depth, double _xSpacing, double _ySpacing,
-	              double _zSpacing)
-		: Texture3D(_width, _height, _depth, _xSpacing, _ySpacing, _zSpacing) {
+	Texture3DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {})
+		: Base(_size, _spacing, _centrePosition) {
 
-		const cudaExtent extent = {.width = static_cast<size_t>(_width), .height = static_cast<size_t>(_height),
-		                           .depth = static_cast<size_t>(_depth)};
+		const cudaExtent extent = {.width = static_cast<size_t>(_size.X()), .height = static_cast<size_t>(_size.Y()),
+		                           .depth = static_cast<size_t>(_size.Z())};
 
 		// Copy the given data into a CUDA array
 		const cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
@@ -23,7 +24,7 @@ public:
 		//                     cudaMemcpyHostToDevice);
 
 		const cudaMemcpy3DParms params = {
-			.srcPtr = make_cudaPitchedPtr((void *)data, _width * sizeof(float), _width, _height),
+			.srcPtr = make_cudaPitchedPtr((void *)data, _size.X() * sizeof(float), _size.X(), _size.Y()),
 			.dstArray = arrayHandle, .extent = extent, .kind = cudaMemcpyHostToDevice};
 		cudaMemcpy3D(&params);
 
@@ -43,7 +44,7 @@ public:
 	void operator=(const Texture3DCUDA &) = delete;
 
 	// yes move
-	Texture3DCUDA(Texture3DCUDA &&other) noexcept : Texture3D(other), arrayHandle(other.arrayHandle),
+	Texture3DCUDA(Texture3DCUDA &&other) noexcept : Base(other), arrayHandle(other.arrayHandle),
 	                                                textureHandle(other.textureHandle) {
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
@@ -55,7 +56,7 @@ public:
 		textureHandle = other.textureHandle;
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
-		Texture3D::operator=(std::move(other));
+		Base::operator=(std::move(other));
 		return *this;
 	}
 
@@ -66,47 +67,44 @@ public:
 
 	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
 
-	__device__ [[nodiscard]] float Sample(const float x, const float y, const float z) const {
-		return tex3D<float>(textureHandle, x, y, z);
+	__device__ [[nodiscard]] float Sample(const VectorType &texCoord) const {
+		return tex3D<float>(textureHandle, texCoord.X(), texCoord.Y(), texCoord.Z());
 	}
 
-	__device__ [[nodiscard]] static float SampleXDerivative(long width, cudaTextureObject_t textureHandle, float x,
-	                                                        const float y, const float z) {
-		const float widthF = static_cast<float>(width);
-		x = floorf(-.5f + x * widthF);
+	__device__ [[nodiscard]] static float SampleXDerivative(long width, cudaTextureObject_t textureHandle, const VectorType &texCoord) {
+		const float widthF = static_cast<float>(Size().X());
+		const float x = floorf(-.5f + texCoord.X() * widthF);
 		const float x0 = (x + .5f) / widthF;
 		const float x1 = (x + 1.5f) / widthF;
-		return widthF * (tex3D<float>(textureHandle, x1, y, z) - tex3D<float>(textureHandle, x0, y, z));
+		return widthF * (tex3D<float>(textureHandle, x1, texCoord.Y(), texCoord.Z()) - tex3D<float>(textureHandle, x0, texCoord.Y(), texCoord.Z()));
 	}
 
-	__device__ [[nodiscard]] static float SampleYDerivative(long height, cudaTextureObject_t textureHandle,
-	                                                        const float x, float y, const float z) {
-		const float heightF = static_cast<float>(height);
-		y = floorf(-.5f + y * heightF);
+	__device__ [[nodiscard]] static float SampleYDerivative(long height, cudaTextureObject_t textureHandle, const VectorType &texCoord) {
+		const float heightF = static_cast<float>(Size().Y());
+		const y = floorf(-.5f + texCoord.Y() * heightF);
 		const float y0 = (y + .5f) / heightF;
 		const float y1 = (y + 1.5f) / heightF;
-		return heightF * (tex3D<float>(textureHandle, x, y1, z) - tex3D<float>(textureHandle, x, y0, z));
+		return heightF * (tex3D<float>(textureHandle, texCoord.X(), y1, texCoord.Z()) - tex3D<float>(textureHandle, texCoord.X(), y0, texCoord.Z()));
 	}
 
-	__device__ [[nodiscard]] static float SampleZDerivative(long depth, cudaTextureObject_t textureHandle,
-	                                                        const float x, const float y, float z) {
+	__device__ [[nodiscard]] static float SampleZDerivative(long depth, cudaTextureObject_t textureHandle, const VectorType &texCoord) {
 		const float depthF = static_cast<float>(depth);
-		z = floorf(-.5f + z * depthF);
+		const float z = floorf(-.5f + texCoord.Z() * depthF);
 		const float z0 = (z + .5f) / depthF;
 		const float z1 = (z + 1.5f) / depthF;
-		return depthF * (tex3D<float>(textureHandle, x, y, z1) - tex3D<float>(textureHandle, x, y, z0));
+		return depthF * (tex3D<float>(textureHandle, texCoord.X(), texCoord.Y(), z1) - tex3D<float>(textureHandle, texCoord.X(), texCoord.Y(), z0));
 	}
 
-	__device__ [[nodiscard]] float SampleXDerivative(float x, const float y, const float z) const {
-		return SampleXDerivative(Width(), textureHandle, x, y, z);
+	__device__ [[nodiscard]] float SampleXDerivative(const VectorType &texCoord) const {
+		return SampleXDerivative(Size().X(), textureHandle, texCoord);
 	}
 
-	__device__ [[nodiscard]] float SampleYDerivative(float x, const float y, const float z) const {
-		return SampleYDerivative(Height(), textureHandle, x, y, z);
+	__device__ [[nodiscard]] float SampleYDerivative(const VectorType &texCoord) const {
+		return SampleYDerivative(Size().Y(), textureHandle, texCoord);
 	}
 
-	__device__ [[nodiscard]] float SampleZDerivative(float x, const float y, const float z) const {
-		return SampleZDerivative(Depth(), textureHandle, x, y, z);
+	__device__ [[nodiscard]] float SampleZDerivative(const VectorType &texCoord) const {
+		return SampleZDerivative(Size().Z(), textureHandle, texCoord);
 	}
 
 private:

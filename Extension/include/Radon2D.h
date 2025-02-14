@@ -48,7 +48,7 @@ template <typename texture_t> struct Radon2D {
 		const float s = sinf(phi);
 		const float c = cosf(phi);
 		const Linear<Vec<float, 2> > mappingOffsetToWorld{{r * c, r * s}, {-s, c}};
-		return textureIn.MappingWorldToNormalised()(mappingOffsetToWorld(mappingIToOffset));
+		return textureIn.MappingWorldToTexCoord()(mappingOffsetToWorld(mappingIToOffset));
 	}
 
 	__host__ __device__ [[nodiscard]] static Vec<float, 2> GetDTexCoordDR(
@@ -56,7 +56,7 @@ template <typename texture_t> struct Radon2D {
 		const float sign = static_cast<float>(r > 0.f) - static_cast<float>(r < 0.f);
 		const float s = sinf(phi);
 		const float c = cosf(phi);
-		return textureIn.MappingWorldToNormalised().gradient * sign * Vec<float, 2>{c, s};
+		return textureIn.MappingWorldToTexCoord().gradient * sign * Vec<float, 2>{c, s};
 	}
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,

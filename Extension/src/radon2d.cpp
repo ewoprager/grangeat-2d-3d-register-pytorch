@@ -20,10 +20,6 @@ at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CPU);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CPU);
 
-	Vec<float, 2> a = {{1.f, 2.f}};
-	Vec<float, 2> b = {{1.f, 2.f}};
-	Vec<float, 2> c = a + b;
-
 	const at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
 	const Texture2DCPU aTexture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};

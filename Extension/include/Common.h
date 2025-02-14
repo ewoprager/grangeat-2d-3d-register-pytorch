@@ -18,7 +18,7 @@ template <typename T> struct Linear {
 	T intercept;
 	T gradient;
 
-	__host__ __device__ [[nodiscard]] T operator()(const T x) const { return gradient * x + intercept; }
+	__host__ __device__ [[nodiscard]] T operator()(const T &x) const { return gradient * x + intercept; }
 
 	__host__ __device__ [[nodiscard]] Linear operator()(const Linear &other) const {
 		return {gradient * other.intercept + intercept, gradient * other.gradient};
@@ -32,7 +32,7 @@ template <typename T> struct Linear2 {
 	T gradient1;
 	T gradient2;
 
-	__host__ __device__ [[nodiscard]] T operator()(const T x, const T y) const {
+	__host__ __device__ [[nodiscard]] T operator()(const T &x, const T &y) const {
 		return gradient1 * x + gradient2 * y + intercept;
 	}
 

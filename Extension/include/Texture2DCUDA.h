@@ -4,11 +4,13 @@
 
 namespace ExtensionTest {
 
-class Texture2DCUDA : public Texture2D {
+class Texture2DCUDA : public Texture<Vec<int, 2>, Vec<float, 2>> {
 public:
+  	using Base = Texture<Vec<int, 2>, Vec<float, 2>>;
+
 	Texture2DCUDA() = default;
 
-	Texture2DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {}) : Texture2D(
+	Texture2DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {}) : Base(
 		_size, _spacing, _centrePosition) {
 
 		// Copy the given data into a CUDA array
@@ -33,7 +35,7 @@ public:
 	void operator=(const Texture2DCUDA &) = delete;
 
 	// yes move
-	Texture2DCUDA(Texture2DCUDA &&other) noexcept : Texture2D(other), arrayHandle(other.arrayHandle),
+	Texture2DCUDA(Texture2DCUDA &&other) noexcept : Base(other), arrayHandle(other.arrayHandle),
 	                                                textureHandle(other.textureHandle) {
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
@@ -45,7 +47,7 @@ public:
 		textureHandle = other.textureHandle;
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
-		Texture2D::operator=(std::move(other));
+		Base::operator=(std::move(other));
 		return *this;
 	}
 
