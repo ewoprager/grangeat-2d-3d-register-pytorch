@@ -4,9 +4,12 @@
 
 namespace ExtensionTest {
 
-template <typename SizeType, typename VectorType>
+template <std::size_t dimensionality, typename intType=int, typename floatType=float>
 class Texture {
 public:
+  	using SizeType = Vec<intType, dimensionality>;
+  	using VectorType = Vec<floatType, dimensionality>;
+
 	__host__ __device__ [[nodiscard]] const SizeType &Size() const { return size; }
 	__host__ __device__ [[nodiscard]] const VectorType &Spacing() const { return spacing; }
 	__host__ __device__ [[nodiscard]] const VectorType &CentrePosition() const { return centrePosition; }

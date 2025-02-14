@@ -4,9 +4,9 @@
 
 namespace ExtensionTest {
 
-class Texture2DCUDA : public Texture<Vec<int, 2>, Vec<float, 2>> {
+class Texture2DCUDA : public Texture<2, int, float> {
 public:
-  	using Base = Texture<Vec<int, 2>, Vec<float, 2>>;
+  	using Base = Texture<2, int, float>;
 
 	Texture2DCUDA() = default;
 

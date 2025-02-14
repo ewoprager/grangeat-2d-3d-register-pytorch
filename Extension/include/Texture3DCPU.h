@@ -8,9 +8,9 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, double phiMinS,
                                    double thetaMaxS, double rMinS, double rMaxS, const at::Tensor &projectionMatrix,
                                    const at::Tensor &phiGrid, const at::Tensor &rGrid);
 
-class Texture3DCPU : public Texture<Vec<int, 3>, Vec<float, 3>> {
+class Texture3DCPU : public Texture<3, int, float> {
 public:
-  	using Base = Texture<Vec<int, 3>, Vec<float, 3>>;
+  	using Base = Texture<3, int, float>;
 
 	Texture3DCPU() = default;
 
