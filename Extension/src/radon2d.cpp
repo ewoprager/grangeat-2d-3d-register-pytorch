@@ -7,7 +7,7 @@
 
 namespace ExtensionTest {
 
-at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+at::Tensor radon2d_cpu(const at::Tensor &image, const Vec<double, 2> &imageSpacing, const at::Tensor &phiValues,
                        const at::Tensor &rValues, long samplesPerLine) {
 	// image should be a 2D tensor of floats on the CPU
 	TORCH_CHECK(image.sizes().size() == 2);
@@ -22,7 +22,7 @@ at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing
 
 	const at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	const Texture2DCPU aTexture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
+	const Texture2DCPU aTexture{aPtr, VecFlip(VecFromIntArrayRef<int64_t, 2>(image.sizes())), imageSpacing};
 
 	const at::Tensor phiFlat = phiValues.flatten();
 	const at::Tensor rFlat = rValues.flatten();
@@ -31,20 +31,21 @@ at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing
 	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
 	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
-	const float lineLength = sqrtf(
-		aTexture.WidthWorld() * aTexture.WidthWorld() + aTexture.HeightWorld() * aTexture.HeightWorld());
-	const auto mappingIToOffset = Radon2D<Texture2DCPU>::GetMappingIToOffset(lineLength, samplesPerLine);
-	const float scaleFactor = lineLength / static_cast<float>(samplesPerLine);
+	const double lineLength = sqrt(VecSum(VecApply<double>(&Square<double>, aTexture.SizeWorld())));
+	const Linear<Vec<double, 2> > mappingIToOffset = Radon2D<Texture2DCPU>::GetMappingIToOffset(
+		lineLength, samplesPerLine);
+	const double scaleFactor = lineLength / static_cast<double>(samplesPerLine);
 	for (long i = 0; i < numelOut; ++i) {
-		const auto indexMappings = Radon2D<Texture2DCPU>::GetIndexMappings(
+		const Linear<Vec<double, 2> > mappingIndexToTexCoord = Radon2D<Texture2DCPU>::GetMappingIndexToTexCoord(
 			aTexture, phiFlat[i].item().toFloat(), rFlat[i].item().toFloat(), mappingIToOffset);
-		resultFlatPtr[i] = scaleFactor * Radon2D<Texture2DCPU>::IntegrateLooped(aTexture, indexMappings, samplesPerLine);
+		resultFlatPtr[i] = scaleFactor * Radon2D<Texture2DCPU>::IntegrateLooped(
+			                   aTexture, mappingIndexToTexCoord, samplesPerLine);
 	}
 
 	return resultFlat.view(phiValues.sizes());
 }
 
-at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+at::Tensor dRadon2dDR_cpu(const at::Tensor &image, const Vec<double, 2> &imageSpacing, const at::Tensor &phiValues,
                           const at::Tensor &rValues, long samplesPerLine) {
 	// image should be a 2D array of floats on the CPU
 	TORCH_CHECK(image.sizes().size() == 2);
@@ -59,7 +60,7 @@ at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpac
 
 	const at::Tensor aContiguous = image.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	const Texture2DCPU aTexture{aPtr, image.sizes()[1], image.sizes()[0], xSpacing, ySpacing};
+	const Texture2DCPU aTexture{aPtr, VecFlip(VecFromIntArrayRef<int64_t, 2>(image.sizes())), imageSpacing};
 
 	const at::Tensor phiFlat = phiValues.flatten();
 	const at::Tensor rFlat = rValues.flatten();
@@ -68,17 +69,18 @@ at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpac
 	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
 	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
-	const float lineLength = sqrtf(
-		aTexture.WidthWorld() * aTexture.WidthWorld() + aTexture.HeightWorld() * aTexture.HeightWorld());
-	const auto constMappings = Radon2D<Texture2DCPU>::GetMappingIToOffset(lineLength, samplesPerLine);
-	const float scaleFactor = lineLength / static_cast<float>(samplesPerLine);
+	const double lineLength = sqrt(VecSum(VecApply<double>(&Square<double>, aTexture.SizeWorld())));
+	const Linear<Vec<double, 2> > constMappings = Radon2D<
+		Texture2DCPU>::GetMappingIToOffset(lineLength, samplesPerLine);
+	const double scaleFactor = lineLength / static_cast<float>(samplesPerLine);
 	for (long i = 0; i < numelOut; ++i) {
-		const float phi = phiFlat[i].item().toFloat();
-		const float r = rFlat[i].item().toFloat();
-		const auto indexMappings = Radon2D<Texture2DCPU>::GetIndexMappings(aTexture, phi, r, constMappings);
-		const auto derivativeWRTR = Radon2D<Texture2DCPU>::GetDerivativeWRTR(aTexture, phi, r);
+		const double phi = phiFlat[i].item().toFloat();
+		const double r = rFlat[i].item().toFloat();
+		const Linear<Vec<double, 2> > indexMappings = Radon2D<Texture2DCPU>::GetMappingIndexToTexCoord(
+			aTexture, phi, r, constMappings);
+		const Vec<double, 2> dTexCoordDR = Radon2D<Texture2DCPU>::GetDTexCoordDR(aTexture, phi, r);
 		resultFlatPtr[i] = scaleFactor * Radon2D<Texture2DCPU>::DIntegrateLoopedDMappingParameter(
-			               aTexture, indexMappings, derivativeWRTR, samplesPerLine);
+			                   aTexture, indexMappings, dTexCoordDR, samplesPerLine);
 	}
 
 	return resultFlat.view(phiValues.sizes());

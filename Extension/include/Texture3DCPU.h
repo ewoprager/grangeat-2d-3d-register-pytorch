@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Texture3D.h"
+#include "Texture.h"
 
 namespace ExtensionTest {
 
@@ -8,14 +8,14 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, double phiMinS,
                                    double thetaMaxS, double rMinS, double rMaxS, const at::Tensor &projectionMatrix,
                                    const at::Tensor &phiGrid, const at::Tensor &rGrid);
 
-class Texture3DCPU : public Texture<3, int, float> {
+class Texture3DCPU : public Texture<3, int64_t, double> {
 public:
-  	using Base = Texture<3, int, float>;
+	using Base = Texture<3, int64_t, double>;
 
 	Texture3DCPU() = default;
 
-	Texture3DCPU(const float *_ptr,SizeType _size, VectorType _spacing,
-				 VectorType _centrePosition = {}) : Base(_size, _spacing, _centrePosition), ptr(_ptr) {
+	Texture3DCPU(const float *_ptr, SizeType _size, VectorType _spacing,
+	             VectorType _centrePosition = {}) : Base(_size, _spacing, _centrePosition), ptr(_ptr) {
 	}
 
 	// yes copy
@@ -40,60 +40,69 @@ public:
 	 * @return sample from texture at given coordinate
 	 */
 	__host__ __device__ [[nodiscard]] float Sample(VectorType texCoord) const {
-		texCoord = texCoord * VecCast<float>(Size()) - .5f;
-		const VectorType floored = VecApply(&floorf, texCoord);
-		const SizeType index = VecCast<int>(floored);
+		texCoord = texCoord * VecCast<double>(Size()) - .5;
+		const VectorType floored = VecApply<double>(&floor, texCoord);
+		const SizeType index = VecCast<int64_t>(floored);
 		const VectorType fractions = texCoord - floored;
-		const float l0r0 = (1.f - fHorizontal) * At(index) + fHorizontal * At({index.X() + 1, index.Y(), index.Z()});
-		const float l0r1 = (1.f - fHorizontal) * At({index.X(), index.Y() + 1, index.Z()}) + fHorizontal * At({index.X() + 1, index.Y() + 1, index.Z()});
-		const float l1r0 = (1.f - fHorizontal) * At({index.X(), index.Y(), index.Z() + 1}) + fHorizontal * At({index.X() + 1, index.Y(), index.Z() + 1});
-		const float l1r1 = (1.f - fHorizontal) * At({index.X(), index.Y() + 1, index.Z() + 1}) + fHorizontal * At(
+		const float l0r0 = (1.f - fractions.X()) * At(index) + fractions.X() *
+		                   At({index.X() + 1, index.Y(), index.Z()});
+		const float l0r1 = (1.f - fractions.X()) * At({index.X(), index.Y() + 1, index.Z()}) + fractions.X() * At(
+			                   {index.X() + 1, index.Y() + 1, index.Z()});
+		const float l1r0 = (1.f - fractions.X()) * At({index.X(), index.Y(), index.Z() + 1}) + fractions.X() * At(
+			                   {index.X() + 1, index.Y(), index.Z() + 1});
+		const float l1r1 = (1.f - fractions.X()) * At({index.X(), index.Y() + 1, index.Z() + 1}) + fractions.X() * At(
 			                   {index.X() + 1, index.Y() + 1, index.Z() + 1});
-		const float l0 = (1.f - fVertical) * l0r0 + fVertical * l0r1;
-		const float l1 = (1.f - fVertical) * l1r0 + fVertical * l1r1;
-		return (1.f - fInward) * l0 + fInward * l1;
+		const float l0 = (1.f - fractions.Y()) * l0r0 + fractions.Y() * l0r1;
+		const float l1 = (1.f - fractions.Y()) * l1r0 + fractions.Y() * l1r1;
+		return (1.f - fractions.Z()) * l0 + fractions.Z() * l1;
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleXDerivative(VectorType texCoord) const {
-		const VectorType sizeF = VecCast<float>(Size());
-		texCoord = texCoord * sizeF - .5f;
-		const VectorType floored = VecApply(&floorf, texCoord);
-		const SizeType index = VecCast<int>(floored);
+		const VectorType sizeF = VecCast<double>(Size());
+		texCoord = texCoord * sizeF - .5;
+		const VectorType floored = VecApply<double>(&floor, texCoord);
+		const SizeType index = VecCast<int64_t>(floored);
 		const float fVertical = texCoord.Y() - floored.Y();
 		const float fInward = texCoord.Z() - floored.Z();
 		const float l0 = (1.f - fVertical) * (At({index.X() + 1, index.Y(), index.Z()}) - At(index)) + fVertical * (
 			                 At({index.X() + 1, index.Y() + 1, index.Z()}) - At({index.X(), index.Y() + 1, index.Z()}));
-		const float l1 = (1.f - fVertical) * (At({index.X() + 1, index.Y(), index.Z() + 1}) - At({index.X(), index.Y(), index.Z() + 1})) + fVertical * (
-			                 At({index.X() + 1, index.Y() + 1, index.Z() + 1}) - At({index.X(), index.Y() + 1, index.Z() + 1}));
-		return widthF * ((1.f - fInward) * l0 + fInward * l1);
+		const float l1 = (1.f - fVertical) * (At({index.X() + 1, index.Y(), index.Z() + 1}) -
+		                                      At({index.X(), index.Y(), index.Z() + 1})) + fVertical * (
+			                 At({index.X() + 1, index.Y() + 1, index.Z() + 1}) - At(
+				                 {index.X(), index.Y() + 1, index.Z() + 1}));
+		return sizeF.X() * ((1.f - fInward) * l0 + fInward * l1);
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleYDerivative(VectorType texCoord) const {
-		const VectorType sizeF = VecCast<float>(Size());
-		texCoord = texCoord * sizeF - .5f;
-		const VectorType floored = VecApply(&floorf, texCoord);
-		const SizeType index = VecCast<int>(floored);
+		const VectorType sizeF = VecCast<double>(Size());
+		texCoord = texCoord * sizeF - .5;
+		const VectorType floored = VecApply<double>(&floor, texCoord);
+		const SizeType index = VecCast<int64_t>(floored);
 		const float fHorizontal = texCoord.X() - floored.X();
 		const float fInward = texCoord.Z() - floored.Z();
 		const float l0 = (1.f - fHorizontal) * (At({index.X(), index.Y() + 1, index.Z()}) - At(index)) + fHorizontal * (
 			                 At({index.X() + 1, index.Y() + 1, index.Z()}) - At({index.X() + 1, index.Y(), index.Z()}));
-		const float l1 = (1.f - fHorizontal) * (At({index.X(), index.Y() + 1, index.Z() + 1}) - At({index.X(), index.Y(), index.Z() + 1})) + fHorizontal * (
-			                 At({index.X() + 1, index.Y() + 1, index.Z() + 1}) - At({index.X() + 1, index.Y(), index.Z() + 1}));
-		return heightF * ((1.f - fInward) * l0 + fInward * l1);
+		const float l1 = (1.f - fHorizontal) * (At({index.X(), index.Y() + 1, index.Z() + 1}) -
+		                                        At({index.X(), index.Y(), index.Z() + 1})) + fHorizontal * (
+			                 At({index.X() + 1, index.Y() + 1, index.Z() + 1}) - At(
+				                 {index.X() + 1, index.Y(), index.Z() + 1}));
+		return sizeF.Y() * ((1.f - fInward) * l0 + fInward * l1);
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleZDerivative(VectorType texCoord) const {
-		const VectorType sizeF = VecCast<float>(Size());
-		texCoord = texCoord * sizeF - .5f;
-		const VectorType floored = VecApply(&floorf, texCoord);
-		const SizeType index = VecCast<int>(floored);
+		const VectorType sizeF = VecCast<double>(Size());
+		texCoord = texCoord * sizeF - .5;
+		const VectorType floored = VecApply<double>(&floor, texCoord);
+		const SizeType index = VecCast<int64_t>(floored);
 		const float fHorizontal = texCoord.X() - floored.X();
 		const float fVertical = texCoord.Y() - floored.Y();
 		const float r0 = (1.f - fHorizontal) * (At({index.X(), index.Y(), index.Z() + 1}) - At(index)) + fHorizontal * (
 			                 At({index.X() + 1, index.Y(), index.Z() + 1}) - At({index.X() + 1, index.Y(), index.Z()}));
-		const float r1 = (1.f - fHorizontal) * (At({index.X(), index.Y() + 1, index.Z() + 1}) - At({index.X(), index.Y() + 1, index.Z()})) + fHorizontal * (
-			                 At({index.X() + 1, index.Y() + 1, index.Z() + 1}) - At({index.X() + 1, index.Y() + 1, index.Z()}));
-		return depthF * ((1.f - fVertical) * r0 + fVertical * r1);
+		const float r1 = (1.f - fHorizontal) * (At({index.X(), index.Y() + 1, index.Z() + 1}) -
+		                                        At({index.X(), index.Y() + 1, index.Z()})) + fHorizontal * (
+			                 At({index.X() + 1, index.Y() + 1, index.Z() + 1}) - At(
+				                 {index.X() + 1, index.Y() + 1, index.Z()}));
+		return sizeF.Z() * ((1.f - fVertical) * r0 + fVertical * r1);
 	}
 
 private:

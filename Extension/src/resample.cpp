@@ -4,8 +4,8 @@
 
 namespace ExtensionTest {
 
-at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, double phiMinS, double phiMaxS, double thetaMinS,
-                                   double thetaMaxS, double rMinS, double rMaxS, const at::Tensor &projectionMatrix,
+at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, const Vec<double, 3> &sinogramSpacing,
+                                   const Vec<double, 3> &sinogramRangeCentres, const at::Tensor &projectionMatrix,
                                    const at::Tensor &phiGrid, const at::Tensor &rGrid) {
 	// sinogram3d should be a 3D tensor of floats on the CPU
 	TORCH_CHECK(sinogram3d.sizes().size() == 3)
@@ -22,17 +22,10 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, double phiMinS,
 	TORCH_INTERNAL_ASSERT(phiGrid.device().type() == at::DeviceType::CPU)
 	TORCH_INTERNAL_ASSERT(rGrid.device().type() == at::DeviceType::CPU)
 
-	const double phiSpacing = (phiMaxS - phiMinS) / static_cast<float>(sinogram3d.sizes()[0] - 1);
-	const double thetaSpacing = (thetaMaxS - thetaMinS) / static_cast<float>(sinogram3d.sizes()[1] - 1);
-	const double rSpacing = (rMaxS - rMinS) / static_cast<float>(sinogram3d.sizes()[2] - 1);
-	const double centrePhi = .5 * (phiMinS + phiMaxS);
-	const double centreTheta = .5 * (thetaMinS + thetaMaxS);
-	const double centreR = .5 * (rMinS + rMaxS);
-
 	const at::Tensor sinogramContiguous = sinogram3d.contiguous();
 	const float *sinogramPtr = sinogramContiguous.data_ptr<float>();
-	const Texture3DCPU sinogramTexture{sinogramPtr, sinogram3d.sizes()[2], sinogram3d.sizes()[1], sinogram3d.sizes()[0],
-	                                   rSpacing, thetaSpacing, phiSpacing, centreR, centreTheta, centrePhi};
+	const Texture3DCPU sinogramTexture{sinogramPtr, VecFlip(VecFromIntArrayRef<int64_t, 3>(sinogram3d.sizes())),
+	                                   sinogramSpacing, sinogramRangeCentres};
 
 	const at::Tensor phiFlat = phiGrid.flatten();
 	const at::Tensor rFlat = rGrid.flatten();
@@ -41,14 +34,8 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, double phiMinS,
 	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), sinogramContiguous.options());
 	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
-	const Linear mappingPhiToNormalised{static_cast<float>(-phiMinS / (phiMaxS - phiMinS)),
-	                                    static_cast<float>(1. / (phiMaxS - phiMinS))};
-	const Linear mappingThetaToNormalised{static_cast<float>(-thetaMinS / (thetaMaxS - thetaMinS)),
-	                                      static_cast<float>(1. / (thetaMaxS - thetaMinS))};
-	const Linear mappingRToNormalised{static_cast<float>(-rMinS / (rMaxS - rMinS)),
-	                                  static_cast<float>(1. / (rMaxS - rMinS))};
-
 	const at::Tensor pht = projectionMatrix.t();
+	const Linear<Vec<double, 3> > mappingRThetaPhiToTexCoord = sinogramTexture.MappingWorldToTexCoord();
 
 	for (int i = 0; i < numelOut; ++i) {
 		const float phi = phiFlat[i].item().toFloat();
@@ -62,17 +49,17 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, double phiMinS,
 		const float y = minusDOverSqMagN * intermediate[1].item().toFloat();
 		const float z = minusDOverSqMagN * intermediate[2].item().toFloat();
 
-		float phiS = atan2f(y, x);
-		const bool over = phiS > .5 * M_PI;
-		const bool under = phiS < -.5 * M_PI;
-		if (over) phiS -= M_PI;
-		else if (under) phiS += M_PI;
+		Vec<double, 3> rThetaPhi{};
+		rThetaPhi.Z() = atan2(y, x);
+		const bool over = rThetaPhi.Z() > .5 * M_PI;
+		const bool under = rThetaPhi.Z() < -.5 * M_PI;
+		if (over) rThetaPhi.Z() -= M_PI;
+		else if (under) rThetaPhi.Z() += M_PI;
 		const float magXY = x * x + y * y;
-		const float thetaS = atan2f(z, sqrtf(magXY));
-		const float rS = static_cast<float>((static_cast<int>(!(over || under)) << 1) - 1) * sqrtf(magXY + z * z);
+		rThetaPhi.Y() = atan2(z, sqrt(magXY));
+		rThetaPhi.X() = static_cast<float>((static_cast<int>(!(over || under)) << 1) - 1) * sqrt(magXY + z * z);
 
-		resultFlatPtr[i] = sinogramTexture.Sample(mappingRToNormalised(rS), mappingThetaToNormalised(thetaS),
-		                                          mappingPhiToNormalised(phiS));
+		resultFlatPtr[i] = sinogramTexture.Sample(mappingRThetaPhiToTexCoord(rThetaPhi));
 	}
 	return resultFlat.view(phiGrid.sizes());
 }

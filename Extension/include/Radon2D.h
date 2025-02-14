@@ -37,45 +37,45 @@ __host__ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, do
  */
 template <typename texture_t> struct Radon2D {
 
-	__host__ __device__ [[nodiscard]] static Linear<Vec<float, 2> > GetMappingIToOffset(
-		float lineLength, long samplesPerLine) {
-		return {Vec<float, 2>::Full(-.5f * lineLength),
-		        Vec<float, 2>::Full(lineLength / static_cast<float>(samplesPerLine - 1))};
+	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2> > GetMappingIToOffset(
+		double lineLength, long samplesPerLine) {
+		return {Vec<double, 2>::Full(-.5f * lineLength),
+		        Vec<double, 2>::Full(lineLength / static_cast<double>(samplesPerLine - 1))};
 	}
 
-	__host__ __device__ [[nodiscard]] static Linear<Vec<float, 2> > GetMappingIndexToTexCoord(
-		const texture_t &textureIn, float phi, float r, const Linear<Vec<float, 2> > &mappingIToOffset) {
-		const float s = sinf(phi);
-		const float c = cosf(phi);
-		const Linear<Vec<float, 2> > mappingOffsetToWorld{{r * c, r * s}, {-s, c}};
+	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2> > GetMappingIndexToTexCoord(
+		const texture_t &textureIn, double phi, double r, const Linear<Vec<double, 2> > &mappingIToOffset) {
+		const double s = sin(phi);
+		const double c = cos(phi);
+		const Linear<Vec<double, 2> > mappingOffsetToWorld{{r * c, r * s}, {-s, c}};
 		return textureIn.MappingWorldToTexCoord()(mappingOffsetToWorld(mappingIToOffset));
 	}
 
-	__host__ __device__ [[nodiscard]] static Vec<float, 2> GetDTexCoordDR(
-		const texture_t &textureIn, float phi, float r) {
-		const float sign = static_cast<float>(r > 0.f) - static_cast<float>(r < 0.f);
-		const float s = sinf(phi);
-		const float c = cosf(phi);
-		return textureIn.MappingWorldToTexCoord().gradient * sign * Vec<float, 2>{c, s};
+	__host__ __device__ [[nodiscard]] static Vec<double, 2> GetDTexCoordDR(
+		const texture_t &textureIn, double phi, double r) {
+		const double sign = static_cast<double>(r > 0.) - static_cast<double>(r < 0.);
+		const double s = sin(phi);
+		const double c = cos(phi);
+		return textureIn.MappingWorldToTexCoord().gradient * sign * Vec<double, 2>{c, s};
 	}
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
-	                                                               const Linear<Vec<float, 2> > &mappingIndexToTexCoord,
-	                                                               long samplesPerLine) {
+	                                                               const Linear<Vec<double, 2> > &
+	                                                               mappingIndexToTexCoord, long samplesPerLine) {
 		float ret = 0.f;
 		for (long i = 0; i < samplesPerLine; ++i) {
-			const float iF = static_cast<float>(i);
-			ret += texture.Sample(mappingIndexToTexCoord(Vec<float, 2>::Full(iF)));
+			const double iF = static_cast<double>(i);
+			ret += texture.Sample(mappingIndexToTexCoord(Vec<double, 2>::Full(iF)));
 		}
 		return ret;
 	}
 
 	__host__ __device__ [[nodiscard]] static float DIntegrateLoopedDMappingParameter(const texture_t &texture,
-		const Linear<Vec<float, 2> > &mappingIndexToTexCoord, const Vec<float, 2> &dTexCoordDR, long samplesPerLine) {
+		const Linear<Vec<double, 2> > &mappingIndexToTexCoord, const Vec<double, 2> &dTexCoordDR, long samplesPerLine) {
 		float ret = 0.f;
 		for (long i = 0; i < samplesPerLine; ++i) {
-			const float iF = static_cast<float>(i);
-			const Vec<float, 2> texCoord = mappingIndexToTexCoord(Vec<float, 2>::Full(iF));
+			const double iF = static_cast<double>(i);
+			const Vec<double, 2> texCoord = mappingIndexToTexCoord(Vec<double, 2>::Full(iF));
 			ret += texture.SampleXDerivative(texCoord) * dTexCoordDR.X() + texture.SampleYDerivative(texCoord) *
 				dTexCoordDR.Y();
 		}

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Texture2D.h"
+#include "Texture.h"
 
 namespace ExtensionTest {
 
-class Texture2DCPU : public Texture<2, int, float> {
+class Texture2DCPU : public Texture<2, int64_t, double> {
 public:
-  	using Base = Texture<2, int, float>;
+	using Base = Texture<2, int64_t, double>;
 
 	Texture2DCPU() = default;
 
@@ -29,9 +29,9 @@ public:
 	}
 
 	__host__ __device__ [[nodiscard]] float Sample(VectorType texCoord) const {
-		texCoord = texCoord * VecCast<float>(Size()) - .5f;
-		const VectorType floored = VecApply(&floorf, texCoord);
-		const SizeType index = VecCast<int>(floored);
+		texCoord = texCoord * VecCast<double>(Size()) - .5;
+		const VectorType floored = VecApply<double>(&floor, texCoord);
+		const SizeType index = VecCast<int64_t>(floored);
 		const VectorType fractions = texCoord - floored;
 		const float r0 = (1.f - fractions.X()) * At(index) + fractions.X() * At({index.X() + 1, index.Y()});
 		const float r1 = (1.f - fractions.X()) * At({index.X(), index.Y() + 1}) + fractions.X() * At(
@@ -40,20 +40,20 @@ public:
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleXDerivative(VectorType texCoord) const {
-		const VectorType sizeF = VecCast<float>(Size());
-		texCoord = texCoord * sizeF - .5f;
-		const VectorType floored = VecApply(&floorf, texCoord);
-		const SizeType index = VecCast<int>(floored);
+		const VectorType sizeF = VecCast<double>(Size());
+		texCoord = texCoord * sizeF - .5;
+		const VectorType floored = VecApply<double>(&floor, texCoord);
+		const SizeType index = VecCast<int64_t>(floored);
 		const float fVertical = texCoord.Y() - floored.Y();
 		return sizeF.X() * ((1.f - fVertical) * (At({index.X() + 1, index.Y()}) - At(index)) + fVertical * (
 			                    At({index.X() + 1, index.Y() + 1}) - At({index.X(), index.Y() + 1})));
 	}
 
 	__host__ __device__ [[nodiscard]] float SampleYDerivative(VectorType texCoord) const {
-		const VectorType sizeF = VecCast<float>(Size());
-		texCoord = texCoord * sizeF - .5f;
-		const VectorType floored = VecApply(&floorf, texCoord);
-		const SizeType index = VecCast<int>(floored);
+		const VectorType sizeF = VecCast<double>(Size());
+		texCoord = texCoord * sizeF - .5;
+		const VectorType floored = VecApply<double>(&floor, texCoord);
+		const SizeType index = VecCast<int64_t>(floored);
 		const float fHorizontal = texCoord.X() - floored.X();
 		return sizeF.Y() * ((1.f - fHorizontal) * (At({index.X(), index.Y() + 1}) - At(index)) + fHorizontal * (
 			                    At({index.X() + 1, index.Y() + 1}) - At({index.X() + 1, index.Y()})));

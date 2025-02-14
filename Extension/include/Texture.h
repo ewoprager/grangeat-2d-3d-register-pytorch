@@ -13,14 +13,14 @@ public:
 	__host__ __device__ [[nodiscard]] const SizeType &Size() const { return size; }
 	__host__ __device__ [[nodiscard]] const VectorType &Spacing() const { return spacing; }
 	__host__ __device__ [[nodiscard]] const VectorType &CentrePosition() const { return centrePosition; }
-	__host__ __device__ [[nodiscard]] VectorType SizeWorld() const { return VecCast<float>(size) * spacing; }
+	__host__ __device__ [[nodiscard]] VectorType SizeWorld() const { return VecCast<floatType>(size) * spacing; }
 	__host__ __device__ [[nodiscard]] bool In(const SizeType &index) const {
 		return VecAll(index >= SizeType{}) && VecAll(index < size);
 	}
 
 	__host__ __device__ [[nodiscard]] Linear<VectorType> MappingWorldToTexCoord() const {
-		const VectorType sizeWorldInverse = 1.f / SizeWorld();
-		return {VectorType::Full(.5f) - centrePosition * sizeWorldInverse, sizeWorldInverse};
+		const VectorType sizeWorldInverse = floatType{1.} / SizeWorld();
+		return {VectorType::Full(floatType{.5}) - centrePosition * sizeWorldInverse, sizeWorldInverse};
 	}
 
 protected:

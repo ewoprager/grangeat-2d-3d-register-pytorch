@@ -12,6 +12,8 @@
 
 namespace ExtensionTest {
 
+template <typename T> T Square(const T &x) { return x * x; }
+
 template <typename T> struct Linear2;
 
 template <typename T> struct Linear {

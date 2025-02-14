@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Texture2D.h"
+#include "Texture.h"
 
 namespace ExtensionTest {
 
-class Texture2DCUDA : public Texture<2, int, float> {
+class Texture2DCUDA : public Texture<2, int64_t, double> {
 public:
-  	using Base = Texture<2, int, float>;
+	using Base = Texture<2, int64_t, double>;
 
 	Texture2DCUDA() = default;
 

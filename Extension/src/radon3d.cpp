@@ -5,9 +5,8 @@
 
 namespace ExtensionTest {
 
-at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
-                       const at::Tensor &phiValues, const at::Tensor &thetaValues, const at::Tensor &rValues,
-                       long samplesPerDirection) {
+at::Tensor radon3d_cpu(const at::Tensor &volume, const Vec<double, 3> &volumeSpacing, const at::Tensor &phiValues,
+                       const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection) {
 	// volume should be a 3D array of floats on the CPU
 	TORCH_CHECK(volume.sizes().size() == 3);
 	TORCH_CHECK(volume.dtype() == at::kFloat);
@@ -24,8 +23,7 @@ at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacin
 
 	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	const Texture3DCPU aTexture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing,
-	                            zSpacing};
+	const Texture3DCPU aTexture{aPtr, VecFlip(VecFromIntArrayRef<int64_t, 3>(volume.sizes())), volumeSpacing};
 
 	const at::Tensor phiFlat = phiValues.flatten();
 	const at::Tensor thetaFlat = thetaValues.flatten();
@@ -35,25 +33,23 @@ at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacin
 	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
 	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
-	const float planeSize = sqrtf(
-		aTexture.WidthWorld() * aTexture.WidthWorld() + aTexture.HeightWorld() * aTexture.HeightWorld() + aTexture.
-		DepthWorld() * aTexture.DepthWorld());
-	const Linear mappingIToOffset = Radon3D<Texture3DCPU>::GetMappingIToOffset(planeSize, samplesPerDirection);
-	const float rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
-	const float scaleFactor = rootScaleFactor * rootScaleFactor;
+	const double planeSize = sqrtf(VecSum(VecApply<double>(&Square<double>, aTexture.SizeWorld())));
+	const Linear<Vec<double, 3> > mappingIToOffset = Radon3D<Texture3DCPU>::GetMappingIToOffset(
+		planeSize, samplesPerDirection);
+	const double rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
+	const double scaleFactor = rootScaleFactor * rootScaleFactor;
 	for (long i = 0; i < numelOut; ++i) {
-		const auto indexMappings = Radon3D<Texture3DCPU>::GetIndexMappings(
+		const Linear2<Vec<double, 3> > mappingIndexToTexCoord = Radon3D<Texture3DCPU>::GetMappingIndexToTexCoord(
 			aTexture, phiFlat[i].item().toFloat(), thetaFlat[i].item().toFloat(), rFlat[i].item().toFloat(),
 			mappingIToOffset);
 		resultFlatPtr[i] = scaleFactor * Radon3D<Texture3DCPU>::IntegrateLooped(
-			                   aTexture, indexMappings, samplesPerDirection);
+			                   aTexture, mappingIndexToTexCoord, samplesPerDirection);
 	}
 	return resultFlat.view(phiValues.sizes());
 }
 
-at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
-                          const at::Tensor &phiValues, const at::Tensor &thetaValues, const at::Tensor &rValues,
-                          long samplesPerDirection) {
+at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, const Vec<double, 3> &volumeSpacing, const at::Tensor &phiValues,
+                          const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection) {
 	// volume should be a 3D array of floats on the CPU
 	TORCH_CHECK(volume.sizes().size() == 3);
 	TORCH_CHECK(volume.dtype() == at::kFloat);
@@ -70,8 +66,7 @@ at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpa
 
 	const at::Tensor aContiguous = volume.contiguous();
 	const float *aPtr = aContiguous.data_ptr<float>();
-	const Texture3DCPU aTexture{aPtr, volume.sizes()[2], volume.sizes()[1], volume.sizes()[0], xSpacing, ySpacing,
-	                            zSpacing};
+	const Texture3DCPU aTexture{aPtr, VecFlip(VecFromIntArrayRef<int64_t, 3>(volume.sizes())), volumeSpacing};
 
 	const at::Tensor phiFlat = phiValues.flatten();
 	const at::Tensor thetaFlat = thetaValues.flatten();
@@ -81,20 +76,20 @@ at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpa
 	const at::Tensor resultFlat = torch::zeros(at::IntArrayRef({numelOut}), aContiguous.options());
 	float *resultFlatPtr = resultFlat.data_ptr<float>();
 
-	const float planeSize = sqrtf(
-		aTexture.WidthWorld() * aTexture.WidthWorld() + aTexture.HeightWorld() * aTexture.HeightWorld() + aTexture.
-		DepthWorld() * aTexture.DepthWorld());
-	const Linear mappingIToOffset = Radon3D<Texture3DCPU>::GetMappingIToOffset(planeSize, samplesPerDirection);
-	const float rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
-	const float scaleFactor = rootScaleFactor * rootScaleFactor;
+	const double planeSize = sqrtf(VecSum(VecApply<double>(&Square<double>, aTexture.SizeWorld())));
+	const Linear<Vec<double, 3> > mappingIToOffset = Radon3D<Texture3DCPU>::GetMappingIToOffset(
+		planeSize, samplesPerDirection);
+	const double rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
+	const double scaleFactor = rootScaleFactor * rootScaleFactor;
 	for (long i = 0; i < numelOut; ++i) {
-		const float phi = phiFlat[i].item().toFloat();
-		const float theta = thetaFlat[i].item().toFloat();
-		const float r = rFlat[i].item().toFloat();
-		const auto indexMappings = Radon3D<Texture3DCPU>::GetIndexMappings(aTexture, phi, theta, r, mappingIToOffset);
-		const auto derivativeWRTR = Radon3D<Texture3DCPU>::GetDerivativeWRTR(aTexture, phi, theta, r);
+		const double phi = phiFlat[i].item().toFloat();
+		const double theta = thetaFlat[i].item().toFloat();
+		const double r = rFlat[i].item().toFloat();
+		const Linear2<Vec<double, 3> > mappingIndexToTexCoord = Radon3D<Texture3DCPU>::GetMappingIndexToTexCoord(
+			aTexture, phi, theta, r, mappingIToOffset);
+		const Vec<double, 3> dTexCoordDR = Radon3D<Texture3DCPU>::GetDTexCoordDR(aTexture, phi, theta, r);
 		resultFlatPtr[i] = scaleFactor * Radon3D<Texture3DCPU>::DIntegrateLoopedDMappingParameter(
-			                   aTexture, indexMappings, derivativeWRTR, samplesPerDirection);
+			                   aTexture, mappingIndexToTexCoord, dTexCoordDR, samplesPerDirection);
 
 	}
 	return resultFlat.view(phiValues.sizes());
