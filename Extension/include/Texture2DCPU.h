@@ -24,14 +24,19 @@ public:
 
 	Texture2DCPU &operator=(Texture2DCPU &&) = default;
 
+	static Texture2DCPU FromTensor(const at::Tensor &image, const at::Tensor &spacing) {
+		return {image.contiguous().data_ptr<float>(), Vec<int64_t, 2>::FromIntArrayRef(image.sizes()).Flipped(),
+		        Vec<double, 2>::FromTensor(spacing)};
+	}
+
 	__host__ __device__ [[nodiscard]] float At(const SizeType &index) const {
 		return In(index) ? ptr[index.Y() * Size().X() + index.X()] : 0.0f;
 	}
 
 	__host__ __device__ [[nodiscard]] float Sample(VectorType texCoord) const {
-		texCoord = texCoord * VecCast<double>(Size()) - .5;
-		const VectorType floored = VecApply<double>(&floor, texCoord);
-		const SizeType index = VecCast<int64_t>(floored);
+		texCoord = texCoord * Size().StaticCast<double>() - .5;
+		const VectorType floored = texCoord.Apply<double>(&floor);
+		const SizeType index = floored.StaticCast<int64_t>();
 		const VectorType fractions = texCoord - floored;
 		const float r0 = (1.f - fractions.X()) * At(index) + fractions.X() * At({index.X() + 1, index.Y()});
 		const float r1 = (1.f - fractions.X()) * At({index.X(), index.Y() + 1}) + fractions.X() * At(
@@ -39,21 +44,21 @@ public:
 		return (1.f - fractions.Y()) * r0 + fractions.Y() * r1;
 	}
 
-	__host__ __device__ [[nodiscard]] float SampleXDerivative(VectorType texCoord) const {
-		const VectorType sizeF = VecCast<double>(Size());
+	__host__ __device__ [[nodiscard]] float DSampleDX(VectorType texCoord) const {
+		const VectorType sizeF = Size().StaticCast<double>();
 		texCoord = texCoord * sizeF - .5;
-		const VectorType floored = VecApply<double>(&floor, texCoord);
-		const SizeType index = VecCast<int64_t>(floored);
+		const VectorType floored = texCoord.Apply<double>(&floor);
+		const SizeType index = floored.StaticCast<int64_t>();
 		const float fVertical = texCoord.Y() - floored.Y();
 		return sizeF.X() * ((1.f - fVertical) * (At({index.X() + 1, index.Y()}) - At(index)) + fVertical * (
 			                    At({index.X() + 1, index.Y() + 1}) - At({index.X(), index.Y() + 1})));
 	}
 
-	__host__ __device__ [[nodiscard]] float SampleYDerivative(VectorType texCoord) const {
-		const VectorType sizeF = VecCast<double>(Size());
+	__host__ __device__ [[nodiscard]] float DSampleDY(VectorType texCoord) const {
+		const VectorType sizeF = Size().StaticCast<double>();
 		texCoord = texCoord * sizeF - .5;
-		const VectorType floored = VecApply<double>(&floor, texCoord);
-		const SizeType index = VecCast<int64_t>(floored);
+		const VectorType floored = texCoord.Apply<double>(&floor);
+		const SizeType index = floored.StaticCast<int64_t>();
 		const float fHorizontal = texCoord.X() - floored.X();
 		return sizeF.Y() * ((1.f - fHorizontal) * (At({index.X(), index.Y() + 1}) - At(index)) + fHorizontal * (
 			                    At({index.X() + 1, index.Y() + 1}) - At({index.X() + 1, index.Y()})));

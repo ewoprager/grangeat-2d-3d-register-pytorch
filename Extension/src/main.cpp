@@ -6,23 +6,23 @@
 
 namespace ExtensionTest {
 
+
+
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-	// VecPythonBindings(m);
 }
 
 TORCH_LIBRARY(ExtensionTest, m) {
-	VecPythonBindings(m);
 	// Note that "float" in the schema corresponds to the C++ `double` type and the Python `float` type.
 	// Note that "int" in the schema corresponds to the C++ `long` type and the Python `int` type.
-	m.def("radon2d(Tensor img, Vec2f spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
-	m.def("radon2d_v2(Tensor img, Vec2f spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
-	m.def("dRadon2dDR(Tensor img, Vec2f spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
-	m.def("radon3d(Tensor vol, Vec3f spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
-	m.def("radon3d_v2(Tensor vol, Vec3f spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
-	m.def("dRadon3dDR(Tensor vol, Vec3f spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
-	m.def("dRadon3dDR_v2(Tensor vol, Vec3f spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
+	m.def("radon2d(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
+	m.def("radon2d_v2(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
+	m.def("dRadon2dDR(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
+	m.def("radon3d(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
+	m.def("radon3d_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
+	m.def("dRadon3dDR(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
+	m.def("dRadon3dDR_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def(
-		"resample_radon_volume(Tensor sin, Vec3f spacing, Vec3f centrePosition, Tensor projMat, Tensor phiGrid, Tensor rGrid) -> Tensor");
+		"resample_radon_volume(Tensor sin, Tensor spacing, Tensor centrePosition, Tensor projMat, Tensor phiGrid, Tensor rGrid) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
@@ -49,5 +49,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 }
 
 #endif
+
+
 
 } // namespace ExtensionTest

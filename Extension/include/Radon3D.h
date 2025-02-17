@@ -1,30 +1,28 @@
 #pragma once
 
 #include "Common.h"
+#include "Vec.h"
 
 namespace ExtensionTest {
 
-at::Tensor radon3d_cpu(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
-                       const at::Tensor &phiValues, const at::Tensor &thetaValues, const at::Tensor &rValues,
-                       long samplesPerDirection);
+at::Tensor radon3d_cpu(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
+                       const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection);
 
-at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
-                          const at::Tensor &phiValues, const at::Tensor &thetaValues, const at::Tensor &rValues,
-                          long samplesPerDirection);
+at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
+                          const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection);
 
-__host__ at::Tensor radon3d_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
-                                 const at::Tensor &phiValues, const at::Tensor &thetaValues, const at::Tensor &rValues,
-                                 long samplesPerDirection);
+__host__ at::Tensor radon3d_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
+                                 const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection);
 
-__host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
+__host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                     const at::Tensor &rValues, long samplesPerDirection);
 
-__host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
+__host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                     const at::Tensor &rValues, long samplesPerDirection);
 
-__host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, double xSpacing, double ySpacing, double zSpacing,
+__host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                        const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                        const at::Tensor &rValues, long samplesPerDirection);
 
@@ -51,7 +49,8 @@ template <typename texture_t> struct Radon3D {
 	}
 
 	__host__ __device__ [[nodiscard]] static Linear2<Vec<double, 3> > GetMappingIndexToTexCoord(
-		const texture_t &textureIn, double phi, double theta, double r, const Linear<Vec<double, 3> > &mappingIToOffset) {
+		const texture_t &textureIn, double phi, double theta, double r,
+		const Linear<Vec<double, 3> > &mappingIToOffset) {
 		const double sp = sin(phi);
 		const double cp = cos(phi);
 		const double st = sin(theta);
@@ -95,8 +94,8 @@ template <typename texture_t> struct Radon3D {
 				const double jF = static_cast<double>(j);
 				const Vec<double, 3> texCoord = mappingIndexToTexCoord(Vec<double, 3>::Full(iF),
 				                                                       Vec<double, 3>::Full(jF));
-				ret += texture.SampleXDerivative(texCoord) * dTexCoordDR.X() + texture.SampleYDerivative(texCoord) *
-					dTexCoordDR.Y() + texture.SampleZDerivative(texCoord) * dTexCoordDR.Z();
+				ret += texture.DSampleDX(texCoord) * dTexCoordDR.X() + texture.DSampleDY(texCoord) * dTexCoordDR.Y() +
+					texture.DSampleDZ(texCoord) * dTexCoordDR.Z();
 			}
 		}
 		return ret;

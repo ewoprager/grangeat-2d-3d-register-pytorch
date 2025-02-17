@@ -1,21 +1,24 @@
 #pragma once
 
 #include "Common.h"
+#include "Vec.h"
 
 namespace ExtensionTest {
 
-template <std::size_t dimensionality, typename intType=int, typename floatType=float>
-class Texture {
+template <std::size_t dimensionality, typename intType=int, typename floatType=float> class Texture {
 public:
-  	using SizeType = Vec<intType, dimensionality>;
-  	using VectorType = Vec<floatType, dimensionality>;
+	using SizeType = Vec<intType, dimensionality>;
+	using VectorType = Vec<floatType, dimensionality>;
 
 	__host__ __device__ [[nodiscard]] const SizeType &Size() const { return size; }
 	__host__ __device__ [[nodiscard]] const VectorType &Spacing() const { return spacing; }
 	__host__ __device__ [[nodiscard]] const VectorType &CentrePosition() const { return centrePosition; }
-	__host__ __device__ [[nodiscard]] VectorType SizeWorld() const { return VecCast<floatType>(size) * spacing; }
+	__host__ __device__ [[nodiscard]] VectorType SizeWorld() const {
+		return size.template StaticCast<floatType>() * spacing;
+	}
+
 	__host__ __device__ [[nodiscard]] bool In(const SizeType &index) const {
-		return VecAll(index >= SizeType{}) && VecAll(index < size);
+		return (index >= SizeType{}).BooleanAll() && (index < size).BooleanAll();
 	}
 
 	__host__ __device__ [[nodiscard]] Linear<VectorType> MappingWorldToTexCoord() const {

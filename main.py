@@ -15,13 +15,7 @@ if __name__ == "__main__":
     if not os.path.exists(cache_directory):
         os.makedirs(cache_directory)
 
-
-
-    vec2 = ExtensionTest.Vec2f(1., 2.)
-    print(vec2)
-
-
-    # benchmark_radon2d.benchmark_radon2d("/home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm")
+    benchmark_radon2d.benchmark_radon2d("/home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm")
     # benchmark_radon2d.benchmark_dRadon2dDR("/home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm")
     # benchmark_radon3d.benchmark_radon3d(sys.argv[1])
     # benchmark_radon3d.benchmark_dRadon3dDR(sys.argv[1])

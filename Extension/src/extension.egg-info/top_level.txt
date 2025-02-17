@@ -1,2 +1,0 @@
-ExtensionTest
-__init__

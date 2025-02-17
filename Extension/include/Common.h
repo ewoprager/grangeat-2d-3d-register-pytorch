@@ -8,8 +8,6 @@
 #define __device__
 #endif
 
-#include "Vec.h"
-
 namespace ExtensionTest {
 
 template <typename T> T Square(const T &x) { return x * x; }

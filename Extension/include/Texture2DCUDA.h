@@ -56,13 +56,18 @@ public:
 		if (arrayHandle) cudaFreeArray(arrayHandle);
 	}
 
+	static Texture2DCUDA FromTensor(const at::Tensor &image, const at::Tensor &spacing) {
+		return {image.contiguous().data_ptr<float>(), Vec<int64_t, 2>::FromIntArrayRef(image.sizes()).Flipped(),
+		        Vec<double, 2>::FromTensor(spacing)};
+	}
+
 	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
 
 	__device__ [[nodiscard]] float Sample(const VectorType &texCoord) const {
 		return tex2D<float>(textureHandle, texCoord.X(), texCoord.Y());
 	}
 
-	__device__ [[nodiscard]] float SampleXDerivative(const VectorType &texCoord) const {
+	__device__ [[nodiscard]] float DSampleDX(const VectorType &texCoord) const {
 		const float widthF = static_cast<float>(Size().X());
 		const float x = floorf(-.5f + texCoord.X() * widthF);
 		const float x0 = (x + .5f) / widthF;
@@ -70,7 +75,7 @@ public:
 		return widthF * (tex2D<float>(textureHandle, x1, texCoord.Y()) - tex2D<float>(textureHandle, x0, texCoord.Y()));
 	}
 
-	__device__ [[nodiscard]] float SampleYDerivative(const VectorType &texCoord) const {
+	__device__ [[nodiscard]] float DSampleDY(const VectorType &texCoord) const {
 		const float heightF = static_cast<float>(Size().Y());
 		const float y = floorf(-.5f + texCoord.Y() * heightF);
 		const float y0 = (y + .5f) / heightF;

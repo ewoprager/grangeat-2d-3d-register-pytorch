@@ -65,14 +65,19 @@ public:
 		if (arrayHandle) cudaFreeArray(arrayHandle);
 	}
 
+	static Texture3DCUDA FromTensor(const at::Tensor &volume, const at::Tensor &spacing) {
+		return {volume.contiguous().data_ptr<float>(), Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Flipped(),
+		        Vec<double, 3>::FromTensor(spacing)};
+	}
+
 	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
 
 	__device__ [[nodiscard]] float Sample(const VectorType &texCoord) const {
 		return tex3D<float>(textureHandle, texCoord.X(), texCoord.Y(), texCoord.Z());
 	}
 
-	__device__ [[nodiscard]] static float SampleXDerivative(long width, cudaTextureObject_t textureHandle,
-	                                                        const VectorType &texCoord) {
+	__device__ [[nodiscard]] static float DSampleDX(long width, cudaTextureObject_t textureHandle,
+	                                                const VectorType &texCoord) {
 		const float widthF = static_cast<float>(width);
 		const float x = floorf(-.5f + texCoord.X() * widthF);
 		const float x0 = (x + .5f) / widthF;
@@ -81,8 +86,8 @@ public:
 			                 textureHandle, x0, texCoord.Y(), texCoord.Z()));
 	}
 
-	__device__ [[nodiscard]] static float SampleYDerivative(long height, cudaTextureObject_t textureHandle,
-	                                                        const VectorType &texCoord) {
+	__device__ [[nodiscard]] static float DSampleDY(long height, cudaTextureObject_t textureHandle,
+	                                                const VectorType &texCoord) {
 		const float heightF = static_cast<float>(height);
 		const float y = floorf(-.5f + texCoord.Y() * heightF);
 		const float y0 = (y + .5f) / heightF;
@@ -91,8 +96,8 @@ public:
 			                  textureHandle, texCoord.X(), y0, texCoord.Z()));
 	}
 
-	__device__ [[nodiscard]] static float SampleZDerivative(long depth, cudaTextureObject_t textureHandle,
-	                                                        const VectorType &texCoord) {
+	__device__ [[nodiscard]] static float DSampleDZ(long depth, cudaTextureObject_t textureHandle,
+	                                                const VectorType &texCoord) {
 		const float depthF = static_cast<float>(depth);
 		const float z = floorf(-.5f + texCoord.Z() * depthF);
 		const float z0 = (z + .5f) / depthF;
@@ -101,16 +106,16 @@ public:
 			                 textureHandle, texCoord.X(), texCoord.Y(), z0));
 	}
 
-	__device__ [[nodiscard]] float SampleXDerivative(const VectorType &texCoord) const {
-		return SampleXDerivative(Size().X(), textureHandle, texCoord);
+	__device__ [[nodiscard]] float DSampleDX(const VectorType &texCoord) const {
+		return DSampleDX(Size().X(), textureHandle, texCoord);
 	}
 
-	__device__ [[nodiscard]] float SampleYDerivative(const VectorType &texCoord) const {
-		return SampleYDerivative(Size().Y(), textureHandle, texCoord);
+	__device__ [[nodiscard]] float DSampleDY(const VectorType &texCoord) const {
+		return DSampleDY(Size().Y(), textureHandle, texCoord);
 	}
 
-	__device__ [[nodiscard]] float SampleZDerivative(const VectorType &texCoord) const {
-		return SampleZDerivative(Size().Z(), textureHandle, texCoord);
+	__device__ [[nodiscard]] float DSampleDZ(const VectorType &texCoord) const {
+		return DSampleDZ(Size().Z(), textureHandle, texCoord);
 	}
 
 private:

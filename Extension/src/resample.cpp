@@ -4,13 +4,23 @@
 
 namespace ExtensionTest {
 
-at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, const Vec<double, 3> &sinogramSpacing,
-                                   const Vec<double, 3> &sinogramRangeCentres, const at::Tensor &projectionMatrix,
+
+
+at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
+                                   const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
                                    const at::Tensor &phiGrid, const at::Tensor &rGrid) {
 	// sinogram3d should be a 3D tensor of floats on the CPU
 	TORCH_CHECK(sinogram3d.sizes().size() == 3)
 	TORCH_CHECK(sinogram3d.dtype() == at::kFloat)
 	TORCH_INTERNAL_ASSERT(sinogram3d.device().type() == at::DeviceType::CPU)
+	// sinogramSpacing should be a 1D tensor of 3 floats or doubles on the CPU
+	TORCH_CHECK(sinogramSpacing.sizes() == at::IntArrayRef{3});
+	TORCH_CHECK(sinogramSpacing.dtype() == at::kFloat || sinogramSpacing.dtype() == at::kDouble);
+	TORCH_INTERNAL_ASSERT(sinogramSpacing.device().type() == at::DeviceType::CPU);
+	// sinogramRangeCentres should be a 1D tensor of 3 floats or doubles on the CPU
+	TORCH_CHECK(sinogramRangeCentres.sizes() == at::IntArrayRef{3});
+	TORCH_CHECK(sinogramRangeCentres.dtype() == at::kFloat || sinogramRangeCentres.dtype() == at::kDouble);
+	TORCH_INTERNAL_ASSERT(sinogramRangeCentres.device().type() == at::DeviceType::CPU);
 	// projectionMatrix should be of size (4, 4), contain floats and be on the CPU
 	TORCH_CHECK(projectionMatrix.sizes() == at::IntArrayRef({4, 4}))
 	TORCH_CHECK(projectionMatrix.dtype() == at::kFloat)
@@ -24,8 +34,9 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, const Vec<doubl
 
 	const at::Tensor sinogramContiguous = sinogram3d.contiguous();
 	const float *sinogramPtr = sinogramContiguous.data_ptr<float>();
-	const Texture3DCPU sinogramTexture{sinogramPtr, VecFlip(VecFromIntArrayRef<int64_t, 3>(sinogram3d.sizes())),
-	                                   sinogramSpacing, sinogramRangeCentres};
+	const Texture3DCPU sinogramTexture{sinogramPtr, Vec<int64_t, 3>::FromIntArrayRef(sinogram3d.sizes()).Flipped(),
+	                                   Vec<double, 3>::FromTensor(sinogramSpacing),
+	                                   Vec<double, 3>::FromTensor(sinogramRangeCentres)};
 
 	const at::Tensor phiFlat = phiGrid.flatten();
 	const at::Tensor rFlat = rGrid.flatten();
@@ -63,5 +74,7 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, const Vec<doubl
 	}
 	return resultFlat.view(phiGrid.sizes());
 }
+
+
 
 } // namespace ExtensionTest

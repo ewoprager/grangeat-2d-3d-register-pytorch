@@ -1,25 +1,26 @@
 #pragma once
 
 #include "Common.h"
+#include "Vec.h"
 
 namespace ExtensionTest {
 
-at::Tensor radon2d_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+at::Tensor radon2d_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                        const at::Tensor &rValues, long samplesPerLine);
 
-at::Tensor radon2d_v2_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+at::Tensor radon2d_v2_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                           const at::Tensor &rValues, long samplesPerLine);
 
-at::Tensor dRadon2dDR_cpu(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+at::Tensor dRadon2dDR_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                           const at::Tensor &rValues, long samplesPerLine);
 
-__host__ at::Tensor radon2d_cuda(const at::Tensor &image, double xSpacing, double ySpacing, const at::Tensor &phiValues,
+__host__ at::Tensor radon2d_cuda(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                                  const at::Tensor &rValues, long samplesPerLine);
 
-__host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, double xSpacing, double ySpacing,
+__host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, const at::Tensor &imageSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine);
 
-__host__ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, double xSpacing, double ySpacing,
+__host__ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, const at::Tensor &imageSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine);
 
 /**
@@ -76,8 +77,7 @@ template <typename texture_t> struct Radon2D {
 		for (long i = 0; i < samplesPerLine; ++i) {
 			const double iF = static_cast<double>(i);
 			const Vec<double, 2> texCoord = mappingIndexToTexCoord(Vec<double, 2>::Full(iF));
-			ret += texture.SampleXDerivative(texCoord) * dTexCoordDR.X() + texture.SampleYDerivative(texCoord) *
-				dTexCoordDR.Y();
+			ret += texture.DSampleDX(texCoord) * dTexCoordDR.X() + texture.DSampleDY(texCoord) * dTexCoordDR.Y();
 		}
 		return ret;
 	}
