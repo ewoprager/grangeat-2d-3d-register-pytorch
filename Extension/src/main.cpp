@@ -20,7 +20,7 @@ TORCH_LIBRARY(ExtensionTest, m) {
 	m.def("d_radon3d_dr(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def("d_radon3d_dr_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def(
-		"resample_sinogram3d(Tensor sin, Tensor spacing, Tensor centrePosition, Tensor projMat, Tensor phiGrid, Tensor rGrid) -> Tensor");
+		"resample_sinogram3d(Tensor sinogram, Tensor spacing, Tensor centres, Tensor projMat, Tensor phis, Tensor rs) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
