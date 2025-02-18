@@ -5,7 +5,6 @@
 
 namespace ExtensionTest {
 
-
 __global__ void radon3d_kernel(Texture3DCUDA textureIn, long numelOut, float *arrayOut,
                                Linear<Vec<double, 3> > mappingIToOffset, const float *phiValues,
                                const float *thetaValues, const float *rValues, long samplesPerDirection,
@@ -353,6 +352,5 @@ __host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, const at::Tenso
 	}
 	return resultFlat.view(phiValues.sizes());
 }
-
 
 } // namespace ExtensionTest

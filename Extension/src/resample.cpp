@@ -4,8 +4,6 @@
 
 namespace ExtensionTest {
 
-
-
 at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
                                    const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
                                    const at::Tensor &phiGrid, const at::Tensor &rGrid) {
@@ -74,7 +72,5 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, const at::Tenso
 	}
 	return resultFlat.view(phiGrid.sizes());
 }
-
-
 
 } // namespace ExtensionTest

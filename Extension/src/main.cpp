@@ -6,8 +6,6 @@
 
 namespace ExtensionTest {
 
-
-
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
 }
 
@@ -36,7 +34,9 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 	m.impl("resample_radon_volume", &ResampleRadonVolume_cpu);
 }
 
-#ifdef __CUDACC__
+#ifdef TORCH_VERSION_MAJOR
+
+#pragma message("using CUDA")
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("radon2d", &radon2d_cuda);
@@ -49,7 +49,5 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 }
 
 #endif
-
-
 
 } // namespace ExtensionTest

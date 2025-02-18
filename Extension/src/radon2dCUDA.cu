@@ -22,10 +22,10 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &image, const at::Tensor &imag
 	TORCH_CHECK(image.sizes().size() == 2);
 	TORCH_CHECK(image.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(image.device().type() == at::DeviceType::CUDA);
-	// image spacing should be a 1D tensor of 2 floats on the CPU
+	// image spacing should be a 1D tensor of 2 floats on the GPU
 	TORCH_CHECK(imageSpacing.sizes() == at::IntArrayRef{2});
 	TORCH_CHECK(imageSpacing.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(imageSpacing.device().type() == at::DeviceType::CPU);
+	TORCH_INTERNAL_ASSERT(imageSpacing.device().type() == at::DeviceType::CUDA);
 	// phiValues and rValues should have the same sizes, should contain floats, and be on the GPU
 	TORCH_CHECK(phiValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
@@ -33,7 +33,7 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &image, const at::Tensor &imag
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
-	Texture2DCUDA texture = Texture2DCUDA::FromTensor(image, imageSpacing);
+	Texture2DCUDA texture = Texture2DCUDA::FromTensor(image, imageSpacing.cpu());
 
 	const at::Tensor phiFlatContiguous = phiValues.flatten().contiguous();
 	const float *phiFlatPtr = phiFlatContiguous.data_ptr<float>();
@@ -75,10 +75,10 @@ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, const at::Tensor &imageSpaci
 	TORCH_CHECK(image.sizes().size() == 2);
 	TORCH_CHECK(image.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(image.device().type() == at::DeviceType::CUDA);
-	// image spacing should be a 1D tensor of 2 floats on the CPU
+	// image spacing should be a 1D tensor of 2 floats on the GPU
 	TORCH_CHECK(imageSpacing.sizes() == at::IntArrayRef{2});
 	TORCH_CHECK(imageSpacing.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(imageSpacing.device().type() == at::DeviceType::CPU);
+	TORCH_INTERNAL_ASSERT(imageSpacing.device().type() == at::DeviceType::CUDA);
 	// phiValues and rValues should have the same sizes, should contain floats, and be on the GPU
 	TORCH_CHECK(phiValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
@@ -86,7 +86,7 @@ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, const at::Tensor &imageSpaci
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
-	Texture2DCUDA texture = Texture2DCUDA::FromTensor(image, imageSpacing);
+	Texture2DCUDA texture = Texture2DCUDA::FromTensor(image, imageSpacing.cpu());
 
 	const at::Tensor phiFlatContiguous = phiValues.contiguous();
 	const float *phiFlatPtr = phiFlatContiguous.data_ptr<float>();
@@ -148,10 +148,10 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, const at::Tensor &i
 	TORCH_CHECK(image.sizes().size() == 2);
 	TORCH_CHECK(image.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(image.device().type() == at::DeviceType::CUDA);
-	// image spacing should be a 1D tensor of 2 floats on the CPU
+	// image spacing should be a 1D tensor of 2 floats on the GPU
 	TORCH_CHECK(imageSpacing.sizes() == at::IntArrayRef{2});
 	TORCH_CHECK(imageSpacing.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(imageSpacing.device().type() == at::DeviceType::CPU);
+	TORCH_INTERNAL_ASSERT(imageSpacing.device().type() == at::DeviceType::CUDA);
 	// phiValues and rValues should have the same sizes, should contain floats, and be on the GPU
 	TORCH_CHECK(phiValues.sizes() == rValues.sizes());
 	TORCH_CHECK(phiValues.dtype() == at::kFloat);
@@ -159,7 +159,7 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, const at::Tensor &i
 	TORCH_INTERNAL_ASSERT(phiValues.device().type() == at::DeviceType::CUDA);
 	TORCH_INTERNAL_ASSERT(rValues.device().type() == at::DeviceType::CUDA);
 
-	const Texture2DCUDA texture = Texture2DCUDA::FromTensor(image, imageSpacing);
+	const Texture2DCUDA texture = Texture2DCUDA::FromTensor(image, imageSpacing.cpu());
 
 	const at::Tensor phiFlat = phiValues.flatten();
 	const at::Tensor rFlat = rValues.flatten();

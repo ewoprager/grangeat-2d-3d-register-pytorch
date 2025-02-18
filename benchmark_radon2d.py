@@ -36,7 +36,6 @@ def read_dicom(path: str, downsample_factor) -> Tuple[torch.Tensor, torch.Tensor
 
 
 def task_radon2d(function, name: str, device: str, image: torch.Tensor, spacing: torch.Tensor) -> TaskSummaryRadon2D:
-    image_devices = image.to(device=device)
     phi_count = 300
     r_count = 300
     phi_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, phi_count, device=device)
@@ -45,7 +44,7 @@ def task_radon2d(function, name: str, device: str, image: torch.Tensor, spacing:
     image_diag = torch.sqrt(image_height.square() + image_width.square()).item()
     r_values = torch.linspace(-.5 * image_diag, .5 * image_diag, r_count, device=device)
     phi_values, r_values = torch.meshgrid(phi_values, r_values)
-    output = function(image_devices, spacing, phi_values, r_values, 1024)
+    output = function(image.to(device=device), spacing.to(device=device), phi_values, r_values, 1024)
     return "{} on {}".format(name, device), output.cpu()
 
 
@@ -80,7 +79,7 @@ def benchmark_radon2d(path: str):
     image, spacing = read_dicom(path, 2)
 
     outputs: list[TaskSummaryRadon2D] = [
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "RT2 V1", "cpu", image, spacing),
+        # run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "RT2 V1", "cpu", image, spacing),
         run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "RT2 V1", "cuda", image, spacing),
         run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d_v2, "RT2 V2", "cuda", image, spacing)
     ]

@@ -7,7 +7,6 @@
 
 namespace ExtensionTest {
 
-
 at::Tensor radon2d_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                        const at::Tensor &rValues, long samplesPerLine) {
 	// image should be a 2D tensor of floats on the CPU
@@ -90,6 +89,5 @@ at::Tensor dRadon2dDR_cpu(const at::Tensor &image, const at::Tensor &imageSpacin
 
 	return resultFlat.view(phiValues.sizes());
 }
-
 
 } // namespace ExtensionTest

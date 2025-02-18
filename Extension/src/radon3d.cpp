@@ -5,7 +5,6 @@
 
 namespace ExtensionTest {
 
-
 at::Tensor radon3d_cpu(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                        const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection) {
 	// volume should be a 3D array of floats on the CPU
@@ -99,6 +98,5 @@ at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, const at::Tensor &volumeSpac
 	}
 	return resultFlat.view(phiValues.sizes());
 }
-
 
 } // namespace ExtensionTest

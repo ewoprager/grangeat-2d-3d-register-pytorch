@@ -35,6 +35,8 @@ set(CMAKE_CUDA_COMPILER "${CUDA_HOME}/bin/nvcc")
 project(Extension
         LANGUAGES CXX CUDA)
 
+set(CMAKE_CUDA_STANDARD 17)
+
 # Get the PyTorch include directories
 execute_process(COMMAND ${Python3_EXECUTABLE} -c "import torch; from torch.utils import cpp_extension; print(cpp_extension.include_paths() + [cpp_extension.CUDA_HOME + '/include'])"
                 OUTPUT_VARIABLE TORCH_INCLUDE_DIRS
@@ -57,5 +59,15 @@ add_library(${PROJECT_NAME} SHARED
             ${SOURCES}
             ${CUDA_SOURCES}
             ${HEADERS})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+                      CUDA_SEPARABLE_COMPILATION ON
+)
+
+# This will define __CUDACC__, so your IDE will check the code as though it will compile with CUDA. Comment this line
+# out to have it check your code as though it will compile without CUDA.
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+                           __CUDACC__
+)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
