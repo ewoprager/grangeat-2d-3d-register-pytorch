@@ -5,22 +5,19 @@
 
 namespace ExtensionTest {
 
-at::Tensor radon2d_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
+at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                        const at::Tensor &rValues, long samplesPerLine);
 
-at::Tensor radon2d_v2_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
+at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                           const at::Tensor &rValues, long samplesPerLine);
 
-at::Tensor dRadon2dDR_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
-                          const at::Tensor &rValues, long samplesPerLine);
-
-__host__ at::Tensor radon2d_cuda(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
+__host__ at::Tensor Radon2D_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                                  const at::Tensor &rValues, long samplesPerLine);
 
-__host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, const at::Tensor &imageSpacing,
+__host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &imageSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine);
 
-__host__ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, const at::Tensor &imageSpacing,
+__host__ at::Tensor DRadon2DDR_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine);
 
 /**

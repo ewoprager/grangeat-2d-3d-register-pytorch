@@ -7,10 +7,10 @@ namespace ExtensionTest {
 
 using CommonData = Radon3D<Texture3DCUDA>::CommonData;
 
-__global__ void radon3d_kernel(Texture3DCUDA textureIn, long numelOut, float *arrayOut,
-                               Linear<Vec<double, 3> > mappingIToOffset, const float *phiValues,
-                               const float *thetaValues, const float *rValues, long samplesPerDirection,
-                               float scaleFactor) {
+__global__ void Kernel_Radon3D_CUDA(Texture3DCUDA textureIn, long numelOut, float *arrayOut,
+                                    Linear<Vec<double, 3> > mappingIToOffset, const float *phiValues,
+                                    const float *thetaValues, const float *rValues, long samplesPerDirection,
+                                    float scaleFactor) {
 	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	if (threadIndex >= numelOut) return;
 	const Linear2<Vec<double, 3> > mappingIndexToTexCoord = Radon3D<Texture3DCUDA>::GetMappingIndexToTexCoord(
@@ -19,7 +19,7 @@ __global__ void radon3d_kernel(Texture3DCUDA textureIn, long numelOut, float *ar
 		                        textureIn, mappingIndexToTexCoord, samplesPerDirection);
 }
 
-__host__ at::Tensor radon3d_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
+__host__ at::Tensor Radon3D_CUDA(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                                  const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection) {
 	CommonData common = Radon3D<Texture3DCUDA>::Common(volume, volumeSpacing, phiValues, thetaValues, rValues,
 	                                                   samplesPerDirection, at::DeviceType::CUDA);
@@ -35,16 +35,16 @@ __host__ at::Tensor radon3d_cuda(const at::Tensor &volume, const at::Tensor &vol
 
 	constexpr int blockSize = 512;
 	const int gridSize = (static_cast<unsigned>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
-	radon3d_kernel<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(), resultFlatPtr,
-	                                        common.mappingIndexToOffset, phiFlatPtr, thetaFlatPtr, rFlatPtr,
-	                                        samplesPerDirection, common.scaleFactor);
+	Kernel_Radon3D_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(),
+	                                             resultFlatPtr, common.mappingIndexToOffset, phiFlatPtr, thetaFlatPtr,
+	                                             rFlatPtr, samplesPerDirection, common.scaleFactor);
 	return common.flatOutput.view(phiValues.sizes());
 }
 
-__global__ void dRadon3dDR_kernel(Texture3DCUDA textureIn, long numelOut, float *arrayOut,
-                                  Linear<Vec<double, 3> > mappingIToOffset, const float *phiValues,
-                                  const float *thetaValues, const float *rValues, long samplesPerDirection,
-                                  float scaleFactor) {
+__global__ void Kernel_DRadon3DDR_CUDA(Texture3DCUDA textureIn, long numelOut, float *arrayOut,
+                                       Linear<Vec<double, 3> > mappingIToOffset, const float *phiValues,
+                                       const float *thetaValues, const float *rValues, long samplesPerDirection,
+                                       float scaleFactor) {
 	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	if (threadIndex >= numelOut) return;
 	const float phi = phiValues[threadIndex];
@@ -57,7 +57,7 @@ __global__ void dRadon3dDR_kernel(Texture3DCUDA textureIn, long numelOut, float 
 		                        textureIn, mappingIndexToTexCoord, dTexCoordDR, samplesPerDirection);
 }
 
-__host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing,
+__host__ at::Tensor DRadon3DDR_CUDA(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                     const at::Tensor &rValues, long samplesPerDirection) {
 	CommonData common = Radon3D<Texture3DCUDA>::Common(volume, volumeSpacing, phiValues, thetaValues, rValues,
@@ -74,22 +74,22 @@ __host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, const at::Tensor &
 
 	constexpr int blockSize = 512;
 	const int gridSize = (static_cast<unsigned>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
-	dRadon3dDR_kernel<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(), resultFlatPtr,
-	                                           common.mappingIndexToOffset, phiFlatPtr, thetaFlatPtr, rFlatPtr,
-	                                           samplesPerDirection, common.scaleFactor);
+	Kernel_DRadon3DDR_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(),
+	                                                resultFlatPtr, common.mappingIndexToOffset, phiFlatPtr,
+	                                                thetaFlatPtr, rFlatPtr, samplesPerDirection, common.scaleFactor);
 	return common.flatOutput.view(phiValues.sizes());
 }
 
 struct Radon3DV2Consts {
 	cudaTextureObject_t textureHandle{};
 	long samplesPerDirection{};
-	float scaleFactor{};
+	double scaleFactor{};
 	float *patchSumsArray{};
 };
 
 __device__ __constant__ Radon3DV2Consts radon3DV2Consts{};
 
-__global__ void radon3d_v2_kernel(Linear2<Vec<double, 3> > mappingIndexToTexCoord) {
+__global__ void Kernel_Radon3D_CUDA_V2(Linear2<Vec<double, 3> > mappingIndexToTexCoord) {
 	extern __shared__ float buffer[];
 
 	const long i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -118,7 +118,7 @@ __global__ void radon3d_v2_kernel(Linear2<Vec<double, 3> > mappingIndexToTexCoor
 	}
 }
 
-__global__ void radon3d_v3_kernel(Linear2<Vec<double, 3> > mappingIndexToTexCoord) {
+__global__ void Kernel_Radon3D_CUDA_V3(Linear2<Vec<double, 3> > mappingIndexToTexCoord) {
 	extern __shared__ float buffer[];
 
 	// REQUIRED: blockDim.x must be equal to blockDim.y
@@ -153,7 +153,7 @@ __global__ void radon3d_v3_kernel(Linear2<Vec<double, 3> > mappingIndexToTexCoor
 	}
 }
 
-__host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing,
+__host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                     const at::Tensor &rValues, long samplesPerDirection) {
 	CommonData common = Radon3D<Texture3DCUDA>::Common(volume, volumeSpacing, phiValues, thetaValues, rValues,
@@ -178,7 +178,7 @@ __host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, const at::Tensor &
 			common.inputTexture, phiFlat[i].item().toFloat(), thetaFlat[i].item().toFloat(), rFlat[i].item().toFloat(),
 			common.mappingIndexToOffset);
 
-		radon3d_v3_kernel<<<gridSize, blockSize, bufferSize>>>(mappingIndexToTexCoord);
+		Kernel_Radon3D_CUDA_V3<<<gridSize, blockSize, bufferSize>>>(mappingIndexToTexCoord);
 
 		common.flatOutput.index_put_({i}, patchSums.sum());
 	}
@@ -197,7 +197,7 @@ struct DRadon3DDRV2Consts {
 
 __device__ __constant__ DRadon3DDRV2Consts dRadon3DDRV2Consts{};
 
-__global__ void dRadon3dDR_v2_kernel(Linear2<Vec<double, 3> > mappingIndexToTexCoord, Vec<double, 3> dTexCoordDR) {
+__global__ void Kernel_DRadon3DDR_CUDA_V2(Linear2<Vec<double, 3> > mappingIndexToTexCoord, Vec<double, 3> dTexCoordDR) {
 	extern __shared__ float buffer[];
 
 	// REQUIRED: blockDim.x must be equal to blockDim.y
@@ -237,7 +237,7 @@ __global__ void dRadon3dDR_v2_kernel(Linear2<Vec<double, 3> > mappingIndexToTexC
 	}
 }
 
-__host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing,
+__host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                        const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                        const at::Tensor &rValues, long samplesPerDirection) {
 	CommonData common = Radon3D<Texture3DCUDA>::Common(volume, volumeSpacing, phiValues, thetaValues, rValues,
@@ -266,7 +266,7 @@ __host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, const at::Tenso
 			common.inputTexture, phi, theta, r, common.mappingIndexToOffset);
 		const Vec<double, 3> dTexCoordDR = Radon3D<Texture3DCUDA>::GetDTexCoordDR(common.inputTexture, phi, theta, r);
 
-		dRadon3dDR_v2_kernel<<<gridSize, blockSize, bufferSize>>>(mappingIndexToTexCoord, dTexCoordDR);
+		Kernel_DRadon3DDR_CUDA_V2<<<gridSize, blockSize, bufferSize>>>(mappingIndexToTexCoord, dTexCoordDR);
 
 		common.flatOutput.index_put_({i}, patchSums.sum());
 	}

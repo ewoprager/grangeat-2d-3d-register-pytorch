@@ -14,9 +14,9 @@ def radon2d_v2(image: torch.Tensor, image_spacing: torch.Tensor, phi_values: tor
     return torch.ops.ExtensionTest.radon2d_v2.default(image, image_spacing, phi_values, r_values, samples_per_line)
 
 
-def dRadon2dDR(image: torch.Tensor, image_spacing: torch.Tensor, phi_values: torch.Tensor, r_values: torch.Tensor,
-               samples_per_line: int) -> torch.Tensor:
-    return torch.ops.ExtensionTest.dRadon2dDR.default(image, image_spacing, phi_values, r_values, samples_per_line)
+def d_radon2d_dr(image: torch.Tensor, image_spacing: torch.Tensor, phi_values: torch.Tensor, r_values: torch.Tensor,
+                 samples_per_line: int) -> torch.Tensor:
+    return torch.ops.ExtensionTest.d_radon2d_dr.default(image, image_spacing, phi_values, r_values, samples_per_line)
 
 
 def radon3d(volume: torch.Tensor, volume_spacing: torch.Tensor, phi_values: torch.Tensor, theta_values: torch.Tensor,
@@ -34,20 +34,19 @@ def radon3d_v2(volume: torch.Tensor, volume_spacing: torch.Tensor, phi_values: t
                                                       samples_per_direction)
 
 
-def dRadon3dDR(volume: torch.Tensor, volume_spacing: torch.Tensor, phi_values: torch.Tensor, theta_values: torch.Tensor,
-               r_values: torch.Tensor, samples_per_direction: int) -> torch.Tensor:
-    return torch.ops.ExtensionTest.dRadon3dDR.default(volume, volume_spacing, phi_values, theta_values, r_values,
-                                                      samples_per_direction)
+def d_radon3d_dr(volume: torch.Tensor, volume_spacing: torch.Tensor, phi_values: torch.Tensor,
+                 theta_values: torch.Tensor, r_values: torch.Tensor, samples_per_direction: int) -> torch.Tensor:
+    return torch.ops.ExtensionTest.d_radon3d_dr.default(volume, volume_spacing, phi_values, theta_values, r_values,
+                                                        samples_per_direction)
 
 
-def dRadon3dDR_v2(volume: torch.Tensor, volume_spacing: torch.Tensor, phi_values: torch.Tensor,
-                  theta_values: torch.Tensor, r_values: torch.Tensor, samples_per_direction: int) -> torch.Tensor:
-    return torch.ops.ExtensionTest.dRadon3dDR_v2.default(volume, volume_spacing, phi_values, theta_values, r_values,
-                                                         samples_per_direction)
+def d_radon3d_dr_v2(volume: torch.Tensor, volume_spacing: torch.Tensor, phi_values: torch.Tensor,
+                    theta_values: torch.Tensor, r_values: torch.Tensor, samples_per_direction: int) -> torch.Tensor:
+    return torch.ops.ExtensionTest.d_radon3d_dr_v2.default(volume, volume_spacing, phi_values, theta_values, r_values,
+                                                           samples_per_direction)
 
 
-def resample_radon_volume(sinogram3d: torch.Tensor, sinogram_spacing: torch.Tensor,
-                          sinogram_range_centres: torch.Tensor, projection_matrix: torch.Tensor, phi_grid: torch.Tensor,
-                          r_grid: torch.Tensor) -> torch.Tensor:
-    return torch.ops.ExtensionTest.resample_radon_volume.default(sinogram3d, sinogram_spacing, sinogram_range_centres,
-                                                                 projection_matrix, phi_grid, r_grid)
+def resample_sinogram3d(sinogram3d: torch.Tensor, sinogram_spacing: torch.Tensor, sinogram_range_centres: torch.Tensor,
+                        projection_matrix: torch.Tensor, phi_grid: torch.Tensor, r_grid: torch.Tensor) -> torch.Tensor:
+    return torch.ops.ExtensionTest.resample_sinogram3d.default(sinogram3d, sinogram_spacing, sinogram_range_centres,
+                                                               projection_matrix, phi_grid, r_grid)

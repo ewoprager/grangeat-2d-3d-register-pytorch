@@ -111,8 +111,8 @@ def benchmark_dRadon2dDR(path: str):
     image, spacing = read_dicom(path, 1)
 
     outputs: list[TaskSummaryRadon2D] = [
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.dRadon2dDR, "dRT2-dR V1", "cpu", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.dRadon2dDR, "dRT2-dR V1", "cuda", image, spacing)]
+        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.d_radon2d_dr, "dRT2-dR V1", "cpu", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.d_radon2d_dr, "dRT2-dR V1", "cuda", image, spacing)]
 
     print("Calculating discrepancies...")
     found: bool = False

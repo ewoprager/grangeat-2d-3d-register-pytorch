@@ -130,9 +130,9 @@ def benchmark_dRadon3dDR(path: str):
     # output_size = torch.tensor([100, 100, 100])
 
     outputs: list[TaskSummaryRadon3D] = [
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR, "dRT3-dR V1", "cuda", image, spacing,
+        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.d_radon3d_dr, "dRT3-dR V1", "cuda", image, spacing,
                  output_size, bounds),
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.dRadon3dDR_v2, "dRT3-dR V2", "cuda", image, spacing,
+        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.d_radon3d_dr_v2, "dRT3-dR V2", "cuda", image, spacing,
                  output_size, bounds)]
 
     print("Calculating discrepancies...")

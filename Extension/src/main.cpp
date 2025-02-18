@@ -2,7 +2,7 @@
 
 #include "../include/Radon3D.h"
 #include "../include/Radon2D.h"
-#include "../include/Texture3DCPU.h"
+#include "../include/ResampleSinogram3D.h"
 
 namespace ExtensionTest {
 
@@ -14,24 +14,24 @@ TORCH_LIBRARY(ExtensionTest, m) {
 	// Note that "int" in the schema corresponds to the C++ `long` type and the Python `int` type.
 	m.def("radon2d(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
 	m.def("radon2d_v2(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
-	m.def("dRadon2dDR(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
+	m.def("d_radon2d_dr(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
 	m.def("radon3d(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def("radon3d_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
-	m.def("dRadon3dDR(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
-	m.def("dRadon3dDR_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
+	m.def("d_radon3d_dr(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
+	m.def("d_radon3d_dr_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def(
-		"resample_radon_volume(Tensor sin, Tensor spacing, Tensor centrePosition, Tensor projMat, Tensor phiGrid, Tensor rGrid) -> Tensor");
+		"resample_sinogram3d(Tensor sin, Tensor spacing, Tensor centrePosition, Tensor projMat, Tensor phiGrid, Tensor rGrid) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
-	m.impl("radon2d", &radon2d_cpu);
-	m.impl("radon2d_v2", &radon2d_cpu); // doesn't have its own cpu version
-	m.impl("dRadon2dDR", &dRadon2dDR_cpu);
-	m.impl("radon3d", &radon3d_cpu);
-	m.impl("radon3d_v2", &radon3d_cpu); // doesn't have its own cpu version
-	m.impl("dRadon3dDR", &dRadon3dDR_cpu);
-	m.impl("dRadon3dDR_v2", &dRadon3dDR_cpu); // doesn't have its own cpu version
-	m.impl("resample_radon_volume", &ResampleRadonVolume_cpu);
+	m.impl("radon2d", &Radon2D_CPU);
+	m.impl("radon2d_v2", &Radon2D_CPU); // doesn't have its own cpu version
+	m.impl("d_radon2d_dr", &DRadon2DDR_CPU);
+	m.impl("radon3d", &Radon3D_CPU);
+	m.impl("radon3d_v2", &Radon3D_CPU); // doesn't have its own cpu version
+	m.impl("d_radon3d_dr", &DRadon3DDR_CPU);
+	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CPU); // doesn't have its own cpu version
+	m.impl("resample_sinogram3d", &ResampleSinogram3DCPU);
 }
 
 #ifdef TORCH_VERSION_MAJOR
@@ -39,13 +39,13 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 #pragma message("using CUDA")
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
-	m.impl("radon2d", &radon2d_cuda);
-	m.impl("radon2d_v2", &radon2d_v2_cuda);
-	m.impl("dRadon2dDR", &dRadon2dDR_cuda);
-	m.impl("radon3d", &radon3d_cuda);
-	m.impl("radon3d_v2", &radon3d_v2_cuda);
-	m.impl("dRadon3dDR", &dRadon3dDR_cuda);
-	m.impl("dRadon3dDR_v2", &dRadon3dDR_v2_cuda);
+	m.impl("radon2d", &Radon2D_CUDA);
+	m.impl("radon2d_v2", &Radon2D_CUDA_V2);
+	m.impl("d_radon2d_dr", &DRadon2DDR_CUDA);
+	m.impl("radon3d", &Radon3D_CUDA);
+	m.impl("radon3d_v2", &Radon3D_CUDA_V2);
+	m.impl("d_radon3d_dr", &DRadon3DDR_CUDA);
+	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CUDA_V2);
 }
 
 #endif

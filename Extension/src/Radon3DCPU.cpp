@@ -7,7 +7,7 @@ namespace ExtensionTest {
 
 using CommonData = Radon3D<Texture3DCPU>::CommonData;
 
-at::Tensor radon3d_cpu(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
+at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                        const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection) {
 	const CommonData common = Radon3D<Texture3DCPU>::Common(volume, volumeSpacing, phiValues, thetaValues, rValues,
 	                                                        samplesPerDirection, at::DeviceType::CPU);
@@ -28,7 +28,7 @@ at::Tensor radon3d_cpu(const at::Tensor &volume, const at::Tensor &volumeSpacing
 	return common.flatOutput.view(phiValues.sizes());
 }
 
-at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
+at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                           const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection) {
 	const CommonData common = Radon3D<Texture3DCPU>::Common(volume, volumeSpacing, phiValues, thetaValues, rValues,
 	                                                        samplesPerDirection, at::DeviceType::CPU);

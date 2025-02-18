@@ -5,24 +5,24 @@
 
 namespace ExtensionTest {
 
-at::Tensor radon3d_cpu(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
+at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                        const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection);
 
-at::Tensor dRadon3dDR_cpu(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
+at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                           const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection);
 
-__host__ at::Tensor radon3d_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
+__host__ at::Tensor Radon3D_CUDA(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                                  const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection);
 
-__host__ at::Tensor dRadon3dDR_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing,
+__host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                     const at::Tensor &rValues, long samplesPerDirection);
 
-__host__ at::Tensor radon3d_v2_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing,
+__host__ at::Tensor DRadon3DDR_CUDA(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                     const at::Tensor &rValues, long samplesPerDirection);
 
-__host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, const at::Tensor &volumeSpacing,
+__host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                        const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                        const at::Tensor &rValues, long samplesPerDirection);
 

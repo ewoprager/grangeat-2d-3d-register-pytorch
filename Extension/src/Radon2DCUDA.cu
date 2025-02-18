@@ -7,9 +7,9 @@ namespace ExtensionTest {
 
 using CommonData = Radon2D<Texture2DCUDA>::CommonData;
 
-__global__ void radon2d_kernel(Texture2DCUDA textureIn, long numelOut, float *arrayOut,
-                               Linear<Vec<double, 2> > mappingIndexToOffset, const float *phiValues,
-                               const float *rValues, long samplesPerLine, float scaleFactor) {
+__global__ void Kernel_Radon2D_CUDA(Texture2DCUDA textureIn, long numelOut, float *arrayOut,
+                                    Linear<Vec<double, 2> > mappingIndexToOffset, const float *phiValues,
+                                    const float *rValues, long samplesPerLine, float scaleFactor) {
 	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	if (threadIndex >= numelOut) return;
 	const Linear<Vec<double, 2> > mappingIndexToTexCoord = Radon2D<Texture2DCUDA>::GetMappingIndexToTexCoord(
@@ -18,7 +18,7 @@ __global__ void radon2d_kernel(Texture2DCUDA textureIn, long numelOut, float *ar
 		                        textureIn, mappingIndexToTexCoord, samplesPerLine);
 }
 
-__host__ at::Tensor radon2d_cuda(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
+__host__ at::Tensor Radon2D_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                                  const at::Tensor &rValues, long samplesPerLine) {
 	CommonData common = Radon2D<Texture2DCUDA>::Common(image, imageSpacing, phiValues, rValues, samplesPerLine,
 	                                                   at::DeviceType::CUDA);
@@ -32,15 +32,15 @@ __host__ at::Tensor radon2d_cuda(const at::Tensor &image, const at::Tensor &imag
 
 	constexpr int blockSize = 256;
 	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
-	radon2d_kernel<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(), resultFlatPtr,
-	                                        common.mappingIndexToOffset, phiFlatPtr, rFlatPtr, samplesPerLine,
-	                                        common.scaleFactor);
+	Kernel_Radon2D_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(),
+	                                             resultFlatPtr, common.mappingIndexToOffset, phiFlatPtr, rFlatPtr,
+	                                             samplesPerLine, common.scaleFactor);
 	return common.flatOutput.view(phiValues.sizes());
 }
 
-__global__ void dRadon2dDR_kernel(Texture2DCUDA textureIn, long numelOut, float *arrayOut,
-                                  Linear<Vec<double, 2> > mappingIndexToOffset, const float *phiValues,
-                                  const float *rValues, long samplesPerLine, float scaleFactor) {
+__global__ void Kernel_DRadon2DDR_CUDA(Texture2DCUDA textureIn, long numelOut, float *arrayOut,
+                                       Linear<Vec<double, 2> > mappingIndexToOffset, const float *phiValues,
+                                       const float *rValues, long samplesPerLine, float scaleFactor) {
 	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	if (threadIndex >= numelOut) return;
 	const Linear<Vec<double, 2> > mappingIndexToTexCoord = Radon2D<Texture2DCUDA>::GetMappingIndexToTexCoord(
@@ -51,7 +51,7 @@ __global__ void dRadon2dDR_kernel(Texture2DCUDA textureIn, long numelOut, float 
 		                        textureIn, mappingIndexToTexCoord, dTexCoordDR, samplesPerLine);
 }
 
-at::Tensor dRadon2dDR_cuda(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
+at::Tensor DRadon2DDR_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                            const at::Tensor &rValues, long samplesPerLine) {
 	CommonData common = Radon2D<Texture2DCUDA>::Common(image, imageSpacing, phiValues, rValues, samplesPerLine,
 	                                                   at::DeviceType::CUDA);
@@ -65,9 +65,9 @@ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, const at::Tensor &imageSpaci
 
 	constexpr int blockSize = 256;
 	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
-	dRadon2dDR_kernel<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(), resultFlatPtr,
-	                                           common.mappingIndexToOffset, phiFlatPtr, rFlatPtr, samplesPerLine,
-	                                           common.scaleFactor);
+	Kernel_DRadon2DDR_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(),
+	                                                resultFlatPtr, common.mappingIndexToOffset, phiFlatPtr, rFlatPtr,
+	                                                samplesPerLine, common.scaleFactor);
 	return common.flatOutput.view(phiValues.sizes());
 }
 
@@ -80,7 +80,7 @@ struct Radon2DV2Consts {
 
 __device__ __constant__ Radon2DV2Consts radon2DV2Consts{};
 
-__global__ void radon2d_v2_kernel(const Linear<Vec<double, 2> > mappingIndexToTexCoord) {
+__global__ void Kernel_Radon2D_CUDA_V2(const Linear<Vec<double, 2> > mappingIndexToTexCoord) {
 	extern __shared__ float buffer[];
 
 	const long i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -104,7 +104,7 @@ __global__ void radon2d_v2_kernel(const Linear<Vec<double, 2> > mappingIndexToTe
 	if (threadIdx.x == 0) radon2DV2Consts.patchSumsArray[blockIdx.x] = radon2DV2Consts.scaleFactor * buffer[0];
 }
 
-__host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, const at::Tensor &imageSpacing,
+__host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &imageSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine) {
 	CommonData common = Radon2D<Texture2DCUDA>::Common(image, imageSpacing, phiValues, rValues, samplesPerLine,
 	                                                   at::DeviceType::CUDA);
@@ -125,7 +125,7 @@ __host__ at::Tensor radon2d_v2_cuda(const at::Tensor &image, const at::Tensor &i
 		const Linear<Vec<double, 2> > mappingIndexToTexCoord = Radon2D<Texture2DCUDA>::GetMappingIndexToTexCoord(
 			common.inputTexture, phiFlat[i].item().toFloat(), rFlat[i].item().toFloat(), common.mappingIndexToOffset);
 
-		radon2d_v2_kernel<<<gridSize, blockSize, bufferSize>>>(mappingIndexToTexCoord);
+		Kernel_Radon2D_CUDA_V2<<<gridSize, blockSize, bufferSize>>>(mappingIndexToTexCoord);
 
 		common.flatOutput.index_put_({i}, patchSums.sum());
 	}

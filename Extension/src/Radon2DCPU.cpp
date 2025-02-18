@@ -9,7 +9,7 @@ namespace ExtensionTest {
 
 using CommonData = Radon2D<Texture2DCPU>::CommonData;
 
-at::Tensor radon2d_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
+at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                        const at::Tensor &rValues, long samplesPerLine) {
 	const CommonData common = Radon2D<Texture2DCPU>::Common(image, imageSpacing, phiValues, rValues, samplesPerLine,
 	                                                        at::DeviceType::CPU);
@@ -27,7 +27,7 @@ at::Tensor radon2d_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, 
 	return common.flatOutput.view(phiValues.sizes());
 }
 
-at::Tensor dRadon2dDR_cpu(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
+at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                           const at::Tensor &rValues, long samplesPerLine) {
 	const CommonData common = Radon2D<Texture2DCPU>::Common(image, imageSpacing, phiValues, rValues, samplesPerLine,
 	                                                        at::DeviceType::CPU);

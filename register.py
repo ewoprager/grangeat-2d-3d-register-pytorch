@@ -75,8 +75,8 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformat
     sinogram_spacing = (sinogram_range_high - sinogram_range_low) / (
             torch.tensor(sinogram3d.size(), dtype=torch.float32) - 1.)
     sinogram_range_centres = .5 * (sinogram_range_low + sinogram_range_high)
-    resampled = Extension.resample_radon_volume(sinogram3d, sinogram_spacing, sinogram_range_centres, ph_matrix,
-                                                fixed_image_grid.phi, fixed_image_grid.r)
+    resampled = Extension.resample_sinogram3d(sinogram3d, sinogram_spacing, sinogram_range_centres, ph_matrix,
+                                              fixed_image_grid.phi, fixed_image_grid.r)
 
     if plot:
         _, axes = plt.subplots()
