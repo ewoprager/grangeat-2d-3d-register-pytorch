@@ -21,9 +21,9 @@ using CommonData = ResampleSinogram3D<Texture3DCPU>::CommonData;
  * @param rValues
  * @return
  */
-at::Tensor ResampleSinogram3DCPU(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
-                                 const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
-                                 const at::Tensor &phiValues, const at::Tensor &rValues) {
+at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
+                                  const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
+                                  const at::Tensor &phiValues, const at::Tensor &rValues) {
 	const CommonData common = ResampleSinogram3D<Texture3DCPU>::Common(sinogram3d, sinogramSpacing,
 	                                                                   sinogramRangeCentres, projectionMatrix,
 	                                                                   phiValues, rValues, at::DeviceType::CPU);
@@ -39,31 +39,28 @@ at::Tensor ResampleSinogram3DCPU(const at::Tensor &sinogram3d, const at::Tensor 
 	                                       originProjectionHomogeneous[3].item().toFloat();
 	const float squareRadius = .25f * originProjection.Apply<float>(&Square<float>).Sum();
 
-	const at::Tensor pht = projectionMatrix.t();
+	const Vec<Vec<float, 4>, 4> pht = Vec<Vec<float, 4>, 4>::FromTensor2D(projectionMatrix.t());
 
 	for (int i = 0; i < common.flatOutput.numel(); ++i) {
 		const float phi = phiFlat[i].item().toFloat();
 		const float r = rFlat[i].item().toFloat();
 		const float cp = cosf(phi);
 		const float sp = sinf(phi);
-		const at::Tensor intermediate = matmul(pht, torch::tensor({{cp, sp, 0.f, -r}}).t());
-		const float minusDOverSqMagN = -intermediate[3].item().toFloat() / (
-			                               intermediate[0].item().toFloat() * intermediate[0].item().toFloat() +
-			                               intermediate[1].item().toFloat() * intermediate[1].item().toFloat() +
-			                               intermediate[2].item().toFloat() * intermediate[2].item().toFloat());
-		const float x = minusDOverSqMagN * intermediate[0].item().toFloat();
-		const float y = minusDOverSqMagN * intermediate[1].item().toFloat();
-		const float z = minusDOverSqMagN * intermediate[2].item().toFloat();
+		const Vec<float, 4> intermediate = MatMul(pht, Vec<float, 4>{cp, sp, 0.f, -r});
+		const Vec<float, 3> intermediate3 = intermediate.XYZ();
+		const Vec<float, 3> posCartesian = -intermediate.W() * intermediate3 / intermediate3.Apply<
+			                                   float>(&Square<float>).Sum();
 
 		Vec<double, 3> rThetaPhi{};
-		rThetaPhi.Z() = atan2(y, x);
+		rThetaPhi.Z() = atan2(posCartesian.Y(), posCartesian.X());
 		const bool over = rThetaPhi.Z() > .5 * M_PI;
 		const bool under = rThetaPhi.Z() < -.5 * M_PI;
 		if (over) rThetaPhi.Z() -= M_PI;
 		else if (under) rThetaPhi.Z() += M_PI;
-		const float magXY = x * x + y * y;
-		rThetaPhi.Y() = atan2(z, sqrt(magXY));
-		rThetaPhi.X() = static_cast<float>((static_cast<int>(!(over || under)) << 1) - 1) * sqrt(magXY + z * z);
+		const float magXY = posCartesian.X() * posCartesian.X() + posCartesian.Y() * posCartesian.Y();
+		rThetaPhi.Y() = atan2(posCartesian.Z(), sqrt(magXY));
+		rThetaPhi.X() = static_cast<float>((static_cast<int>(!(over || under)) << 1) - 1) * sqrt(
+			                magXY + posCartesian.Z() * posCartesian.Z());
 
 		resultFlatPtr[i] = common.inputTexture.Sample(common.mappingRThetaPhiToTexCoord(rThetaPhi));
 

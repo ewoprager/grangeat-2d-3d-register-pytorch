@@ -10,7 +10,7 @@
 
 namespace ExtensionTest {
 
-template <typename T> T Square(const T &x) { return x * x; }
+template <typename T> __host__ __device__ T Square(const T &x) { return x * x; }
 
 template <typename T> struct Linear2;
 
@@ -52,7 +52,6 @@ template <typename T> __host__ __device__ [[nodiscard]] Linear2<T> Linear<T>::op
 )(const Linear2<T> &other) const {
 	return {gradient * other.intercept + intercept, gradient * other.gradient1, gradient * other.gradient2};
 }
-
 
 #ifdef __CUDACC__
 

@@ -31,12 +31,8 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 	m.impl("radon3d_v2", &Radon3D_CPU); // doesn't have its own cpu version
 	m.impl("d_radon3d_dr", &DRadon3DDR_CPU);
 	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CPU); // doesn't have its own cpu version
-	m.impl("resample_sinogram3d", &ResampleSinogram3DCPU);
+	m.impl("resample_sinogram3d", &ResampleSinogram3D_CPU);
 }
-
-#ifdef TORCH_VERSION_MAJOR
-
-#pragma message("using CUDA")
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("radon2d", &Radon2D_CUDA);
@@ -46,8 +42,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("radon3d_v2", &Radon3D_CUDA_V2);
 	m.impl("d_radon3d_dr", &DRadon3DDR_CUDA);
 	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CUDA_V2);
+	m.impl("resample_sinogram3d", &ResampleSinogram3D_CUDA);
 }
-
-#endif
 
 } // namespace ExtensionTest

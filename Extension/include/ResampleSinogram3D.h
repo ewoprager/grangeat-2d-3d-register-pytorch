@@ -5,9 +5,13 @@
 
 namespace ExtensionTest {
 
-at::Tensor ResampleSinogram3DCPU(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
-                                 const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
-                                 const at::Tensor &phiGrid, const at::Tensor &rGrid);
+at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
+                                  const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
+                                  const at::Tensor &phiGrid, const at::Tensor &rGrid);
+
+__host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
+                                            const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
+                                            const at::Tensor &phiGrid, const at::Tensor &rGrid);
 
 template <typename texture_t> struct ResampleSinogram3D {
 

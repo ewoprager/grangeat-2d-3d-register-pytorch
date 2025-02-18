@@ -9,22 +9,25 @@ template <typename T, std::size_t N> class Vec : public std::array<T, N> {
 public:
 	static_assert(N > 0, "Vec size must be greater than 0");
 
+	using type = T;
+	static constexpr std::size_t dimensionality = N;
+
 	using Base = std::array<T, N>;
 
-	__host__ __device__ Vec() : Base() {
+	__host__ __device__ /**/Vec() : Base() {
 		for (T &e : *this) {
 			e = T{};
 		}
 	}
 
-	__host__ __device__ Vec(Base array) : Base(
+	__host__ __device__/**/Vec(Base array) : Base(
 #ifdef __CUDACC__
 		cuda::
 #endif
 		std::move(array)) {
 	}
 
-	__host__ __device__ Vec(std::initializer_list<T> l) : Base() {
+	__host__ __device__/**/Vec(std::initializer_list<T> l) : Base() {
 		int i = 0;
 		for (const T &e : l) {
 			(*this)[i] = e;
@@ -49,15 +52,23 @@ public:
 		}
 		return
 #ifdef __CUDACC__
-		cuda::
+			cuda::
 #endif
-		std::move(ret);
+			std::move(ret);
 	}
 
-	__host__ static constexpr Vec FromTensor(const at::Tensor &t) {
-		assert(t.sizes() == at::IntArrayRef{N});
+	__host__ static Vec FromTensor(const at::Tensor &t) {
+		assert(t.sizes() == at::IntArrayRef({N}));
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 			return {{t[indices].item().template to<T>()...}};
+		}(std::make_index_sequence<N>{});
+	}
+
+	__host__ static Vec FromTensor2D(const at::Tensor &t) {
+		static_assert(std::is_same_v<std::remove_const_t<decltype(T::dimensionality)>, std::size_t>);
+		assert(t.sizes() == at::IntArrayRef({N, T::dimensionality}));
+		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
+			return {{T::FromTensor(t.slice(1, indices, indices + 1).squeeze(1))...}};
 		}(std::make_index_sequence<N>{});
 	}
 
@@ -81,6 +92,12 @@ public:
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> T {
 			return ((*this)[indices] + ...);
 		}(std::make_index_sequence<N>{});
+	}
+
+	__host__ __device__ [[nodiscard]] constexpr Vec<T, 3> DeHomogenise() const {
+		static_assert(std::is_floating_point_v<T>, "Can only de-homogenise floating-point vectors");
+		static_assert(N == 4, "Can only de-homogenise 4-length vectors");
+		return Vec<T, 3>{X(), Y(), Z()} / W();
 	}
 
 	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N> StaticCast() const {
@@ -166,6 +183,9 @@ public:
 		static_assert(N > 3, "Vec size must be greater than 3 to access element W");
 		return (*this)[3];
 	}
+
+	__host__ __device__ [[nodiscard]] constexpr Vec<T, 2> XY() const { return {X(), Y()}; }
+	__host__ __device__ [[nodiscard]] constexpr Vec<T, 3> XYZ() const { return {X(), Y(), Z()}; }
 };
 
 // Element-wise addition: +
@@ -359,6 +379,20 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs <= rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
+}
+
+// Matrix-vector multiplication
+
+template <typename T, std::size_t R, std::size_t C> __host__ __device__ constexpr Vec<T, R> MatMul(
+	const Vec<Vec<T, R>, C> &lhs, const Vec<T, C> &rhs) {
+	constexpr auto rowDotProduct = []<std::size_t row>(const Vec<Vec<T, R>, C> &mat, const Vec<T, C> &vec) -> T {
+		return [&]<std::size_t... cols>(std::index_sequence<cols...>) -> T {
+			return ((mat[cols][row] * vec[cols]) + ...);
+		}(std::make_index_sequence<C>{});
+	};
+	return [&]<std::size_t... rows>(std::index_sequence<rows...>) -> std::array<T, R> {
+		return {{rowDotProduct.template operator()<rows>(lhs, rhs)...}};
+	}(std::make_index_sequence<R>{});
 }
 
 } // namespace ExtensionTest
