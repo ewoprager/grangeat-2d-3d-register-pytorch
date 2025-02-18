@@ -15,6 +15,13 @@ Cuda compilation tools, release 12.6, V12.6.85
 Build cuda_12.6.r12.6/compiler.35059454_0
 ```
 
+The build can be done faster with Ninja installed. Note that `setuptools` won't find the Ninja installation within Clion.
+
+On Ubuntu:
+```bash
+sudo apt install ninja-build
+```
+
 
 ### With `uv`
 

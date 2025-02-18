@@ -38,6 +38,39 @@ __host__ at::Tensor dRadon2dDR_cuda(const at::Tensor &image, const at::Tensor &i
  */
 template <typename texture_t> struct Radon2D {
 
+	struct CommonData {
+		texture_t inputTexture{};
+		Linear<Vec<double, 2> > mappingIndexToOffset{};
+		double scaleFactor{};
+		at::Tensor flatOutput{};
+	};
+
+	__host__ static CommonData Common(const at::Tensor &image, const at::Tensor &imageSpacing,
+	                                  const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine,
+	                                  at::DeviceType device) {
+		// image should be a 2D tensor of floats on the chosen device
+		TORCH_CHECK(image.sizes().size() == 2);
+		TORCH_CHECK(image.dtype() == at::kFloat);
+		TORCH_INTERNAL_ASSERT(image.device().type() == device);
+		// imageSpacing should be a 1D tensor of 2 floats or doubles
+		TORCH_CHECK(imageSpacing.sizes() == at::IntArrayRef{2});
+		TORCH_CHECK(imageSpacing.dtype() == at::kFloat || imageSpacing.dtype() == at::kDouble);
+		// phiValues and rValues should have the same sizes, should contain floats, and be on the chosen device
+		TORCH_CHECK(phiValues.sizes() == rValues.sizes());
+		TORCH_CHECK(phiValues.dtype() == at::kFloat);
+		TORCH_CHECK(rValues.dtype() == at::kFloat);
+		TORCH_INTERNAL_ASSERT(phiValues.device().type() == device);
+		TORCH_INTERNAL_ASSERT(rValues.device().type() == device);
+
+		CommonData ret{};
+		ret.inputTexture = texture_t::FromTensor(image, imageSpacing);
+		const double lineLength = sqrt(ret.inputTexture.SizeWorld().template Apply<double>(&Square<double>).Sum());
+		ret.mappingIndexToOffset = GetMappingIToOffset(lineLength, samplesPerLine);
+		ret.scaleFactor = lineLength / static_cast<float>(samplesPerLine);
+		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), image.contiguous().options());
+		return ret;
+	}
+
 	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2> > GetMappingIToOffset(
 		double lineLength, long samplesPerLine) {
 		return {Vec<double, 2>::Full(-.5f * lineLength),

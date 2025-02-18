@@ -41,6 +41,43 @@ __host__ at::Tensor dRadon3dDR_v2_cuda(const at::Tensor &volume, const at::Tenso
  */
 template <typename texture_t> struct Radon3D {
 
+	struct CommonData {
+		texture_t inputTexture{};
+		Linear<Vec<double, 3> > mappingIndexToOffset{};
+		double scaleFactor{};
+		at::Tensor flatOutput{};
+	};
+
+	__host__ static CommonData Common(const at::Tensor &volume, const at::Tensor &volumeSpacing,
+	                                  const at::Tensor &phiValues, const at::Tensor &thetaValues,
+	                                  const at::Tensor &rValues, long samplesPerDirection, at::DeviceType device) {
+		// volume should be a 3D array of floats on the chosen device
+		TORCH_CHECK(volume.sizes().size() == 3);
+		TORCH_CHECK(volume.dtype() == at::kFloat);
+		TORCH_INTERNAL_ASSERT(volume.device().type() == device);
+		// volumeSpacing should be a 1D tensor of 3 floats or doubles
+		TORCH_CHECK(volumeSpacing.sizes() == at::IntArrayRef{3});
+		TORCH_CHECK(volumeSpacing.dtype() == at::kFloat || volumeSpacing.dtype() == at::kDouble);
+		// phiValues, thetaValues and rValues should have matching sizes, contain floats, and be on the chosen device
+		TORCH_CHECK(phiValues.sizes() == thetaValues.sizes());
+		TORCH_CHECK(thetaValues.sizes() == rValues.sizes());
+		TORCH_CHECK(phiValues.dtype() == at::kFloat);
+		TORCH_CHECK(thetaValues.dtype() == at::kFloat);
+		TORCH_CHECK(rValues.dtype() == at::kFloat);
+		TORCH_INTERNAL_ASSERT(phiValues.device().type() == device);
+		TORCH_INTERNAL_ASSERT(thetaValues.device().type() == device);
+		TORCH_INTERNAL_ASSERT(rValues.device().type() == device);
+
+		CommonData ret{};
+		ret.inputTexture = texture_t::FromTensor(volume, volumeSpacing);
+		const double planeSize = sqrtf(ret.inputTexture.SizeWorld().template Apply<double>(&Square<double>).Sum());
+		ret.mappingIndexToOffset = GetMappingIToOffset(planeSize, samplesPerDirection);
+		const double rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
+		ret.scaleFactor = rootScaleFactor * rootScaleFactor;
+		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), volume.contiguous().options());
+		return ret;
+	}
+
 	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 3> > GetMappingIToOffset(
 		double planeSize, long samplesPerDirection) {
 
