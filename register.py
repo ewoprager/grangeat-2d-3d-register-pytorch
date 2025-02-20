@@ -169,20 +169,20 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
                                                   transformation=transformation_ground_truth.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                   sinogram3d_range=sinogram3d_range, plot=True)
-    print(
-        "{:.4e}".format(zncc.item()# evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
-                        #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
-                        #                 plot=True)
-                        ))
+    print("{:.4e}".format(zncc.item()
+                          # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
+                          #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
+                          #                 plot=True)
+                          ))
 
-    plt.show()
-    low = torch.max(fixed_image.min(), resampled.min())
-    high = torch.min(fixed_image.max(), resampled.max())
-    overlaid = torch.stack((((fixed_image - low) / (high - low)).cpu(), ((resampled - low) / (high - low)).cpu(),
-                            torch.zeros_like(fixed_image, device='cpu')), dim=-1)
-    plt.imshow(overlaid)
+    # plt.show()
+    # low = torch.max(fixed_image.min(), resampled.min())
+    # high = torch.min(fixed_image.max(), resampled.max())
+    # overlaid = torch.stack((((fixed_image - low) / (high - low)).cpu(), ((resampled - low) / (high - low)).cpu(),
+    #                         torch.zeros_like(fixed_image, device='cpu')), dim=-1)
+    # plt.imshow(overlaid)
 
-    if False:
+    if True:
         n = 100
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -196,7 +196,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
                 torch.tensor([angle0s[i0], angle1s[i1], transformation_ground_truth.rotation[2]], device=device),
                 transformation_ground_truth.translation), scene_geometry=scene_geometry,
                                                           fixed_image_grid=sinogram2d_grid,
-                                                          sinogram3d_range=sinogram3d_range)
+                                                          sinogram3d_range=sinogram3d_range)[0]
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(nznccs)
         axes.set_title("landscape over two angle components")
@@ -205,15 +205,16 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.axis('square')
         plt.colorbar(mesh)
 
-    if False:
+    if True:
         n = 1000
         nznccs = torch.zeros(n)
         distances = torch.zeros(n)
         for i in tqdm(range(n)):
             transformation = Transformation.random(device=device)
             distances[i] = transformation_ground_truth.distance(transformation)
-            nznccs[i] = -evaluate(fixed_image, sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
-                                  fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)
+            nznccs[i] = -objective_function.evaluate(fixed_image, sinogram3d, transformation=transformation,
+                                                     scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
+                                                     sinogram3d_range=sinogram3d_range)[0]
 
         _, axes = plt.subplots()
         axes.scatter(distances, nznccs)
@@ -221,12 +222,12 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.set_ylabel("-ZNCC")
         axes.set_title("Relationship between similarity measure and distance in SE3")
 
-    if False:
+    if True:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -objective_function.evaluate(fixed_image, sinogram3d,
                                                 transformation=Transformation(params[0:3], params[3:6]).to(
                                                     device=device), scene_geometry=scene_geometry,
-                                                fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)
+                                                fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)[0]
 
         print("Optimising...")
         param_history = []

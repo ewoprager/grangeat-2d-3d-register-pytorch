@@ -69,7 +69,7 @@ DRR generated at the converged transformation:
 
 ![converged_drr.png](figures/converged_drr.png)
 
-Optimisation completed in 5.942 seconds, performing a total of 779 function evaluations.
+Optimisation completed in 1.429 seconds, performing a total of 564 function evaluations.
 
 Here is a plot of the -ZNCC similarity between the fixed image and the resampled moving image against the distance in SE3
 between the transformation and the ground truth transformation for 1000 random transformations:

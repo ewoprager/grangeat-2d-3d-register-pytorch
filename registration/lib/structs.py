@@ -83,7 +83,7 @@ class Transformation(NamedTuple):
     @classmethod
     def random(cls, *, device=torch.device('cpu')) -> 'Transformation':
         return Transformation(torch.pi * (-1. + 2. * torch.rand(3, device=device)),
-                              75. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
+                              25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
                                   device=device).translation)
 
 
