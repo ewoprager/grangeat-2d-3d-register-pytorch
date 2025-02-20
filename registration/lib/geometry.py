@@ -52,8 +52,8 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     detector_ys, detector_xs = torch.meshgrid(detector_ys, detector_xs)
     directions: torch.Tensor = torch.nn.functional.normalize(
         torch.stack((detector_xs, detector_ys, torch.zeros_like(detector_xs)), dim=-1) - source_position, dim=-1)
-    volume_diag: torch.Tensor = (
-            torch.tensor(volume_data.size(), dtype=torch.float32, device=device) * voxel_spacing).flip(dims=(0,))
+    volume_diag: torch.Tensor = torch.tensor(volume_data.size(), dtype=torch.float32, device=device).flip(
+        dims=(0,)) * voxel_spacing
     volume_diag_length: torch.Tensor = volume_diag.norm()
     lambda_start: torch.Tensor = (source_position - transformation.translation).norm() - .5 * volume_diag_length
     lambda_end: torch.Tensor = lambda_start + volume_diag_length

@@ -26,10 +26,10 @@ import registration.objective_function as objective_function
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
                      *, device, save_to_cache=True):
-    transformation = Transformation(torch.tensor([0., 0., 0.]),
-                                    torch.tensor([0., 0., 500.])).to(device=device)
+    # transformation = Transformation(torch.tensor([0., 0., 0.]),
+    #                                 torch.tensor([0., 0., 200.])).to(device=device)
     # transformation = Transformation.zero(device=volume_data.device)
-    # transformation = Transformation.random(device=volume_data.device)
+    transformation = Transformation.random(device=volume_data.device)
     print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                             transformation.translation))
 
