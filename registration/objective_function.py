@@ -23,9 +23,10 @@ def zncc(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
 
 def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformation: Transformation,
              scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, sinogram3d_range: Sinogram3dRange,
-             plot: bool = False) -> torch.Tensor:
+             plot: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
     # resampled = grangeat.resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
     #                                     output_grid=fixed_image_grid, input_range=sinogram3d_range)
+
     device = sinogram3d.device
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
@@ -49,7 +50,8 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformat
         axes.set_ylabel("phi")
         plt.colorbar(mesh)
 
-    return zncc(fixed_image, resampled)
+    return zncc(fixed_image,
+                resampled), resampled  # return Extension.normalised_cross_correlation(fixed_image.cpu(), resampled.cpu())
 
 
 def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, transformation: Transformation,

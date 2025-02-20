@@ -78,12 +78,12 @@ class Transformation(NamedTuple):
 
     @classmethod
     def zero(cls, *, device=torch.device('cpu')) -> 'Transformation':
-        return Transformation(torch.zeros(3, device=device), torch.tensor([0., 0., 100.], device=device))
+        return Transformation(torch.zeros(3, device=device), torch.zeros(3, device=device))
 
     @classmethod
     def random(cls, *, device=torch.device('cpu')) -> 'Transformation':
         return Transformation(torch.pi * (-1. + 2. * torch.rand(3, device=device)),
-                              25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
+                              75. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
                                   device=device).translation)
 
 
@@ -116,7 +116,7 @@ class SceneGeometry(NamedTuple):
                                              central_ray) + torch.dot(central_ray, central_ray) * torch.vstack(
             (torch.eye(3, device=device), torch.zeros((1, 3), device=device)))
 
-        return torch.hstack((m_matrix, -torch.matmul(m_matrix, source_position.unsqueeze(-1))))
+        return torch.hstack((m_matrix, -torch.matmul(m_matrix, source_position.t().unsqueeze(-1))))
 
 
 class Sinogram2dGrid(NamedTuple):

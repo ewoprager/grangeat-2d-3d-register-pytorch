@@ -26,10 +26,10 @@ import registration.objective_function as objective_function
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
                      *, device, save_to_cache=True):
-    # transformation = Transformation(torch.tensor([0., 0., 0.]),
-    #                                 torch.tensor([10., 0., 0.]) + Transformation.zero().translation).to(device=device)
+    transformation = Transformation(torch.tensor([0., 0., 0.]),
+                                    torch.tensor([0., 0., 500.])).to(device=device)
     # transformation = Transformation.zero(device=volume_data.device)
-    transformation = Transformation.random(device=volume_data.device)
+    # transformation = Transformation.random(device=volume_data.device)
     print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                             transformation.translation))
 
@@ -131,7 +131,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
                                                                               path, volume_downsample_factor,
                                                                               device=device,
                                                                               save_to_cache=save_to_cache,
-                                                                              vol_counts=64)
+                                                                              vol_counts=256)
 
     voxel_spacing = voxel_spacing.to(device=device)
 
@@ -165,14 +165,22 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
 
     sinogram2d_grid = sinogram2d_range.generate_linear_grid(fixed_image.size(), device=device)
 
-    print("{:.4e}".format(objective_function.evaluate(fixed_image, sinogram3d,
-                                                      transformation=transformation_ground_truth.to(device=device),
-                                                      scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
-                                                      sinogram3d_range=sinogram3d_range, plot=True)
-                          # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
-                          #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
-                          #                 plot=True)
-                          ))
+    zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
+                                                  transformation=transformation_ground_truth.to(device=device),
+                                                  scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
+                                                  sinogram3d_range=sinogram3d_range, plot=True)
+    print(
+        "{:.4e}".format(zncc.item()# evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
+                        #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
+                        #                 plot=True)
+                        ))
+
+    plt.show()
+    low = torch.max(fixed_image.min(), resampled.min())
+    high = torch.min(fixed_image.max(), resampled.max())
+    overlaid = torch.stack((((fixed_image - low) / (high - low)).cpu(), ((resampled - low) / (high - low)).cpu(),
+                            torch.zeros_like(fixed_image, device='cpu')), dim=-1)
+    plt.imshow(overlaid)
 
     if False:
         n = 100
@@ -184,10 +192,11 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         for i in tqdm(range(nznccs.numel())):
             i0 = i % n
             i1 = i // n
-            nznccs[i1, i0] = -evaluate(fixed_image, sinogram3d, transformation=Transformation(
+            nznccs[i1, i0] = -objective_function.evaluate(fixed_image, sinogram3d, transformation=Transformation(
                 torch.tensor([angle0s[i0], angle1s[i1], transformation_ground_truth.rotation[2]], device=device),
                 transformation_ground_truth.translation), scene_geometry=scene_geometry,
-                                       fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)
+                                                          fixed_image_grid=sinogram2d_grid,
+                                                          sinogram3d_range=sinogram3d_range)
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(nznccs)
         axes.set_title("landscape over two angle components")

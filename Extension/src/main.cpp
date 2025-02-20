@@ -3,6 +3,7 @@
 #include "../include/Radon3D.h"
 #include "../include/Radon2D.h"
 #include "../include/ResampleSinogram3D.h"
+#include "../include/Similarity.h"
 
 namespace ExtensionTest {
 
@@ -21,6 +22,7 @@ TORCH_LIBRARY(ExtensionTest, m) {
 	m.def("d_radon3d_dr_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def(
 		"resample_sinogram3d(Tensor sinogram, Tensor spacing, Tensor centres, Tensor projMat, Tensor phis, Tensor rs) -> Tensor");
+	m.def("normalised_cross_correlation(Tensor a, Tensor b) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
@@ -32,6 +34,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 	m.impl("d_radon3d_dr", &DRadon3DDR_CPU);
 	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CPU); // doesn't have its own cpu version
 	m.impl("resample_sinogram3d", &ResampleSinogram3D_CPU);
+	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation);
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {

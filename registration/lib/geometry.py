@@ -4,7 +4,7 @@ from registration.lib.structs import *
 
 
 def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, scene_geometry: SceneGeometry,
-                                     transformation: Transformation) -> torch.Tensor:
+                                    transformation: Transformation) -> torch.Tensor:
     device = input_grid.phi.device
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
@@ -13,7 +13,7 @@ def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, scene_geometr
         (torch.cos(input_grid.phi), torch.sin(input_grid.phi), torch.zeros_like(input_grid.phi), -input_grid.r), dim=-1)
     n_tildes = torch.einsum('ij,...j->...i', ph_matrix.t(), intermediates)
     ns = n_tildes[..., 0:3]
-    n_sqmags = torch.einsum('...i,...i->...', ns, ns) + 1e-8
+    n_sqmags = torch.einsum('...i,...i->...', ns, ns) + 1e-12
     return -n_tildes[..., 3].unsqueeze(-1) * ns / n_sqmags.unsqueeze(-1)
 
 
@@ -88,7 +88,7 @@ def plane_integrals(volume_data: torch.Tensor, *, phi_values: torch.Tensor, thet
     assert phi_values.size() == theta_values.size()
     assert theta_values.size() == r_values.size()
 
-    vol_size_world = torch.tensor(volume_data.size(), dtype=torch.float32) * voxel_spacing
+    vol_size_world = torch.tensor(volume_data.size(), dtype=torch.float32) * voxel_spacing.flip(dims=(0,))
     plane_size = vol_size_world.square().sum().sqrt()
 
     def integrate_plane(phi: torch.Tensor, theta: torch.Tensor, r: torch.Tensor) -> torch.Tensor:

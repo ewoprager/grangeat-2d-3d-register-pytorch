@@ -51,3 +51,7 @@ def resample_sinogram3d(sinogram3d: torch.Tensor, sinogram_spacing: torch.Tensor
                         r_values: torch.Tensor) -> torch.Tensor:
     return torch.ops.ExtensionTest.resample_sinogram3d.default(sinogram3d, sinogram_spacing, sinogram_range_centres,
                                                                projection_matrix, phi_values, r_values)
+
+
+def normalised_cross_correlation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    return torch.ops.ExtensionTest.normalised_cross_correlation.default(a, b)

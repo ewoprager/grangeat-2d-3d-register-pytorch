@@ -109,8 +109,7 @@ def test_plane_integrals():
     theta_values = torch.tensor([0.1])
     # theta_values = torch.tensor([torch.pi * .25])
     r_values = torch.tensor([0.])
-    from_extension = ExtensionTest.radon3d(volume_data, voxel_spacing[2].item(), voxel_spacing[1].item(),
-                                           voxel_spacing[0].item(), phi_values, theta_values, r_values,
+    from_extension = ExtensionTest.radon3d(volume_data, voxel_spacing, phi_values, theta_values, r_values,
                                            samples_per_direction=10)
     phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
     from_python = plane_integrals(volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values,
@@ -124,8 +123,7 @@ def test_plane_integrals():
     phi_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 4, device=device)
     theta_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 4, device=device)
     r_values = torch.linspace(-.5 * volume_size, .5 * volume_size, 4, device=device)
-    radon = ExtensionTest.radon3d(volume_data, voxel_spacing[2].item(), voxel_spacing[1].item(),
-                                  voxel_spacing[0].item(), phi_values, theta_values, r_values,
+    radon = ExtensionTest.radon3d(volume_data, voxel_spacing, phi_values, theta_values, r_values,
                                   samples_per_direction=500)
     phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
     radon_python = plane_integrals(volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values,
