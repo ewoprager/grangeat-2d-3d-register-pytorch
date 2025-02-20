@@ -61,7 +61,7 @@ __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const 
                                             const at::Tensor &phiValues, const at::Tensor &rValues) {
 	CommonData common = ResampleSinogram3D<Texture3DCUDA>::Common(sinogram3d, sinogramSpacing, sinogramRangeCentres,
 	                                                              projectionMatrix, phiValues, rValues,
-	                                                              at::DeviceType::CPU);
+	                                                              at::DeviceType::CUDA);
 
 	const at::Tensor phiFlatContiguous = phiValues.flatten().contiguous();
 	const float *phiFlatPtr = phiFlatContiguous.data_ptr<float>();
@@ -70,7 +70,9 @@ __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const 
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	const at::Tensor originProjectionHomogeneous = matmul(projectionMatrix, torch::tensor({{0.f, 0.f, 0.f, 1.f}}).t());
+	const at::Tensor originProjectionHomogeneous = matmul(projectionMatrix,
+	                                                      torch::tensor(
+		                                                      {{0.f, 0.f, 0.f, 1.f}}, projectionMatrix.options()).t());
 	const Vec<float, 2> originProjection = Vec<float, 2>{originProjectionHomogeneous[0].item().toFloat(),
 	                                                     originProjectionHomogeneous[1].item().toFloat()} /
 	                                       originProjectionHomogeneous[3].item().toFloat();

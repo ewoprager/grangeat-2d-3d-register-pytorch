@@ -47,6 +47,7 @@ def d_radon3d_dr_v2(volume: torch.Tensor, volume_spacing: torch.Tensor, phi_valu
 
 
 def resample_sinogram3d(sinogram3d: torch.Tensor, sinogram_spacing: torch.Tensor, sinogram_range_centres: torch.Tensor,
-                        projection_matrix: torch.Tensor, phi_grid: torch.Tensor, r_grid: torch.Tensor) -> torch.Tensor:
+                        projection_matrix: torch.Tensor, phi_values: torch.Tensor,
+                        r_values: torch.Tensor) -> torch.Tensor:
     return torch.ops.ExtensionTest.resample_sinogram3d.default(sinogram3d, sinogram_spacing, sinogram_range_centres,
-                                                               projection_matrix, phi_grid, r_grid)
+                                                               projection_matrix, phi_values, r_values)

@@ -20,12 +20,18 @@ class LinearRange:
         self.low = low
         self.high = high
 
-    def generate_range(self, count: int, *, device) -> torch.Tensor:
+    def generate_range(self, count: int, *, device=torch.device('cpu')) -> torch.Tensor:
         return torch.linspace(self.low, self.high, count, device=device)
 
     def get_mapping_from(self, other: 'LinearRange') -> LinearMapping:
         frac: float = (self.high - self.low) / (other.high - other.low)
         return LinearMapping(self.low - frac * other.low, frac)
+
+    def get_spacing(self, count: int) -> float:
+        return (self.high - self.low) / float(count - 1)
+
+    def get_centre(self) -> float:
+        return .5 * (self.low + self.high)
 
     @classmethod
     def grid_sample_range(cls):
@@ -157,11 +163,25 @@ class Sinogram3dRange(NamedTuple):
     def generate_linear_grid(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device("cpu")):
         if isinstance(counts, int):
             counts = (counts, counts, counts)
+        elif isinstance(counts, torch.Size):
+            assert len(counts) == 3
         phis = torch.linspace(self.phi.low, self.phi.high, counts[0], device=device)
         thetas = torch.linspace(self.theta.low, self.theta.high, counts[1], device=device)
         rs = torch.linspace(self.r.low, self.r.high, counts[2], device=device)
         phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
         return Sinogram3dGrid(phis, thetas, rs)
+
+    def get_spacing(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device('cpu')) -> torch.Tensor:
+        if isinstance(counts, int):
+            counts = (counts, counts, counts)
+        elif isinstance(counts, torch.Size):
+            assert len(counts) == 3
+        return torch.tensor(
+            [self.r.get_spacing(counts[0]), self.theta.get_spacing(counts[1]), self.phi.get_spacing(counts[2])],
+            device=device)
+
+    def get_centres(self, *, device=torch.device('cpu')) -> torch.Tensor:
+        return torch.tensor([self.r.get_centre(), self.theta.get_centre(), self.phi.get_centre()], device=device)
 
 
 class VolumeSpec(NamedTuple):

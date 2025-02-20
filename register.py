@@ -16,167 +16,12 @@ import Extension
 # from diffdrr.visualization import plot_drr
 # from diffdrr.pose import RigidTransform, make_matrix
 
-from registration.common import *
-import registration.grangeat as grangeat
-import registration.geometry as geometry
-
-
-def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    print("Loading CT data file {}...".format(path))
-    data, header = nrrd.read(path)
-    print("Done.")
-    print("Processing CT data...")
-    sizes = header['sizes']
-    print("\tVolume size = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
-    data = torch.tensor(data, device="cpu")
-    image = torch.maximum(data.type(torch.float32) + 1000., torch.tensor([0.], device=data.device))
-    if downsample_factor > 1:
-        down_sampler = torch.nn.AvgPool3d(downsample_factor)
-        image = down_sampler(image[None, :, :, :])[0]
-    sizes = image.size()
-    print("\tVolume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
-    bounds = torch.Tensor([image.min().item(), image.max().item()])
-    print("\tValue range = ({:.3f}, {:.3f})".format(bounds[0], bounds[1]))
-    bounds[1] *= 10000.
-    directions = torch.tensor(header['space directions'])
-    spacing = float(downsample_factor) * directions.norm(dim=1)
-    print("\tCT voxel spacing = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
-    print("Done.")
-
-    return image, spacing, bounds
-
-
-def zncc(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
-    n = xs.numel()
-    assert (ys.size() == xs.size())
-    n = float(n)
-    sum_x = xs.sum()
-    sum_y = ys.sum()
-    sum_x2 = xs.square().sum()
-    sum_y2 = ys.square().sum()
-    sum_prod = (xs * ys).sum()
-    num = n * sum_prod - sum_x * sum_y
-    den = (n * sum_x2 - sum_x.square()).sqrt() * (n * sum_y2 - sum_y.square()).sqrt()
-    return num / den
-
-
-def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformation: Transformation,
-             scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, sinogram3d_range: Sinogram3dRange,
-             plot: bool = False) -> torch.Tensor:
-    # resampled = grangeat.resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
-    #                                     output_grid=fixed_image_grid, input_range=sinogram3d_range)
-    device = sinogram3d.device
-    source_position = scene_geometry.source_position(device=device)
-    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
-    sinogram_range_low = torch.tensor([sinogram3d_range.r.low, sinogram3d_range.theta.low, sinogram3d_range.phi.low])
-    sinogram_range_high = torch.tensor(
-        [sinogram3d_range.r.high, sinogram3d_range.theta.high, sinogram3d_range.phi.high])
-    sinogram_spacing = (sinogram_range_high - sinogram_range_low) / (
-            torch.tensor(sinogram3d.size(), dtype=torch.float32) - 1.)
-    sinogram_range_centres = .5 * (sinogram_range_low + sinogram_range_high)
-    resampled = Extension.resample_sinogram3d(sinogram3d, sinogram_spacing, sinogram_range_centres, ph_matrix,
-                                              fixed_image_grid.phi, fixed_image_grid.r)
-
-    if plot:
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(resampled.clone().cpu())
-        axes.axis('square')
-        axes.set_title("d/dr R3 [mu] resampled")
-        axes.set_xlabel("r")
-        axes.set_ylabel("phi")
-        plt.colorbar(mesh)
-
-    return zncc(fixed_image, resampled)
-
-
-def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, transformation: Transformation,
-                    scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, voxel_spacing: torch.Tensor,
-                    plot: bool = False) -> torch.Tensor:
-    direct = grangeat.directly_calculate_radon_slice(volume_data, transformation=transformation,
-                                                     scene_geometry=scene_geometry, output_grid=fixed_image_grid,
-                                                     voxel_spacing=voxel_spacing)
-    if plot:
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(direct.cpu())
-        axes.axis('square')
-        axes.set_title("d/dr R3 [mu] calculated directly")
-        axes.set_xlabel("r")
-        axes.set_ylabel("phi")
-        plt.colorbar(mesh)
-
-    return zncc(fixed_image, direct)
-
-
-def load_cached_volume(cache_directory: str):
-    file: str = cache_directory + "/volume_spec.pt"
-    try:
-        volume_spec = torch.load(file)
-    except:
-        print("No cache file '{}' found.".format(file))
-        return None
-    if not isinstance(volume_spec, VolumeSpec):
-        print("Cache file '{}' invalid.".format(file))
-        return None
-    path = volume_spec.ct_volume_path
-    volume_downsample_factor = volume_spec.downsample_factor
-    sinogram3d = volume_spec.sinogram
-    sinogram3d_range = volume_spec.sinogram_range
-    print("Loaded cached volume spec from '{}'".format(file))
-    return path, volume_downsample_factor, sinogram3d, sinogram3d_range
-
-
-def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
-                              ct_volume_path: str, volume_downsample_factor: int, *, device, save_to_cache=True,
-                              vol_counts=256):
-    print("Calculating 3D sinogram (the volume to resample)...")
-
-    vol_diag: float = (
-            voxel_spacing * torch.tensor(volume_data.size(), dtype=torch.float32)).square().sum().sqrt().item()
-    sinogram3d_range = Sinogram3dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
-                                       LinearRange(-.5 * torch.pi, .5 * torch.pi),
-                                       LinearRange(-.5 * vol_diag, .5 * vol_diag))
-
-    sinogram3d_grid = sinogram3d_range.generate_linear_grid(vol_counts, device=device)
-    sinogram3d = grangeat.calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
-                                                 samples_per_direction=vol_counts)
-
-    if save_to_cache:
-        torch.save(VolumeSpec(ct_volume_path, volume_downsample_factor, sinogram3d, sinogram3d_range),
-                   cache_directory + "/volume_spec.pt")
-
-    print("Done and saved.")
-
-    # X, Y, Z = torch.meshgrid(  #     [torch.arange(0, vol_counts, 1), torch.arange(0, vol_counts, 1), torch.arange(0, vol_counts, 1)])  # fig = pgo.Figure(data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=sinogram3d.cpu().flatten(),  #                                  isomin=sinogram3d.min().item(), isomax=sinogram3d.max().item(), opacity=.2, surface_count=21))  # fig.show()
-
-    # vol_image = ScalarImage(tensor=vol_data[None, :, :, :])  # vol_subject = read(vol_image, spacing=voxel_spacing)  # I believe that the detector array lies on the x-z plane, with x down, and z to the left (and so y outward)  # drr_generator = DRR(vol_subject,  # An object storing the CT volume, origin, and voxel spacing  #                     sdd=source_distance,  # Source-to-detector distance (i.e., focal length)  #                     height=int(torch.ceil(  #                         1.1 * voxel_spacing.mean() * torch.tensor(vol_size).max() / detector_spacing).item()),  #                     # Image height (if width is not provided, the generated DRR is square)  #                     delx=detector_spacing,  # Pixel spacing (in mm)  #                     ).to(device)  #
-
-    return sinogram3d, sinogram3d_range
-
-
-def load_cached_drr(cache_directory: str, ct_volume_path: str):
-    file: str = cache_directory + "/drr_spec.pt"
-    try:
-        drr_spec = torch.load(file)
-    except:
-        print("No cache file '{}' found.".format(file))
-        return None
-    if not isinstance(drr_spec, DrrSpec):
-        print("Cache file '{}' invalid.".format(file))
-        return None
-    if drr_spec.ct_volume_path != ct_volume_path:
-        print("Cached drr '{}' is from different volume = '{}'; required volume = {}.".format(file,
-                                                                                              drr_spec.ct_volume_path,
-                                                                                              ct_volume_path))
-        return None
-    detector_spacing = drr_spec.detector_spacing
-    scene_geometry = drr_spec.scene_geometry
-    drr_image = drr_spec.image
-    fixed_image = drr_spec.sinogram
-    sinogram2d_range = drr_spec.sinogram_range
-    transformation_ground_truth = drr_spec.transformation
-    print("Loaded cached drr spec from '{}'".format(file))
-    return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth
+from registration.lib.structs import *
+import registration.lib.grangeat as grangeat
+import registration.lib.geometry as geometry
+import registration.data as data
+import registration.pre_computed as pre_computed
+import registration.objective_function as objective_function
 
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
@@ -229,8 +74,8 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
 
 def register(path: str | None, *, cache_directory: str, load_cached: bool = True, regenerate_drr: bool = False,
              save_to_cache=True):
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = "cpu"
 
     # cal_image = torch.zeros((10, 10))
     # cal_image[0, 0] = 1.
@@ -265,7 +110,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     sinogram3d = None
     sinogram3d_range = None
     if load_cached:
-        volume_spec = load_cached_volume(cache_directory)
+        volume_spec = data.load_cached_volume(cache_directory)
 
     if volume_spec is None:
         volume_downsample_factor: int = 4
@@ -278,19 +123,21 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         vol_data[1, 1, 1] = 1.
         voxel_spacing = torch.tensor([10., 10., 10.])
     else:
-        vol_data, voxel_spacing, bounds = read_nrrd(path, downsample_factor=volume_downsample_factor)
+        vol_data, voxel_spacing, bounds = data.read_nrrd(path, downsample_factor=volume_downsample_factor)
         vol_data = vol_data.to(device=device, dtype=torch.float32)
 
     if sinogram3d is None or sinogram3d_range is None:
-        sinogram3d, sinogram3d_range = calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
-                                                                 volume_downsample_factor, device=device,
-                                                                 save_to_cache=save_to_cache, vol_counts=64)
+        sinogram3d, sinogram3d_range = pre_computed.calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing,
+                                                                              path, volume_downsample_factor,
+                                                                              device=device,
+                                                                              save_to_cache=save_to_cache,
+                                                                              vol_counts=64)
 
     voxel_spacing = voxel_spacing.to(device=device)
 
     drr_spec = None
     if not regenerate_drr:
-        drr_spec = load_cached_drr(cache_directory, path)
+        drr_spec = data.load_cached_drr(cache_directory, path)
 
     if drr_spec is None:
         drr_spec = generate_new_drr(cache_directory, path, vol_data, voxel_spacing, device=device,
@@ -318,13 +165,14 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
 
     sinogram2d_grid = sinogram2d_range.generate_linear_grid(fixed_image.size(), device=device)
 
-    print("{:.4e}".format(
-        evaluate(fixed_image, sinogram3d, transformation=transformation_ground_truth.to(device=device),
-                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range,
-                 plot=True)  # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
-        #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
-        #                 plot=True)
-    ))
+    print("{:.4e}".format(objective_function.evaluate(fixed_image, sinogram3d,
+                                                      transformation=transformation_ground_truth.to(device=device),
+                                                      scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
+                                                      sinogram3d_range=sinogram3d_range, plot=True)
+                          # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
+                          #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
+                          #                 plot=True)
+                          ))
 
     if False:
         n = 100
@@ -366,10 +214,10 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
 
     if False:
         def objective(params: torch.Tensor) -> torch.Tensor:
-            return -evaluate(fixed_image, sinogram3d,
-                             transformation=Transformation(params[0:3], params[3:6]).to(device=device),
-                             scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
-                             sinogram3d_range=sinogram3d_range)
+            return -objective_function.evaluate(fixed_image, sinogram3d,
+                                                transformation=Transformation(params[0:3], params[3:6]).to(
+                                                    device=device), scene_geometry=scene_geometry,
+                                                fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)
 
         print("Optimising...")
         param_history = []

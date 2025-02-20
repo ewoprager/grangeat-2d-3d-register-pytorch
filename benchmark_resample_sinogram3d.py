@@ -1,99 +1,114 @@
-from typing import Tuple
+from typing import Tuple, NamedTuple
 import matplotlib.pyplot as plt
-import plotly.graph_objects as pgo
 import time
 import torch
-import nrrd
 
 import Extension as ExtensionTest
 
-TaskSummaryRadon3D = Tuple[str, torch.Tensor]
+from registration.lib.structs import *
+import registration.data as data
+import registration.pre_computed as pre_computed
+from registration.lib.structs import LinearRange, SceneGeometry
+
+TaskSummaryResample = Tuple[str, torch.Tensor]
 
 
-def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    print("Loading CT data file {}...".format(path))
-    data, header = nrrd.read(path)
-    print("Done.")
-    print("Processing CT data...")
-    sizes = header['sizes']
-    print("\tVolume size = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
-    data = torch.tensor(data, device="cpu")
-    image = torch.maximum(data.type(torch.float32) + 1000., torch.tensor([0.], device=data.device))
-    if downsample_factor > 1:
-        down_sampler = torch.nn.AvgPool3d(downsample_factor)
-        image = down_sampler(image[None, :, :, :])[0]
-    sizes = image.size()
-    print("\tVolume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
-    bounds = torch.Tensor([image.min().item(), image.max().item()])
-    print("\tValue range = ({:.3f}, {:.3f})".format(bounds[0], bounds[1]))
-    bounds[1] *= 10000.
-    directions = torch.tensor(header['space directions'])
-    spacing = float(downsample_factor) * directions.norm(dim=1)
-    print("\tCT voxel spacing = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
-    print("Done.")
-
-    return image, spacing, bounds
+class FunctionParams(NamedTuple):
+    sinogram3d: torch.Tensor
+    spacing: torch.Tensor
+    range_centres: torch.Tensor
+    projection_matrix: torch.Tensor
+    phi_values: torch.Tensor
+    r_values: torch.Tensor
 
 
-def task_resample_sinogram3d(function, name: str, device: str, sinogram3d: torch.Tensor, spacing: torch.Tensor,
-                             range_centres: torch.Tensor, projection_matrix: torch.Tensor,
-                             output_size: torch.Tensor) -> TaskSummaryRadon3D:
-    phi_count = output_size[0].item()
-    r_count = output_size[1].item()
-    phi_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, phi_count, device=device)
-    image_height: torch.Tensor = spacing[0] * float(image.size()[0])
-    image_width: torch.Tensor = spacing[1] * float(image.size()[1])
-    image_diag = torch.sqrt(image_depth.square() + image_height.square() + image_width.square()).item()
-    r_values = torch.linspace(-.5 * image_diag, .5 * image_diag, r_count, device=device)
-    phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
-    output = function(image.to(device=device), spacing.to(device=device), phi_values, theta_values, r_values, 64)
+def task_resample_sinogram3d(function, name: str, device: str, params: FunctionParams) -> TaskSummaryResample:
+    output = function(params.sinogram3d.to(device=device), params.spacing.to(device=device),
+                      params.range_centres.to(device=device), params.projection_matrix.to(device=device),
+                      params.phi_values.to(device=device), params.r_values.to(device=device))
     name: str = "{}_on_{}".format(name, device)
     return name, output.cpu()
 
 
-def plot_task_resample_sinogram3d(summary: TaskSummaryRadon3D, bounds: torch.Tensor):
-    size = summary[1].size()
-    X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])
-    fig = pgo.Figure(data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=summary[1].flatten(),
-                                     isomin=bounds[0].item(), isomax=bounds[1].item(), opacity=.2, surface_count=21),
-                     layout=pgo.Layout(title=summary[0]))
-    fig.show()
+def plot_task_resample_sinogram3d(summary: TaskSummaryResample):
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(summary[1].clone())
+    axes.axis('square')
+    axes.set_title("d/dr R3 [mu] resampled: {}".format(summary[0]))
+    axes.set_xlabel("r")
+    axes.set_ylabel("phi")
+    plt.colorbar(mesh)
 
 
-def run_task(task, task_plot, function, name: str, device: str, image: torch.Tensor, spacing: torch.Tensor,
-             output_size: torch.Tensor, bounds: torch.Tensor):
+def run_task(task, task_plot, function, name: str, device: str, params: FunctionParams) -> TaskSummaryResample:
     print("Running {} on {}...".format(name, device))
     tic = time.time()
-    summary = task(function, name, device, image, spacing, output_size)
+    summary = task(function, name, device, params)
     toc = time.time()
     print("Done; took {:.3f}s. Saving and plotting...".format(toc - tic))
     torch.save(summary[1], "cache/{}.pt".format(summary[0]))
-    task_plot(summary, bounds)
+    task_plot(summary)
     print("Done.")
     return summary
 
 
-def benchmark_resample_sinogram3d(path: str):
+def benchmark_resample_sinogram3d(path: str, *, cache_directory: str, load_cached: bool = True,
+                                  save_to_cache: bool = True):
     print("----- Benchmarking resample_sinogram3d -----")
 
-    image = torch.zeros((5, 5, 5))
-    image[0, 0, 0] = 1.
-    image[4, 3, 2] = .5
+    cuda = torch.device('cuda')
 
-    spacing = torch.tensor([1., 1., 1.])
-    bounds = torch.tensor([image.min(), 5. * image.max()])
+    volume_spec = None
+    sinogram3d = None
+    sinogram3d_range = None
+    if load_cached:
+        volume_spec = data.load_cached_volume(cache_directory)
 
-    # image, spacing, bounds = read_nrrd(path, 8)
+    if volume_spec is None:
+        volume_downsample_factor: int = 4
+    else:
+        path, volume_downsample_factor, sinogram3d, sinogram3d_range = volume_spec
 
-    output_size = torch.tensor([64, 64, 64])
+    if path is None:
+        save_to_cache = False
+        vol_data = torch.zeros((3, 3, 3))
+        vol_data[1, 1, 1] = 1.
+        voxel_spacing = torch.tensor([10., 10., 10.])
+    else:
+        vol_data, voxel_spacing, bounds = data.read_nrrd(path, downsample_factor=volume_downsample_factor)
+        vol_data = vol_data.to(dtype=torch.float32)
 
-    outputs: list[TaskSummaryRadon3D] = [
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.radon3d, "RT3 V1", "cpu", image, spacing, output_size,
-                 bounds),
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.radon3d, "RT3 V1", "cuda", image, spacing, output_size,
-                 bounds),
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.radon3d_v2, "RT3 V2", "cuda", image, spacing,
-                 output_size, bounds)]
+    if sinogram3d is None or sinogram3d_range is None:
+        sinogram3d, sinogram3d_range = pre_computed.calculate_volume_sinogram(cache_directory, vol_data.to(device=cuda),
+                                                                              voxel_spacing.to(device=cuda), path,
+                                                                              volume_downsample_factor,
+                                                                              device=torch.device('cuda'),
+                                                                              save_to_cache=save_to_cache,
+                                                                              vol_counts=192)
+
+    vol_diag: float = (
+            torch.tensor([vol_data.size()], dtype=torch.float32) * voxel_spacing).square().sum().sqrt().item()
+
+    phi_values = LinearRange(-.5 * torch.pi, .5 * torch.pi).generate_range(1000)
+    r_values = LinearRange(-.5 * vol_diag, .5 * vol_diag).generate_range(1000)
+    phi_values, r_values = torch.meshgrid(phi_values, r_values)
+
+    scene_geometry = SceneGeometry(source_distance=1000.)
+    transformation = Transformation(rotation=torch.tensor([0., 0., 0.]), translation=torch.tensor([0., 0., 0.]))
+    source_position = scene_geometry.source_position()
+    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32)
+
+    params = FunctionParams(sinogram3d, sinogram3d_range.get_spacing(sinogram3d.size()), sinogram3d_range.get_centres(),
+                            ph_matrix, phi_values, r_values)
+
+    outputs: list[TaskSummaryResample] = [
+        run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, ExtensionTest.resample_sinogram3d,
+                 "ResampleSinogram3D", "cpu", params),
+        run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, ExtensionTest.resample_sinogram3d,
+                 "ResampleSinogram3D", "cuda", params)]
+
+    plt.show()
 
     print("Calculating discrepancies...")
     found: bool = False

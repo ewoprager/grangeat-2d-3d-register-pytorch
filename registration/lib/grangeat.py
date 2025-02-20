@@ -1,8 +1,8 @@
 import torch
 from tqdm import tqdm
 
-from registration.common import *
-import registration.geometry as geometry
+from registration.lib.structs import *
+import registration.lib.geometry as geometry
 
 import Extension as ExtensionTest
 

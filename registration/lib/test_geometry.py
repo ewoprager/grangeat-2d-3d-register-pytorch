@@ -2,7 +2,7 @@ import pytest
 import torch
 
 import Extension as ExtensionTest
-from registration.geometry import *
+from registration.lib.geometry import *
 
 
 def test_fixed_polar_to_moving_cartesian():

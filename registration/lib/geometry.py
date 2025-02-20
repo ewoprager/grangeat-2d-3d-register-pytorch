@@ -1,6 +1,6 @@
 import torch
 
-from registration.common import *
+from registration.lib.structs import *
 
 
 def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, scene_geometry: SceneGeometry,

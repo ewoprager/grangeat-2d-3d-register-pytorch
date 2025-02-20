@@ -7,11 +7,11 @@ namespace ExtensionTest {
 
 at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
                                   const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
-                                  const at::Tensor &phiGrid, const at::Tensor &rGrid);
+                                  const at::Tensor &phiValues, const at::Tensor &rValues);
 
 __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
                                             const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
-                                            const at::Tensor &phiGrid, const at::Tensor &rGrid);
+                                            const at::Tensor &phiValues, const at::Tensor &rValues);
 
 template <typename texture_t> struct ResampleSinogram3D {
 
@@ -23,7 +23,7 @@ template <typename texture_t> struct ResampleSinogram3D {
 
 	__host__ static CommonData Common(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
 	                                  const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
-	                                  const at::Tensor &phiGrid, const at::Tensor &rGrid, at::DeviceType device) {
+	                                  const at::Tensor &phiValues, const at::Tensor &rValues, at::DeviceType device) {
 		// sinogram3d should be a 3D tensor of floats on the chosen device
 		TORCH_CHECK(sinogram3d.sizes().size() == 3)
 		TORCH_CHECK(sinogram3d.dtype() == at::kFloat)
@@ -38,12 +38,12 @@ template <typename texture_t> struct ResampleSinogram3D {
 		TORCH_CHECK(projectionMatrix.sizes() == at::IntArrayRef({4, 4}))
 		TORCH_CHECK(projectionMatrix.dtype() == at::kFloat)
 		TORCH_INTERNAL_ASSERT(projectionMatrix.device().type() == device)
-		// phiGrid and rGrid should be of the same size, contain floats and be on the chosen device
-		TORCH_CHECK(phiGrid.sizes() == rGrid.sizes())
-		TORCH_CHECK(phiGrid.dtype() == at::kFloat)
-		TORCH_CHECK(rGrid.dtype() == at::kFloat)
-		TORCH_INTERNAL_ASSERT(phiGrid.device().type() == device)
-		TORCH_INTERNAL_ASSERT(rGrid.device().type() == device)
+		// phiValues and rValues should be of the same size, contain floats and be on the chosen device
+		TORCH_CHECK(phiValues.sizes() == rValues.sizes())
+		TORCH_CHECK(phiValues.dtype() == at::kFloat)
+		TORCH_CHECK(rValues.dtype() == at::kFloat)
+		TORCH_INTERNAL_ASSERT(phiValues.device().type() == device)
+		TORCH_INTERNAL_ASSERT(rValues.device().type() == device)
 
 		CommonData ret{};
 		const at::Tensor sinogramContiguous = sinogram3d.contiguous();
@@ -52,7 +52,7 @@ template <typename texture_t> struct ResampleSinogram3D {
 		                             Vec<double, 3>::FromTensor(sinogramSpacing),
 		                             Vec<double, 3>::FromTensor(sinogramRangeCentres)};
 		ret.mappingRThetaPhiToTexCoord = ret.inputTexture.MappingWorldToTexCoord();
-		ret.flatOutput = torch::zeros(at::IntArrayRef({phiGrid.numel()}), sinogramContiguous.options());
+		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), sinogramContiguous.options());
 		return ret;
 	}
 };
