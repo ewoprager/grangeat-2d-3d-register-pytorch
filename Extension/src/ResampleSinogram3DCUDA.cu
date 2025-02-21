@@ -80,7 +80,8 @@ __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const 
 
 	const at::Tensor pht = projectionMatrix.t();
 
-	constexpr int blockSize = 512;
+	int minGridSize, blockSize;
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_ResampleSinogram3D_CUDA, 0, 0);
 	const int gridSize = (static_cast<unsigned>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 
 	Kernel_ResampleSinogram3D_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture),

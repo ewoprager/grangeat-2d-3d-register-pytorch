@@ -149,6 +149,44 @@ public:
 		}(std::make_index_sequence<N>{});
 	}
 
+	// Modification in place
+
+	__host__ __device__ Vec &operator+=(const Vec &other) {
+		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
+			([&]() {
+				(*this)[indices] += other[indices];
+			}(), ...);
+		}(std::make_index_sequence<N>{});
+		return *this;
+	}
+
+	__host__ __device__ Vec &operator-=(const Vec &other) {
+		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
+			([&]() {
+				(*this)[indices] -= other[indices];
+			}(), ...);
+		}(std::make_index_sequence<N>{});
+		return *this;
+	}
+
+	__host__ __device__ Vec &operator*=(const Vec &other) {
+		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
+			([&]() {
+				(*this)[indices] *= other[indices];
+			}(), ...);
+		}(std::make_index_sequence<N>{});
+		return *this;
+	}
+
+	__host__ __device__ Vec &operator/=(const Vec &other) {
+		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
+			([&]() {
+				(*this)[indices] /= other[indices];
+			}(), ...);
+		}(std::make_index_sequence<N>{});
+		return *this;
+	}
+
 	// Named member accessors
 
 	__host__ __device__ [[nodiscard]] constexpr const T &X() const { return (*this)[0]; }

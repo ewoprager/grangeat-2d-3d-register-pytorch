@@ -21,13 +21,16 @@ class FunctionParams(NamedTuple):
     phi_values: torch.Tensor
     r_values: torch.Tensor
 
+    def to(self, **kwargs) -> 'FunctionParams':
+        return FunctionParams(self.sinogram3d.to(**kwargs), self.spacing.to(**kwargs), self.range_centres.to(**kwargs),
+                              self.projection_matrix.to(**kwargs), self.phi_values.to(**kwargs),
+                              self.r_values.to(**kwargs))
 
-def task_resample_sinogram3d(function, name: str, device: str, params: FunctionParams) -> TaskSummaryResample:
-    output = function(params.sinogram3d.to(device=device), params.spacing.to(device=device),
-                      params.range_centres.to(device=device), params.projection_matrix.to(device=device),
-                      params.phi_values.to(device=device), params.r_values.to(device=device))
-    name: str = "{}_on_{}".format(name, device)
-    return name, output.cpu()
+
+def task_resample_sinogram3d(function, params: FunctionParams) -> TaskSummaryResample:
+    output = function(params.sinogram3d, params.spacing, params.range_centres, params.projection_matrix,
+                      params.phi_values, params.r_values)
+    return output
 
 
 def plot_task_resample_sinogram3d(summary: TaskSummaryResample):
@@ -41,11 +44,14 @@ def plot_task_resample_sinogram3d(summary: TaskSummaryResample):
 
 
 def run_task(task, task_plot, function, name: str, device: str, params: FunctionParams) -> TaskSummaryResample:
+    params_device = params.to(device=device)
     print("Running {} on {}...".format(name, device))
     tic = time.time()
-    summary = task(function, name, device, params)
+    output = task(function, params_device)
     toc = time.time()
     print("Done; took {:.3f}s. Saving and plotting...".format(toc - tic))
+    name: str = "{}_on_{}".format(name, device)
+    summary = name, output.cpu()
     torch.save(summary[1], "cache/{}.pt".format(summary[0]))
     task_plot(summary)
     print("Done.")

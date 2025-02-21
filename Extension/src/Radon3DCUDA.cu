@@ -33,7 +33,8 @@ __host__ at::Tensor Radon3D_CUDA(const at::Tensor &volume, const at::Tensor &vol
 	const at::Tensor rFlatContiguous = rValues.flatten().contiguous();
 	const float *rFlatPtr = rFlatContiguous.data_ptr<float>();
 
-	constexpr int blockSize = 512;
+	int minGridSize, blockSize;
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_Radon3D_CUDA, 0, 0);
 	const int gridSize = (static_cast<unsigned>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 	Kernel_Radon3D_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(),
 	                                             resultFlatPtr, common.mappingIndexToOffset, phiFlatPtr, thetaFlatPtr,
@@ -72,7 +73,8 @@ __host__ at::Tensor DRadon3DDR_CUDA(const at::Tensor &volume, const at::Tensor &
 	const at::Tensor rFlatContiguous = rValues.flatten().contiguous();
 	const float *rFlatPtr = rFlatContiguous.data_ptr<float>();
 
-	constexpr int blockSize = 512;
+	int minGridSize, blockSize;
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_DRadon3DDR_CUDA, 0, 0);
 	const int gridSize = (static_cast<unsigned>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 	Kernel_DRadon3DDR_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(),
 	                                                resultFlatPtr, common.mappingIndexToOffset, phiFlatPtr,
@@ -153,6 +155,10 @@ __global__ void Kernel_Radon3D_CUDA_V3(Linear2<Vec<double, 3> > mappingIndexToTe
 	}
 }
 
+int blockSizeToDynamicSMemSize_Radon3D_CUDA_V2(int blockSize) {
+	return blockSize * sizeof(float);
+}
+
 __host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                     const at::Tensor &rValues, long samplesPerDirection) {
@@ -163,10 +169,14 @@ __host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &volume, const at::Tensor &
 	const at::Tensor thetaFlat = thetaValues.flatten();
 	const at::Tensor rFlat = rValues.flatten();
 
-	constexpr dim3 blockSize = {32, 32};
-	constexpr size_t bufferSize = blockSize.x * blockSize.y * sizeof(float);
-	const dim3 gridSize = {(static_cast<unsigned>(samplesPerDirection) + blockSize.x - 1) / blockSize.x,
-	                       (static_cast<unsigned>(samplesPerDirection) + blockSize.y - 1) / blockSize.y};
+	int minGridSize, blockSize;
+	cudaOccupancyMaxPotentialBlockSizeVariableSMem(&minGridSize, &blockSize, &Kernel_Radon3D_CUDA_V3,
+	                                               &blockSizeToDynamicSMemSize_Radon3D_CUDA_V2, 0);
+	const unsigned blockWidth = static_cast<unsigned>(sqrtf(static_cast<float>(blockSize)));
+	const dim3 blockDims = {blockWidth, blockSize / blockWidth};
+	const size_t bufferSize = blockSizeToDynamicSMemSize_Radon3D_CUDA_V2(blockDims.x * blockDims.y);
+	const dim3 gridSize = {(static_cast<unsigned>(samplesPerDirection) + blockDims.x - 1) / blockDims.x,
+	                       (static_cast<unsigned>(samplesPerDirection) + blockDims.y - 1) / blockDims.y};
 	const at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize.y, gridSize.x}), common.flatOutput.options());
 	float *patchSumsPtr = patchSums.data_ptr<float>();
 
@@ -178,7 +188,7 @@ __host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &volume, const at::Tensor &
 			common.inputTexture, phiFlat[i].item().toFloat(), thetaFlat[i].item().toFloat(), rFlat[i].item().toFloat(),
 			common.mappingIndexToOffset);
 
-		Kernel_Radon3D_CUDA_V3<<<gridSize, blockSize, bufferSize>>>(mappingIndexToTexCoord);
+		Kernel_Radon3D_CUDA_V3<<<gridSize, blockDims, bufferSize>>>(mappingIndexToTexCoord);
 
 		common.flatOutput.index_put_({i}, patchSums.sum());
 	}
@@ -237,6 +247,10 @@ __global__ void Kernel_DRadon3DDR_CUDA_V2(Linear2<Vec<double, 3> > mappingIndexT
 	}
 }
 
+int blockSizeToDynamicSMemSize_DRadon3DDR_CUDA_V2(int blockSize) {
+	return blockSize * sizeof(float);
+}
+
 __host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
                                        const at::Tensor &phiValues, const at::Tensor &thetaValues,
                                        const at::Tensor &rValues, long samplesPerDirection) {
@@ -247,10 +261,14 @@ __host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tenso
 	const at::Tensor thetaFlat = thetaValues.flatten();
 	const at::Tensor rFlat = rValues.flatten();
 
-	constexpr dim3 blockSize = {32, 32};
-	constexpr size_t bufferSize = blockSize.x * blockSize.y * sizeof(float);
-	const dim3 gridSize = {(static_cast<unsigned>(samplesPerDirection) + blockSize.x - 1) / blockSize.x,
-	                       (static_cast<unsigned>(samplesPerDirection) + blockSize.y - 1) / blockSize.y};
+	int minGridSize, blockSize;
+	cudaOccupancyMaxPotentialBlockSizeVariableSMem(&minGridSize, &blockSize, &Kernel_DRadon3DDR_CUDA_V2,
+	                                               &blockSizeToDynamicSMemSize_DRadon3DDR_CUDA_V2, 0);
+	const unsigned blockWidth = static_cast<unsigned>(sqrtf(static_cast<float>(blockSize)));
+	const dim3 blockDims = {blockWidth, blockSize / blockWidth};
+	const size_t bufferSize = blockSizeToDynamicSMemSize_DRadon3DDR_CUDA_V2(blockDims.x * blockDims.y);
+	const dim3 gridSize = {(static_cast<unsigned>(samplesPerDirection) + blockDims.x - 1) / blockDims.x,
+	                       (static_cast<unsigned>(samplesPerDirection) + blockDims.y - 1) / blockDims.y};
 	const at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize.y, gridSize.x}), common.flatOutput.options());
 	float *patchSumsPtr = patchSums.data_ptr<float>();
 
@@ -266,7 +284,7 @@ __host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tenso
 			common.inputTexture, phi, theta, r, common.mappingIndexToOffset);
 		const Vec<double, 3> dTexCoordDR = Radon3D<Texture3DCUDA>::GetDTexCoordDR(common.inputTexture, phi, theta, r);
 
-		Kernel_DRadon3DDR_CUDA_V2<<<gridSize, blockSize, bufferSize>>>(mappingIndexToTexCoord, dTexCoordDR);
+		Kernel_DRadon3DDR_CUDA_V2<<<gridSize, blockDims, bufferSize>>>(mappingIndexToTexCoord, dTexCoordDR);
 
 		common.flatOutput.index_put_({i}, patchSums.sum());
 	}

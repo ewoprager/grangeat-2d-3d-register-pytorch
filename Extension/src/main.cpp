@@ -34,7 +34,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 	m.impl("d_radon3d_dr", &DRadon3DDR_CPU);
 	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CPU); // doesn't have its own cpu version
 	m.impl("resample_sinogram3d", &ResampleSinogram3D_CPU);
-	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation);
+	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CPU);
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
@@ -46,6 +46,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("d_radon3d_dr", &DRadon3DDR_CUDA);
 	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CUDA_V2);
 	m.impl("resample_sinogram3d", &ResampleSinogram3D_CUDA);
+	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CUDA);
 }
 
 } // namespace ExtensionTest

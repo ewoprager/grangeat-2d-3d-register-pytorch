@@ -30,7 +30,8 @@ __host__ at::Tensor Radon2D_CUDA(const at::Tensor &image, const at::Tensor &imag
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	constexpr int blockSize = 256;
+	int minGridSize, blockSize;
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_Radon2D_CUDA, 0, 0);
 	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 	Kernel_Radon2D_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(),
 	                                             resultFlatPtr, common.mappingIndexToOffset, phiFlatPtr, rFlatPtr,
@@ -63,7 +64,8 @@ at::Tensor DRadon2DDR_CUDA(const at::Tensor &image, const at::Tensor &imageSpaci
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	constexpr int blockSize = 256;
+	int minGridSize, blockSize;
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_DRadon2DDR_CUDA, 0, 0);
 	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 	Kernel_DRadon2DDR_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), common.flatOutput.numel(),
 	                                                resultFlatPtr, common.mappingIndexToOffset, phiFlatPtr, rFlatPtr,
@@ -104,6 +106,10 @@ __global__ void Kernel_Radon2D_CUDA_V2(const Linear<Vec<double, 2> > mappingInde
 	if (threadIdx.x == 0) radon2DV2Consts.patchSumsArray[blockIdx.x] = radon2DV2Consts.scaleFactor * buffer[0];
 }
 
+int blockSizeToDynamicSMemSize_Radon2D_CUDA_V2(int blockSize) {
+	return blockSize * sizeof(float);
+}
+
 __host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &imageSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine) {
 	CommonData common = Radon2D<Texture2DCUDA>::Common(image, imageSpacing, phiValues, rValues, samplesPerLine,
@@ -112,8 +118,10 @@ __host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &i
 	const at::Tensor phiFlat = phiValues.flatten();
 	const at::Tensor rFlat = rValues.flatten();
 
-	constexpr int blockSize = 256;
-	constexpr size_t bufferSize = blockSize * sizeof(float);
+	int minGridSize, blockSize;
+	cudaOccupancyMaxPotentialBlockSizeVariableSMem(&minGridSize, &blockSize, &Kernel_Radon2D_CUDA_V2,
+	                                               &blockSizeToDynamicSMemSize_Radon2D_CUDA_V2, 0);
+	const size_t bufferSize = blockSizeToDynamicSMemSize_Radon2D_CUDA_V2(blockSize);
 	const int gridSize = (static_cast<int>(samplesPerLine) + blockSize - 1) / blockSize;
 	const at::Tensor patchSums = torch::zeros(at::IntArrayRef({gridSize}), common.flatOutput.options());
 	float *patchSumsPtr = patchSums.data_ptr<float>();
