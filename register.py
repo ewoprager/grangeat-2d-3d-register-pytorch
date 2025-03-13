@@ -22,6 +22,7 @@ import registration.lib.geometry as geometry
 import registration.data as data
 import registration.pre_computed as pre_computed
 import registration.objective_function as objective_function
+import registration.lib.plot as myplt
 
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
@@ -189,7 +190,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     #                         torch.zeros_like(fixed_image, device='cpu')), dim=-1)
     # plt.imshow(overlaid)
 
-    if True:
+    if False:
         n = 80
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -211,6 +212,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.set_ylabel("y-component of rotation vector")
         axes.axis('square')
         plt.colorbar(mesh)
+        plt.savefig("data/temp/landscape_no_sample_smoothing.pgf")
 
         if True:
             nznccs = torch.zeros((n, n))
@@ -229,6 +231,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
             axes.set_ylabel("y-component of rotation vector")
             axes.axis('square')
             plt.colorbar(mesh)
+            plt.savefig("data/temp/landscape_with_sample_smoothing.pgf")
 
     if False:
         n = 1000
