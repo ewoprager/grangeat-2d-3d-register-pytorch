@@ -169,11 +169,18 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
                                                   transformation=transformation_ground_truth.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                   sinogram3d_range=sinogram3d_range, plot=True)
-    print("{:.4e}".format(zncc.item()
-                          # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
-                          #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
-                          #                 plot=True)
-                          ))
+    print("-ZNCC = -{:.4e}".format(zncc.item()
+                                   # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
+                                   #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
+                                   #                 plot=True)
+                                   ))
+
+    if True:
+        zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
+                                                      transformation=transformation_ground_truth.to(device=device),
+                                                      scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
+                                                      sinogram3d_range=sinogram3d_range, plot=True, smooth=True)
+        print("With sample smoothing, -ZNCC = -{:.4e}".format(zncc.item()))
 
     # plt.show()
     # low = torch.max(fixed_image.min(), resampled.min())

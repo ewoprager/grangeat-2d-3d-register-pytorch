@@ -5,7 +5,6 @@ Based on this paper:
 Frysch R, Pfeiffer T, Rose G. A novel approach to 2D/3D registration of X-ray images using Grangeat's relation. Med
 Image Anal. 2021 Jan;67:101815. doi: 10.1016/j.media.2020.101815. Epub 2020 Sep 30. PMID: 33065470.
 
-
 ## Setup
 
 CUDA is required. NVCC version information:
@@ -15,27 +14,29 @@ Cuda compilation tools, release 12.6, V12.6.85
 Build cuda_12.6.r12.6/compiler.35059454_0
 ```
 
-The build can be done faster with Ninja installed. Note that `setuptools` won't find the Ninja installation within Clion.
+The build can be done faster with Ninja installed. Note that `setuptools` won't find the Ninja installation within
+Clion.
 
 On Ubuntu:
+
 ```bash
 sudo apt install ninja-build
 ```
 
-
 ### With `uv`
 
 Initialise the virtual environment:
+
 ```bash
 uv venv
 source .venv/bin/activate
 ```
 
 Run:
+
 ```bash
 uv run main.py "/path/to/ct.nrrd"
 ```
-
 
 ## Experiments so far
 
@@ -71,10 +72,30 @@ DRR generated at the converged transformation:
 
 Optimisation completed in 1.429 seconds, performing a total of 564 function evaluations.
 
-Here is a plot of the -ZNCC similarity between the fixed image and the resampled moving image against the distance in SE3
+Here is a plot of the -ZNCC similarity between the fixed image and the resampled moving image against the distance in
+SE3
 between the transformation and the ground truth transformation for 1000 random transformations:
 
 ![loss_vs_distance.png](figures/loss_vs_distance.png)
+
+# Resampling
+
+The 3D sinogram image is stored as a 3D grid of values, where the dimensions correspond to different values of phi,
+theta and r. While this is very efficient for resampling, having the same number of value of phi for every value of
+theta results in memory inefficiency and an extremely high densities of values near theta = +/- pi/2.
+
+Smoothing the sampling consistently over S^2 to eliminate the second of these effects demonstrates that the line of
+discontinuity visible in the resampling of the sinogram is due to this effect:
+
+![dds_R2_gtilde_ground_truth_no_sample_smoothing.png](figures/dds_R2_gtilde_ground_truth_no_sample_smoothing.png)
+![ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png](figures/ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png)
+![ddr_R3_mu_resampled_ground_truth_sample_smoothing.png](figures/ddr_R3_mu_resampled_ground_truth_sample_smoothing.png)
+
+Although there is no significant difference manifest in the resulting optimisation landscape:
+
+![landscape_no_sample_smoothing.png](figures/landscape_no_sample_smoothing.png)
+![landscape_sample_smoothing.png](figures/landscape_sample_smoothing.png)
+
 
 ## IDE integration
 

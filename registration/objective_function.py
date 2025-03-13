@@ -59,7 +59,7 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformat
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(resampled.clone().cpu())
         axes.axis('square')
-        axes.set_title("d/dr R3 [mu] resampled")
+        axes.set_title("d/dr R3 [mu] resampled with sample smoothing" if smooth else "d/dr R3 [mu] resampled")
         axes.set_xlabel("r")
         axes.set_ylabel("phi")
         plt.colorbar(mesh)
