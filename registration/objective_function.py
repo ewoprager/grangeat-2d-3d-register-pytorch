@@ -37,22 +37,22 @@ def zncc2(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
 def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformation: Transformation,
              scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, sinogram3d_range: Sinogram3dRange,
              plot: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
-    # resampled = grangeat.resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
-    #                                     output_grid=fixed_image_grid, input_range=sinogram3d_range)
-
-    device = sinogram3d.device
-    source_position = scene_geometry.source_position(device=device)
-    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
-    sinogram_range_low = torch.tensor([sinogram3d_range.r.low, sinogram3d_range.theta.low, sinogram3d_range.phi.low],
-                                      device=device)
-    sinogram_range_high = torch.tensor(
-        [sinogram3d_range.r.high, sinogram3d_range.theta.high, sinogram3d_range.phi.high], device=device)
-    sinogram_spacing = (sinogram_range_high - sinogram_range_low) / (
-            torch.tensor(sinogram3d.size(), dtype=torch.float32, device=device) - 1.)
-    sinogram_range_centres = .5 * (sinogram_range_low + sinogram_range_high)
-    resampled = Extension.resample_sinogram3d(sinogram3d, sinogram_spacing, sinogram_range_centres, ph_matrix,
-                                              fixed_image_grid.phi, fixed_image_grid.r)
+    resampled = grangeat.resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
+                                        output_grid=fixed_image_grid, input_range=sinogram3d_range)
+    #
+    # device = sinogram3d.device
+    # source_position = scene_geometry.source_position(device=device)
+    # p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    # ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+    # sinogram_range_low = torch.tensor([sinogram3d_range.r.low, sinogram3d_range.theta.low, sinogram3d_range.phi.low],
+    #                                   device=device)
+    # sinogram_range_high = torch.tensor(
+    #     [sinogram3d_range.r.high, sinogram3d_range.theta.high, sinogram3d_range.phi.high], device=device)
+    # sinogram_spacing = (sinogram_range_high - sinogram_range_low) / (
+    #         torch.tensor(sinogram3d.size(), dtype=torch.float32, device=device) - 1.)
+    # sinogram_range_centres = .5 * (sinogram_range_low + sinogram_range_high)
+    # resampled = Extension.resample_sinogram3d(sinogram3d, sinogram_spacing, sinogram_range_centres, ph_matrix,
+    #                                           fixed_image_grid.phi, fixed_image_grid.r)
 
     if plot:
         _, axes = plt.subplots()

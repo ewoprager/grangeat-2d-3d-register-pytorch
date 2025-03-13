@@ -183,7 +183,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     # plt.imshow(overlaid)
 
     if True:
-        n = 100
+        n = 80
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
         angle1s = torch.linspace(transformation_ground_truth.rotation[1] - torch.pi,
@@ -205,7 +205,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.axis('square')
         plt.colorbar(mesh)
 
-    if True:
+    if False:
         n = 1000
         nznccs = torch.zeros(n)
         distances = torch.zeros(n)
@@ -222,7 +222,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.set_ylabel("-ZNCC")
         axes.set_title("Relationship between similarity measure and distance in SE3")
 
-    if True:
+    if False:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -objective_function.evaluate(fixed_image, sinogram3d,
                                                 transformation=Transformation(params[0:3], params[3:6]).to(

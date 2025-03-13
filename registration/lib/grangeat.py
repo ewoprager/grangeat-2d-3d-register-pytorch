@@ -90,6 +90,58 @@ def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: 
     return ret
 
 
+def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.Tensor, theta_values: torch.Tensor,
+                                    r_values: torch.Tensor, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
+                                    k_mapping: LinearMapping, a_count: int = 4, b_count: int = 6,
+                                    sigma: float | None = None, phi_count: int | None = None):
+    device = sinogram3d.device
+
+    if sigma is None:
+        assert phi_count is not None
+        sigma = 2. * torch.pi / (6. * float(phi_count))
+
+    delta_a: float = 3. * sigma / float(a_count)
+    a_values: torch.Tensor = delta_a * torch.arange(0., float(a_count), 1.)
+    b_values = torch.linspace(-torch.pi, torch.pi, b_count + 1)[:-1]
+    w_values = (-a_values.square() / (2. * sigma * sigma)).exp()
+    w_values = w_values / (w_values.sum() * float(b_count))
+    b_values, a_values = torch.meshgrid(b_values, a_values)
+
+    unit_vectors = torch.stack(
+        (torch.ones_like(phi_values), torch.zeros_like(phi_values), torch.zeros_like(phi_values)), dim=-1)
+
+    ca = a_values.cos()
+    sa = a_values.sin()
+    cb = b_values.cos()
+    sb = b_values.sin()
+    row_0 = torch.stack((ca, torch.zeros_like(ca), -sa), dim=-1)
+    row_1 = torch.stack((-sa * sb, cb, -ca * sb), dim=-1)
+    row_2 = torch.stack((sa * cb, sb, ca * cb), dim=-1)
+    offset_matrices = torch.stack((row_0, row_1, row_2), dim=-1).to(device=device)
+
+    offset_vectors = torch.einsum('ijkl,...l->...ijk', offset_matrices, unit_vectors)
+
+    cp = phi_values.cos()
+    sp = phi_values.sin()
+    ct = theta_values.cos()
+    st = theta_values.sin()
+    row_0 = torch.stack((cp * ct, sp, -cp * st), dim=-1)
+    row_1 = torch.stack((-sp * ct, cp, -sp * st), dim=-1)
+    row_2 = torch.stack((st, torch.zeros_like(st), ct), dim=-1)
+    rotation_matrices = torch.stack((row_0, row_1, row_2), dim=-1).to(device=device)
+
+    rotated_vectors = torch.einsum('...ij,...klj->...kli', rotation_matrices, offset_vectors)
+
+    new_phis = torch.atan2(rotated_vectors[..., 1], rotated_vectors[..., 0]).flatten(-2)
+    new_thetas = rotated_vectors[..., 2].asin().flatten(-2)
+    new_rs = r_values.unsqueeze(-1).expand(-1, -1, new_phis.size()[-1])
+
+    grid = torch.stack((i_mapping(new_rs), j_mapping(new_thetas), k_mapping(new_phis)), dim=-1)
+    samples = torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, :, :, :, :])[0, 0]
+
+    return torch.einsum('i,...i->...', w_values.repeat(b_count).to(device=device), samples)
+
+
 def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, transformation: Transformation,
                    scene_geometry: SceneGeometry, output_grid: Sinogram2dGrid) -> torch.Tensor:
     assert output_grid.device_consistent()
@@ -140,8 +192,12 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
     j_mapping: LinearMapping = grid_range.get_mapping_from(input_range.theta)
     k_mapping: LinearMapping = grid_range.get_mapping_from(input_range.phi)
 
-    grid = torch.stack((i_mapping(output_grid_sph.r), j_mapping(output_grid_sph.theta), k_mapping(output_grid_sph.phi)),
-                       dim=-1)
-    ret = torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
+    # grid = torch.stack((i_mapping(output_grid_sph.r), j_mapping(output_grid_sph.theta), k_mapping(output_grid_sph.phi)),
+    #                    dim=-1)
+    # ret = torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
+
+    ret = grid_sample_sinogram3d_smoothed(sinogram3d, output_grid_sph.phi, output_grid_sph.theta, output_grid_sph.r,
+                                          i_mapping=i_mapping, j_mapping=j_mapping, k_mapping=k_mapping, phi_count=256)
+
     ret[need_sign_change] *= -1.
     return ret
