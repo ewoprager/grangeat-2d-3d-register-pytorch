@@ -205,6 +205,24 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.axis('square')
         plt.colorbar(mesh)
 
+        if True:
+            nznccs = torch.zeros((n, n))
+            for i in tqdm(range(nznccs.numel())):
+                i0 = i % n
+                i1 = i // n
+                nznccs[i1, i0] = -objective_function.evaluate(fixed_image, sinogram3d, transformation=Transformation(
+                    torch.tensor([angle0s[i0], angle1s[i1], transformation_ground_truth.rotation[2]], device=device),
+                    transformation_ground_truth.translation), scene_geometry=scene_geometry,
+                                                              fixed_image_grid=sinogram2d_grid,
+                                                              sinogram3d_range=sinogram3d_range, smooth=True)[0]
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(nznccs)
+            axes.set_title("landscape over two angle components, with sample smoothing")
+            axes.set_xlabel("x-component of rotation vector")
+            axes.set_ylabel("y-component of rotation vector")
+            axes.axis('square')
+            plt.colorbar(mesh)
+
     if False:
         n = 1000
         nznccs = torch.zeros(n)
