@@ -7,10 +7,12 @@ namespace ExtensionTest {
 class Texture2DCUDA : public Texture<2, int64_t, double> {
 public:
 	using Base = Texture<2, int64_t, double>;
+	using AddressModeType = Vec<cudaTextureAddressMode, 2>;
 
 	Texture2DCUDA() = default;
 
-	Texture2DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {}) : Base(
+	Texture2DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
+	              const AddressModeType &addressModes = AddressModeType::Full(cudaAddressModeBorder)) : Base(
 		_size, _spacing, _centrePosition) {
 
 		// Copy the given data into a CUDA array
@@ -22,10 +24,9 @@ public:
 		// Create the texture object from the CUDA array
 		const cudaResourceDesc resourceDescriptor = {.resType = cudaResourceTypeArray,
 		                                             .res = {.array = {.array = arrayHandle}}};
-		constexpr cudaTextureDesc textureDescriptor = {
-			.addressMode = {cudaAddressModeBorder, cudaAddressModeBorder, cudaAddressModeBorder},
-			.filterMode = cudaFilterModeLinear, .readMode = cudaReadModeElementType,
-			.borderColor = {0.f, 0.f, 0.f, 0.f}, .normalizedCoords = true};
+		cudaTextureDesc textureDescriptor = {.filterMode = cudaFilterModeLinear, .readMode = cudaReadModeElementType,
+		                                     .borderColor = {0.f, 0.f, 0.f, 0.f}, .normalizedCoords = true};
+		memcpy(&textureDescriptor.addressMode, addressModes.data(), 2 * sizeof(cudaTextureAddressMode));
 		cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
 	}
 
@@ -63,11 +64,11 @@ public:
 
 	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
 
-	__device__ [[nodiscard]] float Sample(const VectorType &texCoord) const {
+	[[nodiscard]] __device__ float Sample(const VectorType &texCoord) const {
 		return tex2D<float>(textureHandle, texCoord.X(), texCoord.Y());
 	}
 
-	__device__ [[nodiscard]] float DSampleDX(const VectorType &texCoord) const {
+	[[nodiscard]] __device__ float DSampleDX(const VectorType &texCoord) const {
 		const float widthF = static_cast<float>(Size().X());
 		const float x = floorf(-.5f + texCoord.X() * widthF);
 		const float x0 = (x + .5f) / widthF;
@@ -75,7 +76,7 @@ public:
 		return widthF * (tex2D<float>(textureHandle, x1, texCoord.Y()) - tex2D<float>(textureHandle, x0, texCoord.Y()));
 	}
 
-	__device__ [[nodiscard]] float DSampleDY(const VectorType &texCoord) const {
+	[[nodiscard]] __device__ float DSampleDY(const VectorType &texCoord) const {
 		const float heightF = static_cast<float>(Size().Y());
 		const float y = floorf(-.5f + texCoord.Y() * heightF);
 		const float y0 = (y + .5f) / heightF;

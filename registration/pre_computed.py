@@ -11,7 +11,7 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
 
     vol_diag: float = (voxel_spacing * torch.tensor(volume_data.size(), dtype=torch.float32,
                                                     device=voxel_spacing.device)).square().sum().sqrt().item()
-    sinogram3d_range = Sinogram3dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
+    sinogram3d_range = Sinogram3dRange(LinearRange(-.5 * torch.pi, torch.pi * (.5 - 1. / float(vol_counts))),
                                        LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * vol_diag, .5 * vol_diag))
 

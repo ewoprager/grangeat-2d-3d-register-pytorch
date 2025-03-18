@@ -62,7 +62,9 @@ at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor
 		rThetaPhi.X() = static_cast<float>((static_cast<int>(!(over || under)) << 1) - 1) * sqrt(
 			                magXY + posCartesian.Z() * posCartesian.Z());
 
-		resultFlatPtr[i] = common.inputTexture.Sample(common.mappingRThetaPhiToTexCoord(rThetaPhi));
+		resultFlatPtr[i] = common.inputTexture.Sample(common.mappingRThetaPhiToTexCoord(rThetaPhi)
+			// ,{AddressMode::ZERO, AddressMode::ZERO, AddressMode::WRAP}
+			);
 
 		if ((r * Vec<float, 2>{cp, sp} - .5f * originProjection).Apply<float>(&Square<float>).Sum() < squareRadius) {
 			resultFlatPtr[i] *= -1.f;

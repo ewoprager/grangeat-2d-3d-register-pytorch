@@ -12,19 +12,21 @@ namespace ExtensionTest {
 
 template <typename T> __host__ __device__ T Square(const T &x) { return x * x; }
 
+template <typename T> __host__ __device__ T Modulo(const T &x, const T &y) { return (x % y + y) % y; }
+
 template <typename T> struct Linear2;
 
 template <typename T> struct Linear {
 	T intercept;
 	T gradient;
 
-	__host__ __device__ [[nodiscard]] T operator()(const T &x) const { return gradient * x + intercept; }
+	[[nodiscard]] __host__ __device__ T operator()(const T &x) const { return gradient * x + intercept; }
 
-	__host__ __device__ [[nodiscard]] Linear operator()(const Linear &other) const {
+	[[nodiscard]] __host__ __device__ Linear operator()(const Linear &other) const {
 		return {gradient * other.intercept + intercept, gradient * other.gradient};
 	}
 
-	__host__ __device__ [[nodiscard]] Linear2<T> operator()(const Linear2<T> &other) const;
+	[[nodiscard]] __host__ __device__ Linear2<T> operator()(const Linear2<T> &other) const;
 };
 
 template <typename T> struct Linear2 {
@@ -32,23 +34,23 @@ template <typename T> struct Linear2 {
 	T gradient1;
 	T gradient2;
 
-	__host__ __device__ [[nodiscard]] T operator()(const T &x, const T &y) const {
+	[[nodiscard]] __host__ __device__ T operator()(const T &x, const T &y) const {
 		return gradient1 * x + gradient2 * y + intercept;
 	}
 
-	__host__ __device__ [[nodiscard]] Linear2 operator()(const Linear<T> &other) const {
+	[[nodiscard]] __host__ __device__ Linear2 operator()(const Linear<T> &other) const {
 		return {(gradient1 + gradient2) * other.intercept + intercept, gradient1 * other.gradient,
 		        gradient2 * other.gradient};
 	}
 
-	__host__ __device__ [[nodiscard]] Linear2 operator()(const Linear2 &other) const {
+	[[nodiscard]] __host__ __device__ Linear2 operator()(const Linear2 &other) const {
 		const T gradientSum = gradient1 + gradient2;
 		return {gradientSum * other.intercept + intercept, gradientSum * other.gradient1,
 		        gradientSum * other.gradient2};
 	}
 };
 
-template <typename T> __host__ __device__ [[nodiscard]] Linear2<T> Linear<T>::operator(
+template <typename T> [[nodiscard]] __host__ __device__ Linear2<T> Linear<T>::operator(
 )(const Linear2<T> &other) const {
 	return {gradient * other.intercept + intercept, gradient * other.gradient1, gradient * other.gradient2};
 }

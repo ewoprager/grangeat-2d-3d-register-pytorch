@@ -7,11 +7,14 @@ namespace ExtensionTest {
 class Texture2DCPU : public Texture<2, int64_t, double> {
 public:
 	using Base = Texture<2, int64_t, double>;
+	using AddressModeType = Vec<TextureAddressModeCPU, 2>;
 
 	Texture2DCPU() = default;
 
-	Texture2DCPU(const float *_ptr, SizeType _size, VectorType _spacing,
-	             VectorType _centrePosition = {}) : Base(_size, _spacing, _centrePosition), ptr(_ptr) {
+	Texture2DCPU(const float *_ptr, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
+	             const AddressModeType &_addressModes =
+		             AddressModeType::Full(TextureAddressModeCPU::ZERO)) : Base(_size, _spacing, _centrePosition),
+		                                                                   ptr(_ptr), addressModes(_addressModes) {
 	}
 
 	// yes copy
@@ -29,11 +32,16 @@ public:
 		        Vec<double, 2>::FromTensor(spacing)};
 	}
 
-	__host__ __device__ [[nodiscard]] float At(const SizeType &index) const {
-		return In(index) ? ptr[index.Y() * Size().X() + index.X()] : 0.0f;
+	[[nodiscard]] __host__ __device__ float At(const SizeType &index) const {
+		if ((addressModes.X() == TextureAddressModeCPU::ZERO && (index.X() < 0 || index.X() >= Size().X())) || (
+			    addressModes.Y() == TextureAddressModeCPU::ZERO && (index.Y() < 0 || index.Y() >= Size().Y()))) {
+			return 0.f;
+		}
+		// Uses wrapping for indices outside the texture.
+		return ptr[Modulo(index.Y(), Size().Y()) * Size().X() + Modulo(index.X(), Size().X())];
 	}
 
-	__host__ __device__ [[nodiscard]] float Sample(VectorType texCoord) const {
+	[[nodiscard]] __host__ __device__ float Sample(VectorType texCoord) const {
 		texCoord = texCoord * Size().StaticCast<double>() - .5;
 		const VectorType floored = texCoord.Apply<double>(&floor);
 		const SizeType index = floored.StaticCast<int64_t>();
@@ -44,7 +52,7 @@ public:
 		return (1.f - fractions.Y()) * r0 + fractions.Y() * r1;
 	}
 
-	__host__ __device__ [[nodiscard]] float DSampleDX(VectorType texCoord) const {
+	[[nodiscard]] __host__ __device__ float DSampleDX(VectorType texCoord) const {
 		const VectorType sizeF = Size().StaticCast<double>();
 		texCoord = texCoord * sizeF - .5;
 		const VectorType floored = texCoord.Apply<double>(&floor);
@@ -54,7 +62,7 @@ public:
 			                    At({index.X() + 1, index.Y() + 1}) - At({index.X(), index.Y() + 1})));
 	}
 
-	__host__ __device__ [[nodiscard]] float DSampleDY(VectorType texCoord) const {
+	[[nodiscard]] __host__ __device__ float DSampleDY(VectorType texCoord) const {
 		const VectorType sizeF = Size().StaticCast<double>();
 		texCoord = texCoord * sizeF - .5;
 		const VectorType floored = texCoord.Apply<double>(&floor);
@@ -66,6 +74,7 @@ public:
 
 private:
 	const float *ptr{};
+	AddressModeType addressModes{};
 };
 
 } // namespace ExtensionTest

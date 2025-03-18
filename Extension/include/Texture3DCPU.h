@@ -11,11 +11,14 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, const at::Tenso
 class Texture3DCPU : public Texture<3, int64_t, double> {
 public:
 	using Base = Texture<3, int64_t, double>;
+	using AddressModeType = Vec<TextureAddressModeCPU, 3>;
 
 	Texture3DCPU() = default;
 
-	Texture3DCPU(const float *_ptr, SizeType _size, VectorType _spacing,
-	             VectorType _centrePosition = {}) : Base(_size, _spacing, _centrePosition), ptr(_ptr) {
+	Texture3DCPU(const float *_ptr, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
+	             AddressModeType _addressModes =
+		             AddressModeType::Full(TextureAddressModeCPU::ZERO)) : Base(_size, _spacing, _centrePosition),
+		                                                                   ptr(_ptr), addressModes(_addressModes) {
 	}
 
 	// yes copy
@@ -33,24 +36,29 @@ public:
 		        Vec<double, 3>::FromTensor(spacing)};
 	}
 
-	__host__ __device__ [[nodiscard]] float At(const SizeType &index) const {
-		return In(index) ? ptr[index.Z() * Size().X() * Size().Y() + index.Y() * Size().X() + index.X()] : 0.0f;
+	[[nodiscard]] __host__ __device__ float At(const SizeType &index) const {
+		if ((addressModes.X() == TextureAddressModeCPU::ZERO && (index.X() < 0 || index.X() >= Size().X())) || (
+			    addressModes.Y() == TextureAddressModeCPU::ZERO && (index.Y() < 0 || index.Y() >= Size().Y())) || (
+			    addressModes.Z() == TextureAddressModeCPU::ZERO && (index.Z() < 0 || index.Z() >= Size().Z()))) {
+			return 0.f;
+		}
+		// Uses wrapping for indices outside the texture.
+		return ptr[Modulo(index.Z(), Size().Z()) * Size().X() * Size().Y() + Modulo(index.Y(), Size().Y()) * Size().X()
+		           + Modulo(index.X(), Size().X())];
 	}
 
 	/**
-	 * @brief Sample the texture using linear interpolation.
-	 * @param x sampling coordinate x in texture coordinates (0, 1)
-	 * @param y sampling coordinate y in texture coordinates (0, 1)
-	 * @param z sampling coordinate z in texture coordinates (0, 1)
-	 * @return sample from texture at given coordinate
+	 * Sample the texture using linear interpolation.
+	 * @param texCoord
+	 * @return
 	 */
-	__host__ __device__ [[nodiscard]] float Sample(VectorType texCoord) const {
+	[[nodiscard]] __host__ __device__ float Sample(VectorType texCoord) const {
 		texCoord = texCoord * Size().StaticCast<double>() - .5;
 		const VectorType floored = texCoord.Apply<double>(&floor);
 		const SizeType index = floored.StaticCast<int64_t>();
 		const VectorType fractions = texCoord - floored;
-		const float l0r0 = (1.f - fractions.X()) * At(index) + fractions.X() *
-		                   At({index.X() + 1, index.Y(), index.Z()});
+		const float l0r0 = (1.f - fractions.X()) * At(index) + fractions.X() * At(
+			                   {index.X() + 1, index.Y(), index.Z()});
 		const float l0r1 = (1.f - fractions.X()) * At({index.X(), index.Y() + 1, index.Z()}) + fractions.X() * At(
 			                   {index.X() + 1, index.Y() + 1, index.Z()});
 		const float l1r0 = (1.f - fractions.X()) * At({index.X(), index.Y(), index.Z() + 1}) + fractions.X() * At(
@@ -62,7 +70,7 @@ public:
 		return (1.f - fractions.Z()) * l0 + fractions.Z() * l1;
 	}
 
-	__host__ __device__ [[nodiscard]] float DSampleDX(VectorType texCoord) const {
+	[[nodiscard]] __host__ __device__ float DSampleDX(VectorType texCoord) const {
 		const VectorType sizeF = Size().StaticCast<double>();
 		texCoord = texCoord * sizeF - .5;
 		const VectorType floored = texCoord.Apply<double>(&floor);
@@ -78,7 +86,7 @@ public:
 		return sizeF.X() * ((1.f - fInward) * l0 + fInward * l1);
 	}
 
-	__host__ __device__ [[nodiscard]] float DSampleDY(VectorType texCoord) const {
+	[[nodiscard]] __host__ __device__ float DSampleDY(VectorType texCoord) const {
 		const VectorType sizeF = Size().StaticCast<double>();
 		texCoord = texCoord * sizeF - .5;
 		const VectorType floored = texCoord.Apply<double>(&floor);
@@ -94,7 +102,7 @@ public:
 		return sizeF.Y() * ((1.f - fInward) * l0 + fInward * l1);
 	}
 
-	__host__ __device__ [[nodiscard]] float DSampleDZ(VectorType texCoord) const {
+	[[nodiscard]] __host__ __device__ float DSampleDZ(VectorType texCoord) const {
 		const VectorType sizeF = Size().StaticCast<double>();
 		texCoord = texCoord * sizeF - .5;
 		const VectorType floored = texCoord.Apply<double>(&floor);
@@ -112,6 +120,7 @@ public:
 
 private:
 	const float *ptr{};
+	AddressModeType addressModes{};
 };
 
 } // namespace ExtensionTest

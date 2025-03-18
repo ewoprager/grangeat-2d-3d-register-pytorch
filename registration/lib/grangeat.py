@@ -120,7 +120,8 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
 
     # Radial distances in Gaussian pattern
     delta_a: float = 3. * sigma / float(a_count)
-    a_values: torch.Tensor = delta_a * torch.arange(0., float(a_count), 1.)
+    # a_values: torch.Tensor = delta_a * torch.arange(0., float(a_count), 1.)
+    a_values = torch.zeros(a_count)
     # Orientations in Gaussian pattern
     b_values = torch.linspace(-torch.pi, torch.pi, b_count + 1)[:-1]
     # Sample weights in Gaussian pattern
@@ -132,21 +133,13 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     # New offset values of phi & theta are determined by rotating the vector (1, 0, 0)^T first by a small perturbation
     # according to the Gaussian pattern, and then by the original rotation according to the old values of phi * theta.
 
-    # Starting with all vectors equal to (1, 0, 0)^T:
-    unit_vectors = torch.stack(
-        (torch.ones_like(phi_values), torch.zeros_like(phi_values), torch.zeros_like(phi_values)), dim=-1)
-
-    # Determining a rotation matrix with which to perturb each vector for each offset in the Gaussian pattern:
+    # Determining a perturbed vector for each offset in the Gaussian pattern:
     ca = a_values.cos()
     sa = a_values.sin()
     cb = b_values.cos()
     sb = b_values.sin()
-    row_0 = torch.stack((ca, torch.zeros_like(ca), -sa), dim=-1)
-    row_1 = torch.stack((-sa * sb, cb, -ca * sb), dim=-1)
-    row_2 = torch.stack((sa * cb, sb, ca * cb), dim=-1)
-    offset_matrices = torch.stack((row_0, row_1, row_2), dim=-1).to(device=device)
     # Multiplying for the perturbed unit vectors:
-    offset_vectors = torch.einsum('ijkl,...l->...ijk', offset_matrices, unit_vectors)
+    offset_vectors = torch.stack((ca, -sa * sb, sa * cb), dim=-1).to(device=device)
 
     # Determining the rotation matrices for each input (phi, theta):
     cp = phi_values.cos()
@@ -154,7 +147,7 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     ct = theta_values.cos()
     st = theta_values.sin()
     row_0 = torch.stack((cp * ct, sp, -cp * st), dim=-1)
-    row_1 = torch.stack((-sp * ct, cp, -sp * st), dim=-1)
+    row_1 = torch.stack((-sp * ct, cp, sp * st), dim=-1)
     row_2 = torch.stack((st, torch.zeros_like(st), ct), dim=-1)
     rotation_matrices = torch.stack((row_0, row_1, row_2), dim=-1).to(device=device)
     # Multiplying by the perturbed unit vectors for the perturbed, rotated unit vector:
@@ -218,7 +211,6 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
     ##
 
     grid_range = LinearRange.grid_sample_range()
-
     i_mapping: LinearMapping = grid_range.get_mapping_from(input_range.r)
     j_mapping: LinearMapping = grid_range.get_mapping_from(input_range.theta)
     k_mapping: LinearMapping = grid_range.get_mapping_from(input_range.phi)

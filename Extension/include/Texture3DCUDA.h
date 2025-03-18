@@ -7,10 +7,12 @@ namespace ExtensionTest {
 class Texture3DCUDA : public Texture<3, int64_t, double> {
 public:
 	using Base = Texture<3, int64_t, double>;
+	using AddressModeType = Vec<cudaTextureAddressMode, 3>;
 
 	Texture3DCUDA() = default;
 
-	Texture3DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {})
+	Texture3DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
+	              const AddressModeType &addressModes = AddressModeType::Full(cudaAddressModeBorder))
 		: Base(_size, _spacing, _centrePosition) {
 
 		const cudaExtent extent = {.width = static_cast<size_t>(_size.X()), .height = static_cast<size_t>(_size.Y()),
@@ -31,10 +33,9 @@ public:
 		// Create the texture object from the CUDA array
 		const cudaResourceDesc resourceDescriptor = {.resType = cudaResourceTypeArray,
 		                                             .res = {.array = {.array = arrayHandle}}};
-		constexpr cudaTextureDesc textureDescriptor = {
-			.addressMode = {cudaAddressModeBorder, cudaAddressModeBorder, cudaAddressModeBorder},
-			.filterMode = cudaFilterModeLinear, .readMode = cudaReadModeElementType,
-			.borderColor = {0.f, 0.f, 0.f, 0.f}, .normalizedCoords = true};
+		cudaTextureDesc textureDescriptor = {.filterMode = cudaFilterModeLinear, .readMode = cudaReadModeElementType,
+		                                     .borderColor = {0.f, 0.f, 0.f, 0.f}, .normalizedCoords = true};
+		memcpy(&textureDescriptor.addressMode, addressModes.data(), 3 * sizeof(cudaTextureAddressMode));
 		cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
 	}
 
@@ -72,11 +73,11 @@ public:
 
 	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
 
-	__device__ [[nodiscard]] float Sample(const VectorType &texCoord) const {
+	[[nodiscard]] __device__ float Sample(const VectorType &texCoord) const {
 		return tex3D<float>(textureHandle, texCoord.X(), texCoord.Y(), texCoord.Z());
 	}
 
-	__device__ [[nodiscard]] static float DSampleDX(long width, cudaTextureObject_t textureHandle,
+	[[nodiscard]] __device__ static float DSampleDX(long width, cudaTextureObject_t textureHandle,
 	                                                const VectorType &texCoord) {
 		const float widthF = static_cast<float>(width);
 		const float x = floorf(-.5f + texCoord.X() * widthF);
@@ -86,7 +87,7 @@ public:
 			                 textureHandle, x0, texCoord.Y(), texCoord.Z()));
 	}
 
-	__device__ [[nodiscard]] static float DSampleDY(long height, cudaTextureObject_t textureHandle,
+	[[nodiscard]] __device__ static float DSampleDY(long height, cudaTextureObject_t textureHandle,
 	                                                const VectorType &texCoord) {
 		const float heightF = static_cast<float>(height);
 		const float y = floorf(-.5f + texCoord.Y() * heightF);
@@ -96,7 +97,7 @@ public:
 			                  textureHandle, texCoord.X(), y0, texCoord.Z()));
 	}
 
-	__device__ [[nodiscard]] static float DSampleDZ(long depth, cudaTextureObject_t textureHandle,
+	[[nodiscard]] __device__ static float DSampleDZ(long depth, cudaTextureObject_t textureHandle,
 	                                                const VectorType &texCoord) {
 		const float depthF = static_cast<float>(depth);
 		const float z = floorf(-.5f + texCoord.Z() * depthF);
@@ -106,15 +107,15 @@ public:
 			                 textureHandle, texCoord.X(), texCoord.Y(), z0));
 	}
 
-	__device__ [[nodiscard]] float DSampleDX(const VectorType &texCoord) const {
+	[[nodiscard]] __device__ float DSampleDX(const VectorType &texCoord) const {
 		return DSampleDX(Size().X(), textureHandle, texCoord);
 	}
 
-	__device__ [[nodiscard]] float DSampleDY(const VectorType &texCoord) const {
+	[[nodiscard]] __device__ float DSampleDY(const VectorType &texCoord) const {
 		return DSampleDY(Size().Y(), textureHandle, texCoord);
 	}
 
-	__device__ [[nodiscard]] float DSampleDZ(const VectorType &texCoord) const {
+	[[nodiscard]] __device__ float DSampleDZ(const VectorType &texCoord) const {
 		return DSampleDZ(Size().Z(), textureHandle, texCoord);
 	}
 
