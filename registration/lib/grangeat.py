@@ -1,5 +1,6 @@
 import torch
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 from registration.lib.structs import *
 import registration.lib.geometry as geometry
@@ -92,7 +93,7 @@ def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: 
 
 def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.Tensor, theta_values: torch.Tensor,
                                     r_values: torch.Tensor, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
-                                    k_mapping: LinearMapping, a_count: int = 4, b_count: int = 6,
+                                    k_mapping: LinearMapping, a_count: int = 6, b_count: int = 16,
                                     sigma: float | None = None):
     """
     Sample the given sinogram at the given phi, theta, r spherical coordinates, with extra samples in a Gaussian layout
@@ -113,15 +114,27 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     """
     device = sinogram3d.device
 
+    assert phi_values.device == device
+    assert theta_values.device == device
+    assert r_values.device == device
+    assert len(sinogram3d.size()) == 3
+    assert len(phi_values.size()) == 2
+    assert phi_values.size() == theta_values.size()
+    assert theta_values.size() == r_values.size()
+    assert sigma is None or sigma > 0.
+
     # Determine a sensible value of sigma if not provided
     if sigma is None:
         phi_count: int = sinogram3d.size()[0]
         sigma = 2. * torch.pi / (6. * float(phi_count))
 
+    sigma = .05
+
+    print("Sample smoothing with sigma = {:.3f}".format(sigma))
+
     # Radial distances in Gaussian pattern
     delta_a: float = 3. * sigma / float(a_count)
-    # a_values: torch.Tensor = delta_a * torch.arange(0., float(a_count), 1.)
-    a_values = torch.zeros(a_count)
+    a_values: torch.Tensor = delta_a * torch.arange(0., float(a_count), 1.)
     # Orientations in Gaussian pattern
     b_values = torch.linspace(-torch.pi, torch.pi, b_count + 1)[:-1]
     # Sample weights in Gaussian pattern
@@ -146,10 +159,10 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     sp = phi_values.sin()
     ct = theta_values.cos()
     st = theta_values.sin()
-    row_0 = torch.stack((cp * ct, sp, -cp * st), dim=-1)
-    row_1 = torch.stack((-sp * ct, cp, sp * st), dim=-1)
+    row_0 = torch.stack((cp * ct, -sp, -cp * st), dim=-1)
+    row_1 = torch.stack((sp * ct, cp, sp * st), dim=-1)
     row_2 = torch.stack((st, torch.zeros_like(st), ct), dim=-1)
-    rotation_matrices = torch.stack((row_0, row_1, row_2), dim=-1).to(device=device)
+    rotation_matrices = torch.stack((row_0, row_1, row_2), dim=-2).to(device=device)
     # Multiplying by the perturbed unit vectors for the perturbed, rotated unit vector:
     rotated_vectors = torch.einsum('...ij,...klj->...kli', rotation_matrices, offset_vectors)
 
@@ -158,9 +171,40 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     new_thetas = rotated_vectors[..., 2].asin().flatten(-2)
     new_rs = r_values.unsqueeze(-1).expand(-1, -1, new_phis.size()[-1])
 
+    phis_under = new_phis < -.5 * torch.pi
+    phis_over = new_phis > .5 * torch.pi
+    new_phis[phis_under] += torch.pi
+    new_phis[phis_over] -= torch.pi
+
+    # new_rs[torch.logical_or(phis_under, phis_over)] *= -1.
+
     # Sampling at all the perturbed orientations:
     grid = torch.stack((i_mapping(new_rs), j_mapping(new_thetas), k_mapping(new_phis)), dim=-1)
     samples = torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, :, :, :, :])[0, 0]
+
+    ##
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_phis.cpu()).cpu())
+    axes.axis('square')
+    axes.set_title("average phi_sph resampling values")
+    axes.set_xlabel("r_pol")
+    axes.set_ylabel("phi_pol")
+    plt.colorbar(mesh)
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_thetas.cpu()).cpu())
+    axes.axis('square')
+    axes.set_title("average theta_sph resampling values")
+    axes.set_xlabel("r_pol")
+    axes.set_ylabel("phi_pol")
+    plt.colorbar(mesh)
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_rs.cpu()).cpu())
+    axes.axis('square')
+    axes.set_title("average r_sph resampling values")
+    axes.set_xlabel("r_pol")
+    axes.set_ylabel("phi_pol")
+    plt.colorbar(mesh)
+    ##
 
     # Applying the weights and summing along the last dimension for an output equal in size to the input tensors of coordinates:
     return torch.einsum('i,...i->...', w_values.repeat(b_count).to(device=device), samples)
@@ -187,27 +231,27 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
     ##
 
     ##
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(phi_values_sph.cpu())
-    # axes.axis('square')
-    # axes.set_title("phi_sph resampling values")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(theta_values_sph.cpu())
-    # axes.axis('square')
-    # axes.set_title("theta_sph resampling values")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(r_values_sph.cpu())
-    # axes.axis('square')
-    # axes.set_title("r_sph resampling values")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(output_grid_sph.phi.cpu())
+    axes.axis('square')
+    axes.set_title("phi_sph resampling values")
+    axes.set_xlabel("r_pol")
+    axes.set_ylabel("phi_pol")
+    plt.colorbar(mesh)
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(output_grid_sph.theta.cpu())
+    axes.axis('square')
+    axes.set_title("theta_sph resampling values")
+    axes.set_xlabel("r_pol")
+    axes.set_ylabel("phi_pol")
+    plt.colorbar(mesh)
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(output_grid_sph.r.cpu())
+    axes.axis('square')
+    axes.set_title("r_sph resampling values")
+    axes.set_xlabel("r_pol")
+    axes.set_ylabel("phi_pol")
+    plt.colorbar(mesh)
     ##
 
     grid_range = LinearRange.grid_sample_range()

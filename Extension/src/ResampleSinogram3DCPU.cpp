@@ -59,12 +59,10 @@ at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor
 		else if (under) rThetaPhi.Z() += M_PI;
 		const float magXY = posCartesian.X() * posCartesian.X() + posCartesian.Y() * posCartesian.Y();
 		rThetaPhi.Y() = atan2(posCartesian.Z(), sqrt(magXY));
-		rThetaPhi.X() = static_cast<float>((static_cast<int>(!(over || under)) << 1) - 1) * sqrt(
+		rThetaPhi.X() = static_cast<float>(2 * static_cast<int>(!(over || under)) - 1) * sqrt(
 			                magXY + posCartesian.Z() * posCartesian.Z());
 
-		resultFlatPtr[i] = common.inputTexture.Sample(common.mappingRThetaPhiToTexCoord(rThetaPhi)
-			// ,{AddressMode::ZERO, AddressMode::ZERO, AddressMode::WRAP}
-			);
+		resultFlatPtr[i] = common.inputTexture.Sample(common.mappingRThetaPhiToTexCoord(rThetaPhi));
 
 		if ((r * Vec<float, 2>{cp, sp} - .5f * originProjection).Apply<float>(&Square<float>).Sum() < squareRadius) {
 			resultFlatPtr[i] *= -1.f;

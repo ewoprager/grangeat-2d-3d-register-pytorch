@@ -11,14 +11,13 @@ at::Tensor ResampleRadonVolume_cpu(const at::Tensor &sinogram3d, const at::Tenso
 class Texture3DCPU : public Texture<3, int64_t, double> {
 public:
 	using Base = Texture<3, int64_t, double>;
-	using AddressModeType = Vec<TextureAddressModeCPU, 3>;
 
 	Texture3DCPU() = default;
 
 	Texture3DCPU(const float *_ptr, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
 	             AddressModeType _addressModes =
-		             AddressModeType::Full(TextureAddressModeCPU::ZERO)) : Base(_size, _spacing, _centrePosition),
-		                                                                   ptr(_ptr), addressModes(_addressModes) {
+		             AddressModeType::Full(TextureAddressMode::ZERO)) : Base(_size, _spacing, _centrePosition),
+		                                                                ptr(_ptr), addressModes(_addressModes) {
 	}
 
 	// yes copy
@@ -37,9 +36,9 @@ public:
 	}
 
 	[[nodiscard]] __host__ __device__ float At(const SizeType &index) const {
-		if ((addressModes.X() == TextureAddressModeCPU::ZERO && (index.X() < 0 || index.X() >= Size().X())) || (
-			    addressModes.Y() == TextureAddressModeCPU::ZERO && (index.Y() < 0 || index.Y() >= Size().Y())) || (
-			    addressModes.Z() == TextureAddressModeCPU::ZERO && (index.Z() < 0 || index.Z() >= Size().Z()))) {
+		if ((addressModes.X() == TextureAddressMode::ZERO && (index.X() < 0 || index.X() >= Size().X())) || (
+			    addressModes.Y() == TextureAddressMode::ZERO && (index.Y() < 0 || index.Y() >= Size().Y())) || (
+			    addressModes.Z() == TextureAddressMode::ZERO && (index.Z() < 0 || index.Z() >= Size().Z()))) {
 			return 0.f;
 		}
 		// Uses wrapping for indices outside the texture.

@@ -5,15 +5,29 @@
 
 namespace ExtensionTest {
 
-enum class TextureAddressModeCPU {
+enum class TextureAddressMode {
 	ZERO,
 	WRAP
 };
+
+#ifdef __CUDACC__
+inline cudaTextureAddressMode TextureAddressModeToCuda(TextureAddressMode tam) {
+	switch (tam) {
+	case TextureAddressMode::ZERO:
+		return cudaAddressModeBorder;
+	case TextureAddressMode::WRAP:
+		return cudaAddressModeWrap;
+	default:
+		return cudaAddressModeBorder;
+	}
+}
+#endif
 
 template <std::size_t dimensionality, typename intType=int, typename floatType=float> class Texture {
 public:
 	using SizeType = Vec<intType, dimensionality>;
 	using VectorType = Vec<floatType, dimensionality>;
+	using AddressModeType = Vec<TextureAddressMode, dimensionality>;
 
 	[[nodiscard]] __host__ __device__ const SizeType &Size() const { return size; }
 	[[nodiscard]] __host__ __device__ const VectorType &Spacing() const { return spacing; }

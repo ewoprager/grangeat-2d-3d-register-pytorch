@@ -76,6 +76,7 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
 def register(path: str | None, *, cache_directory: str, load_cached: bool = True, regenerate_drr: bool = False,
              save_to_cache=True):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
     # device = "cpu"
 
     # cal_image = torch.zeros((10, 10))
@@ -146,6 +147,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
 
     detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth = drr_spec
 
+    print("Plotting DRR and fixed image...")
     _, axes = plt.subplots()
     mesh = axes.pcolormesh(drr_image.cpu())
     axes.axis('square')
@@ -163,25 +165,30 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     axes.set_xlabel("r")
     axes.set_ylabel("phi")
     plt.colorbar(mesh)
+    print("Done.")
 
     sinogram2d_grid = sinogram2d_range.generate_linear_grid(fixed_image.size(), device=device)
 
+    print("Evaluating at ground truth...")
     zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
                                                   transformation=transformation_ground_truth.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                   sinogram3d_range=sinogram3d_range, plot=True)
-    print("-ZNCC = -{:.4e}".format(zncc.item()
+    print("\t-ZNCC = -{:.4e}".format(zncc.item()
                                    # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
                                    #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
                                    #                 plot=True)
                                    ))
+    print("Done.")
 
     if True:
+        print("Evaluating at ground truth with sample smoothing...")
         zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
                                                       transformation=transformation_ground_truth.to(device=device),
                                                       scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                       sinogram3d_range=sinogram3d_range, plot=True, smooth=True)
-        print("With sample smoothing, -ZNCC = -{:.4e}".format(zncc.item()))
+        print("\tWith sample smoothing, -ZNCC = -{:.4e}".format(zncc.item()))
+        print("Done.")
 
     # plt.show()
     # low = torch.max(fixed_image.min(), resampled.min())

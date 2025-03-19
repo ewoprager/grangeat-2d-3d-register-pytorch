@@ -9,7 +9,7 @@ template <typename T, std::size_t N> class Vec : public std::array<T, N> {
 public:
 	static_assert(N > 0, "Vec size must be greater than 0");
 
-	using type = T;
+	using ElementType = T;
 	static constexpr std::size_t dimensionality = N;
 
 	using Base = std::array<T, N>;

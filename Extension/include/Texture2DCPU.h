@@ -7,14 +7,13 @@ namespace ExtensionTest {
 class Texture2DCPU : public Texture<2, int64_t, double> {
 public:
 	using Base = Texture<2, int64_t, double>;
-	using AddressModeType = Vec<TextureAddressModeCPU, 2>;
 
 	Texture2DCPU() = default;
 
 	Texture2DCPU(const float *_ptr, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
 	             const AddressModeType &_addressModes =
-		             AddressModeType::Full(TextureAddressModeCPU::ZERO)) : Base(_size, _spacing, _centrePosition),
-		                                                                   ptr(_ptr), addressModes(_addressModes) {
+		             AddressModeType::Full(TextureAddressMode::ZERO)) : Base(_size, _spacing, _centrePosition),
+		                                                                ptr(_ptr), addressModes(_addressModes) {
 	}
 
 	// yes copy
@@ -33,8 +32,8 @@ public:
 	}
 
 	[[nodiscard]] __host__ __device__ float At(const SizeType &index) const {
-		if ((addressModes.X() == TextureAddressModeCPU::ZERO && (index.X() < 0 || index.X() >= Size().X())) || (
-			    addressModes.Y() == TextureAddressModeCPU::ZERO && (index.Y() < 0 || index.Y() >= Size().Y()))) {
+		if ((addressModes.X() == TextureAddressMode::ZERO && (index.X() < 0 || index.X() >= Size().X())) || (
+			    addressModes.Y() == TextureAddressMode::ZERO && (index.Y() < 0 || index.Y() >= Size().Y()))) {
 			return 0.f;
 		}
 		// Uses wrapping for indices outside the texture.

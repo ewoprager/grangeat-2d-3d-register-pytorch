@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Vec.h"
+#include "Texture.h"
 
 namespace ExtensionTest {
 
@@ -50,7 +51,8 @@ template <typename texture_t> struct ResampleSinogram3D {
 		const float *sinogramPtr = sinogramContiguous.data_ptr<float>();
 		ret.inputTexture = texture_t{sinogramPtr, Vec<int64_t, 3>::FromIntArrayRef(sinogram3d.sizes()).Flipped(),
 		                             Vec<double, 3>::FromTensor(sinogramSpacing),
-		                             Vec<double, 3>::FromTensor(sinogramRangeCentres)};
+		                             Vec<double, 3>::FromTensor(sinogramRangeCentres),
+		                             {TextureAddressMode::ZERO, TextureAddressMode::ZERO, TextureAddressMode::WRAP}};
 		ret.mappingRThetaPhiToTexCoord = ret.inputTexture.MappingWorldToTexCoord();
 		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), sinogramContiguous.options());
 		return ret;

@@ -7,12 +7,11 @@ namespace ExtensionTest {
 class Texture3DCUDA : public Texture<3, int64_t, double> {
 public:
 	using Base = Texture<3, int64_t, double>;
-	using AddressModeType = Vec<cudaTextureAddressMode, 3>;
 
 	Texture3DCUDA() = default;
 
 	Texture3DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
-	              const AddressModeType &addressModes = AddressModeType::Full(cudaAddressModeBorder))
+	              const AddressModeType &addressModes = AddressModeType::Full(TextureAddressMode::ZERO))
 		: Base(_size, _spacing, _centrePosition) {
 
 		const cudaExtent extent = {.width = static_cast<size_t>(_size.X()), .height = static_cast<size_t>(_size.Y()),
@@ -35,7 +34,9 @@ public:
 		                                             .res = {.array = {.array = arrayHandle}}};
 		cudaTextureDesc textureDescriptor = {.filterMode = cudaFilterModeLinear, .readMode = cudaReadModeElementType,
 		                                     .borderColor = {0.f, 0.f, 0.f, 0.f}, .normalizedCoords = true};
-		memcpy(&textureDescriptor.addressMode, addressModes.data(), 3 * sizeof(cudaTextureAddressMode));
+		for (int i = 0; i < 3; ++i) {
+			textureDescriptor.addressMode[i] = TextureAddressModeToCuda(addressModes[i]);
+		}
 		cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
 	}
 

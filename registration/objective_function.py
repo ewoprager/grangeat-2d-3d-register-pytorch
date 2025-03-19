@@ -38,7 +38,7 @@ def zncc2(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
 
 def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformation: Transformation,
              scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, sinogram3d_range: Sinogram3dRange,
-             plot: bool = False, smooth: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
+             plot: bool = False, save: bool = False, smooth: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
     if smooth:
         resampled = grangeat.resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
                                             output_grid=fixed_image_grid, input_range=sinogram3d_range, smooth=smooth)
@@ -65,7 +65,8 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: torch.Tensor, *, transformat
         axes.set_xlabel("r")
         axes.set_ylabel("phi")
         plt.colorbar(mesh)
-        plt.savefig("data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else "data/temp/d_dr_R3_mu_resampled.pgf")
+        if save:
+            plt.savefig("data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else "data/temp/d_dr_R3_mu_resampled.pgf")
 
     return zncc(fixed_image,
                 resampled), resampled  # return Extension.normalised_cross_correlation(fixed_image, resampled), resampled
