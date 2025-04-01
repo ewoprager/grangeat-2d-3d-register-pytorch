@@ -5,6 +5,9 @@ Based on this paper:
 Frysch R, Pfeiffer T, Rose G. A novel approach to 2D/3D registration of X-ray images using Grangeat's relation. Med
 Image Anal. 2021 Jan;67:101815. doi: 10.1016/j.media.2020.101815. Epub 2020 Sep 30. PMID: 33065470.
 
+This project is very much in the experimental stages, so none of the code is very usable yet. It is being actively
+developed as part of a PhD.
+
 ## Setup
 
 CUDA is required. NVCC version information:

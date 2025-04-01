@@ -71,8 +71,12 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
 def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, transformation: Transformation,
                     scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, voxel_spacing: torch.Tensor,
                     plot: bool = False) -> torch.Tensor:
-    direct = grangeat.directly_calculate_radon_slice(volume_data, transformation=transformation,
-                                                     scene_geometry=scene_geometry, output_grid=fixed_image_grid,
+    device = volume_data.device
+    source_position = scene_geometry.source_position(device=device)
+    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+
+    direct = grangeat.directly_calculate_radon_slice(volume_data, ph_matrix=ph_matrix, output_grid=fixed_image_grid,
                                                      voxel_spacing=voxel_spacing)
     if plot:
         _, axes = plt.subplots()
