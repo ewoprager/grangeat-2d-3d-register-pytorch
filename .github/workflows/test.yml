@@ -30,6 +30,10 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version-file: "pyproject.toml"
+
+    - name: Build the extension
+      working-directory: ./Extension
+      run: python setup.py develop --verbose --debug
       
     - name: Install the project
       run: uv sync --all-extras --dev
