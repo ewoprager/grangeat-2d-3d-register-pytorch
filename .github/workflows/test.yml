@@ -31,12 +31,12 @@ jobs:
       with:
         python-version-file: "pyproject.toml"
 
+    - name: Install the project
+      run: uv sync --all-extras --dev
+
     - name: Build the extension
       working-directory: ./Extension
       run: python setup.py develop --verbose --debug
-      
-    - name: Install the project
-      run: uv sync --all-extras --dev
       
     # - name: Lint with flake8
     #   run: |
