@@ -4,9 +4,6 @@ import torch
 import kornia
 import scipy
 import numpy
-from abc import ABC, abstractmethod
-
-import Extension
 
 
 class LinearMapping:
@@ -204,65 +201,3 @@ class Sinogram3dGrid(NamedTuple):
         thetas = thetas.unsqueeze(-1).repeat(1, r_count)
         phis = phis.unsqueeze(-1).repeat(1, r_count)
         return Sinogram3dGrid(phis, thetas, rs)
-
-
-class Sinogram(ABC):
-    @abstractmethod
-    def device(self):
-        pass
-
-    @abstractmethod
-    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        pass
-
-
-class SinogramClassic(Sinogram):
-    def __init__(self, data: torch.Tensor, sinogram_range: Sinogram3dRange):
-        self.data = data
-        self.sinogram_range = sinogram_range
-
-    def device(self):
-        return self.data.device
-
-    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        device = self.data.device
-        sinogram_range_low = torch.tensor([self.sinogram_range.r.low, self.sinogram_range.theta.low, self.sinogram_range.phi.low], device=device)
-        sinogram_range_high = torch.tensor([self.sinogram_range.r.high, self.sinogram_range.theta.high, self.sinogram_range.phi.high],
-            device=device)
-        sinogram_spacing = (sinogram_range_high - sinogram_range_low) / (
-                torch.tensor(self.data.size(), dtype=torch.float32, device=device) - 1.)
-        sinogram_range_centres = .5 * (sinogram_range_low + sinogram_range_high)
-        return Extension.resample_sinogram3d(self.data, sinogram_spacing, sinogram_range_centres, ph_matrix,
-                                             fixed_image_grid.phi, fixed_image_grid.r)
-
-
-# class SinogramFibonacci(Sinogram, NamedTuple):
-#     data: torch.Tensor
-#     r_range: LinearRange
-#
-#     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-#         device = self.data.device
-#
-
-
-class VolumeSpec(NamedTuple):
-    ct_volume_path: str
-    downsample_factor: int
-    sinogram: SinogramClassic
-
-
-# class VolumeSpecFibonacci(NamedTuple):
-#     ct_volume_path: str
-#     downsample_factor: int
-#     sinogram: torch.Tensor
-#     r_range: LinearRange
-
-
-class DrrSpec(NamedTuple):
-    ct_volume_path: str
-    detector_spacing: torch.Tensor  # [mm] distances between the detectors: (vertical, horizontal)
-    scene_geometry: SceneGeometry
-    image: torch.Tensor
-    sinogram: torch.Tensor
-    sinogram_range: Sinogram2dRange
-    transformation: Transformation

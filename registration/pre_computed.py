@@ -1,6 +1,7 @@
 import torch
 
 from registration.lib.structs import *
+from registration.lib.sinogram import *
 import registration.lib.grangeat as grangeat
 
 
@@ -12,7 +13,8 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
     vol_diag: float = (voxel_spacing * torch.tensor(volume_data.size(), dtype=torch.float32,
                                                     device=voxel_spacing.device)).square().sum().sqrt().item()
     sinogram_range = Sinogram3dRange(LinearRange(-.5 * torch.pi, torch.pi * (.5 - 1. / float(vol_counts))),
-                            LinearRange(-.5 * torch.pi, .5 * torch.pi), LinearRange(-.5 * vol_diag, .5 * vol_diag))
+                                     LinearRange(-.5 * torch.pi, .5 * torch.pi),
+                                     LinearRange(-.5 * vol_diag, .5 * vol_diag))
 
     sinogram3d_grid = Sinogram3dGrid.linear_from_range(sinogram_range, vol_counts, device=device)
     data = grangeat.calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
@@ -33,23 +35,25 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
     return sinogram3d
 
 
-# def calculate_volume_sinogram_fibonacci(cache_directory: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
-#                                         ct_volume_path: str, volume_downsample_factor: int, *,
-#                                         device=torch.device('cpu'), save_to_cache=True, vol_counts=256) -> Tuple[
-#     torch.Tensor, LinearRange]:
-#     print("Calculating 3D Fibonacci sinogram (the volume to resample)...")
-#
-#     vol_diag: float = (voxel_spacing * torch.tensor(volume_data.size(), dtype=torch.float32,
-#                                                     device=voxel_spacing.device)).square().sum().sqrt().item()
-#     r_range = LinearRange(-.5 * vol_diag, .5 * vol_diag)
-#
-#     sinogram3d_grid = Sinogram3dGrid.fibonacci_from_r_range(r_range, vol_counts, device=device)
-#     sinogram3d = grangeat.calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
-#                                                  samples_per_direction=vol_counts)
-#
-#     if save_to_cache:
-#         torch.save(VolumeSpecFibonacci(ct_volume_path, volume_downsample_factor, sinogram3d, r_range),
-#                    cache_directory + "/volume_spec_fibonacci.pt")
-#
-#     print("Done and saved.")
-#     return sinogram3d, r_range
+def calculate_volume_sinogram_fibonacci(cache_directory: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
+                                        ct_volume_path: str, volume_downsample_factor: int, *,
+                                        device=torch.device('cpu'), save_to_cache=True,
+                                        vol_counts=256) -> SinogramFibonacci:
+    print("Calculating 3D Fibonacci sinogram (the volume to resample)...")
+
+    vol_diag: float = (voxel_spacing * torch.tensor(volume_data.size(), dtype=torch.float32,
+                                                    device=voxel_spacing.device)).square().sum().sqrt().item()
+    r_range = LinearRange(-.5 * vol_diag, .5 * vol_diag)
+
+    sinogram3d_grid = Sinogram3dGrid.fibonacci_from_r_range(r_range, vol_counts, device=device)
+    data = grangeat.calculate_radon_volume(volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid,
+                                           samples_per_direction=vol_counts)
+
+    sinogram3d = SinogramFibonacci(data, r_range)
+
+    if save_to_cache:
+        torch.save(VolumeSpecFibonacci(ct_volume_path, volume_downsample_factor, sinogram3d),
+                   cache_directory + "/volume_spec_fibonacci.pt")
+
+    print("Done and saved.")
+    return sinogram3d

@@ -6,9 +6,6 @@ from registration.lib.structs import *
 def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, ph_matrix: torch.Tensor) -> torch.Tensor:
     device = input_grid.phi.device
     assert ph_matrix.device == device
-    # source_position = scene_geometry.source_position(device=device)
-    # p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-    # ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device))
     intermediates = torch.stack(
         (torch.cos(input_grid.phi), torch.sin(input_grid.phi), torch.zeros_like(input_grid.phi), -input_grid.r), dim=-1)
     n_tildes = torch.einsum('ij,...j->...i', ph_matrix.t(), intermediates)

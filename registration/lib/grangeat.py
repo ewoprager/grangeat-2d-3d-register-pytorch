@@ -3,7 +3,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from registration.lib.structs import *
-import registration.lib.geometry as geometry
+from registration.lib import geometry
 
 import Extension as ExtensionTest
 
@@ -210,62 +210,62 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     return torch.einsum('i,...i->...', w_values.repeat(b_count).to(device=device), samples)
 
 
-def resample_slice(sinogram3d: SinogramClassic, *, ph_matrix: torch.Tensor, output_grid: Sinogram2dGrid,
-                   smooth: bool = False) -> torch.Tensor:
-    assert output_grid.device_consistent()
-    assert output_grid.phi.device == sinogram3d.device()
-    assert ph_matrix.device == sinogram3d.device()
-
-    output_grid_cartesian = geometry.fixed_polar_to_moving_cartesian(output_grid, ph_matrix=ph_matrix)
-
-    output_grid_sph = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian)
-
-    ## sign changes - this relies on the convenient coordinate system
-    moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
-    square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
-    need_sign_change = ((output_grid.r.unsqueeze(-1) * torch.stack(
-        (torch.cos(output_grid.phi), torch.sin(output_grid.phi)), dim=-1) - .5 * moving_origin_projected).square().sum(
-        dim=-1) < square_radius)
-    ##
-
-    ##
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(output_grid_sph.phi.cpu())
-    axes.axis('square')
-    axes.set_title("phi_sph resampling values")
-    axes.set_xlabel("r_pol")
-    axes.set_ylabel("phi_pol")
-    plt.colorbar(mesh)
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(output_grid_sph.theta.cpu())
-    axes.axis('square')
-    axes.set_title("theta_sph resampling values")
-    axes.set_xlabel("r_pol")
-    axes.set_ylabel("phi_pol")
-    plt.colorbar(mesh)
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(output_grid_sph.r.cpu())
-    axes.axis('square')
-    axes.set_title("r_sph resampling values")
-    axes.set_xlabel("r_pol")
-    axes.set_ylabel("phi_pol")
-    plt.colorbar(mesh)
-    ##
-
-    grid_range = LinearRange.grid_sample_range()
-    i_mapping: LinearMapping = grid_range.get_mapping_from(sinogram3d.sinogram_range.r)
-    j_mapping: LinearMapping = grid_range.get_mapping_from(sinogram3d.sinogram_range.theta)
-    k_mapping: LinearMapping = grid_range.get_mapping_from(sinogram3d.sinogram_range.phi)
-
-    if smooth:
-        ret = grid_sample_sinogram3d_smoothed(sinogram3d.data, output_grid_sph.phi, output_grid_sph.theta, output_grid_sph.r,
-                                              i_mapping=i_mapping, j_mapping=j_mapping, k_mapping=k_mapping)
-    else:
-        grid = torch.stack(
-            (i_mapping(output_grid_sph.r), j_mapping(output_grid_sph.theta), k_mapping(output_grid_sph.phi)), dim=-1)
-        ret = torch.nn.functional.grid_sample(sinogram3d.data[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
-
-    ret[need_sign_change] *= -1.
-    return ret
+# def resample_slice(sinogram3d: SinogramClassic, *, ph_matrix: torch.Tensor, output_grid: Sinogram2dGrid,
+#                    smooth: bool = False) -> torch.Tensor:
+#     assert output_grid.device_consistent()
+#     assert output_grid.phi.device == sinogram3d.device()
+#     assert ph_matrix.device == sinogram3d.device()
+#
+#     output_grid_cartesian = geometry.fixed_polar_to_moving_cartesian(output_grid, ph_matrix=ph_matrix)
+#
+#     output_grid_sph = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian)
+#
+#     ## sign changes - this relies on the convenient coordinate system
+#     moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+#     square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+#     need_sign_change = ((output_grid.r.unsqueeze(-1) * torch.stack(
+#         (torch.cos(output_grid.phi), torch.sin(output_grid.phi)), dim=-1) - .5 * moving_origin_projected).square().sum(
+#         dim=-1) < square_radius)
+#     ##
+#
+#     ##
+#     _, axes = plt.subplots()
+#     mesh = axes.pcolormesh(output_grid_sph.phi.cpu())
+#     axes.axis('square')
+#     axes.set_title("phi_sph resampling values")
+#     axes.set_xlabel("r_pol")
+#     axes.set_ylabel("phi_pol")
+#     plt.colorbar(mesh)
+#     _, axes = plt.subplots()
+#     mesh = axes.pcolormesh(output_grid_sph.theta.cpu())
+#     axes.axis('square')
+#     axes.set_title("theta_sph resampling values")
+#     axes.set_xlabel("r_pol")
+#     axes.set_ylabel("phi_pol")
+#     plt.colorbar(mesh)
+#     _, axes = plt.subplots()
+#     mesh = axes.pcolormesh(output_grid_sph.r.cpu())
+#     axes.axis('square')
+#     axes.set_title("r_sph resampling values")
+#     axes.set_xlabel("r_pol")
+#     axes.set_ylabel("phi_pol")
+#     plt.colorbar(mesh)
+#     ##
+#
+#     grid_range = LinearRange.grid_sample_range()
+#     i_mapping: LinearMapping = grid_range.get_mapping_from(sinogram3d.sinogram_range.r)
+#     j_mapping: LinearMapping = grid_range.get_mapping_from(sinogram3d.sinogram_range.theta)
+#     k_mapping: LinearMapping = grid_range.get_mapping_from(sinogram3d.sinogram_range.phi)
+#
+#     if smooth:
+#         ret = grid_sample_sinogram3d_smoothed(sinogram3d.data, output_grid_sph.phi, output_grid_sph.theta, output_grid_sph.r,
+#                                               i_mapping=i_mapping, j_mapping=j_mapping, k_mapping=k_mapping)
+#     else:
+#         grid = torch.stack(
+#             (i_mapping(output_grid_sph.r), j_mapping(output_grid_sph.theta), k_mapping(output_grid_sph.phi)), dim=-1)
+#         ret = torch.nn.functional.grid_sample(sinogram3d.data[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
+#
+#     ret[need_sign_change] *= -1.
+#     return ret
 
 # def resample_slice_fibonacci()

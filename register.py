@@ -18,6 +18,7 @@ import Extension
 # from diffdrr.pose import RigidTransform, make_matrix
 
 from registration.lib.structs import *
+from registration.lib.sinogram import *
 import registration.lib.grangeat as grangeat
 import registration.lib.geometry as geometry
 import registration.data as data
@@ -60,7 +61,7 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
             detector_spacing * torch.tensor(drr_image.size(), dtype=torch.float32)).square().sum().sqrt().item()
     sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * image_diag, .5 * image_diag))
-    sinogram2d_grid = sinogram2d_range.generate_linear_grid(sinogram2d_counts, device=device)
+    sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=device)
 
     fixed_image = grangeat.calculate_fixed_image(drr_image, source_distance=scene_geometry.source_distance,
                                                  detector_spacing=detector_spacing, output_grid=sinogram2d_grid)

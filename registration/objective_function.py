@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import Extension
 
 from registration.lib.structs import *
+from registration.lib.sinogram import *
 import registration.lib.grangeat as grangeat
 import registration.lib.plot as myplt
 
@@ -45,7 +46,7 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
     ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
 
     if smooth and isinstance(sinogram3d, SinogramClassic):
-        resampled = grangeat.resample_slice(sinogram3d, ph_matrix=ph_matrix, output_grid=fixed_image_grid, smooth=smooth)
+        resampled = sinogram3d.resample_python(ph_matrix=ph_matrix, fixed_image_grid=fixed_image_grid, smooth=smooth)
     else:
         if smooth:
             print("Warning, cannot resample smooth as not given a SinogramClassic")

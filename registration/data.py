@@ -2,6 +2,7 @@ import torch
 import nrrd
 
 from registration.lib.structs import *
+from registration.lib.sinogram import *
 
 
 def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -59,9 +60,8 @@ def load_cached_volume_fibonacci(cache_directory: str):
     path = volume_spec.ct_volume_path
     volume_downsample_factor = volume_spec.downsample_factor
     sinogram3d = volume_spec.sinogram
-    r_range = volume_spec.r_range
     print("Loaded cached Fibonacci volume spec from '{}'".format(file))
-    return path, volume_downsample_factor, sinogram3d, r_range
+    return path, volume_downsample_factor, sinogram3d
 
 
 def load_cached_drr(cache_directory: str, ct_volume_path: str):

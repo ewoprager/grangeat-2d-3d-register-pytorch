@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-import registration.objective_function as objective_function
+from registration import objective_function
 import Extension
 
 
