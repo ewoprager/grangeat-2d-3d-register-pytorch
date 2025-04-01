@@ -42,9 +42,26 @@ def load_cached_volume(cache_directory: str):
     path = volume_spec.ct_volume_path
     volume_downsample_factor = volume_spec.downsample_factor
     sinogram3d = volume_spec.sinogram
-    sinogram3d_range = volume_spec.sinogram_range
     print("Loaded cached volume spec from '{}'".format(file))
-    return path, volume_downsample_factor, sinogram3d, sinogram3d_range
+    return path, volume_downsample_factor, sinogram3d
+
+
+def load_cached_volume_fibonacci(cache_directory: str):
+    file: str = cache_directory + "/volume_spec_fibonacci.pt"
+    try:
+        volume_spec = torch.load(file)
+    except:
+        print("No cache file '{}' found.".format(file))
+        return None
+    if not isinstance(volume_spec, VolumeSpecFibonacci):
+        print("Cache file '{}' invalid.".format(file))
+        return None
+    path = volume_spec.ct_volume_path
+    volume_downsample_factor = volume_spec.downsample_factor
+    sinogram3d = volume_spec.sinogram
+    r_range = volume_spec.r_range
+    print("Loaded cached Fibonacci volume spec from '{}'".format(file))
+    return path, volume_downsample_factor, sinogram3d, r_range
 
 
 def load_cached_drr(cache_directory: str, ct_volume_path: str):

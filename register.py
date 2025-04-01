@@ -7,6 +7,7 @@ import torch
 import nrrd
 from tqdm import tqdm
 import scipy
+from enum import Enum
 
 import Extension
 # from diffdrr.drr import DRR
@@ -73,8 +74,13 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation
 
 
+class SinogramStructure(Enum):
+    CLASSIC = 1
+    FIBONACCI = 2
+
+
 def register(path: str | None, *, cache_directory: str, load_cached: bool = True, regenerate_drr: bool = False,
-             save_to_cache=True):
+             save_to_cache=True, sinogram_structure: SinogramStructure = SinogramStructure.CLASSIC):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
     # device = "cpu"
@@ -117,7 +123,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     if volume_spec is None:
         volume_downsample_factor: int = 4
     else:
-        path, volume_downsample_factor, sinogram3d, sinogram3d_range = volume_spec
+        path, volume_downsample_factor, sinogram3d = volume_spec
 
     if path is None:
         save_to_cache = False
@@ -128,12 +134,10 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         vol_data, voxel_spacing, bounds = data.read_nrrd(path, downsample_factor=volume_downsample_factor)
         vol_data = vol_data.to(device=device, dtype=torch.float32)
 
-    if sinogram3d is None or sinogram3d_range is None:
-        sinogram3d, sinogram3d_range = pre_computed.calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing,
-                                                                              path, volume_downsample_factor,
-                                                                              device=device,
-                                                                              save_to_cache=save_to_cache,
-                                                                              vol_counts=256)
+    if sinogram3d is None:
+        sinogram3d = pre_computed.calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
+                                                            volume_downsample_factor, device=device,
+                                                            save_to_cache=save_to_cache, vol_counts=256)
 
     voxel_spacing = voxel_spacing.to(device=device)
 
@@ -167,18 +171,18 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     plt.colorbar(mesh)
     print("Done.")
 
-    sinogram2d_grid = sinogram2d_range.generate_linear_grid(fixed_image.size(), device=device)
+    sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, fixed_image.size(), device=device)
 
     print("Evaluating at ground truth...")
     zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
                                                   transformation=transformation_ground_truth.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
-                                                  sinogram3d_range=sinogram3d_range, plot=True)
+                                                  plot=True)
     print("\t-ZNCC = -{:.4e}".format(zncc.item()
-                                   # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
-                                   #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
-                                   #                 plot=True)
-                                   ))
+                                     # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
+                                     #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
+                                     #                 plot=True)
+                                     ))
     print("Done.")
 
     if True:
@@ -186,7 +190,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
                                                       transformation=transformation_ground_truth.to(device=device),
                                                       scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
-                                                      sinogram3d_range=sinogram3d_range, plot=True, smooth=True)
+                                                      plot=True, smooth=True)
         print("\tWith sample smoothing, -ZNCC = -{:.4e}".format(zncc.item()))
         print("Done.")
 

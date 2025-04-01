@@ -4,6 +4,9 @@ import torch
 import kornia
 import scipy
 import numpy
+from abc import ABC, abstractmethod
+
+import Extension
 
 
 class LinearMapping:
@@ -119,57 +122,15 @@ class SceneGeometry(NamedTuple):
         return torch.hstack((m_matrix, -torch.matmul(m_matrix, source_position.t().unsqueeze(-1))))
 
 
-class Sinogram2dGrid(NamedTuple):
-    phi: torch.Tensor
-    r: torch.Tensor
-
-    def device_consistent(self) -> bool:
-        return self.phi.device == self.r.device
-
-    def size_consistent(self) -> bool:
-        return self.phi.size() == self.r.size()
-
-
-class Sinogram3dGrid(NamedTuple):
-    phi: torch.Tensor
-    theta: torch.Tensor
-    r: torch.Tensor
-
-    def device_consistent(self) -> bool:
-        return self.phi.device == self.theta.device and self.theta.device == self.r.device
-
-    def size_consistent(self) -> bool:
-        return self.phi.size() == self.theta.size() and self.theta.size() == self.r.size()
-
-
 class Sinogram2dRange(NamedTuple):
     phi: LinearRange
     r: LinearRange
-
-    def generate_linear_grid(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device("cpu")):
-        if isinstance(counts, int):
-            counts = (counts, counts)
-        phis = torch.linspace(self.phi.low, self.phi.high, counts[0], device=device)
-        rs = torch.linspace(self.r.low, self.r.high, counts[1], device=device)
-        phis, rs = torch.meshgrid(phis, rs)
-        return Sinogram2dGrid(phis, rs)
 
 
 class Sinogram3dRange(NamedTuple):
     phi: LinearRange
     theta: LinearRange
     r: LinearRange
-
-    def generate_linear_grid(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device("cpu")):
-        if isinstance(counts, int):
-            counts = (counts, counts, counts)
-        elif isinstance(counts, torch.Size):
-            assert len(counts) == 3
-        phis = torch.linspace(self.phi.low, self.phi.high, counts[0], device=device)
-        thetas = torch.linspace(self.theta.low, self.theta.high, counts[1], device=device)
-        rs = torch.linspace(self.r.low, self.r.high, counts[2], device=device)
-        phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
-        return Sinogram3dGrid(phis, thetas, rs)
 
     def get_spacing(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device('cpu')) -> torch.Tensor:
         if isinstance(counts, int):
@@ -184,11 +145,117 @@ class Sinogram3dRange(NamedTuple):
         return torch.tensor([self.r.get_centre(), self.theta.get_centre(), self.phi.get_centre()], device=device)
 
 
+class Sinogram2dGrid(NamedTuple):
+    phi: torch.Tensor
+    r: torch.Tensor
+
+    def device_consistent(self) -> bool:
+        return self.phi.device == self.r.device
+
+    def size_consistent(self) -> bool:
+        return self.phi.size() == self.r.size()
+
+    @classmethod
+    def linear_from_range(cls, sinogram_range: Sinogram2dRange, counts: int | Tuple[int] | torch.Size, *,
+                          device=torch.device("cpu")) -> 'Sinogram2dGrid':
+        if isinstance(counts, int):
+            counts = (counts, counts)
+        phis = torch.linspace(sinogram_range.phi.low, sinogram_range.phi.high, counts[0], device=device)
+        rs = torch.linspace(sinogram_range.r.low, sinogram_range.r.high, counts[1], device=device)
+        phis, rs = torch.meshgrid(phis, rs)
+        return Sinogram2dGrid(phis, rs)
+
+
+class Sinogram3dGrid(NamedTuple):
+    phi: torch.Tensor
+    theta: torch.Tensor
+    r: torch.Tensor
+
+    def device_consistent(self) -> bool:
+        return self.phi.device == self.theta.device and self.theta.device == self.r.device
+
+    def size_consistent(self) -> bool:
+        return self.phi.size() == self.theta.size() and self.theta.size() == self.r.size()
+
+    @classmethod
+    def linear_from_range(cls, sinogram_range: Sinogram3dRange, counts: int | Tuple[int] | torch.Size, *,
+                          device=torch.device("cpu")) -> 'Sinogram3dGrid':
+        if isinstance(counts, int):
+            counts = (counts, counts, counts)
+        elif isinstance(counts, torch.Size):
+            assert len(counts) == 3
+        phis = torch.linspace(sinogram_range.phi.low, sinogram_range.phi.high, counts[0], device=device)
+        thetas = torch.linspace(sinogram_range.theta.low, sinogram_range.theta.high, counts[1], device=device)
+        rs = torch.linspace(sinogram_range.r.low, sinogram_range.r.high, counts[2], device=device)
+        phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
+        return Sinogram3dGrid(phis, thetas, rs)
+
+    @classmethod
+    def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None = None,
+                               device=torch.device("cpu")) -> 'Sinogram3dGrid':
+        if spiral_count is None:
+            spiral_count = r_count * r_count
+        rs = torch.linspace(r_range.low, r_range.high, r_count, device=device)
+        spiral_indices = torch.arange(spiral_count, dtype=torch.float32)
+        two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))
+        thetas = (1. - 2. * spiral_indices / float(spiral_count)).asin()
+        phis = torch.fmod(spiral_indices * two_pi_phi_inverse + torch.pi, 2. * torch.pi) - torch.pi
+        rs = rs.repeat(spiral_count, 1)
+        thetas = thetas.unsqueeze(-1).repeat(1, r_count)
+        phis = phis.unsqueeze(-1).repeat(1, r_count)
+        return Sinogram3dGrid(phis, thetas, rs)
+
+
+class Sinogram(ABC):
+    @abstractmethod
+    def device(self):
+        pass
+
+    @abstractmethod
+    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+        pass
+
+
+class SinogramClassic(Sinogram):
+    def __init__(self, data: torch.Tensor, sinogram_range: Sinogram3dRange):
+        self.data = data
+        self.sinogram_range = sinogram_range
+
+    def device(self):
+        return self.data.device
+
+    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+        device = self.data.device
+        sinogram_range_low = torch.tensor([self.sinogram_range.r.low, self.sinogram_range.theta.low, self.sinogram_range.phi.low], device=device)
+        sinogram_range_high = torch.tensor([self.sinogram_range.r.high, self.sinogram_range.theta.high, self.sinogram_range.phi.high],
+            device=device)
+        sinogram_spacing = (sinogram_range_high - sinogram_range_low) / (
+                torch.tensor(self.data.size(), dtype=torch.float32, device=device) - 1.)
+        sinogram_range_centres = .5 * (sinogram_range_low + sinogram_range_high)
+        return Extension.resample_sinogram3d(self.data, sinogram_spacing, sinogram_range_centres, ph_matrix,
+                                             fixed_image_grid.phi, fixed_image_grid.r)
+
+
+# class SinogramFibonacci(Sinogram, NamedTuple):
+#     data: torch.Tensor
+#     r_range: LinearRange
+#
+#     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+#         device = self.data.device
+#
+
+
 class VolumeSpec(NamedTuple):
     ct_volume_path: str
     downsample_factor: int
-    sinogram: torch.Tensor
-    sinogram_range: Sinogram3dRange
+    sinogram: SinogramClassic
+
+
+# class VolumeSpecFibonacci(NamedTuple):
+#     ct_volume_path: str
+#     downsample_factor: int
+#     sinogram: torch.Tensor
+#     r_range: LinearRange
 
 
 class DrrSpec(NamedTuple):

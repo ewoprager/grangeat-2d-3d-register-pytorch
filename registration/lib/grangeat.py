@@ -269,3 +269,6 @@ def resample_slice(sinogram3d: torch.Tensor, *, input_range: Sinogram3dRange, tr
 
     ret[need_sign_change] *= -1.
     return ret
+
+
+# def resample_slice_fibonacci()
