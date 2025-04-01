@@ -39,14 +39,16 @@ def zncc2(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
 def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation: Transformation,
              scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, plot: bool = False, save: bool = False,
              smooth: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
-    if False:#smooth:
-        resampled = grangeat.resample_slice(sinogram3d, transformation=transformation, scene_geometry=scene_geometry,
-                                            output_grid=fixed_image_grid, input_range=sinogram3d_range, smooth=smooth)
+    device = sinogram3d.device()
+    source_position = scene_geometry.source_position(device=device)
+    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+
+    if smooth and isinstance(sinogram3d, SinogramClassic):
+        resampled = grangeat.resample_slice(sinogram3d, ph_matrix=ph_matrix, output_grid=fixed_image_grid, smooth=smooth)
     else:
-        device = sinogram3d.device()
-        source_position = scene_geometry.source_position(device=device)
-        p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-        ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+        if smooth:
+            print("Warning, cannot resample smooth as not given a SinogramClassic")
         resampled = sinogram3d.resample(ph_matrix, fixed_image_grid)
 
     if plot:
