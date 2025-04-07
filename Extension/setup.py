@@ -35,10 +35,12 @@ extra_compile_args = {
     "cxx": [
         cpp_version,
         "-O0" if debug else "-O3",
-        "-fdiagnostics-color=always"
+        "-fdiagnostics-color=always",
+        "-Wno-c++20-extensions"  # suppress C++20 extension warnings
     ],
     "nvcc": [
         "-O0" if debug else "-O3",
+        "-diag-suppress=3288" # suppress C++20 extension warnings
     ],
 }
 extra_link_args = []
