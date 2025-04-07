@@ -31,12 +31,8 @@ jobs:
       with:
         python-version-file: "pyproject.toml"
 
-    - name: Install the project
+    - name: Install dependencies from lockfile
       run: uv sync --all-extras --dev
-
-    - name: Build the extension
-      working-directory: ./Extension
-      run: uv pip install .
       
     # - name: Lint with flake8
     #   run: |
@@ -45,5 +41,5 @@ jobs:
     #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
     #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         
-    - name: Test with pytest
+    - name: Build the extension and test with pytest
       run: uv run pytest
