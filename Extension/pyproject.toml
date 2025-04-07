@@ -180,6 +180,7 @@ cuda = [
 
 [build-system]
 requires = [
+    "numpy==2.2.1",
     "torch==2.5.1",
     "setuptools==75.8.0",
 ]
