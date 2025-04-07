@@ -31,5 +31,7 @@ if __name__ == "__main__":
     # benchmark_dRadon2dDR("/home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm")
     # benchmark_radon3d(sys.argv[1])
     # benchmark_dRadon3dDR(sys.argv[1])
-    register(sys.argv[1], cache_directory=cache_directory, load_cached=True,
-             regenerate_drr=False)  # register(None, cache_directory=cache_directory, load_cached=False, regenerate_drr=True, save_to_cache=False)  # benchmark_resample_sinogram3d(sys.argv[1], cache_directory=cache_directory, load_cached=True, save_to_cache=False)  # benchmark_similarity()
+    register(sys.argv[1] if len(sys.argv) > 1 else None, cache_directory=cache_directory, load_cached=True,
+             regenerate_drr=False)
+
+    # register(None, cache_directory=cache_directory, load_cached=False, regenerate_drr=True, save_to_cache=False)  # benchmark_resample_sinogram3d(sys.argv[1], cache_directory=cache_directory, load_cached=True, save_to_cache=False)  # benchmark_similarity()
