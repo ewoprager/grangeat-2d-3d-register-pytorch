@@ -1,7 +1,10 @@
 from typing import Tuple
+import time
+import logging
+logger = logging.getLogger(__name__)
+
 import matplotlib.pyplot as plt
 import plotly.graph_objects as pgo
-import time
 import torch
 import nrrd
 
@@ -11,26 +14,26 @@ TaskSummaryRadon3D = Tuple[str, torch.Tensor]
 
 
 def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    print("Loading CT data file {}...".format(path))
+    logger.info("Loading CT data file {}...".format(path))
     data, header = nrrd.read(path)
-    print("Done.")
-    print("Processing CT data...")
+    logger.info("Done.")
+    logger.info("Processing CT data...")
     sizes = header['sizes']
-    print("\tVolume size = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
+    logger.info("\tVolume size = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
     data = torch.tensor(data, device="cpu")
     image = torch.maximum(data.type(torch.float32) + 1000., torch.tensor([0.], device=data.device))
     if downsample_factor > 1:
         down_sampler = torch.nn.AvgPool3d(downsample_factor)
         image = down_sampler(image[None, :, :, :])[0]
     sizes = image.size()
-    print("\tVolume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
+    logger.info("\tVolume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
     bounds = torch.Tensor([image.min().item(), image.max().item()])
-    print("\tValue range = ({:.3f}, {:.3f})".format(bounds[0], bounds[1]))
+    logger.info("\tValue range = ({:.3f}, {:.3f})".format(bounds[0], bounds[1]))
     bounds[1] *= 10000.
     directions = torch.tensor(header['space directions'])
     spacing = float(downsample_factor) * directions.norm(dim=1)
-    print("\tCT voxel spacing = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
-    print("Done.")
+    logger.info("\tCT voxel spacing = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
+    logger.info("Done.")
 
     return image, spacing, bounds
 
@@ -65,19 +68,19 @@ def plot_task_radon3d(summary: TaskSummaryRadon3D, bounds: torch.Tensor):
 
 def run_task(task, task_plot, function, name: str, device: str, image: torch.Tensor, spacing: torch.Tensor,
              output_size: torch.Tensor, bounds: torch.Tensor):
-    print("Running {} on {}...".format(name, device))
+    logger.info("Running {} on {}...".format(name, device))
     tic = time.time()
     summary = task(function, name, device, image, spacing, output_size)
     toc = time.time()
-    print("Done; took {:.3f}s. Saving and plotting...".format(toc - tic))
+    logger.info("Done; took {:.3f}s. Saving and plotting...".format(toc - tic))
     torch.save(summary[1], "cache/{}.pt".format(summary[0]))
     task_plot(summary, bounds)
-    print("Done.")
+    logger.info("Done.")
     return summary
 
 
 def benchmark_radon3d(path: str):
-    print("----- Benchmarking radon3d -----")
+    logger.info("----- Benchmarking radon3d -----")
 
     image = torch.zeros((5, 5, 5))
     image[0, 0, 0] = 1.
@@ -98,24 +101,24 @@ def benchmark_radon3d(path: str):
         run_task(task_radon3d, plot_task_radon3d, ExtensionTest.radon3d_v2, "RT3 V2", "cuda", image, spacing,
                  output_size, bounds)]
 
-    print("Calculating discrepancies...")
+    logger.info("Calculating discrepancies...")
     found: bool = False
     for i in range(len(outputs) - 1):
         discrepancy = ((outputs[i][1] - outputs[i + 1][1]).abs() / (
                 .5 * (outputs[i][1] + outputs[i + 1][1]).abs() + 1e-5)).mean()
         if discrepancy > 1e-2:
             found = True
-            print("\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
+            logger.info("\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
                                                                                        100. * discrepancy))
     if not found:
-        print("\tNo discrepancies found.")
-    print("Done.")
+        logger.info("\tNo discrepancies found.")
+    logger.info("Done.")
 
-    # print("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #                     opacity=.1, surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
+    # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #                     opacity=.1, surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
 
 
 def benchmark_dRadon3dDR(path: str):
-    print("----- Benchmarking dRadon3dDR -----")
+    logger.info("----- Benchmarking dRadon3dDR -----")
 
     image, spacing, bounds = read_nrrd(path, 1)
 
@@ -135,7 +138,7 @@ def benchmark_dRadon3dDR(path: str):
         run_task(task_radon3d, plot_task_radon3d, ExtensionTest.d_radon3d_dr_v2, "dRT3-dR V2", "cuda", image, spacing,
                  output_size, bounds)]
 
-    print("Calculating discrepancies...")
+    logger.info("Calculating discrepancies...")
     found: bool = False
     for i in range(len(outputs) - 1):
         discrepancy = ((outputs[i][1] - outputs[i + 1][1]).abs() / (

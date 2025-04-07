@@ -1,15 +1,19 @@
 import copy
 from typing import Tuple
+import time
+from tqdm import tqdm
+from enum import Enum
+import logging
+logger = logging.getLogger(__name__)
+
 import matplotlib.pyplot as plt
 import numpy as np
-import time
 import torch
 import nrrd
-from tqdm import tqdm
 import scipy
-from enum import Enum
 
 import Extension
+
 # from diffdrr.drr import DRR
 # from diffdrr.data import read
 # from sympy.solvers.solvers import det_perm
@@ -33,7 +37,7 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     #                                 torch.tensor([0., 0., 200.])).to(device=device)
     # transformation = Transformation.zero(device=volume_data.device)
     transformation = Transformation.random(device=volume_data.device)
-    print("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
+    logger.info("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                             transformation.translation))
 
     #
@@ -52,9 +56,9 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
                                       detector_spacing=detector_spacing, scene_geometry=scene_geometry,
                                       output_size=torch.Size([1000, 1000]), samples_per_ray=500)
 
-    print("Done.")
+    logger.info("DRR generated.")
 
-    print("Calculating 2D sinogram (the fixed image)...")
+    logger.info("Calculating 2D sinogram (the fixed image)...")
 
     sinogram2d_counts = 1024
     image_diag: float = (
@@ -70,7 +74,7 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
         torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range,
                            transformation), cache_directory + "/drr_spec.pt")
 
-    print("Done and saved.")
+    logger.info("Sinogram calculated and saved.")
 
     return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation
 
@@ -83,7 +87,7 @@ class SinogramStructure(Enum):
 def register(path: str | None, *, cache_directory: str, load_cached: bool = True, regenerate_drr: bool = False,
              save_to_cache=True, sinogram_structure: SinogramStructure = SinogramStructure.CLASSIC):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device:", device)
+    logger.info("Using device: {}".format(device))
     # device = "cpu"
 
     # cal_image = torch.zeros((10, 10))
@@ -96,11 +100,11 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     # plt.colorbar(mesh)
     #
     # grid = torch.tensor([[-.9, -.9]])
-    # print(torch.nn.functional.grid_sample(cal_image[None, None, :, :], grid[None, None, :, :])[0, 0])
+    # logger.info(torch.nn.functional.grid_sample(cal_image[None, None, :, :], grid[None, None, :, :])[0, 0])
     # grid = torch.tensor([[.9, -.9]])
-    # print(torch.nn.functional.grid_sample(cal_image[None, None, :, :], grid[None, None, :, :])[0, 0])
+    # logger.info(torch.nn.functional.grid_sample(cal_image[None, None, :, :], grid[None, None, :, :])[0, 0])
     # grid = torch.tensor([[-.9, .9]])
-    # print(torch.nn.functional.grid_sample(cal_image[None, None, :, :], grid[None, None, :, :])[0, 0])
+    # logger.info(torch.nn.functional.grid_sample(cal_image[None, None, :, :], grid[None, None, :, :])[0, 0])
 
     # vol_size = torch.Size([10, 10, 10])
 
@@ -152,7 +156,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
 
     detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth = drr_spec
 
-    print("Plotting DRR and fixed image...")
+    logger.info("Plotting DRR and fixed image...")
     _, axes = plt.subplots()
     mesh = axes.pcolormesh(drr_image.cpu())
     axes.axis('square')
@@ -170,30 +174,28 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
     axes.set_xlabel("r")
     axes.set_ylabel("phi")
     plt.colorbar(mesh)
-    print("Done.")
+    logger.info("DRR and fixed image plotted.")
 
     sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, fixed_image.size(), device=device)
 
-    print("Evaluating at ground truth...")
+    logger.info("Evaluating at ground truth...")
     zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
                                                   transformation=transformation_ground_truth.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                   plot=True)
-    print("\t-ZNCC = -{:.4e}".format(zncc.item()
+    logger.info("Evaluation: -ZNCC = -{:.4e}".format(zncc.item()
                                      # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
                                      #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
                                      #                 plot=True)
                                      ))
-    print("Done.")
 
     if True:
-        print("Evaluating at ground truth with sample smoothing...")
+        logger.info("Evaluating at ground truth with sample smoothing...")
         zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
                                                       transformation=transformation_ground_truth.to(device=device),
                                                       scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                       plot=True, smooth=True)
-        print("\tWith sample smoothing, -ZNCC = -{:.4e}".format(zncc.item()))
-        print("Done.")
+        logger.info("Evaluation with sample smoothing, -ZNCC = -{:.4e}".format(zncc.item()))
 
     # plt.show()
     # low = torch.max(fixed_image.min(), resampled.min())
@@ -269,7 +271,7 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
                                                     device=device), scene_geometry=scene_geometry,
                                                 fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)[0]
 
-        print("Optimising...")
+        logger.info("Optimising...")
         param_history = []
         value_history = []
         transformation_start = Transformation.random()
@@ -296,8 +298,8 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
                 iterated_params = optimiser.step(closure)
 
             toc = time.time()
-            print("Done. Took {:.3f}s.".format(toc - tic))
-            print("Final value = {:.3f} at params = {}".format(value_history[-1], param_history[-1]))
+            logger.info("Done. Took {:.3f}s.".format(toc - tic))
+            logger.info("Final value = {:.3f} at params = {}".format(value_history[-1], param_history[-1]))
             converged_params = param_history[-1]
         else:
             def objective_scipy(params: np.ndarray) -> float:
@@ -310,8 +312,8 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
             tic = time.time()
             res = scipy.optimize.minimize(objective_scipy, start_params.numpy(), method='Nelder-Mead')
             toc = time.time()
-            print("Done. Took {:.3f}s.".format(toc - tic))
-            print(res)
+            logger.info("Done. Took {:.3f}s.".format(toc - tic))
+            logger.info(res)
             converged_params = torch.from_numpy(res.x)
 
         final_image = geometry.generate_drr(vol_data, transformation=Transformation(

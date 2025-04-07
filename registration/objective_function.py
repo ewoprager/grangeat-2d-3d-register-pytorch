@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -49,7 +52,7 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
         resampled = sinogram3d.resample_python(ph_matrix=ph_matrix, fixed_image_grid=fixed_image_grid, smooth=smooth)
     else:
         if smooth:
-            print("Warning, cannot resample smooth as not given a SinogramClassic")
+            logger.warning("Cannot resample smooth as not given a SinogramClassic")
         resampled = sinogram3d.resample(ph_matrix, fixed_image_grid)
 
     if plot:

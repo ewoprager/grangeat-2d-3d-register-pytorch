@@ -1,8 +1,18 @@
 import os
 import time
+import sys
+import logging
+
+logging_formatter = logging.Formatter(style='{',
+                                      fmt="[{levelname}]  File \"{filename}\", line {lineno}, in {funcName}:  {message}")
+logging_stream_handler = logging.StreamHandler()
+logging_stream_handler.setFormatter(logging_formatter)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(logging_stream_handler)
+
 import torch
 import matplotlib.pyplot as plt
-import sys
 
 import Extension as ExtensionTest
 
@@ -21,7 +31,5 @@ if __name__ == "__main__":
     # benchmark_dRadon2dDR("/home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm")
     # benchmark_radon3d(sys.argv[1])
     # benchmark_dRadon3dDR(sys.argv[1])
-    register(sys.argv[1], cache_directory=cache_directory, load_cached=True, regenerate_drr=False)
-    # register(None, cache_directory=cache_directory, load_cached=False, regenerate_drr=True, save_to_cache=False)
-    # benchmark_resample_sinogram3d(sys.argv[1], cache_directory=cache_directory, load_cached=True, save_to_cache=False)
-    # benchmark_similarity()
+    register(sys.argv[1], cache_directory=cache_directory, load_cached=True,
+             regenerate_drr=False)  # register(None, cache_directory=cache_directory, load_cached=False, regenerate_drr=True, save_to_cache=False)  # benchmark_resample_sinogram3d(sys.argv[1], cache_directory=cache_directory, load_cached=True, save_to_cache=False)  # benchmark_similarity()

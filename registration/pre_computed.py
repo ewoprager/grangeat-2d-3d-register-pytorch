@@ -1,4 +1,6 @@
 import torch
+import logging
+logger = logging.getLogger(__name__)
 
 from registration.lib.structs import *
 from registration.lib.sinogram import *
@@ -8,7 +10,7 @@ import registration.lib.grangeat as grangeat
 def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
                               ct_volume_path: str, volume_downsample_factor: int, *, device=torch.device('cpu'),
                               save_to_cache=True, vol_counts=256) -> SinogramClassic:
-    print("Calculating 3D sinogram (the volume to resample)...")
+    logger.info("Calculating 3D sinogram (the volume to resample)...")
 
     vol_diag: float = (voxel_spacing * torch.tensor(volume_data.size(), dtype=torch.float32,
                                                     device=voxel_spacing.device)).square().sum().sqrt().item()
@@ -26,7 +28,7 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, v
         torch.save(VolumeSpec(ct_volume_path, volume_downsample_factor, sinogram3d),
                    cache_directory + "/volume_spec.pt")
 
-    print("Done and saved.")
+    logger.info("3D sinogram calculated and saved.")
 
     # X, Y, Z = torch.meshgrid(  #     [torch.arange(0, vol_counts, 1), torch.arange(0, vol_counts, 1), torch.arange(0, vol_counts, 1)])  # fig = pgo.Figure(data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=sinogram3d.cpu().flatten(),  #                                  isomin=sinogram3d.min().item(), isomax=sinogram3d.max().item(), opacity=.2, surface_count=21))  # fig.show()
 
@@ -39,7 +41,7 @@ def calculate_volume_sinogram_fibonacci(cache_directory: str, volume_data: torch
                                         ct_volume_path: str, volume_downsample_factor: int, *,
                                         device=torch.device('cpu'), save_to_cache=True,
                                         vol_counts=256) -> SinogramFibonacci:
-    print("Calculating 3D Fibonacci sinogram (the volume to resample)...")
+    logger.info("Calculating 3D Fibonacci sinogram (the volume to resample)...")
 
     vol_diag: float = (voxel_spacing * torch.tensor(volume_data.size(), dtype=torch.float32,
                                                     device=voxel_spacing.device)).square().sum().sqrt().item()
@@ -55,5 +57,5 @@ def calculate_volume_sinogram_fibonacci(cache_directory: str, volume_data: torch
         torch.save(VolumeSpecFibonacci(ct_volume_path, volume_downsample_factor, sinogram3d),
                    cache_directory + "/volume_spec_fibonacci.pt")
 
-    print("Done and saved.")
+    logger.info("3D Fibonacci sinogram calculated and saved.")
     return sinogram3d

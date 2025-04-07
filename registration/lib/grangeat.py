@@ -1,5 +1,8 @@
-import torch
 from tqdm import tqdm
+import logging
+logger = logging.getLogger(__name__)
+
+import torch
 import matplotlib.pyplot as plt
 
 from registration.lib.structs import *
@@ -128,7 +131,7 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
 
     sigma = .05
 
-    print("Sample smoothing with sigma = {:.3f}".format(sigma))
+    logger.info("Sample smoothing with sigma = {:.3f}".format(sigma))
 
     # Radial distances in Gaussian pattern
     delta_a: float = 3. * sigma / float(a_count)
