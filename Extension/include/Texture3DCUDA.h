@@ -78,7 +78,7 @@ public:
 		return tex3D<float>(textureHandle, texCoord.X(), texCoord.Y(), texCoord.Z());
 	}
 
-	[[nodiscard]] __device__ static float DSampleDX(long width, cudaTextureObject_t textureHandle,
+	[[nodiscard]] __device__ static float DSampleDX(int64_t width, cudaTextureObject_t textureHandle,
 	                                                const VectorType &texCoord) {
 		const float widthF = static_cast<float>(width);
 		const float x = floorf(-.5f + texCoord.X() * widthF);
@@ -88,7 +88,7 @@ public:
 			                 textureHandle, x0, texCoord.Y(), texCoord.Z()));
 	}
 
-	[[nodiscard]] __device__ static float DSampleDY(long height, cudaTextureObject_t textureHandle,
+	[[nodiscard]] __device__ static float DSampleDY(int64_t height, cudaTextureObject_t textureHandle,
 	                                                const VectorType &texCoord) {
 		const float heightF = static_cast<float>(height);
 		const float y = floorf(-.5f + texCoord.Y() * heightF);
@@ -98,7 +98,7 @@ public:
 			                  textureHandle, texCoord.X(), y0, texCoord.Z()));
 	}
 
-	[[nodiscard]] __device__ static float DSampleDZ(long depth, cudaTextureObject_t textureHandle,
+	[[nodiscard]] __device__ static float DSampleDZ(int64_t depth, cudaTextureObject_t textureHandle,
 	                                                const VectorType &texCoord) {
 		const float depthF = static_cast<float>(depth);
 		const float z = floorf(-.5f + texCoord.Z() * depthF);

@@ -10,7 +10,7 @@ namespace ExtensionTest {
 using CommonData = Radon2D<Texture2DCPU>::CommonData;
 
 at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
-                       const at::Tensor &rValues, long samplesPerLine) {
+                       const at::Tensor &rValues, int64_t samplesPerLine) {
 	const CommonData common = Radon2D<Texture2DCPU>::Common(image, imageSpacing, phiValues, rValues, samplesPerLine,
 	                                                        at::DeviceType::CPU);
 	const at::Tensor phiFlat = phiValues.flatten();
@@ -18,7 +18,7 @@ at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, 
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	for (long i = 0; i < common.flatOutput.numel(); ++i) {
+	for (int64_t i = 0; i < common.flatOutput.numel(); ++i) {
 		const Linear<Vec<double, 2> > mappingIndexToTexCoord = Radon2D<Texture2DCPU>::GetMappingIndexToTexCoord(
 			common.inputTexture, phiFlat[i].item().toFloat(), rFlat[i].item().toFloat(), common.mappingIndexToOffset);
 		resultFlatPtr[i] = common.scaleFactor * Radon2D<Texture2DCPU>::IntegrateLooped(
@@ -28,7 +28,7 @@ at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, 
 }
 
 at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
-                          const at::Tensor &rValues, long samplesPerLine) {
+                          const at::Tensor &rValues, int64_t samplesPerLine) {
 	const CommonData common = Radon2D<Texture2DCPU>::Common(image, imageSpacing, phiValues, rValues, samplesPerLine,
 	                                                        at::DeviceType::CPU);
 	const at::Tensor phiFlat = phiValues.flatten();
@@ -36,7 +36,7 @@ at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacin
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	for (long i = 0; i < common.flatOutput.numel(); ++i) {
+	for (int64_t i = 0; i < common.flatOutput.numel(); ++i) {
 		const double phi = phiFlat[i].item().toFloat();
 		const double r = rFlat[i].item().toFloat();
 		const Linear<Vec<double, 2> > mappingIndexToTexCoord = Radon2D<Texture2DCPU>::GetMappingIndexToTexCoord(

@@ -12,7 +12,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
 
 TORCH_LIBRARY(ExtensionTest, m) {
 	// Note that "float" in the schema corresponds to the C++ `double` type and the Python `float` type.
-	// Note that "int" in the schema corresponds to the C++ `long` type and the Python `int` type.
+	// Note that "int" in the schema corresponds to the C++ `int64_t` type and the Python `int` type.
 	m.def("radon2d(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
 	m.def("radon2d_v2(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
 	m.def("d_radon2d_dr(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");

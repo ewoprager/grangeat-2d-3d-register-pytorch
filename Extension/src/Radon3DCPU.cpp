@@ -8,7 +8,7 @@ namespace ExtensionTest {
 using CommonData = Radon3D<Texture3DCPU>::CommonData;
 
 at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
-                       const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection) {
+                       const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection) {
 	const CommonData common = Radon3D<Texture3DCPU>::Common(volume, volumeSpacing, phiValues, thetaValues, rValues,
 	                                                        samplesPerDirection, at::DeviceType::CPU);
 
@@ -18,7 +18,7 @@ at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	for (long i = 0; i < common.flatOutput.numel(); ++i) {
+	for (int64_t i = 0; i < common.flatOutput.numel(); ++i) {
 		const Linear2<Vec<double, 3> > mappingIndexToTexCoord = Radon3D<Texture3DCPU>::GetMappingIndexToTexCoord(
 			common.inputTexture, phiFlat[i].item().toFloat(), thetaFlat[i].item().toFloat(), rFlat[i].item().toFloat(),
 			common.mappingIndexToOffset);
@@ -29,7 +29,7 @@ at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing
 }
 
 at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
-                          const at::Tensor &thetaValues, const at::Tensor &rValues, long samplesPerDirection) {
+                          const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection) {
 	const CommonData common = Radon3D<Texture3DCPU>::Common(volume, volumeSpacing, phiValues, thetaValues, rValues,
 	                                                        samplesPerDirection, at::DeviceType::CPU);
 
@@ -39,7 +39,7 @@ at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpac
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	for (long i = 0; i < common.flatOutput.numel(); ++i) {
+	for (int64_t i = 0; i < common.flatOutput.numel(); ++i) {
 		const double phi = phiFlat[i].item().toFloat();
 		const double theta = thetaFlat[i].item().toFloat();
 		const double r = rFlat[i].item().toFloat();

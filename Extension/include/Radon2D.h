@@ -6,13 +6,13 @@
 namespace ExtensionTest {
 
 at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
-                       const at::Tensor &rValues, long samplesPerLine);
+                       const at::Tensor &rValues, int64_t samplesPerLine);
 
 at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
-                          const at::Tensor &rValues, long samplesPerLine);
+                          const at::Tensor &rValues, int64_t samplesPerLine);
 
 __host__ at::Tensor Radon2D_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
-                                 const at::Tensor &rValues, long samplesPerLine);
+                                 const at::Tensor &rValues, int64_t samplesPerLine);
 
 __host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &imageSpacing,
                                     const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine);
