@@ -15,10 +15,10 @@ __host__ at::Tensor Radon2D_CUDA(const at::Tensor &image, const at::Tensor &imag
                                  const at::Tensor &rValues, int64_t samplesPerLine);
 
 __host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &imageSpacing,
-                                    const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine);
+                                    const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine);
 
 __host__ at::Tensor DRadon2DDR_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing,
-                                    const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine);
+                                    const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine);
 
 /**
  * Cartesian coordinates:
@@ -43,7 +43,7 @@ template <typename texture_t> struct Radon2D {
 	};
 
 	__host__ static CommonData Common(const at::Tensor &image, const at::Tensor &imageSpacing,
-	                                  const at::Tensor &phiValues, const at::Tensor &rValues, long samplesPerLine,
+	                                  const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine,
 	                                  at::DeviceType device) {
 		// image should be a 2D tensor of floats on the chosen device
 		TORCH_CHECK(image.sizes().size() == 2);
@@ -69,7 +69,7 @@ template <typename texture_t> struct Radon2D {
 	}
 
 	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2> > GetMappingIToOffset(
-		double lineLength, long samplesPerLine) {
+		double lineLength, int64_t samplesPerLine) {
 		return {Vec<double, 2>::Full(-.5f * lineLength),
 		        Vec<double, 2>::Full(lineLength / static_cast<double>(samplesPerLine - 1))};
 	}
@@ -92,9 +92,9 @@ template <typename texture_t> struct Radon2D {
 
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
 	                                                               const Linear<Vec<double, 2> > &
-	                                                               mappingIndexToTexCoord, long samplesPerLine) {
+	                                                               mappingIndexToTexCoord, int64_t samplesPerLine) {
 		float ret = 0.f;
-		for (long i = 0; i < samplesPerLine; ++i) {
+		for (int64_t i = 0; i < samplesPerLine; ++i) {
 			const double iF = static_cast<double>(i);
 			ret += texture.Sample(mappingIndexToTexCoord(Vec<double, 2>::Full(iF)));
 		}
@@ -102,9 +102,10 @@ template <typename texture_t> struct Radon2D {
 	}
 
 	__host__ __device__ [[nodiscard]] static float DIntegrateLoopedDMappingParameter(const texture_t &texture,
-		const Linear<Vec<double, 2> > &mappingIndexToTexCoord, const Vec<double, 2> &dTexCoordDR, long samplesPerLine) {
+		const Linear<Vec<double, 2> > &mappingIndexToTexCoord, const Vec<double, 2> &dTexCoordDR,
+		int64_t samplesPerLine) {
 		float ret = 0.f;
-		for (long i = 0; i < samplesPerLine; ++i) {
+		for (int64_t i = 0; i < samplesPerLine; ++i) {
 			const double iF = static_cast<double>(i);
 			const Vec<double, 2> texCoord = mappingIndexToTexCoord(Vec<double, 2>::Full(iF));
 			ret += texture.DSampleDX(texCoord) * dTexCoordDR.X() + texture.DSampleDY(texCoord) * dTexCoordDR.Y();

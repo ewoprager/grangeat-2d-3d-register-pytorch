@@ -277,7 +277,7 @@ __host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tenso
 	                             volume.sizes()[2], volume.sizes()[1], volume.sizes()[0]};
 	CudaMemcpyToObjectSymbol(dRadon3DDRV2Consts, constants);
 
-	for (long i = 0; i < common.flatOutput.numel(); ++i) {
+	for (int64_t i = 0; i < common.flatOutput.numel(); ++i) {
 		const float phi = phiFlat[i].item().toFloat();
 		const float theta = thetaFlat[i].item().toFloat();
 		const float r = rFlat[i].item().toFloat();
