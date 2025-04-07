@@ -37,6 +37,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CPU);
 }
 
+#ifdef USE_CUDA
 TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("radon2d", &Radon2D_CUDA);
 	m.impl("radon2d_v2", &Radon2D_CUDA_V2);
@@ -48,5 +49,6 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("resample_sinogram3d", &ResampleSinogram3D_CUDA);
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CUDA);
 }
+#endif
 
 } // namespace ExtensionTest

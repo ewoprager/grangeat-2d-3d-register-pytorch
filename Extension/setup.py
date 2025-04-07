@@ -1,6 +1,8 @@
 import os.path
 import sys
 import glob
+from typing import Tuple
+
 import torch
 from setuptools import setup, Extension
 from torch.utils.cpp_extension import CppExtension, CUDAExtension, BuildExtension, CUDA_HOME
@@ -31,6 +33,10 @@ extension_object = CUDAExtension if use_cuda else CppExtension
 
 source_files: list[str] = (cpu_source_files + cuda_source_files) if use_cuda else cpu_source_files
 
+macros: list[Tuple] = []
+if use_cuda:
+    macros.append(("USE_CUDA", None))
+
 extra_compile_args = {
     "cxx": [
         cpp_version,
@@ -52,6 +58,7 @@ if debug:
 setup(name=extension_name,
       ext_modules=[extension_object(name=extension_name,
                                     sources=source_files,
+                                    define_macros=macros,
                                     extra_compile_args=extra_compile_args,
                                     extra_link_args=extra_link_args)],
       cmdclass={'build_ext': BuildExtension})
