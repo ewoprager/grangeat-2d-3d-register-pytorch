@@ -29,7 +29,7 @@ else:
 
 extension_object = CUDAExtension if use_cuda else CppExtension
 
-source_files: list[str] = cpu_source_files + cuda_source_files if use_cuda else cpu_source_files
+source_files: list[str] = (cpu_source_files + cuda_source_files) if use_cuda else cpu_source_files
 
 extra_compile_args = {
     "cxx": [
