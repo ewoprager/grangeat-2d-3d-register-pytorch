@@ -6,8 +6,6 @@ import os
 import argparse
 import logging.config
 
-
-
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -186,8 +184,11 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                   plot=True)
     logger.info("Evaluation: -ZNCC = -{:.4e}".format(zncc.item()
-                                                     # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
-                                                     #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
+                                                     # evaluate_direct(fixed_image, vol_data,
+                                                     # transformation=transformation_ground_truth,
+                                                     #                 scene_geometry=scene_geometry,
+                                                     #                 fixed_image_grid=sinogram2d_grid,
+                                                     #                 voxel_spacing=voxel_spacing,
                                                      #                 plot=True)
                                                      ))
 
@@ -374,18 +375,27 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
-    parser.add_argument("-c", "--cache-directory", type=str, default="cache", help="")
-    parser.add_argument("-p", "--ct-path", type=str, help="")
-    parser.add_argument("-i", "--ignore-cache", action='store_true', help="")
-    parser.add_argument("-r", "--regenerate-drr", action='store_true', help="")
-    parser.add_argument("-n", "--no-save", action='store_true', help="")
-    parser.add_argument("-s", "--sinogram-size", type=int, default=256, help="")
+    parser.add_argument("-c", "--cache-directory", type=str, default="cache",
+                        help="Set the directory where data that is expensive to calculate will be saved. The default "
+                             "is 'cache'.")
+    parser.add_argument("-p", "--ct-path", type=str,
+                        help="Give a path to a NRRD file containing CT data to process. If not provided, some simply "
+                             "synthetic data will be used instead.")
+    parser.add_argument("-i", "--no-load", action='store_true',
+                        help="Do not load any pre-calculated data from the cache.")
+    parser.add_argument("-r", "--regenerate-drr", action='store_true',
+                        help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
+    parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
+    parser.add_argument("-s", "--sinogram-size", type=int, default=256,
+                        help="The number of values of r, theta and phi to calculate plane integrals for, "
+                             "and the width and height of the grid of samples taken to approximate each integral. The "
+                             "computational expense of the 3D Radon transform is O(sinogram_size^5).")
     args = parser.parse_args()
 
     # create cache directory
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
-    main(path=args.ct_path, cache_directory=args.cache_directory, load_cached=not args.ignore_cache,
+    main(path=args.ct_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
          regenerate_drr=args.regenerate_drr, save_to_cache=not args.no_save, sinogram_size=args.sinogram_size,
          sinogram_structure=SinogramStructure.CLASSIC)

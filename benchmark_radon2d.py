@@ -82,8 +82,7 @@ def main(path: str):
     outputs: list[TaskSummaryRadon2D] = [
         run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "RT2 V1", "cpu", image, spacing),
         run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "RT2 V1", "cuda", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d_v2, "RT2 V2", "cuda", image, spacing)
-    ]
+        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d_v2, "RT2 V2", "cuda", image, spacing)]
 
     logger.info("Calculating discrepancies...")
     found: bool = False
@@ -92,8 +91,9 @@ def main(path: str):
                 .5 * (outputs[i][1] + outputs[i + 1][1]).abs() + 1e-5)).mean()
         if discrepancy > 1e-2:
             found = True
-            logger.info("\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                       100. * discrepancy))
+            logger.info(
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
+                                                                                     100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")
@@ -122,8 +122,9 @@ def benchmark_dRadon2dDR(path: str):
                 .5 * (outputs[i][1] + outputs[i + 1][1]).abs() + 1e-5)).mean()
         if discrepancy > 1e-2:
             found = True
-            logger.info("\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                       100. * discrepancy))
+            logger.info(
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
+                                                                                     100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")

@@ -1,4 +1,5 @@
 import logging
+
 logger = logging.getLogger(__name__)
 
 import torch
@@ -65,10 +66,12 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
         plt.colorbar(mesh)
         if save:
             plt.savefig(
-                "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else "data/temp/d_dr_R3_mu_resampled.pgf")
+                "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else
+                "data/temp/d_dr_R3_mu_resampled.pgf")
 
     return zncc(fixed_image,
-                resampled), resampled  # return Extension.normalised_cross_correlation(fixed_image, resampled), resampled
+                resampled), resampled  # return Extension.normalised_cross_correlation(fixed_image, resampled),
+    # resampled
 
 
 def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, transformation: Transformation,

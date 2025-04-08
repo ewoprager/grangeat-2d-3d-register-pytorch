@@ -130,7 +130,10 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")
 
-    # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #                     opacity=.1, surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
+    # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0,
+    # size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(),
+    # y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #
+    # opacity=.1, surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
 
 
 if __name__ == "__main__":
@@ -142,7 +145,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="", epilog="")
     parser.add_argument("-c", "--cache-directory", type=str, default="cache", help="")
     parser.add_argument("-p", "--ct-path", type=str, help="")
-    parser.add_argument("-i", "--ignore-cache", action='store_true', help="")
+    parser.add_argument("-i", "--no-load", action='store_true', help="")
     parser.add_argument("-n", "--no-save", action='store_true', help="")
     parser.add_argument("-s", "--sinogram-size", type=int, default=256, help="")
     args = parser.parse_args()
@@ -151,5 +154,5 @@ if __name__ == "__main__":
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
-    main(path=args.ct_path, cache_directory=args.cache_directory, load_cached=not args.ignore_cache,
+    main(path=args.ct_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
          save_to_cache=not args.no_save, sinogram_size=args.sinogram_size)

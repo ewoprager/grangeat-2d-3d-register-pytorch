@@ -108,13 +108,17 @@ def benchmark_radon3d(path: str):
                 .5 * (outputs[i][1] + outputs[i + 1][1]).abs() + 1e-5)).mean()
         if discrepancy > 1e-2:
             found = True
-            logger.info("\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                       100. * discrepancy))
+            logger.info(
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
+                                                                                     100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")
 
-    # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #                     opacity=.1, surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
+    # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0,
+    # size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(),
+    # y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #
+    # opacity=.1, surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
 
 
 def main(path: str):
@@ -145,8 +149,9 @@ def main(path: str):
                 .5 * (outputs[i][1] + outputs[i + 1][1]).abs() + 1e-5)).mean()
         if discrepancy > 1e-2:
             found = True
-            logger.info("\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                       100. * discrepancy))
+            logger.info(
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
+                                                                                     100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")

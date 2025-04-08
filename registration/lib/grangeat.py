@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import logging
+
 logger = logging.getLogger(__name__)
 
 import torch
@@ -75,7 +76,8 @@ def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: 
 
     output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian(output_grid_2d, ph_matrix=ph_matrix)
 
-    # output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian2(output_grid_2d, scene_geometry=scene_geometry,
+    # output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian2(output_grid_2d,
+    # scene_geometry=scene_geometry,
     #                                                                      transformation=transformation)
 
     output_grid_sph_2d = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian_2d)
@@ -167,7 +169,8 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     # Multiplying by the perturbed unit vectors for the perturbed, rotated unit vector:
     rotated_vectors = torch.einsum('...ij,...klj->...kli', rotation_matrices, offset_vectors)
 
-    # Converting the resulting unit vectors back into new values of phi & theta, and expanding the r tensor to match in size:
+    # Converting the resulting unit vectors back into new values of phi & theta, and expanding the r tensor to match
+    # in size:
     new_phis = torch.atan2(rotated_vectors[..., 1], rotated_vectors[..., 0]).flatten(-2)
     new_thetas = rotated_vectors[..., 2].asin().flatten(-2)
     new_rs = r_values.unsqueeze(-1).expand(-1, -1, new_phis.size()[-1])
@@ -207,5 +210,6 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     plt.colorbar(mesh)
     ##
 
-    # Applying the weights and summing along the last dimension for an output equal in size to the input tensors of coordinates:
+    # Applying the weights and summing along the last dimension for an output equal in size to the input tensors of
+    # coordinates:
     return torch.einsum('i,...i->...', w_values.repeat(b_count).to(device=device), samples)
