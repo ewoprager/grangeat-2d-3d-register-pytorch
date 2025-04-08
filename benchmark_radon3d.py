@@ -1,7 +1,7 @@
 from typing import Tuple
 import time
-import logging
-logger = logging.getLogger(__name__)
+import argparse
+import logging.config
 
 import matplotlib.pyplot as plt
 import plotly.graph_objects as pgo
@@ -117,7 +117,7 @@ def benchmark_radon3d(path: str):
     # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #                     opacity=.1, surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
 
 
-def benchmark_dRadon3dDR(path: str):
+def main(path: str):
     logger.info("----- Benchmarking dRadon3dDR -----")
 
     image, spacing, bounds = read_nrrd(path, 1)
@@ -145,8 +145,21 @@ def benchmark_dRadon3dDR(path: str):
                 .5 * (outputs[i][1] + outputs[i + 1][1]).abs() + 1e-5)).mean()
         if discrepancy > 1e-2:
             found = True
-            print("\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
+            logger.info("\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
                                                                                        100. * discrepancy))
     if not found:
-        print("\tNo discrepancies found.")
-    print("Done.")
+        logger.info("\tNo discrepancies found.")
+    logger.info("Done.")
+
+
+if __name__ == "__main__":
+    # set up logger
+    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
+    logger = logging.getLogger("radonRegistration")
+
+    # parse arguments
+    parser = argparse.ArgumentParser(description="", epilog="")
+    parser.add_argument("ct_nrrd_path", type=str, help="")
+    args = parser.parse_args()
+
+    main(path=args.ct_nrrd_path)

@@ -1,7 +1,7 @@
 from typing import Tuple
 import time
-import logging
-logger = logging.getLogger(__name__)
+import argparse
+import logging.config
 
 import matplotlib.cm
 import matplotlib.pyplot as plt
@@ -70,7 +70,7 @@ def run_task(task, task_plot, function, name: str, device: str, image: torch.Ten
     return summary
 
 
-def benchmark_radon2d(path: str):
+def main(path: str):
     logger.info("----- Benchmarking radon2d -----")
 
     # image = torch.tensor(
@@ -134,3 +134,16 @@ def benchmark_dRadon2dDR(path: str):
     fig.colorbar(mesh)
     axes.set_title("Input image")
     plt.show()
+
+
+if __name__ == "__main__":
+    # set up logger
+    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
+    logger = logging.getLogger("radonRegistration")
+
+    # parse arguments
+    parser = argparse.ArgumentParser(description="", epilog="")
+    parser.add_argument("xray_dicom_path", type=str, help="")
+    args = parser.parse_args()
+
+    main(path=args.xray_dicom_path)

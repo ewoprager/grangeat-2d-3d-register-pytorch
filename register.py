@@ -6,8 +6,7 @@ import os
 import argparse
 import logging.config
 
-logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
-logger = logging.getLogger("simpleExample")
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -89,7 +88,7 @@ class SinogramStructure(Enum):
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
-         sinogram_structure: SinogramStructure = SinogramStructure.CLASSIC):
+         sinogram_size: int, sinogram_structure: SinogramStructure = SinogramStructure.CLASSIC):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
     # device = "cpu"
@@ -125,7 +124,6 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     volume_spec = None
     sinogram3d = None
-    sinogram3d_range = None
     if load_cached:
         volume_spec = data.load_cached_volume(cache_directory)
 
@@ -146,7 +144,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     if sinogram3d is None:
         sinogram3d = pre_computed.calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
                                                             volume_downsample_factor, device=device,
-                                                            save_to_cache=save_to_cache, vol_counts=256)
+                                                            save_to_cache=save_to_cache, vol_counts=sinogram_size)
 
     voxel_spacing = voxel_spacing.to(device=device)
 
@@ -370,15 +368,24 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
 
 if __name__ == "__main__":
+    # set up logger
+    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
+    logger = logging.getLogger("radonRegistration")
+
+    # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
     parser.add_argument("-c", "--cache-directory", type=str, default="cache", help="")
     parser.add_argument("-p", "--ct-path", type=str, help="")
     parser.add_argument("-i", "--ignore-cache", action='store_true', help="")
     parser.add_argument("-r", "--regenerate-drr", action='store_true', help="")
+    parser.add_argument("-n", "--no-save", action='store_true', help="")
+    parser.add_argument("-s", "--sinogram-size", type=int, default=256, help="")
     args = parser.parse_args()
 
+    # create cache directory
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
     main(path=args.ct_path, cache_directory=args.cache_directory, load_cached=not args.ignore_cache,
-         regenerate_drr=args.regenerate_drr, save_to_cache=True, sinogram_structure=SinogramStructure.CLASSIC)
+         regenerate_drr=args.regenerate_drr, save_to_cache=not args.no_save, sinogram_size=args.sinogram_size,
+         sinogram_structure=SinogramStructure.CLASSIC)

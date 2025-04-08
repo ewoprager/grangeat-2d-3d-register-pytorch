@@ -11,6 +11,10 @@ from registration.lib import grangeat
 
 class Sinogram(ABC):
     @abstractmethod
+    def to(self, **kwargs) -> 'Sinogram':
+        pass
+
+    @abstractmethod
     def device(self):
         pass
 
@@ -28,8 +32,14 @@ class SinogramClassic(Sinogram):
         self.data = data
         self.sinogram_range = sinogram_range
 
+    def to(self, **kwargs) -> 'SinogramClassic':
+        return SinogramClassic(self.data.to(**kwargs), self.sinogram_range)
+
     def device(self):
         return self.data.device
+
+    def get_spacing(self, *, device=torch.device('cpu')) -> torch.Tensor:
+        return self.sinogram_range.get_spacing(self.data.size(), device=device)
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         device = self.data.device
@@ -108,6 +118,9 @@ class SinogramFibonacci(Sinogram):
     def __init__(self, data: torch.Tensor, r_range: LinearRange):
         self.data = data
         self.r_range = r_range
+
+    def to(self, **kwargs) -> 'SinogramFibonacci':
+        return SinogramFibonacci(self.data.to(**kwargs), self.r_range)
 
     def device(self):
         return self.data.device
