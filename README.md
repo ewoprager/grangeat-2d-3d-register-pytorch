@@ -47,7 +47,7 @@ uv run benchmark_radon3d.py "/path/to/ct.nrrd"
 ```bash
 uv run benchmark_resample_sinogram3d.py -h
 uv run benchmark_resample_sinogram3d.py --no-load --no-save --sinogram-size 64 # run on synthetic data
-uv run benchmark_resample_sinogram3d.py --ct-path "/path/to/ct.nrrd"
+uv run benchmark_resample_sinogram3d.py --ct-nrrd-path "/path/to/ct.nrrd"
 ```
 
 ### Run registration experiments:
@@ -55,7 +55,7 @@ uv run benchmark_resample_sinogram3d.py --ct-path "/path/to/ct.nrrd"
 ```bash
 uv run register.py -h
 uv run register.py --no-load --no-save --sinogram-size 64 # run on synthetic data
-uv run register.py --ct-path "/path/to/ct.nrrd"
+uv run register.py --ct-nrrd-path "/path/to/ct.nrrd"
 ```
 
 ## Experiments so far
@@ -115,7 +115,6 @@ Although there is no significant difference manifest in the resulting optimisati
 
 ![landscape_no_sample_smoothing.png](figures/landscape_no_sample_smoothing.png)
 ![landscape_sample_smoothing.png](figures/landscape_sample_smoothing.png)
-
 
 ## IDE integration
 

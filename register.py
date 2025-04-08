@@ -183,8 +183,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                                   transformation=transformation_ground_truth.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                   plot=True)
-    logger.info("Evaluation: -ZNCC = -{:.4e}".format(zncc.item()
-                                                     # evaluate_direct(fixed_image, vol_data,
+    logger.info("Evaluation: -ZNCC = -{:.4e}".format(zncc.item()  # evaluate_direct(fixed_image, vol_data,
                                                      # transformation=transformation_ground_truth,
                                                      #                 scene_geometry=scene_geometry,
                                                      #                 fixed_image_grid=sinogram2d_grid,
@@ -378,7 +377,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--cache-directory", type=str, default="cache",
                         help="Set the directory where data that is expensive to calculate will be saved. The default "
                              "is 'cache'.")
-    parser.add_argument("-p", "--ct-path", type=str,
+    parser.add_argument("-p", "--ct-nrrd-path", type=str,
                         help="Give a path to a NRRD file containing CT data to process. If not provided, some simply "
                              "synthetic data will be used instead.")
     parser.add_argument("-i", "--no-load", action='store_true',
@@ -396,6 +395,6 @@ if __name__ == "__main__":
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
-    main(path=args.ct_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
+    main(path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
          regenerate_drr=args.regenerate_drr, save_to_cache=not args.no_save, sinogram_size=args.sinogram_size,
          sinogram_structure=SinogramStructure.CLASSIC)

@@ -144,7 +144,8 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
-    parser.add_argument("xray_dicom_path", type=str, help="")
+    parser.add_argument("xray_dicom_path", type=str, help="The path to the DICOM file containing X-ray data to "
+                                                          "process.")
     args = parser.parse_args()
 
     main(path=args.xray_dicom_path)

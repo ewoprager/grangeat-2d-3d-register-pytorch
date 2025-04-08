@@ -132,8 +132,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
 
     # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0,
     # size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(),
-    # y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #
-    # opacity=.1, surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
+    # y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #  # opacity=.1,
+    # surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
 
 
 if __name__ == "__main__":
@@ -143,16 +143,26 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
-    parser.add_argument("-c", "--cache-directory", type=str, default="cache", help="")
-    parser.add_argument("-p", "--ct-path", type=str, help="")
-    parser.add_argument("-i", "--no-load", action='store_true', help="")
-    parser.add_argument("-n", "--no-save", action='store_true', help="")
-    parser.add_argument("-s", "--sinogram-size", type=int, default=256, help="")
+    parser.add_argument("-c", "--cache-directory", type=str, default="cache",
+                        help="Set the directory where data that is expensive to calculate will be saved. The default "
+                             "is 'cache'.")
+    parser.add_argument("-p", "--ct-nrrd-path", type=str,
+                        help="Give a path to a NRRD file containing CT data to process. If not provided, some simply "
+                             "synthetic data will be used instead.")
+    parser.add_argument("-i", "--no-load", action='store_true',
+                        help="Do not load any pre-calculated data from the cache.")
+    parser.add_argument("-r", "--regenerate-drr", action='store_true',
+                        help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
+    parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
+    parser.add_argument("-s", "--sinogram-size", type=int, default=256,
+                        help="The number of values of r, theta and phi to calculate plane integrals for, "
+                             "and the width and height of the grid of samples taken to approximate each integral. The "
+                             "computational expense of the 3D Radon transform is O(sinogram_size^5).")
     args = parser.parse_args()
 
     # create cache directory
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
-    main(path=args.ct_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
+    main(path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
          save_to_cache=not args.no_save, sinogram_size=args.sinogram_size)

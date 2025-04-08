@@ -117,8 +117,8 @@ def benchmark_radon3d(path: str):
 
     # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0,
     # size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(),
-    # y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #
-    # opacity=.1, surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
+    # y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #  # opacity=.1,
+    # surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
 
 
 def main(path: str):
@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
-    parser.add_argument("ct_nrrd_path", type=str, help="")
+    parser.add_argument("ct_nrrd_path", type=str, help="The path to the NRRD file containing CT data to process.")
     args = parser.parse_args()
 
     main(path=args.ct_nrrd_path)
