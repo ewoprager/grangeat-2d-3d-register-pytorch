@@ -1,16 +1,20 @@
 import copy
 from typing import Tuple
 import time
-from tqdm import tqdm
 from enum import Enum
-import logging
-logger = logging.getLogger(__name__)
+import os
+import argparse
+import logging.config
+
+logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
+logger = logging.getLogger("simpleExample")
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import nrrd
 import scipy
+from tqdm import tqdm
 
 import Extension
 
@@ -38,7 +42,7 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     # transformation = Transformation.zero(device=volume_data.device)
     transformation = Transformation.random(device=volume_data.device)
     logger.info("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
-                                                                            transformation.translation))
+                                                                                  transformation.translation))
 
     #
     # drr_image = drr_generator(rotations, translations, parameterization="euler_angles", convention="ZXY")
@@ -84,8 +88,8 @@ class SinogramStructure(Enum):
     FIBONACCI = 2
 
 
-def register(path: str | None, *, cache_directory: str, load_cached: bool = True, regenerate_drr: bool = False,
-             save_to_cache=True, sinogram_structure: SinogramStructure = SinogramStructure.CLASSIC):
+def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
+         sinogram_structure: SinogramStructure = SinogramStructure.CLASSIC):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
     # device = "cpu"
@@ -184,10 +188,10 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                   plot=True)
     logger.info("Evaluation: -ZNCC = -{:.4e}".format(zncc.item()
-                                     # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
-                                     #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
-                                     #                 plot=True)
-                                     ))
+                                                     # evaluate_direct(fixed_image, vol_data, transformation=transformation_ground_truth,
+                                                     #                 scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid, voxel_spacing=voxel_spacing,
+                                                     #                 plot=True)
+                                                     ))
 
     if True:
         logger.info("Evaluating at ground truth with sample smoothing...")
@@ -363,3 +367,18 @@ def register(path: str | None, *, cache_directory: str, load_cached: bool = True
         axes.set_title("loss over optimisation iterations")
 
     plt.show()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="", epilog="")
+    parser.add_argument("-c", "--cache-directory", type=str, default="cache", help="")
+    parser.add_argument("-p", "--ct-path", type=str, help="")
+    parser.add_argument("-i", "--ignore-cache", action='store_true', help="")
+    parser.add_argument("-r", "--regenerate-drr", action='store_true', help="")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.cache_directory):
+        os.makedirs(args.cache_directory)
+
+    main(path=args.ct_path, cache_directory=args.cache_directory, load_cached=not args.ignore_cache,
+         regenerate_drr=args.regenerate_drr, save_to_cache=True, sinogram_structure=SinogramStructure.CLASSIC)
