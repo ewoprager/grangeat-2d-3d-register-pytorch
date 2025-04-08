@@ -9,6 +9,13 @@ from registration.lib.structs import *
 from registration.lib.sinogram import *
 
 
+def deterministic_hash(text: str):
+    ret = 0
+    for ch in text:
+        ret = (ret * 281 ^ ord(ch) * 997) & 0xFFFFFFFF
+    return ret
+
+
 def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     logger.info("Loading CT data file {}...".format(path))
     data, header = nrrd.read(path)
@@ -34,8 +41,8 @@ def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tenso
     return image, spacing, bounds
 
 
-def load_cached_volume(cache_directory: str):
-    file: str = cache_directory + "/volume_spec.pt"
+def load_cached_volume(cache_directory: str, ct_volume_path: str):
+    file: str = cache_directory + "/volume_spec_{}.pt".format(deterministic_hash(ct_volume_path))
     try:
         volume_spec = torch.load(file)
     except:
@@ -44,15 +51,15 @@ def load_cached_volume(cache_directory: str):
     if not isinstance(volume_spec, VolumeSpec):
         logger.error("Cache file '{}' invalid.".format(file))
         return None
-    path = volume_spec.ct_volume_path
+    assert ct_volume_path == volume_spec.ct_volume_path
     volume_downsample_factor = volume_spec.downsample_factor
     sinogram3d = volume_spec.sinogram
     logger.info("Loaded cached volume spec from '{}'".format(file))
-    return path, volume_downsample_factor, sinogram3d
+    return volume_downsample_factor, sinogram3d
 
 
-def load_cached_volume_fibonacci(cache_directory: str):
-    file: str = cache_directory + "/volume_spec_fibonacci.pt"
+def load_cached_volume_fibonacci(cache_directory: str, ct_volume_path: str):
+    file: str = cache_directory + "/volume_spec_fibonacci_{}.pt".format(deterministic_hash(ct_volume_path))
     try:
         volume_spec = torch.load(file)
     except:
@@ -61,15 +68,15 @@ def load_cached_volume_fibonacci(cache_directory: str):
     if not isinstance(volume_spec, VolumeSpecFibonacci):
         logger.error("Cache file '{}' invalid.".format(file))
         return None
-    path = volume_spec.ct_volume_path
+    assert ct_volume_path == volume_spec.ct_volume_path
     volume_downsample_factor = volume_spec.downsample_factor
     sinogram3d = volume_spec.sinogram
     logger.info("Loaded cached Fibonacci volume spec from '{}'".format(file))
-    return path, volume_downsample_factor, sinogram3d
+    return volume_downsample_factor, sinogram3d
 
 
 def load_cached_drr(cache_directory: str, ct_volume_path: str):
-    file: str = cache_directory + "/drr_spec.pt"
+    file: str = cache_directory + "/drr_spec_{}.pt".format(deterministic_hash(ct_volume_path))
     try:
         drr_spec = torch.load(file)
     except:
@@ -78,11 +85,7 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
     if not isinstance(drr_spec, DrrSpec):
         logger.error("Cache file '{}' invalid.".format(file))
         return None
-    if drr_spec.ct_volume_path != ct_volume_path:
-        logger.warning("Cached drr '{}' is from different volume = '{}'; required volume = {}.".format(file,
-                                                                                                       drr_spec.ct_volume_path,
-                                                                                                       ct_volume_path))
-        return None
+    assert drr_spec.ct_volume_path == ct_volume_path
     detector_spacing = drr_spec.detector_spacing
     scene_geometry = drr_spec.scene_geometry
     drr_image = drr_spec.image

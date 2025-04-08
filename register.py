@@ -24,11 +24,11 @@ import Extension
 
 from registration.lib.structs import *
 from registration.lib.sinogram import *
-import registration.lib.grangeat as grangeat
-import registration.lib.geometry as geometry
-import registration.data as data
-import registration.pre_computed as pre_computed
-import registration.objective_function as objective_function
+from registration.lib import grangeat
+from registration.lib import geometry
+from registration import data
+from registration import pre_computed
+from registration import objective_function
 import registration.lib.plot as myplt
 
 
@@ -71,11 +71,13 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     fixed_image = grangeat.calculate_fixed_image(drr_image, source_distance=scene_geometry.source_distance,
                                                  detector_spacing=detector_spacing, output_grid=sinogram2d_grid)
 
-    if save_to_cache:
-        torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range,
-                           transformation), cache_directory + "/drr_spec.pt")
+    logger.info("DRR sinogram calculated.")
 
-    logger.info("Sinogram calculated and saved.")
+    if save_to_cache:
+        save_path = cache_directory + "/drr_spec_{}.pt".format(data.deterministic_hash(ct_volume_path))
+        torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range,
+                           transformation), save_path)
+        logger.info("DRR sinogram saved to '{}'".format(save_path))
 
     return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation
 
@@ -122,13 +124,13 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     volume_spec = None
     sinogram3d = None
-    if load_cached:
-        volume_spec = data.load_cached_volume(cache_directory)
+    if load_cached and path is not None:
+        volume_spec = data.load_cached_volume(cache_directory, path)
 
     if volume_spec is None:
         volume_downsample_factor: int = 4
     else:
-        path, volume_downsample_factor, sinogram3d = volume_spec
+        volume_downsample_factor, sinogram3d = volume_spec
 
     if path is None:
         save_to_cache = False
@@ -378,8 +380,9 @@ if __name__ == "__main__":
                         help="Set the directory where data that is expensive to calculate will be saved. The default "
                              "is 'cache'.")
     parser.add_argument("-p", "--ct-nrrd-path", type=str,
-                        help="Give a path to a NRRD file containing CT data to process. If not provided, some simply "
-                             "synthetic data will be used instead.")
+                        help="Give a path to a NRRD file containing CT data to process. If not provided, some simple "
+                             "synthetic data will be used instead - note that in this case, data will not be saved to "
+                             "the cache.")
     parser.add_argument("-i", "--no-load", action='store_true',
                         help="Do not load any pre-calculated data from the cache.")
     parser.add_argument("-r", "--regenerate-drr", action='store_true',

@@ -69,13 +69,13 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
 
     volume_spec = None
     sinogram3d = None
-    if load_cached:
-        volume_spec = data.load_cached_volume(cache_directory)
+    if load_cached and path is not None:
+        volume_spec = data.load_cached_volume(cache_directory, path)
 
     if volume_spec is None:
         volume_downsample_factor: int = 4
     else:
-        path, volume_downsample_factor, sinogram3d = volume_spec
+        volume_downsample_factor, sinogram3d = volume_spec
 
     if path is None:
         save_to_cache = False
@@ -87,9 +87,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
         vol_data = vol_data.to(dtype=torch.float32)
 
     if sinogram3d is None:
-        sinogram3d = pre_computed.calculate_volume_sinogram(cache_directory, vol_data.to(device=cuda),
-                                                            voxel_spacing.to(device=cuda), path,
-                                                            volume_downsample_factor, device=torch.device('cuda'),
+        sinogram3d = pre_computed.calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
+                                                            volume_downsample_factor, device=cuda,
                                                             save_to_cache=save_to_cache, vol_counts=sinogram_size)
 
     vol_diag: float = (
@@ -147,8 +146,9 @@ if __name__ == "__main__":
                         help="Set the directory where data that is expensive to calculate will be saved. The default "
                              "is 'cache'.")
     parser.add_argument("-p", "--ct-nrrd-path", type=str,
-                        help="Give a path to a NRRD file containing CT data to process. If not provided, some simply "
-                             "synthetic data will be used instead.")
+                        help="Give a path to a NRRD file containing CT data to process. If not provided, some simple "
+                             "synthetic data will be used instead - note that in this case, data will not be saved to "
+                             "the cache.")
     parser.add_argument("-i", "--no-load", action='store_true',
                         help="Do not load any pre-calculated data from the cache.")
     parser.add_argument("-r", "--regenerate-drr", action='store_true',
