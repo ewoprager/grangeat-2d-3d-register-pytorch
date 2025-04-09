@@ -10,44 +10,42 @@ import torch
 import Extension as ExtensionTest
 
 from registration.lib.structs import *
+from registration.lib.sinogram import *
 import registration.data as data
 import registration.pre_computed as pre_computed
 from registration.lib.structs import LinearRange, SceneGeometry
 
-TaskSummaryResample = Tuple[str, torch.Tensor]
+
+class TaskSummary(NamedTuple):
+    name: str
+    result: torch.Tensor
 
 
 class FunctionParams(NamedTuple):
-    sinogram3d: torch.Tensor
-    spacing: torch.Tensor
-    range_centres: torch.Tensor
-    projection_matrix: torch.Tensor
-    phi_values: torch.Tensor
-    r_values: torch.Tensor
+    sinogram3d: SinogramClassic
+    ph_matrix: torch.Tensor
+    fixed_image_grid: Sinogram2dGrid
 
     def to(self, **kwargs) -> 'FunctionParams':
-        return FunctionParams(self.sinogram3d.to(**kwargs), self.spacing.to(**kwargs), self.range_centres.to(**kwargs),
-                              self.projection_matrix.to(**kwargs), self.phi_values.to(**kwargs),
-                              self.r_values.to(**kwargs))
+        return FunctionParams(self.sinogram3d.to(**kwargs), self.ph_matrix.to(**kwargs),
+                              self.fixed_image_grid.to(**kwargs))
 
 
-def task_resample_sinogram3d(function, params: FunctionParams) -> TaskSummaryResample:
-    output = function(params.sinogram3d, params.spacing, params.range_centres, params.projection_matrix,
-                      params.phi_values, params.r_values)
-    return output
+def task_resample_sinogram3d(function, params: FunctionParams) -> torch.Tensor:
+    return function(params.sinogram3d, params.ph_matrix, params.fixed_image_grid)
 
 
-def plot_task_resample_sinogram3d(summary: TaskSummaryResample):
+def plot_task_resample_sinogram3d(summary: TaskSummary):
     _, axes = plt.subplots()
-    mesh = axes.pcolormesh(summary[1].clone())
+    mesh = axes.pcolormesh(summary.result.clone())
     axes.axis('square')
-    axes.set_title("d/dr R3 [mu] resampled: {}".format(summary[0]))
+    axes.set_title("d/dr R3 [mu] resampled: {}".format(summary.name))
     axes.set_xlabel("r")
     axes.set_ylabel("phi")
     plt.colorbar(mesh)
 
 
-def run_task(task, task_plot, function, name: str, device: str, params: FunctionParams) -> TaskSummaryResample:
+def run_task(task, task_plot, function, name: str, device: str, params: FunctionParams) -> TaskSummary:
     params_device = params.to(device=device)
     logger.info("Running {} on {}...".format(name, device))
     tic = time.time()
@@ -55,8 +53,8 @@ def run_task(task, task_plot, function, name: str, device: str, params: Function
     toc = time.time()
     logger.info("Done; took {:.3f}s. Saving and plotting...".format(toc - tic))
     name: str = "{}_on_{}".format(name, device)
-    summary = name, output.cpu()
-    torch.save(summary[1], "cache/{}.pt".format(summary[0]))
+    summary = TaskSummary(name, output.cpu())
+    torch.save(summary.result, "cache/{}.pt".format(summary.name))
     task_plot(summary)
     logger.info("Done.")
     return summary
@@ -73,7 +71,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
         volume_spec = data.load_cached_volume(cache_directory, path)
 
     if volume_spec is None:
-        volume_downsample_factor: int = 4
+        volume_downsample_factor: int = 1
     else:
         volume_downsample_factor, sinogram3d = volume_spec
 
@@ -84,49 +82,52 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
         voxel_spacing = torch.tensor([10., 10., 10.])
     else:
         vol_data, voxel_spacing, bounds = data.read_nrrd(path, downsample_factor=volume_downsample_factor)
-        vol_data = vol_data.to(dtype=torch.float32)
+        vol_data = vol_data.to(dtype=torch.float32, device=cuda)
 
     if sinogram3d is None:
         sinogram3d = pre_computed.calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
-                                                            volume_downsample_factor, device=cuda,
-                                                            save_to_cache=save_to_cache, vol_counts=sinogram_size)
+                                                            volume_downsample_factor, save_to_cache=save_to_cache,
+                                                            vol_counts=sinogram_size)
 
     vol_diag: float = (
             torch.tensor([vol_data.size()], dtype=torch.float32) * voxel_spacing).square().sum().sqrt().item()
 
-    phi_values = LinearRange(-.5 * torch.pi, .5 * torch.pi).generate_range(1000)
-    r_values = LinearRange(-.5 * vol_diag, .5 * vol_diag).generate_range(1000)
-    phi_values, r_values = torch.meshgrid(phi_values, r_values)
+    fixed_image_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
+                                        LinearRange(-.5 * vol_diag, .5 * vol_diag))
+    fixed_image_grid = Sinogram2dGrid.linear_from_range(fixed_image_range, (1000, 1000))
 
     scene_geometry = SceneGeometry(source_distance=1000.)
-    transformation = Transformation(rotation=torch.tensor([0., 0., 0.]), translation=torch.tensor([0., 0., 0.]))
+    # transformation = Transformation(rotation=torch.tensor([0., 0., 0.]), translation=torch.tensor([0., 0., 0.]))
+    transformation = Transformation.random()
     source_position = scene_geometry.source_position()
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32)
 
-    params = FunctionParams(sinogram3d.data, sinogram3d.get_spacing(), sinogram3d.sinogram_range.get_centres(),
-                            ph_matrix, phi_values, r_values)
+    params = FunctionParams(sinogram3d, ph_matrix, fixed_image_grid)
 
-    outputs: list[TaskSummaryResample] = [
-        run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, ExtensionTest.resample_sinogram3d,
-                 "ResampleSinogram3D", "cpu", params),
-        run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, ExtensionTest.resample_sinogram3d,
-                 "ResampleSinogram3D", "cuda", params)]
+    outputs: list[TaskSummary] = [
+        run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, SinogramClassic.resample,
+                 "Sinogram3D.resample", "cpu", params),
+        run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, SinogramClassic.resample,
+                 "Sinogram3D.resample", "cuda", params),
+        run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, SinogramClassic.resample_python,
+                 "Sinogram3D.resample_python", "cpu", params)]
 
     plt.show()
 
     logger.info("Calculating discrepancies...")
-    found: bool = False
+    # found: bool = False
     for i in range(len(outputs) - 1):
-        discrepancy = ((outputs[i][1] - outputs[i + 1][1]).abs() / (
-                .5 * (outputs[i][1] + outputs[i + 1][1]).abs() + 1e-5)).mean()
-        if discrepancy > 1e-2:
-            found = True
-            logger.info(
-                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                     100. * discrepancy))
-    if not found:
-        logger.info("\tNo discrepancies found.")
+        discrepancy = (outputs[i].result - outputs[i + 1].result).abs().mean() / (.5 * (
+                outputs[i].result.max() - outputs[i].result.min() + outputs[i + 1].result.max() - outputs[
+            i + 1].result.min()))
+        # if discrepancy > 1e-2:
+        #     found = True
+        logger.info("\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i].name,
+                                                                                             outputs[i + 1].name,
+                                                                                             100. * discrepancy))
+    # if not found:
+    #     logger.info("\tNo discrepancies found.")
     logger.info("Done.")
 
     # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0,

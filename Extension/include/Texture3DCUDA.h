@@ -12,7 +12,7 @@ public:
 
 	Texture3DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
 	              const AddressModeType &addressModes = AddressModeType::Full(TextureAddressMode::ZERO))
-		: Base(_size, _spacing, _centrePosition) {
+		: Base(std::move(_size), std::move(_spacing), std::move(_centrePosition)) {
 
 		const cudaExtent extent = {.width = static_cast<size_t>(_size.X()), .height = static_cast<size_t>(_size.Y()),
 		                           .depth = static_cast<size_t>(_size.Z())};

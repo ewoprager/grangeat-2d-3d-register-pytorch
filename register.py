@@ -128,7 +128,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         volume_spec = data.load_cached_volume(cache_directory, path)
 
     if volume_spec is None:
-        volume_downsample_factor: int = 4
+        volume_downsample_factor: int = 1
     else:
         volume_downsample_factor, sinogram3d = volume_spec
 

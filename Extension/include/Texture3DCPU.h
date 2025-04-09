@@ -16,8 +16,9 @@ public:
 
 	Texture3DCPU(const float *_ptr, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
 	             AddressModeType _addressModes =
-		             AddressModeType::Full(TextureAddressMode::ZERO)) : Base(_size, _spacing, _centrePosition),
-		                                                                ptr(_ptr), addressModes(_addressModes) {
+		             AddressModeType::Full(TextureAddressMode::ZERO)) : Base(std::move(_size), std::move(_spacing),
+		                                                                     std::move(_centrePosition)), ptr(_ptr),
+		                                                                addressModes(_addressModes) {
 	}
 
 	// yes copy

@@ -20,7 +20,7 @@ class LinearRange:
         self.low = low
         self.high = high
 
-    def generate_range(self, count: int, *, device=torch.device('cpu')) -> torch.Tensor:
+    def generate_grid(self, count: int, *, device=torch.device('cpu')) -> torch.Tensor:
         return torch.linspace(self.low, self.high, count, device=device)
 
     def get_mapping_from(self, other: 'LinearRange') -> LinearMapping:
@@ -129,7 +129,8 @@ class Sinogram3dRange(NamedTuple):
     theta: LinearRange
     r: LinearRange
 
-    def get_spacing(self, counts: int | Tuple[int] | torch.Size, *, device=torch.device('cpu')) -> torch.Tensor:
+    def get_spacing(self, counts: int | Tuple[int, int, int] | torch.Size, *,
+                    device=torch.device('cpu')) -> torch.Tensor:
         if isinstance(counts, int):
             counts = (counts, counts, counts)
         elif isinstance(counts, torch.Size):
@@ -146,6 +147,9 @@ class Sinogram2dGrid(NamedTuple):
     phi: torch.Tensor
     r: torch.Tensor
 
+    def to(self, **kwargs) -> 'Sinogram2dGrid':
+        return Sinogram2dGrid(self.phi.to(**kwargs), self.r.to(**kwargs))
+
     def device_consistent(self) -> bool:
         return self.phi.device == self.r.device
 
@@ -153,7 +157,7 @@ class Sinogram2dGrid(NamedTuple):
         return self.phi.size() == self.r.size()
 
     @classmethod
-    def linear_from_range(cls, sinogram_range: Sinogram2dRange, counts: int | Tuple[int] | torch.Size, *,
+    def linear_from_range(cls, sinogram_range: Sinogram2dRange, counts: int | Tuple[int, int] | torch.Size, *,
                           device=torch.device("cpu")) -> 'Sinogram2dGrid':
         if isinstance(counts, int):
             counts = (counts, counts)
@@ -168,6 +172,9 @@ class Sinogram3dGrid(NamedTuple):
     theta: torch.Tensor
     r: torch.Tensor
 
+    def to(self, **kwargs) -> 'Sinogram3dGrid':
+        return Sinogram3dGrid(self.phi.to(**kwargs), self.theta.to(**kwargs), self.r.to(**kwargs))
+
     def device_consistent(self) -> bool:
         return self.phi.device == self.theta.device and self.theta.device == self.r.device
 
@@ -175,7 +182,7 @@ class Sinogram3dGrid(NamedTuple):
         return self.phi.size() == self.theta.size() and self.theta.size() == self.r.size()
 
     @classmethod
-    def linear_from_range(cls, sinogram_range: Sinogram3dRange, counts: int | Tuple[int] | torch.Size, *,
+    def linear_from_range(cls, sinogram_range: Sinogram3dRange, counts: int | Tuple[int, int, int] | torch.Size, *,
                           device=torch.device("cpu")) -> 'Sinogram3dGrid':
         if isinstance(counts, int):
             counts = (counts, counts, counts)

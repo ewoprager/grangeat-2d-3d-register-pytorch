@@ -12,7 +12,7 @@ public:
 
 	Texture2DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
 	              const AddressModeType &addressModes = AddressModeType::Full(TextureAddressMode::ZERO)) : Base(
-		_size, _spacing, _centrePosition) {
+		std::move(_size), std::move(_spacing), std::move(_centrePosition)) {
 
 		// Copy the given data into a CUDA array
 		const cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
@@ -25,7 +25,7 @@ public:
 		                                             .res = {.array = {.array = arrayHandle}}};
 		cudaTextureDesc textureDescriptor = {.filterMode = cudaFilterModeLinear, .readMode = cudaReadModeElementType,
 		                                     .borderColor = {0.f, 0.f, 0.f, 0.f}, .normalizedCoords = true};
-		for (int i=0; i<2; ++i) {
+		for (int i = 0; i < 2; ++i) {
 			textureDescriptor.addressMode[i] = TextureAddressModeToCuda(addressModes[i]);
 		}
 		cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
