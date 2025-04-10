@@ -46,9 +46,8 @@ jobs:
       run: uv pip install -e .[cpu]
       
     - name: Test the extension
-      working-directory: Extension
-      run: pytest
+      run: python -m pytest Extension
     
     - name: Test the code
-      run: pytest
+      run: python -m pytest .
 
