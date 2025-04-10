@@ -26,13 +26,16 @@ jobs:
         version: "0.5.26"
         enable-cache: true
       
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version-file: "pyproject.toml"
+    # - name: Set up Python
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version-file: "pyproject.toml"
 
-    - name: Install dependencies from lockfile
-      run: uv sync --all-extras --dev
+    - name: Set up virtual environment
+      run: uv venv .venv
+
+    # - name: Install dependencies from lockfile
+    #   run: uv sync --all-extras --dev
       
     # - name: Lint with flake8
     #   run: |
