@@ -113,7 +113,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
         run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, SinogramClassic.resample_python,
                  "Sinogram3D.resample_python", "cpu", params),
         run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, SinogramClassic.resample_python,
-                 "Sinogram3D.resample_python", "cuda", params)]
+                 "Sinogram3D.resample_python", "cuda", params)
+    ]
 
     plt.show()
 

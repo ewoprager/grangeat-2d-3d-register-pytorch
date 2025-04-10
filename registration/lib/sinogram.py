@@ -108,7 +108,8 @@ class SinogramClassic(Sinogram):
         else:
             grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
                                 k_mapping(fixed_image_grid_sph.phi)), dim=-1)
-            ret = torch.nn.functional.grid_sample(self.data[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
+            # ret = torch.nn.functional.grid_sample(self.data[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
+            ret = Extension.grid_sample3d(self.data, grid, "wrap")
 
         ret[need_sign_change] *= -1.
         return ret

@@ -24,7 +24,7 @@ TORCH_LIBRARY(ExtensionTest, m) {
 	m.def(
 		"resample_sinogram3d(Tensor sinogram, Tensor spacing, Tensor centres, Tensor projMat, Tensor phis, Tensor rs) -> Tensor");
 	m.def("normalised_cross_correlation(Tensor a, Tensor b) -> Tensor");
-	m.def("grid_sample3d(Tensor input, Tensor grid) -> Tensor");
+	m.def("grid_sample3d(Tensor input, Tensor grid, str address_mode) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {
@@ -51,6 +51,7 @@ TORCH_LIBRARY_IMPL(ExtensionTest, CUDA, m) {
 	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CUDA_V2);
 	m.impl("resample_sinogram3d", &ResampleSinogram3D_CUDA);
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CUDA);
+	m.impl("grid_sample3d", &GridSample3D_CUDA);
 }
 #endif
 
