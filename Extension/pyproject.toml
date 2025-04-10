@@ -100,6 +100,7 @@ dependencies = [
     "pygments==2.19.1",
     "pynrrd==1.1.1",
     "pyparsing==3.2.1",
+    "pytest>=8.3.4",
     "python-dateutil==2.9.0.post0",
     "python-json-logger==3.2.1",
     "pytz==2024.2",
