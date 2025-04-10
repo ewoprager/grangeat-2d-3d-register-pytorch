@@ -8,6 +8,9 @@ def test_grid_sample3d():
     grid = torch.rand((10, 7, 3))
     res = grid_sample3d(input_, grid)
     assert res.size() == grid.size()[0:-1]
+    if torch.cuda.is_available():
+        res_cuda = grid_sample3d(input_.cuda(), grid.cuda())
+        assert res == pytest.approx(res_cuda.cpu(), rel=0.05)
 
     input_ = torch.rand((11, 12, 8, 5))
     with pytest.raises(RuntimeError):
