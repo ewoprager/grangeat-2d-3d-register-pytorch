@@ -49,8 +49,8 @@ jobs:
       run: uv pip install -e .[cpu]
       
     - name: Test the extension
-      run: python -m pytest Extension
+      run: .venv/bin/python -m pytest Extension
     
     - name: Test the code
-      run: python -m pytest .
+      run: .venv/bin/python -m pytest .
 
