@@ -41,6 +41,25 @@ class SinogramClassic(Sinogram):
     def get_spacing(self, *, device=torch.device('cpu')) -> torch.Tensor:
         return self.sinogram_range.get_spacing(self.data.size(), device=device)
 
+    @classmethod
+    def unflip_coordinates(cls, grid: Sinogram3dGrid) -> Sinogram3dGrid:
+        assert grid.size_consistent()
+        assert grid.device_consistent()
+
+        theta_div = torch.div(grid.theta + .5 * torch.pi, torch.pi, rounding_mode="floor")
+        theta_flip = torch.fmod(theta_div.to(dtype=torch.int32).abs(), 2).to(dtype=torch.bool)
+        phi_div = torch.div(grid.phi + .5 * torch.pi, torch.pi, rounding_mode="floor")
+        phi_flip = torch.fmod(phi_div.to(dtype=torch.int32).abs(), 2).to(dtype=torch.bool)
+
+        ret_theta = grid.theta - torch.pi * theta_div
+        ret_phi = grid.phi - torch.pi * phi_div
+
+        ret_theta[torch.logical_and(phi_flip, torch.logical_not(theta_flip))] *= -1.
+        ret_r = grid.r.clone()
+        ret_r[torch.logical_xor(theta_flip, phi_flip)] *= -1.
+
+        return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
+
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         device = self.data.device
         sinogram_range_low = torch.tensor(
