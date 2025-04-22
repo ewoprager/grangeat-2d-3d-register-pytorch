@@ -12,6 +12,7 @@ def test_grid_sample3d():
         res_cuda = grid_sample3d(input_.cuda(), grid.cuda())
         assert res == pytest.approx(res_cuda.cpu())
 
+    # input must be 3D, so these should raise a runtime error
     input_ = torch.rand((11, 12, 8, 5))
     with pytest.raises(RuntimeError):
         grid_sample3d(input_, grid)
@@ -19,6 +20,7 @@ def test_grid_sample3d():
     with pytest.raises(RuntimeError):
         grid_sample3d(input_, grid)
 
+    # grid must have final dimension 3, so these should raise a runtime error
     input_ = torch.rand((11, 12, 8))
     grid = torch.rand((10, 7, 2))
     with pytest.raises(RuntimeError):

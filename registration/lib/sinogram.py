@@ -48,7 +48,7 @@ class SinogramClassic(Sinogram):
         sinogram_range_high = torch.tensor(
             [self.sinogram_range.r.high, self.sinogram_range.theta.high, self.sinogram_range.phi.high], device=device)
         sinogram_spacing = (sinogram_range_high - sinogram_range_low) / (
-            torch.tensor(self.data.size(), dtype=torch.float32, device=device).flip(dims=(0,)))
+                torch.tensor(self.data.size(), dtype=torch.float32, device=device).flip(dims=(0,)) - 1)
         sinogram_range_centres = .5 * (sinogram_range_low + sinogram_range_high)
         return Extension.resample_sinogram3d(self.data, sinogram_spacing, sinogram_range_centres, ph_matrix,
                                              fixed_image_grid.phi, fixed_image_grid.r)
