@@ -72,27 +72,27 @@ class SinogramClassic(Sinogram):
         ##
 
         ##
-        # _, axes = plt.subplots()
-        # mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
-        # axes.axis('square')
-        # axes.set_title("phi_sph resampling values")
-        # axes.set_xlabel("r_pol")
-        # axes.set_ylabel("phi_pol")
-        # plt.colorbar(mesh)
-        # _, axes = plt.subplots()
-        # mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
-        # axes.axis('square')
-        # axes.set_title("theta_sph resampling values")
-        # axes.set_xlabel("r_pol")
-        # axes.set_ylabel("phi_pol")
-        # plt.colorbar(mesh)
-        # _, axes = plt.subplots()
-        # mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
-        # axes.axis('square')
-        # axes.set_title("r_sph resampling values")
-        # axes.set_xlabel("r_pol")
-        # axes.set_ylabel("phi_pol")
-        # plt.colorbar(mesh)
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
+        axes.axis('square')
+        axes.set_title("phi_sph resampling values")
+        axes.set_xlabel("r_pol")
+        axes.set_ylabel("phi_pol")
+        plt.colorbar(mesh)
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
+        axes.axis('square')
+        axes.set_title("theta_sph resampling values")
+        axes.set_xlabel("r_pol")
+        axes.set_ylabel("phi_pol")
+        plt.colorbar(mesh)
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
+        axes.axis('square')
+        axes.set_title("r_sph resampling values")
+        axes.set_xlabel("r_pol")
+        axes.set_ylabel("phi_pol")
+        plt.colorbar(mesh)
         ##
 
         grid_range = LinearRange.grid_sample_range()
@@ -104,7 +104,7 @@ class SinogramClassic(Sinogram):
             ret = grangeat.grid_sample_sinogram3d_smoothed(self.data, fixed_image_grid_sph.phi,
                                                            fixed_image_grid_sph.theta, fixed_image_grid_sph.r,
                                                            i_mapping=i_mapping, j_mapping=j_mapping,
-                                                           k_mapping=k_mapping, sigma=.1)
+                                                           k_mapping=k_mapping, sigma=.5)
         else:
             grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
                                 k_mapping(fixed_image_grid_sph.phi)), dim=-1)

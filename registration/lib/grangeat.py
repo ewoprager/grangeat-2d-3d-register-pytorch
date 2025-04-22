@@ -96,6 +96,10 @@ def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: 
     return ret
 
 
+def unflip_angle(angle: float | torch.Tensor, low: float, high: float) -> float | torch.Tensor:
+    return low + torch.remainder(angle - low, high - low)
+
+
 def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.Tensor, theta_values: torch.Tensor,
                                     r_values: torch.Tensor, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
                                     k_mapping: LinearMapping, a_count: int = 6, b_count: int = 16,
@@ -155,6 +159,8 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     sb = b_values.sin()
     offset_vectors = torch.stack((ca, -sa * sb, sa * cb), dim=-1).to(device=device)
 
+    del ca, sa, cb, sb
+
     # Determining the rotation matrices for each input (phi, theta):
     cp = phi_values.cos()
     sp = phi_values.sin()
@@ -167,45 +173,59 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     # Multiplying by the perturbed unit vectors for the perturbed, rotated unit vector:
     rotated_vectors = torch.einsum('...ij,baj->...bai', rotation_matrices, offset_vectors)
 
+    del cp, sp, ct, st, row_0, row_1, row_2, rotation_matrices, offset_vectors
+
     # Converting the resulting unit vectors back into new values of phi & theta, and expanding the r tensor to match
     # in size:
     new_phis = torch.atan2(rotated_vectors[..., 1], rotated_vectors[..., 0]).flatten(-2)
-    new_thetas = rotated_vectors[..., 2].asin().flatten(-2)
-    new_rs = r_values.unsqueeze(-1).expand(-1, -1, new_phis.size()[-1])
+    new_thetas = torch.clamp(rotated_vectors[..., 2], -1., 1.).asin().flatten(-2)
+    new_rs = r_values.unsqueeze(-1).expand(-1, -1, new_phis.size()[
+        -1]).clone()  # need to clone otherwise it's just a tensor view, not a tensor in its own right
 
-    phis_under = new_phis < -.5 * torch.pi
-    phis_over = new_phis > .5 * torch.pi
-    new_phis[phis_under] += torch.pi
-    new_phis[phis_over] -= torch.pi
+    del rotated_vectors
 
-    # new_rs[torch.logical_or(phis_under, phis_over)] *= -1.
+    # wrapping sinogram coordinates that lie outside the bounds
+    theta_div = torch.div(new_thetas + .5 * torch.pi, torch.pi, rounding_mode="floor")
+    theta_flip = torch.fmod(theta_div.to(dtype=torch.int32).abs(), 2).to(dtype=torch.bool)
+    phi_div = torch.div(new_phis + .5 * torch.pi, torch.pi, rounding_mode="floor")
+    phi_flip = torch.fmod(phi_div.to(dtype=torch.int32).abs(), 2).to(dtype=torch.bool)
+
+    new_thetas -= torch.pi * theta_div
+    new_phis -= torch.pi * phi_div
+
+    new_thetas[torch.logical_and(phi_flip, torch.logical_not(theta_flip))] *= -1.
+    new_rs[torch.logical_xor(theta_flip, phi_flip)] *= -1.
+
+    del theta_div, theta_flip, phi_div, phi_flip
 
     # Sampling at all the perturbed orientations:
     grid = torch.stack((i_mapping(new_rs), j_mapping(new_thetas), k_mapping(new_phis)), dim=-1)
     samples = Extension.grid_sample3d(sinogram3d, grid, address_mode="wrap")
 
+    del grid
+
     ##
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_phis.cpu()).cpu())
-    # axes.axis('square')
-    # axes.set_title("average phi_sph resampling values")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_thetas.cpu()).cpu())
-    # axes.axis('square')
-    # axes.set_title("average theta_sph resampling values")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_rs.cpu()).cpu())
-    # axes.axis('square')
-    # axes.set_title("average r_sph resampling values")
-    # axes.set_xlabel("r_pol")
-    # axes.set_ylabel("phi_pol")
-    # plt.colorbar(mesh)
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_phis.cpu()).cpu())
+    axes.axis('square')
+    axes.set_title("average phi_sph resampling values")
+    axes.set_xlabel("r_pol")
+    axes.set_ylabel("phi_pol")
+    plt.colorbar(mesh)
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_thetas.cpu()).cpu())
+    axes.axis('square')
+    axes.set_title("average theta_sph resampling values")
+    axes.set_xlabel("r_pol")
+    axes.set_ylabel("phi_pol")
+    plt.colorbar(mesh)
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_rs.cpu()).cpu())
+    axes.axis('square')
+    axes.set_title("average r_sph resampling values")
+    axes.set_xlabel("r_pol")
+    axes.set_ylabel("phi_pol")
+    plt.colorbar(mesh)
     ##
 
     # Applying the weights and summing along the last dimension for an output equal in size to the input tensors of
