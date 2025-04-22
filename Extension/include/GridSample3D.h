@@ -23,9 +23,9 @@ template <typename texture_t> struct GridSample3D {
 		TORCH_CHECK(input.sizes().size() == 3)
 		TORCH_CHECK(input.dtype() == at::kFloat)
 		TORCH_INTERNAL_ASSERT(input.device().type() == device)
-		// grid should be a tensor of doubles with a final dimension of 3 on the chosen device
+		// grid should be a tensor of floats with a final dimension of 3 on the chosen device
 		TORCH_CHECK(grid.sizes().back() == 3);
-		TORCH_CHECK(grid.dtype() == at::kDouble);
+		TORCH_CHECK(grid.dtype() == at::kFloat);
 		TORCH_INTERNAL_ASSERT(grid.device().type() == device)
 		// addressMode should be one of the valid values:
 		TextureAddressMode am = TextureAddressMode::ZERO;

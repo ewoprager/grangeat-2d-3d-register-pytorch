@@ -8,14 +8,14 @@ namespace ExtensionTest {
 using CommonData = GridSample3D<Texture3DCUDA>::CommonData;
 
 __global__ void Kernel_GridSample3D_CUDA(Texture3DCUDA inputTexture, Linear<Vec<double, 3> > mappingGridToTexCoord,
-                                         double *const grid, long numelOut, float *resultPtr) {
+                                         float *const grid, long numelOut, float *resultPtr) {
 	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	if (threadIndex >= numelOut) return;
 
 	const long arrayIndex = threadIndex * 3;
-	const Vec<double, 3> pos = {grid[arrayIndex], grid[arrayIndex + 1], grid[arrayIndex + 2]};
+	const Vec<float, 3> pos = {grid[arrayIndex], grid[arrayIndex + 1], grid[arrayIndex + 2]};
 
-	resultPtr[threadIndex] = inputTexture.Sample(mappingGridToTexCoord(pos));
+	resultPtr[threadIndex] = inputTexture.Sample(mappingGridToTexCoord(pos.StaticCast<double>()));
 }
 
 at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode) {
@@ -24,7 +24,7 @@ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, co
 	const Linear<Texture3DCUDA::VectorType> mappingGridToTexCoord = common.inputTexture.MappingWorldToTexCoord();
 
 	const at::Tensor gridFlat = grid.view({-1, 3});
-	double *const gridFlatPtr = gridFlat.data_ptr<double>();
+	float *const gridFlatPtr = gridFlat.data_ptr<float>();
 
 	int minGridSize, blockSize;
 	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_GridSample3D_CUDA, 0, 0);

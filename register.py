@@ -143,8 +143,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     if sinogram3d is None:
         sinogram3d = pre_computed.calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
-                                                            volume_downsample_factor, device=device,
-                                                            save_to_cache=save_to_cache, vol_counts=sinogram_size)
+                                                            volume_downsample_factor, save_to_cache=save_to_cache,
+                                                            vol_counts=sinogram_size)
 
     voxel_spacing = voxel_spacing.to(device=device)
 

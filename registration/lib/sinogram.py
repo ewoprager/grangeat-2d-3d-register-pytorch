@@ -104,11 +104,10 @@ class SinogramClassic(Sinogram):
             ret = grangeat.grid_sample_sinogram3d_smoothed(self.data, fixed_image_grid_sph.phi,
                                                            fixed_image_grid_sph.theta, fixed_image_grid_sph.r,
                                                            i_mapping=i_mapping, j_mapping=j_mapping,
-                                                           k_mapping=k_mapping)
+                                                           k_mapping=k_mapping, sigma=.1)
         else:
             grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
                                 k_mapping(fixed_image_grid_sph.phi)), dim=-1)
-            # ret = torch.nn.functional.grid_sample(self.data[None, None, :, :, :], grid[None, None, :, :, :])[0, 0, 0]
             ret = Extension.grid_sample3d(self.data, grid, "wrap")
 
         ret[need_sign_change] *= -1.

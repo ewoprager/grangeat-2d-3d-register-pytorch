@@ -58,4 +58,4 @@ def normalised_cross_correlation(a: torch.Tensor, b: torch.Tensor) -> torch.Tens
 
 
 def grid_sample3d(input_: torch.Tensor, grid: torch.Tensor, address_mode: str="zero") -> torch.Tensor:
-    return torch.ops.ExtensionTest.grid_sample3d.default(input_, grid.to(dtype=torch.float64), address_mode)
+    return torch.ops.ExtensionTest.grid_sample3d.default(input_, grid.to(dtype=torch.float32), address_mode)

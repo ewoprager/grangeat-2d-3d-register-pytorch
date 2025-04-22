@@ -1,6 +1,8 @@
 from tqdm import tqdm
 import logging
 
+import Extension
+
 logger = logging.getLogger(__name__)
 
 import torch
@@ -103,17 +105,17 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     around the sampling positions to make the sampling more even over S^2, even if the point distribution is less even.
 
     :param sinogram3d: A 3D tensor
-    :param phi_values: A tensor of size (n, m)
-    :param theta_values: A tensor of size (n, m)
-    :param r_values: A tensor of size (n, m)
-    :param i_mapping: Mapping from r to sinogram texture coordinate (-1, 1)
-    :param j_mapping: Mapping from theta to sinogram texture coordinate (-1, 1)
-    :param k_mapping: Mapping from phi to sinogram texture coordinate (-1, 1)
+    :param phi_values: A tensor
+    :param theta_values: A tensor matching size of `phi_values`
+    :param r_values: A tensor matching size of `phi_values`
+    :param i_mapping: Mapping from r to sinogram texture x-coordinate (-1, 1)
+    :param j_mapping: Mapping from theta to sinogram texture y-coordinate (-1, 1)
+    :param k_mapping: Mapping from phi to sinogram texture z-coordinate (-1, 1)
     :param a_count: Number of radial values at which to make extra samples in the Gaussian pattern
     :param b_count: Number of samples to make at each radius in the Gaussian pattern
     :param sigma: The standard deviation of the Gaussian pattern. Optional; if not provided, a sensible value is
     determined from the phi count in the given sinogram
-    :return: A tensor of size (n, m) - the weighted sums of offset samples around the given coordinates.
+    :return: A tensor matching size of `phi_values`  - the weighted sums of offset samples around the given coordinates.
     """
     device = sinogram3d.device
 
@@ -121,7 +123,6 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     assert theta_values.device == device
     assert r_values.device == device
     assert len(sinogram3d.size()) == 3
-    assert len(phi_values.size()) == 2
     assert phi_values.size() == theta_values.size()
     assert theta_values.size() == r_values.size()
     assert sigma is None or sigma > 0.
@@ -130,8 +131,6 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     if sigma is None:
         phi_count: int = sinogram3d.size()[0]
         sigma = 2. * torch.pi / (6. * float(phi_count))
-
-    sigma = .05
 
     logger.info("Sample smoothing with sigma = {:.3f}".format(sigma))
 
@@ -154,7 +153,6 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     sa = a_values.sin()
     cb = b_values.cos()
     sb = b_values.sin()
-    # Multiplying for the perturbed unit vectors:
     offset_vectors = torch.stack((ca, -sa * sb, sa * cb), dim=-1).to(device=device)
 
     # Determining the rotation matrices for each input (phi, theta):
@@ -167,7 +165,7 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
     row_2 = torch.stack((st, torch.zeros_like(st), ct), dim=-1)
     rotation_matrices = torch.stack((row_0, row_1, row_2), dim=-2).to(device=device)
     # Multiplying by the perturbed unit vectors for the perturbed, rotated unit vector:
-    rotated_vectors = torch.einsum('...ij,...klj->...kli', rotation_matrices, offset_vectors)
+    rotated_vectors = torch.einsum('...ij,baj->...bai', rotation_matrices, offset_vectors)
 
     # Converting the resulting unit vectors back into new values of phi & theta, and expanding the r tensor to match
     # in size:
@@ -184,7 +182,7 @@ def grid_sample_sinogram3d_smoothed(sinogram3d: torch.Tensor, phi_values: torch.
 
     # Sampling at all the perturbed orientations:
     grid = torch.stack((i_mapping(new_rs), j_mapping(new_thetas), k_mapping(new_phis)), dim=-1)
-    samples = torch.nn.functional.grid_sample(sinogram3d[None, None, :, :, :], grid[None, :, :, :, :])[0, 0]
+    samples = Extension.grid_sample3d(sinogram3d, grid, address_mode="wrap")
 
     ##
     # _, axes = plt.subplots()

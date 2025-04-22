@@ -54,7 +54,10 @@ def load_cached_volume(cache_directory: str, ct_volume_path: str):
     assert ct_volume_path == volume_spec.ct_volume_path
     volume_downsample_factor = volume_spec.downsample_factor
     sinogram3d = volume_spec.sinogram
-    logger.info("Loaded cached volume spec from '{}'".format(file))
+    logger.info(
+        "Loaded cached volume spec from '{}'; sinogram size = [{} x {} x {}]".format(file, sinogram3d.data.size()[0],
+                                                                                     sinogram3d.data.size()[0],
+                                                                                     sinogram3d.data.size()[0]))
     return volume_downsample_factor, sinogram3d
 
 
