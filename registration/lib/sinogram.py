@@ -1,6 +1,9 @@
 import torch
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
+import logging
+
+logger = logging.getLogger(__name__)
 
 import Extension
 
@@ -29,6 +32,8 @@ class Sinogram(ABC):
 
 class SinogramClassic(Sinogram):
     def __init__(self, data: torch.Tensor, sinogram_range: Sinogram3dRange):
+        assert len(data.size()) == 3
+
         self.data = data
         self.sinogram_range = sinogram_range
 
@@ -59,6 +64,122 @@ class SinogramClassic(Sinogram):
         ret_r[torch.logical_xor(theta_flip, phi_flip)] *= -1.
 
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
+
+    def grid_sample_smoothed(self, grid: Sinogram3dGrid, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
+                             k_mapping: LinearMapping, a_count: int = 6, b_count: int = 16, sigma: float | None = None):
+        """
+        Sample the sinogram at the given phi, theta, r spherical coordinates, with extra samples in a Gaussian layout
+        around the sampling positions to make the sampling more even over S^2, even if the point distribution is less
+        even.
+
+        :param grid: A grid of 3D sinogram coordinates
+        :param i_mapping: Mapping from r to sinogram texture x-coordinate (-1, 1)
+        :param j_mapping: Mapping from theta to sinogram texture y-coordinate (-1, 1)
+        :param k_mapping: Mapping from phi to sinogram texture z-coordinate (-1, 1)
+        :param a_count: Number of radial values at which to make extra samples in the Gaussian pattern
+        :param b_count: Number of samples to make at each radius in the Gaussian pattern
+        :param sigma: The standard deviation of the Gaussian pattern. Optional; if not provided, a sensible value is
+        determined from the phi count in the given sinogram
+        :return: A tensor matching size of `phi_values`  - the weighted sums of offset samples around the given
+        coordinates.
+        """
+
+        assert grid.phi.device == self.device()
+        assert grid.device_consistent()
+        assert grid.size_consistent()
+        assert sigma is None or sigma > 0.
+
+        # Determine a sensible value of sigma if not provided
+        if sigma is None:
+            phi_count: int = self.data.size()[0]
+            sigma = 2. * torch.pi / (6. * float(phi_count))
+
+        logger.info("Sample smoothing with sigma = {:.3f}".format(sigma))
+
+        # Radial distances in Gaussian pattern
+        delta_a: float = 3. * sigma / float(a_count)
+        a_values: torch.Tensor = delta_a * torch.arange(0., float(a_count), 1.)
+        # Orientations in Gaussian pattern
+        b_values = torch.linspace(-torch.pi, torch.pi, b_count + 1)[:-1]
+        # Sample weights in Gaussian pattern
+        w_values = (-a_values.square() / (2. * sigma * sigma)).exp()
+        w_values = w_values / (w_values.sum() * float(b_count))
+
+        b_values, a_values = torch.meshgrid(b_values, a_values)
+
+        # New offset values of phi & theta are determined by rotating the vector (1, 0, 0)^T first by a small
+        # perturbation
+        # according to the Gaussian pattern, and then by the original rotation according to the old values of phi *
+        # theta.
+
+        # Determining a perturbed vector for each offset in the Gaussian pattern:
+        ca = a_values.cos()
+        sa = a_values.sin()
+        cb = b_values.cos()
+        sb = b_values.sin()
+        offset_vectors = torch.stack((ca, -sa * sb, sa * cb), dim=-1).to(device=self.device())
+
+        del ca, sa, cb, sb
+
+        # Determining the rotation matrices for each input (phi, theta):
+        cp = grid.phi.cos()
+        sp = grid.phi.sin()
+        ct = grid.theta.cos()
+        st = grid.theta.sin()
+        row_0 = torch.stack((cp * ct, -sp, -cp * st), dim=-1)
+        row_1 = torch.stack((sp * ct, cp, sp * st), dim=-1)
+        row_2 = torch.stack((st, torch.zeros_like(st), ct), dim=-1)
+        rotation_matrices = torch.stack((row_0, row_1, row_2), dim=-2).to(device=self.device())
+        # Multiplying by the perturbed unit vectors for the perturbed, rotated unit vector:
+        rotated_vectors = torch.einsum('...ij,baj->...bai', rotation_matrices, offset_vectors)
+
+        del cp, sp, ct, st, row_0, row_1, row_2, rotation_matrices, offset_vectors
+
+        # Converting the resulting unit vectors back into new values of phi & theta, and expanding the r tensor to match
+        # in size:
+        new_phis = torch.atan2(rotated_vectors[..., 1], rotated_vectors[..., 0]).flatten(-2)
+        new_grid = Sinogram3dGrid(new_phis, torch.clamp(rotated_vectors[..., 2], -1., 1.).asin().flatten(-2),
+                                  grid.r.unsqueeze(-1).expand(
+                                      [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone())  # need to
+        # clone the r grid otherwise it's just a tensor view, not a tensor in its own right
+
+        del rotated_vectors, new_phis
+
+        new_grid = SinogramClassic.unflip_coordinates(new_grid)
+
+        # Sampling at all the perturbed orientations:
+        grid = torch.stack((i_mapping(new_grid.r), j_mapping(new_grid.theta), k_mapping(new_grid.phi)), dim=-1)
+        samples = Extension.grid_sample3d(self.data, grid, address_mode="wrap")
+
+        del grid
+
+        ##
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_grid.phi.cpu()).cpu())
+        axes.axis('square')
+        axes.set_title("average phi_sph resampling values")
+        axes.set_xlabel("r_pol")
+        axes.set_ylabel("phi_pol")
+        plt.colorbar(mesh)
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_grid.theta.cpu()).cpu())
+        axes.axis('square')
+        axes.set_title("average theta_sph resampling values")
+        axes.set_xlabel("r_pol")
+        axes.set_ylabel("phi_pol")
+        plt.colorbar(mesh)
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_grid.r.cpu()).cpu())
+        axes.axis('square')
+        axes.set_title("average r_sph resampling values")
+        axes.set_xlabel("r_pol")
+        axes.set_ylabel("phi_pol")
+        plt.colorbar(mesh)
+        ##
+
+        # Applying the weights and summing along the last dimension for an output equal in size to the input tensors of
+        # coordinates:
+        return torch.einsum('i,...i->...', w_values.repeat(b_count).to(device=self.device()), samples)
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         device = self.data.device
@@ -120,10 +241,8 @@ class SinogramClassic(Sinogram):
         k_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.phi)
 
         if smooth:
-            ret = grangeat.grid_sample_sinogram3d_smoothed(self.data, fixed_image_grid_sph.phi,
-                                                           fixed_image_grid_sph.theta, fixed_image_grid_sph.r,
-                                                           i_mapping=i_mapping, j_mapping=j_mapping,
-                                                           k_mapping=k_mapping, sigma=.5)
+            ret = self.grid_sample_smoothed(fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping,
+                                            k_mapping=k_mapping, sigma=.5)
         else:
             grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
                                 k_mapping(fixed_image_grid_sph.phi)), dim=-1)
