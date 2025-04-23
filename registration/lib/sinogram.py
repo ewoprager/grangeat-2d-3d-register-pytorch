@@ -73,7 +73,7 @@ class SinogramClassic(Sinogram):
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
     def grid_sample_smoothed(self, grid: Sinogram3dGrid, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
-                             k_mapping: LinearMapping, offset_count: int = 10, sigma: float | None = None):
+                             k_mapping: LinearMapping, sigma: float, offset_count: int = 10):
         """
         Sample the sinogram at the given phi, theta, r spherical coordinates, with extra samples in a Gaussian layout
         around the sampling positions to make the sampling more even over S^2, even if the point distribution is less
@@ -84,8 +84,7 @@ class SinogramClassic(Sinogram):
         :param j_mapping: Mapping from theta to sinogram texture y-coordinate (-1, 1)
         :param k_mapping: Mapping from phi to sinogram texture z-coordinate (-1, 1)
         :param offset_count: Number of rows and columns of offset points to make weighted samples at
-        :param sigma: The standard deviation of the Gaussian pattern. Optional; if not provided, a sensible value is
-        determined from the phi count in the given sinogram
+        :param sigma: The standard deviation of the Gaussian pattern
         :return: A tensor matching size of `phi_values`  - the weighted sums of offset samples around the given
         coordinates.
         """
@@ -93,12 +92,7 @@ class SinogramClassic(Sinogram):
         assert grid.phi.device == self.device()
         assert grid.device_consistent()
         assert grid.size_consistent()
-        assert sigma is None or sigma > 0.
-
-        # Determine a sensible value of sigma if not provided
-        if sigma is None:
-            phi_count: int = self.data.size()[0]
-            sigma = 2. * torch.pi / (6. * float(phi_count))
+        assert sigma >= 0.
 
         logger.info("Sample smoothing with sigma = {:.3f}".format(sigma))
 
@@ -206,7 +200,7 @@ class SinogramClassic(Sinogram):
         return Extension.resample_sinogram3d(self.data, sinogram_spacing, sinogram_range_centres, ph_matrix,
                                              fixed_image_grid.phi, fixed_image_grid.r)
 
-    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: bool = False,
+    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
                         plot: bool = False) -> torch.Tensor:
         assert fixed_image_grid.device_consistent()
         assert fixed_image_grid.phi.device == self.device()
@@ -252,9 +246,9 @@ class SinogramClassic(Sinogram):
         j_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.theta)
         k_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.phi)
 
-        if smooth:
+        if smooth is not None:
             ret = self.grid_sample_smoothed(fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping,
-                                            k_mapping=k_mapping, sigma=.1)
+                                            k_mapping=k_mapping, sigma=smooth)
         else:
             grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
                                 k_mapping(fixed_image_grid_sph.phi)), dim=-1)

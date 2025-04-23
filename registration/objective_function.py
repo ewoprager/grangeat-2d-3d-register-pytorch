@@ -42,18 +42,18 @@ def zncc2(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
 
 
 def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation: Transformation,
-             scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, save: bool = False, smooth: bool = False,
-             plot: Tuple[float, float] | None = None) -> Tuple[torch.Tensor, torch.Tensor]:
+             scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, save: bool = False,
+             smooth: float | None = None, plot: Tuple[float, float] | None = None) -> Tuple[torch.Tensor, torch.Tensor]:
     device = sinogram3d.device()
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
 
-    if smooth and isinstance(sinogram3d, SinogramClassic):
+    if smooth is not None and isinstance(sinogram3d, SinogramClassic):
         resampled = sinogram3d.resample_python(ph_matrix=ph_matrix, fixed_image_grid=fixed_image_grid, smooth=smooth,
                                                plot=plot is not None)
     else:
-        if smooth:
+        if smooth is not None:
             logger.warning("Cannot resample smooth as not given a SinogramClassic")
         resampled = sinogram3d.resample(ph_matrix, fixed_image_grid)
 
@@ -61,7 +61,7 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(resampled.clone().cpu(), vmin=plot[0], vmax=plot[1])
         axes.axis('square')
-        axes.set_title("d/dr R3 [mu] resampled with sample smoothing" if smooth else "d/dr R3 [mu] resampled")
+        axes.set_title("d/dr R3 [mu] resampled with sample smoothing" if smooth is not None else "d/dr R3 [mu] resampled")
         axes.set_xlabel("r")
         axes.set_ylabel("phi")
         plt.colorbar(mesh)

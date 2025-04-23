@@ -72,19 +72,13 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                                   transformation=transformation_ground_truth.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                   plot=colour_limits)
-    logger.info("Evaluation: -ZNCC = -{:.4e}".format(zncc.item()  # evaluate_direct(fixed_image, vol_data,
-                                                     # transformation=transformation_ground_truth,
-                                                     #                 scene_geometry=scene_geometry,
-                                                     #                 fixed_image_grid=sinogram2d_grid,
-                                                     #                 voxel_spacing=voxel_spacing,
-                                                     #                 plot=True)
-                                                     ))
+    logger.info("Evaluation: -ZNCC = -{:.4e}".format(zncc.item()))
 
     logger.info("Evaluating at ground truth with sample smoothing...")
     zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
                                                   transformation=transformation_ground_truth.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
-                                                  plot=colour_limits, smooth=True)
+                                                  plot=colour_limits, smooth=0.02)
     logger.info("Evaluation with sample smoothing, -ZNCC = -{:.4e}".format(zncc.item()))
 
     plt.show()
