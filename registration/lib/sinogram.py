@@ -10,6 +10,7 @@ import Extension
 from registration.lib.structs import *
 from registration.lib import geometry
 from registration.lib import grangeat
+from registration.lib import plot as myplt
 
 
 class Sinogram(ABC):
@@ -219,27 +220,30 @@ class SinogramClassic(Sinogram):
         ##
 
         if plot:
-            _, axes = plt.subplots()
-            mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
-            axes.axis('square')
-            axes.set_title("phi_sph resampling values")
-            axes.set_xlabel("r_pol")
-            axes.set_ylabel("phi_pol")
-            plt.colorbar(mesh)
-            _, axes = plt.subplots()
-            mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
-            axes.axis('square')
-            axes.set_title("theta_sph resampling values")
-            axes.set_xlabel("r_pol")
-            axes.set_ylabel("phi_pol")
-            plt.colorbar(mesh)
-            _, axes = plt.subplots()
-            mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
-            axes.axis('square')
-            axes.set_title("r_sph resampling values")
-            axes.set_xlabel("r_pol")
-            axes.set_ylabel("phi_pol")
-            plt.colorbar(mesh)
+            if True:
+                myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.r)
+            else:
+                _, axes = plt.subplots()
+                mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
+                axes.axis('square')
+                axes.set_title("phi_sph resampling values")
+                axes.set_xlabel("r_pol")
+                axes.set_ylabel("phi_pol")
+                plt.colorbar(mesh)
+                _, axes = plt.subplots()
+                mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
+                axes.axis('square')
+                axes.set_title("theta_sph resampling values")
+                axes.set_xlabel("r_pol")
+                axes.set_ylabel("phi_pol")
+                plt.colorbar(mesh)
+                _, axes = plt.subplots()
+                mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
+                axes.axis('square')
+                axes.set_title("r_sph resampling values")
+                axes.set_xlabel("r_pol")
+                axes.set_ylabel("phi_pol")
+                plt.colorbar(mesh)
 
         grid_range = LinearRange.grid_sample_range()
         i_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.r)

@@ -17,7 +17,7 @@ from registration import data
 from registration import pre_computed
 from registration import objective_function
 from registration import script
-import registration.lib.plot as myplt
+from registration.lib import plot
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
