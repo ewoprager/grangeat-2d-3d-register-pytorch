@@ -24,62 +24,13 @@ import Extension
 
 from registration.lib.structs import *
 from registration.lib.sinogram import *
-from registration.lib import grangeat
+from registration import drr
 from registration.lib import geometry
 from registration import data
 from registration import pre_computed
 from registration import objective_function
+from registration import script
 import registration.lib.plot as myplt
-
-
-def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
-                     *, device, save_to_cache=True):
-    # transformation = Transformation(torch.tensor([0., 0., 0.]),
-    #                                 torch.tensor([0., 0., 200.])).to(device=device)
-    # transformation = Transformation.zero(device=volume_data.device)
-    transformation = Transformation.random(device=volume_data.device)
-    logger.info("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
-                                                                                  transformation.translation))
-
-    #
-    # drr_image = drr_generator(rotations, translations, parameterization="euler_angles", convention="ZXY")
-    # # plot_drr(drr_image, ticks=False)
-    # drr_image = drr_image[0, 0]
-    # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(drr_image.cpu())
-    # axes.axis('square')
-    # plt.colorbar(mesh)
-
-    detector_spacing = torch.tensor([.25, .25])
-    scene_geometry = SceneGeometry(source_distance=1000.)
-
-    drr_image = geometry.generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
-                                      detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                      output_size=torch.Size([1000, 1000]), samples_per_ray=500)
-
-    logger.info("DRR generated.")
-
-    logger.info("Calculating 2D sinogram (the fixed image)...")
-
-    sinogram2d_counts = 1024
-    image_diag: float = (
-            detector_spacing * torch.tensor(drr_image.size(), dtype=torch.float32)).square().sum().sqrt().item()
-    sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
-                                       LinearRange(-.5 * image_diag, .5 * image_diag))
-    sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=device)
-
-    fixed_image = grangeat.calculate_fixed_image(drr_image, source_distance=scene_geometry.source_distance,
-                                                 detector_spacing=detector_spacing, output_grid=sinogram2d_grid)
-
-    logger.info("DRR sinogram calculated.")
-
-    if save_to_cache:
-        save_path = cache_directory + "/drr_spec_{}.pt".format(data.deterministic_hash(ct_volume_path))
-        torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range,
-                           transformation), save_path)
-        logger.info("DRR sinogram saved to '{}'".format(save_path))
-
-    return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation
 
 
 class SinogramStructure(Enum):
@@ -122,43 +73,24 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     # vol_data[0, 0, 0] = 1.
     # voxel_spacing = torch.Tensor([10., 10., 10.])  # [mm]
 
-    volume_spec = None
-    sinogram3d = None
-    if load_cached and path is not None:
-        volume_spec = data.load_cached_volume(cache_directory, path)
+    # Load the volume and get its sinogram
+    vol_data, voxel_spacing, sinogram3d = script.get_volume_and_sinogram(path, cache_directory, load_cached=load_cached,
+                                                                         save_to_cache=save_to_cache,
+                                                                         sinogram_size=sinogram_size, device=device)
 
-    if volume_spec is None:
-        volume_downsample_factor: int = 1
-    else:
-        volume_downsample_factor, sinogram3d = volume_spec
-
-    if path is None:
-        save_to_cache = False
-        vol_data = torch.zeros((3, 3, 3), device=device)
-        vol_data[1, 1, 1] = 1.
-        voxel_spacing = torch.tensor([10., 10., 10.])
-    else:
-        vol_data, voxel_spacing, bounds = data.read_nrrd(path, downsample_factor=volume_downsample_factor)
-        vol_data = vol_data.to(device=device, dtype=torch.float32)
-
-    if sinogram3d is None:
-        sinogram3d = pre_computed.calculate_volume_sinogram(cache_directory, vol_data, voxel_spacing, path,
-                                                            volume_downsample_factor, save_to_cache=save_to_cache,
-                                                            vol_counts=sinogram_size)
-
-    voxel_spacing = voxel_spacing.to(device=device)
-
+    # Load / generate a DRR through the volume
     drr_spec = None
     if not regenerate_drr:
         drr_spec = data.load_cached_drr(cache_directory, path)
 
     if drr_spec is None:
-        drr_spec = generate_new_drr(cache_directory, path, vol_data, voxel_spacing, device=device,
-                                    save_to_cache=save_to_cache)
+        drr_spec = drr.generate_new_drr(cache_directory, path, vol_data, voxel_spacing, device=device,
+                                        save_to_cache=save_to_cache)
 
     detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth = drr_spec
 
     logger.info("Plotting DRR and fixed image...")
+    # Plotting DRR
     _, axes = plt.subplots()
     mesh = axes.pcolormesh(drr_image.cpu())
     axes.axis('square')
@@ -169,6 +101,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     # nrrd.write("/home/eprager/Desktop/projection_image.nrrd", drr_image.cpu().unsqueeze(0).numpy())
 
+    # Plotting fixed image (d/ds R_2 [g^tilde])
     _, axes = plt.subplots()
     mesh = axes.pcolormesh(fixed_image.cpu())
     axes.axis('square')
@@ -176,6 +109,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     axes.set_xlabel("r")
     axes.set_ylabel("phi")
     plt.colorbar(mesh)
+    # Getting the limits to use for other colour mesh plots:
+    colour_limits: Tuple[float, float] = mesh.get_clim()
     logger.info("DRR and fixed image plotted.")
 
     sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, fixed_image.size(), device=device)
@@ -184,7 +119,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
                                                   transformation=transformation_ground_truth.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
-                                                  plot=True)
+                                                  plot=colour_limits)
     logger.info("Evaluation: -ZNCC = -{:.4e}".format(zncc.item()  # evaluate_direct(fixed_image, vol_data,
                                                      # transformation=transformation_ground_truth,
                                                      #                 scene_geometry=scene_geometry,
@@ -192,14 +127,6 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                                      #                 voxel_spacing=voxel_spacing,
                                                      #                 plot=True)
                                                      ))
-
-    if True:
-        logger.info("Evaluating at ground truth with sample smoothing...")
-        zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
-                                                      transformation=transformation_ground_truth.to(device=device),
-                                                      scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
-                                                      plot=True, smooth=True)
-        logger.info("Evaluation with sample smoothing, -ZNCC = -{:.4e}".format(zncc.item()))
 
     # plt.show()
     # low = torch.max(fixed_image.min(), resampled.min())
@@ -268,12 +195,12 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         axes.set_ylabel("-ZNCC")
         axes.set_title("Relationship between similarity measure and distance in SE3")
 
-    if False:
+    if True:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -objective_function.evaluate(fixed_image, sinogram3d,
                                                 transformation=Transformation(params[0:3], params[3:6]).to(
                                                     device=device), scene_geometry=scene_geometry,
-                                                fixed_image_grid=sinogram2d_grid, sinogram3d_range=sinogram3d_range)[0]
+                                                fixed_image_grid=sinogram2d_grid)[0]
 
         logger.info("Optimising...")
         param_history = []

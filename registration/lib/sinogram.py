@@ -57,16 +57,23 @@ class SinogramClassic(Sinogram):
         phi_flip = torch.fmod(phi_div.to(dtype=torch.int32).abs(), 2).to(dtype=torch.bool)
 
         ret_theta = grid.theta - torch.pi * theta_div
+
+        del theta_div
+
         ret_phi = grid.phi - torch.pi * phi_div
+
+        del phi_div
 
         ret_theta[torch.logical_and(phi_flip, torch.logical_not(theta_flip))] *= -1.
         ret_r = grid.r.clone()
         ret_r[torch.logical_xor(theta_flip, phi_flip)] *= -1.
 
+        del theta_flip, phi_flip
+
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
     def grid_sample_smoothed(self, grid: Sinogram3dGrid, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
-                             k_mapping: LinearMapping, a_count: int = 6, b_count: int = 16, sigma: float | None = None):
+                             k_mapping: LinearMapping, offset_count: int = 10, sigma: float | None = None):
         """
         Sample the sinogram at the given phi, theta, r spherical coordinates, with extra samples in a Gaussian layout
         around the sampling positions to make the sampling more even over S^2, even if the point distribution is less
@@ -76,8 +83,7 @@ class SinogramClassic(Sinogram):
         :param i_mapping: Mapping from r to sinogram texture x-coordinate (-1, 1)
         :param j_mapping: Mapping from theta to sinogram texture y-coordinate (-1, 1)
         :param k_mapping: Mapping from phi to sinogram texture z-coordinate (-1, 1)
-        :param a_count: Number of radial values at which to make extra samples in the Gaussian pattern
-        :param b_count: Number of samples to make at each radius in the Gaussian pattern
+        :param offset_count: Number of rows and columns of offset points to make weighted samples at
         :param sigma: The standard deviation of the Gaussian pattern. Optional; if not provided, a sensible value is
         determined from the phi count in the given sinogram
         :return: A tensor matching size of `phi_values`  - the weighted sums of offset samples around the given
@@ -96,16 +102,14 @@ class SinogramClassic(Sinogram):
 
         logger.info("Sample smoothing with sigma = {:.3f}".format(sigma))
 
-        # Radial distances in Gaussian pattern
-        delta_a: float = 3. * sigma / float(a_count)
-        a_values: torch.Tensor = delta_a * torch.arange(0., float(a_count), 1.)
-        # Orientations in Gaussian pattern
-        b_values = torch.linspace(-torch.pi, torch.pi, b_count + 1)[:-1]
-        # Sample weights in Gaussian pattern
-        w_values = (-a_values.square() / (2. * sigma * sigma)).exp()
-        w_values = w_values / (w_values.sum() * float(b_count))
-
-        b_values, a_values = torch.meshgrid(b_values, a_values)
+        # Gaussian weighed sampling offsets
+        xs = torch.linspace(-3. * sigma, 3. * sigma, offset_count)
+        ys = torch.linspace(-3. * sigma, 3. * sigma, offset_count)
+        ys, xs = torch.meshgrid(ys, xs)
+        xs = xs.flatten()
+        ys = ys.flatten()
+        weights = (-(xs.square() + ys.square()) / (2. * sigma * sigma)).exp()
+        weights = weights / weights.sum()
 
         # New offset values of phi & theta are determined by rotating the vector (1, 0, 0)^T first by a small
         # perturbation
@@ -113,13 +117,19 @@ class SinogramClassic(Sinogram):
         # theta.
 
         # Determining a perturbed vector for each offset in the Gaussian pattern:
-        ca = a_values.cos()
-        sa = a_values.sin()
-        cb = b_values.cos()
-        sb = b_values.sin()
-        offset_vectors = torch.stack((ca, -sa * sb, sa * cb), dim=-1).to(device=self.device())
+        phis_off = torch.atan2(ys, xs)
+        thetas_off = (xs.square() + ys.square()).sqrt()
 
-        del ca, sa, cb, sb
+        del xs, ys
+
+        cp = phis_off.cos()
+        sp = phis_off.sin()
+        ct = thetas_off.cos()
+        st = thetas_off.sin()
+
+        del phis_off, thetas_off
+
+        offset_vectors = torch.stack((ct, -st * sp, st * cp), dim=-1).to(device=self.device())
 
         # Determining the rotation matrices for each input (phi, theta):
         cp = grid.phi.cos()
@@ -131,19 +141,22 @@ class SinogramClassic(Sinogram):
         row_2 = torch.stack((st, torch.zeros_like(st), ct), dim=-1)
         rotation_matrices = torch.stack((row_0, row_1, row_2), dim=-2).to(device=self.device())
         # Multiplying by the perturbed unit vectors for the perturbed, rotated unit vector:
-        rotated_vectors = torch.einsum('...ij,baj->...bai', rotation_matrices, offset_vectors)
+        rotated_vectors = torch.einsum('...ij,kj->...ki', rotation_matrices, offset_vectors)
 
         del cp, sp, ct, st, row_0, row_1, row_2, rotation_matrices, offset_vectors
 
         # Converting the resulting unit vectors back into new values of phi & theta, and expanding the r tensor to match
         # in size:
-        new_phis = torch.atan2(rotated_vectors[..., 1], rotated_vectors[..., 0]).flatten(-2)
-        new_grid = Sinogram3dGrid(new_phis, torch.clamp(rotated_vectors[..., 2], -1., 1.).asin().flatten(-2),
-                                  grid.r.unsqueeze(-1).expand(
-                                      [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone())  # need to
+        new_phis = torch.atan2(rotated_vectors[..., 1], rotated_vectors[..., 0])
+        new_thetas = torch.clamp(rotated_vectors[..., 2], -1., 1.).asin()
+
+        del rotated_vectors
+
+        new_grid = Sinogram3dGrid(new_phis, new_thetas, grid.r.unsqueeze(-1).expand(
+            [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone())  # need to
         # clone the r grid otherwise it's just a tensor view, not a tensor in its own right
 
-        del rotated_vectors, new_phis
+        del new_phis, new_thetas
 
         new_grid = SinogramClassic.unflip_coordinates(new_grid)
 
@@ -155,21 +168,21 @@ class SinogramClassic(Sinogram):
 
         ##
         _, axes = plt.subplots()
-        mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_grid.phi.cpu()).cpu())
+        mesh = axes.pcolormesh(torch.einsum('i,...i->...', weights, new_grid.phi.cpu()).cpu())
         axes.axis('square')
         axes.set_title("average phi_sph resampling values")
         axes.set_xlabel("r_pol")
         axes.set_ylabel("phi_pol")
         plt.colorbar(mesh)
         _, axes = plt.subplots()
-        mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_grid.theta.cpu()).cpu())
+        mesh = axes.pcolormesh(torch.einsum('i,...i->...', weights, new_grid.theta.cpu()).cpu())
         axes.axis('square')
         axes.set_title("average theta_sph resampling values")
         axes.set_xlabel("r_pol")
         axes.set_ylabel("phi_pol")
         plt.colorbar(mesh)
         _, axes = plt.subplots()
-        mesh = axes.pcolormesh(torch.einsum('i,...i->...', w_values.repeat(b_count), new_grid.r.cpu()).cpu())
+        mesh = axes.pcolormesh(torch.einsum('i,...i->...', weights, new_grid.r.cpu()).cpu())
         axes.axis('square')
         axes.set_title("average r_sph resampling values")
         axes.set_xlabel("r_pol")
@@ -179,7 +192,7 @@ class SinogramClassic(Sinogram):
 
         # Applying the weights and summing along the last dimension for an output equal in size to the input tensors of
         # coordinates:
-        return torch.einsum('i,...i->...', w_values.repeat(b_count).to(device=self.device()), samples)
+        return torch.einsum('i,...i->...', weights.to(device=self.device()), samples)
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         device = self.data.device
@@ -193,8 +206,8 @@ class SinogramClassic(Sinogram):
         return Extension.resample_sinogram3d(self.data, sinogram_spacing, sinogram_range_centres, ph_matrix,
                                              fixed_image_grid.phi, fixed_image_grid.r)
 
-    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid,
-                        smooth: bool = False) -> torch.Tensor:
+    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: bool = False,
+                        plot: bool = False) -> torch.Tensor:
         assert fixed_image_grid.device_consistent()
         assert fixed_image_grid.phi.device == self.device()
         assert ph_matrix.device == self.device()
@@ -203,7 +216,7 @@ class SinogramClassic(Sinogram):
 
         fixed_image_grid_sph = geometry.moving_cartesian_to_moving_spherical(fixed_image_grid_cartesian)
 
-        ## sign changes - this relies on the convenient coordinate system
+        ## sign changes - this implementation relies on the convenient coordinate system
         moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
         square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
         need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
@@ -211,29 +224,28 @@ class SinogramClassic(Sinogram):
             dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
         ##
 
-        ##
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
-        axes.axis('square')
-        axes.set_title("phi_sph resampling values")
-        axes.set_xlabel("r_pol")
-        axes.set_ylabel("phi_pol")
-        plt.colorbar(mesh)
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
-        axes.axis('square')
-        axes.set_title("theta_sph resampling values")
-        axes.set_xlabel("r_pol")
-        axes.set_ylabel("phi_pol")
-        plt.colorbar(mesh)
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
-        axes.axis('square')
-        axes.set_title("r_sph resampling values")
-        axes.set_xlabel("r_pol")
-        axes.set_ylabel("phi_pol")
-        plt.colorbar(mesh)
-        ##
+        if plot:
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
+            axes.axis('square')
+            axes.set_title("phi_sph resampling values")
+            axes.set_xlabel("r_pol")
+            axes.set_ylabel("phi_pol")
+            plt.colorbar(mesh)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
+            axes.axis('square')
+            axes.set_title("theta_sph resampling values")
+            axes.set_xlabel("r_pol")
+            axes.set_ylabel("phi_pol")
+            plt.colorbar(mesh)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
+            axes.axis('square')
+            axes.set_title("r_sph resampling values")
+            axes.set_xlabel("r_pol")
+            axes.set_ylabel("phi_pol")
+            plt.colorbar(mesh)
 
         grid_range = LinearRange.grid_sample_range()
         i_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.r)
@@ -242,7 +254,7 @@ class SinogramClassic(Sinogram):
 
         if smooth:
             ret = self.grid_sample_smoothed(fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping,
-                                            k_mapping=k_mapping, sigma=.5)
+                                            k_mapping=k_mapping, sigma=.1)
         else:
             grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
                                 k_mapping(fixed_image_grid_sph.phi)), dim=-1)
