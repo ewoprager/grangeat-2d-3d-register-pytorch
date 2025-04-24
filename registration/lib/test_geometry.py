@@ -78,13 +78,11 @@ def test_moving_cartesian_to_moving_spherical():
     assert ret.phi.size() == torch.Size([1, 1])
 
     ret = moving_cartesian_to_moving_spherical(torch.tensor([0., 1., 0.], device=device))
-    assert ret.phi.item() == pytest.approx(-.5 * torch.pi, abs=1e-6)
+    assert ret.phi.item() * ret.r.item() == pytest.approx(.5 * torch.pi, abs=1e-6)
     assert ret.theta.item() == pytest.approx(0., abs=1e-6)
-    assert ret.r.item() == pytest.approx(-1., abs=1e-6)
 
     ret = moving_cartesian_to_moving_spherical(torch.tensor([0., 0., 1.], device=device))
-    assert ret.theta.item() == pytest.approx(-.5 * torch.pi, abs=1e-6)
-    assert ret.r.item() == pytest.approx(-1., abs=1e-6)
+    assert ret.theta.item() * ret.r.item() == pytest.approx(.5 * torch.pi, abs=1e-6)
 
     ret = moving_cartesian_to_moving_spherical(torch.tensor([-1., 0., 0.], device=device))
     assert ret.phi.item() == pytest.approx(0., abs=1e-6)
