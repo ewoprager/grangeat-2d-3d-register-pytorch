@@ -2,8 +2,6 @@
 
 #include <array>
 
-#include "Common.h"
-
 namespace ExtensionTest {
 template <typename T, std::size_t N> class Vec : public std::array<T, N> {
 public:

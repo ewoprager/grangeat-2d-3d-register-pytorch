@@ -26,14 +26,10 @@ __global__ void Kernel_ResampleSinogram3D_CUDA(Texture3DCUDA inputTexture,
 
 	Vec<double, 3> rThetaPhi{};
 	rThetaPhi.Z() = atan2(posCartesian.Y(), posCartesian.X());
-	const bool over = rThetaPhi.Z() > .5 * M_PI;
-	const bool under = rThetaPhi.Z() < -.5 * M_PI;
-	if (over) rThetaPhi.Z() -= M_PI;
-	else if (under) rThetaPhi.Z() += M_PI;
 	const float magXY = posCartesian.X() * posCartesian.X() + posCartesian.Y() * posCartesian.Y();
 	rThetaPhi.Y() = atan2(posCartesian.Z(), sqrt(magXY));
-	rThetaPhi.X() = static_cast<float>(2 * static_cast<int>(!(over || under)) - 1) * sqrt(
-		                magXY + posCartesian.Z() * posCartesian.Z());
+	rThetaPhi.X() = sqrt(magXY + posCartesian.Z() * posCartesian.Z());
+	rThetaPhi = UnflipSphericalCoordinate(rThetaPhi);
 
 	resultPtr[threadIndex] = inputTexture.Sample(mappingRThetaPhiToTexCoord(rThetaPhi));
 

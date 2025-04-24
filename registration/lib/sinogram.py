@@ -5,6 +5,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import pyvista as pv
+
 import Extension
 
 from registration.lib.structs import *
@@ -46,32 +48,6 @@ class SinogramClassic(Sinogram):
 
     def get_spacing(self, *, device=torch.device('cpu')) -> torch.Tensor:
         return self.sinogram_range.get_spacing(self.data.size(), device=device)
-
-    @classmethod
-    def unflip_coordinates(cls, grid: Sinogram3dGrid) -> Sinogram3dGrid:
-        assert grid.size_consistent()
-        assert grid.device_consistent()
-
-        theta_div = torch.div(grid.theta + .5 * torch.pi, torch.pi, rounding_mode="floor")
-        theta_flip = torch.fmod(theta_div.to(dtype=torch.int32).abs(), 2).to(dtype=torch.bool)
-        phi_div = torch.div(grid.phi + .5 * torch.pi, torch.pi, rounding_mode="floor")
-        phi_flip = torch.fmod(phi_div.to(dtype=torch.int32).abs(), 2).to(dtype=torch.bool)
-
-        ret_theta = grid.theta - torch.pi * theta_div
-
-        del theta_div
-
-        ret_phi = grid.phi - torch.pi * phi_div
-
-        del phi_div
-
-        ret_theta[torch.logical_and(phi_flip, torch.logical_not(theta_flip))] *= -1.
-        ret_r = grid.r.clone()
-        ret_r[torch.logical_xor(theta_flip, phi_flip)] *= -1.
-
-        del theta_flip, phi_flip
-
-        return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
     def grid_sample_smoothed(self, grid: Sinogram3dGrid, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
                              k_mapping: LinearMapping, sigma: float, offset_count: int = 10):
@@ -148,12 +124,10 @@ class SinogramClassic(Sinogram):
         del rotated_vectors
 
         new_grid = Sinogram3dGrid(new_phis, new_thetas, grid.r.unsqueeze(-1).expand(
-            [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone())  # need to
+            [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone()).unflip()  # need to
         # clone the r grid otherwise it's just a tensor view, not a tensor in its own right
 
         del new_phis, new_thetas
-
-        new_grid = SinogramClassic.unflip_coordinates(new_grid)
 
         # Sampling at all the perturbed orientations:
         grid = torch.stack((i_mapping(new_grid.r), j_mapping(new_grid.theta), k_mapping(new_grid.phi)), dim=-1)
@@ -209,6 +183,12 @@ class SinogramClassic(Sinogram):
 
         fixed_image_grid_cartesian = geometry.fixed_polar_to_moving_cartesian(fixed_image_grid, ph_matrix=ph_matrix)
 
+        if plot:
+            pl = pv.Plotter()
+            cartesian_points = fixed_image_grid_cartesian.flatten(end_dim=-2)
+            pl.add_points(cartesian_points.cpu().numpy())  # , scalars=scalars.flatten().cpu().numpy())
+            pl.show()
+
         fixed_image_grid_sph = geometry.moving_cartesian_to_moving_spherical(fixed_image_grid_cartesian)
 
         ## sign changes - this implementation relies on the convenient coordinate system
@@ -220,30 +200,28 @@ class SinogramClassic(Sinogram):
         ##
 
         if plot:
-            if True:
-                myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.r)
-            else:
-                _, axes = plt.subplots()
-                mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
-                axes.axis('square')
-                axes.set_title("phi_sph resampling values")
-                axes.set_xlabel("r_pol")
-                axes.set_ylabel("phi_pol")
-                plt.colorbar(mesh)
-                _, axes = plt.subplots()
-                mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
-                axes.axis('square')
-                axes.set_title("theta_sph resampling values")
-                axes.set_xlabel("r_pol")
-                axes.set_ylabel("phi_pol")
-                plt.colorbar(mesh)
-                _, axes = plt.subplots()
-                mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
-                axes.axis('square')
-                axes.set_title("r_sph resampling values")
-                axes.set_xlabel("r_pol")
-                axes.set_ylabel("phi_pol")
-                plt.colorbar(mesh)
+            myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
+            axes.axis('square')
+            axes.set_title("phi_sph resampling values")
+            axes.set_xlabel("r_pol")
+            axes.set_ylabel("phi_pol")
+            plt.colorbar(mesh)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
+            axes.axis('square')
+            axes.set_title("theta_sph resampling values")
+            axes.set_xlabel("r_pol")
+            axes.set_ylabel("phi_pol")
+            plt.colorbar(mesh)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
+            axes.axis('square')
+            axes.set_title("r_sph resampling values")
+            axes.set_xlabel("r_pol")
+            axes.set_ylabel("phi_pol")
+            plt.colorbar(mesh)
 
         grid_range = LinearRange.grid_sample_range()
         i_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.r)

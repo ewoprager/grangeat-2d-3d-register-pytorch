@@ -21,15 +21,10 @@ def moving_cartesian_to_moving_spherical(positions_cartesian: torch.Tensor) -> S
     ys = positions_cartesian[..., 1]
     zs = positions_cartesian[..., 2]
     phis = torch.atan2(ys, xs)
-    phis_over = phis > .5 * torch.pi
-    phis_under = phis < -.5 * torch.pi
-    phis[phis_over] -= torch.pi
-    phis[phis_under] += torch.pi
     r2s_x_y = xs.square() + ys.square()
     thetas = torch.atan2(zs, r2s_x_y.sqrt())
     rs = (r2s_x_y + zs.square()).sqrt()
-    rs[torch.logical_or(phis_over, phis_under)] *= -1.
-    return Sinogram3dGrid(phis, thetas, rs)
+    return Sinogram3dGrid(phis, thetas, rs).unflip()
 
 
 def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,

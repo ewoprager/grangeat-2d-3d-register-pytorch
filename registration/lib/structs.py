@@ -181,6 +181,31 @@ class Sinogram3dGrid(NamedTuple):
     def size_consistent(self) -> bool:
         return self.phi.size() == self.theta.size() and self.theta.size() == self.r.size()
 
+    def unflip(self) -> 'Sinogram3dGrid':
+        assert self.size_consistent()
+        assert self.device_consistent()
+
+        theta_div = torch.div(self.theta + .5 * torch.pi, torch.pi, rounding_mode="floor")
+        theta_flip = torch.fmod(theta_div.to(dtype=torch.int32).abs(), 2).to(dtype=torch.bool)
+        phi_div = torch.div(self.phi + .5 * torch.pi, torch.pi, rounding_mode="floor")
+        phi_flip = torch.fmod(phi_div.to(dtype=torch.int32).abs(), 2).to(dtype=torch.bool)
+
+        ret_theta = self.theta - torch.pi * theta_div
+
+        del theta_div
+
+        ret_phi = self.phi - torch.pi * phi_div
+
+        del phi_div
+
+        ret_theta[torch.logical_and(phi_flip, torch.logical_not(theta_flip))] *= -1.
+        ret_r = self.r.clone()
+        ret_r[torch.logical_xor(theta_flip, phi_flip)] *= -1.
+
+        del theta_flip, phi_flip
+
+        return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
+
     @classmethod
     def linear_from_range(cls, sinogram_range: Sinogram3dRange, counts: int | Tuple[int, int, int] | torch.Size, *,
                           device=torch.device("cpu")) -> 'Sinogram3dGrid':
