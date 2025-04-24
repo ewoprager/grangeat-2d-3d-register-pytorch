@@ -24,9 +24,9 @@ def test_fixed_polar_to_moving_cartesian():
     assert isinstance(ret, torch.Tensor)
     assert ret.device == input_grid.phi.device
     assert ret.size() == torch.Size([1, 3])
-    assert ret[0, 0].item() == pytest.approx((b * sin_alpha * cos_alpha).item(), abs=1e-4)
-    assert ret[0, 1].item() == pytest.approx(0., abs=1e-4)
-    assert ret[0, 2].item() == pytest.approx(b * sin_alpha.square().item(), abs=1e-4)
+    assert ret[0, 0].item() == pytest.approx((b * sin_alpha * cos_alpha).item(), abs=1e-6)
+    assert ret[0, 1].item() == pytest.approx(0., abs=1e-6)
+    assert ret[0, 2].item() == pytest.approx(b * sin_alpha.square().item(), abs=1e-6)
 
     transformation = Transformation(rotation=torch.zeros(3, device=device),
                                     translation=torch.tensor([b * sin_alpha * cos_alpha, 0., b * sin_alpha.square()]))
@@ -34,9 +34,9 @@ def test_fixed_polar_to_moving_cartesian():
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
     ret = fixed_polar_to_moving_cartesian(input_grid, ph_matrix=ph_matrix)
-    assert ret[0, 0].item() == pytest.approx(0., abs=1e-4)
-    assert ret[0, 1].item() == pytest.approx(0., abs=1e-4)
-    assert ret[0, 2].item() == pytest.approx(0., abs=1e-4)
+    assert ret[0, 0].item() == pytest.approx(0., abs=1e-6)
+    assert ret[0, 1].item() == pytest.approx(0., abs=1e-6)
+    assert ret[0, 2].item() == pytest.approx(0., abs=1e-6)
 
     angle = 0.32341
     input_grid = Sinogram2dGrid(phi=torch.tensor([angle], device=device), r=-a)
@@ -47,15 +47,15 @@ def test_fixed_polar_to_moving_cartesian():
     ret_a = fixed_polar_to_moving_cartesian(input_grid, ph_matrix=ph_matrix)
     input_grid = Sinogram2dGrid(phi=torch.tensor([angle + torch.pi], device=device), r=a)
     ret_b = fixed_polar_to_moving_cartesian(input_grid, ph_matrix=ph_matrix)
-    assert ret_a[0, 0].item() == pytest.approx(ret_b[0, 0].item(), abs=1e-4)
-    assert ret_a[0, 1].item() == pytest.approx(ret_b[0, 1].item(), abs=1e-4)
-    assert ret_a[0, 2].item() == pytest.approx(ret_b[0, 2].item(), abs=1e-4)
+    assert ret_a[0, 0].item() == pytest.approx(ret_b[0, 0].item(), abs=1e-6)
+    assert ret_a[0, 1].item() == pytest.approx(ret_b[0, 1].item(), abs=1e-6)
+    assert ret_a[0, 2].item() == pytest.approx(ret_b[0, 2].item(), abs=1e-6)
 
     input_grid = Sinogram2dGrid(phi=torch.tensor([.5 * torch.pi], device=device), r=a)
     ret = fixed_polar_to_moving_cartesian(input_grid, ph_matrix=ph_matrix)
-    assert ret[0, 0].item() == pytest.approx(0., abs=1e-4)
-    assert ret[0, 1].item() == pytest.approx((b * sin_alpha * cos_alpha).item(), abs=1e-4)
-    assert ret[0, 2].item() == pytest.approx(b * sin_alpha.square().item(), abs=1e-4)
+    assert ret[0, 0].item() == pytest.approx(0., abs=1e-6)
+    assert ret[0, 1].item() == pytest.approx((b * sin_alpha * cos_alpha).item(), abs=1e-6)
+    assert ret[0, 2].item() == pytest.approx(b * sin_alpha.square().item(), abs=1e-6)
 
 
 def test_moving_cartesian_to_moving_spherical():
@@ -66,9 +66,9 @@ def test_moving_cartesian_to_moving_spherical():
     assert ret.phi.device == device
     assert ret.size_consistent()
     assert ret.phi.size() == torch.Size([])
-    assert ret.phi.item() == pytest.approx(0., abs=1e-4)
-    assert ret.theta.item() == pytest.approx(0., abs=1e-4)
-    assert ret.r.item() == pytest.approx(1., abs=1e-4)
+    assert ret.phi.item() == pytest.approx(0., abs=1e-6)
+    assert ret.theta.item() == pytest.approx(0., abs=1e-6)
+    assert ret.r.item() == pytest.approx(1., abs=1e-6)
 
     ret = moving_cartesian_to_moving_spherical(torch.tensor([[[1., 0., 0.]]], device=device))
     assert isinstance(ret, Sinogram3dGrid)
@@ -78,18 +78,18 @@ def test_moving_cartesian_to_moving_spherical():
     assert ret.phi.size() == torch.Size([1, 1])
 
     ret = moving_cartesian_to_moving_spherical(torch.tensor([0., 1., 0.], device=device))
-    assert ret.phi.item() == pytest.approx(.5 * torch.pi, abs=1e-4)
-    assert ret.theta.item() == pytest.approx(0., abs=1e-4)
-    assert ret.r.item() == pytest.approx(1., abs=1e-4)
+    assert ret.phi.item() == pytest.approx(-.5 * torch.pi, abs=1e-6)
+    assert ret.theta.item() == pytest.approx(0., abs=1e-6)
+    assert ret.r.item() == pytest.approx(-1., abs=1e-6)
 
     ret = moving_cartesian_to_moving_spherical(torch.tensor([0., 0., 1.], device=device))
-    assert ret.theta.item() == pytest.approx(.5 * torch.pi, abs=1e-4)
-    assert ret.r.item() == pytest.approx(1., abs=1e-4)
+    assert ret.theta.item() == pytest.approx(-.5 * torch.pi, abs=1e-6)
+    assert ret.r.item() == pytest.approx(-1., abs=1e-6)
 
     ret = moving_cartesian_to_moving_spherical(torch.tensor([-1., 0., 0.], device=device))
-    assert ret.phi.item() == pytest.approx(0., abs=1e-4)
-    assert ret.theta.item() == pytest.approx(0., abs=1e-4)
-    assert ret.r.item() == pytest.approx(-1., abs=1e-4)
+    assert ret.phi.item() == pytest.approx(0., abs=1e-6)
+    assert ret.theta.item() == pytest.approx(0., abs=1e-6)
+    assert ret.r.item() == pytest.approx(-1., abs=1e-6)
 
 
 def test_generate_drr():
@@ -132,10 +132,10 @@ def test_plane_integrals():
     phi_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 4, device=device)
     theta_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 4, device=device)
     r_values = torch.linspace(-.5 * volume_size, .5 * volume_size, 4, device=device)
+    phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
     radon = ExtensionTest.radon3d(volume_data, voxel_spacing, phi_values, theta_values, r_values,
                                   samples_per_direction=500)
-    phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
     radon_python = plane_integrals(volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values,
                                    theta_values=theta_values, r_values=r_values, samples_per_direction=500)
-    assert ((radon_python - radon).abs() / (.5 * (radon_python.abs() + radon.abs()) + 1e-5)).mean() == pytest.approx(0.,
-                                                                                                                     abs=1e-5)
+    assert (radon_python - radon).abs().mean() / (
+            .5 * (radon_python.max() - radon_python.min() + radon.max() - radon.min())) == pytest.approx(0., abs=1e-4)

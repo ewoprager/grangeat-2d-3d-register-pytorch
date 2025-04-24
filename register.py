@@ -247,6 +247,11 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             logger.info(res)
             converged_params = torch.from_numpy(res.x)
 
+        objective_function.evaluate(fixed_image, sinogram3d,
+                                    transformation=Transformation(converged_params[0:3], converged_params[3:6]).to(
+                                        device=device), scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
+                                    plot=colour_limits)
+
         final_image = geometry.generate_drr(vol_data, transformation=Transformation(
             torch.tensor(converged_params[0:3], device=device), torch.tensor(converged_params[3:6], device=device)),
                                             voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
