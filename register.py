@@ -136,7 +136,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     #                         torch.zeros_like(fixed_image, device='cpu')), dim=-1)
     # plt.imshow(overlaid)
 
-    if True:
+    # Landscape of similarity metric over two transformation parameters
+    if False:
         n = 80
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -159,6 +160,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         plt.colorbar(mesh)
         plt.savefig("data/temp/landscape_no_sample_smoothing.pgf")
 
+        # Landscape with sample smoothing
         if False:
             nznccs = torch.zeros((n, n))
             for i in tqdm(range(nznccs.numel())):
@@ -177,6 +179,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             plt.colorbar(mesh)
             plt.savefig("data/temp/landscape_with_sample_smoothing.pgf")
 
+    # Scatter of similarity vs. distance in SE3
     if True:
         n = 1000
         nznccs = torch.zeros(n)
@@ -193,7 +196,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         axes.set_ylabel("-ZNCC")
         axes.set_title("Relationship between similarity measure and distance in SE3")
 
-    if True:
+    # Registration
+    if False:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -objective_function.evaluate(fixed_image, sinogram3d,
                                                 transformation=Transformation(params[0:3], params[3:6]).to(
@@ -207,7 +211,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         start_params: torch.Tensor = transformation_start.vectorised()
 
         converged_params: torch.Tensor | None = None
-        if False:
+        if False:  # Using a PyTorch optimiser
             n = 1000
             iterated_params = start_params.clone().to(device=sinogram3d.device)
             iterated_params.requires_grad_(True)
@@ -230,7 +234,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             logger.info("Done. Took {:.3f}s.".format(toc - tic))
             logger.info("Final value = {:.3f} at params = {}".format(value_history[-1], param_history[-1]))
             converged_params = param_history[-1]
-        else:
+        else:  # Using a scipy optimiser
             def objective_scipy(params: np.ndarray) -> float:
                 params = torch.tensor(copy.deepcopy(params))
                 param_history.append(params)
@@ -239,7 +243,9 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                 return value.item()
 
             tic = time.time()
-            res = scipy.optimize.minimize(objective_scipy, start_params.numpy(), method='Nelder-Mead')
+            # res = scipy.optimize.minimize(objective_scipy, start_params.numpy(), method='Powell')
+            res = scipy.optimize.basinhopping(objective_scipy, start_params.numpy(), T=1.0,
+                                              minimizer_kwargs={"method": 'Nelder-Mead'})
             toc = time.time()
             logger.info("Done. Took {:.3f}s.".format(toc - tic))
             logger.info(res)

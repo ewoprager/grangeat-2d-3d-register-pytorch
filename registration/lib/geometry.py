@@ -53,7 +53,7 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     lambda_end: torch.Tensor = lambda_start + volume_diag_length
     step_size: float = (lambda_end - lambda_start).item() / float(samples_per_ray)
 
-    h_matrix_inv = transformation.inverse().get_h(device=device)
+    h_matrix_inv = transformation.inverse().get_h(device=device).to(dtype=torch.float32)
     deltas = directions * step_size
     deltas_homogeneous = torch.cat((deltas, torch.zeros_like(deltas[..., 0], device=device).unsqueeze(-1)), dim=-1)
     deltas = torch.einsum('ji,...i->...j', h_matrix_inv, deltas_homogeneous)[..., 0:3]

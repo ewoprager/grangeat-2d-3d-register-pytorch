@@ -47,7 +47,7 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
     device = sinogram3d.device()
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device).to(dtype=torch.float32))
 
     if smooth is not None and isinstance(sinogram3d, SinogramClassic):
         resampled = sinogram3d.resample_python(ph_matrix=ph_matrix, fixed_image_grid=fixed_image_grid, smooth=smooth,

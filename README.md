@@ -82,7 +82,9 @@ the resampled Radon-transformed volume, with the ground truth transformation at 
 ![landscape.png](figures/landscape.png)
 
 Starting from a different random transformation, optimising the ZNCC between these images over the transformation using
-the Nelder-Mead algorithm:
+the basin-hopping algorithm:
+
+(specifically `scipy.optimize.basinhopping` with `T=1.0`, `minimizer_kwargs={"method": 'Nelder-Mead'}`)
 
 ![rotation_params_against_iteration.png](figures/rotation_params_against_iteration.png)
 ![translation_params_against_iteration.png](figures/translation_params_against_iteration.png)
@@ -96,17 +98,17 @@ DRR generated at the converged transformation:
 
 ![converged_drr.png](figures/converged_drr.png)
 
-Optimisation completed in 2.046 seconds, performing a total of 708 function evaluations.
+Optimisation completed in 125.508 seconds, performing a total of 45,472 function evaluations.
 
 Here is a plot of the -ZNCC similarity between the fixed image and the resampled moving image against the distance in
-SE3
-between the transformation and the ground truth transformation for 1000 random transformations:
+SE3 between the transformation and the ground truth transformation for 1000 random transformations:
 
 ![loss_vs_distance.png](figures/loss_vs_distance.png)
 
 [//]: # (# Resampling)
 
 [//]: # ()
+
 [//]: # (The 3D sinogram image is stored as a 3D grid of values, where the dimensions correspond to different values of phi,)
 
 [//]: # (theta and r. While this is very efficient for resampling, having the same number of value of phi for every value of)
@@ -114,11 +116,13 @@ between the transformation and the ground truth transformation for 1000 random t
 [//]: # (theta results in memory inefficiency and an extremely high densities of values near theta = +/- pi/2.)
 
 [//]: # ()
+
 [//]: # (Smoothing the sampling consistently over S^2 to eliminate the second of these effects demonstrates that the line of)
 
 [//]: # (discontinuity visible in the resampling of the sinogram is due to this effect:)
 
 [//]: # ()
+
 [//]: # (![dds_R2_gtilde_ground_truth_no_sample_smoothing.png]&#40;figures/dds_R2_gtilde_ground_truth_no_sample_smoothing.png&#41;)
 
 [//]: # (![ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png]&#40;figures/ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png&#41;)
@@ -126,9 +130,11 @@ between the transformation and the ground truth transformation for 1000 random t
 [//]: # (![ddr_R3_mu_resampled_ground_truth_sample_smoothing.png]&#40;figures/ddr_R3_mu_resampled_ground_truth_sample_smoothing.png&#41;)
 
 [//]: # ()
+
 [//]: # (Although there is no significant difference manifest in the resulting optimisation landscape:)
 
 [//]: # ()
+
 [//]: # (![landscape_no_sample_smoothing.png]&#40;figures/landscape_no_sample_smoothing.png&#41;)
 
 [//]: # (![landscape_sample_smoothing.png]&#40;figures/landscape_sample_smoothing.png&#41;)
