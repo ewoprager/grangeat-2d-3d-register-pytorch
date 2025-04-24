@@ -1,4 +1,4 @@
-# CUDA-accelerated PyTorch extension for 2D/3D radiographic image registration using Grangeat's relation
+# A PyTorch extension for fast 2D/3D radiographic image registration using Grangeat's relation
 
 Based on this paper:
 
@@ -10,7 +10,9 @@ developed as part of a PhD.
 
 ## Setup
 
-CUDA is required. NVCC version information:
+The (slower) CPU implementations should work on all platforms.
+
+CUDA is required for the more expensive functionality to run quickly. NVCC version information:
 
 ```bash
 Cuda compilation tools, release 12.6, V12.6.85
@@ -86,11 +88,15 @@ the Nelder-Mead algorithm:
 ![translation_params_against_iteration.png](figures/translation_params_against_iteration.png)
 ![loss_against_iteration.png](figures/loss_against_iteration.png)
 
+The fixed image (= 1/cos^2 alpha * d/ds R2\[cos gamma * g\]) at the converged transformation:
+
+![ddr_R3_mu_resampled_converged.png](figures/ddr_R3_mu_resampled_converged.png)
+
 DRR generated at the converged transformation:
 
 ![converged_drr.png](figures/converged_drr.png)
 
-Optimisation completed in 1.429 seconds, performing a total of 564 function evaluations.
+Optimisation completed in 2.046 seconds, performing a total of 708 function evaluations.
 
 Here is a plot of the -ZNCC similarity between the fixed image and the resampled moving image against the distance in
 SE3
@@ -98,23 +104,34 @@ between the transformation and the ground truth transformation for 1000 random t
 
 ![loss_vs_distance.png](figures/loss_vs_distance.png)
 
-# Resampling
+[//]: # (# Resampling)
 
-The 3D sinogram image is stored as a 3D grid of values, where the dimensions correspond to different values of phi,
-theta and r. While this is very efficient for resampling, having the same number of value of phi for every value of
-theta results in memory inefficiency and an extremely high densities of values near theta = +/- pi/2.
+[//]: # ()
+[//]: # (The 3D sinogram image is stored as a 3D grid of values, where the dimensions correspond to different values of phi,)
 
-Smoothing the sampling consistently over S^2 to eliminate the second of these effects demonstrates that the line of
-discontinuity visible in the resampling of the sinogram is due to this effect:
+[//]: # (theta and r. While this is very efficient for resampling, having the same number of value of phi for every value of)
 
-![dds_R2_gtilde_ground_truth_no_sample_smoothing.png](figures/dds_R2_gtilde_ground_truth_no_sample_smoothing.png)
-![ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png](figures/ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png)
-![ddr_R3_mu_resampled_ground_truth_sample_smoothing.png](figures/ddr_R3_mu_resampled_ground_truth_sample_smoothing.png)
+[//]: # (theta results in memory inefficiency and an extremely high densities of values near theta = +/- pi/2.)
 
-Although there is no significant difference manifest in the resulting optimisation landscape:
+[//]: # ()
+[//]: # (Smoothing the sampling consistently over S^2 to eliminate the second of these effects demonstrates that the line of)
 
-![landscape_no_sample_smoothing.png](figures/landscape_no_sample_smoothing.png)
-![landscape_sample_smoothing.png](figures/landscape_sample_smoothing.png)
+[//]: # (discontinuity visible in the resampling of the sinogram is due to this effect:)
+
+[//]: # ()
+[//]: # (![dds_R2_gtilde_ground_truth_no_sample_smoothing.png]&#40;figures/dds_R2_gtilde_ground_truth_no_sample_smoothing.png&#41;)
+
+[//]: # (![ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png]&#40;figures/ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png&#41;)
+
+[//]: # (![ddr_R3_mu_resampled_ground_truth_sample_smoothing.png]&#40;figures/ddr_R3_mu_resampled_ground_truth_sample_smoothing.png&#41;)
+
+[//]: # ()
+[//]: # (Although there is no significant difference manifest in the resulting optimisation landscape:)
+
+[//]: # ()
+[//]: # (![landscape_no_sample_smoothing.png]&#40;figures/landscape_no_sample_smoothing.png&#41;)
+
+[//]: # (![landscape_sample_smoothing.png]&#40;figures/landscape_sample_smoothing.png&#41;)
 
 ## IDE integration
 

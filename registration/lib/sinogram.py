@@ -188,16 +188,11 @@ class SinogramClassic(Sinogram):
             cartesian_points = fixed_image_grid_cartesian.flatten(end_dim=-2)
             pl.add_points(cartesian_points.cpu().numpy())  # , scalars=scalars.flatten().cpu().numpy())
             pl.show()
+            del cartesian_points
 
         fixed_image_grid_sph = geometry.moving_cartesian_to_moving_spherical(fixed_image_grid_cartesian)
 
-        ## sign changes - this implementation relies on the convenient coordinate system
-        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
-        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
-        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
-            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
-            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
-        ##
+        del fixed_image_grid_cartesian
 
         if plot:
             myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
@@ -236,7 +231,20 @@ class SinogramClassic(Sinogram):
                                 k_mapping(fixed_image_grid_sph.phi)), dim=-1)
             ret = Extension.grid_sample3d(self.data, grid, "wrap")
 
+        del fixed_image_grid_sph
+
+        ## sign changes - this implementation relies on the convenient coordinate system
+        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
+        ##
+
         ret[need_sign_change] *= -1.
+
+        del need_sign_change
+
         return ret
 
 

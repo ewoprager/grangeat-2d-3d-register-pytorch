@@ -88,6 +88,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                         save_to_cache=save_to_cache)
 
     detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth = drr_spec
+    del drr_spec
 
     logger.info("Plotting DRR and fixed image...")
     # Plotting DRR
@@ -135,7 +136,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     #                         torch.zeros_like(fixed_image, device='cpu')), dim=-1)
     # plt.imshow(overlaid)
 
-    if False:
+    if True:
         n = 80
         angle0s = torch.linspace(transformation_ground_truth.rotation[0] - torch.pi,
                                  transformation_ground_truth.rotation[0] + torch.pi, n)
@@ -148,8 +149,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             nznccs[i1, i0] = -objective_function.evaluate(fixed_image, sinogram3d, transformation=Transformation(
                 torch.tensor([angle0s[i0], angle1s[i1], transformation_ground_truth.rotation[2]], device=device),
                 transformation_ground_truth.translation), scene_geometry=scene_geometry,
-                                                          fixed_image_grid=sinogram2d_grid,
-                                                          sinogram3d_range=sinogram3d_range)[0]
+                                                          fixed_image_grid=sinogram2d_grid)[0]
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(nznccs)
         axes.set_title("landscape over two angle components")
@@ -159,7 +159,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         plt.colorbar(mesh)
         plt.savefig("data/temp/landscape_no_sample_smoothing.pgf")
 
-        if True:
+        if False:
             nznccs = torch.zeros((n, n))
             for i in tqdm(range(nznccs.numel())):
                 i0 = i % n
@@ -167,8 +167,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                 nznccs[i1, i0] = -objective_function.evaluate(fixed_image, sinogram3d, transformation=Transformation(
                     torch.tensor([angle0s[i0], angle1s[i1], transformation_ground_truth.rotation[2]], device=device),
                     transformation_ground_truth.translation), scene_geometry=scene_geometry,
-                                                              fixed_image_grid=sinogram2d_grid,
-                                                              sinogram3d_range=sinogram3d_range, smooth=True)[0]
+                                                              fixed_image_grid=sinogram2d_grid, smooth=True)[0]
             _, axes = plt.subplots()
             mesh = axes.pcolormesh(nznccs)
             axes.set_title("landscape over two angle components, with sample smoothing")
@@ -178,7 +177,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             plt.colorbar(mesh)
             plt.savefig("data/temp/landscape_with_sample_smoothing.pgf")
 
-    if False:
+    if True:
         n = 1000
         nznccs = torch.zeros(n)
         distances = torch.zeros(n)
@@ -186,8 +185,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             transformation = Transformation.random(device=device)
             distances[i] = transformation_ground_truth.distance(transformation)
             nznccs[i] = -objective_function.evaluate(fixed_image, sinogram3d, transformation=transformation,
-                                                     scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
-                                                     sinogram3d_range=sinogram3d_range)[0]
+                                                     scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid)[0]
 
         _, axes = plt.subplots()
         axes.scatter(distances, nznccs)
@@ -264,6 +262,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         axes.set_xlabel("x")
         axes.set_ylabel("y")
         plt.colorbar(mesh)
+
+        del final_image
 
         param_history = torch.stack(param_history, dim=0)
         value_history = torch.tensor(value_history)
