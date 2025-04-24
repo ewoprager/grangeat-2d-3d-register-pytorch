@@ -59,10 +59,9 @@ __host__ at::Tensor NormalisedCrossCorrelation_CUDA(const at::Tensor &a, const a
 	const at::Tensor bContiguous = b.contiguous();
 	const float *bPtr = bContiguous.data_ptr<float>();
 
-	// int minGridSize, blockSize;
-	// cudaOccupancyMaxPotentialBlockSizeVariableSMem(&minGridSize, &blockSize, &Kernel_NormalisedCrossCorrelation_CUDA,
-	//                                                &blockSizeToDynamicSMemSize, 0);
-	const int blockSize = 512;
+	int minGridSize, blockSize;
+	cudaOccupancyMaxPotentialBlockSizeVariableSMem(&minGridSize, &blockSize, &Kernel_NormalisedCrossCorrelation_CUDA,
+	                                               &blockSizeToDynamicSMemSize, 0);
 
 	const size_t bufferSize = blockSizeToDynamicSMemSize(blockSize);
 	const int gridSize = (static_cast<int>(a.numel()) + blockSize - 1) / blockSize;

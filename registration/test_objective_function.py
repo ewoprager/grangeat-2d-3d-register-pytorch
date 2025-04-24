@@ -10,8 +10,8 @@ def test_zncc():
 
     # a = torch.tensor([1.56, 2.35, 3.361])
     # b = torch.tensor([1.7, 2.66, 3.11])
-    a = torch.rand((100, 100))
-    b = torch.rand((100, 100))
+    a = torch.rand((100, 100), dtype=torch.float32)
+    b = torch.rand((100, 100), dtype=torch.float32)
     vanilla_cpu = objective_function.zncc(a, b)
     cpu = Extension.normalised_cross_correlation(a, b)
     if cuda_available:
@@ -33,7 +33,7 @@ def test_zncc():
         assert vanilla_cuda.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
         assert cuda.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
 
-    b = torch.zeros_like(a)
+    b = torch.ones_like(a)
     vanilla_cpu = objective_function.zncc(a, b)
     cpu = Extension.normalised_cross_correlation(a, b)
     if cuda_available:
