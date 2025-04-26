@@ -1,11 +1,25 @@
 #pragma once
 
 #include "Common.h"
-#include "Vec.h"
 #include "Texture.h"
+#include "Vec.h"
 
 namespace ExtensionTest {
 
+/**
+ * @brief Sample the given 3D input tensor at the positions given in grid according to the given address mode using
+ * bilinear interpolation
+ * @param input A vector of `torch.float32`s; must have 3 dimensions
+ * @param grid A vector of `torch.float32`s; can have any number of dimensions, but the last dimension must be 3 -
+ * representing 3D locations within the `input` volume between (-1, -1, -1) and (1, 1, 1)
+ * @param addressMode Either "wrap" or "zero"
+ * @return A vector of `torch.float32`s  with the same size as `grid`, minus the last dimension.
+ *
+ * # Address modes
+ * - "zero": sampling locations outside (-1, -1, -1) and (1, 1, 1) will be read as 0
+ * - "wrap": sampling locations (x, y, z) outside (-1, -1, -1) and (1, 1, 1) will be read wrapped back according to ((x
+ * + 1) mod 2 - 1, (y + 1) mod 2 - 1, (y + 1) mod 2 - 1)
+ */
 at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode);
 
 __host__ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode);
@@ -18,7 +32,7 @@ template <typename texture_t> struct GridSample3D {
 	};
 
 	__host__ static CommonData Common(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode,
-	                                  at::DeviceType device) {
+									  at::DeviceType device) {
 		// input should be a 3D tensor of floats on the chosen device
 		TORCH_CHECK(input.sizes().size() == 3)
 		TORCH_CHECK(input.dtype() == at::kFloat)
@@ -42,7 +56,7 @@ template <typename texture_t> struct GridSample3D {
 		const Vec<int64_t, 3> inputSize = Vec<int64_t, 3>::FromIntArrayRef(input.sizes()).Flipped();
 		const Vec<double, 3> inputSpacing = 2.0 / (inputSize - static_cast<int64_t>(1)).StaticCast<double>();
 		ret.inputTexture = texture_t{inputPtr, inputSize, inputSpacing, Vec<double, 3>::Full(0.0),
-		                             texture_t::AddressModeType::Full(am)};
+									 texture_t::AddressModeType::Full(am)};
 		ret.flatOutput = torch::zeros(at::IntArrayRef({grid.numel() / 3}), inputContiguous.options());
 		return ret;
 	}
