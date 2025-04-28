@@ -1,50 +1,84 @@
 #pragma once
 
 #include "Common.h"
-#include "Vec.h"
 
 namespace ExtensionTest {
 
+/**
+ * @brief Compute an approximation of the Radon transform of the given 2D image
+ * @param image A 2D tensor of `torch.float32`s; the input image to take the Radon transform of
+ * @param imageSpacing The spacing between the image columns and rows
+ * @param phiValues A tensor of `torch.float32`s of any size; the values of the polar coordinate phi at which to
+ * calculate approximations for line integrals through the given image
+ * @param rValues A tensor of `torch.float32`s of the same size as `phiValues`; the values of the polar coordinate r at
+ * which to calculate approximations for line integrals through the given image
+ * @param samplesPerLine The number of samples to take from the image for approximating each line integral
+ * @return A tensor of `torch.float32`s matching `phiValues` in size; approximations of the line integrals through the
+ * given image at the given polar coordinate locations
+ *
+ * The polar coordinates should be defined according to the convention stated in Extension/Conventions.md
+ */
 at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
-                       const at::Tensor &rValues, int64_t samplesPerLine);
-
-at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
-                          const at::Tensor &rValues, int64_t samplesPerLine);
-
-__host__ at::Tensor Radon2D_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
-                                 const at::Tensor &rValues, int64_t samplesPerLine);
-
-__host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &imageSpacing,
-                                    const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine);
-
-__host__ at::Tensor DRadon2DDR_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing,
-                                    const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine);
+					   const at::Tensor &rValues, int64_t samplesPerLine);
 
 /**
- * Cartesian coordinates:
- *	- Origin at centre of image
- *	- x is to the right
- *	- y is up
+ * @brief Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the
+ * given 2D image
+ * @param image A 2D tensor of `torch.float32`s; the input image to take the Radon transform of
+ * @param imageSpacing The spacing between the image columns and rows
+ * @param phiValues A tensor of `torch.float32`s of any size; the values of the polar coordinate phi at which to
+ * calculate approximations for line integrals through the given image
+ * @param rValues A tensor of `torch.float32`s of the same size as `phiValues`; the values of the polar coordinate r at
+ * which to calculate approximations for line integrals through the given image
+ * @param samplesPerLine The number of samples to take from the image for approximating each line integral
+ * @return A tensor of `torch.float32`s matching `phiValues` in size; the derivatives with respect to plane-origin
+ * distance of the approximations (according to the `Radon2D_...` functions) of the line integrals through the given
+ * image at the given polar coordinate locations
  *
- * Radial coordinates:
- *	- Origin at centre of image
- *	- r is distance from origin
- *	- phi is radians anticlockwise from the positive x-direction
+ * The polar coordinates should be defined according to the convention stated in Extension/Conventions.md
+ */
+at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
+						  const at::Tensor &rValues, int64_t samplesPerLine);
+
+/**
+ * An implementation of `Radon2D_CPU` that uses CUDA parallelisation. A single kernel launch is made, with each kernel
+ * calculating one line integral approximation.
+ */
+__host__ at::Tensor Radon2D_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
+								 const at::Tensor &rValues, int64_t samplesPerLine);
+
+/**
+ * An implementation of `Radon2D_CPU` that uses CUDA parallelisation. One kernel launch is made per line integral, and
+ * each line integral approximation is done by summing samples from multiple kernels in log-time.
+ */
+__host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &imageSpacing,
+									const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine);
+
+/**
+ * An implementation of `DRadon2DDR_CPU` that uses CUDA parallelisation. A single kernel launch is made, with each
+ * kernel calculating one line integral approximation.
+ */
+__host__ at::Tensor DRadon2DDR_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing,
+									const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine);
+
+/**
+ * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
  *
- * @tparam texture_t
+ * This struct is used as a namespace for code that is shared between different implementations of `Radon2D_...` and
+ * `DRadon2DDR_...` functions
  */
 template <typename texture_t> struct Radon2D {
 
 	struct CommonData {
 		texture_t inputTexture{};
-		Linear<Vec<double, 2> > mappingIndexToOffset{};
+		Linear<Vec<double, 2>> mappingIndexToOffset{};
 		double scaleFactor{};
 		at::Tensor flatOutput{};
 	};
 
 	__host__ static CommonData Common(const at::Tensor &image, const at::Tensor &imageSpacing,
-	                                  const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine,
-	                                  at::DeviceType device) {
+									  const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine,
+									  at::DeviceType device) {
 		// image should be a 2D tensor of floats on the chosen device
 		TORCH_CHECK(image.sizes().size() == 2);
 		TORCH_CHECK(image.dtype() == at::kFloat);
@@ -68,31 +102,76 @@ template <typename texture_t> struct Radon2D {
 		return ret;
 	}
 
-	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2> > GetMappingIToOffset(
-		double lineLength, int64_t samplesPerLine) {
+	/**
+	 * @param lineLength
+	 * @param samplesPerLine
+	 * @return The `Linear` mapping from integration iteration index to world sample distance, according to the given
+	 * line length and sample count
+	 *
+	 * This is used as part of the approximation of a line integral: for each sample taken to contribute to the line
+	 * integral, the returned functor maps the sample index to the (untransformed) world offset.
+	 *
+	 * The mapping is generated for 2-vectors, as it will ultimately be applied to 2-vectors.
+	 */
+	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2>> GetMappingIToOffset(double lineLength,
+																						int64_t samplesPerLine) {
 		return {Vec<double, 2>::Full(-.5f * lineLength),
-		        Vec<double, 2>::Full(lineLength / static_cast<double>(samplesPerLine - 1))};
+				Vec<double, 2>::Full(lineLength / static_cast<double>(samplesPerLine - 1))};
 	}
 
-	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2> > GetMappingIndexToTexCoord(
-		const texture_t &textureIn, double phi, double r, const Linear<Vec<double, 2> > &mappingIToOffset) {
+	/**
+	 * @param textureIn The texture object which the returned mapping will be used to access.
+	 * @param phi The phi polar coordinate of the plane this mapping should correspond to
+	 * @param r The r polar coordinate of the plane this mapping should correspond to
+	 * @param mappingIToOffset The mapping from integration iteration index to untransformed sampling offset
+	 * @return The `Linear` mapping from integration iteration index to 2D cartesian texture coordinate sampling
+	 * location, according to the given texture object and integration line (parameterised in polar coordinates)
+	 *
+	 * The polar coordinates should be defined according to the convention stated in Extension/Conventions.md
+	 */
+	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2>>
+	GetMappingIndexToTexCoord(const texture_t &textureIn, double phi, double r,
+							  const Linear<Vec<double, 2>> &mappingIToOffset) {
 		const double s = sin(phi);
 		const double c = cos(phi);
-		const Linear<Vec<double, 2> > mappingOffsetToWorld{{r * c, r * s}, {-s, c}};
+		const Linear<Vec<double, 2>> mappingOffsetToWorld{{r * c, r * s}, {-s, c}};
 		return textureIn.MappingWorldToTexCoord()(mappingOffsetToWorld(mappingIToOffset));
 	}
 
-	__host__ __device__ [[nodiscard]] static Vec<double, 2> GetDTexCoordDR(
-		const texture_t &textureIn, double phi, double r) {
+	/**
+	 * @param textureIn The texture object which is being accessed
+	 * @param phi The phi polar coordinate at which the result should be evaluated
+	 * @param r The r polar coordinate at which the result should be evaluated
+	 * @return The derivative of the 2D cartesian texture coordinate in the given texture at the given world position
+	 * defined in polar coordinates, with respect to the **unsigned** r polar coordinate
+	 *
+	 * The polar coordinates should be defined according to the convention stated in Extension/Conventions.md, however
+	 * the parameter with respect to which this is evaluating the derivative is the **unsigned** version of `r`, i.e.
+	 * the **unsigned** distance between the orign and the line.
+	 */
+	__host__ __device__ [[nodiscard]] static Vec<double, 2> GetDTexCoordDR(const texture_t &textureIn, double phi,
+																		   double r) {
 		const double sign = static_cast<double>(r > 0.) - static_cast<double>(r < 0.);
 		const double s = sin(phi);
 		const double c = cos(phi);
 		return textureIn.MappingWorldToTexCoord().gradient * sign * Vec<double, 2>{c, s};
 	}
 
+	/**
+	 * @param texture The texture object to sample
+	 * @param mappingIndexToTexCoord The mapping from integration iteration index to 2D cartesian texture coordinate
+	 * (this determines the integration line)
+	 * @param samplesPerLine The number of samples to make
+	 * @return An approximation of the line integral through the given texture, determined by the given index ->
+	 * texture coordinate mapping. `samplesPerLine` samples are taken evenly spaced along the line.
+	 *
+	 * `mappingIndexToTexCoord` can be determined using `GetMappingIndexToTexCoord` (here the line to be integrated is
+	 * defined in polar coordinates). This function is separate as it is often more efficient to precalculate the value
+	 * of `mappingIndexToTexCoord`.
+	 */
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
-	                                                               const Linear<Vec<double, 2> > &
-	                                                               mappingIndexToTexCoord, int64_t samplesPerLine) {
+																   const Linear<Vec<double, 2>> &mappingIndexToTexCoord,
+																   int64_t samplesPerLine) {
 		float ret = 0.f;
 		for (int64_t i = 0; i < samplesPerLine; ++i) {
 			const double iF = static_cast<double>(i);
@@ -101,18 +180,28 @@ template <typename texture_t> struct Radon2D {
 		return ret;
 	}
 
-	__host__ __device__ [[nodiscard]] static float DIntegrateLoopedDMappingParameter(const texture_t &texture,
-		const Linear<Vec<double, 2> > &mappingIndexToTexCoord, const Vec<double, 2> &dTexCoordDR,
-		int64_t samplesPerLine) {
+	/**
+	 * @param texture The texture object to sample
+	 * @param mappingIndexToTexCoord The mapping from integration iteration index to 2D cartesian texture coordinate
+	 * (this determines the integration line)
+	 * @param dTexCoordDMappingParameter The derivative of the sampling locations with respect to some parameter. This
+	 * is assumed to be constant along the line.
+	 * @param samplesPerLine The number of samples to make
+	 * @return The derivative of the approximation of a line integral as in `IntegrateLooped`, with respect to some
+	 * parameter (according to the value of `dTexCoordDMappingParameter`).
+	 */
+	__host__ __device__ [[nodiscard]] static float
+	DIntegrateLoopedDMappingParameter(const texture_t &texture, const Linear<Vec<double, 2>> &mappingIndexToTexCoord,
+									  const Vec<double, 2> &dTexCoordDMappingParameter, int64_t samplesPerLine) {
 		float ret = 0.f;
 		for (int64_t i = 0; i < samplesPerLine; ++i) {
 			const double iF = static_cast<double>(i);
 			const Vec<double, 2> texCoord = mappingIndexToTexCoord(Vec<double, 2>::Full(iF));
-			ret += texture.DSampleDX(texCoord) * dTexCoordDR.X() + texture.DSampleDY(texCoord) * dTexCoordDR.Y();
+			ret += texture.DSampleDX(texCoord) * dTexCoordDMappingParameter.X() +
+				   texture.DSampleDY(texCoord) * dTexCoordDMappingParameter.Y();
 		}
 		return ret;
 	}
-
 };
 
 } // namespace ExtensionTest
