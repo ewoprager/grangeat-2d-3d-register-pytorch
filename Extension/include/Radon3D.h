@@ -5,6 +5,16 @@
 
 namespace ExtensionTest {
 
+/**
+ * @brief Compute an approximation of the Radon transform of the given 3D volume
+ * @param volume The input volume to take the Radon transform of
+ * @param volumeSpacing The spacing bewteen the volume layers in each cartsian direction
+ * @param phiValues
+ * @param thetaValues
+ * @param rValues
+ * @param samplesPerDirection
+ * @return
+ */
 at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                        const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
 

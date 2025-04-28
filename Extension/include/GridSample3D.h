@@ -8,7 +8,7 @@ namespace ExtensionTest {
 
 /**
  * @brief Sample the given 3D input tensor at the positions given in grid according to the given address mode using
- * bilinear interpolation
+ * bilinear interpolation. This implementation is single-threaded.
  * @param input A vector of `torch.float32`s; must have 3 dimensions
  * @param grid A vector of `torch.float32`s; can have any number of dimensions, but the last dimension must be 3 -
  * representing 3D locations within the `input` volume between (-1, -1, -1) and (1, 1, 1)
@@ -22,8 +22,28 @@ namespace ExtensionTest {
  */
 at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode);
 
+/**
+ * @brief Sample the given 3D input tensor at the positions given in grid according to the given address mode using
+ * bilinear interpolation. This implementation uses CUDA parallelisation.
+ * @param input A vector of `torch.float32`s; must have 3 dimensions
+ * @param grid A vector of `torch.float32`s; can have any number of dimensions, but the last dimension must be 3 -
+ * representing 3D locations within the `input` volume between (-1, -1, -1) and (1, 1, 1)
+ * @param addressMode Either "wrap" or "zero"
+ * @return A vector of `torch.float32`s  with the same size as `grid`, minus the last dimension.
+ *
+ * # Address modes
+ * - "zero": sampling locations outside (-1, -1, -1) and (1, 1, 1) will be read as 0
+ * - "wrap": sampling locations (x, y, z) outside (-1, -1, -1) and (1, 1, 1) will be read wrapped back according to ((x
+ * + 1) mod 2 - 1, (y + 1) mod 2 - 1, (y + 1) mod 2 - 1)
+ */
 __host__ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode);
 
+/**
+ * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
+ *
+ * This struct is used as a namespace for code that is shared between different implementations of GridSample3D_...
+ * functions
+ */
 template <typename texture_t> struct GridSample3D {
 
 	struct CommonData {
