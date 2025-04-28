@@ -46,7 +46,7 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
 
     logger.info("DRR sinogram calculated.")
 
-    if save_to_cache:
+    if save_to_cache and ct_volume_path is not None:
         save_path = cache_directory + "/drr_spec_{}.pt".format(data.deterministic_hash(ct_volume_path))
         torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range,
                            transformation), save_path)

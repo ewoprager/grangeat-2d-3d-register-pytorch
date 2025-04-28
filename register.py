@@ -80,7 +80,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     # Load / generate a DRR through the volume
     drr_spec = None
-    if not regenerate_drr:
+    if not regenerate_drr and path is not None:
         drr_spec = data.load_cached_drr(cache_directory, path)
 
     if drr_spec is None:
@@ -180,7 +180,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             plt.savefig("data/temp/landscape_with_sample_smoothing.pgf")
 
     # Scatter of similarity vs. distance in SE3
-    if True:
+    if False:
         n = 1000
         nznccs = torch.zeros(n)
         distances = torch.zeros(n)
