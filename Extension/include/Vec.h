@@ -3,8 +3,19 @@
 #include <array>
 
 namespace ExtensionTest {
+
+/**
+ * @brief A simple vector class derived from `std::array<T, N>`, providing overrides for all useful operators.
+ * @tparam T The type of the vector's elements
+ * @tparam N The size/dimensionality of the vector; must be greater than 0
+ *
+ * - CUDA-compatible
+ * - Provides some conversions to and from PyTorch structures (at::Tensor and at::IntArrayRef)
+ * - Methods and operator overloads are constexpr, excluding PyTorch-related functionality
+ * - Can be used with very limited functionality for matrix manipulation using `Vec<Vec<T, C>, R>`
+ */
 template <typename T, std::size_t N> class Vec : public std::array<T, N> {
-public:
+  public:
 	static_assert(N > 0, "Vec size must be greater than 0");
 
 	using ElementType = T;
@@ -12,20 +23,21 @@ public:
 
 	using Base = std::array<T, N>;
 
-	__host__ __device__ /**/Vec() : Base() {
+	__host__ __device__ /**/ Vec() : Base() {
 		for (T &e : *this) {
 			e = T{};
 		}
 	}
 
-	__host__ __device__/**/Vec(Base array) : Base(
+	__host__ __device__ /**/ Vec(Base array)
+		: Base(
 #ifdef __CUDACC__
-		cuda::
+			  cuda::
 #endif
-		std::move(array)) {
+				  std::move(array)) {
 	}
 
-	__host__ __device__/**/Vec(std::initializer_list<T> l) : Base() {
+	__host__ __device__ /**/ Vec(std::initializer_list<T> l) : Base() {
 		int i = 0;
 		for (const T &e : l) {
 			(*this)[i] = e;
@@ -52,9 +64,15 @@ public:
 #ifdef __CUDACC__
 			cuda::
 #endif
-			std::move(ret);
+				std::move(ret);
 	}
 
+	/**
+	 * @brief Construct a vector from a 1D PyTorch tensor
+	 * @param t A 1D tensor of size (N,). The contained type must be consistent with the vector's type, i.e. for a
+	 * `Vec<float32_t, N>`, `t` must contain values of type `torch.float32`.
+	 * @return A `Vec` filled with the values copied from the given tensor
+	 */
 	__host__ static Vec FromTensor(const at::Tensor &t) {
 		assert(t.sizes() == at::IntArrayRef({N}));
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
@@ -62,6 +80,14 @@ public:
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @brief Construct a matrix from a 2D PyTorch tensor
+	 * @param t A 2D tensor of size (N, T::dimensionality). The contained type must be consistent with the vector's
+	 * type, i.e. for a `Vec<Vec<float32_t, C>, R>`, `t` must contain values of type `torch.float32`.
+	 * @return A `Vec` (of `Vec`s) filled with the values copied from the given tensor
+	 *
+	 * Only valid for Vec of contained type T that is a specialisation of Vec, e.g. `Vec<Vec<float, C>, R>`
+	 */
 	__host__ static Vec FromTensor2D(const at::Tensor &t) {
 		static_assert(std::is_same_v<std::remove_const_t<decltype(T::dimensionality)>, std::size_t>);
 		assert(t.sizes() == at::IntArrayRef({N, T::dimensionality}));
@@ -80,30 +106,49 @@ public:
 		return torch::from_blob(this->data(), {this->size()}, options);
 	}
 
+	/**
+	 * @return A copy of this vector, with the order of the elements reversed
+	 */
 	__host__ __device__ [[nodiscard]] constexpr Vec Flipped() const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 			return {{(*this)[N - 1 - indices]...}};
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @return The sum of the elements of the vector
+	 */
 	__host__ __device__ [[nodiscard]] constexpr T Sum() const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> T {
 			return ((*this)[indices] + ...);
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @return The 3-vector corresponding to this homogeneous 4-vector, i.e. (x, y, z) / w
+	 *
+	 * For floating-point 4-vectors only.
+	 */
 	__host__ __device__ [[nodiscard]] constexpr Vec<T, 3> DeHomogenise() const {
 		static_assert(std::is_floating_point_v<T>, "Can only de-homogenise floating-point vectors");
 		static_assert(N == 4, "Can only de-homogenise 4-length vectors");
 		return Vec<T, 3>{X(), Y(), Z()} / W();
 	}
 
+	/**
+	 * @return A copy of this vector, with each element cast to the type `newT`
+	 */
 	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N> StaticCast() const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<newT, N> {
 			return {{static_cast<newT>((*this)[indices])...}};
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @return Whether all elements of the vector are `true`
+	 *
+	 * For boolean vectors only
+	 */
 	__host__ __device__ [[nodiscard]] constexpr bool BooleanAll() const {
 		static_assert(std::is_integral_v<T>, "Only integral types are supported for boolean 'all' operation");
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> bool {
@@ -111,24 +156,29 @@ public:
 		}(std::make_index_sequence<N>{});
 	}
 
-	__host__ __device__ [[nodiscard]] constexpr bool BooleanNone() const {
-		static_assert(std::is_integral_v<T>, "Only integral types are supported for boolean 'none' operation");
+	/**
+	 * @return Whether any elements of the vector are `true`
+	 *
+	 * For boolean vectors only
+	 */
+	__host__ __device__ [[nodiscard]] constexpr bool BooleanAny() const {
+		static_assert(std::is_integral_v<T>, "Only integral types are supported for boolean 'any' operation");
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> bool {
-			return (!(*this)[indices] && ...);
+			return ((*this)[indices] || ...);
 		}(std::make_index_sequence<N>{});
 	}
 
 	// Element-wise function:
 
-	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N> Apply(
-		const std::function<newT(T)> &f) const {
+	template <typename newT>
+	__host__ __device__ [[nodiscard]] constexpr Vec<newT, N> Apply(const std::function<newT(T)> &f) const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<newT, N> {
 			return {{f((*this)[indices])...}};
 		}(std::make_index_sequence<N>{});
 	}
 
-	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N> Apply(
-		const std::function<newT(const T &)> &f) const {
+	template <typename newT>
+	__host__ __device__ [[nodiscard]] constexpr Vec<newT, N> Apply(const std::function<newT(const T &)> &f) const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<newT, N> {
 			return {{f((*this)[indices])...}};
 		}(std::make_index_sequence<N>{});
@@ -140,8 +190,8 @@ public:
 		}(std::make_index_sequence<N>{});
 	}
 
-	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N>
-	Apply(newT (*f)(const T &)) const {
+	template <typename newT>
+	__host__ __device__ [[nodiscard]] constexpr Vec<newT, N> Apply(newT (*f)(const T &)) const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<newT, N> {
 			return {{f((*this)[indices])...}};
 		}(std::make_index_sequence<N>{});
@@ -151,36 +201,28 @@ public:
 
 	__host__ __device__ Vec &operator+=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() {
-				(*this)[indices] += other[indices];
-			}(), ...);
+			([&]() { (*this)[indices] += other[indices]; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator-=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() {
-				(*this)[indices] -= other[indices];
-			}(), ...);
+			([&]() { (*this)[indices] -= other[indices]; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator*=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() {
-				(*this)[indices] *= other[indices];
-			}(), ...);
+			([&]() { (*this)[indices] *= other[indices]; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator/=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() {
-				(*this)[indices] /= other[indices];
-			}(), ...);
+			([&]() { (*this)[indices] /= other[indices]; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
@@ -226,22 +268,22 @@ public:
 
 // Element-wise addition: +
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator+(
-	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator+(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs[indices] + rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator+(
-	const Vec<T, N> &lhs, const T &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator+(const Vec<T, N> &lhs, const T &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs[indices] + rhs)...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator+(
-	const T &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator+(const T &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs + rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
@@ -249,22 +291,22 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 // Element-wise subtraction: -
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator-(
-	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator-(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs[indices] - rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator-(
-	const Vec<T, N> &lhs, const T &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator-(const Vec<T, N> &lhs, const T &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs[indices] - rhs)...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator-(
-	const T &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator-(const T &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs - rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
@@ -272,22 +314,22 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 // Element-wise multiplication: *
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator*(
-	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator*(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs[indices] * rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator*(
-	const Vec<T, N> &lhs, const T &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator*(const Vec<T, N> &lhs, const T &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs[indices] * rhs)...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator*(
-	const T &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator*(const T &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs * rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
@@ -295,22 +337,22 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 // Element-wise division: /
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator/(
-	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator/(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs[indices] / rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator/(
-	const Vec<T, N> &lhs, const T &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator/(const Vec<T, N> &lhs, const T &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs[indices] / rhs)...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator/(
-	const T &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator/(const T &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs / rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
@@ -318,8 +360,8 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 // Dot product
 
-template <typename T, std::size_t N> __host__ __device__ constexpr T
-VecDot(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr T VecDot(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> T {
 		return ((lhs[indices] * rhs[indices]) + ...);
 	}(std::make_index_sequence<N>{});
@@ -327,22 +369,22 @@ VecDot(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 
 // Element-wise greater-than: >
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>(
-	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator>(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs[indices] > rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>(
-	const Vec<T, N> &lhs, const T &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator>(const Vec<T, N> &lhs, const T &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs[indices] > rhs)...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>(
-	const T &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator>(const T &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs > rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
@@ -350,22 +392,22 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 // Element-wise greater-or-equal-than: >=
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>=(
-	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator>=(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs[indices] >= rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>=(
-	const Vec<T, N> &lhs, const T &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator>=(const Vec<T, N> &lhs, const T &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs[indices] >= rhs)...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>=(
-	const T &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator>=(const T &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs >= rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
@@ -373,22 +415,22 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 // Element-wise less-than: <
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<(
-	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator<(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs[indices] < rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<(
-	const Vec<T, N> &lhs, const T &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator<(const Vec<T, N> &lhs, const T &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs[indices] < rhs)...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<(
-	const T &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator<(const T &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs < rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
@@ -396,22 +438,22 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 // Element-wise less--or-equal-than: <=
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<=(
-	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator<=(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs[indices] <= rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<=(
-	const Vec<T, N> &lhs, const T &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator<=(const Vec<T, N> &lhs, const T &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs[indices] <= rhs)...}};
 	}(std::make_index_sequence<N>{});
 }
 
-template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<=(
-	const T &lhs, const Vec<T, N> &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<bool, N> operator<=(const T &lhs, const Vec<T, N> &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<bool, N> {
 		return {{(lhs <= rhs[indices])...}};
 	}(std::make_index_sequence<N>{});
@@ -419,8 +461,8 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 // Matrix-vector multiplication
 
-template <typename T, std::size_t R, std::size_t C> __host__ __device__ constexpr Vec<T, R> MatMul(
-	const Vec<Vec<T, R>, C> &lhs, const Vec<T, C> &rhs) {
+template <typename T, std::size_t R, std::size_t C>
+__host__ __device__ constexpr Vec<T, R> MatMul(const Vec<Vec<T, R>, C> &lhs, const Vec<T, C> &rhs) {
 	constexpr auto rowDotProduct = []<std::size_t row>(const Vec<Vec<T, R>, C> &mat, const Vec<T, C> &vec) -> T {
 		return [&]<std::size_t... cols>(std::index_sequence<cols...>) -> T {
 			return ((mat[cols][row] * vec[cols]) + ...);
