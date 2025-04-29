@@ -7,6 +7,8 @@ Note: Inline maths is written between \f$ ... \f$ as this works with MathJax whe
 The documentation for this extension is uploaded
 at https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/index.html
 
+Conventions obeyed by the implementations are detailed in [Conventions.md](Conventions.md).
+
 # Build
 
 ## Directly with setuptools:
