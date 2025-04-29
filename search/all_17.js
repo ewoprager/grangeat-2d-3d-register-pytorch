@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['_7etexture2dcuda_0',['~Texture2DCUDA',['../classExtensionTest_1_1Texture2DCUDA.html#aca20145e23befeeb42ae6c278565997a',1,'ExtensionTest::Texture2DCUDA']]],
-  ['_7etexture3dcuda_1',['~Texture3DCUDA',['../classExtensionTest_1_1Texture3DCUDA.html#a96e4a36cc92caf722c1d30bed65dfc64',1,'ExtensionTest::Texture3DCUDA']]]
+  ['y_0',['y',['../classExtensionTest_1_1Vec.html#a2c8a7f0fe5fe68e220829ce062cfce81',1,'ExtensionTest::Vec::Y() const'],['../classExtensionTest_1_1Vec.html#a635e30e68e2139c957a73a6be9175c14',1,'ExtensionTest::Vec::Y()']]]
 ];

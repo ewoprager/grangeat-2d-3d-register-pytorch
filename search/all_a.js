@@ -1,10 +1,8 @@
 var searchData=
 [
-  ['main_2ecpp_0',['main.cpp',['../main_8cpp.html',1,'']]],
-  ['mappingindextooffset_1',['mappingindextooffset',['../structExtensionTest_1_1Radon2D_1_1CommonData.html#a3898a3c7b0258ad607ea34656751dccc',1,'ExtensionTest::Radon2D::CommonData::mappingIndexToOffset'],['../structExtensionTest_1_1Radon3D_1_1CommonData.html#aec92d107dbdbe37b3ebfe7002ff03602',1,'ExtensionTest::Radon3D::CommonData::mappingIndexToOffset']]],
-  ['mappingrthetaphitotexcoord_2',['mappingRThetaPhiToTexCoord',['../structExtensionTest_1_1ResampleSinogram3D_1_1CommonData.html#aaf0493d0a031844deb28f5b88a3754a2',1,'ExtensionTest::ResampleSinogram3D::CommonData']]],
-  ['mappingworldtotexcoord_3',['MappingWorldToTexCoord',['../classExtensionTest_1_1Texture.html#a058500f63b64d48b62ab3b7ac3400f76',1,'ExtensionTest::Texture']]],
-  ['matmul_4',['MatMul',['../namespaceExtensionTest.html#a10a594bb612bbf30d8247b8bd5b90085',1,'ExtensionTest']]],
-  ['modes_5',['Address modes',['../namespaceExtensionTest.html#autotoc_md0',1,'']]],
-  ['modulo_6',['Modulo',['../namespaceExtensionTest.html#a6f8b97c667edc9a7e865e592c57f214c',1,'ExtensionTest']]]
+  ['image_20registration_0',['Grangeat-based 2D/3D image registration',['../index.html',1,'']]],
+  ['in_1',['In',['../classExtensionTest_1_1Texture.html#a7e46b164df6bb3cda9496b746a3fd9d4',1,'ExtensionTest::Texture']]],
+  ['inputtexture_2',['inputtexture',['../structExtensionTest_1_1GridSample3D_1_1CommonData.html#a32a2f6d34284e68f4974e26b80d0651a',1,'ExtensionTest::GridSample3D::CommonData::inputTexture'],['../structExtensionTest_1_1Radon2D_1_1CommonData.html#a99be1ccf8619904553246f3c92a723d6',1,'ExtensionTest::Radon2D::CommonData::inputTexture'],['../structExtensionTest_1_1Radon3D_1_1CommonData.html#a7ac17a1eb245eb90772a8b7aef091f35',1,'ExtensionTest::Radon3D::CommonData::inputTexture'],['../structExtensionTest_1_1ResampleSinogram3D_1_1CommonData.html#ab95c1c91e1246a718144ed5bf499b015',1,'ExtensionTest::ResampleSinogram3D::CommonData::inputTexture']]],
+  ['integratelooped_3',['integratelooped',['../structExtensionTest_1_1Radon2D.html#add8b5c0c34f6003d60e59ecd2e1276c7',1,'ExtensionTest::Radon2D::IntegrateLooped()'],['../structExtensionTest_1_1Radon3D.html#a7c1b02a459b6490d223846539e98066d',1,'ExtensionTest::Radon3D::IntegrateLooped()']]],
+  ['intercept_4',['intercept',['../structExtensionTest_1_1Linear.html#ad26864436bfd76b99e8ced4aec344eef',1,'ExtensionTest::Linear::intercept'],['../structExtensionTest_1_1Linear2.html#a53ce95a6f22857f3c1e22e780321ab38',1,'ExtensionTest::Linear2::intercept']]]
 ];

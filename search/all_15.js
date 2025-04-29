@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['y_0',['y',['../classExtensionTest_1_1Vec.html#a2c8a7f0fe5fe68e220829ce062cfce81',1,'ExtensionTest::Vec::Y() const'],['../classExtensionTest_1_1Vec.html#a635e30e68e2139c957a73a6be9175c14',1,'ExtensionTest::Vec::Y()']]]
+  ['w_0',['w',['../classExtensionTest_1_1Vec.html#a851ecda504162fc37b089cca38d96ae9',1,'ExtensionTest::Vec::W() const'],['../classExtensionTest_1_1Vec.html#adda7e2a3b920d58967faed2746c9d17c',1,'ExtensionTest::Vec::W()']]],
+  ['with_20setuptools_3a_1',['Directly with setuptools:',['../index.html#autotoc_md3',1,'']]],
+  ['wrap_2',['WRAP',['../namespaceExtensionTest.html#a41d363d6e20d5b35656bce16b1256370ae1c8555fcf0ea2bb648a6fd527d658c0',1,'ExtensionTest']]]
 ];
