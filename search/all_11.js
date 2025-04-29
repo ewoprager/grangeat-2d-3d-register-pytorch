@@ -11,7 +11,7 @@ var searchData=
   ['sizetype_8',['SizeType',['../classExtensionTest_1_1Texture.html#aba69aa3794e8ca20a398fd88154b1c83',1,'ExtensionTest::Texture']]],
   ['sizeworld_9',['SizeWorld',['../classExtensionTest_1_1Texture.html#aa1df0a99db7b3b335b4864f12e62d955',1,'ExtensionTest::Texture']]],
   ['spacing_10',['Spacing',['../classExtensionTest_1_1Texture.html#aa7d69514abb45a567bc9f389510da147',1,'ExtensionTest::Texture']]],
-  ['spherical_20coordinates_11',['Spherical coordinates',['../conventions.html#autotoc_md10',1,'']]],
+  ['spherical_20coordinates_11',['Spherical coordinates',['../conventions.html#autotoc_md9',1,'']]],
   ['square_12',['Square',['../namespaceExtensionTest.html#aa2eec8b4d91ec79367949f23d3aae24d',1,'ExtensionTest']]],
   ['staticcast_13',['StaticCast',['../classExtensionTest_1_1Vec.html#a0133ca687ec29403d19150f0c509ce69',1,'ExtensionTest::Vec']]],
   ['sum_14',['Sum',['../classExtensionTest_1_1Vec.html#ab21b13d197a05aa0ef65d670d31f2027',1,'ExtensionTest::Vec']]]
