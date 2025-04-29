@@ -1,4 +1,4 @@
-/*! \page conventions Conventions
+\page conventions Conventions
 
 ## Cartesian coordinates
 
