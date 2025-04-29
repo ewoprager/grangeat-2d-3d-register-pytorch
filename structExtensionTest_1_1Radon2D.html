@@ -12,13 +12,16 @@
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
-<script type="text/x-mathjax-config">
-MathJax.Hub.Config({
-  extensions: ["tex2jax.js"],
-  jax: ["input/TeX","output/HTML-CSS"],
-});
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript">
+window.MathJax = {
+  options: {
+    ignoreHtmlClass: 'tex2jax_ignore',
+    processHtmlClass: 'tex2jax_process'
+  }
+};
 </script>
-<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
+<script type="text/javascript" id="MathJax-script" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -292,7 +295,7 @@ template&lt;typename texture_t &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The derivative of the 2D cartesian texture coordinate in the given texture at the given world position defined in polar coordinates, with respect to the <b>unsigned</b> r polar coordinate</dd></dl>
-<p>The polar coordinates should be defined according to the convention stated in Extension/Conventions.md, however the parameter with respect to which this is evaluating the derivative is the <b>unsigned</b> version of <code>r</code>, i.e. the <b>unsigned</b> distance between the orign and the line. </p>
+<p>The polar coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">Extension/Conventions.md</a>, however the parameter with respect to which this is evaluating the derivative is the <b>unsigned</b> version of <code>r</code>, i.e. the <b>unsigned</b> distance between the orign and the line. </p>
 
 </div>
 </div>
@@ -353,7 +356,7 @@ template&lt;typename texture_t &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The <code><a class="el" href="structExtensionTest_1_1Linear.html" title="A functor class that represents a linear transformation: intercept + gradient * x.">Linear</a></code> mapping from integration iteration index to 2D cartesian texture coordinate sampling location, according to the given texture object and integration line (parameterised in polar coordinates)</dd></dl>
-<p>The polar coordinates should be defined according to the convention stated in Extension/Conventions.md </p>
+<p>The polar coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">Extension/Conventions.md</a> </p>
 
 </div>
 </div>
