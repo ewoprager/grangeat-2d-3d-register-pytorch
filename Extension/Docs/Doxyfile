@@ -736,8 +736,8 @@ SORT_BY_SCOPE_NAME     = NO
 
 STRICT_PROTO_MATCHING  = NO
 
-# The GENERATE_TODOLIST tag can be used to enable (YES) or disable (NO) the todo
-# list. This list is created by putting \todo commands in the documentation.
+# The GENERATE_TODOLIST tag can be used to enable (YES) or disable (NO) the t_odo
+# list. This list is created by putting \t_odo commands in the documentation.
 # The default value is: YES.
 
 GENERATE_TODOLIST      = YES
@@ -2248,6 +2248,7 @@ MAN_LINKS              = NO
 # captures the structure of the code including all documentation.
 # The default value is: NO.
 
+GENERATE_XML           = YES
 GENERATE_XML           = YES
 
 # The XML_OUTPUT tag is used to specify where the XML pages will be put. If a
