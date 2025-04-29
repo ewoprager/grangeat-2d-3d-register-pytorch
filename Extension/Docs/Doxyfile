@@ -994,6 +994,7 @@ FILE_PATTERNS          = *.c \
                          *.cxx \
                          *.cxxm \
                          *.cpp \
+                         *.cu \
                          *.cppm \
                          *.ccm \
                          *.c++ \
