@@ -122,7 +122,8 @@ template <typename T>
  * @param coordSph A 3-vector containing (r, theta, phi)
  * @return The unflipped 3-vector (r', theta', phi'),
  *
- * The spherical coordinates should be defined according to the convention stated in [Conventions.md](Conventions.md)
+ * The spherical coordinates should be defined according to the convention stated in
+ * [Conventions.md](Conventions.md#anchor)
  */
 template <typename T> [[nodiscard]] __host__ __device__ Vec<T, 3> UnflipSphericalCoordinate(const Vec<T, 3> &coordSph) {
 	constexpr T PI_T = static_cast<T>(M_PI);
