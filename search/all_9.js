@@ -1,4 +1,0 @@
-var searchData=
-[
-  ['operator_28_29_0',['operator()',['../structExtensionTest_1_1Linear.html#ab9eb19d9e586f50d05920c54eddcfc73',1,'ExtensionTest::Linear::operator()(const T &amp;x) const'],['../structExtensionTest_1_1Linear.html#a7e1cd742bf8da2abf94fd88cf0177288',1,'ExtensionTest::Linear::operator()(const Linear &amp;other) const'],['../structExtensionTest_1_1Linear.html#a36478b1bab9f6f960f65cf9f2f2590b4',1,'ExtensionTest::Linear::operator()(const Linear2&lt; T &gt; &amp;other) const'],['../structExtensionTest_1_1Linear2.html#a4e255f03246254930097b89fe46a4a7a',1,'ExtensionTest::Linear2::operator()(const T &amp;x, const T &amp;y) const'],['../structExtensionTest_1_1Linear2.html#a19e0e727243d59bbd4052efdeb3860d8',1,'ExtensionTest::Linear2::operator()(const Linear&lt; T &gt; &amp;other) const'],['../structExtensionTest_1_1Linear2.html#a9b61cf81b4b794f3727556b0a0d0ed66',1,'ExtensionTest::Linear2::operator()(const Linear2 &amp;other) const']]]
-];
