@@ -12,7 +12,7 @@ The documentation for this extension is uploaded at https://ewoprager.github.io/
 
 # Radon Transforms
 
-The \(n\)-dimensional Radon Transform $\mathcal{R}_n$ maps from one scalar field to another:
+The \f$n\f$-dimensional Radon Transform $\mathcal{R}_n$ maps from one scalar field to another:
 \[
 \mathcal{R}_n : f \to g, \quad f, g : \mathbb{R}^n \to \mathbb{R}
 \]
