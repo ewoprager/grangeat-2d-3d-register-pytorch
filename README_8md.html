@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Grangeat-based 2D/3D image registration: Build</title>
+<title>Grangeat-based 2D/3D image registration: /home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/Extension/README.md File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -46,7 +46,6 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
-</div><!-- top -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -68,28 +67,11 @@ $(function() {
 </div>
 </div>
 
-<div><div class="header">
-  <div class="headertitle"><div class="title">Build </div></div>
+</div><!-- top -->
+<div class="header">
+  <div class="headertitle"><div class="title">/home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/Extension/README.md File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2grangeat-2d-3d-register-pytorch_2grangeat-2d-3d-register-pytorch_2Extension_2README"></a> </p>
-<h1><a class="anchor" id="autotoc_md2"></a>
-Directly with setuptools:</h1>
-<p><code>python setup.py develop</code></p><ul>
-<li>In debug: <code>--debug</code></li>
-<li>Without CUDA: <code>--no-cuda</code></li>
-</ul>
-<h1><a class="anchor" id="autotoc_md3"></a>
-Radon Transforms</h1>
-<p>The $n$-dimensional Radon Transform $\mathcal{R}_n$ maps from one scalar field to another: $$ \mathcal{R}_n : f \to g, \quad f, g : \mathbb{R}^n \to \mathbb{R} $$ It is equal to the set of all $(n-1)$-dimensional hyper-plane integrals: $$ \mathcal{R}_n[f](\mathbf{\hat{n}, d}) = \int \dots \int_{\mathbb{R}^n} ! f(\mathbf{x}) \delta(\mathbf{x} \cdot \mathbf{\hat{n}} - d) \, \mathrm{d} x^n $$</p>
-<p>The implementations provided here are for 2- and 3-dimensional Radon transforms which take as input:</p><ul>
-<li>the input field $f$ as a 2/3-dimensional tensor of <code>torch.float32</code>s, interpreted as begin evenly spaced samples in 2/3-dimensional Cartesian space respectively,</li>
-<li>the output polar/spherical coordinates give as 2/3 1-D tensors of <code>torch.float32</code>s</li>
-<li>the number of samples to sum over along each line/over each plane when calculating the approximation of a hyper-plane integral</li>
-</ul>
-<p>and give as output a 2/3-dimensional tensor of <code>torch.float32</code>s corresponding to the values of the hyperplane integrals through $f$, where each hyper-plane defined by normal $\mathbf{\hat{n}}$ and origin distance $d$ corresponds to the vector $d \mathbf{\hat{n}}$ defined in polar/spherical coordinates in </p><div class="fragment"><div class="line">torch.stack(torch.meshgrid(phi_values, r_values), dim=-1)</div>
-</div><!-- fragment --><p> or </p><div class="fragment"><div class="line">torch.stack(torch.meshgrid(phi_values, theta_values, r_values), dim=-1)</div>
-</div><!-- fragment --> </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
