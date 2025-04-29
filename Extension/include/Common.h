@@ -1,3 +1,6 @@
+/// \file Common.h
+/// \brief Example header
+
 #pragma once
 
 #ifdef __CUDACC__
