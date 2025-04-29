@@ -2,7 +2,7 @@ var searchData=
 [
   ['sample_0',['sample',['../classExtensionTest_1_1Texture2DCPU.html#aa42a0ceafb06caeb9448fc692a7b2151',1,'ExtensionTest::Texture2DCPU::Sample()'],['../classExtensionTest_1_1Texture2DCUDA.html#a3c831f7913611575ddb1167a0ef16ed5',1,'ExtensionTest::Texture2DCUDA::Sample()'],['../classExtensionTest_1_1Texture3DCPU.html#a8864bddd5ab76e85ebd8d87fb1eba568',1,'ExtensionTest::Texture3DCPU::Sample()'],['../classExtensionTest_1_1Texture3DCUDA.html#a6020537b11bdea960f5f744289213f4b',1,'ExtensionTest::Texture3DCUDA::Sample()']]],
   ['scalefactor_1',['scalefactor',['../structExtensionTest_1_1Radon3D_1_1CommonData.html#a23026c4475e2d7d6d9b335d48495584a',1,'ExtensionTest::Radon3D::CommonData::scaleFactor'],['../structExtensionTest_1_1Radon2D_1_1CommonData.html#a23139584432ec3cc20e0967a33a4c411',1,'ExtensionTest::Radon2D::CommonData::scaleFactor']]],
-  ['setuptools_3a_2',['Directly with setuptools:',['../index.html#autotoc_md2',1,'']]],
+  ['setuptools_3a_2',['Directly with setuptools:',['../index.html#autotoc_md3',1,'']]],
   ['similarity_3',['Similarity',['../structExtensionTest_1_1Similarity.html',1,'ExtensionTest']]],
   ['similarity_2eh_4',['Similarity.h',['../Similarity_8h.html',1,'']]],
   ['similaritycpu_2ecpp_5',['SimilarityCPU.cpp',['../SimilarityCPU_8cpp.html',1,'']]],

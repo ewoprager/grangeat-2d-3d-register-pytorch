@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Grangeat-based 2D/3D image registration: Build</title>
+<title>Grangeat-based 2D/3D image registration: Documentation</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -76,19 +76,21 @@ $(function() {
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">Build </div></div>
+  <div class="headertitle"><div class="title">Documentation </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2grangeat-2d-3d-register-pytorch_2grangeat-2d-3d-register-pytorch_2Extension_2README"></a> </p>
+<div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2grangeat-2d-3d-register-pytorch_2grangeat-2d-3d-register-pytorch_2Extension_2README"></a> The documentation for this extension is uploaded at <a href="https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/index.html">https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/index.html</a></p>
 <h1><a class="anchor" id="autotoc_md2"></a>
-Directly with setuptools:</h1>
+Build</h1>
+<h2><a class="anchor" id="autotoc_md3"></a>
+Directly with setuptools:</h2>
 <p><code>python setup.py develop</code></p><ul>
 <li>In debug: <code>--debug</code></li>
 <li>Without CUDA: <code>--no-cuda</code></li>
 </ul>
-<h1><a class="anchor" id="autotoc_md3"></a>
+<h1><a class="anchor" id="autotoc_md4"></a>
 Radon Transforms</h1>
-<p>The $n$-dimensional Radon Transform $\mathcal{R}_n$ maps from one scalar field to another: $$ \mathcal{R}_n : f \to g, \quad f, g : \mathbb{R}^n \to \mathbb{R} $$ It is equal to the set of all $(n-1)$-dimensional hyper-plane integrals: $$ \mathcal{R}_n[f](\mathbf{\hat{n}, d}) = \int \dots \int_{\mathbb{R}^n} ! f(\mathbf{x}) \delta(\mathbf{x} \cdot \mathbf{\hat{n}} - d) \, \mathrm{d} x^n $$</p>
+<p>The (n)-dimensional Radon Transform $\mathcal{R}_n$ maps from one scalar field to another: [ \mathcal{R}_n : f \to g, \quad f, g : \mathbb{R}^n \to \mathbb{R} ] It is equal to the set of all $(n-1)$-dimensional hyper-plane integrals: $$ \mathcal{R}_n[f](\mathbf{\hat{n}, d}) = \int \dots \int_{\mathbb{R}^n} ! f(\mathbf{x}) \delta(\mathbf{x} \cdot \mathbf{\hat{n}} - d) \, \mathrm{d} x^n $$</p>
 <p>The implementations provided here are for 2- and 3-dimensional Radon transforms which take as input:</p><ul>
 <li>the input field $f$ as a 2/3-dimensional tensor of <code>torch.float32</code>s, interpreted as begin evenly spaced samples in 2/3-dimensional Cartesian space respectively,</li>
 <li>the output polar/spherical coordinates give as 2/3 1-D tensors of <code>torch.float32</code>s</li>
