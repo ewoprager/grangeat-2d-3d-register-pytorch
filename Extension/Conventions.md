@@ -1,7 +1,7 @@
-<!--- \page conventions Conventions
+/*! \page conventions Conventions
 
 This file describes all mathematical conventions used throughout the library.
--->
+*/
 
 # Conventions
 
