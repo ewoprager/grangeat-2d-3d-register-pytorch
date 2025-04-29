@@ -23,7 +23,7 @@ jobs:
           sudo apt-get install doxygen
 #          pip install sphinx breathe sphinx_rtd_theme
 
-      - name: Build Doxygen XML
+      - name: Build Doxygen HTML
         working-directory: Extension/Docs
         run: doxygen Doxyfile
 
