@@ -1,9 +1,0 @@
-.venv/
-.idea/
-**/.DS_Store
-**/build/
-**/cmake-build-*/
-cache/
-**/__pycache__
-**/*.so
-data/temp/
