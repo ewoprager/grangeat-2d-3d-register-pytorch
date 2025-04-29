@@ -1,5 +1,7 @@
-/// \file Common.h
-/// \brief Example header
+/**
+ * @file
+ * @brief Global functions
+ */
 
 #pragma once
 

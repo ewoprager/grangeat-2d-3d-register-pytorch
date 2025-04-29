@@ -1,15 +1,19 @@
+/**
+ * @file
+ * @brief PyTorch bindings
+ */
+
 #include <torch/extension.h>
 
-#include "../include/Radon3D.h"
+#include "../include/GridSample3D.h"
 #include "../include/Radon2D.h"
+#include "../include/Radon3D.h"
 #include "../include/ResampleSinogram3D.h"
 #include "../include/Similarity.h"
-#include "../include/GridSample3D.h"
 
 namespace ExtensionTest {
 
-PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-}
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {}
 
 TORCH_LIBRARY(ExtensionTest, m) {
 	// Note that "float" in the schema corresponds to the C++ `double` type and the Python `float` type.
@@ -21,8 +25,8 @@ TORCH_LIBRARY(ExtensionTest, m) {
 	m.def("radon3d_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def("d_radon3d_dr(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def("d_radon3d_dr_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
-	m.def(
-		"resample_sinogram3d(Tensor sinogram, Tensor spacing, Tensor centres, Tensor projMat, Tensor phis, Tensor rs) -> Tensor");
+	m.def("resample_sinogram3d(Tensor sinogram, Tensor spacing, Tensor centres, Tensor projMat, Tensor phis, Tensor "
+		  "rs) -> Tensor");
 	m.def("normalised_cross_correlation(Tensor a, Tensor b) -> Tensor");
 	m.def("grid_sample3d(Tensor input, Tensor grid, str address_mode) -> Tensor");
 }

@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief Global functions
+ */
+
 #pragma once
 
 #include "Common.h"
