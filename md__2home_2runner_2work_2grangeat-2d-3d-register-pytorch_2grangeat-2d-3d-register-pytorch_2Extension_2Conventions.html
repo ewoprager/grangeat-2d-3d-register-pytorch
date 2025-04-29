@@ -82,26 +82,27 @@ $(function() {
   <div class="headertitle"><div class="title">Conventions</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md5"></a> </p>
-<h1><a class="anchor" id="autotoc_md6"></a>
-Cartesian coordinates</h1>
-<h2><a class="anchor" id="autotoc_md7"></a>
-2D</h2>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md5"></a>
+Conventions</h1>
+<h2><a class="anchor" id="autotoc_md6"></a>
+Cartesian coordinates</h2>
+<h3><a class="anchor" id="autotoc_md7"></a>
+2D</h3>
 <p>In image data, the dimensions from largest to smallest are (Y, X), so the 1D index in a 2D array is given by <code>width * Y + X</code>.</p>
-<h2><a class="anchor" id="autotoc_md8"></a>
-3D</h2>
+<h3><a class="anchor" id="autotoc_md8"></a>
+3D</h3>
 <p>(X, Y, Z) is always right-handed.</p>
 <p>In volume data, the origin is placed at the centre, and the dimensions from largest to smallest are (Z, Y, X), so the 1D index in a 3D array is given by <code>width * height * Z + width * Y + X</code>.</p>
-<h1><a class="anchor" id="autotoc_md9"></a>
-Polar coordinates</h1>
+<h2><a class="anchor" id="autotoc_md9"></a>
+Polar coordinates</h2>
 <p>In 2D sinograms, lines in 2D space defined in polar coordinates are done so as follows:</p>
 <p>The vector from the origin to the closest point on the line (which is therefor normal to the line) defines the line, and is parametrised by the following 2-vector: </p><div class="fragment"><div class="line">(r, phi)</div>
 </div><!-- fragment --><p> where</p><ul>
 <li><code>r</code> is the <b>signed</b> length of the vector (the signed shortest distance between the line and the origin),</li>
 <li><code>phi</code> in (-pi/2, pi/2) is the angle anti-clockwise from the positive x-direction to the vector.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md10"></a>
-Spherical coordinates</h1>
+<h2><a class="anchor" id="autotoc_md10"></a>
+Spherical coordinates</h2>
 <p>In 3D sinograms, planes in 3D space defined in spherical coordinates are done so as follows:</p>
 <p>The vector from the origin to the closest point on the plane (which is therefore normal to the plane) defines the plane, and is parametrised by the following 3-vector:</p>
 <div class="fragment"><div class="line">(r, theta, phi)</div>
