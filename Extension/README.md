@@ -20,6 +20,8 @@ Conventions obeyed by the implementations are detailed in \ref conventions.
 
 # Radon Transforms
 
+The theory behind the implementation is detailed [here](https://ewoprager.github.io/grangeats-relation/main.pdf).
+
 The \f$n\f$-dimensional Radon Transform \f$\mathcal{R}_n\f$ maps from one scalar field to another:
 $$
 \mathcal{R}_n : f \to g, \quad f, g : \mathbb{R}^n \to \mathbb{R}
