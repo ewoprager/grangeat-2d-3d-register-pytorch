@@ -91,7 +91,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Global functions.  
+<p>Implementations of grid sampling functions.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Common_8h_source.html">Common.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Texture_8h_source.html">Texture.h</a>&quot;</code><br />
@@ -112,15 +112,15 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ab11fb3c9fda27956a66fc2e510e1459a" id="r_ab11fb3c9fda27956a66fc2e510e1459a"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#ab11fb3c9fda27956a66fc2e510e1459a">ExtensionTest::GridSample3D_CPU</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
-<tr class="memdesc:ab11fb3c9fda27956a66fc2e510e1459a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sample the given 3D input tensor at the positions given in grid according to the given address mode using bilinear interpolation. This implementation is single-threaded.  <br /></td></tr>
-<tr class="separator:ab11fb3c9fda27956a66fc2e510e1459a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa716f13160de170ffa808f0bb19d1cc2" id="r_aa716f13160de170ffa808f0bb19d1cc2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Common_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#aa716f13160de170ffa808f0bb19d1cc2">ExtensionTest::GridSample3D_CUDA</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
-<tr class="memdesc:aa716f13160de170ffa808f0bb19d1cc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <code>GridSample3D_CPU</code> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:aa716f13160de170ffa808f0bb19d1cc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab11fb3c9fda27956a66fc2e510e1459a" id="r_gab11fb3c9fda27956a66fc2e510e1459a"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gab11fb3c9fda27956a66fc2e510e1459a">ExtensionTest::GridSample3D_CPU</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
+<tr class="memdesc:gab11fb3c9fda27956a66fc2e510e1459a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sample the given 3D input tensor at the positions given in grid according to the given address mode using bilinear interpolation. This implementation is single-threaded.  <br /></td></tr>
+<tr class="separator:gab11fb3c9fda27956a66fc2e510e1459a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa716f13160de170ffa808f0bb19d1cc2" id="r_gaa716f13160de170ffa808f0bb19d1cc2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Common_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaa716f13160de170ffa808f0bb19d1cc2">ExtensionTest::GridSample3D_CUDA</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
+<tr class="memdesc:gaa716f13160de170ffa808f0bb19d1cc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gab11fb3c9fda27956a66fc2e510e1459a" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">ExtensionTest::GridSample3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:gaa716f13160de170ffa808f0bb19d1cc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Global functions. </p>
+<div class="textblock"><p>Implementations of grid sampling functions. </p>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

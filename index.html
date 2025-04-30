@@ -82,35 +82,19 @@ $(function() {
   <div class="headertitle"><div class="title">Grangeat-based 2D/3D image registration </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2grangeat-2d-3d-register-pytorch_2grangeat-2d-3d-register-pytorch_2Extension_2README"></a></p>
-<h1><a class="anchor" id="autotoc_md1"></a>
-Documentation</h1>
-<p>The documentation for this extension is uploaded at <a href="https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/index.html">https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/index.html</a></p>
-<p>Conventions obeyed by the implementations are detailed in <a class="el" href="conventions.html">Conventions</a>.</p>
-<h1><a class="anchor" id="autotoc_md2"></a>
-Build</h1>
-<h2><a class="anchor" id="autotoc_md3"></a>
-Directly with setuptools:</h2>
-<p><code>python setup.py develop</code></p>
-<ul>
-<li>In debug: <code>--debug</code></li>
-<li>Without CUDA: <code>--no-cuda</code></li>
-</ul>
-<h1><a class="anchor" id="autotoc_md4"></a>
-Radon Transforms</h1>
+<div class="textblock"><p><a class="anchor" id="md__2home_2runner_2work_2grangeat-2d-3d-register-pytorch_2grangeat-2d-3d-register-pytorch_2Extension_2mainpage"></a></p>
 <p>The theory behind the implementation is detailed <a href="https://ewoprager.github.io/grangeats-relation/main.pdf">here</a>.</p>
-<p>The \(n\)-dimensional Radon Transform \(\mathcal{R}_n\) maps from one scalar field to another: $$ \mathcal{R}_n : f \to g, \quad f, g : \mathbb{R}^n \to \mathbb{R} $$ It is equal to the set of all \((n-1)\)-dimensional hyper-plane integrals: $$ \mathcal{R}_n[f](\mathbf{\hat{n}, d}) = \int \dots \int_{\mathbb{R}^n} ! f(\mathbf{x}) \delta(\mathbf{x} \cdot \mathbf{\hat{n}} - d) \, \mathrm{d} x^n $$</p>
-<p>The implementations provided here are for 2- and 3-dimensional Radon transforms which take as input:</p>
+<p>For setup instructions, see the <a href="https://github.com/ewoprager/grangeat-2d-3d-register-pytorch/tree/main/Extension">README on GitHub</a>.</p>
+<p>Conventions obeyed by the implementations are detailed in <a class="el" href="conventions.html">Conventions</a>.</p>
+<h2>The PyTorch extension </h2>
+<p>This library is a PyTorch extension, providing a number of functions for:</p>
 <ul>
-<li>the input field \(f\) as a 2/3-dimensional tensor of <code>torch.float32</code>s, interpreted as begin evenly spaced samples in 2/3-dimensional Cartesian space respectively,</li>
-<li>the output polar/spherical coordinates give as 2/3 1-D tensors of <code>torch.float32</code>s</li>
-<li>the number of samples to sum over along each line/over each plane when calculating the approximation of a hyper-plane integral</li>
+<li>grid sampling of 3-dimensional tensors with different flexibilities to <code>torch.nn.functional.grid_sample</code>,</li>
+<li>evaluating approximations of Radon transforms of 2- and 3-D images, and</li>
+<li>resampling of 3D sinograms and evaluation of similarity metrics between images for the purposes of 2D/3D image registration (see paper referenced in the <a href="https://github.com/ewoprager/grangeat-2d-3d-register-pytorch/tree/main/Extension">README</a>).</li>
 </ul>
-<p>and give as output a 2/3-dimensional tensor of <code>torch.float32</code>s corresponding to the values of the hyperplane integrals through \(f\), where each hyper-plane defined by normal \(\mathbf{\hat{n}}\) and origin distance \(d\) corresponds to the vector \(d \mathbf{\hat{n}}\) defined in polar/spherical coordinates in</p>
-<div class="fragment"><div class="line">torch.stack(torch.meshgrid(phi_values, r_values), dim=-1)</div>
-</div><!-- fragment --><p>or</p>
-<div class="fragment"><div class="line">torch.stack(torch.meshgrid(phi_values, theta_values, r_values), dim=-1)</div>
-</div><!-- fragment --> </div></div><!-- PageDoc -->
+<p>The functions are documented here: <a class="el" href="group__pytorch__functions.html">PyTorch Functions</a> </p>
+</div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

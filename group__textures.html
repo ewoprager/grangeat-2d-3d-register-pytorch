@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Grangeat-based 2D/3D image registration: /home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/Extension/include/Texture.h File Reference</title>
+<title>Grangeat-based 2D/3D image registration: Texture-Related Types</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -56,6 +56,7 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
+</div><!-- top -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -77,33 +78,31 @@ $(function() {
 </div>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#namespaces">Namespaces</a> &#124;
 <a href="#enum-members">Enumerations</a>  </div>
-  <div class="headertitle"><div class="title">Texture.h File Reference</div></div>
+  <div class="headertitle"><div class="title">Texture-Related Types</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &quot;<a class="el" href="Common_8h_source.html">Common.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="Vec_8h_source.html">Vec.h</a>&quot;</code><br />
-</div>
-<p><a href="Texture_8h_source.html">Go to the source code of this file.</a></p>
+
+<p>Classes and enumerations related to accessing data as textures.  
+<a href="#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classExtensionTest_1_1Texture.html">ExtensionTest::Texture&lt; dimensionality, intType, floatType &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A parent texture class containing template data and functionality.  <a href="classExtensionTest_1_1Texture.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:namespaceExtensionTest" id="r_namespaceExtensionTest"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html">ExtensionTest</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classExtensionTest_1_1Texture2DCPU.html">ExtensionTest::Texture2DCPU</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 2D texture stored for access by the CPU.  <a href="classExtensionTest_1_1Texture2DCPU.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classExtensionTest_1_1Texture2DCUDA.html">ExtensionTest::Texture2DCUDA</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classExtensionTest_1_1Texture3DCPU.html">ExtensionTest::Texture3DCPU</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 3D texture stored for access by the CPU.  <a href="classExtensionTest_1_1Texture3DCPU.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classExtensionTest_1_1Texture3DCUDA.html">ExtensionTest::Texture3DCUDA</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
@@ -113,6 +112,38 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="separator:ga41d363d6e20d5b35656bce16b1256370"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p>Classes and enumerations related to accessing data as textures. </p>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="ga41d363d6e20d5b35656bce16b1256370" name="ga41d363d6e20d5b35656bce16b1256370"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga41d363d6e20d5b35656bce16b1256370">&#9670;&#160;</a></span>TextureAddressMode</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="group__textures.html#ga41d363d6e20d5b35656bce16b1256370">ExtensionTest::TextureAddressMode</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>An enumeration of address modes for texture objects, similar to the argument <code>padding_mode</code> in <code>torch.nn.functional.grid_sample</code>, or the CUDA enumeration <code>cudaTextureAddressMode</code>. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga41d363d6e20d5b35656bce16b1256370a529e9e0beb5f85d1f132917c1a09860c" name="gga41d363d6e20d5b35656bce16b1256370a529e9e0beb5f85d1f132917c1a09860c"></a>ZERO&#160;</td><td class="fielddoc"><p>Sampling locations outside texture coordinate range will be read as 0. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga41d363d6e20d5b35656bce16b1256370ae1c8555fcf0ea2bb648a6fd527d658c0" name="gga41d363d6e20d5b35656bce16b1256370ae1c8555fcf0ea2bb648a6fd527d658c0"></a>WRAP&#160;</td><td class="fielddoc"><p>Sampling locations outside texture coordinate range will be read wrapped back according to ((x - left) mod width + left, (y - bottom) mod height + bottom, etc... </p>
+</td></tr>
+</table>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
