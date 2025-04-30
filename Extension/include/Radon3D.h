@@ -5,6 +5,7 @@
 namespace ExtensionTest {
 
 /**
+ * @ingroup pytorch_functions
  * @brief Compute an approximation of the Radon transform of the given 3D volume
  * @param volume A 3D tensor of `torch.float32`s; the input volume to take the Radon transform of
  * @param volumeSpacing The spacing between the volume layers in each cartesian direction
@@ -25,6 +26,7 @@ at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing
 					   const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
+ * @ingroup pytorch_functions
  * @brief Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the
  * given 3D volume
  * @param volume A 3D tensor of `torch.float32`s; the input volume to take the Radon transform of
@@ -47,31 +49,39 @@ at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpac
 						  const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
- * An implementation of `Radon3D_CPU` that uses CUDA parallelisation. A single kernel launch is made, with each kernel
- * calculating one plane integral approximation.
+ * @ingroup pytorch_functions
+ * @brief An implementation of ExtensionTest::Radon3D_CPU that uses CUDA parallelisation
+ *
+ * A single kernel launch is made, with each kernel calculating one plane integral approximation.
  */
 __host__ at::Tensor Radon3D_CUDA(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
 								 const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
- * An implementation of `Radon3D_CPU` that uses CUDA parallelisation. One kernel launch is made per plane integral, and
- * each plane integral approximation is done by summing samples from multiple kernels in log-time.
+ * @brief An implementation of ExtensionTest::Radon3D_CPU that uses CUDA parallelisation
+ *
+ * One kernel launch is made per plane integral, and each plane integral approximation is done by summing samples from
+ * multiple kernels in log-time.
  */
 __host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
 									const at::Tensor &phiValues, const at::Tensor &thetaValues,
 									const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
- * An implementation of `DRadon3DDR_CPU` that uses CUDA parallelisation. A single kernel launch is made, with each
- * kernel calculating one plane integral approximation.
+ * @ingroup pytorch_functions
+ * @brief An implementation of ExtensionTest::DRadon3DDR_CPU that uses CUDA parallelisation
+ *
+ * A single kernel launch is made, with each kernel calculating one plane integral approximation.
  */
 __host__ at::Tensor DRadon3DDR_CUDA(const at::Tensor &volume, const at::Tensor &volumeSpacing,
 									const at::Tensor &phiValues, const at::Tensor &thetaValues,
 									const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
- * An implementation of `DRadon3DDR_CPU` that uses CUDA parallelisation. One kernel launch is made per plane integral,
- * and each plane integral approximation is done by summing samples from multiple kernels in log-time.
+ * @brief An implementation of ExtensionTest::DRadon3DDR_CPU that uses CUDA parallelisation
+ *
+ * One kernel launch is made per plane integral, and each plane integral approximation is done by summing samples from
+ * multiple kernels in log-time.
  */
 __host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
 									   const at::Tensor &phiValues, const at::Tensor &thetaValues,

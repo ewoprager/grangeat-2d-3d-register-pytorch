@@ -5,6 +5,7 @@
 namespace ExtensionTest {
 
 /**
+ * @ingroup data_structures
  * @brief A simple vector class derived from `std::array<T, N>`, providing overrides for all useful operators.
  * @tparam T The type of the vector's elements
  * @tparam N The size/dimensionality of the vector; must be greater than 0

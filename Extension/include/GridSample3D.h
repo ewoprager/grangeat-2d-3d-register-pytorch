@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Global functions
+ * @brief Implementations of grid sampling functions
  */
 
 #pragma once
@@ -11,6 +11,7 @@
 namespace ExtensionTest {
 
 /**
+ * @ingroup pytorch_functions
  * @brief Sample the given 3D input tensor at the positions given in grid according to the given address mode using
  * bilinear interpolation. This implementation is single-threaded.
  * @param input A vector of `torch.float32`s; must have 3 dimensions
@@ -27,7 +28,8 @@ namespace ExtensionTest {
 at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode);
 
 /**
- * @brief An implementation of `GridSample3D_CPU` that uses CUDA parallelisation.
+ * @ingroup pytorch_functions
+ * @brief An implementation of ExtensionTest::GridSample3D_CPU that uses CUDA parallelisation.
  */
 __host__ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode);
 

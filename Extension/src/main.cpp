@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief PyTorch bindings
+ * @brief PyTorch binding generation
  */
 
 #include <torch/extension.h>
@@ -12,6 +12,14 @@
 #include "../include/Similarity.h"
 
 namespace ExtensionTest {
+
+/**
+ * @defgroup pytorch_functions PyTorch Functions
+ * @brief Functions that have Python bindings generated and are accessible in the PyTorch extension.
+ * @{
+ * @}
+ */
+
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {}
 

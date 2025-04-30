@@ -5,6 +5,7 @@
 namespace ExtensionTest {
 
 /**
+ * @ingroup textures
  * @brief A 3D texture stored for access by the CPU
  *
  * **This object does not own the data it provides access to, it just holds a pointer to it**

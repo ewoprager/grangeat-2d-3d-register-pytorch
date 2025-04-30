@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Global functions
+ * @brief General tools and structs
  */
 
 #pragma once
@@ -18,6 +18,12 @@
 namespace ExtensionTest {
 
 /**
+ * @defgroup general_tools General Tools
+ * @brief Small functions used throughout the codebase.
+ * @{
+ */
+
+/**
  * @brief Returns the square of the given value
  * @tparam T Type of parameter and result
  * @param x Input value
@@ -33,6 +39,16 @@ template <typename T> __host__ __device__ T Square(const T &x) { return x * x; }
  * @return x modulo y, respecting the sign of x.
  */
 template <typename T> __host__ __device__ T Modulo(const T &x, const T &y) { return (x % y + y) % y; }
+
+/**
+ * @}
+ */
+
+/**
+ * @defgroup data_structures Data Structures
+ * @brief Structures and classes that help with contained data manipulation and storage.
+ * @{
+ */
 
 template <typename T> struct Linear2;
 
@@ -149,5 +165,9 @@ __host__ cudaError_t CudaMemcpyToObjectSymbol(const T &symbol, T &src, cudaMemcp
 }
 
 #endif
+
+/**
+ * @}
+ */
 
 } // namespace ExtensionTest

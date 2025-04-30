@@ -5,6 +5,7 @@
 namespace ExtensionTest {
 
 /**
+ * @ingroup pytorch_functions
  * @param a A tensor of `torch.float32`s of any size
  * @param b A tensor of `torch.float32`s matching `a` in size
  * @return The zero-normalised cross-correlation between the given tensors.
@@ -12,7 +13,8 @@ namespace ExtensionTest {
 at::Tensor NormalisedCrossCorrelation_CPU(const at::Tensor &a, const at::Tensor &b);
 
 /**
- * An implementation of `NormalisedCrossCorrelation_CPU` that uses CUDA parallisation.
+ * @ingroup pytorch_functions
+ * @brief An implementation of ExtensionTest::NormalisedCrossCorrelation_CPU that uses CUDA parallisation
  */
 __host__ at::Tensor NormalisedCrossCorrelation_CUDA(const at::Tensor &a, const at::Tensor &b);
 

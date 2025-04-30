@@ -10,6 +10,7 @@
 namespace ExtensionTest {
 
 /**
+ * @ingroup pytorch_functions
  * @brief Compute an approximation of the Radon transform of the given 2D image
  * @param image A 2D tensor of `torch.float32`s; the input image to take the Radon transform of
  * @param imageSpacing The spacing between the image columns and rows
@@ -27,6 +28,7 @@ at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, 
 					   const at::Tensor &rValues, int64_t samplesPerLine);
 
 /**
+ * @ingroup pytorch_functions
  * @brief Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the
  * given 2D image
  * @param image A 2D tensor of `torch.float32`s; the input image to take the Radon transform of
@@ -46,22 +48,28 @@ at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacin
 						  const at::Tensor &rValues, int64_t samplesPerLine);
 
 /**
- * An implementation of `Radon2D_CPU` that uses CUDA parallelisation. A single kernel launch is made, with each kernel
- * calculating one line integral approximation.
+ * @ingroup pytorch_functions
+ * @brief An implementation of ExtensionTest::Radon2D_CPU that uses CUDA parallelisation
+ *
+ * A single kernel launch is made, with each kernel calculating one line integral approximation.
  */
 __host__ at::Tensor Radon2D_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
 								 const at::Tensor &rValues, int64_t samplesPerLine);
 
 /**
- * An implementation of `Radon2D_CPU` that uses CUDA parallelisation. One kernel launch is made per line integral, and
- * each line integral approximation is done by summing samples from multiple kernels in log-time.
+ * @brief An implementation of ExtensionTest::Radon2D_CPU that uses CUDA parallelisation
+ *
+ * One kernel launch is made per line integral, and each line integral approximation is done by summing samples from
+ * multiple kernels in log-time.
  */
 __host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &imageSpacing,
 									const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine);
 
 /**
- * An implementation of `DRadon2DDR_CPU` that uses CUDA parallelisation. A single kernel launch is made, with each
- * kernel calculating one line integral approximation.
+ * @ingroup pytorch_functions
+ * @brief An implementation of ExtensionTest::DRadon2DDR_CPU that uses CUDA parallelisation
+ *
+ * A single kernel launch is made, with each kernel calculating one line integral approximation.
  */
 __host__ at::Tensor DRadon2DDR_CUDA(const at::Tensor &image, const at::Tensor &imageSpacing,
 									const at::Tensor &phiValues, const at::Tensor &rValues, int64_t samplesPerLine);

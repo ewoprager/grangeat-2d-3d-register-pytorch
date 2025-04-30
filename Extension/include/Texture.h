@@ -6,6 +6,12 @@
 namespace ExtensionTest {
 
 /**
+ * @defgroup textures Texture-Related Types
+ * @brief Classes and enumerations related to accessing data as textures
+ * @{
+ */
+
+/**
  * An enumeration of address modes for texture objects, similar to the argument `padding_mode` in
  * `torch.nn.functional.grid_sample`, or the CUDA enumeration `cudaTextureAddressMode`.
  */
@@ -96,5 +102,9 @@ template <std::size_t dimensionality, typename intType = int, typename floatType
 	VectorType spacing{};		 ///< The spacing between the values of the texture in world coordinates
 	VectorType centrePosition{}; ///< The position of the centre of the texture in world coordinates
 };
+
+/**
+ * @}
+ */
 
 } // namespace ExtensionTest

@@ -4,27 +4,33 @@
 
 namespace ExtensionTest {
 
+/**
+ * @ingroup textures
+ *
+ */
 class Texture2DCUDA : public Texture<2, int64_t, double> {
-public:
+  public:
 	using Base = Texture<2, int64_t, double>;
 
 	Texture2DCUDA() = default;
 
 	Texture2DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
-	              const AddressModeType &addressModes = AddressModeType::Full(TextureAddressMode::ZERO)) : Base(
-		std::move(_size), std::move(_spacing), std::move(_centrePosition)) {
+				  const AddressModeType &addressModes = AddressModeType::Full(TextureAddressMode::ZERO))
+		: Base(std::move(_size), std::move(_spacing), std::move(_centrePosition)) {
 
 		// Copy the given data into a CUDA array
 		const cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
 		cudaMallocArray(&arrayHandle, &channelDesc, _size.X(), _size.Y());
 		cudaMemcpy2DToArray(arrayHandle, 0, 0, data, _size.X() * sizeof(float), _size.X() * sizeof(float), _size.Y(),
-		                    cudaMemcpyHostToDevice);
+							cudaMemcpyHostToDevice);
 
 		// Create the texture object from the CUDA array
 		const cudaResourceDesc resourceDescriptor = {.resType = cudaResourceTypeArray,
-		                                             .res = {.array = {.array = arrayHandle}}};
-		cudaTextureDesc textureDescriptor = {.filterMode = cudaFilterModeLinear, .readMode = cudaReadModeElementType,
-		                                     .borderColor = {0.f, 0.f, 0.f, 0.f}, .normalizedCoords = true};
+													 .res = {.array = {.array = arrayHandle}}};
+		cudaTextureDesc textureDescriptor = {.filterMode = cudaFilterModeLinear,
+											 .readMode = cudaReadModeElementType,
+											 .borderColor = {0.f, 0.f, 0.f, 0.f},
+											 .normalizedCoords = true};
 		for (int i = 0; i < 2; ++i) {
 			textureDescriptor.addressMode[i] = TextureAddressModeToCuda(addressModes[i]);
 		}
@@ -37,8 +43,8 @@ public:
 	void operator=(const Texture2DCUDA &) = delete;
 
 	// yes move
-	Texture2DCUDA(Texture2DCUDA &&other) noexcept : Base(other), arrayHandle(other.arrayHandle),
-	                                                textureHandle(other.textureHandle) {
+	Texture2DCUDA(Texture2DCUDA &&other) noexcept
+		: Base(other), arrayHandle(other.arrayHandle), textureHandle(other.textureHandle) {
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
 	}
@@ -60,7 +66,7 @@ public:
 
 	static Texture2DCUDA FromTensor(const at::Tensor &image, const at::Tensor &spacing) {
 		return {image.contiguous().data_ptr<float>(), Vec<int64_t, 2>::FromIntArrayRef(image.sizes()).Flipped(),
-		        Vec<double, 2>::FromTensor(spacing)};
+				Vec<double, 2>::FromTensor(spacing)};
 	}
 
 	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
@@ -82,11 +88,11 @@ public:
 		const float y = floorf(-.5f + texCoord.Y() * heightF);
 		const float y0 = (y + .5f) / heightF;
 		const float y1 = (y + 1.5f) / heightF;
-		return heightF * (tex2D<float>(textureHandle, texCoord.X(), y1) - tex2D<
-			                  float>(textureHandle, texCoord.X(), y0));
+		return heightF *
+			   (tex2D<float>(textureHandle, texCoord.X(), y1) - tex2D<float>(textureHandle, texCoord.X(), y0));
 	}
 
-private:
+  private:
 	cudaArray_t arrayHandle = nullptr;
 	cudaTextureObject_t textureHandle = 0;
 };
