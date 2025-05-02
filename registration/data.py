@@ -4,6 +4,7 @@ logger = logging.getLogger(__name__)
 
 import torch
 import nrrd
+import pydicom
 
 from registration.lib.structs import *
 from registration.lib.sinogram import *
@@ -34,11 +35,27 @@ def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tenso
     logger.info("CT data value range = ({:.3f}, {:.3f})".format(bounds[0], bounds[1]))
     bounds[1] *= 10000.
     directions = torch.tensor(header['space directions'])
-    spacing = float(downsample_factor) * directions.norm(dim=1)
+    spacing = float(downsample_factor) * directions.norm(dim=1).flip(dims=(0,))
     logger.info("CT voxel spacing = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
     logger.info("CT data file processed.")
-
     return image, spacing, bounds
+
+
+def read_dicom(path: str):
+    logger.info("Loading X-ray DICOM file {}...".format(path))
+    dataset = pydicom.dcmread(path)
+    logger.info("DICOM file loaded.")
+    logger.info("Processing DICOM data...")
+    image = torch.tensor(pydicom.pixels.pixel_array(dataset), dtype=torch.float32)
+    logger.info("X-ray image size = [{} x {}]".format(image.size()[0], image.size()[1]))
+    spacing = dataset["PixelSpacing"]
+    spacing = torch.tensor([spacing[0], spacing[1]])
+    logger.info("X-ray pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
+    scene_geometry = SceneGeometry(dataset["DistanceSourceToPatient"].value)
+    logger.info("X-ray distance source-to-patient = {} mm".format(scene_geometry.source_distance))
+    logger.info("X-ray DICOM file processed.")
+    return image, spacing, scene_geometry
+
 
 
 def load_cached_volume(cache_directory: str, ct_volume_path: str):

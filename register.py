@@ -39,7 +39,8 @@ class SinogramStructure(Enum):
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
-         sinogram_size: int, sinogram_structure: SinogramStructure = SinogramStructure.CLASSIC):
+         sinogram_size: int, sinogram_structure: SinogramStructure = SinogramStructure.CLASSIC,
+         x_ray: str | None = None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
     # device = "cpu"
@@ -78,20 +79,43 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                                                          save_to_cache=save_to_cache,
                                                                          sinogram_size=sinogram_size, device=device)
 
-    # Load / generate a DRR through the volume
-    drr_spec = None
-    if not regenerate_drr and path is not None:
-        drr_spec = data.load_cached_drr(cache_directory, path)
+    if x_ray is None:
+        # Load / generate a DRR through the volume
+        drr_spec = None
+        if not regenerate_drr and path is not None:
+            drr_spec = data.load_cached_drr(cache_directory, path)
 
-    if drr_spec is None:
-        drr_spec = drr.generate_new_drr(cache_directory, path, vol_data, voxel_spacing, device=device,
-                                        save_to_cache=save_to_cache)
+        if drr_spec is None:
+            drr_spec = drr.generate_new_drr(cache_directory, path, vol_data, voxel_spacing, device=device,
+                                            save_to_cache=save_to_cache)
 
-    detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth = drr_spec
-    del drr_spec
+        detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth = (
+            drr_spec)
+        del drr_spec
+    else:
+        # Load the given X-ray
+        drr_image, detector_spacing, scene_geometry = data.read_dicom(x_ray)
+        drr_image = drr_image.to(device=device)
+        f_middle = 0.5
+        drr_image = drr_image[int(float(drr_image.size()[0]) * .5 * (1. - f_middle)):int(float(drr_image.size()[0]) * .5 * (1. + f_middle)), :]
 
-    logger.info("Plotting DRR and fixed image...")
-    # Plotting DRR
+        logger.info("Calculating 2D sinogram (the fixed image)...")
+
+        sinogram2d_counts = 1024
+        image_diag: float = (
+                detector_spacing * torch.tensor(drr_image.size(), dtype=torch.float32)).square().sum().sqrt().item()
+        sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
+                                           LinearRange(-.5 * image_diag, .5 * image_diag))
+        sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=device)
+
+        fixed_image = grangeat.calculate_fixed_image(drr_image, source_distance=scene_geometry.source_distance,
+                                                     detector_spacing=detector_spacing, output_grid=sinogram2d_grid)
+
+        del sinogram2d_grid
+        logger.info("X-ray sinogram calculated.")
+
+    logger.info("Plotting DRR/X-ray and fixed image...")
+    # Plotting DRR/X-ray
     _, axes = plt.subplots()
     mesh = axes.pcolormesh(drr_image.cpu())
     axes.axis('square')
@@ -112,17 +136,17 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     plt.colorbar(mesh)
     # Getting the limits to use for other colour mesh plots:
     colour_limits: Tuple[float, float] = mesh.get_clim()
-    logger.info("DRR and fixed image plotted.")
+    logger.info("DRR/X-ray and fixed image plotted.")
 
     sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, fixed_image.size(), device=device)
 
-    logger.info("Evaluating at ground truth...")
-    zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d,
-                                                  transformation=transformation_ground_truth.to(device=device),
+    tr = transformation_ground_truth if x_ray is None else Transformation.random()
+    logger.info("Evaluating at ground truth..." if x_ray is None else "Evaluating at random transformation")
+    zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d, transformation=tr.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                                   plot=colour_limits)
     logger.info("Evaluation: -ZNCC = -{:.4e}".format(zncc.item()  # evaluate_direct(fixed_image, vol_data,
-                                                     # transformation=transformation_ground_truth,
+                                                     # transformation=tr,
                                                      #                 scene_geometry=scene_geometry,
                                                      #                 fixed_image_grid=sinogram2d_grid,
                                                      #                 voxel_spacing=voxel_spacing,
@@ -197,7 +221,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         axes.set_title("Relationship between similarity measure and distance in SE3")
 
     # Registration
-    if False:
+    if True:
         def objective(params: torch.Tensor) -> torch.Tensor:
             return -objective_function.evaluate(fixed_image, sinogram3d,
                                                 transformation=Transformation(params[0:3], params[3:6]).to(
@@ -207,8 +231,22 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         logger.info("Optimising...")
         param_history = []
         value_history = []
-        transformation_start = Transformation.random()
+        transformation_start = Transformation(-.75 * torch.pi * torch.tensor([1., -1., -1]), torch.tensor([0., 0., 80.]))
         start_params: torch.Tensor = transformation_start.vectorised()
+
+        initial_image = geometry.generate_drr(vol_data, transformation=transformation_start.to(device=device),
+                                              voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
+                                              scene_geometry=scene_geometry, output_size=drr_image.size(),
+                                              samples_per_ray=512)
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(initial_image.cpu())
+        axes.axis('square')
+        axes.set_title("DRR at initial transformation")
+        axes.set_xlabel("x")
+        axes.set_ylabel("y")
+        plt.colorbar(mesh)
+        plt.show()
+        del initial_image
 
         converged_params: torch.Tensor | None = None
         if False:  # Using a PyTorch optimiser
@@ -244,7 +282,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
             tic = time.time()
             # res = scipy.optimize.minimize(objective_scipy, start_params.numpy(), method='Powell')
-            res = scipy.optimize.basinhopping(objective_scipy, start_params.numpy(), T=1.0,
+            res = scipy.optimize.basinhopping(objective_scipy, start_params.numpy(), T=5.0,
                                               minimizer_kwargs={"method": 'Nelder-Mead'})
             toc = time.time()
             logger.info("Done. Took {:.3f}s.".format(toc - tic))
@@ -277,12 +315,16 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         its = np.arange(param_history.size()[0])
         its2 = np.array([its[0], its[-1]])
 
+        if x_ray is None:
+            param_history[:, 0:3] -= transformation_ground_truth.rotation
+            param_history[:, 3:6] -= transformation_ground_truth.translation
+
         # rotations
         _, axes = plt.subplots()
         axes.plot(its2, np.full(2, 0.), ls='dashed')
-        axes.plot(its, param_history[:, 0] - transformation_ground_truth.rotation[0].item(), label="r0 - r0*")
-        axes.plot(its, param_history[:, 1] - transformation_ground_truth.rotation[1].item(), label="r1 - r1*")
-        axes.plot(its, param_history[:, 2] - transformation_ground_truth.rotation[2].item(), label="r2 - r2*")
+        axes.plot(its, param_history[:, 0], label="r0 - r0*" if x_ray is None else "r0")
+        axes.plot(its, param_history[:, 1], label="r1 - r1*" if x_ray is None else "r1")
+        axes.plot(its, param_history[:, 2], label="r2 - r2*" if x_ray is None else "r2")
         axes.legend()
         axes.set_xlabel("iteration")
         axes.set_ylabel("param value [rad]")
@@ -290,9 +332,9 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         # translations
         _, axes = plt.subplots()
         axes.plot(its2, np.full(2, 0.), ls='dashed')
-        axes.plot(its, param_history[:, 3] - transformation_ground_truth.translation[0].item(), label="t0 - t0*")
-        axes.plot(its, param_history[:, 4] - transformation_ground_truth.translation[1].item(), label="t1 - t1*")
-        axes.plot(its, param_history[:, 5] - transformation_ground_truth.translation[2].item(), label="t2 - t2*")
+        axes.plot(its, param_history[:, 3], label="t0 - t0*" if x_ray is None else "t0")
+        axes.plot(its, param_history[:, 4], label="t1 - t1*" if x_ray is None else "t1")
+        axes.plot(its, param_history[:, 5], label="t2 - t2*" if x_ray is None else "t2")
         axes.legend()
         axes.set_xlabel("iteration")
         axes.set_ylabel("param value [mm]")
@@ -330,6 +372,9 @@ if __name__ == "__main__":
                         help="The number of values of r, theta and phi to calculate plane integrals for, "
                              "and the width and height of the grid of samples taken to approximate each integral. The "
                              "computational expense of the 3D Radon transform is O(sinogram_size^5).")
+    parser.add_argument("-x", "--x-ray", type=str,
+                        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
+                             "this is provided, the X-ray will by used instead of any DRR.")
     args = parser.parse_args()
 
     # create cache directory
@@ -338,4 +383,4 @@ if __name__ == "__main__":
 
     main(path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
          regenerate_drr=args.regenerate_drr, save_to_cache=not args.no_save, sinogram_size=args.sinogram_size,
-         sinogram_structure=SinogramStructure.CLASSIC)
+         sinogram_structure=SinogramStructure.CLASSIC, x_ray=args.x_ray if "x_ray" in vars(args) else None)
