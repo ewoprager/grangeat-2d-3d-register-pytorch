@@ -1,5 +1,7 @@
 import torch
 
+import pyvista as pv
+
 from registration.lib.structs import *
 
 import Extension
@@ -25,6 +27,22 @@ def moving_cartesian_to_moving_spherical(positions_cartesian: torch.Tensor) -> S
     thetas = torch.atan2(zs, r2s_x_y.sqrt())
     rs = (r2s_x_y + zs.square()).sqrt()
     return Sinogram3dGrid(phis, thetas, rs).unflip()
+
+
+def fixed_polar_to_moving_spherical(input_grid: Sinogram2dGrid, *, ph_matrix: torch.Tensor, plot: bool=False) -> Sinogram3dGrid:
+    assert input_grid.device_consistent()
+    assert ph_matrix.device == input_grid.phi.device
+
+    fixed_image_grid_cartesian = fixed_polar_to_moving_cartesian(input_grid, ph_matrix=ph_matrix)
+
+    if plot:
+        pl = pv.Plotter()
+        cartesian_points = fixed_image_grid_cartesian.flatten(end_dim=-2)
+        pl.add_points(cartesian_points.cpu().numpy())  # , scalars=scalars.flatten().cpu().numpy())
+        pl.show()
+        del cartesian_points
+
+    return moving_cartesian_to_moving_spherical(fixed_image_grid_cartesian)
 
 
 def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,

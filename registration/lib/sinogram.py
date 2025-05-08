@@ -181,18 +181,8 @@ class SinogramClassic(Sinogram):
         assert fixed_image_grid.phi.device == self.device()
         assert ph_matrix.device == self.device()
 
-        fixed_image_grid_cartesian = geometry.fixed_polar_to_moving_cartesian(fixed_image_grid, ph_matrix=ph_matrix)
-
-        if plot:
-            pl = pv.Plotter()
-            cartesian_points = fixed_image_grid_cartesian.flatten(end_dim=-2)
-            pl.add_points(cartesian_points.cpu().numpy())  # , scalars=scalars.flatten().cpu().numpy())
-            pl.show()
-            del cartesian_points
-
-        fixed_image_grid_sph = geometry.moving_cartesian_to_moving_spherical(fixed_image_grid_cartesian)
-
-        del fixed_image_grid_cartesian
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+                                                                        plot=plot)
 
         if plot:
             myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
@@ -246,6 +236,31 @@ class SinogramClassic(Sinogram):
         del need_sign_change
 
         return ret
+
+
+class SinogramHEALPix(Sinogram):
+    def __init__(self, data: torch.Tensor, r_range: LinearRange):
+        self.data = data
+        self.r_range = r_range
+
+    def to(self, **kwargs) -> 'SinogramHEALPix':
+        return SinogramHEALPix(self.data.to(**kwargs), self.r_range)
+
+    def device(self):
+        return self.data.device
+
+    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+        raise Exception("Not yet implemented")
+
+    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                        plot: bool = False) -> torch.Tensor:
+        assert fixed_image_grid.device_consistent()
+        assert fixed_image_grid.phi.device == self.device()
+        assert ph_matrix.device == self.device()
+
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+                                                                        plot=plot)
+        raise Exception("Not yet implemented")
 
 
 class SinogramFibonacci(Sinogram):
