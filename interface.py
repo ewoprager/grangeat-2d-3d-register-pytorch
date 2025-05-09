@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import napari
 import scipy
+from magicgui import magicgui, widgets
 
 from registration.lib.sinogram import *
 from registration import drr
@@ -61,10 +62,12 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     fixed_image_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, fixed_image.size(), device=device)
     transformation = transformation_ground_truth if x_ray is None else Transformation.random(device=device)
+    saved_transformation = transformation
 
     viewer = napari.Viewer()
-    fixed_image_layer = viewer.add_image(drr_image.cpu().numpy(), colormap="yellow")
-    moving_image_layer = viewer.add_image(np.zeros((1, 1)), colormap="blue", blending="additive")
+    fixed_image_layer = viewer.add_image(drr_image.cpu().numpy(), colormap="yellow", interpolation2d="linear")
+    moving_image_layer = viewer.add_image(np.zeros((1, 1)), colormap="blue", blending="additive",
+                                          interpolation2d="linear")
 
     key_states = {"Alt": False}
 
@@ -82,15 +85,15 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         yield
         key_states["Alt"] = False
 
-    @viewer.bind_key('r')
+    @moving_image_layer.bind_key('r')
     def reset(event=None):
         nonlocal transformation, transformation_ground_truth, x_ray
         transformation = transformation_ground_truth if x_ray is None else Transformation.random(device=device)
         refresh()
         logger.info("Reset")
 
-    @viewer.mouse_drag_callbacks.append
-    def mouse_drag(viewer, event):
+    @moving_image_layer.mouse_drag_callbacks.append
+    def mouse_drag(layer, event):
         nonlocal transformation
         if event.button == 1 and key_states["Alt"]:  # Alt-left click drag
             # mouse down
@@ -141,6 +144,24 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                 else:
                     # just clicked
                     pass
+
+    @magicgui(auto_call=True, z_translation={"widget_type": "FloatSlider", "min": -300.0, "max": 300, "step": 0.2})
+    def moving_parameters(z_translation: float = 0.0):
+        nonlocal transformation
+        transformation.translation[2] = z_translation
+        refresh()
+
+    save_button = widgets.PushButton(label="Save transformation")
+
+    @save_button.changed.connect
+    def _():
+        nonlocal transformation, saved_transformation
+        saved_transformation = transformation
+        print(saved_transformation)
+
+    dock = widgets.Container(widgets=[moving_parameters, save_button])
+
+    viewer.window.add_dock_widget(dock)
 
     refresh()
 

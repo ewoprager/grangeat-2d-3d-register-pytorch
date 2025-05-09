@@ -63,6 +63,7 @@ dependencies = [
     "kiwisolver==1.4.8",
     "kornia==0.8.0",
     "kornia-rs==0.1.8",
+    "magicgui>=0.10.0",
     "markdown-it-py==3.0.0",
     "markupsafe==3.0.2",
     "matplotlib==3.10.0",
