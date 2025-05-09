@@ -60,6 +60,10 @@ class Transformation(NamedTuple):
     def vectorised(self) -> torch.Tensor:
         return torch.cat((self.rotation, self.translation), dim=0)
 
+    def device(self):
+        assert self.device_consistent()
+        return self.translation.device
+
     def to(self, **kwargs) -> 'Transformation':
         return Transformation(self.rotation.to(**kwargs), self.translation.to(**kwargs))
 

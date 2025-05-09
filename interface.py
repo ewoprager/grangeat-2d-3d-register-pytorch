@@ -1,6 +1,8 @@
 import os
 import argparse
 import logging.config
+import time
+from typing import NamedTuple
 
 import numpy as np
 import torch
@@ -13,6 +15,11 @@ from registration import drr
 from registration import data
 from registration import script
 from registration.lib import geometry
+
+
+class SavedTransformation(NamedTuple):
+    name: str
+    value: Transformation
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
@@ -62,13 +69,12 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     fixed_image_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, fixed_image.size(), device=device)
     transformation = transformation_ground_truth if x_ray is None else Transformation.random(device=device)
-    saved_transformation = transformation
 
     viewer = napari.Viewer()
     fixed_image_layer = viewer.add_image(drr_image.cpu().numpy(), colormap="yellow", interpolation2d="linear")
     moving_image_layer = viewer.add_image(np.zeros((1, 1)), colormap="blue", blending="additive",
                                           interpolation2d="linear")
-
+    # saved_transformations = [SavedTransformation("initial", transformation)]
     key_states = {"Alt": False}
 
     def refresh():
@@ -152,14 +158,37 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         refresh()
 
     save_button = widgets.PushButton(label="Save transformation")
+    saved_transformations_widget = widgets.Select(choices=["initial"])
+    saved_transformations_widget.set_choice("initial", transformation)
+    set_to_saved_button = widgets.PushButton(label="Set transformation to selected")
+    print(saved_transformations_widget.choices)
+
+    # !!! for some reason the 'choices' member of the widget starts correctly containing the transformations, then next
+    # time we look at it in the callback, it just contains the names!
 
     @save_button.changed.connect
     def _():
-        nonlocal transformation, saved_transformation
-        saved_transformation = transformation
-        print(saved_transformation)
+        nonlocal transformation, saved_transformations_widget
+        new_name = "{}".format(time.time())
+        saved_transformations_widget.set_choice(new_name, transformation)
 
-    dock = widgets.Container(widgets=[moving_parameters, save_button])
+    @set_to_saved_button.changed.connect
+    def _():
+        nonlocal transformation, saved_transformations_widget
+        print(saved_transformations_widget.choices)
+        current = saved_transformations_widget.value
+        if len(current) == 1:
+            print(current[0])
+            print(saved_transformations_widget.get_choice(current[0]))
+            # transformation = saved_transformations_widget.get_choice(current[0])[0].to(device=transformation.device())
+            # refresh()
+        elif len(current) == 0:
+            logger.warning("No transformation selected.")
+        else:
+            logger.warning("Multiple transformations selected.")
+
+    dock = widgets.Container(
+        widgets=[moving_parameters, save_button, saved_transformations_widget, set_to_saved_button])
 
     viewer.window.add_dock_widget(dock)
 
