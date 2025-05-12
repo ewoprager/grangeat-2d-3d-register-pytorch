@@ -2,7 +2,8 @@ import os
 import argparse
 import logging.config
 import time
-from typing import NamedTuple
+from typing import NamedTuple, Any
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -15,11 +16,7 @@ from registration import drr
 from registration import data
 from registration import script
 from registration.lib import geometry
-
-
-class SavedTransformation(NamedTuple):
-    name: str
-    value: Transformation
+from registration.interface.transformations import build_transformations_widget
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
@@ -138,7 +135,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             while event.type == "mouse_move":
                 dragged = True
 
-                delta = 0.02 * (torch.tensor(event.position) - drag_start).flip((0,))
+                delta = 0.06 * (torch.tensor(event.position) - drag_start).flip((0,))
                 transformation.translation[0:2] = (translation_start + delta).to(
                     device=transformation.translation.device)
                 refresh()
@@ -151,46 +148,17 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                     # just clicked
                     pass
 
-    @magicgui(auto_call=True, z_translation={"widget_type": "FloatSlider", "min": -300.0, "max": 300, "step": 0.2})
-    def moving_parameters(z_translation: float = 0.0):
+    def set_transformation(tr: Transformation) -> None:
         nonlocal transformation
-        transformation.translation[2] = z_translation
-        refresh()
+        transformation = tr
 
-    save_button = widgets.PushButton(label="Save transformation")
-    saved_transformations_widget = widgets.Select(choices=["initial"])
-    saved_transformations_widget.set_choice("initial", transformation)
-    set_to_saved_button = widgets.PushButton(label="Set transformation to selected")
-    print(saved_transformations_widget.choices)
+    def get_transformation() -> Transformation:
+        nonlocal transformation
+        return transformation
 
-    # !!! for some reason the 'choices' member of the widget starts correctly containing the transformations, then next
-    # time we look at it in the callback, it just contains the names!
+    transformations_widget = build_transformations_widget(get_transformation, set_transformation, refresh)
 
-    @save_button.changed.connect
-    def _():
-        nonlocal transformation, saved_transformations_widget
-        new_name = "{}".format(time.time())
-        saved_transformations_widget.set_choice(new_name, transformation)
-
-    @set_to_saved_button.changed.connect
-    def _():
-        nonlocal transformation, saved_transformations_widget
-        print(saved_transformations_widget.choices)
-        current = saved_transformations_widget.value
-        if len(current) == 1:
-            print(current[0])
-            print(saved_transformations_widget.get_choice(current[0]))
-            # transformation = saved_transformations_widget.get_choice(current[0])[0].to(device=transformation.device())
-            # refresh()
-        elif len(current) == 0:
-            logger.warning("No transformation selected.")
-        else:
-            logger.warning("Multiple transformations selected.")
-
-    dock = widgets.Container(
-        widgets=[moving_parameters, save_button, saved_transformations_widget, set_to_saved_button])
-
-    viewer.window.add_dock_widget(dock)
+    viewer.window.add_dock_widget(transformations_widget)
 
     refresh()
 
