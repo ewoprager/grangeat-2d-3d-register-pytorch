@@ -234,10 +234,10 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         transformation_start = Transformation(-.75 * torch.pi * torch.tensor([1., -1., -1]), torch.tensor([0., 0., 80.]))
         start_params: torch.Tensor = transformation_start.vectorised()
 
-        initial_image = geometry.generate_drr(vol_data, transformation=transformation_start.to(device=device),
-                                              voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
-                                              scene_geometry=scene_geometry, output_size=drr_image.size(),
-                                              samples_per_ray=512)
+        initial_image = geometry.generate_drr_python(vol_data, transformation=transformation_start.to(device=device),
+                                                     voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
+                                                     scene_geometry=scene_geometry, output_size=drr_image.size(),
+                                                     samples_per_ray=512)
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(initial_image.cpu())
         axes.axis('square')
@@ -294,11 +294,11 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                         device=device), scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
                                     plot=colour_limits)
 
-        final_image = geometry.generate_drr(vol_data, transformation=Transformation(
+        final_image = geometry.generate_drr_python(vol_data, transformation=Transformation(
             torch.tensor(converged_params[0:3], device=device), torch.tensor(converged_params[3:6], device=device)),
-                                            voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
-                                            scene_geometry=scene_geometry, output_size=drr_image.size(),
-                                            samples_per_ray=512)
+                                                   voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
+                                                   scene_geometry=scene_geometry, output_size=drr_image.size(),
+                                                   samples_per_ray=512)
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(final_image.cpu())
         axes.axis('square')

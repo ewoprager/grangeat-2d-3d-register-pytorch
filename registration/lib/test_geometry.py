@@ -1,5 +1,8 @@
+import diffdrr.data
 import pytest
 import torch
+
+import matplotlib.pyplot as plt
 
 import Extension as ExtensionTest
 from registration.lib.geometry import *
@@ -90,7 +93,7 @@ def test_moving_cartesian_to_moving_spherical():
     assert ret.r.item() == pytest.approx(-1., abs=1e-4)
 
 
-def test_generate_drr():
+def test_generate_drr_python():
     device = torch.device('cpu')
     volume_data = torch.zeros((3, 3, 3), device=device)
     volume_data[1, 1, 1] = 1.
@@ -99,11 +102,58 @@ def test_generate_drr():
     detector_spacing = torch.tensor([1., 1.])
     scene_geometry = SceneGeometry(source_distance=3.)
     output_size = torch.Size([3, 3])
-    ret = generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
-                       detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
+    ret = generate_drr_python(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
+                              detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
     assert isinstance(ret, torch.Tensor)
     assert ret.size() == output_size
     assert ret.device == device
+
+
+def test_generate_drr():
+    device = torch.device('cpu')
+
+    volume_data = torch.full((5, 5, 5), -1000, device=device, dtype=torch.int16)
+    volume_data[1:4, 1:4, 1:4] = 0
+    volume_data[1:4, 1, 1:4] = 500
+    volume_data[2, 2, 2] = 1000
+    volume_data[1:4, 3, 3] = 2000
+    density = diffdrr.data.transform_hu_to_density(volume_data, bone_attenuation_multiplier=1.0)
+
+    transformation = Transformation(rotation=torch.zeros(3), translation=torch.tensor([0., 0., 1.5]))
+    voxel_spacing = torch.tensor([1., 1., 1.])
+    detector_spacing = torch.tensor([1., 1.])
+    scene_geometry = SceneGeometry(source_distance=3.)
+    output_size = torch.Size([5, 5])
+
+    drr_python = generate_drr_python(density, transformation=transformation, voxel_spacing=voxel_spacing,
+                                     detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                     output_size=output_size)
+
+    drr_diffdrr = generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
+                               detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                               output_size=output_size)
+
+    # Plotting DRR
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(drr_python.cpu())
+    axes.axis('square')
+    axes.set_title("g")
+    axes.set_xlabel("x")
+    axes.set_ylabel("y")
+    plt.colorbar(mesh)
+
+    # Plotting DRR
+    _, axes = plt.subplots()
+    mesh = axes.pcolormesh(drr_diffdrr.cpu())
+    axes.axis('square')
+    axes.set_title("g")
+    axes.set_xlabel("x")
+    axes.set_ylabel("y")
+    plt.colorbar(mesh)
+
+    plt.show()
+
+    assert drr_python == pytest.approx(drr_diffdrr, abs=1.0)
 
 
 def test_plane_integrals():

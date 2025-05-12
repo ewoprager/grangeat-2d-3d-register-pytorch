@@ -595,7 +595,7 @@ wheels = [
 
 [[package]]
 name = "diffdrr"
-version = "0.4.6"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "einops" },
@@ -613,9 +613,9 @@ dependencies = [
     { name = "torchvision" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/a9/4b87ecea0fb4f692b251b716593cfdf061308a4f128b9e0fcc14315a9af6/diffdrr-0.4.6.tar.gz", hash = "sha256:ada277cb93cdde77ea47e2303782a77658ef9294421e3321a87ccfd9e351f4d4", size = 34805352 }
+sdist = { url = "https://files.pythonhosted.org/packages/55/90/40c66cdd1eed3dea76158d7344d9cf2de2762506f47c0a8b1146fbafeb7a/diffdrr-0.5.0.tar.gz", hash = "sha256:3be6748f2e4614baf915412346e7be969ea08e63eb5f9c8afec458956e42d706", size = 34805149 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/9d/5e72d68b693a7191870833e7382e3130a9ed4536533392841bfe340fd804/diffdrr-0.4.6-py3-none-any.whl", hash = "sha256:f147ec072e53c7218667567d0b43259436509dc6d972a68bba70ce1fdac39d2b", size = 34802490 },
+    { url = "https://files.pythonhosted.org/packages/fe/a2/411f188926a3d4aef6b41bfccbdb0857f2a1c825b9ef7b473060dbab5a55/diffdrr-0.5.0-py3-none-any.whl", hash = "sha256:178f5f7e30b137fbbf55057b2a9c77ccdef7814e3ccae7e56759c626f0e323d1", size = 34802605 },
 ]
 
 [[package]]
@@ -694,7 +694,6 @@ dependencies = [
     { name = "decorator" },
     { name = "defusedxml" },
     { name = "deprecated" },
-    { name = "diffdrr" },
     { name = "einops" },
     { name = "executing" },
     { name = "fastcore" },
@@ -870,7 +869,6 @@ requires-dist = [
     { name = "decorator", specifier = "==5.1.1" },
     { name = "defusedxml", specifier = "==0.7.1" },
     { name = "deprecated", specifier = "==1.2.16" },
-    { name = "diffdrr", specifier = "==0.4.6" },
     { name = "einops", specifier = "==0.8.0" },
     { name = "executing", specifier = "==2.2.0" },
     { name = "fastcore", specifier = "==1.7.28" },
@@ -3141,7 +3139,7 @@ requires-dist = [
     { name = "decorator", specifier = "==5.1.1" },
     { name = "defusedxml", specifier = "==0.7.1" },
     { name = "deprecated", specifier = "==1.2.16" },
-    { name = "diffdrr", specifier = "==0.4.6" },
+    { name = "diffdrr", specifier = "==0.5.0" },
     { name = "einops", specifier = "==0.8.0" },
     { name = "executing", specifier = "==2.2.0" },
     { name = "extension", editable = "Extension" },

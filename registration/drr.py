@@ -14,8 +14,7 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     logger.info("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                                   transformation.translation))
 
-    #
-    # drr_image = drr_generator(rotations, translations, parameterization="euler_angles", convention="ZXY")
+
     # # plot_drr(drr_image, ticks=False)
     # drr_image = drr_image[0, 0]
     # _, axes = plt.subplots()
@@ -26,9 +25,9 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     detector_spacing = torch.tensor([.25, .25])
     scene_geometry = SceneGeometry(source_distance=1000.)
 
-    drr_image = geometry.generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
-                                      detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                      output_size=torch.Size([1000, 1000]), samples_per_ray=500)
+    drr_image = geometry.generate_drr_python(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
+                                             detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                             output_size=torch.Size([1000, 1000]), samples_per_ray=500)
 
     logger.info("DRR generated.")
 

@@ -82,7 +82,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         nonlocal scene_geometry, moving_image_layer
         moved_drr = geometry.generate_drr(vol_data, transformation=transformation, voxel_spacing=voxel_spacing,
                                           detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                          output_size=torch.Size([1000, 1000]), samples_per_ray=500)
+                                          output_size=torch.Size([1000, 1000]))  # , samples_per_ray=500
         moving_image_layer.data = moved_drr.cpu().numpy()
 
     transformation_manager = transformations.TransformationManager(
@@ -128,13 +128,13 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                                                          transformation_manager.get_current_transformation().translation))
                 render_drr(transformation_manager.get_current_transformation())
                 yield
-                # on release
-                if dragged:
-                    # dragged
-                    pass
-                else:
-                    # just clicked
-                    pass
+            # on release
+            if dragged:
+                # dragged
+                pass
+            else:
+                # just clicked
+                pass
         elif event.button == 2 and key_states["Alt"]:  # Alt-right click drag
             # mouse down
             dragged = False
@@ -153,13 +153,13 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                                                          rotation=transformation_manager.get_current_transformation().rotation))
                 render_drr(transformation_manager.get_current_transformation())
                 yield
-                # on release
-                if dragged:
-                    # dragged
-                    pass
-                else:
-                    # just clicked
-                    pass
+            # on release
+            if dragged:
+                # dragged
+                pass
+            else:
+                # just clicked
+                pass
 
     def set_view_params(vp: ViewParams) -> None:
         nonlocal view_params
