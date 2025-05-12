@@ -10,13 +10,16 @@ import torch
 import napari
 import scipy
 from magicgui import magicgui, widgets
+from PyQt6.QtWidgets import QDockWidget
 
 from registration.lib.sinogram import *
 from registration import drr
 from registration import data
 from registration import script
 from registration.lib import geometry
-from registration.interface.transformations import build_transformations_widget
+from registration.interface.lib.structs import *
+import registration.interface.transformations as transformations
+from registration.interface.view import build_view_widget
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
@@ -65,21 +68,26 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         logger.info("X-ray sinogram calculated.")
 
     fixed_image_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, fixed_image.size(), device=device)
-    transformation = transformation_ground_truth if x_ray is None else Transformation.random(device=device)
 
     viewer = napari.Viewer()
     fixed_image_layer = viewer.add_image(drr_image.cpu().numpy(), colormap="yellow", interpolation2d="linear")
     moving_image_layer = viewer.add_image(np.zeros((1, 1)), colormap="blue", blending="additive",
                                           interpolation2d="linear")
-    # saved_transformations = [SavedTransformation("initial", transformation)]
+
+    view_params = ViewParams(translation_sensitivity=0.06, rotation_sensitivity=0.002)
+
     key_states = {"Alt": False}
 
-    def refresh():
-        nonlocal scene_geometry, transformation, moving_image_layer
+    def render_drr(transformation: Transformation):
+        nonlocal scene_geometry, moving_image_layer
         moved_drr = geometry.generate_drr(vol_data, transformation=transformation, voxel_spacing=voxel_spacing,
                                           detector_spacing=detector_spacing, scene_geometry=scene_geometry,
                                           output_size=torch.Size([1000, 1000]), samples_per_ray=500)
         moving_image_layer.data = moved_drr.cpu().numpy()
+
+    transformation_manager = transformations.TransformationManager(
+        initial_transformation=transformation_ground_truth if x_ray is None else Transformation.random(device=device),
+        refresh_render=render_drr)
 
     @viewer.bind_key("Alt")
     def on_alt_down(viewer):
@@ -90,32 +98,35 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     @moving_image_layer.bind_key('r')
     def reset(event=None):
-        nonlocal transformation, transformation_ground_truth, x_ray
-        transformation = transformation_ground_truth if x_ray is None else Transformation.random(device=device)
-        refresh()
+        nonlocal transformation_manager, transformation_ground_truth, x_ray
+        transformation_manager.set_transformation(
+            transformation_ground_truth if x_ray is None else Transformation.random(device=device))
+        render_drr(transformation_manager.get_current_transformation())
         logger.info("Reset")
 
     @moving_image_layer.mouse_drag_callbacks.append
     def mouse_drag(layer, event):
-        nonlocal transformation
+        nonlocal transformation_manager, view_params
         if event.button == 1 and key_states["Alt"]:  # Alt-left click drag
             # mouse down
             dragged = False
             drag_start = np.array(event.position)
-            rotation_start = scipy.spatial.transform.Rotation.from_rotvec(transformation.rotation.cpu().numpy())
+            rotation_start = scipy.spatial.transform.Rotation.from_rotvec(
+                transformation_manager.get_current_transformation().rotation.cpu().numpy())
             yield
             # on move
             while event.type == "mouse_move":
                 dragged = True
 
-                delta = 0.002 * (np.array(event.position) - drag_start)
+                delta = view_params.rotation_sensitivity * (np.array(event.position) - drag_start)
                 euler_angles = [delta[0], delta[1], 0.0]
                 rot_euler = scipy.spatial.transform.Rotation.from_euler("zyx", euler_angles)
                 rot_combined = rot_euler * rotation_start
-                transformation = Transformation(
-                    torch.tensor(rot_combined.as_rotvec(), device=transformation.rotation.device,
-                                 dtype=transformation.rotation.dtype), transformation.translation)
-                refresh()
+                transformation_manager.set_transformation(Transformation(torch.tensor(rot_combined.as_rotvec(),
+                                                                                      device=transformation_manager.get_current_transformation().rotation.device,
+                                                                                      dtype=transformation_manager.get_current_transformation().rotation.dtype),
+                                                                         transformation_manager.get_current_transformation().translation))
+                render_drr(transformation_manager.get_current_transformation())
                 yield
                 # on release
                 if dragged:
@@ -129,16 +140,18 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             dragged = False
             drag_start = torch.tensor(event.position)
             # rotation_start = scipy.spatial.transform.Rotation.from_rotvec(transformation.rotation.cpu().numpy())
-            translation_start = transformation.translation[0:2].cpu()
+            translation_start = transformation_manager.get_current_transformation().translation[0:2].cpu()
             yield
             # on move
             while event.type == "mouse_move":
                 dragged = True
 
-                delta = 0.06 * (torch.tensor(event.position) - drag_start).flip((0,))
-                transformation.translation[0:2] = (translation_start + delta).to(
-                    device=transformation.translation.device)
-                refresh()
+                delta = view_params.translation_sensitivity * (torch.tensor(event.position) - drag_start).flip((0,))
+                tr = transformation_manager.get_current_transformation().translation
+                tr[0:2] = (translation_start + delta).to(device=tr.device)
+                transformation_manager.set_transformation(Transformation(translation=tr,
+                                                                         rotation=transformation_manager.get_current_transformation().rotation))
+                render_drr(transformation_manager.get_current_transformation())
                 yield
                 # on release
                 if dragged:
@@ -148,19 +161,22 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                     # just clicked
                     pass
 
-    def set_transformation(tr: Transformation) -> None:
-        nonlocal transformation
-        transformation = tr
+    def set_view_params(vp: ViewParams) -> None:
+        nonlocal view_params
+        view_params = vp
 
-    def get_transformation() -> Transformation:
-        nonlocal transformation
-        return transformation
+    def get_view_params() -> ViewParams:
+        nonlocal view_params
+        return view_params
 
-    transformations_widget = build_transformations_widget(get_transformation, set_transformation, refresh)
+    view_widget = build_view_widget(get_view_params, set_view_params)
+    viewer.window.add_dock_widget(view_widget, name="View options", area="right", menu=viewer.window.window_menu)
 
-    viewer.window.add_dock_widget(transformations_widget)
+    transformations_widget = transformation_manager.get_widget()
+    viewer.window.add_dock_widget(transformations_widget, name="Transformations", area="right",
+                                  menu=viewer.window.window_menu)
 
-    refresh()
+    render_drr(transformation_manager.get_current_transformation())
 
     napari.run()
 

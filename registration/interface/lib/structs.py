@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, NamedTuple
 import logging
 
 logger = logging.getLogger(__name__)
@@ -28,3 +28,8 @@ class WidgetSelectData:
                 continue
             self.widget.del_choice(name)
             self.data.pop(name)
+
+
+class ViewParams(NamedTuple):
+    translation_sensitivity: float
+    rotation_sensitivity: float
