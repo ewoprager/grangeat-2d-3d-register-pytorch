@@ -50,7 +50,8 @@ class Transformation(NamedTuple):
     def get_h(self, *, device=torch.device('cpu')) -> torch.Tensor:
         """
         :param device:
-        :return: [(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation
+        :return: [(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation.
+        Stored column-major.
         """
         r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
                                                                                                         dtype=torch.float32)

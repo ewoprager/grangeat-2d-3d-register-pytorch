@@ -109,9 +109,9 @@ template <typename texture_t> struct Radon3D {
 		TORCH_CHECK(volume.sizes().size() == 3);
 		TORCH_CHECK(volume.dtype() == at::kFloat);
 		TORCH_INTERNAL_ASSERT(volume.device().type() == device);
-		// volumeSpacing should be a 1D tensor of 3 floats or doubles
+		// volumeSpacing should be a 1D tensor of 3 doubles
 		TORCH_CHECK(volumeSpacing.sizes() == at::IntArrayRef{3});
-		TORCH_CHECK(volumeSpacing.dtype() == at::kFloat || volumeSpacing.dtype() == at::kDouble);
+		TORCH_CHECK(volumeSpacing.dtype() == at::kDouble);
 		// phiValues, thetaValues and rValues should have matching sizes, contain floats, and be on the chosen device
 		TORCH_CHECK(phiValues.sizes() == thetaValues.sizes());
 		TORCH_CHECK(thetaValues.sizes() == rValues.sizes());

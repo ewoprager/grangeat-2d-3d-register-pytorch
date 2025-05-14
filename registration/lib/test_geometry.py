@@ -112,7 +112,7 @@ def test_generate_drr_python():
 def test_generate_drr():
     device = torch.device('cpu')
 
-    volume_data = torch.full((5, 5, 5), -1000, device=device, dtype=torch.int16)
+    volume_data = torch.full((5, 5, 5), -1000, device=device, dtype=torch.float32)
     volume_data[1:4, 1:4, 1:4] = 0
     volume_data[1:4, 1, 1:4] = 500
     volume_data[2, 2, 2] = 1000
@@ -129,31 +129,31 @@ def test_generate_drr():
                                      detector_spacing=detector_spacing, scene_geometry=scene_geometry,
                                      output_size=output_size)
 
-    drr_diffdrr = generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
+    drr_diffdrr = generate_drr(density, transformation=transformation, voxel_spacing=voxel_spacing,
                                detector_spacing=detector_spacing, scene_geometry=scene_geometry,
                                output_size=output_size)
 
-    # Plotting DRR
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(drr_python.cpu())
-    axes.axis('square')
-    axes.set_title("g")
-    axes.set_xlabel("x")
-    axes.set_ylabel("y")
-    plt.colorbar(mesh)
+    # # Plotting DRR
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(drr_python.cpu())
+    # axes.axis('square')
+    # axes.set_title("g")
+    # axes.set_xlabel("x")
+    # axes.set_ylabel("y")
+    # plt.colorbar(mesh)
+    #
+    # # Plotting DRR
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(drr_diffdrr.cpu())
+    # axes.axis('square')
+    # axes.set_title("g")
+    # axes.set_xlabel("x")
+    # axes.set_ylabel("y")
+    # plt.colorbar(mesh)
+    #
+    # plt.show()
 
-    # Plotting DRR
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(drr_diffdrr.cpu())
-    axes.axis('square')
-    axes.set_title("g")
-    axes.set_xlabel("x")
-    axes.set_ylabel("y")
-    plt.colorbar(mesh)
-
-    plt.show()
-
-    assert drr_python == pytest.approx(drr_diffdrr, abs=1.0)
+    assert drr_python == pytest.approx(drr_diffdrr, abs=0.002)
 
 
 def test_plane_integrals():

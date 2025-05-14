@@ -29,12 +29,12 @@ template <typename texture_t> struct ResampleSinogram3D {
 		TORCH_CHECK(sinogram3d.sizes().size() == 3)
 		TORCH_CHECK(sinogram3d.dtype() == at::kFloat)
 		TORCH_INTERNAL_ASSERT(sinogram3d.device().type() == device)
-		// sinogramSpacing should be a 1D tensor of 3 floats or doubles
+		// sinogramSpacing should be a 1D tensor of 3 doubles
 		TORCH_CHECK(sinogramSpacing.sizes() == at::IntArrayRef{3});
-		TORCH_CHECK(sinogramSpacing.dtype() == at::kFloat || sinogramSpacing.dtype() == at::kDouble);
-		// sinogramRangeCentres should be a 1D tensor of 3 floats or doubles
+		TORCH_CHECK(sinogramSpacing.dtype() == at::kDouble);
+		// sinogramRangeCentres should be a 1D tensor of 3 doubles
 		TORCH_CHECK(sinogramRangeCentres.sizes() == at::IntArrayRef{3});
-		TORCH_CHECK(sinogramRangeCentres.dtype() == at::kFloat || sinogramRangeCentres.dtype() == at::kDouble);
+		TORCH_CHECK(sinogramRangeCentres.dtype() == at::kDouble);
 		// projectionMatrix should be of size (4, 4), contain floats and be on the chosen device
 		TORCH_CHECK(projectionMatrix.sizes() == at::IntArrayRef({4, 4}))
 		TORCH_CHECK(projectionMatrix.dtype() == at::kFloat)

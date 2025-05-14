@@ -96,9 +96,9 @@ template <typename texture_t> struct Radon2D {
 		TORCH_CHECK(image.sizes().size() == 2);
 		TORCH_CHECK(image.dtype() == at::kFloat);
 		TORCH_INTERNAL_ASSERT(image.device().type() == device);
-		// imageSpacing should be a 1D tensor of 2 floats or doubles
+		// imageSpacing should be a 1D tensor of 2 doubles
 		TORCH_CHECK(imageSpacing.sizes() == at::IntArrayRef{2});
-		TORCH_CHECK(imageSpacing.dtype() == at::kFloat || imageSpacing.dtype() == at::kDouble);
+		TORCH_CHECK(imageSpacing.dtype() == at::kDouble);
 		// phiValues and rValues should have the same sizes, should contain floats, and be on the chosen device
 		TORCH_CHECK(phiValues.sizes() == rValues.sizes());
 		TORCH_CHECK(phiValues.dtype() == at::kFloat);

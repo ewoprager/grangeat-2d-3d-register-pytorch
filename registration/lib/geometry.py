@@ -49,44 +49,62 @@ def fixed_polar_to_moving_spherical(input_grid: Sinogram2dGrid, *, ph_matrix: to
     return moving_cartesian_to_moving_spherical(fixed_image_grid_cartesian)
 
 
+# This uses diffdrr
+# def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
+#                  detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size) -> (
+#         torch.Tensor):
+#     image = torchio.ScalarImage(tensor=volume_data.unsqueeze(0))
+#
+#     subject = diffdrr.data.read(image, spacing=voxel_spacing, orientation=None)
+#
+#     del image
+#
+#     # I believe that the detector array lies on the x-z plane, with x down, and z to the left (and so y outward)
+#     drr_generator = diffdrr.drr.DRR(subject,  # An object storing the CT volume, origin, and voxel spacing  #
+#                                     sdd=scene_geometry.source_distance,
+#                                     # Source-to-detector distance (i.e., focal length)
+#                                     height=output_size[0], width=output_size[1],
+#                                     # Image height (if width is not provided, the generated DRR is square)
+#                                     delx=detector_spacing[0],  # Pixel spacing (in mm)
+#                                     dely=detector_spacing[1]).to(volume_data.device)
+#
+#
+#     # affine = torch.eye(4)
+#     # affine[0, 0] = voxel_spacing[0]
+#     # affine[1, 1] = voxel_spacing[1]
+#     # affine[2, 2] = voxel_spacing[2]
+#     # subject = diffdrr.data.read(volume=torchio.ScalarImage(tensor=volume_data.unsqueeze(0), affine=affine),
+#     #                             orientation=None)
+#     #
+#     # drr_generator = diffdrr.drr.DRR(subject, sdd=scene_geometry.source_distance, height=output_size[0],
+#     # width=output_size[1],
+#     #                       delx=detector_spacing[0], dely=detector_spacing[1]).to(volume_data.device)
+#
+#     del subject
+#
+#     ret = drr_generator(transformation.rotation.unsqueeze(0), transformation.translation.unsqueeze(0),
+#                         parameterization="axis_angle")[0, 0]
+#
+#     del drr_generator
+#
+#     return ret
+
 def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
                  detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size) -> (
         torch.Tensor):
-    image = torchio.ScalarImage(tensor=volume_data.unsqueeze(0))
+    device = volume_data.device
+    assert len(output_size) == 2
+    assert voxel_spacing.size() == torch.Size([3])
+    assert detector_spacing.size() == torch.Size([2])
+    assert transformation.device_consistent()
+    assert transformation.translation.device == device
+    assert voxel_spacing.device == device
+    img_width: int = output_size[1]
+    img_height: int = output_size[0]
+    h_matrix_inv = transformation.inverse().get_h(device=device)
 
-    subject = diffdrr.data.read(image, spacing=voxel_spacing, orientation=None)
-
-    del image
-
-    # I believe that the detector array lies on the x-z plane, with x down, and z to the left (and so y outward)
-    drr_generator = diffdrr.drr.DRR(subject,  # An object storing the CT volume, origin, and voxel spacing  #
-                                    sdd=scene_geometry.source_distance,
-                                    # Source-to-detector distance (i.e., focal length)
-                                    height=output_size[0], width=output_size[1],
-                                    # Image height (if width is not provided, the generated DRR is square)
-                                    delx=detector_spacing[0],  # Pixel spacing (in mm)
-                                    dely=detector_spacing[1]).to(volume_data.device)
-
-
-    # affine = torch.eye(4)
-    # affine[0, 0] = voxel_spacing[0]
-    # affine[1, 1] = voxel_spacing[1]
-    # affine[2, 2] = voxel_spacing[2]
-    # subject = diffdrr.data.read(volume=torchio.ScalarImage(tensor=volume_data.unsqueeze(0), affine=affine),
-    #                             orientation=None)
-    #
-    # drr_generator = diffdrr.drr.DRR(subject, sdd=scene_geometry.source_distance, height=output_size[0],
-    # width=output_size[1],
-    #                       delx=detector_spacing[0], dely=detector_spacing[1]).to(volume_data.device)
-
-    del subject
-
-    ret = drr_generator(transformation.rotation.unsqueeze(0), transformation.translation.unsqueeze(0),
-                        parameterization="axis_angle")[0, 0]
-
-    del drr_generator
-
-    return ret
+    return Extension.project_drr(volume_data, voxel_spacing, h_matrix_inv, scene_geometry.source_distance, img_width,
+                                 img_height, detector_spacing)
 
 
 def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
@@ -95,6 +113,7 @@ def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transforma
     device = volume_data.device
     assert len(output_size) == 2
     assert voxel_spacing.size() == torch.Size([3])
+    assert detector_spacing.size() == torch.Size([2])
     assert transformation.device_consistent()
     assert transformation.translation.device == device
     assert voxel_spacing.device == device
@@ -112,8 +131,7 @@ def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transforma
         dims=(0,)) * voxel_spacing
     volume_diag_length: torch.Tensor = volume_diag.norm()
     lambda_start: torch.Tensor = (source_position - transformation.translation).norm() - .5 * volume_diag_length
-    lambda_end: torch.Tensor = lambda_start + volume_diag_length
-    step_size: float = (lambda_end - lambda_start).item() / float(samples_per_ray)
+    step_size: float = volume_diag_length.item() / float(samples_per_ray)
 
     h_matrix_inv = transformation.inverse().get_h(device=device).to(dtype=torch.float32)
     deltas = directions * step_size
