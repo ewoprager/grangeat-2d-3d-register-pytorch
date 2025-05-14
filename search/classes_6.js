@@ -1,10 +1,10 @@
 var searchData=
 [
-  ['vec_0',['Vec',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20double_2c_202_20_3e_1',['Vec&lt; double, 2 &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20double_2c_203_20_3e_2',['Vec&lt; double, 3 &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20double_2c_20dimensionality_20_3e_3',['Vec&lt; double, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20float_2c_20dimensionality_20_3e_4',['Vec&lt; float, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20int_2c_20dimensionality_20_3e_5',['Vec&lt; int, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20int64_5ft_2c_20dimensionality_20_3e_6',['Vec&lt; int64_t, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]]
+  ['texture_0',['Texture',['../classExtensionTest_1_1Texture.html',1,'ExtensionTest']]],
+  ['texture2dcpu_1',['Texture2DCPU',['../classExtensionTest_1_1Texture2DCPU.html',1,'ExtensionTest']]],
+  ['texture2dcuda_2',['Texture2DCUDA',['../classExtensionTest_1_1Texture2DCUDA.html',1,'ExtensionTest']]],
+  ['texture3dcpu_3',['Texture3DCPU',['../classExtensionTest_1_1Texture3DCPU.html',1,'ExtensionTest']]],
+  ['texture3dcuda_4',['Texture3DCUDA',['../classExtensionTest_1_1Texture3DCUDA.html',1,'ExtensionTest']]],
+  ['texture_3c_202_2c_20int64_5ft_2c_20double_20_3e_5',['Texture&lt; 2, int64_t, double &gt;',['../classExtensionTest_1_1Texture.html',1,'ExtensionTest']]],
+  ['texture_3c_203_2c_20int64_5ft_2c_20double_20_3e_6',['Texture&lt; 3, int64_t, double &gt;',['../classExtensionTest_1_1Texture.html',1,'ExtensionTest']]]
 ];
