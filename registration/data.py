@@ -17,7 +17,7 @@ def deterministic_hash(text: str):
     return ret
 
 
-def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
     logger.info("Loading CT data file {}...".format(path))
     data, header = nrrd.read(path)
     logger.info("CT data file loaded.")
@@ -25,20 +25,20 @@ def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tenso
     sizes = header['sizes']
     logger.info("CT data volume size = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
     data = torch.tensor(data, device="cpu")
-    image = torch.maximum(data.type(torch.float32) + 1000., torch.tensor([0.], device=data.device))
+    image = data.to(dtype=torch.float32)
+    image[image < -1000.0] = -1000.0
+    image -= image.min()
+    image /= image.max()
     if downsample_factor > 1:
         down_sampler = torch.nn.AvgPool3d(downsample_factor)
-        image = down_sampler(image[None, :, :, :])[0]
+        image = down_sampler(image.unsqueeze(0))[0]
     sizes = image.size()
-    logger.info("CT data volume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
-    bounds = torch.Tensor([image.min().item(), image.max().item()])
-    logger.info("CT data value range = ({:.3f}, {:.3f})".format(bounds[0], bounds[1]))
-    bounds[1] *= 10000.
+    logger.info("CT volume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
     directions = torch.tensor(header['space directions'])
     spacing = float(downsample_factor) * directions.norm(dim=1).flip(dims=(0,))
     logger.info("CT voxel spacing = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
     logger.info("CT data file processed.")
-    return image, spacing, bounds
+    return image, spacing
 
 
 def read_dicom(path: str):

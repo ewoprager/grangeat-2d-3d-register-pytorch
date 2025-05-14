@@ -80,9 +80,9 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     def render_drr(transformation: Transformation):
         nonlocal scene_geometry, moving_image_layer
-        moved_drr = geometry.generate_drr(vol_data, transformation=transformation, voxel_spacing=voxel_spacing,
-                                          detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                          output_size=torch.Size([1000, 1000]))  # , samples_per_ray=500
+        moved_drr = geometry.generate_drr_python(vol_data, transformation=transformation, voxel_spacing=voxel_spacing,
+                                                 detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                                 output_size=torch.Size([1000, 1000]), samples_per_ray=500)
         moving_image_layer.data = moved_drr.cpu().numpy()
 
     transformation_manager = transformations.TransformationManager(
