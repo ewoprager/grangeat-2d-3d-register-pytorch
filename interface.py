@@ -20,6 +20,7 @@ from registration.lib import geometry
 from registration.interface.lib.structs import *
 import registration.interface.transformations as transformations
 from registration.interface.view import build_view_widget
+from registration.interface.register import build_register_widget
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
@@ -81,8 +82,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     def render_drr(transformation: Transformation):
         nonlocal scene_geometry, moving_image_layer
         moved_drr = geometry.generate_drr(vol_data, transformation=transformation, voxel_spacing=voxel_spacing,
-                                                 detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                                 output_size=torch.Size([1000, 1000])) #, samples_per_ray=500
+                                          detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                          output_size=torch.Size([1000, 1000]))  # , samples_per_ray=500
         moving_image_layer.data = moved_drr.cpu().numpy()
 
     transformation_manager = transformations.TransformationManager(
@@ -111,21 +112,21 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             # mouse down
             dragged = False
             drag_start = np.array([event.position[1], -event.position[0]])
-            rotation_start = scipy.spatial.transform.Rotation.from_rotvec(rotvec=
-                transformation_manager.get_current_transformation().rotation.cpu().numpy())
+            rotation_start = scipy.spatial.transform.Rotation.from_rotvec(
+                rotvec=transformation_manager.get_current_transformation().rotation.cpu().numpy())
             yield
             # on move
             while event.type == "mouse_move":
                 dragged = True
 
-                delta = view_params.rotation_sensitivity * (np.array([event.position[1], -event.position[0]]) - drag_start)
-                print(delta)
+                delta = view_params.rotation_sensitivity * (
+                            np.array([event.position[1], -event.position[0]]) - drag_start)
                 euler_angles = [delta[1], delta[0], 0.0]
                 rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
                 rot_combined = rot_euler * rotation_start
-                transformation_manager.set_transformation(Transformation(rotation = torch.tensor(rot_combined.as_rotvec(),
-                                                                                      device=transformation_manager.get_current_transformation().rotation.device,
-                                                                                      dtype=transformation_manager.get_current_transformation().rotation.dtype),
+                transformation_manager.set_transformation(Transformation(rotation=torch.tensor(rot_combined.as_rotvec(),
+                                                                                               device=transformation_manager.get_current_transformation().rotation.device,
+                                                                                               dtype=transformation_manager.get_current_transformation().rotation.dtype),
                                                                          translation=transformation_manager.get_current_transformation().translation))
                 yield
             # on release
@@ -175,6 +176,10 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     transformations_widget = transformation_manager.get_widget()
     viewer.window.add_dock_widget(transformations_widget, name="Transformations", area="right",
                                   menu=viewer.window.window_menu)
+
+    register_widget = build_register_widget(fixed_image, vol_data, voxel_spacing, detector_spacing,
+                                            transformation_manager, scene_geometry)
+    viewer.window.add_dock_widget(register_widget, name="Register", area="right", menu=viewer.window.window_menu)
 
     render_drr(transformation_manager.get_current_transformation())
 
