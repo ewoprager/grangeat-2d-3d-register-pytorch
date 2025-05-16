@@ -20,24 +20,29 @@ class SavedTransformation(NamedTuple):
 class TransformationManager:
     def __init__(self, initial_transformation: Transformation, refresh_render: Callable[[Transformation], None]):
         self.current_transformation = initial_transformation
-        self.widget = self.build_transformations_widget(refresh_render)
+        self.refresh_render_function = refresh_render
+        self.widget = self.build_transformations_widget()
+        self.supress_callbacks = False
 
     def get_current_transformation(self) -> Transformation:
         return self.current_transformation
 
     def set_transformation(self, new_value: Transformation) -> None:
         self.current_transformation = new_value
+        self.supress_callbacks = True
         self.widget[0][0].set_value(self.current_transformation.translation[0])
         self.widget[0][1].set_value(self.current_transformation.translation[1])
         self.widget[0][2].set_value(self.current_transformation.translation[2])
         self.widget[0][3].set_value(self.current_transformation.rotation[0])
         self.widget[0][4].set_value(self.current_transformation.rotation[1])
         self.widget[0][5].set_value(self.current_transformation.rotation[2])
+        self.supress_callbacks = False
+        self.refresh_render_function(self.get_current_transformation())
 
     def get_widget(self) -> widgets.Widget:
         return self.widget
 
-    def build_transformations_widget(self, refresh_render: Callable[[Transformation], None]) -> widgets.Widget:
+    def build_transformations_widget(self) -> widgets.Widget:
         @magicgui(auto_call=True, x_translation={"widget_type": "FloatSlider", "min": -200.0, "max": 200, "step": 0.2,
                                                  "label": "X translation"},
                   y_translation={"widget_type": "FloatSlider", "min": -200.0, "max": 200, "step": 0.2,
@@ -56,12 +61,14 @@ class TransformationManager:
                               x_rotation: float = self.current_transformation.rotation[0],
                               y_rotation: float = self.current_transformation.rotation[1],
                               z_rotation: float = self.current_transformation.rotation[2]):
-            nonlocal self, refresh_render
-            self.set_transformation(
-                Transformation(translation=torch.tensor([x_translation, y_translation, z_translation]),
-                               rotation=torch.tensor([x_rotation, y_rotation, z_rotation])).to(
-                    device=self.get_current_transformation().device()))
-            refresh_render(self.get_current_transformation())
+            nonlocal self
+            if self.supress_callbacks:
+                return
+            self.current_transformation = Transformation(
+                translation=torch.tensor([x_translation, y_translation, z_translation]),
+                rotation=torch.tensor([x_rotation, y_rotation, z_rotation])).to(
+                device=self.get_current_transformation().device())
+            self.refresh_render_function(self.get_current_transformation())
 
         save_button = widgets.PushButton(label="Save new")
         saved_transformations_widget = WidgetSelectData(initial_choices={"initial": self.current_transformation})
@@ -71,16 +78,20 @@ class TransformationManager:
         @save_button.changed.connect
         def _():
             nonlocal self, saved_transformations_widget
+            if self.supress_callbacks:
+                return
             new_name = datetime.now().strftime("%Y-%m-%d, %H:%M:%S")
             saved_transformations_widget.add_choice(new_name, self.get_current_transformation())
 
         @set_to_saved_button.changed.connect
         def _():
-            nonlocal self, saved_transformations_widget, refresh_render
+            nonlocal self, saved_transformations_widget
+            if self.supress_callbacks:
+                return
             current = saved_transformations_widget.get_selected()
             if len(current) == 1:
                 self.set_transformation(saved_transformations_widget.get_data(current[0]))
-                refresh_render(self.get_current_transformation())
+                self.refresh_render_function(self.get_current_transformation())
             elif len(current) == 0:
                 logger.warning("No transformation selected.")
             else:
@@ -89,6 +100,8 @@ class TransformationManager:
         @del_button.changed.connect
         def _():
             nonlocal saved_transformations_widget
+            if self.supress_callbacks:
+                return
             current = saved_transformations_widget.get_selected()  # this actually returns a list of strings
             if len(current) == 0:
                 logger.warning("No transformation selected.")

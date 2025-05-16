@@ -110,23 +110,23 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         if event.button == 1 and key_states["Alt"]:  # Alt-left click drag
             # mouse down
             dragged = False
-            drag_start = np.array(event.position)
-            rotation_start = scipy.spatial.transform.Rotation.from_rotvec(
+            drag_start = np.array([event.position[1], -event.position[0]])
+            rotation_start = scipy.spatial.transform.Rotation.from_rotvec(rotvec=
                 transformation_manager.get_current_transformation().rotation.cpu().numpy())
             yield
             # on move
             while event.type == "mouse_move":
                 dragged = True
 
-                delta = view_params.rotation_sensitivity * (np.array(event.position) - drag_start)
-                euler_angles = [delta[0], delta[1], 0.0]
-                rot_euler = scipy.spatial.transform.Rotation.from_euler("zyx", euler_angles)
+                delta = view_params.rotation_sensitivity * (np.array([event.position[1], -event.position[0]]) - drag_start)
+                print(delta)
+                euler_angles = [delta[1], delta[0], 0.0]
+                rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
                 rot_combined = rot_euler * rotation_start
-                transformation_manager.set_transformation(Transformation(torch.tensor(rot_combined.as_rotvec(),
+                transformation_manager.set_transformation(Transformation(rotation = torch.tensor(rot_combined.as_rotvec(),
                                                                                       device=transformation_manager.get_current_transformation().rotation.device,
                                                                                       dtype=transformation_manager.get_current_transformation().rotation.dtype),
-                                                                         transformation_manager.get_current_transformation().translation))
-                render_drr(transformation_manager.get_current_transformation())
+                                                                         translation=transformation_manager.get_current_transformation().translation))
                 yield
             # on release
             if dragged:
