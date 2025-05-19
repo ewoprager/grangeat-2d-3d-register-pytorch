@@ -7,3 +7,4 @@ cache/
 **/__pycache__
 **/*.so
 data/temp/
+**/*.log

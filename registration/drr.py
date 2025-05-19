@@ -24,33 +24,9 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
     detector_spacing = torch.tensor([.25, .25])
     scene_geometry = SceneGeometry(source_distance=1000.)
 
-    drr_image = geometry.generate_drr_python(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
-                                             detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                             output_size=torch.Size([1000, 1000]), samples_per_ray=500)
-
-    #
-    # Plotting DRR
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(drr_image.cpu())
-    axes.axis('square')
-    axes.set_title("g")
-    axes.set_xlabel("x")
-    axes.set_ylabel("y")
-    plt.colorbar(mesh)
-    # Plotting new comparison
-    comp = geometry.generate_drr(volume_data.cpu(), transformation=transformation.to(device="cpu"),
-                                 voxel_spacing=voxel_spacing.to(device="cpu"),
-                                 detector_spacing=detector_spacing.to(device="cpu"), scene_geometry=scene_geometry,
-                                 output_size=torch.Size([1000, 1000]))
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(comp.cpu())
-    axes.axis('square')
-    axes.set_title("g")
-    axes.set_xlabel("x")
-    axes.set_ylabel("y")
-    plt.colorbar(mesh)
-    plt.show()
-    #
+    drr_image = geometry.generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
+                                      detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                      output_size=torch.Size([1000, 1000]))
 
     logger.info("DRR generated.")
 

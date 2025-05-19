@@ -14,7 +14,7 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
         volume_spec = data.load_cached_volume(cache_directory, ct_volume_path)
 
     if volume_spec is None:
-        volume_downsample_factor: int = 4
+        volume_downsample_factor: int = 2
     else:
         volume_downsample_factor, sinogram3d = volume_spec
 

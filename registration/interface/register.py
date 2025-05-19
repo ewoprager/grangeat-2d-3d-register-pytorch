@@ -1,6 +1,7 @@
 import copy
 import time
 import logging
+from datetime import datetime
 from typing import Callable, Any
 
 logger = logging.getLogger(__name__)
@@ -23,33 +24,29 @@ from registration.interface.transformations import TransformationManager
 def objective_function_standard(*, fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: torch.Tensor,
                                 detector_spacing: torch.Tensor, transformation: Transformation,
                                 scene_geometry: SceneGeometry) -> torch.Tensor:
-    assert len(fixed_image.size()) == 2
-    assert len(volume.size()) == 3
-    assert voxel_spacing.size() == torch.Size([3])
-    assert detector_spacing.size() == torch.Size([2])
-    device = volume.device
-    assert fixed_image.device == device
-    assert transformation.device_consistent()
-    assert transformation.device() == device
-
     moving_image = generate_drr(volume, transformation=transformation, voxel_spacing=voxel_spacing,
                                 detector_spacing=detector_spacing, scene_geometry=scene_geometry,
                                 output_size=fixed_image.size())
 
-    return zncc(fixed_image, moving_image)
+    return -zncc(fixed_image, moving_image)
 
 
 def register(fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: torch.Tensor,
              detector_spacing: torch.Tensor, initial_transformation: Transformation, scene_geometry: SceneGeometry,
              it_callback: Callable[[list, list, Transformation], None]) -> Transformation:
     device = volume.device
+    assert len(fixed_image.size()) == 2
+    assert len(volume.size()) == 3
+    assert voxel_spacing.size() == torch.Size([3])
+    assert detector_spacing.size() == torch.Size([2])
+    assert fixed_image.device == device
 
     def objective(params: torch.Tensor) -> torch.Tensor:
         nonlocal fixed_image, volume, voxel_spacing, detector_spacing, device, scene_geometry
-        return -objective_function_standard(fixed_image=fixed_image, volume=volume, voxel_spacing=voxel_spacing,
-                                            detector_spacing=detector_spacing,
-                                            transformation=Transformation(params[0:3], params[3:6]).to(device=device),
-                                            scene_geometry=scene_geometry)
+        return objective_function_standard(fixed_image=fixed_image, volume=volume, voxel_spacing=voxel_spacing,
+                                           detector_spacing=detector_spacing,
+                                           transformation=Transformation(params[0:3], params[3:6]).to(device=device),
+                                           scene_geometry=scene_geometry)
 
     logger.info("Optimising...")
     param_history = []
@@ -64,15 +61,18 @@ def register(fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: tor
                 param_history.append(params)
                 value = objective(params)
                 value_history.append(value)
-                it_callback(param_history, value_history, Transformation(params[0:3], params[3:6]).to(device=device))
+                it_callback(param_history, value_history)
                 ret[i] = value.item()
             return ret
 
-        options = {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
-        optimiser = pyswarms.single.GlobalBestPSO(n_particles=500, dimensions=6,
-                                                  init_pos=np.random.normal(loc=start_params.numpy(), size=(500, 6),
+        options = {'c1': 2.525, 'c2': 1.225, 'w': 0.28}  # {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+        n_particles = 500
+        n_dimensions = 6
+        optimiser = pyswarms.single.GlobalBestPSO(n_particles=n_particles, dimensions=n_dimensions,
+                                                  init_pos=np.random.normal(loc=start_params.numpy(),
+                                                                            size=(n_particles, n_dimensions),
                                                                             scale=np.array(
-                                                                                [0.2, 0.2, 0.2, 10.0, 10.0, 10.0])),
+                                                                                [0.1, 0.1, 0.1, 2.0, 2.0, 2.0])),
                                                   options=options)
 
         cost, converged_params = optimiser.optimize(objective_pso, iters=10)
@@ -101,8 +101,8 @@ def register(fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: tor
 
 
 class Worker(QObject):
-    finished = pyqtSignal()
-    progress = pyqtSignal(list, list, Transformation)
+    finished = pyqtSignal(Transformation)
+    progress = pyqtSignal(list, list)
 
     def __init__(self, fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: torch.Tensor,
                  detector_spacing: torch.Tensor, initial_transformation: Transformation, scene_geometry: SceneGeometry):
@@ -115,13 +115,13 @@ class Worker(QObject):
         self.initial_transformation = initial_transformation
 
     def run(self):
-        def iteration_callback(param_history: list, value_history: list, latest_transformation: Transformation) -> None:
+        def iteration_callback(param_history: list, value_history: list) -> None:
             nonlocal self
-            self.progress.emit(param_history, value_history, latest_transformation)
+            self.progress.emit(param_history, value_history)
 
-        register(self.fixed_image, self.volume, self.voxel_spacing, self.detector_spacing, self.initial_transformation,
-                 self.scene_geometry, iteration_callback)
-        self.finished.emit()
+        res = register(self.fixed_image, self.volume, self.voxel_spacing, self.detector_spacing,
+                       self.initial_transformation, self.scene_geometry, iteration_callback)
+        self.finished.emit(res)
 
 
 class RegisterWidget(widgets.Container):
@@ -137,14 +137,27 @@ class RegisterWidget(widgets.Container):
         self.transformation_manager = transformation_manager
 
         self.fig, self.axes = plt.subplots()
+
+        eval_once_button = widgets.PushButton(label="Evaluate once")
+        self.eval_result_label = widgets.Label(label="Evaluation result: -")
+
+        @eval_once_button.changed.connect
+        def _():
+            nonlocal self
+            res = objective_function_standard(fixed_image=self.fixed_image, volume=self.volume,
+                                              voxel_spacing=self.voxel_spacing, detector_spacing=self.detector_spacing,
+                                              transformation=self.transformation_manager.get_current_transformation(),
+                                              scene_geometry=self.scene_geometry)
+            self.eval_result_label.label = "Evaluation result: {:.4f}".format(res.item())
+
         register_button = widgets.PushButton(label="Register")
 
         self.register_progress = widgets.Label(label="no registration run")
+        self.evals_per_render = 10
+        self.iteration_callback_count = 0
+        self.best = None
         self.last_value = None
         self.last_rendered_iteration = 0
-        self.iteration_callback_count = 0
-        self.evals_per_render = 10
-        self.best = None
 
         self.evals_per_render_widget = widgets.SpinBox(value=10, min=1, max=1000, step=1)
 
@@ -153,7 +166,7 @@ class RegisterWidget(widgets.Container):
             nonlocal self
             self.evals_per_render = new_value
 
-        def iteration_callback(param_history: list, value_history: list, latest_transformation: Transformation) -> None:
+        def iteration_callback(param_history: list, value_history: list) -> None:
             nonlocal self
             self.iteration_callback_count += 1
             self.last_value = value_history[-1].item()
@@ -182,22 +195,36 @@ class RegisterWidget(widgets.Container):
                 self.axes.set_ylabel("objective function value")
                 self.fig.canvas.draw()
 
-                self.transformation_manager.set_transformation(latest_transformation)
-
                 self.last_rendered_iteration = self.iteration_callback_count
-                self.best = torch.tensor(value_history).cpu().min().item()
+                values = torch.tensor(value_history).cpu()
+                self.best, best_index = values.min(0)
+                self.best = self.best.item()
+                best_index = best_index.item()
+                best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
+                self.transformation_manager.set_transformation(best_transformation)
 
             self.register_progress.label = "Iteration {}: latest = {:.4f}, best = {:.4f}".format(
                 self.iteration_callback_count, self.last_value, 0.0 if self.best is None else self.best)
 
+        def finish_callback(converged_transformation: Transformation):
+            nonlocal self
+            self.transformation_manager.set_transformation(converged_transformation)
+            self.transformation_manager.save_transformation(converged_transformation, "registration result {}".format(
+                datetime.now().strftime("%Y-%m-%d, %H:%M:%S")))
+
         @register_button.changed.connect
         def _():
             nonlocal self
+            self.iteration_callback_count = 0
+            self.best = None
+            self.last_value = None
+            self.last_rendered_iteration = 0
             self.thread = QThread()
             self.worker = Worker(self.fixed_image, self.volume, self.voxel_spacing, self.detector_spacing,
                                  self.transformation_manager.get_current_transformation(), self.scene_geometry)
             self.worker.moveToThread(self.thread)
             self.thread.started.connect(self.worker.run)
+            self.worker.finished.connect(finish_callback)
             self.worker.finished.connect(self.thread.quit)
             self.worker.finished.connect(self.worker.deleteLater)
             self.thread.finished.connect(self.thread.deleteLater)
@@ -205,6 +232,8 @@ class RegisterWidget(widgets.Container):
             self.thread.start()
 
         self.native.layout().addWidget(FigureCanvasQTAgg(self.fig))
+        self.append(eval_once_button)
+        self.append(self.eval_result_label)
         self.append(register_button)
         self.append(self.register_progress)
         self.append(self.evals_per_render_widget)

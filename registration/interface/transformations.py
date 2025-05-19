@@ -27,6 +27,7 @@ class TransformationManager:
         self.current_transformation = initial_transformation
         self.refresh_render_function = refresh_render
         self.save_path = save_path
+        self.saved_transformations_widget = None
         self.widget = self.build_transformations_widget()
         self.supress_callbacks = False
 
@@ -34,7 +35,7 @@ class TransformationManager:
         return self.current_transformation
 
     def set_transformation(self, new_value: Transformation) -> None:
-        self.current_transformation = new_value
+        self.current_transformation = new_value.to(device=self.current_transformation.device())
         self.supress_callbacks = True
         self.widget[0][0].set_value(self.current_transformation.translation[0])
         self.widget[0][1].set_value(self.current_transformation.translation[1])
@@ -92,34 +93,34 @@ class TransformationManager:
                     logger.warning("Invalid saved transformation data at '{}'".format(str(self.save_path)))
         else:
             logger.warning("Transformation save file '{}' doesn't exist.".format(str(self.save_path)))
-        saved_transformations_widget = WidgetSelectData(initial_choices=initial_choices)
+        self.saved_transformations_widget = WidgetSelectData(initial_choices=initial_choices)
         set_to_saved_button = widgets.PushButton(label="Load selected")
         del_button = widgets.PushButton(label="Delete selected")
 
         def on_exit() -> None:
-            nonlocal self, saved_transformations_widget
+            nonlocal self
             with open(self.save_path, "wb") as file:
-                pickle.dump(saved_transformations_widget.data, file)
+                pickle.dump(self.saved_transformations_widget.data, file)
                 logger.info("Transformation data saved to '{}'".format(str(self.save_path)))
 
         QApplication.instance().aboutToQuit.connect(on_exit)
 
         @save_button.changed.connect
         def _():
-            nonlocal self, saved_transformations_widget
+            nonlocal self
             if self.supress_callbacks:
                 return
             new_name = datetime.now().strftime("%Y-%m-%d, %H:%M:%S")
-            saved_transformations_widget.add_choice(new_name, self.get_current_transformation())
+            self.saved_transformations_widget.add_choice(new_name, self.get_current_transformation())
 
         @set_to_saved_button.changed.connect
         def _():
-            nonlocal self, saved_transformations_widget
+            nonlocal self
             if self.supress_callbacks:
                 return
-            current = saved_transformations_widget.get_selected()
+            current = self.saved_transformations_widget.get_selected()
             if len(current) == 1:
-                self.set_transformation(saved_transformations_widget.get_data(current[0]))
+                self.set_transformation(self.saved_transformations_widget.get_data(current[0]))
                 self.refresh_render_function(self.get_current_transformation())
             elif len(current) == 0:
                 logger.warning("No transformation selected.")
@@ -128,16 +129,21 @@ class TransformationManager:
 
         @del_button.changed.connect
         def _():
-            nonlocal self, saved_transformations_widget
+            nonlocal self
             if self.supress_callbacks:
                 return
-            current = saved_transformations_widget.get_selected()  # this actually returns a list of strings
+            current = self.saved_transformations_widget.get_selected()  # this actually returns a list of strings
             if len(current) == 0:
                 logger.warning("No transformation selected.")
                 return
-            saved_transformations_widget.del_choices(current)
+            self.saved_transformations_widget.del_choices(current)
 
         return widgets.Container(widgets=[moving_parameters, widgets.Label(value="Transformations"),
                                           widgets.Container(widgets=[save_button, set_to_saved_button, del_button],
-                                                            layout="horizontal"), saved_transformations_widget.widget],
-                                 labels=False)
+                                                            layout="horizontal"),
+                                          self.saved_transformations_widget.widget], labels=False)
+
+    def save_transformation(self, transformation: Transformation, name: str) -> None:
+        while self.saved_transformations_widget.name_exists(name):
+            name = "{} (1)".format(name)
+        self.saved_transformations_widget.add_choice(name, transformation)

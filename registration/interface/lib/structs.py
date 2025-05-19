@@ -15,9 +15,12 @@ class WidgetSelectData:
         self.data[name] = data
 
     def get_data(self, name: str) -> Any | None:
-        if name in self.data:
+        if self.name_exists(name):
             return self.data[name]
         return None
+
+    def name_exists(self, name: str) -> bool:
+        return name in self.data
 
     def get_selected(self) -> str:
         return self.widget.current_choice

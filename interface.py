@@ -50,11 +50,14 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         del drr_spec
     else:
         # Load the given X-ray
-        drr_image, detector_spacing, scene_geometry = data.read_dicom(x_ray, downsample_factor=8)
+        drr_image, detector_spacing, scene_geometry = data.read_dicom(x_ray, downsample_factor=4)
         drr_image = drr_image.to(device=device)
-        f_middle = 0.5
+        f_middle = 0.3
+        # drr_image = drr_image[int(float(drr_image.size()[0]) * .5 * (1. - f_middle)):int(
+        #     float(drr_image.size()[0]) * .5 * (1. + f_middle)), :]
         drr_image = drr_image[int(float(drr_image.size()[0]) * .5 * (1. - f_middle)):int(
-            float(drr_image.size()[0]) * .5 * (1. + f_middle)), :]
+            float(drr_image.size()[0]) * .5 * (1. + f_middle)),
+                    int(float(drr_image.size()[1]) * .5 * (1. - 0.7)):int(float(drr_image.size()[1]) * .5 * (1. + 0.7))]
 
         logger.info("Calculating 2D sinogram (the fixed image)...")
 
@@ -75,7 +78,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     viewer = napari.Viewer()
     fixed_image_layer = viewer.add_image(drr_image.cpu().numpy(), colormap="yellow", interpolation2d="linear")
-    moving_image_layer = viewer.add_image(np.zeros((1, 1)), colormap="blue", blending="additive",
+    moving_image_layer = viewer.add_image(np.zeros(drr_image.size()), colormap="blue", blending="additive",
                                           interpolation2d="linear")
 
     view_params = ViewParams(translation_sensitivity=0.06, rotation_sensitivity=0.002)
@@ -83,10 +86,10 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     key_states = {"Alt": False}
 
     def render_drr(transformation: Transformation):
-        nonlocal scene_geometry, moving_image_layer
+        nonlocal scene_geometry, moving_image_layer, voxel_spacing, detector_spacing, scene_geometry, drr_image
         moved_drr = geometry.generate_drr(vol_data, transformation=transformation, voxel_spacing=voxel_spacing,
                                           detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                          output_size=drr_image.size())  # , samples_per_ray=500
+                                          output_size=drr_image.size())
         moving_image_layer.data = moved_drr.cpu().numpy()
 
     transformation_manager = transformations.TransformationManager(
@@ -180,7 +183,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     viewer.window.add_dock_widget(transformations_widget, name="Transformations", area="right",
                                   menu=viewer.window.window_menu)
 
-    register_widget = build_register_widget(fixed_image, vol_data, voxel_spacing, detector_spacing,
+    register_widget = build_register_widget(drr_image, vol_data, voxel_spacing, detector_spacing,
                                             transformation_manager, scene_geometry)
     viewer.window.add_dock_widget(register_widget, name="Register", area="right", menu=viewer.window.window_menu)
 
