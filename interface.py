@@ -50,7 +50,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         del drr_spec
     else:
         # Load the given X-ray
-        drr_image, detector_spacing, scene_geometry = data.read_dicom(x_ray)
+        drr_image, detector_spacing, scene_geometry = data.read_dicom(x_ray, downsample_factor=8)
         drr_image = drr_image.to(device=device)
         f_middle = 0.5
         drr_image = drr_image[int(float(drr_image.size()[0]) * .5 * (1. - f_middle)):int(
@@ -86,7 +86,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         nonlocal scene_geometry, moving_image_layer
         moved_drr = geometry.generate_drr(vol_data, transformation=transformation, voxel_spacing=voxel_spacing,
                                           detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                          output_size=torch.Size([1000, 1000]))  # , samples_per_ray=500
+                                          output_size=drr_image.size())  # , samples_per_ray=500
         moving_image_layer.data = moved_drr.cpu().numpy()
 
     transformation_manager = transformations.TransformationManager(

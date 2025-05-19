@@ -17,7 +17,7 @@ def deterministic_hash(text: str):
     return ret
 
 
-def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
+def read_nrrd(path: str, *, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
     logger.info("Loading CT data file {}...".format(path))
     data, header = nrrd.read(path)
     logger.info("CT data file loaded.")
@@ -26,14 +26,14 @@ def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tenso
     logger.info("CT data volume size = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
     data = torch.tensor(data, device="cpu")
     image = data.to(dtype=torch.float32)
-    image[image < -1000.0] = -1000.0
+    image[image < -800.0] = -800.0
     image -= image.min()
     image /= image.max()
     if downsample_factor > 1:
         down_sampler = torch.nn.AvgPool3d(downsample_factor)
         image = down_sampler(image.unsqueeze(0))[0]
-    sizes = image.size()
-    logger.info("CT volume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
+        sizes = image.size()
+        logger.info("CT volume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
     directions = torch.tensor(header['space directions'])
     spacing = float(downsample_factor) * directions.norm(dim=1).flip(dims=(0,))
     logger.info("CT voxel spacing = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
@@ -41,21 +41,24 @@ def read_nrrd(path: str, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tenso
     return image, spacing
 
 
-def read_dicom(path: str):
+def read_dicom(path: str, *, downsample_factor=1):
     logger.info("Loading X-ray DICOM file {}...".format(path))
     dataset = pydicom.dcmread(path)
     logger.info("DICOM file loaded.")
     logger.info("Processing DICOM data...")
     image = torch.tensor(pydicom.pixels.pixel_array(dataset), dtype=torch.float32)
     logger.info("X-ray image size = [{} x {}]".format(image.size()[0], image.size()[1]))
+    if downsample_factor > 1:
+        down_sampler = torch.nn.AvgPool2d(downsample_factor)
+        image = down_sampler(image.unsqueeze(0))[0]
+        logger.info("X-ray image size after down-sampling = [{} x {}]".format(image.size()[0], image.size()[1]))
     spacing = dataset["PixelSpacing"]
-    spacing = torch.tensor([spacing[0], spacing[1]])
+    spacing = float(downsample_factor) * torch.tensor([spacing[0], spacing[1]])
     logger.info("X-ray pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
     scene_geometry = SceneGeometry(dataset["DistanceSourceToPatient"].value)
     logger.info("X-ray distance source-to-patient = {} mm".format(scene_geometry.source_distance))
     logger.info("X-ray DICOM file processed.")
     return image, spacing, scene_geometry
-
 
 
 def load_cached_volume(cache_directory: str, ct_volume_path: str):

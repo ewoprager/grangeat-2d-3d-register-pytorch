@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+import pyswarms
 
 from registration.lib.structs import *
 from registration.lib.geometry import generate_drr
@@ -44,6 +45,7 @@ def register(fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: tor
     device = volume.device
 
     def objective(params: torch.Tensor) -> torch.Tensor:
+        nonlocal fixed_image, volume, voxel_spacing, detector_spacing, device, scene_geometry
         return -objective_function_standard(fixed_image=fixed_image, volume=volume, voxel_spacing=voxel_spacing,
                                             detector_spacing=detector_spacing,
                                             transformation=Transformation(params[0:3], params[3:6]).to(device=device),
@@ -52,24 +54,49 @@ def register(fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: tor
     logger.info("Optimising...")
     param_history = []
     value_history = []
-    start_params: torch.Tensor = initial_transformation.vectorised()
+    start_params: torch.Tensor = initial_transformation.vectorised().cpu()
 
-    def objective_scipy(params: np.ndarray) -> float:
-        params = torch.tensor(copy.deepcopy(params))
-        param_history.append(params)
-        value = objective(params)
-        value_history.append(value)
-        it_callback(param_history, value_history, Transformation(params[0:3], params[3:6]).to(device=device))
-        return value.item()
+    if True:
+        def objective_pso(particle_params: np.ndarray) -> np.ndarray:
+            ret = np.zeros(particle_params.shape[0])
+            for i, row in enumerate(particle_params):
+                params = torch.tensor(copy.deepcopy(row))
+                param_history.append(params)
+                value = objective(params)
+                value_history.append(value)
+                it_callback(param_history, value_history, Transformation(params[0:3], params[3:6]).to(device=device))
+                ret[i] = value.item()
+            return ret
 
-    tic = time.time()
-    # res = scipy.optimize.minimize(objective_scipy, start_params.cpu().numpy(), method='Powell')
-    res = scipy.optimize.basinhopping(objective_scipy, start_params.cpu().numpy(), T=1.0,
-                                      minimizer_kwargs={"method": 'Nelder-Mead'})
-    toc = time.time()
-    logger.info("Done. Took {:.3f}s.".format(toc - tic))
-    logger.info(res)
-    converged_params = torch.from_numpy(res.x)
+        options = {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
+        optimiser = pyswarms.single.GlobalBestPSO(n_particles=500, dimensions=6,
+                                                  init_pos=np.random.normal(loc=start_params.numpy(), size=(500, 6),
+                                                                            scale=np.array(
+                                                                                [0.2, 0.2, 0.2, 10.0, 10.0, 10.0])),
+                                                  options=options)
+
+        cost, converged_params = optimiser.optimize(objective_pso, iters=10)
+        converged_params = torch.from_numpy(converged_params)
+        logger.info("PSO finished")
+
+    if False:
+        def objective_scipy(params: np.ndarray) -> float:
+            params = torch.tensor(copy.deepcopy(params))
+            param_history.append(params)
+            value = objective(params)
+            value_history.append(value)
+            it_callback(param_history, value_history, Transformation(params[0:3], params[3:6]).to(device=device))
+            return value.item()
+
+        tic = time.time()
+        # res = scipy.optimize.minimize(objective_scipy, start_params, method='Powell')
+        res = scipy.optimize.basinhopping(objective_scipy, start_params, T=1.0,
+                                          minimizer_kwargs={"method": 'Nelder-Mead'})
+        toc = time.time()
+        logger.info("Done. Took {:.3f}s.".format(toc - tic))
+        logger.info(res)
+        converged_params = torch.from_numpy(res.x)
+
     return Transformation(converged_params[0:3], converged_params[3:6]).to(device=device)
 
 
