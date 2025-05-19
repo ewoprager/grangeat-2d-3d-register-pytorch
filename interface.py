@@ -23,7 +23,19 @@ from registration.lib import geometry
 from registration.interface.lib.structs import *
 import registration.interface.transformations as transformations
 from registration.interface.view import build_view_widget
-from registration.interface.register import build_register_widget
+from registration.interface.register import RegisterWidget
+from registration.lib.geometry import generate_drr
+from registration.objective_function import zncc
+
+
+def objective_function_standard(*, fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: torch.Tensor,
+                                detector_spacing: torch.Tensor, transformation: Transformation,
+                                scene_geometry: SceneGeometry) -> torch.Tensor:
+    moving_image = generate_drr(volume, transformation=transformation, voxel_spacing=voxel_spacing,
+                                detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                output_size=fixed_image.size())
+
+    return -zncc(fixed_image, moving_image)
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
@@ -183,8 +195,13 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     viewer.window.add_dock_widget(transformations_widget, name="Transformations", area="right",
                                   menu=viewer.window.window_menu)
 
-    register_widget = build_register_widget(drr_image, vol_data, voxel_spacing, detector_spacing,
-                                            transformation_manager, scene_geometry)
+    def obj_func(transformation: Transformation) -> torch.Tensor:
+        nonlocal drr_image, vol_data, voxel_spacing, scene_geometry, detector_spacing
+        return objective_function_standard(fixed_image=fixed_image, volume=vol_data, voxel_spacing=voxel_spacing,
+                                           detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                           transformation=transformation.to(device=vol_data.device))
+
+    register_widget = RegisterWidget(transformation_manager=transformation_manager, objective_function=obj_func)
     viewer.window.add_dock_widget(register_widget, name="Register", area="right", menu=viewer.window.window_menu)
 
     render_drr(transformation_manager.get_current_transformation())
