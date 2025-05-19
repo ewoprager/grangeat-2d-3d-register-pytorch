@@ -5,6 +5,8 @@ import time
 from typing import NamedTuple, Any
 from datetime import datetime
 
+os.environ["QT_API"] = "PyQt6"
+
 import numpy as np
 import torch
 import napari

@@ -10,8 +10,8 @@ import napari
 from magicgui import magicgui, widgets
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQT
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 
 from registration.lib.structs import *
 from registration.lib.geometry import generate_drr
@@ -87,7 +87,6 @@ class Worker(QObject):
         self.scene_geometry = scene_geometry
         self.initial_transformation = initial_transformation
 
-
     def run(self):
         def iteration_callback(param_history: list, value_history: list, latest_transformation: Transformation) -> None:
             nonlocal self
@@ -113,44 +112,75 @@ class RegisterWidget(widgets.Container):
         self.fig, self.axes = plt.subplots()
         register_button = widgets.PushButton(label="Register")
 
+        self.register_progress = widgets.Label(label="no registration run")
+        self.last_value = None
+        self.last_rendered_iteration = 0
+        self.iteration_callback_count = 0
+        self.evals_per_render = 10
+        self.best = None
+
+        self.evals_per_render_widget = widgets.SpinBox(value=10, min=1, max=1000, step=1)
+
+        @self.evals_per_render_widget.changed.connect
+        def _(new_value):
+            nonlocal self
+            self.evals_per_render = new_value
+
         def iteration_callback(param_history: list, value_history: list, latest_transformation: Transformation) -> None:
             nonlocal self
-            # self.axes.cla()
-            param_history = torch.stack(param_history, dim=0)
-            value_history = torch.tensor(value_history)
+            self.iteration_callback_count += 1
+            self.last_value = value_history[-1]
+            if self.iteration_callback_count - self.last_rendered_iteration >= self.evals_per_render:
+                self.axes.cla()
+                param_history = torch.stack(param_history, dim=0)
+                value_history = torch.tensor(value_history)
 
-            its = np.arange(param_history.size()[0])
-            its2 = np.array([its[0], its[-1]])
+                its = np.arange(param_history.size()[0])
+                its2 = np.array([its[0], its[-1]])
 
-            # rotations
-            # self.axes.plot(its2, np.full(2, 0.), ls='dashed')
-            # self.axes.plot(its, param_history[:, 0], label="r0")
-            # self.axes.plot(its, param_history[:, 1], label="r1")
-            # self.axes.plot(its, param_history[:, 2], label="r2")
-            # self.axes.legend()
-            # self.axes.set_xlabel("iteration")
-            # self.axes.set_ylabel("param value [rad]")
-            # self.axes.set_title("rotation parameter values over optimisation iterations")
-            # self.fig.canvas.draw()
+                # rotations
+                # self.axes.plot(its2, np.full(2, 0.), ls='dashed')
+                # self.axes.plot(its, param_history[:, 0], label="r0")
+                # self.axes.plot(its, param_history[:, 1], label="r1")
+                # self.axes.plot(its, param_history[:, 2], label="r2")
+                # self.axes.legend()
+                # self.axes.set_xlabel("iteration")
+                # self.axes.set_ylabel("param value [rad]")
+                # self.axes.set_title("rotation parameter values over optimisation iterations")
+                # self.fig.canvas.draw()
 
-            self.transformation_manager.set_transformation(latest_transformation)
+                # value
+                self.axes.plot(its, value_history)
+                self.axes.set_xlabel("iteration")
+                self.axes.set_ylabel("objective function value")
+                self.fig.canvas.draw()
+
+                self.transformation_manager.set_transformation(latest_transformation)
+
+                self.last_rendered_iteration = self.iteration_callback_count
+                self.best = np.min(torch.tensor(value_history).cpu().numpy())
+
+            self.register_progress.label = "Iteration {}: latest = {}, best = {}".format(self.iteration_callback_count,
+                                                                                         self.last_value, self.best)
 
         @register_button.changed.connect
         def _():
             nonlocal self
-            thread = QThread()
-            worker = Worker(self.fixed_image, self.volume, self.voxel_spacing, self.detector_spacing,
-                            self.transformation_manager.get_current_transformation(), self.scene_geometry)
-            worker.moveToThread(thread)
-            thread.started.connect(worker.run)
-            worker.finished.connect(thread.quit)
-            worker.finished.connect(worker.deleteLater)
-            thread.finished.connect(thread.deleteLater)
-            worker.progress.connect(iteration_callback)
-            thread.start()
+            self.thread = QThread()
+            self.worker = Worker(self.fixed_image, self.volume, self.voxel_spacing, self.detector_spacing,
+                                 self.transformation_manager.get_current_transformation(), self.scene_geometry)
+            self.worker.moveToThread(self.thread)
+            self.thread.started.connect(self.worker.run)
+            self.worker.finished.connect(self.thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.thread.finished.connect(self.thread.deleteLater)
+            self.worker.progress.connect(iteration_callback)
+            self.thread.start()
 
-        self.native.layout().addWidget(FigureCanvasQT(self.fig))
+        self.native.layout().addWidget(FigureCanvasQTAgg(self.fig))
         self.append(register_button)
+        self.append(self.register_progress)
+        self.append(self.evals_per_render_widget)
 
 
 def build_register_widget(fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: torch.Tensor,

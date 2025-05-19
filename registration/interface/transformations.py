@@ -1,4 +1,5 @@
 from typing import NamedTuple, Any, Callable
+import copy
 from datetime import datetime
 import logging
 
@@ -25,7 +26,8 @@ class TransformationManager:
         self.supress_callbacks = False
 
     def get_current_transformation(self) -> Transformation:
-        return self.current_transformation
+        ret = copy.deepcopy(self.current_transformation)
+        return ret
 
     def set_transformation(self, new_value: Transformation) -> None:
         self.current_transformation = new_value
@@ -64,10 +66,10 @@ class TransformationManager:
             nonlocal self
             if self.supress_callbacks:
                 return
+            device = self.get_current_transformation().device()
             self.current_transformation = Transformation(
                 translation=torch.tensor([x_translation, y_translation, z_translation]),
-                rotation=torch.tensor([x_rotation, y_rotation, z_rotation])).to(
-                device=self.get_current_transformation().device())
+                rotation=torch.tensor([x_rotation, y_rotation, z_rotation])).to(device=device)
             self.refresh_render_function(self.get_current_transformation())
 
         save_button = widgets.PushButton(label="Save new")
@@ -99,7 +101,7 @@ class TransformationManager:
 
         @del_button.changed.connect
         def _():
-            nonlocal saved_transformations_widget
+            nonlocal self, saved_transformations_widget
             if self.supress_callbacks:
                 return
             current = saved_transformations_widget.get_selected()  # this actually returns a list of strings
