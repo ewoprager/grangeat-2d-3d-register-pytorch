@@ -1,6 +1,7 @@
 import os
 import argparse
 import logging.config
+import pathlib
 import time
 from typing import NamedTuple, Any
 from datetime import datetime
@@ -90,7 +91,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
     transformation_manager = transformations.TransformationManager(
         initial_transformation=transformation_ground_truth if x_ray is None else Transformation.random(device=device),
-        refresh_render=render_drr)
+        refresh_render=render_drr, save_path=pathlib.Path("cache/saved_transformations.pkl"))
 
     @viewer.bind_key("Alt")
     def on_alt_down(viewer):
@@ -122,7 +123,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                 dragged = True
 
                 delta = view_params.rotation_sensitivity * (
-                            np.array([event.position[1], -event.position[0]]) - drag_start)
+                        np.array([event.position[1], -event.position[0]]) - drag_start)
                 euler_angles = [delta[1], delta[0], 0.0]
                 rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
                 rot_combined = rot_euler * rotation_start

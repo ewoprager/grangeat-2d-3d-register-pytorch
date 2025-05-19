@@ -158,10 +158,10 @@ class RegisterWidget(widgets.Container):
                 self.transformation_manager.set_transformation(latest_transformation)
 
                 self.last_rendered_iteration = self.iteration_callback_count
-                self.best = np.min(torch.tensor(value_history).cpu().numpy())
+                self.best = torch.tensor(value_history).cpu().min().clone().numpy()
 
-            self.register_progress.label = "Iteration {}: latest = {}, best = {}".format(self.iteration_callback_count,
-                                                                                         self.last_value, self.best)
+            self.register_progress.label = "Iteration {}: latest = {:.4f}, best = {:.4f}".format(
+                self.iteration_callback_count, self.last_value, self.best)
 
         @register_button.changed.connect
         def _():

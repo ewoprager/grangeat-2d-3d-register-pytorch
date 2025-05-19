@@ -1,6 +1,8 @@
+import pathlib
 from typing import NamedTuple, Any, Callable
 import copy
 from datetime import datetime
+import pickle
 import logging
 
 logger = logging.getLogger(__name__)
@@ -8,6 +10,7 @@ logger = logging.getLogger(__name__)
 import torch
 import napari
 from magicgui import magicgui, widgets
+from qtpy.QtWidgets import QApplication
 
 from registration.lib.structs import Transformation
 from registration.interface.lib.structs import *
@@ -19,15 +22,16 @@ class SavedTransformation(NamedTuple):
 
 
 class TransformationManager:
-    def __init__(self, initial_transformation: Transformation, refresh_render: Callable[[Transformation], None]):
+    def __init__(self, *, initial_transformation: Transformation, refresh_render: Callable[[Transformation], None],
+                 save_path: pathlib.Path):
         self.current_transformation = initial_transformation
         self.refresh_render_function = refresh_render
+        self.save_path = save_path
         self.widget = self.build_transformations_widget()
         self.supress_callbacks = False
 
     def get_current_transformation(self) -> Transformation:
-        ret = copy.deepcopy(self.current_transformation)
-        return ret
+        return self.current_transformation
 
     def set_transformation(self, new_value: Transformation) -> None:
         self.current_transformation = new_value
@@ -73,9 +77,32 @@ class TransformationManager:
             self.refresh_render_function(self.get_current_transformation())
 
         save_button = widgets.PushButton(label="Save new")
-        saved_transformations_widget = WidgetSelectData(initial_choices={"initial": self.current_transformation})
+        initial_choices = {"initial": self.current_transformation}
+        if self.save_path.is_file():
+            with open(self.save_path, "rb") as file:
+                loaded = pickle.load(file)
+                valid = isinstance(loaded, dict)
+                if valid:
+                    for k, v in loaded.items():
+                        valid = valid and isinstance(k, str) and isinstance(v, Transformation)
+                if valid:
+                    initial_choices = initial_choices | loaded
+                    logger.info("Saved transformation data loaded from '{}'".format(self.save_path))
+                else:
+                    logger.warning("Invalid saved transformation data at '{}'".format(self.save_path))
+        else:
+            logger.warning("Transformation save file '{}' doesn't exist.".format(self.save_path))
+        saved_transformations_widget = WidgetSelectData(initial_choices=initial_choices)
         set_to_saved_button = widgets.PushButton(label="Load selected")
         del_button = widgets.PushButton(label="Delete selected")
+
+        def on_exit() -> None:
+            nonlocal self, saved_transformations_widget
+            with open(self.save_path, "wb") as file:
+                pickle.dump(saved_transformations_widget.data, file)
+                logger.info("Transformation data saved to '{}'".format(self.save_path))
+
+        QApplication.instance().aboutToQuit.connect(on_exit)
 
         @save_button.changed.connect
         def _():
