@@ -38,6 +38,18 @@ def objective_function_standard(*, fixed_image: torch.Tensor, volume: torch.Tens
     return -zncc(fixed_image, moving_image)
 
 
+def objective_function_grangeat(*, fixed_image: torch.Tensor, sinogram3d: Sinogram, transformation: Transformation,
+                                scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+    device = sinogram3d.device()
+    source_position = scene_geometry.source_position(device=device)
+    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device).to(dtype=torch.float32))
+
+    resampled = sinogram3d.resample(ph_matrix, fixed_image_grid)
+
+    return -zncc(fixed_image, resampled)
+
+
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
          sinogram_size: int, x_ray: str | None = None) -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -73,7 +85,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
         logger.info("Calculating 2D sinogram (the fixed image)...")
 
-        sinogram2d_counts = 1024
+        sinogram2d_counts = max(drr_image.size()[0], drr_image.size()[1])
         image_diag: float = (
                 detector_spacing * torch.tensor(drr_image.size(), dtype=torch.float32)).square().sum().sqrt().item()
         sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
@@ -89,9 +101,12 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     fixed_image_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, fixed_image.size(), device=device)
 
     viewer = napari.Viewer()
-    fixed_image_layer = viewer.add_image(drr_image.cpu().numpy(), colormap="yellow", interpolation2d="linear")
+    fixed_image_layer = viewer.add_image(drr_image.cpu().numpy(), colormap="yellow", interpolation2d="linear",
+                                         name="Fixed image")
     moving_image_layer = viewer.add_image(np.zeros(drr_image.size()), colormap="blue", blending="additive",
-                                          interpolation2d="linear")
+                                          interpolation2d="linear", name="DRR")
+    sinogram2d_layer = viewer.add_image(fixed_image.cpu().numpy(), colormap="yellow", interpolation2d="linear",
+                                        translate=(drr_image.size()[0] + 24, 0), name="Fixed sinogram")
 
     view_params = ViewParams(translation_sensitivity=0.06, rotation_sensitivity=0.002)
 
@@ -201,7 +216,14 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
                                            detector_spacing=detector_spacing, scene_geometry=scene_geometry,
                                            transformation=transformation.to(device=vol_data.device))
 
-    register_widget = RegisterWidget(transformation_manager=transformation_manager, objective_function=obj_func)
+    def obj_func_grangeat(transformation: Transformation) -> torch.Tensor:
+        nonlocal fixed_image, sinogram3d, scene_geometry, fixed_image_grid
+        return objective_function_grangeat(fixed_image=fixed_image, sinogram3d=sinogram3d,
+                                           fixed_image_grid=fixed_image_grid, scene_geometry=scene_geometry,
+                                           transformation=transformation)
+
+    register_widget = RegisterWidget(transformation_manager=transformation_manager,
+                                     objective_function=obj_func_grangeat)
     viewer.window.add_dock_widget(register_widget, name="Register", area="right", menu=viewer.window.window_menu)
 
     render_drr(transformation_manager.get_current_transformation())

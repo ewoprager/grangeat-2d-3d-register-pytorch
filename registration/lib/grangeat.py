@@ -21,13 +21,15 @@ def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Te
 
 
 def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, detector_spacing: torch.Tensor,
-                          output_grid: Sinogram2dGrid, samples_per_line: int = 128) -> torch.Tensor:
+                          output_grid: Sinogram2dGrid) -> torch.Tensor:
     device = drr_image.device
     assert output_grid.device_consistent()
     assert output_grid.phi.device == device
 
     img_width = drr_image.size()[1]
     img_height = drr_image.size()[0]
+
+    samples_per_line = int(torch.tensor(drr_image.size()).square().sum().sqrt().ceil().item())
 
     xs = detector_spacing[1] * (torch.arange(0, img_width, 1, dtype=torch.float32) - 0.5 * float(img_width - 1))
     ys = detector_spacing[0] * (torch.arange(0, img_height, 1, dtype=torch.float32) - 0.5 * float(img_height - 1))

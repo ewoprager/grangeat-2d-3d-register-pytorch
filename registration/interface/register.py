@@ -123,7 +123,8 @@ class RegisterWidget(widgets.Container):
         self.last_value = None
         self.last_rendered_iteration = 0
 
-        self.evals_per_render_widget = widgets.SpinBox(value=10, min=1, max=1000, step=1)
+        self.evals_per_render_widget = widgets.SpinBox(value=10, min=1, max=1000, step=1,
+                                                       label="Evaluations per re-plot")
 
         @self.evals_per_render_widget.changed.connect
         def _(new_value):
@@ -199,6 +200,5 @@ class RegisterWidget(widgets.Container):
         self.append(eval_once_button)
         self.append(self.eval_result_label)
         self.append(register_button)
-        self.append(stop_register_button)
         self.append(self.register_progress)
         self.append(self.evals_per_render_widget)
