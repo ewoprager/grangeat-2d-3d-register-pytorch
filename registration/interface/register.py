@@ -63,8 +63,8 @@ def register(fixed_image: torch.Tensor, volume: torch.Tensor, voxel_spacing: tor
         return value.item()
 
     tic = time.time()
-    # res = scipy.optimize.minimize(objective_scipy, start_params.numpy(), method='Powell')
-    res = scipy.optimize.basinhopping(objective_scipy, start_params.cpu().numpy(), T=5.0,
+    # res = scipy.optimize.minimize(objective_scipy, start_params.cpu().numpy(), method='Powell')
+    res = scipy.optimize.basinhopping(objective_scipy, start_params.cpu().numpy(), T=1.0,
                                       minimizer_kwargs={"method": 'Nelder-Mead'})
     toc = time.time()
     logger.info("Done. Took {:.3f}s.".format(toc - tic))
@@ -129,7 +129,7 @@ class RegisterWidget(widgets.Container):
         def iteration_callback(param_history: list, value_history: list, latest_transformation: Transformation) -> None:
             nonlocal self
             self.iteration_callback_count += 1
-            self.last_value = value_history[-1]
+            self.last_value = value_history[-1].item()
             if self.iteration_callback_count - self.last_rendered_iteration >= self.evals_per_render:
                 self.axes.cla()
                 param_history = torch.stack(param_history, dim=0)
@@ -158,10 +158,10 @@ class RegisterWidget(widgets.Container):
                 self.transformation_manager.set_transformation(latest_transformation)
 
                 self.last_rendered_iteration = self.iteration_callback_count
-                self.best = torch.tensor(value_history).cpu().min().clone().numpy()
+                self.best = torch.tensor(value_history).cpu().min().item()
 
             self.register_progress.label = "Iteration {}: latest = {:.4f}, best = {:.4f}".format(
-                self.iteration_callback_count, self.last_value, self.best)
+                self.iteration_callback_count, self.last_value, 0.0 if self.best is None else self.best)
 
         @register_button.changed.connect
         def _():

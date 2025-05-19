@@ -87,11 +87,11 @@ class TransformationManager:
                         valid = valid and isinstance(k, str) and isinstance(v, Transformation)
                 if valid:
                     initial_choices = initial_choices | loaded
-                    logger.info("Saved transformation data loaded from '{}'".format(self.save_path))
+                    logger.info("Saved transformation data loaded from '{}'".format(str(self.save_path)))
                 else:
-                    logger.warning("Invalid saved transformation data at '{}'".format(self.save_path))
+                    logger.warning("Invalid saved transformation data at '{}'".format(str(self.save_path)))
         else:
-            logger.warning("Transformation save file '{}' doesn't exist.".format(self.save_path))
+            logger.warning("Transformation save file '{}' doesn't exist.".format(str(self.save_path)))
         saved_transformations_widget = WidgetSelectData(initial_choices=initial_choices)
         set_to_saved_button = widgets.PushButton(label="Load selected")
         del_button = widgets.PushButton(label="Delete selected")
@@ -100,7 +100,7 @@ class TransformationManager:
             nonlocal self, saved_transformations_widget
             with open(self.save_path, "wb") as file:
                 pickle.dump(saved_transformations_widget.data, file)
-                logger.info("Transformation data saved to '{}'".format(self.save_path))
+                logger.info("Transformation data saved to '{}'".format(str(self.save_path)))
 
         QApplication.instance().aboutToQuit.connect(on_exit)
 
