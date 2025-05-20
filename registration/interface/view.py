@@ -1,25 +1,27 @@
-from typing import NamedTuple, Any, Callable
+from typing import NamedTuple, Callable
 import logging
 
 logger = logging.getLogger(__name__)
 
 import torch
-import napari
-from magicgui import magicgui, widgets
+from magicgui import widgets
 
 from registration.interface.lib.structs import *
 
 
-def build_view_widget(get_view_params: Callable[[], ViewParams],
-                      set_view_params: Callable[[ViewParams], None]) -> widgets.Widget:
-    @magicgui(auto_call=True,
-              translation_sensitivity={"widget_type": "FloatSlider", "min": 0.005, "max": 0.5, "step": 0.005,
-                                       "label": "Translation sensitivity"},
-              rotation_sensitivity={"widget_type": "FloatSlider", "min": 0.0005, "max": 0.05, "step": 0.0005,
-                                    "label": "Rotation sensitivity"})
-    def view_params(translation_sensitivity: float = 0.06, rotation_sensitivity: float = 0.002):
-        nonlocal set_view_params
-        set_view_params(
-            ViewParams(translation_sensitivity=translation_sensitivity, rotation_sensitivity=rotation_sensitivity))
+class ViewWidget(widgets.Container):
+    def __init__(self, view_params_setter: Callable[[ViewParams], None]):
+        super().__init__()
+        self._view_params_setter = view_params_setter
+        self._translation_sensitivity_slider = widgets.FloatSlider(value=0.06, min=0.005, max=0.5, step=0.005,
+                                                                   label="Translation sensitivity")
+        self._rotation_sensitivity_slider = widgets.FloatSlider(value=0.002, min=0.0005, max=0.05, step=0.0005,
+                                                                label="Rotation sensitivity")
+        self._translation_sensitivity_slider.changed.connect(self._update)
+        self._rotation_sensitivity_slider.changed.connect(self._update)
+        self.append(self._translation_sensitivity_slider)
+        self.append(self._rotation_sensitivity_slider)
 
-    return view_params
+    def _update(self, *args) -> None:
+        self._view_params_setter(ViewParams(translation_sensitivity=self._translation_sensitivity_slider.get_value(),
+                                            rotation_sensitivity=self._rotation_sensitivity_slider.get_value()))

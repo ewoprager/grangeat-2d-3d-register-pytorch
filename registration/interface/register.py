@@ -16,7 +16,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 import pyswarms
 
 from registration.lib.structs import *
-from registration.interface.transformations import TransformationManager
+from registration.interface.transformations import TransformationWidget
 
 
 def register(*, initial_transformation: Transformation, objective_function: Callable[[Transformation], torch.Tensor],
@@ -83,122 +83,119 @@ class Worker(QObject):
     def __init__(self, *, initial_transformation: Transformation,
                  objective_function: Callable[[Transformation], torch.Tensor]):
         super().__init__()
-        self.initial_transformation = initial_transformation
-        self.objective_function = objective_function
+        self._initial_transformation = initial_transformation
+        self._objective_function = objective_function
 
     def run(self):
-        def iteration_callback(param_history: list, value_history: list) -> None:
-            nonlocal self
-            self.progress.emit(param_history, value_history)
-
-        res = register(initial_transformation=self.initial_transformation, iteration_callback=iteration_callback,
-                       objective_function=self.objective_function)
+        res = register(initial_transformation=self._initial_transformation, iteration_callback=self._iteration_callback,
+                       objective_function=self._objective_function)
         self.finished.emit(res)
+
+    def _iteration_callback(self, param_history: list, value_history: list) -> None:
+        self.progress.emit(param_history, value_history)
 
 
 class RegisterWidget(widgets.Container):
-    def __init__(self, *, transformation_manager: TransformationManager,
+    def __init__(self, *, transformation_widget: TransformationWidget,
                  objective_function: Callable[[Transformation], torch.Tensor]):
         super().__init__()
-        self.transformation_manager = transformation_manager
-        self.objective_function = objective_function
+        self._transformation_widget = transformation_widget
+        self._objective_function = objective_function
 
-        self.fig, self.axes = plt.subplots()
+        self._evals_per_render: int = 10
+        self._iteration_callback_count: int = 0
+        self._best: float | None = None
+        self._last_value: float | None = None
+        self._last_rendered_iteration: int = 0
+        self._thread: QThread | None = None
+        self._worker: Worker | None = None
 
-        eval_once_button = widgets.PushButton(label="Evaluate once")
-        self.eval_result_label = widgets.Label(label="Evaluation result: -")
+        self._fig, self._axes = plt.subplots()
+        self.native.layout().addWidget(FigureCanvasQTAgg(self._fig))
 
-        @eval_once_button.changed.connect
-        def _():
-            nonlocal self
-            res = objective_function(self.transformation_manager.get_current_transformation())
-            self.eval_result_label.label = "Evaluation result: {:.4f}".format(res.item())
+        self._eval_once_button = widgets.PushButton(label="Evaluate once")
+        self._eval_once_button.changed.connect(self._on_eval_once)
+        self.append(self._eval_once_button)
 
-        register_button = widgets.PushButton(label="Register")
+        self._eval_result_label = widgets.Label(label="Evaluation result: -")
+        self.append(self._eval_result_label)
 
-        self.register_progress = widgets.Label(label="no registration run")
-        self.evals_per_render = 10
-        self.iteration_callback_count = 0
-        self.best = None
-        self.last_value = None
-        self.last_rendered_iteration = 0
+        self._register_button = widgets.PushButton(label="Register")
+        self._register_button.changed.connect(self._on_register)
+        self.append(self._register_button)
 
-        self.evals_per_render_widget = widgets.SpinBox(value=10, min=1, max=1000, step=1,
+        self._register_progress = widgets.Label(label="no registration run")
+        self.append(self._register_progress)
+
+        self._evals_per_render_widget = widgets.SpinBox(value=10, min=1, max=1000, step=1,
                                                        label="Evaluations per re-plot")
+        self._evals_per_render_widget.changed.connect(self._on_evals_per_render)
+        self.append(self._evals_per_render_widget)
 
-        @self.evals_per_render_widget.changed.connect
-        def _(new_value):
-            nonlocal self
-            self.evals_per_render = new_value
+    def _on_eval_once(self):
+        res = self._objective_function(self._transformation_widget.get_current_transformation())
+        self._eval_result_label.label = "Evaluation result: {:.4f}".format(res.item())
 
-        def iteration_callback(param_history: list, value_history: list) -> None:
-            nonlocal self
-            self.iteration_callback_count += 1
-            self.last_value = value_history[-1].item()
-            if self.iteration_callback_count - self.last_rendered_iteration >= self.evals_per_render:
-                self.axes.cla()
-                param_history = torch.stack(param_history, dim=0)
-                value_history = torch.tensor(value_history)
+    def _on_register(self):
+        self._iteration_callback_count = 0
+        self._best = None
+        self._last_value = None
+        self._last_rendered_iteration = 0
+        self._thread = QThread()
+        self._worker = Worker(initial_transformation=self._transformation_widget.get_current_transformation(),
+                             objective_function=self._objective_function)
+        self._worker.moveToThread(self._thread)
+        self._thread.started.connect(self._worker.run)
+        self._worker.finished.connect(self._finish_callback)
+        self._worker.finished.connect(self._thread.quit)
+        self._worker.finished.connect(self._worker.deleteLater)
+        self._thread.finished.connect(self._thread.deleteLater)
+        self._worker.progress.connect(self._iteration_callback)
+        self._thread.start()
 
-                its = np.arange(param_history.size()[0])
-                its2 = np.array([its[0], its[-1]])
+    def _on_evals_per_render(self, *args):
+        self._evals_per_render = self._evals_per_render_widget.get_value()
 
-                # rotations
-                # self.axes.plot(its2, np.full(2, 0.), ls='dashed')
-                # self.axes.plot(its, param_history[:, 0], label="r0")
-                # self.axes.plot(its, param_history[:, 1], label="r1")
-                # self.axes.plot(its, param_history[:, 2], label="r2")
-                # self.axes.legend()
-                # self.axes.set_xlabel("iteration")
-                # self.axes.set_ylabel("param value [rad]")
-                # self.axes.set_title("rotation parameter values over optimisation iterations")
-                # self.fig.canvas.draw()
+    def _iteration_callback(self, param_history: list, value_history: list) -> None:
+        self._iteration_callback_count += 1
+        self._last_value = value_history[-1].item()
+        if self._iteration_callback_count - self._last_rendered_iteration >= self._evals_per_render:
+            self._axes.cla()
+            param_history = torch.stack(param_history, dim=0)
+            value_history = torch.tensor(value_history)
 
-                # value
-                self.axes.plot(its, value_history)
-                self.axes.set_xlabel("iteration")
-                self.axes.set_ylabel("objective function value")
-                self.fig.canvas.draw()
+            its = np.arange(param_history.size()[0])
+            its2 = np.array([its[0], its[-1]])
 
-                self.last_rendered_iteration = self.iteration_callback_count
-                values = torch.tensor(value_history).cpu()
-                self.best, best_index = values.min(0)
-                self.best = self.best.item()
-                best_index = best_index.item()
-                best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
-                self.transformation_manager.set_transformation(best_transformation)
+            # rotations
+            # self.axes.plot(its2, np.full(2, 0.), ls='dashed')
+            # self.axes.plot(its, param_history[:, 0], label="r0")
+            # self.axes.plot(its, param_history[:, 1], label="r1")
+            # self.axes.plot(its, param_history[:, 2], label="r2")
+            # self.axes.legend()
+            # self.axes.set_xlabel("iteration")
+            # self.axes.set_ylabel("param value [rad]")
+            # self.axes.set_title("rotation parameter values over optimisation iterations")
+            # self.fig.canvas.draw()
 
-            self.register_progress.label = "Iteration {}: latest = {:.4f}, best = {:.4f}".format(
-                self.iteration_callback_count, self.last_value, 0.0 if self.best is None else self.best)
+            # value
+            self._axes.plot(its, value_history)
+            self._axes.set_xlabel("iteration")
+            self._axes.set_ylabel("objective function value")
+            self._fig.canvas.draw()
 
-        def finish_callback(converged_transformation: Transformation):
-            nonlocal self
-            self.transformation_manager.set_transformation(converged_transformation)
-            self.transformation_manager.save_transformation(converged_transformation, "registration result {}".format(
-                datetime.now().strftime("%Y-%m-%d, %H:%M:%S")))
+            self._last_rendered_iteration = self._iteration_callback_count
+            values = torch.tensor(value_history).cpu()
+            self._best, best_index = values.min(0)
+            self._best = self._best.item()
+            best_index = best_index.item()
+            best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
+            self._transformation_widget.set_current_transformation(best_transformation)
 
-        @register_button.changed.connect
-        def _():
-            nonlocal self
-            self.iteration_callback_count = 0
-            self.best = None
-            self.last_value = None
-            self.last_rendered_iteration = 0
-            self.thread = QThread()
-            self.worker = Worker(initial_transformation=self.transformation_manager.get_current_transformation(),
-                                 objective_function=self.objective_function)
-            self.worker.moveToThread(self.thread)
-            self.thread.started.connect(self.worker.run)
-            self.worker.finished.connect(finish_callback)
-            self.worker.finished.connect(self.thread.quit)
-            self.worker.finished.connect(self.worker.deleteLater)
-            self.thread.finished.connect(self.thread.deleteLater)
-            self.worker.progress.connect(iteration_callback)
-            self.thread.start()
+            self._register_progress.label = "Iteration {}: latest = {:.4f}, best = {:.4f}".format(
+                self._iteration_callback_count, self._last_value, 0.0 if self._best is None else self._best)
 
-        self.native.layout().addWidget(FigureCanvasQTAgg(self.fig))
-        self.append(eval_once_button)
-        self.append(self.eval_result_label)
-        self.append(register_button)
-        self.append(self.register_progress)
-        self.append(self.evals_per_render_widget)
+    def _finish_callback(self, converged_transformation: Transformation):
+        self._transformation_widget.set_current_transformation(converged_transformation)
+        self._transformation_widget.save_transformation(converged_transformation, "registration result {}".format(
+            datetime.now().strftime("%Y-%m-%d, %H:%M:%S")))
