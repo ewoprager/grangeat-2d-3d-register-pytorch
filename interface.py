@@ -68,8 +68,9 @@ class Interface:
         self._viewer.window.add_dock_widget(self._transformation_widget, name="Transformations", area="right",
                                             menu=self._viewer.window.window_menu)
 
-        self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget,
-                                               objective_function=self.registration_data.objective_function_grangeat)
+        self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget, objective_functions={
+            "drr": self.registration_data.objective_function_drr,
+            "grangeat": self.registration_data.objective_function_grangeat})
         self._viewer.window.add_dock_widget(self._register_widget, name="Register", area="right",
                                             menu=self._viewer.window.window_menu)
 

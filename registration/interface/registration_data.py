@@ -115,7 +115,7 @@ class RegistrationData:
         return self.sinogram3d.resample(ph_matrix, self.sinogram2d_grid)
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        moving_image = geometry.generate_drr(self.ct_volume, transformation=transformation,
+        moving_image = geometry.generate_drr(self.ct_volume, transformation=transformation.to(device=self.device),
                                              voxel_spacing=self.ct_spacing, detector_spacing=self.fixed_image_spacing,
                                              scene_geometry=self.scene_geometry, output_size=self.fixed_image.size())
         return -objective_function.zncc(self.fixed_image, moving_image)

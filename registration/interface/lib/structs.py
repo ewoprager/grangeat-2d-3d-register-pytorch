@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 from magicgui import magicgui, widgets
 
 class WidgetSelectData:
-    def __init__(self, initial_choices: dict[str, Any] = {}):
-        self._widget = widgets.Select(choices = [key for key in initial_choices])
+    def __init__(self, widget_type: type, initial_choices: dict[str, Any] = {}, **kwargs):
+        self._widget = widget_type(choices = [key for key in initial_choices], **kwargs)
         self._data = initial_choices
 
     @property

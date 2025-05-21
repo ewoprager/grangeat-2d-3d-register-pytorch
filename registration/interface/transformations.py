@@ -72,7 +72,7 @@ class TransformationWidget(widgets.Container):
                     logger.warning("Invalid saved transformation data at '{}'".format(str(self._save_path)))
         else:
             logger.warning("Transformation save file '{}' doesn't exist.".format(str(self._save_path)))
-        self._select_saved_widget = WidgetSelectData(initial_choices=initial_choices)
+        self._select_saved_widget = WidgetSelectData(widget_type=widgets.Select, initial_choices=initial_choices)
         self.append(self._select_saved_widget.widget)
 
         QApplication.instance().aboutToQuit.connect(self._on_exit)

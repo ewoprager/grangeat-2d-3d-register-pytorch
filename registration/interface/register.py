@@ -17,41 +17,45 @@ import pyswarms
 
 from registration.lib.structs import *
 from registration.interface.transformations import TransformationWidget
+from registration.interface.lib.structs import *
 
 
 def register(*, initial_transformation: Transformation, objective_function: Callable[[Transformation], torch.Tensor],
-             iteration_callback: Callable[[list, list], None]) -> Transformation:
+             iteration_callback: Callable[[torch.Tensor, torch.Tensor], None], particle_count: int,
+             iteration_count: int) -> Transformation:
     def obj_func(params: torch.Tensor) -> torch.Tensor:
         return objective_function(Transformation(params[0:3], params[3:6]))
 
     logger.info("Optimising...")
-    param_history = []
-    value_history = []
+    param_history = torch.zeros((particle_count * iteration_count, 6))
+    value_history = torch.zeros(particle_count * iteration_count)
     start_params: torch.Tensor = initial_transformation.vectorised().cpu()
 
     if True:
+        j: int = 0
         def objective_pso(particle_params: np.ndarray) -> np.ndarray:
+            nonlocal j
             ret = np.zeros(particle_params.shape[0])
             for i, row in enumerate(particle_params):
                 params = torch.tensor(copy.deepcopy(row))
-                param_history.append(params)
+                param_history[j] = params
                 value = obj_func(params)
-                value_history.append(value)
-                iteration_callback(param_history, value_history)
+                value_history[j] = value
+                j += 1
+                iteration_callback(param_history[:j], value_history[:j])
                 ret[i] = value.item()
             return ret
 
         options = {'c1': 2.525, 'c2': 1.225, 'w': 0.28}  # {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
-        n_particles = 500
         n_dimensions = 6
-        optimiser = pyswarms.single.GlobalBestPSO(n_particles=n_particles, dimensions=n_dimensions,
+        optimiser = pyswarms.single.GlobalBestPSO(n_particles=particle_count, dimensions=n_dimensions,
                                                   init_pos=np.random.normal(loc=start_params.numpy(),
-                                                                            size=(n_particles, n_dimensions),
+                                                                            size=(particle_count, n_dimensions),
                                                                             scale=np.array(
                                                                                 [0.1, 0.1, 0.1, 2.0, 2.0, 2.0])),
                                                   options=options)
 
-        cost, converged_params = optimiser.optimize(objective_pso, iters=10)
+        cost, converged_params = optimiser.optimize(objective_pso, iters=iteration_count)
         converged_params = torch.from_numpy(converged_params)
         logger.info("PSO finished")
 
@@ -78,30 +82,35 @@ def register(*, initial_transformation: Transformation, objective_function: Call
 
 class Worker(QObject):
     finished = pyqtSignal(Transformation)
-    progress = pyqtSignal(list, list)
+    progress = pyqtSignal(torch.Tensor, torch.Tensor)
 
     def __init__(self, *, initial_transformation: Transformation,
-                 objective_function: Callable[[Transformation], torch.Tensor]):
+                 objective_function: Callable[[Transformation], torch.Tensor], particle_count: int,
+                 iteration_count: int):
         super().__init__()
         self._initial_transformation = initial_transformation
         self._objective_function = objective_function
+        self._particle_count = particle_count
+        self._iteration_count = iteration_count
 
     def run(self):
         res = register(initial_transformation=self._initial_transformation, iteration_callback=self._iteration_callback,
-                       objective_function=self._objective_function)
+                       objective_function=self._objective_function, particle_count=self._particle_count,
+                       iteration_count=self._iteration_count)
         self.finished.emit(res)
 
-    def _iteration_callback(self, param_history: list, value_history: list) -> None:
+    def _iteration_callback(self, param_history: torch.Tensor, value_history: torch.Tensor) -> None:
         self.progress.emit(param_history, value_history)
 
 
 class RegisterWidget(widgets.Container):
     def __init__(self, *, transformation_widget: TransformationWidget,
-                 objective_function: Callable[[Transformation], torch.Tensor]):
+                 objective_functions: dict[str, Callable[[Transformation], torch.Tensor]]):
         super().__init__()
         self._transformation_widget = transformation_widget
-        self._objective_function = objective_function
+        self._objective_functions = objective_functions
 
+        # Optimisation worker thread and plotting
         self._evals_per_render: int = 100
         self._iteration_callback_count: int = 0
         self._best: float | None = None
@@ -109,31 +118,56 @@ class RegisterWidget(widgets.Container):
         self._thread: QThread | None = None
         self._worker: Worker | None = None
 
+        # Optimisation hyper-parameters:
+        self._particle_count: int = 500
+        self._iteration_count: int = 5
+
         self._fig, self._axes = plt.subplots()
         self.native.layout().addWidget(FigureCanvasQTAgg(self._fig))
 
+        self._objective_function_widget = WidgetSelectData(widget_type=widgets.ComboBox,
+                                                           initial_choices=objective_functions, label="Obj. func.")
+
         self._eval_once_button = widgets.PushButton(label="Evaluate once")
         self._eval_once_button.changed.connect(self._on_eval_once)
-        self.append(self._eval_once_button)
 
-        self._eval_result_label = widgets.Label(label="Evaluation result: -")
-        self.append(self._eval_result_label)
+        self._eval_result_label = widgets.Label(label="Result:", value="n/a")
+
+        self.append(widgets.Container(
+            widgets=[self._objective_function_widget.widget, self._eval_once_button, self._eval_result_label],
+            layout="horizontal", label="Obj. func."))
+
+        self._particle_count_widget = widgets.SpinBox(value=self._particle_count, min=1, max=5000, step=1,
+                                                      label="N particles")
+        self._particle_count_widget.changed.connect(self._on_particle_count)
+
+        self._iteration_count_widget = widgets.SpinBox(value=self._iteration_count, min=1, max=30, step=1,
+                                                       label="N iterations")
+        self._iteration_count_widget.changed.connect(self._on_iteration_count)
+
+        self.append(
+            widgets.Container(widgets=[self._particle_count_widget, self._iteration_count_widget], layout="horizontal",
+                              label="PSO params"))
 
         self._register_button = widgets.PushButton(label="Register")
         self._register_button.changed.connect(self._on_register)
         self.append(self._register_button)
 
-        self._register_progress = widgets.Label(label="no registration run")
+        self._register_progress = widgets.Label(label="Progress:", value="n/a")
         self.append(self._register_progress)
 
         self._evals_per_render_widget = widgets.SpinBox(value=self._evals_per_render, min=1, max=1000, step=1,
-                                                        label="Evaluations per re-plot")
+                                                        label="Evals./re-plot")
         self._evals_per_render_widget.changed.connect(self._on_evals_per_render)
         self.append(self._evals_per_render_widget)
 
+    def _current_obj_func(self) -> Callable[[Transformation], torch.Tensor] | None:
+        current = self._objective_function_widget.get_selected() # from a ComboBox, a str is returned
+        return self._objective_function_widget.get_data(current)
+
     def _on_eval_once(self):
-        res = self._objective_function(self._transformation_widget.get_current_transformation())
-        self._eval_result_label.label = "Evaluation result: {:.4f}".format(res.item())
+        res = self._current_obj_func()(self._transformation_widget.get_current_transformation())
+        self._eval_result_label.value = "{:.4f}".format(res.item())
 
     def _on_register(self):
         self._iteration_callback_count = 0
@@ -141,7 +175,8 @@ class RegisterWidget(widgets.Container):
         self._last_rendered_iteration = 0
         self._thread = QThread()
         self._worker = Worker(initial_transformation=self._transformation_widget.get_current_transformation(),
-                              objective_function=self._objective_function)
+                              objective_function=self._current_obj_func(), particle_count=self._particle_count,
+                              iteration_count=self._iteration_count)
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._worker.finished.connect(self._finish_callback)
@@ -154,15 +189,13 @@ class RegisterWidget(widgets.Container):
     def _on_evals_per_render(self, *args):
         self._evals_per_render = self._evals_per_render_widget.get_value()
 
-    def _iteration_callback(self, param_history: list, value_history: list) -> None:
+    def _iteration_callback(self, param_history: torch.Tensor, value_history: torch.Tensor) -> None:
         self._iteration_callback_count += 1
 
         if self._iteration_callback_count - self._last_rendered_iteration < self._evals_per_render:
             return
 
         self._axes.cla()
-        param_history = torch.stack(param_history, dim=0)
-        value_history = torch.tensor(value_history)
 
         its = np.arange(param_history.size()[0])
         its2 = np.array([its[0], its[-1]])
@@ -192,10 +225,18 @@ class RegisterWidget(widgets.Container):
         best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
         self._transformation_widget.set_current_transformation(best_transformation)
 
-        self._register_progress.label = "Iteration {}: best = {:.4f}".format(self._iteration_callback_count,
-                                                                             0.0 if self._best is None else self._best)
+        self._register_progress.value = "It. {} / {}; best = {:.4f}".format(self._iteration_callback_count,
+                                                                            self._iteration_count,
+                                                                            0.0 if self._best is None else self._best)
 
     def _finish_callback(self, converged_transformation: Transformation):
         self._transformation_widget.set_current_transformation(converged_transformation)
         self._transformation_widget.save_transformation(converged_transformation, "registration result {}".format(
             datetime.now().strftime("%Y-%m-%d, %H:%M:%S")))
+
+    def _on_particle_count(self, *args) -> None:
+        self._particle_count = self._particle_count_widget.get_value()
+
+    def _on_iteration_count(self, *args) -> None:
+        self._iteration_count = self._iteration_count_widget.get_value()
+
