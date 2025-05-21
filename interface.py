@@ -110,8 +110,8 @@ class Interface:
             self._transformation_widget.get_current_transformation())
         self._moving_sinogram_layer.data = resampled_sinogram.cpu().numpy()
 
-    def _re_crop_fixed_image(self, top: int, bottom: int) -> None:
-        self._registration_data.re_crop_fixed_image(top, bottom)
+    def _re_crop_fixed_image(self, top: int, bottom: int, left: int, right: int) -> None:
+        self._registration_data.re_crop_fixed_image(top, bottom, left, right)
         self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
         self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
         self.render_drr()

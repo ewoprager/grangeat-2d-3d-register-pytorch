@@ -94,8 +94,8 @@ class RegistrationData:
     def transformation_ground_truth(self) -> Transformation | None:
         return self._transformation_ground_truth
 
-    def re_crop_fixed_image(self, top: int, bottom: int) -> None:
-        self._fixed_image = self._image_2d_full[top:bottom, :]
+    def re_crop_fixed_image(self, top: int, bottom: int, left: int, right: int) -> None:
+        self._fixed_image = self._image_2d_full[top:bottom, left:right]
         self._refresh_fixed_sinogram()
 
     def resample_sinogram3d(self, transformation: Transformation) -> torch.Tensor:
