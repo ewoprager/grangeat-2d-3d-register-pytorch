@@ -34,39 +34,21 @@ class RegistrationData:
                 drr_spec = drr.generate_new_drr(cache_directory, path, self.ct_volume, self.ct_spacing,
                                                 device=self.device, save_to_cache=save_to_cache)
 
-            (self._fixed_image_spacing, self._scene_geometry, self._fixed_image, self._sinogram2d, sinogram2d_range,
+            (self._fixed_image_spacing, self._scene_geometry, self._image_2d_full, self._sinogram2d, sinogram2d_range,
              self._transformation_ground_truth) = drr_spec
             del drr_spec
 
+            self._fixed_image = self._image_2d_full
             self._sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, self.sinogram2d.size(),
                                                                      device=self.device)
         else:
             # Load the given X-ray
-            self._fixed_image, self._fixed_image_spacing, self._scene_geometry = data.read_dicom(x_ray,
-                                                                                                 downsample_factor=4)
-            self._fixed_image = self._fixed_image.to(device=self.device)
+            self._image_2d_full, self._fixed_image_spacing, self._scene_geometry = data.read_dicom(x_ray,
+                                                                                                   downsample_factor=4)
+            self._image_2d_full = self._image_2d_full.to(device=self.device)
             f_middle = 0.4
-            # _fixed_image = _fixed_image[int(float(_fixed_image.size()[0]) * .5 * (1. - f_middle)):int(
-            #     float(_fixed_image.size()[0]) * .5 * (1. + f_middle)), :]
-            self._fixed_image = self._fixed_image[int(float(self._fixed_image.size()[0]) * .5 * (1. - f_middle)):int(
-                float(self._fixed_image.size()[0]) * .5 * (1. + f_middle)),
-                                int(float(self._fixed_image.size()[1]) * .5 * (1. - 0.7)):int(
-                                    float(self._fixed_image.size()[1]) * .5 * (1. + 0.7))]
-
-            logger.info("Calculating 2D sinogram (the fixed image)...")
-
-            sinogram2d_counts = max(self.fixed_image.size()[0], self.fixed_image.size()[1])
-            image_diag: float = (self.fixed_image_spacing.flip(dims=(0,)) * torch.tensor(self.fixed_image.size(),
-                                                                                         dtype=torch.float32)).square().sum().sqrt().item()
-            sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
-                                               LinearRange(-.5 * image_diag, .5 * image_diag))
-            self._sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=self.device)
-
-            self._sinogram2d = grangeat.calculate_fixed_image(self.fixed_image,
-                                                              source_distance=self.scene_geometry.source_distance,
-                                                              detector_spacing=self.fixed_image_spacing,
-                                                              output_grid=self._sinogram2d_grid)
-            logger.info("X-ray sinogram calculated.")
+            self._fixed_image = self._image_2d_full
+            self._refresh_fixed_sinogram()
 
     @property
     def device(self):
@@ -89,6 +71,10 @@ class RegistrationData:
         return self._sinogram3d
 
     @property
+    def image_2d_full(self) -> torch.Tensor:
+        return self._image_2d_full
+
+    @property
     def fixed_image(self) -> torch.Tensor:
         return self._fixed_image
 
@@ -108,6 +94,10 @@ class RegistrationData:
     def transformation_ground_truth(self) -> Transformation | None:
         return self._transformation_ground_truth
 
+    def re_crop_fixed_image(self, top: int, bottom: int) -> None:
+        self._fixed_image = self._image_2d_full[top:bottom, :]
+        self._refresh_fixed_sinogram()
+
     def resample_sinogram3d(self, transformation: Transformation) -> torch.Tensor:
         source_position = self.scene_geometry.source_position(device=self.device)
         p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
@@ -122,3 +112,22 @@ class RegistrationData:
 
     def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
         return -objective_function.zncc(self.sinogram2d, self.resample_sinogram3d(transformation))
+
+    def _refresh_fixed_sinogram(self) -> None:
+        logger.info("Calculating 2D sinogram (the fixed image)...")
+
+        sinogram2d_counts = max(self.fixed_image.size()[0], self.fixed_image.size()[1])
+        image_diag: float = (self.fixed_image_spacing.flip(dims=(0,)) * torch.tensor(self.fixed_image.size(),
+                                                                                     dtype=torch.float32)).square(
+
+        ).sum().sqrt().item()
+        sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
+                                           LinearRange(-.5 * image_diag, .5 * image_diag))
+        self._sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts,
+                                                                 device=self.device)
+
+        self._sinogram2d = grangeat.calculate_fixed_image(self.fixed_image,
+                                                          source_distance=self.scene_geometry.source_distance,
+                                                          detector_spacing=self.fixed_image_spacing,
+                                                          output_grid=self._sinogram2d_grid)
+        logger.info("X-ray sinogram calculated.")

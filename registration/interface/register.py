@@ -33,6 +33,7 @@ def register(*, initial_transformation: Transformation, objective_function: Call
 
     if True:
         j: int = 0
+
         def objective_pso(particle_params: np.ndarray) -> np.ndarray:
             nonlocal j
             ret = np.zeros(particle_params.shape[0])
@@ -48,12 +49,11 @@ def register(*, initial_transformation: Transformation, objective_function: Call
 
         options = {'c1': 2.525, 'c2': 1.225, 'w': 0.28}  # {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
         n_dimensions = 6
+        initial_positions = np.random.normal(loc=start_params.numpy(), size=(particle_count, n_dimensions),
+                                             scale=np.array([0.1, 0.1, 0.1, 2.0, 2.0, 2.0]))
+        initial_positions[0] = start_params.numpy()
         optimiser = pyswarms.single.GlobalBestPSO(n_particles=particle_count, dimensions=n_dimensions,
-                                                  init_pos=np.random.normal(loc=start_params.numpy(),
-                                                                            size=(particle_count, n_dimensions),
-                                                                            scale=np.array(
-                                                                                [0.1, 0.1, 0.1, 2.0, 2.0, 2.0])),
-                                                  options=options)
+                                                  init_pos=initial_positions, options=options)
 
         cost, converged_params = optimiser.optimize(objective_pso, iters=iteration_count)
         converged_params = torch.from_numpy(converged_params)
@@ -162,7 +162,7 @@ class RegisterWidget(widgets.Container):
         self.append(self._evals_per_render_widget)
 
     def _current_obj_func(self) -> Callable[[Transformation], torch.Tensor] | None:
-        current = self._objective_function_widget.get_selected() # from a ComboBox, a str is returned
+        current = self._objective_function_widget.get_selected()  # from a ComboBox, a str is returned
         return self._objective_function_widget.get_data(current)
 
     def _on_eval_once(self):
@@ -225,9 +225,10 @@ class RegisterWidget(widgets.Container):
         best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
         self._transformation_widget.set_current_transformation(best_transformation)
 
-        self._register_progress.value = "It. {} / {}; best = {:.4f}".format(self._iteration_callback_count,
-                                                                            self._iteration_count,
-                                                                            0.0 if self._best is None else self._best)
+        self._register_progress.value = "Eval. {} / {}; best = {:.4f}".format(self._iteration_callback_count,
+                                                                              self._particle_count *
+                                                                              self._iteration_count,
+                                                                              0.0 if self._best is None else self._best)
 
     def _finish_callback(self, converged_transformation: Transformation):
         self._transformation_widget.set_current_transformation(converged_transformation)
@@ -239,4 +240,3 @@ class RegisterWidget(widgets.Container):
 
     def _on_iteration_count(self, *args) -> None:
         self._iteration_count = self._iteration_count_widget.get_value()
-

@@ -74,8 +74,10 @@ class Interface:
         self._viewer.window.add_dock_widget(self._register_widget, name="Register", area="right",
                                             menu=self._viewer.window.window_menu)
 
-        self._grangeat_widget = GrangeatWidget(self._moving_image_layer.events.data, self.registration_data,
-                                               self.render_moving_sinogram)
+        self._grangeat_widget = GrangeatWidget(moving_image_changed_signal=self._moving_image_layer.events.data,
+                                               registration_data=self.registration_data,
+                                               render_moving_sinogram_callback=self.render_moving_sinogram,
+                                               fixed_image_crop_callback=self._re_crop_fixed_image)
         self._viewer.window.add_dock_widget(self._grangeat_widget, name="Sinograms", area="right",
                                             menu=self._viewer.window.window_menu)
 
@@ -107,6 +109,13 @@ class Interface:
         resampled_sinogram = self.registration_data.resample_sinogram3d(
             self._transformation_widget.get_current_transformation())
         self._moving_sinogram_layer.data = resampled_sinogram.cpu().numpy()
+
+    def _re_crop_fixed_image(self, top: int, bottom: int) -> None:
+        self._registration_data.re_crop_fixed_image(top, bottom)
+        self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
+        self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
+        self.render_drr()
+        self.render_moving_sinogram()
 
     # Event callbacks:
     def _on_alt_down(self, viewer):
