@@ -1,4 +1,3 @@
-import diffdrr.data
 import pytest
 import torch
 
@@ -117,7 +116,11 @@ def test_generate_drr():
     volume_data[1:4, 1, 1:4] = 500
     volume_data[2, 2, 2] = 1000
     volume_data[1:4, 3, 3] = 2000
-    density = diffdrr.data.transform_hu_to_density(volume_data, bone_attenuation_multiplier=1.0)
+    # density = diffdrr.data.transform_hu_to_density(volume_data, bone_attenuation_multiplier=1.0)
+    density = volume_data
+    density[density < -800.0] = -800.0
+    density -= density.min()
+    density /= density.max()
 
     transformation = Transformation(rotation=torch.zeros(3), translation=torch.tensor([0., 0., 1.5]))
     voxel_spacing = torch.tensor([1., 1., 1.])

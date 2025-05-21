@@ -1,8 +1,4 @@
 import torch
-import torchio
-import diffdrr.data
-import diffdrr.drr
-import diffdrr.visualization
 import pyvista as pv
 
 from registration.lib.structs import *

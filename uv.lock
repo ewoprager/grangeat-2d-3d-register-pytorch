@@ -594,31 +594,6 @@ wheels = [
 ]
 
 [[package]]
-name = "diffdrr"
-version = "0.5.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "einops" },
-    { name = "fastcore" },
-    { name = "imageio" },
-    { name = "kornia" },
-    { name = "matplotlib" },
-    { name = "numpy" },
-    { name = "pyvista", extra = ["all"] },
-    { name = "scipy" },
-    { name = "seaborn" },
-    { name = "timm" },
-    { name = "torch" },
-    { name = "torchio" },
-    { name = "torchvision" },
-    { name = "tqdm" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/55/90/40c66cdd1eed3dea76158d7344d9cf2de2762506f47c0a8b1146fbafeb7a/diffdrr-0.5.0.tar.gz", hash = "sha256:3be6748f2e4614baf915412346e7be969ea08e63eb5f9c8afec458956e42d706", size = 34805149 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/fe/a2/411f188926a3d4aef6b41bfccbdb0857f2a1c825b9ef7b473060dbab5a55/diffdrr-0.5.0-py3-none-any.whl", hash = "sha256:178f5f7e30b137fbbf55057b2a9c77ccdef7814e3ccae7e56759c626f0e323d1", size = 34802605 },
-]
-
-[[package]]
 name = "docstring-parser"
 version = "0.16"
 source = { registry = "https://pypi.org/simple" }
@@ -2986,7 +2961,6 @@ dependencies = [
     { name = "decorator" },
     { name = "defusedxml" },
     { name = "deprecated" },
-    { name = "diffdrr" },
     { name = "einops" },
     { name = "executing" },
     { name = "extension" },
@@ -3167,7 +3141,6 @@ requires-dist = [
     { name = "decorator", specifier = "==5.1.1" },
     { name = "defusedxml", specifier = "==0.7.1" },
     { name = "deprecated", specifier = "==1.2.16" },
-    { name = "diffdrr", specifier = "==0.5.0" },
     { name = "einops", specifier = "==0.8.0" },
     { name = "executing", specifier = "==2.2.0" },
     { name = "extension", editable = "Extension" },
@@ -3342,22 +3315,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/56/01/a7ebede7d5c0bb3b895a7d6afd4d51f0aa328b50ba93d8bc72eb0fb5856b/pyvista-0.44.2.tar.gz", hash = "sha256:db65943c3c1c9ba49fe16f5a25a5bc23b74bf1ea7a38aae4ef9c4dc5838ccf5e", size = 2192634 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/65/07/699a032f8b5a1b70c9681185541f18523936a76ac5846e93c5eaaa1e2f33/pyvista-0.44.2-py3-none-any.whl", hash = "sha256:8530d35f57cdaa33507ac9aec19e3292be0bc9026b28e4f12df7e8054438d028", size = 2244442 },
-]
-
-[package.optional-dependencies]
-all = [
-    { name = "cmocean" },
-    { name = "colorcet" },
-    { name = "imageio" },
-    { name = "ipywidgets" },
-    { name = "jupyter-server-proxy" },
-    { name = "meshio" },
-    { name = "nest-asyncio" },
-    { name = "trame" },
-    { name = "trame-client" },
-    { name = "trame-server" },
-    { name = "trame-vtk" },
-    { name = "trame-vuetify" },
 ]
 
 [[package]]

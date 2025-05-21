@@ -28,7 +28,6 @@ dependencies = [
     "decorator==5.1.1",
     "defusedxml==0.7.1",
     "deprecated==1.2.16",
-    "diffdrr==0.5.0",
     "einops==0.8.0",
     "executing==2.2.0",
     "extension",

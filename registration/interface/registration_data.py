@@ -53,10 +53,8 @@ class RegistrationData:
             logger.info("Calculating 2D sinogram (the fixed image)...")
 
             sinogram2d_counts = max(self.fixed_image.size()[0], self.fixed_image.size()[1])
-            image_diag: float = (self.fixed_image_spacing * torch.tensor(self.fixed_image.size(),
-                                                                         dtype=torch.float32)).square().sum().sqrt(
-
-            ).item()
+            image_diag: float = (self.fixed_image_spacing.flip(dims=(0,)) * torch.tensor(self.fixed_image.size(),
+                                                                                         dtype=torch.float32)).square().sum().sqrt().item()
             sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                                LinearRange(-.5 * image_diag, .5 * image_diag))
             sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=self.device)
