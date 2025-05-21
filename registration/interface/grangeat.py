@@ -35,6 +35,7 @@ class GrangeatWidget(widgets.Container):
 
     def _on_regen_continuous(self, *args) -> None:
         self._regen_moving_sinogram_continuous = self._regen_moving_sinogram_continuous_check.get_value()
+        self._on_regen_once()
 
     def _on_moving_image_changed(self) -> None:
         if self._regen_moving_sinogram_continuous:
