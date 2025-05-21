@@ -105,7 +105,6 @@ class RegisterWidget(widgets.Container):
         self._evals_per_render: int = 100
         self._iteration_callback_count: int = 0
         self._best: float | None = None
-        self._last_value: float | None = None
         self._last_rendered_iteration: int = 0
         self._thread: QThread | None = None
         self._worker: Worker | None = None
@@ -139,7 +138,6 @@ class RegisterWidget(widgets.Container):
     def _on_register(self):
         self._iteration_callback_count = 0
         self._best = None
-        self._last_value = None
         self._last_rendered_iteration = 0
         self._thread = QThread()
         self._worker = Worker(initial_transformation=self._transformation_widget.get_current_transformation(),
@@ -158,42 +156,44 @@ class RegisterWidget(widgets.Container):
 
     def _iteration_callback(self, param_history: list, value_history: list) -> None:
         self._iteration_callback_count += 1
-        self._last_value = value_history[-1].item()
-        if self._iteration_callback_count - self._last_rendered_iteration >= self._evals_per_render:
-            self._axes.cla()
-            param_history = torch.stack(param_history, dim=0)
-            value_history = torch.tensor(value_history)
 
-            its = np.arange(param_history.size()[0])
-            its2 = np.array([its[0], its[-1]])
+        if self._iteration_callback_count - self._last_rendered_iteration < self._evals_per_render:
+            return
 
-            # rotations
-            # self.axes.plot(its2, np.full(2, 0.), ls='dashed')
-            # self.axes.plot(its, param_history[:, 0], label="r0")
-            # self.axes.plot(its, param_history[:, 1], label="r1")
-            # self.axes.plot(its, param_history[:, 2], label="r2")
-            # self.axes.legend()
-            # self.axes.set_xlabel("iteration")
-            # self.axes.set_ylabel("param value [rad]")
-            # self.axes.set_title("rotation parameter values over optimisation iterations")
-            # self.fig.canvas.draw()
+        self._axes.cla()
+        param_history = torch.stack(param_history, dim=0)
+        value_history = torch.tensor(value_history)
 
-            # value
-            self._axes.plot(its, value_history)
-            self._axes.set_xlabel("iteration")
-            self._axes.set_ylabel("objective function value")
-            self._fig.canvas.draw()
+        its = np.arange(param_history.size()[0])
+        its2 = np.array([its[0], its[-1]])
 
-            self._last_rendered_iteration = self._iteration_callback_count
-            values = torch.tensor(value_history).cpu()
-            self._best, best_index = values.min(0)
-            self._best = self._best.item()
-            best_index = best_index.item()
-            best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
-            self._transformation_widget.set_current_transformation(best_transformation)
+        # rotations
+        # self.axes.plot(its2, np.full(2, 0.), ls='dashed')
+        # self.axes.plot(its, param_history[:, 0], label="r0")
+        # self.axes.plot(its, param_history[:, 1], label="r1")
+        # self.axes.plot(its, param_history[:, 2], label="r2")
+        # self.axes.legend()
+        # self.axes.set_xlabel("iteration")
+        # self.axes.set_ylabel("param value [rad]")
+        # self.axes.set_title("rotation parameter values over optimisation iterations")
+        # self.fig.canvas.draw()
 
-            self._register_progress.label = "Iteration {}: latest = {:.4f}, best = {:.4f}".format(
-                self._iteration_callback_count, self._last_value, 0.0 if self._best is None else self._best)
+        # value
+        self._axes.plot(its, value_history)
+        self._axes.set_xlabel("iteration")
+        self._axes.set_ylabel("objective function value")
+        self._fig.canvas.draw()
+
+        self._last_rendered_iteration = self._iteration_callback_count
+        values = torch.tensor(value_history).cpu()
+        self._best, best_index = values.min(0)
+        self._best = self._best.item()
+        best_index = best_index.item()
+        best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
+        self._transformation_widget.set_current_transformation(best_transformation)
+
+        self._register_progress.label = "Iteration {}: best = {:.4f}".format(self._iteration_callback_count,
+                                                                             0.0 if self._best is None else self._best)
 
     def _finish_callback(self, converged_transformation: Transformation):
         self._transformation_widget.set_current_transformation(converged_transformation)

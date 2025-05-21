@@ -6,6 +6,8 @@ import time
 from typing import NamedTuple, Any
 from datetime import datetime
 
+from scipy.signal import resample
+
 os.environ["QT_API"] = "PyQt6"
 
 import numpy as np
@@ -72,11 +74,12 @@ class Interface:
                                             menu=self._viewer.window.window_menu)
 
         self._grangeat_widget = GrangeatWidget(self._moving_image_layer.events.data, self.registration_data,
-                                               self._transformation_widget, self._moving_sinogram_layer)
+                                               self.render_moving_sinogram)
         self._viewer.window.add_dock_widget(self._grangeat_widget, name="Sinograms", area="right",
                                             menu=self._viewer.window.window_menu)
 
-        self.render_drr(self._transformation_widget.get_current_transformation())
+        self.render_drr()
+        self.render_moving_sinogram()
 
     @property
     def registration_data(self) -> RegistrationData:
@@ -90,13 +93,19 @@ class Interface:
 
     view_params = property(get_view_params, set_view_params)
 
-    def render_drr(self, transformation: Transformation):
-        moved_drr = geometry.generate_drr(self.registration_data.ct_volume, transformation=transformation,
+    def render_drr(self):
+        moved_drr = geometry.generate_drr(self.registration_data.ct_volume,
+                                          transformation=self._transformation_widget.get_current_transformation(),
                                           voxel_spacing=self.registration_data.ct_spacing,
                                           detector_spacing=self.registration_data.fixed_image_spacing,
                                           scene_geometry=self.registration_data.scene_geometry,
                                           output_size=self.registration_data.fixed_image.size())
         self._moving_image_layer.data = moved_drr.cpu().numpy()
+
+    def render_moving_sinogram(self):
+        resampled_sinogram = self.registration_data.resample_sinogram3d(
+            self._transformation_widget.get_current_transformation())
+        self._moving_sinogram_layer.data = resampled_sinogram.cpu().numpy()
 
     # Event callbacks:
     def _on_alt_down(self, viewer):
@@ -109,7 +118,7 @@ class Interface:
         if reset_transformation is None:
             reset_transformation = Transformation.random(device=self.registration_data.device)
         self._transformation_widget.set_current_transformation(reset_transformation)
-        self.render_drr(self._transformation_widget.get_current_transformation())
+        self.render_drr()
         logger.info("Reset")
 
     def _mouse_drag(self, layer, event):
@@ -163,7 +172,7 @@ class Interface:
                 tr[0:2] = (translation_start + delta).to(device=tr.device)
                 self._transformation_widget.set_current_transformation(Transformation(translation=tr,
                                                                                       rotation=self._transformation_widget.get_current_transformation().rotation))
-                self.render_drr(self._transformation_widget.get_current_transformation())
+                self.render_drr()
                 yield
             # on release
             if dragged:

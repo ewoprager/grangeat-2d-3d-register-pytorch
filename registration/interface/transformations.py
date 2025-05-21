@@ -22,7 +22,7 @@ from registration.interface.lib.structs import *
 
 class TransformationWidget(widgets.Container):
     def __init__(self, *, initial_transformation: Transformation,
-                 refresh_render_function: Callable[[Transformation], None], save_path: pathlib.Path):
+                 refresh_render_function: Callable[[], None], save_path: pathlib.Path):
         super().__init__()
         self._current_transformation = initial_transformation
         self._refresh_render_function = refresh_render_function
@@ -88,7 +88,7 @@ class TransformationWidget(widgets.Container):
         for i in range(3):
             self._rotation_sliders[i].set_value(self._current_transformation.rotation[i].item())
         self._suppress_callbacks = False
-        self._refresh_render_function(self._current_transformation)
+        self._refresh_render_function()
 
     def save_transformation(self, transformation: Transformation, name: str) -> None:
         while self._select_saved_widget.name_exists(name):

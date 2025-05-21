@@ -14,12 +14,11 @@ from registration.interface.transformations import TransformationWidget
 
 class GrangeatWidget(widgets.Container):
     def __init__(self, moving_image_changed_signal, registration_data: RegistrationData,
-                 transformation_widget: TransformationWidget, moving_sinogram_layer: napari.layers.Image):
+                 render_moving_sinogram_callback: Callable[[], None]):
         super().__init__()
         moving_image_changed_signal.connect(self._on_moving_image_changed)
         self._registration_data = registration_data
-        self._transformation_widget = transformation_widget
-        self._moving_sinogram_layer = moving_sinogram_layer
+        self._render_moving_sinogram_callback = render_moving_sinogram_callback
 
         self._regen_moving_sinogram_continuous: bool = False
 
@@ -32,9 +31,7 @@ class GrangeatWidget(widgets.Container):
             layout="horizontal", label="Regen moving sinogram"))
 
     def _on_regen_once(self) -> None:
-        self._moving_sinogram_layer.data = self._registration_data.resample_sinogram3d(
-            self._transformation_widget.get_current_transformation()).cpu().numpy()
-        print("regenerating!")
+        self._render_moving_sinogram_callback()
 
     def _on_regen_continuous(self, *args) -> None:
         self._regen_moving_sinogram_continuous = self._regen_moving_sinogram_continuous_check.get_value()
