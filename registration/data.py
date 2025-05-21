@@ -53,7 +53,9 @@ def read_dicom(path: str, *, downsample_factor=1):
         image = down_sampler(image.unsqueeze(0))[0]
         logger.info("X-ray image size after down-sampling = [{} x {}]".format(image.size()[0], image.size()[1]))
     spacing = dataset["PixelSpacing"]
-    spacing = float(downsample_factor) * torch.tensor([spacing[0], spacing[1]])
+    spacing = float(downsample_factor) * torch.tensor([spacing[1],  # column spacing (x-direction)
+        spacing[0]  # row spacing (y-direction)
+    ])
     logger.info("X-ray pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
     scene_geometry = SceneGeometry(dataset["DistanceSourceToPatient"].value)
     logger.info("X-ray distance source-to-patient = {} mm".format(scene_geometry.source_distance))
@@ -76,8 +78,8 @@ def load_cached_volume(cache_directory: str, ct_volume_path: str):
     sinogram3d = volume_spec.sinogram
     logger.info(
         "Loaded cached volume spec from '{}'; sinogram size = [{} x {} x {}]".format(file, sinogram3d.data.size()[0],
-                                                                                     sinogram3d.data.size()[0],
-                                                                                     sinogram3d.data.size()[0]))
+                                                                                     sinogram3d.data.size()[1],
+                                                                                     sinogram3d.data.size()[2]))
     return volume_downsample_factor, sinogram3d
 
 

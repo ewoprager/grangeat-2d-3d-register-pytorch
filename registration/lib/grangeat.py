@@ -31,8 +31,8 @@ def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, de
 
     samples_per_line = int(torch.tensor(drr_image.size()).square().sum().sqrt().ceil().item())
 
-    xs = detector_spacing[1] * (torch.arange(0, img_width, 1, dtype=torch.float32) - 0.5 * float(img_width - 1))
-    ys = detector_spacing[0] * (torch.arange(0, img_height, 1, dtype=torch.float32) - 0.5 * float(img_height - 1))
+    xs = detector_spacing[0] * (torch.arange(0, img_width, 1, dtype=torch.float32) - 0.5 * float(img_width - 1))
+    ys = detector_spacing[1] * (torch.arange(0, img_height, 1, dtype=torch.float32) - 0.5 * float(img_height - 1))
     ys, xs = torch.meshgrid(ys, xs)
     cos_gamma = source_distance / torch.sqrt(xs.square() + ys.square() + source_distance * source_distance)
     g_tilde = cos_gamma.to(device=device) * drr_image
@@ -76,10 +76,6 @@ def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: 
     output_grid_2d = Sinogram2dGrid(*torch.meshgrid(output_grid.phi, output_grid.r))
 
     output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian(output_grid_2d, ph_matrix=ph_matrix)
-
-    # output_grid_cartesian_2d = geometry.fixed_polar_to_moving_cartesian2(output_grid_2d,
-    # scene_geometry=scene_geometry,
-    #                                                                      transformation=transformation)
 
     output_grid_sph_2d = geometry.moving_cartesian_to_moving_spherical(output_grid_cartesian_2d)
 

@@ -37,12 +37,15 @@ class RegistrationData:
             (self._fixed_image_spacing, self._scene_geometry, self._fixed_image, self._sinogram2d, sinogram2d_range,
              self._transformation_ground_truth) = drr_spec
             del drr_spec
+
+            self._sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, self.sinogram2d.size(),
+                                                                     device=self.device)
         else:
             # Load the given X-ray
             self._fixed_image, self._fixed_image_spacing, self._scene_geometry = data.read_dicom(x_ray,
                                                                                                  downsample_factor=4)
             self._fixed_image = self._fixed_image.to(device=self.device)
-            f_middle = 0.3
+            f_middle = 0.4
             # _fixed_image = _fixed_image[int(float(_fixed_image.size()[0]) * .5 * (1. - f_middle)):int(
             #     float(_fixed_image.size()[0]) * .5 * (1. + f_middle)), :]
             self._fixed_image = self._fixed_image[int(float(self._fixed_image.size()[0]) * .5 * (1. - f_middle)):int(
@@ -57,18 +60,13 @@ class RegistrationData:
                                                                                          dtype=torch.float32)).square().sum().sqrt().item()
             sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                                LinearRange(-.5 * image_diag, .5 * image_diag))
-            sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=self.device)
+            self._sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=self.device)
 
             self._sinogram2d = grangeat.calculate_fixed_image(self.fixed_image,
                                                               source_distance=self.scene_geometry.source_distance,
                                                               detector_spacing=self.fixed_image_spacing,
-                                                              output_grid=sinogram2d_grid)
-
-            del sinogram2d_grid
+                                                              output_grid=self._sinogram2d_grid)
             logger.info("X-ray sinogram calculated.")
-
-        self._sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, self.sinogram2d.size(),
-                                                                 device=self.device)
 
     @property
     def device(self):

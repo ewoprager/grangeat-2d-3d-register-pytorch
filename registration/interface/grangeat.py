@@ -7,9 +7,7 @@ import torch
 import napari
 from magicgui import widgets
 
-from registration.lib.structs import *
 from registration.interface.registration_data import RegistrationData
-from registration.interface.transformations import TransformationWidget
 
 
 class GrangeatWidget(widgets.Container):
