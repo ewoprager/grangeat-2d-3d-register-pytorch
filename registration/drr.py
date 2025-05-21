@@ -1,6 +1,6 @@
 import torch
 
-from registration.lib import geometry
+from registration.lib import grangeat
 from registration import data
 from registration.lib.sinogram import *
 
@@ -39,15 +39,15 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
                                        LinearRange(-.5 * image_diag, .5 * image_diag))
     sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=device)
 
-    fixed_image = grangeat.calculate_fixed_image(drr_image, source_distance=scene_geometry.source_distance,
+    sinogram2d = grangeat.calculate_fixed_image(drr_image, source_distance=scene_geometry.source_distance,
                                                  detector_spacing=detector_spacing, output_grid=sinogram2d_grid)
 
     logger.info("DRR sinogram calculated.")
 
     if save_to_cache and ct_volume_path is not None:
         save_path = cache_directory + "/drr_spec_{}.pt".format(data.deterministic_hash(ct_volume_path))
-        torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range,
+        torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, sinogram2d, sinogram2d_range,
                            transformation), save_path)
         logger.info("DRR sinogram saved to '{}'".format(save_path))
 
-    return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation
+    return detector_spacing, scene_geometry, drr_image, sinogram2d, sinogram2d_range, transformation

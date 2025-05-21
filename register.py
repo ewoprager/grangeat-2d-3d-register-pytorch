@@ -24,12 +24,8 @@ import Extension
 
 from registration.lib.structs import *
 from registration.lib.sinogram import *
-from registration import drr
-from registration.lib import geometry
-from registration import data
-from registration import pre_computed
-from registration import objective_function
-from registration import script
+from registration import drr, data, script, objective_function
+from registration.lib import geometry, grangeat
 import registration.lib.plot as myplt
 
 

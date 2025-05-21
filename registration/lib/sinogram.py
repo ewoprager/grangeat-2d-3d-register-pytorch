@@ -11,7 +11,6 @@ import Extension
 
 from registration.lib.structs import *
 from registration.lib import geometry
-from registration.lib import grangeat
 from registration.lib import plot as myplt
 
 

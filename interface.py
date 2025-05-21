@@ -16,129 +16,13 @@ from magicgui import magicgui, widgets
 from PyQt6.QtWidgets import QDockWidget
 
 from registration.lib.sinogram import *
-from registration import drr
-from registration import data
-from registration import script
 from registration.lib import geometry
 from registration.interface.lib.structs import *
+from registration.interface.registration_data import RegistrationData
 from registration.interface.transformations import TransformationWidget
 from registration.interface.view import ViewWidget
 from registration.interface.register import RegisterWidget
-from registration.lib.geometry import generate_drr
-from registration.objective_function import zncc
-
-
-class RegistrationData:
-    def __init__(self, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool,
-                 save_to_cache: bool, sinogram_size: int, x_ray: str | None, device):
-        self._ct_volume, self._ct_spacing, self._sinogram3d = script.get_volume_and_sinogram(path, cache_directory,
-                                                                                             load_cached=load_cached,
-                                                                                             save_to_cache=save_to_cache,
-                                                                                             sinogram_size=sinogram_size,
-                                                                                             device=device)
-        self._device = device
-        self._transformation_ground_truth = None
-
-        if x_ray is None:
-            # Load / generate a DRR through the volume
-            drr_spec = None
-            if not regenerate_drr and path is not None:
-                drr_spec = data.load_cached_drr(cache_directory, path)
-
-            if drr_spec is None:
-                drr_spec = drr.generate_new_drr(cache_directory, path, self.ct_volume, self.ct_spacing,
-                                                device=self.device, save_to_cache=save_to_cache)
-
-            (self._fixed_image_spacing, self._scene_geometry, self._fixed_image, self._sinogram2d, sinogram2d_range,
-             self._transformation_ground_truth) = drr_spec
-            del drr_spec
-        else:
-            # Load the given X-ray
-            self._fixed_image, self._fixed_image_spacing, self._scene_geometry = data.read_dicom(x_ray,
-                                                                                                 downsample_factor=4)
-            self._fixed_image = self._fixed_image.to(device=self.device)
-            f_middle = 0.3
-            # _fixed_image = _fixed_image[int(float(_fixed_image.size()[0]) * .5 * (1. - f_middle)):int(
-            #     float(_fixed_image.size()[0]) * .5 * (1. + f_middle)), :]
-            self._fixed_image = self._fixed_image[int(float(self._fixed_image.size()[0]) * .5 * (1. - f_middle)):int(
-                float(self._fixed_image.size()[0]) * .5 * (1. + f_middle)),
-                                int(float(self._fixed_image.size()[1]) * .5 * (1. - 0.7)):int(
-                                    float(self._fixed_image.size()[1]) * .5 * (1. + 0.7))]
-
-            logger.info("Calculating 2D sinogram (the fixed image)...")
-
-            sinogram2d_counts = max(self.fixed_image.size()[0], self.fixed_image.size()[1])
-            image_diag: float = (self.fixed_image_spacing * torch.tensor(self.fixed_image.size(),
-                                                                         dtype=torch.float32)).square().sum().sqrt(
-
-            ).item()
-            sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
-                                               LinearRange(-.5 * image_diag, .5 * image_diag))
-            sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=self.device)
-
-            self._sinogram2d = grangeat.calculate_fixed_image(self.fixed_image,
-                                                              source_distance=self.scene_geometry.source_distance,
-                                                              detector_spacing=self.fixed_image_spacing,
-                                                              output_grid=sinogram2d_grid)
-
-            del sinogram2d_grid
-            logger.info("X-ray sinogram calculated.")
-
-        self._sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, self.sinogram2d.size(),
-                                                                 device=self.device)
-
-    @property
-    def device(self):
-        return self._device
-
-    @property
-    def scene_geometry(self) -> SceneGeometry:
-        return self._scene_geometry
-
-    @property
-    def ct_volume(self) -> torch.Tensor:
-        return self._ct_volume
-
-    @property
-    def ct_spacing(self) -> torch.Tensor:
-        return self._ct_spacing
-
-    @property
-    def sinogram3d(self) -> Sinogram:
-        return self._sinogram3d
-
-    @property
-    def fixed_image(self) -> torch.Tensor:
-        return self._fixed_image
-
-    @property
-    def fixed_image_spacing(self) -> torch.Tensor:
-        return self._fixed_image_spacing
-
-    @property
-    def sinogram2d(self) -> torch.Tensor:
-        return self._sinogram2d
-
-    @property
-    def sinogram2d_grid(self) -> Sinogram2dGrid:
-        return self._sinogram2d_grid
-
-    @property
-    def transformation_ground_truth(self) -> Transformation | None:
-        return self._transformation_ground_truth
-
-    def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        moving_image = generate_drr(self.ct_volume, transformation=transformation, voxel_spacing=self.ct_spacing,
-                                    detector_spacing=self.fixed_image_spacing, scene_geometry=self.scene_geometry,
-                                    output_size=self.fixed_image.size())
-        return -zncc(self.fixed_image, moving_image)
-
-    def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
-        source_position = self.scene_geometry.source_position(device=self.device)
-        p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-        ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=self.device).to(dtype=torch.float32))
-        resampled = self.sinogram3d.resample(ph_matrix, self.sinogram2d_grid)
-        return -zncc(self.sinogram2d, resampled)
+from registration.interface.grangeat import GrangeatWidget
 
 
 class Interface:
@@ -157,9 +41,13 @@ class Interface:
         self._moving_image_layer.bind_key('r', self._reset)
         self._moving_image_layer.mouse_drag_callbacks.append(self._mouse_drag)
 
-        self._sinogram2d_layer = self._viewer.add_image(self.registration_data.fixed_image.cpu().numpy(),
+        self._sinogram2d_layer = self._viewer.add_image(self.registration_data.sinogram2d.cpu().numpy(),
                                                         colormap="yellow", interpolation2d="linear", translate=(
                 self.registration_data.fixed_image.size()[0] + 24, 0), name="Fixed sinogram")
+        self._moving_sinogram_layer = self._viewer.add_image(np.zeros(self.registration_data.sinogram2d.size()),
+                                                             colormap="blue", blending="additive",
+                                                             interpolation2d="linear", translate=(
+                self.registration_data.fixed_image.size()[0] + 24, 0), name="Moving sinogram")
 
         self._view_params = ViewParams(translation_sensitivity=0.06, rotation_sensitivity=0.002)
 
@@ -181,6 +69,11 @@ class Interface:
         self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget,
                                                objective_function=self.registration_data.objective_function_grangeat)
         self._viewer.window.add_dock_widget(self._register_widget, name="Register", area="right",
+                                            menu=self._viewer.window.window_menu)
+
+        self._grangeat_widget = GrangeatWidget(self._moving_image_layer.events.data, self.registration_data,
+                                               self._transformation_widget, self._moving_sinogram_layer)
+        self._viewer.window.add_dock_widget(self._grangeat_widget, name="Sinograms", area="right",
                                             menu=self._viewer.window.window_menu)
 
         self.render_drr(self._transformation_widget.get_current_transformation())

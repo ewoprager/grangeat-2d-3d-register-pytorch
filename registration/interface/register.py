@@ -102,7 +102,7 @@ class RegisterWidget(widgets.Container):
         self._transformation_widget = transformation_widget
         self._objective_function = objective_function
 
-        self._evals_per_render: int = 10
+        self._evals_per_render: int = 100
         self._iteration_callback_count: int = 0
         self._best: float | None = None
         self._last_value: float | None = None
@@ -127,8 +127,8 @@ class RegisterWidget(widgets.Container):
         self._register_progress = widgets.Label(label="no registration run")
         self.append(self._register_progress)
 
-        self._evals_per_render_widget = widgets.SpinBox(value=10, min=1, max=1000, step=1,
-                                                       label="Evaluations per re-plot")
+        self._evals_per_render_widget = widgets.SpinBox(value=self._evals_per_render, min=1, max=1000, step=1,
+                                                        label="Evaluations per re-plot")
         self._evals_per_render_widget.changed.connect(self._on_evals_per_render)
         self.append(self._evals_per_render_widget)
 
@@ -143,7 +143,7 @@ class RegisterWidget(widgets.Container):
         self._last_rendered_iteration = 0
         self._thread = QThread()
         self._worker = Worker(initial_transformation=self._transformation_widget.get_current_transformation(),
-                             objective_function=self._objective_function)
+                              objective_function=self._objective_function)
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._worker.finished.connect(self._finish_callback)
