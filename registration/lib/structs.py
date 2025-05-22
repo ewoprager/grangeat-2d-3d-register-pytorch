@@ -81,6 +81,9 @@ class Transformation(NamedTuple):
             [numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))],
             device=device).square().sum()).sqrt().item()
 
+    def __str__(self) -> str:
+        return "Transformation(rot = {}, trans = {})".format(str(self.rotation), str(self.translation))
+
     @classmethod
     def zero(cls, *, device=torch.device('cpu')) -> 'Transformation':
         return Transformation(torch.zeros(3, device=device), torch.zeros(3, device=device))

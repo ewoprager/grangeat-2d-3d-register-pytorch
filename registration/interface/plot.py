@@ -1,6 +1,6 @@
 import copy
 import logging
-from typing import Callable, NamedTuple
+from typing import Callable, NamedTuple, Tuple
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -81,13 +81,12 @@ class WorkSpec(NamedTuple):
 
 
 class Landscape2(NamedTuple):
-    central_transformation: Transformation
     x_range: ParameterRange
     y_range: ParameterRange
     data: torch.Tensor
 
 
-def four_landscapes(work_spec: WorkSpec) -> list[Landscape2]:
+def four_landscapes(work_spec: WorkSpec) -> Tuple[Transformation, list[Landscape2]]:
     ret = []
     x_param = TransformationParameter(type=TransformationParameterType.ROTATION, index=0)
     y_param = TransformationParameter(type=TransformationParameterType.ROTATION, index=1)
@@ -95,10 +94,9 @@ def four_landscapes(work_spec: WorkSpec) -> list[Landscape2]:
                              count=work_spec.counts)
     y_range = ParameterRange(parameter=y_param, range=y_param.get(work_spec.transformation_range),
                              count=work_spec.counts)
-    ret.append(Landscape2(work_spec.central_transformation, x_range, y_range,
-                          landscape2(objective_function=work_spec.objective_function,
-                                     central_transformation=work_spec.central_transformation, x_range=x_range,
-                                     y_range=y_range)))
+    ret.append(Landscape2(x_range, y_range, landscape2(objective_function=work_spec.objective_function,
+                                                       central_transformation=work_spec.central_transformation,
+                                                       x_range=x_range, y_range=y_range)))
 
     x_param = TransformationParameter(type=TransformationParameterType.ROTATION, index=1)
     y_param = TransformationParameter(type=TransformationParameterType.ROTATION, index=2)
@@ -106,10 +104,9 @@ def four_landscapes(work_spec: WorkSpec) -> list[Landscape2]:
                              count=work_spec.counts)
     y_range = ParameterRange(parameter=y_param, range=y_param.get(work_spec.transformation_range),
                              count=work_spec.counts)
-    ret.append(Landscape2(work_spec.central_transformation, x_range, y_range,
-                          landscape2(objective_function=work_spec.objective_function,
-                                     central_transformation=work_spec.central_transformation, x_range=x_range,
-                                     y_range=y_range)))
+    ret.append(Landscape2(x_range, y_range, landscape2(objective_function=work_spec.objective_function,
+                                                       central_transformation=work_spec.central_transformation,
+                                                       x_range=x_range, y_range=y_range)))
 
     x_param = TransformationParameter(type=TransformationParameterType.TRANSLATION, index=0)
     y_param = TransformationParameter(type=TransformationParameterType.TRANSLATION, index=1)
@@ -117,10 +114,9 @@ def four_landscapes(work_spec: WorkSpec) -> list[Landscape2]:
                              count=work_spec.counts)
     y_range = ParameterRange(parameter=y_param, range=y_param.get(work_spec.transformation_range),
                              count=work_spec.counts)
-    ret.append(Landscape2(work_spec.central_transformation, x_range, y_range,
-                          landscape2(objective_function=work_spec.objective_function,
-                                     central_transformation=work_spec.central_transformation, x_range=x_range,
-                                     y_range=y_range)))
+    ret.append(Landscape2(x_range, y_range, landscape2(objective_function=work_spec.objective_function,
+                                                       central_transformation=work_spec.central_transformation,
+                                                       x_range=x_range, y_range=y_range)))
 
     x_param = TransformationParameter(type=TransformationParameterType.TRANSLATION, index=1)
     y_param = TransformationParameter(type=TransformationParameterType.TRANSLATION, index=2)
@@ -128,16 +124,15 @@ def four_landscapes(work_spec: WorkSpec) -> list[Landscape2]:
                              count=work_spec.counts)
     y_range = ParameterRange(parameter=y_param, range=y_param.get(work_spec.transformation_range),
                              count=work_spec.counts)
-    ret.append(Landscape2(work_spec.central_transformation, x_range, y_range,
-                          landscape2(objective_function=work_spec.objective_function,
-                                     central_transformation=work_spec.central_transformation, x_range=x_range,
-                                     y_range=y_range)))
+    ret.append(Landscape2(x_range, y_range, landscape2(objective_function=work_spec.objective_function,
+                                                       central_transformation=work_spec.central_transformation,
+                                                       x_range=x_range, y_range=y_range)))
 
-    return ret
+    return work_spec.central_transformation, ret
 
 
 class Worker(QObject):
-    finished = pyqtSignal(list)
+    finished = pyqtSignal(Transformation, list)
 
     def __init__(self, work_spec: WorkSpec):
         super().__init__()
@@ -145,7 +140,7 @@ class Worker(QObject):
 
     def run(self):
         res = four_landscapes(self._work_spec)
-        self.finished.emit(res)
+        self.finished.emit(*res)
 
 
 class PlotWidget(widgets.Container):
@@ -201,21 +196,24 @@ class PlotWidget(widgets.Container):
         self._thread.finished.connect(self._thread.deleteLater)
         self._thread.start()
 
-    def _finish_callback(self, landscapes: list[Landscape2]) -> None:
-        fig, axes = plt.subplots(subplot_kw={"projection": "3d"})
-        figure_widget = FigureCanvasQTAgg(fig)
-        xs = landscapes[0].x_range.get_grid_around_centre(landscapes[0].central_transformation)
-        ys = landscapes[0].y_range.get_grid_around_centre(landscapes[0].central_transformation)
-        ys, xs = torch.meshgrid(ys, xs)
-        axes.cla()
-        axes.plot_surface(xs.clone().detach().cpu().numpy(), ys.clone().detach().cpu().numpy(),
-                          landscapes[0].data.clone().detach().cpu().numpy())
-        # axes.set_xlabel("iteration")
-        # axes.set_ylabel("objective function value")
-        fig.canvas.draw()
+    def _finish_callback(self, central_transformation: Transformation, landscapes: list[Landscape2]) -> None:
+        figures_widget = widgets.Container(layout="horizontal", labels=False)
+        for landscape in landscapes:
+            fig, axes = plt.subplots(subplot_kw={"projection": "3d"})
+            figures_widget.native.layout().addWidget(FigureCanvasQTAgg(fig))
+            xs = landscape.x_range.get_grid_around_centre(central_transformation)
+            ys = landscape.y_range.get_grid_around_centre(central_transformation)
+            ys, xs = torch.meshgrid(ys, xs)
+            axes.cla()
+            axes.plot_surface(xs.clone().detach().cpu().numpy(), ys.clone().detach().cpu().numpy(),
+                              landscape.data.clone().detach().cpu().numpy())
+            axes.set_xlabel(str(landscape.x_range.parameter))
+            axes.set_ylabel(str(landscape.y_range.parameter))
+            axes.set_zlabel("objective function value")
+            fig.canvas.draw()
 
-        self._window.add_dock_widget(figure_widget,
-                                     name="Landscape: {} x {}".format(str(landscapes[0].x_range.parameter),
-                                                                      str(landscapes[0].y_range.parameter)),
-                                     area="right", tabify=True)
+        self._window.add_dock_widget(widgets.Container(
+            widgets=[widgets.Label(value="Landscape over two parameters around {}".format(str(central_transformation))),
+                     figures_widget], labels=False), name="4 landscapes over two parameters each", area="right",
+            tabify=True)
         logger.info("Landscape plotting finished")
