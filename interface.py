@@ -25,6 +25,7 @@ from registration.interface.transformations import TransformationWidget
 from registration.interface.view import ViewWidget
 from registration.interface.register import RegisterWidget
 from registration.interface.grangeat import GrangeatWidget
+from registration.interface.plot import PlotWidget
 
 
 class Interface:
@@ -56,7 +57,7 @@ class Interface:
         self._key_states = {"Alt": False}
 
         self._view_widget = ViewWidget(self.set_view_params)
-        self._viewer.window.add_dock_widget(self._view_widget, name="View options", area="right",
+        self._viewer.window.add_dock_widget(self._view_widget, name="View options", area="left",
                                             menu=self._viewer.window.window_menu)
 
         initial_transformation = self.registration_data.transformation_ground_truth
@@ -68,9 +69,11 @@ class Interface:
         self._viewer.window.add_dock_widget(self._transformation_widget, name="Transformations", area="right",
                                             menu=self._viewer.window.window_menu)
 
-        self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget, objective_functions={
-            "drr": self.registration_data.objective_function_drr,
-            "grangeat": self.registration_data.objective_function_grangeat})
+        objective_functions = {"drr": self.registration_data.objective_function_drr,
+                               "grangeat": self.registration_data.objective_function_grangeat}
+
+        self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget,
+                                               objective_functions=objective_functions)
         self._viewer.window.add_dock_widget(self._register_widget, name="Register", area="right",
                                             menu=self._viewer.window.window_menu)
 
@@ -79,7 +82,12 @@ class Interface:
                                                render_moving_sinogram_callback=self.render_moving_sinogram,
                                                fixed_image_crop_callback=self._re_crop_fixed_image)
         self._viewer.window.add_dock_widget(self._grangeat_widget, name="Sinograms", area="right",
-                                            menu=self._viewer.window.window_menu)
+                                            menu=self._viewer.window.window_menu, tabify=True)
+
+        self._plot_widget = PlotWidget(transformation_widget=self._transformation_widget,
+                                       objective_functions=objective_functions, window=self._viewer.window)
+        self._viewer.window.add_dock_widget(self._plot_widget, name="Landscape plotting", area="right",
+                                            menu=self._viewer.window.window_menu, tabify=True)
 
         self.render_drr()
         self.render_moving_sinogram()

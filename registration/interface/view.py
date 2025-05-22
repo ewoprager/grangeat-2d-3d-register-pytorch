@@ -14,11 +14,12 @@ class ViewWidget(widgets.Container):
         super().__init__()
         self._view_params_setter = view_params_setter
         self._translation_sensitivity_slider = widgets.FloatSlider(value=0.06, min=0.005, max=0.5, step=0.005,
-                                                                   label="Translation sensitivity")
+                                                                   label="Translation")
         self._rotation_sensitivity_slider = widgets.FloatSlider(value=0.002, min=0.0005, max=0.05, step=0.0005,
-                                                                label="Rotation sensitivity")
+                                                                label="Rotation")
         self._translation_sensitivity_slider.changed.connect(self._update)
         self._rotation_sensitivity_slider.changed.connect(self._update)
+        self.append(widgets.Label(label=None, value="Mouse drag sensitivity"))
         self.append(self._translation_sensitivity_slider)
         self.append(self._rotation_sensitivity_slider)
 

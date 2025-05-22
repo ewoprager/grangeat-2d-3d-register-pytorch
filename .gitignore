@@ -8,3 +8,4 @@ cache/
 **/*.so
 data/temp/
 **/*.log
+Extension/src/extension.egg-info/
