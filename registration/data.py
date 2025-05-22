@@ -1,4 +1,6 @@
 import logging
+import pathlib
+from typing import NamedTuple
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +12,46 @@ from registration.lib.structs import *
 from registration.lib.sinogram import *
 
 
+class LoadedVolume(NamedTuple):
+    data: torch.Tensor
+    spacing: torch.Tensor
+
+
+def read_volume(path: pathlib.Path) -> LoadedVolume:
+    if path.is_file():
+        logger.info("Loading CT data file '{}'...".format(str(path)))
+        if path.suffix == ".nrrd":
+            data, header = nrrd.read(str(path))
+        else:
+            raise Exception("Error: file {} is of unrecognised type.".format(str(path)))
+        logger.info("CT data file loaded.")
+        directions = torch.tensor(header['space directions'])
+        spacing = directions.norm(dim=1).flip(dims=(0,))
+        return LoadedVolume(torch.tensor(data), spacing)
+    if path.is_dir():
+        logger.info("Loading CT DICOM data from directory '{}'...".format(str(path)))
+        files = [elem for elem in path.iterdir() if elem.is_file() and elem.suffix == ".dcm"]
+        if len(files) == 0:
+            raise Exception("Error: no DICOM (.dcm) files found in given directory '{}'.".format(str(path)))
+        slices = [pydicom.dcmread(f) for f in files]
+        try:
+            # Sort by z-position
+            slices.sort(key=lambda ds: float(ds.ImagePositionPatient[2]))
+        except AttributeError:
+            # Fallback: sort by instance number
+            slices.sort(key=lambda ds: int(ds.InstanceNumber))
+        pixel_spacing = slices[0]["PixelSpacing"]
+        slice_spacing = (torch.tensor([slices[0]["ImagePositionPatient"][i] for i in range(3)]) - torch.tensor(
+            [slices[1]["ImagePositionPatient"][i] for i in range(3)])).norm()
+        spacing = torch.tensor([pixel_spacing[1],  # column spacing (x-direction)
+                                pixel_spacing[0],  # row spacing (y-direction)
+                                slice_spacing  # slice spacing (z-direction)
+                                ])
+        volume = torch.stack([torch.tensor(pydicom.pixels.pixel_array(s)) for s in slices])
+        return LoadedVolume(volume, spacing)
+    raise Exception("Given path '{}' is not a file or directory.".format(str(path)))
+
+
 def deterministic_hash(text: str):
     ret = 0
     for ch in text:
@@ -17,15 +59,12 @@ def deterministic_hash(text: str):
     return ret
 
 
-def read_nrrd(path: str, *, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
-    logger.info("Loading CT data file {}...".format(path))
-    data, header = nrrd.read(path)
-    logger.info("CT data file loaded.")
+def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
+    loaded_volume = read_volume(path)
     logger.info("Processing CT data...")
-    sizes = header['sizes']
+    sizes = loaded_volume.data.size()
     logger.info("CT data volume size = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
-    data = torch.tensor(data, device="cpu")
-    image = data.to(dtype=torch.float32)
+    image = loaded_volume.data.to(dtype=torch.float32)
     image[image < -800.0] = -800.0
     image -= image.min()
     image /= image.max()
@@ -34,9 +73,8 @@ def read_nrrd(path: str, *, downsample_factor=1) -> Tuple[torch.Tensor, torch.Te
         image = down_sampler(image.unsqueeze(0))[0]
         sizes = image.size()
         logger.info("CT volume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
-    directions = torch.tensor(header['space directions'])
-    spacing = float(downsample_factor) * directions.norm(dim=1).flip(dims=(0,))
-    logger.info("CT voxel spacing = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
+    spacing = float(downsample_factor) * loaded_volume.spacing
+    logger.info("CT voxel spacing after down-sampling = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
     logger.info("CT data file processed.")
     return image, spacing
 
@@ -52,13 +90,22 @@ def read_dicom(path: str, *, downsample_factor=1):
         down_sampler = torch.nn.AvgPool2d(downsample_factor)
         image = down_sampler(image.unsqueeze(0))[0]
         logger.info("X-ray image size after down-sampling = [{} x {}]".format(image.size()[0], image.size()[1]))
-    spacing = dataset["PixelSpacing"]
-    spacing = float(downsample_factor) * torch.tensor([spacing[1],  # column spacing (x-direction)
-        spacing[0]  # row spacing (y-direction)
-    ])
-    logger.info("X-ray pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
-    scene_geometry = SceneGeometry(dataset["DistanceSourceToPatient"].value)
-    logger.info("X-ray distance source-to-patient = {} mm".format(scene_geometry.source_distance))
+    if "PixelSpacing" in dataset:
+        spacing = float(downsample_factor) * torch.tensor([dataset["PixelSpacing"][1],  # column spacing (x-direction)
+                                                           dataset["PixelSpacing"][0]  # row spacing (y-direction)
+                                                           ])
+        logger.info("X-ray pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
+        scene_geometry = SceneGeometry(dataset["DistanceSourceToPatient"].value)
+        logger.info("X-ray distance source-to-patient = {} mm".format(scene_geometry.source_distance))
+    else:
+        spacing = float(downsample_factor) * torch.tensor(
+            [dataset["ImagerPixelSpacing"][1],  # column spacing (x-direction)
+             dataset["ImagerPixelSpacing"][0]  # row spacing (y-direction)
+             ])
+        logger.info("X-ray imager pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
+        scene_geometry = SceneGeometry(dataset["DistanceSourceToDetector"].value)
+        logger.info("X-ray distance source-to-detector = {} mm".format(scene_geometry.source_distance))
+
     logger.info("X-ray DICOM file processed.")
     return image, spacing, scene_geometry
 

@@ -11,7 +11,7 @@ from registration import data
 
 def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor,
                               ct_volume_path: str, volume_downsample_factor: int, save_to_cache=True,
-                              vol_counts=256) -> SinogramClassic:
+                              vol_counts=192) -> SinogramClassic:
     device = volume_data.device
     logger.info("Calculating 3D sinogram (the volume to resample)...")
 

@@ -114,8 +114,6 @@ class RegistrationData:
         return -objective_function.zncc(self.sinogram2d, self.resample_sinogram3d(transformation))
 
     def _refresh_fixed_sinogram(self) -> None:
-        logger.info("Calculating 2D sinogram (the fixed image)...")
-
         sinogram2d_counts = max(self.fixed_image.size()[0], self.fixed_image.size()[1])
         image_diag: float = (self.fixed_image_spacing.flip(dims=(0,)) * torch.tensor(self.fixed_image.size(),
                                                                                      dtype=torch.float32)).square(
@@ -130,4 +128,3 @@ class RegistrationData:
                                                           source_distance=self.scene_geometry.source_distance,
                                                           detector_spacing=self.fixed_image_spacing,
                                                           output_grid=self._sinogram2d_grid)
-        logger.info("X-ray sinogram calculated.")

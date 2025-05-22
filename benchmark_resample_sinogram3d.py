@@ -81,7 +81,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
         vol_data[1, 1, 1] = 1.
         voxel_spacing = torch.tensor([10., 10., 10.])
     else:
-        vol_data, voxel_spacing = data.read_nrrd(path, downsample_factor=volume_downsample_factor)
+        vol_data, voxel_spacing = data.load_volume(path, downsample_factor=volume_downsample_factor)
         vol_data = vol_data.to(dtype=torch.float32, device=cuda)
 
     if sinogram3d is None:

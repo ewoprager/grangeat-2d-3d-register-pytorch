@@ -1,4 +1,5 @@
 from typing import Tuple
+import pathlib
 
 import torch
 
@@ -24,7 +25,8 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
         vol_data[1, 1, 1] = 1.
         voxel_spacing = torch.tensor([10., 10., 10.])
     else:
-        vol_data, voxel_spacing = data.read_nrrd(ct_volume_path, downsample_factor=volume_downsample_factor)
+        vol_data, voxel_spacing = data.load_volume(pathlib.Path(ct_volume_path),
+                                                   downsample_factor=volume_downsample_factor)
         vol_data = vol_data.to(device=device, dtype=torch.float32)
 
     if sinogram3d is None:
