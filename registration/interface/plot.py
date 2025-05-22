@@ -2,6 +2,7 @@ import copy
 import logging
 from typing import Callable, NamedTuple, Tuple
 from enum import Enum
+import pathlib
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,7 @@ import matplotlib.pyplot as plt
 from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from tqdm import tqdm
+from matplotlib import cm
 
 from registration.interface.registration_data import RegistrationData
 from registration.lib.structs import Transformation
@@ -206,10 +208,13 @@ class PlotWidget(widgets.Container):
             ys, xs = torch.meshgrid(ys, xs)
             axes.cla()
             axes.plot_surface(xs.clone().detach().cpu().numpy(), ys.clone().detach().cpu().numpy(),
-                              landscape.data.clone().detach().cpu().numpy())
+                              landscape.data.clone().detach().cpu().numpy(), cmap=cm.get_cmap("viridis"))
             axes.set_xlabel(str(landscape.x_range.parameter))
             axes.set_ylabel(str(landscape.y_range.parameter))
             axes.set_zlabel("objective function value")
+            fname = "of_over_{}_{}.png".format(str(landscape.x_range.parameter).replace(' ', '_'),
+                                               str(landscape.y_range.parameter).replace(' ', '_'))
+            fig.savefig(pathlib.Path("figures") / "landscapes" / fname, dpi=300, bbox_inches='tight')
             fig.canvas.draw()
 
         self._window.add_dock_widget(widgets.Container(
