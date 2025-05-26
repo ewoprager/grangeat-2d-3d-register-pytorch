@@ -202,12 +202,12 @@ class Interface:
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
-         sinogram_size: int, x_ray: str | None = None) -> int:
+         sinogram_size: int, x_ray: str | None = None, new_drr_size: torch.Size = torch.Size([1000, 1000])) -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
 
     registration_data = RegistrationData(path, cache_directory, load_cached, regenerate_drr, save_to_cache,
-                                         sinogram_size, x_ray, device)
+                                         sinogram_size, x_ray, device, new_drr_size=new_drr_size)
 
     interface = Interface(registration_data)
 
@@ -242,6 +242,8 @@ if __name__ == "__main__":
     parser.add_argument("-x", "--x-ray", type=str,
                         help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
                              "this is provided, the X-ray will by used instead of any DRR.")
+    parser.add_argument("-d", "--drr-size", type=int, default=1000,
+                        help="The size of the square DRR to generate as the fixed image if no X-ray is given.")
     args = parser.parse_args()
 
     # create cache directory
@@ -250,6 +252,7 @@ if __name__ == "__main__":
 
     ret = main(path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
                regenerate_drr=args.regenerate_drr, save_to_cache=not args.no_save, sinogram_size=args.sinogram_size,
-               x_ray=args.x_ray if "x_ray" in vars(args) else None)
+               x_ray=args.x_ray if "x_ray" in vars(args) else None,
+               new_drr_size=torch.Size([args.drr_size, args.drr_size]))
 
     exit(ret)

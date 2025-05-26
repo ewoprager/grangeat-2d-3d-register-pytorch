@@ -6,7 +6,7 @@ from registration.lib.sinogram import *
 
 
 def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
-                     *, device, save_to_cache=True):
+                     *, device, save_to_cache=True, size: torch.Size=torch.Size([1000, 1000])):
     # transformation = Transformation(torch.tensor([0., 0., 0.]),
     #                                 torch.tensor([0., 0., 200.])).to(device=device)
     # transformation = Transformation.zero(device=volume_data.device)
@@ -26,7 +26,7 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
 
     drr_image = geometry.generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
                                       detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                      output_size=torch.Size([1000, 1000]))
+                                      output_size=size)
 
     logger.info("DRR generated.")
 

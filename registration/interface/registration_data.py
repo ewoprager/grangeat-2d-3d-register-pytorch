@@ -15,7 +15,8 @@ from registration.lib import grangeat
 
 class RegistrationData:
     def __init__(self, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool,
-                 save_to_cache: bool, sinogram_size: int, x_ray: str | None, device):
+                 save_to_cache: bool, sinogram_size: int, x_ray: str | None, device,
+                 new_drr_size: torch.Size = torch.Size([1000, 1000])):
         self._ct_volume, self._ct_spacing, self._sinogram3d = script.get_volume_and_sinogram(path, cache_directory,
                                                                                              load_cached=load_cached,
                                                                                              save_to_cache=save_to_cache,
@@ -32,7 +33,7 @@ class RegistrationData:
 
             if drr_spec is None:
                 drr_spec = drr.generate_new_drr(cache_directory, path, self.ct_volume, self.ct_spacing,
-                                                device=self.device, save_to_cache=save_to_cache)
+                                                device=self.device, save_to_cache=save_to_cache, size=new_drr_size)
 
             (self._fixed_image_spacing, self._scene_geometry, self._image_2d_full, self._sinogram2d, sinogram2d_range,
              self._transformation_ground_truth) = drr_spec
