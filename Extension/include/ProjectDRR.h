@@ -16,7 +16,7 @@ namespace ExtensionTest {
  */
 at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpacing,
                           const at::Tensor &homographyMatrixInverse, double sourceDistance, int64_t outputWidth,
-                          int64_t outputHeight, const at::Tensor &detectorSpacing);
+                          int64_t outputHeight, const at::Tensor &outputOffset, const at::Tensor &detectorSpacing);
 
 /**
  * @ingroup pytorch_functions
@@ -24,7 +24,8 @@ at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpaci
  */
 __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &voxelSpacing,
                                     const at::Tensor &homographyMatrixInverse, double sourceDistance,
-                                    int64_t outputWidth, int64_t outputHeight, const at::Tensor &detectorSpacing);
+                                    int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
+                                    const at::Tensor &detectorSpacing);
 
 /**
  * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
@@ -37,6 +38,7 @@ template <typename texture_t> struct ProjectDRR {
 	struct CommonData {
 		texture_t inputTexture{};
 		Vec<Vec<double, 4>, 4> homographyMatrixInverse;
+		Vec<double, 2> outputOffset;
 		Vec<double, 2> detectorSpacing;
 		double lambdaStart;
 		double stepSize;
@@ -45,8 +47,8 @@ template <typename texture_t> struct ProjectDRR {
 
 	__host__ static CommonData Common(const at::Tensor &volume, const at::Tensor &voxelSpacing,
 	                                  const at::Tensor &homographyMatrixInverse, double sourceDistance,
-	                                  int64_t outputWidth, int64_t outputHeight, const at::Tensor &detectorSpacing,
-	                                  int64_t samplesPerRay, at::DeviceType device) {
+	                                  int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
+	                                  const at::Tensor &detectorSpacing, int64_t samplesPerRay, at::DeviceType device) {
 		// volume should be a 3D tensor of floats on the chosen device
 		TORCH_CHECK(volume.sizes().size() == 3);
 		TORCH_CHECK(volume.dtype() == at::kFloat);
@@ -58,6 +60,9 @@ template <typename texture_t> struct ProjectDRR {
 		TORCH_CHECK(homographyMatrixInverse.sizes() == at::IntArrayRef({4, 4}));
 		TORCH_CHECK(homographyMatrixInverse.dtype() == at::kDouble);
 		TORCH_INTERNAL_ASSERT(homographyMatrixInverse.device().type() == device);
+		// outputOffset should be a 1D tensor of 2 doubles
+		TORCH_CHECK(outputOffset.sizes() == at::IntArrayRef{2});
+		TORCH_CHECK(outputOffset.dtype() == at::kDouble);
 		// detectorSpacing should be a 1D tensor of 2 doubles
 		TORCH_CHECK(detectorSpacing.sizes() == at::IntArrayRef{2});
 		TORCH_CHECK(detectorSpacing.dtype() == at::kDouble);
@@ -73,7 +78,7 @@ template <typename texture_t> struct ProjectDRR {
 		ret.lambdaStart = MatMul(ret.homographyMatrixInverse, VecCat(sourcePosition, 1.0)).XYZ().Length() - 0.5 *
 		                  volumeDiagLength;
 		ret.stepSize = volumeDiagLength / static_cast<double>(samplesPerRay);
-
+		ret.outputOffset = Vec<double, 2>::FromTensor(detectorSpacing);
 		ret.detectorSpacing = Vec<double, 2>::FromTensor(detectorSpacing);
 		ret.flatOutput = torch::zeros(at::IntArrayRef({outputWidth * outputHeight}), volume.contiguous().options());
 		return ret;

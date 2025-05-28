@@ -46,8 +46,8 @@ class RegistrationData:
             # Load the given X-ray
             self._image_2d_full, self._fixed_image_spacing, self._scene_geometry = data.read_dicom(x_ray,
                                                                                                    downsample_factor=4)
-            self._image_2d_full = self._image_2d_full.to(device=self.device)
-            f_middle = 0.4
+            # Flip horizontally
+            self._image_2d_full = self._image_2d_full.flip(dims=(1,)).to(device=self.device)
             self._fixed_image = self._image_2d_full
             self._refresh_fixed_sinogram()
 
@@ -97,13 +97,21 @@ class RegistrationData:
 
     def re_crop_fixed_image(self, top: int, bottom: int, left: int, right: int) -> None:
         self._fixed_image = self._image_2d_full[top:bottom, left:right]
+        top_left = torch.tensor([left, top], dtype=torch.float64)
+        size = torch.tensor([right - left, bottom - top], dtype=torch.float64)
+        offset = 0.5 * torch.tensor(self._image_2d_full.size(),
+                                    dtype=torch.float64) - (
+                         top_left + 0.5 * size)
+        self._scene_geometry = SceneGeometry(source_distance=self._scene_geometry.source_distance,
+                                             fixed_image_offset=offset)
         self._refresh_fixed_sinogram()
 
     def resample_sinogram3d(self, transformation: Transformation) -> torch.Tensor:
         source_position = self.scene_geometry.source_position(device=self.device)
         p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
         ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=self.device).to(dtype=torch.float32))
-        return self.sinogram3d.resample(ph_matrix, self.sinogram2d_grid)
+        return self.sinogram3d.resample(ph_matrix,
+                                        self.sinogram2d_grid.shifted(-self.scene_geometry.fixed_image_offset))
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
         moving_image = geometry.generate_drr(self.ct_volume, transformation=transformation.to(device=self.device),

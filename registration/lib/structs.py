@@ -119,6 +119,7 @@ class Transformation(NamedTuple):
 
 class SceneGeometry(NamedTuple):
     source_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array
+    fixed_image_offset: torch.Tensor = torch.zeros(2)  # size (2,): (x, y) [mm]; offset of the fixed image relative to the source
 
     def source_position(self, *, device=torch.device('cpu')):
         return torch.tensor([0., 0., self.source_distance], device=device)
@@ -185,6 +186,16 @@ class Sinogram2dGrid(NamedTuple):
 
     def size_consistent(self) -> bool:
         return self.phi.size() == self.r.size()
+
+    def shifted(self, offset: torch.Tensor) -> 'Sinogram2dGrid':
+        assert offset.size() == torch.Size([2])
+        cp = self.phi.cos()
+        sp = self.phi.sin()
+        unit = torch.stack((cp, sp), dim=-1)
+        del cp, sp
+        delta = torch.einsum("...i, i -> ...", unit, offset.to(device=unit.device, dtype=unit.dtype))
+        del unit
+        return Sinogram2dGrid(self.phi, self.r - delta)
 
     @classmethod
     def linear_from_range(cls, sinogram_range: Sinogram2dRange, counts: int | Tuple[int, int] | torch.Size, *,

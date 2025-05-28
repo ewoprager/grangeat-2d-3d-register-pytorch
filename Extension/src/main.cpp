@@ -40,7 +40,7 @@ TORCH_LIBRARY(ExtensionTest, m) {
 	m.def("normalised_cross_correlation(Tensor a, Tensor b) -> Tensor");
 	m.def("grid_sample3d(Tensor input, Tensor grid, str address_mode) -> Tensor");
 	m.def(
-		"project_drr(Tensor volume, Tensor spacing, Tensor hInverse, float sourceDist, int outW, int outH, Tensor outSpacing) -> Tensor");
+		"project_drr(Tensor volume, Tensor spacing, Tensor hInverse, float sourceDist, int outW, int outH, Tensor outOff, Tensor  outSpacing) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(ExtensionTest, CPU, m) {

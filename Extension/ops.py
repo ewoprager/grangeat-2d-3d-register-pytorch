@@ -66,9 +66,9 @@ def grid_sample3d(input_: torch.Tensor, grid: torch.Tensor, address_mode: str = 
 
 
 def project_drr(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,
-                source_distance: float, output_width: int, output_height: int, detector_spacing: torch.Tensor) -> (
-        torch.Tensor):
+                source_distance: float, output_width: int, output_height: int, output_offset: torch.Tensor,
+                detector_spacing: torch.Tensor) -> (torch.Tensor):
     return torch.ops.ExtensionTest.project_drr.default(volume, voxel_spacing.to(dtype=torch.float64),
                                                        homography_matrix_inverse.to(dtype=torch.float64),
-                                                       source_distance, output_width, output_height,
+                                                       source_distance, output_width, output_height, output_offset,
                                                        detector_spacing.to(dtype=torch.float64))

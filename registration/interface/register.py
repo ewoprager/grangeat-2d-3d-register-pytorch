@@ -67,6 +67,9 @@ class ParticleSwarm(OptimisationAlgorithm):
         param_history = GrowingTensor([n_dimensions], self.particle_count * self.iteration_count)
         value_history = GrowingTensor([], self.particle_count * self.iteration_count)
 
+        param_history.push_back(starting_parameters)
+        value_history.push_back(objective_function(starting_parameters))
+
         def objective_pso(particle_params: np.ndarray) -> np.ndarray:
             ret = np.zeros(particle_params.shape[0])
             for i, row in enumerate(particle_params):
@@ -105,6 +108,9 @@ class LocalSearch(OptimisationAlgorithm):
         n_dimensions = starting_parameters.numel()
         param_history = GrowingTensor([n_dimensions], 50)
         value_history = GrowingTensor([], 50)
+        
+        param_history.push_back(starting_parameters)
+        value_history.push_back(objective_function(starting_parameters))
 
         def objective_scipy(params: np.ndarray) -> float:
             params = torch.tensor(copy.deepcopy(params))
