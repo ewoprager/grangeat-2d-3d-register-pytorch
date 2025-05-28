@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 import pyswarms
+from qtpy.QtWidgets import QApplication
 
 from registration.lib.structs import *
 from registration.interface.transformations import TransformationWidget
@@ -27,6 +28,11 @@ from registration.interface.lib.structs import *
 class OptimisationAlgorithm(ABC):
     @abstractmethod
     def __str__(self) -> str:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def algorithm_name() -> str:
         pass
 
     @abstractmethod
@@ -50,6 +56,10 @@ class ParticleSwarm(OptimisationAlgorithm):
 
     def __str__(self) -> str:
         return "Particle swarm with {} particles for {} iterations".format(self.particle_count, self.iteration_count)
+
+    @staticmethod
+    def algorithm_name() -> str:
+        return "Particle Swarm"
 
     def run(self, *, starting_parameters: torch.Tensor, objective_function: Callable[[torch.Tensor], torch.Tensor],
             iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> torch.Tensor:
@@ -85,6 +95,10 @@ class LocalSearch(OptimisationAlgorithm):
 
     def __str__(self) -> str:
         return "Local search"
+
+    @staticmethod
+    def algorithm_name() -> str:
+        return "Local Search"
 
     def run(self, *, starting_parameters: torch.Tensor, objective_function: Callable[[torch.Tensor], torch.Tensor],
             iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> torch.Tensor:
@@ -149,13 +163,17 @@ class Worker(QObject):
         self.progress.emit(param_history, value_history)
 
 
-class OpAlgoInput(ABC):
+class OpAlgoWidget(ABC):
     @abstractmethod
     def get_op_algo(self) -> OptimisationAlgorithm:
         pass
 
+    @abstractmethod
+    def set_from_op_algo(self, _: Any) -> None:
+        pass
 
-class PSOWidget(widgets.Container, OpAlgoInput):
+
+class PSOWidget(widgets.Container, OpAlgoWidget):
     def __init__(self, particle_count: int, iteration_count: int):
         super().__init__(layout="horizontal")
         self._particle_count = particle_count
@@ -174,6 +192,10 @@ class PSOWidget(widgets.Container, OpAlgoInput):
     def get_op_algo(self) -> ParticleSwarm:
         return ParticleSwarm(particle_count=self._particle_count, iteration_count=self._iteration_count)
 
+    def set_from_op_algo(self, particle_swarm: ParticleSwarm) -> None:
+        self._particle_count_widget.set_value(particle_swarm.particle_count)
+        self._iteration_count_widget.set_value(particle_swarm.iteration_count)
+
     def _on_particle_count(self, *args) -> None:
         self._particle_count = self._particle_count_widget.get_value()
 
@@ -181,23 +203,26 @@ class PSOWidget(widgets.Container, OpAlgoInput):
         self._iteration_count = self._iteration_count_widget.get_value()
 
 
-class LocalSearchWidget(widgets.Container, OpAlgoInput):
+class LocalSearchWidget(widgets.Container, OpAlgoWidget):
     def __init__(self):
         super().__init__(layout="horizontal")
 
     def get_op_algo(self) -> LocalSearch:
         return LocalSearch()
 
+    def set_from_op_algo(self, local_search: LocalSearch) -> None:
+        pass
+
 
 class RegisterWidget(widgets.Container):
     def __init__(self, *, transformation_widget: TransformationWidget,
                  objective_functions: dict[str, Callable[[Transformation], torch.Tensor]],
                  fixed_image_crop_callback: Callable[[int, int, int, int], None],
-                 hyper_parameter_save_path: str | pathlib.Path):
-        super().__init__()
+                 hyper_parameter_save_path: str | pathlib.Path, fixed_image_size: torch.Size):
+        super().__init__(labels=False)
         self._transformation_widget = transformation_widget
         self._objective_functions = objective_functions
-        self.__hyper_parameter_save_path = pathlib.Path(hyper_parameter_save_path)
+        self._hyper_parameter_save_path = pathlib.Path(hyper_parameter_save_path)
 
         # Optimisation worker thread and plotting
         self._evals_per_render: int = 100
@@ -215,8 +240,8 @@ class RegisterWidget(widgets.Container):
         ##
         self._fixed_image_crop_callback = fixed_image_crop_callback
         self._ignore_crop_sliders: bool = False
-        width = self._registration_data.fixed_image.size()[1]
-        height = self._registration_data.fixed_image.size()[0]
+        width = fixed_image_size[1]
+        height = fixed_image_size[0]
         self._bottom_crop_slider = widgets.IntSlider(value=height, min=0, max=height, step=1, label="Crop bottom")
         self._top_crop_slider = widgets.IntSlider(value=0, min=0, max=height, step=1, label="Crop top")
         self._right_crop_slider = widgets.IntSlider(value=width, min=0, max=width, step=1, label="Crop right")
@@ -225,30 +250,16 @@ class RegisterWidget(widgets.Container):
         self._top_crop_slider.changed.connect(self._on_crop_slider)
         self._right_crop_slider.changed.connect(self._on_crop_slider)
         self._left_crop_slider.changed.connect(self._on_crop_slider)
-        self.append(self._bottom_crop_slider)
-        self.append(self._top_crop_slider)
-        self.append(self._right_crop_slider)
-        self.append(self._left_crop_slider)
-
-        ##
-        ## Objective function and optimisation parameters
-        ##
-        self._objective_function_widget = WidgetSelectData(widget_type=widgets.ComboBox,
-                                                           initial_choices=objective_functions, label="Obj. func.")
-
-        self._eval_once_button = widgets.PushButton(label="Evaluate once")
-        self._eval_once_button.changed.connect(self._on_eval_once)
-
-        self._eval_result_label = widgets.Label(label="Result:", value="n/a")
-
         self.append(widgets.Container(
-            widgets=[self._objective_function_widget.widget, self._eval_once_button, self._eval_result_label],
-            layout="horizontal", label="Obj. func."))
+            widgets=[self._bottom_crop_slider, self._top_crop_slider, self._right_crop_slider, self._left_crop_slider],
+            layout="vertical"))
 
-        self._pso_widget = PSOWidget(particle_count=500, iteration_count=5)
-        self._local_search_widget = LocalSearchWidget()
-
-        self._algorithm_widget = widgets.ComboBox(choices=["Particle Swarm", "Local Search"])
+        ##
+        ## Optimisation algorithm and parameters
+        ##
+        self._op_algo_widgets = {ParticleSwarm.algorithm_name(): PSOWidget(particle_count=500, iteration_count=5),
+                                 LocalSearch.algorithm_name(): LocalSearchWidget()}
+        self._algorithm_widget = widgets.ComboBox(choices=[name for name in self._op_algo_widgets])
         self._algorithm_widget.changed.connect(self._on_algorithm)
         self._algorithm_container_widget = widgets.Container(widgets=[self._algorithm_widget], layout="vertical")
         self.append(self._algorithm_container_widget)
@@ -265,19 +276,37 @@ class RegisterWidget(widgets.Container):
         self.append(self._hyper_parameters_widget)
 
         ##
+        ## Objective function
+        ##
+        self._objective_function_widget = WidgetSelectData(widget_type=widgets.ComboBox,
+                                                           initial_choices=objective_functions, label="Obj. func.")
+
+        self._eval_once_button = widgets.PushButton(label="Evaluate once")
+        self._eval_once_button.changed.connect(self._on_eval_once)
+
+        self._eval_result_label = widgets.Label(label="Result:", value="n/a")
+
+        self.append(widgets.Container(
+            widgets=[self._objective_function_widget.widget, self._eval_once_button, self._eval_result_label],
+            layout="horizontal", label="Obj. func."))
+
+        ##
         ## Registration
         ##
         self._register_button = widgets.PushButton(label="Register")
         self._register_button.changed.connect(self._on_register)
-        self.append(self._register_button)
 
         self._register_progress = widgets.Label(label="Progress:", value="n/a")
-        self.append(self._register_progress)
 
         self._evals_per_render_widget = widgets.SpinBox(value=self._evals_per_render, min=1, max=1000, step=1,
                                                         label="Evals./re-plot")
         self._evals_per_render_widget.changed.connect(self._on_evals_per_render)
-        self.append(self._evals_per_render_widget)
+
+        self.append(
+            widgets.Container(widgets=[self._register_button, self._register_progress, self._evals_per_render_widget],
+                              layout="vertical"))
+
+        QApplication.instance().aboutToQuit.connect(self._on_exit)
 
     def _current_obj_func(self) -> Callable[[Transformation], torch.Tensor] | None:
         current = self._objective_function_widget.get_selected()  # from a ComboBox, a str is returned
@@ -363,10 +392,8 @@ class RegisterWidget(widgets.Container):
             del self._algorithm_container_widget[-1]
 
         value = self._algorithm_widget.get_value()
-        if value == "Particle Swarm":
-            self._algorithm_container_widget.append(self._pso_widget)
-        elif value == "Local Search":
-            self._algorithm_container_widget.append(self._local_search_widget)
+        if value in self._op_algo_widgets:
+            self._algorithm_container_widget.append(self._op_algo_widgets[value])
         else:
             logger.error("Unrecognised optimisation algorithm option: '{}'.".format(value))
 
@@ -392,8 +419,14 @@ class RegisterWidget(widgets.Container):
                                                  bottom=self._bottom_crop_slider.get_value()))
 
     def _set_hyper_parameters(self, new_value: HyperParameters) -> None:
-
+        self._algorithm_widget.set_value(new_value.optimisation_algorithm.algorithm_name())
+        self._op_algo_widgets[new_value.optimisation_algorithm.algorithm_name()].set_from_op_algo(
+            new_value.optimisation_algorithm)
+        self._refresh_algorithm_container_widget()
         self._right_crop_slider.set_value(new_value.cropping.right)
         self._top_crop_slider.set_value(new_value.cropping.top)
         self._left_crop_slider.set_value(new_value.cropping.left)
         self._bottom_crop_slider.set_value(new_value.cropping.bottom)
+
+    def _on_exit(self) -> None:
+        self._hyper_parameters_widget.save_to_file(self._hyper_parameter_save_path)

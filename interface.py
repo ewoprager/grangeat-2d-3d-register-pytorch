@@ -73,14 +73,17 @@ class Interface:
                                "grangeat": self.registration_data.objective_function_grangeat}
 
         self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget,
-                                               objective_functions=objective_functions)
+                                               objective_functions=objective_functions,
+                                               fixed_image_crop_callback=self._re_crop_fixed_image,
+                                               hyper_parameter_save_path=pathlib.Path(
+                                                   "cache/saved_hyperparameters.pkl"),
+                                               fixed_image_size=self._registration_data.fixed_image.size())
         self._viewer.window.add_dock_widget(self._register_widget, name="Register", area="right",
-                                            menu=self._viewer.window.window_menu)
+                                            menu=self._viewer.window.window_menu, tabify=True)
 
         self._grangeat_widget = GrangeatWidget(moving_image_changed_signal=self._moving_image_layer.events.data,
                                                registration_data=self.registration_data,
-                                               render_moving_sinogram_callback=self.render_moving_sinogram,
-                                               fixed_image_crop_callback=self._re_crop_fixed_image)
+                                               render_moving_sinogram_callback=self.render_moving_sinogram)
         self._viewer.window.add_dock_widget(self._grangeat_widget, name="Sinograms", area="right",
                                             menu=self._viewer.window.window_menu, tabify=True)
 
