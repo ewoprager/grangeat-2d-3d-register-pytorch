@@ -2,7 +2,11 @@ import copy
 import time
 import logging
 from datetime import datetime
-from typing import Callable, Any
+from typing import Callable, Any, NamedTuple, Union
+from abc import ABC, abstractmethod
+from enum import Enum
+
+import scipy.optimize
 
 logger = logging.getLogger(__name__)
 
@@ -20,64 +24,100 @@ from registration.interface.transformations import TransformationWidget
 from registration.interface.lib.structs import *
 
 
-def register(*, initial_transformation: Transformation, objective_function: Callable[[Transformation], torch.Tensor],
-             iteration_callback: Callable[[torch.Tensor, torch.Tensor], None], particle_count: int,
-             iteration_count: int) -> Transformation:
-    def obj_func(params: torch.Tensor) -> torch.Tensor:
-        return objective_function(Transformation(params[0:3], params[3:6]))
+class OptimisationAlgorithm(ABC):
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
 
-    logger.info("Optimising...")
-    param_history = torch.zeros((particle_count * iteration_count, 6))
-    value_history = torch.zeros(particle_count * iteration_count)
-    start_params: torch.Tensor = initial_transformation.vectorised().cpu()
+    @abstractmethod
+    def run(self, *, starting_parameters: torch.Tensor, objective_function: Callable[[torch.Tensor], torch.Tensor],
+            iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> torch.Tensor:
+        pass
 
-    if True:
-        j: int = 0
+
+class ParticleSwarm(OptimisationAlgorithm):
+    def __init__(self, particle_count: int, iteration_count: int):
+        self._particle_count = particle_count
+        self._iteration_count = iteration_count
+
+    @property
+    def particle_count(self):
+        return self._particle_count
+
+    @property
+    def iteration_count(self):
+        return self._iteration_count
+
+    def __str__(self) -> str:
+        return "Particle swarm with {} particles for {} iterations".format(self.particle_count, self.iteration_count)
+
+    def run(self, *, starting_parameters: torch.Tensor, objective_function: Callable[[torch.Tensor], torch.Tensor],
+            iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> torch.Tensor:
+        n_dimensions = starting_parameters.numel()
+        param_history = GrowingTensor([n_dimensions], self.particle_count * self.iteration_count)
+        value_history = GrowingTensor([], self.particle_count * self.iteration_count)
 
         def objective_pso(particle_params: np.ndarray) -> np.ndarray:
-            nonlocal j
             ret = np.zeros(particle_params.shape[0])
             for i, row in enumerate(particle_params):
                 params = torch.tensor(copy.deepcopy(row))
-                param_history[j] = params
-                value = obj_func(params)
-                value_history[j] = value
-                j += 1
-                iteration_callback(param_history[:j], value_history[:j])
+                param_history.push_back(params)
+                value = objective_function(params)
+                value_history.push_back(value)
+                iteration_callback(param_history.get(), value_history.get())
                 ret[i] = value.item()
             return ret
 
         options = {'c1': 2.525, 'c2': 1.225, 'w': 0.28}  # {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
-        n_dimensions = 6
-        initial_positions = np.random.normal(loc=start_params.numpy(), size=(particle_count, n_dimensions),
+        initial_positions = np.random.normal(loc=starting_parameters.numpy(), size=(self.particle_count, n_dimensions),
                                              scale=np.array([0.1, 0.1, 0.1, 2.0, 2.0, 2.0]))
-        initial_positions[0] = start_params.numpy()
-        optimiser = pyswarms.single.GlobalBestPSO(n_particles=particle_count, dimensions=n_dimensions,
+        initial_positions[0] = starting_parameters.numpy()
+        optimiser = pyswarms.single.GlobalBestPSO(n_particles=self.particle_count, dimensions=n_dimensions,
                                                   init_pos=initial_positions, options=options)
 
-        cost, converged_params = optimiser.optimize(objective_pso, iters=iteration_count)
-        converged_params = torch.from_numpy(converged_params)
-        logger.info("PSO finished")
+        cost, converged_params = optimiser.optimize(objective_pso, iters=self.iteration_count)
+        return torch.from_numpy(converged_params)
 
-    if False:
+
+class LocalSearch(OptimisationAlgorithm):
+    def __init__(self):
+        pass
+
+    def __str__(self) -> str:
+        return "Local search"
+
+    def run(self, *, starting_parameters: torch.Tensor, objective_function: Callable[[torch.Tensor], torch.Tensor],
+            iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> torch.Tensor:
+        n_dimensions = starting_parameters.numel()
+        param_history = GrowingTensor([n_dimensions], 50)
+        value_history = GrowingTensor([], 50)
+
         def objective_scipy(params: np.ndarray) -> float:
             params = torch.tensor(copy.deepcopy(params))
-            param_history.append(params)
-            value = obj_func(params)
-            value_history.append(value)
-            iteration_callback(param_history, value_history)
+            param_history.push_back(params)
+            value = objective_function(params)
+            value_history.push_back(value)
+            iteration_callback(param_history.get(), value_history.get())
             return value.item()
 
         tic = time.time()
-        # res = scipy.optimize.minimize(objective_scipy, start_params, method='Powell')
-        res = scipy.optimize.basinhopping(objective_scipy, start_params, T=1.0,
-                                          minimizer_kwargs={"method": 'Nelder-Mead'})
+        res = scipy.optimize.minimize(objective_scipy, starting_parameters, method='Powell')
         toc = time.time()
         logger.info("Done. Took {:.3f}s.".format(toc - tic))
         logger.info(res)
-        converged_params = torch.from_numpy(res.x)
+        return torch.from_numpy(res.x)
 
-    return Transformation(converged_params[0:3], converged_params[3:6])
+
+class Cropping(NamedTuple):
+    right: int
+    top: int
+    left: int
+    bottom: int
+
+
+class HyperParameters(NamedTuple):
+    optimisation_algorithm: OptimisationAlgorithm
+    cropping: Cropping
 
 
 class Worker(QObject):
@@ -85,30 +125,79 @@ class Worker(QObject):
     progress = pyqtSignal(torch.Tensor, torch.Tensor)
 
     def __init__(self, *, initial_transformation: Transformation,
-                 objective_function: Callable[[Transformation], torch.Tensor], particle_count: int,
-                 iteration_count: int):
+                 objective_function: Callable[[Transformation], torch.Tensor], optimisation_algorithm: Any):
         super().__init__()
         self._initial_transformation = initial_transformation
         self._objective_function = objective_function
-        self._particle_count = particle_count
-        self._iteration_count = iteration_count
+        self._optimisation_algorithm = optimisation_algorithm
 
     def run(self):
-        res = register(initial_transformation=self._initial_transformation, iteration_callback=self._iteration_callback,
-                       objective_function=self._objective_function, particle_count=self._particle_count,
-                       iteration_count=self._iteration_count)
+        def obj_func(params: torch.Tensor) -> torch.Tensor:
+            return self._objective_function(Transformation.from_vector(params))
+
+        starting_parameters: torch.Tensor = self._initial_transformation.vectorised().cpu()
+
+        logger.info("Optimising with '{}'...".format(str(self._optimisation_algorithm)))
+        converged_params = self._optimisation_algorithm.run(starting_parameters=starting_parameters,
+                                                            objective_function=obj_func,
+                                                            iteration_callback=self._iteration_callback)
+        logger.info("Optimisation finished.")
+        res = Transformation.from_vector(converged_params)
         self.finished.emit(res)
 
     def _iteration_callback(self, param_history: torch.Tensor, value_history: torch.Tensor) -> None:
         self.progress.emit(param_history, value_history)
 
 
+class OpAlgoInput(ABC):
+    @abstractmethod
+    def get_op_algo(self) -> OptimisationAlgorithm:
+        pass
+
+
+class PSOWidget(widgets.Container, OpAlgoInput):
+    def __init__(self, particle_count: int, iteration_count: int):
+        super().__init__(layout="horizontal")
+        self._particle_count = particle_count
+        self._iteration_count = iteration_count
+
+        self._particle_count_widget = widgets.SpinBox(value=self._particle_count, min=1, max=5000, step=1,
+                                                      label="N particles")
+        self._particle_count_widget.changed.connect(self._on_particle_count)
+        self.append(self._particle_count_widget)
+
+        self._iteration_count_widget = widgets.SpinBox(value=self._iteration_count, min=1, max=30, step=1,
+                                                       label="N iterations")
+        self._iteration_count_widget.changed.connect(self._on_iteration_count)
+        self.append(self._iteration_count_widget)
+
+    def get_op_algo(self) -> ParticleSwarm:
+        return ParticleSwarm(particle_count=self._particle_count, iteration_count=self._iteration_count)
+
+    def _on_particle_count(self, *args) -> None:
+        self._particle_count = self._particle_count_widget.get_value()
+
+    def _on_iteration_count(self, *args) -> None:
+        self._iteration_count = self._iteration_count_widget.get_value()
+
+
+class LocalSearchWidget(widgets.Container, OpAlgoInput):
+    def __init__(self):
+        super().__init__(layout="horizontal")
+
+    def get_op_algo(self) -> LocalSearch:
+        return LocalSearch()
+
+
 class RegisterWidget(widgets.Container):
     def __init__(self, *, transformation_widget: TransformationWidget,
-                 objective_functions: dict[str, Callable[[Transformation], torch.Tensor]]):
+                 objective_functions: dict[str, Callable[[Transformation], torch.Tensor]],
+                 fixed_image_crop_callback: Callable[[int, int, int, int], None],
+                 hyper_parameter_save_path: str | pathlib.Path):
         super().__init__()
         self._transformation_widget = transformation_widget
         self._objective_functions = objective_functions
+        self.__hyper_parameter_save_path = pathlib.Path(hyper_parameter_save_path)
 
         # Optimisation worker thread and plotting
         self._evals_per_render: int = 100
@@ -118,13 +207,32 @@ class RegisterWidget(widgets.Container):
         self._thread: QThread | None = None
         self._worker: Worker | None = None
 
-        # Optimisation hyper-parameters:
-        self._particle_count: int = 500
-        self._iteration_count: int = 5
-
         self._fig, self._axes = plt.subplots()
         self.native.layout().addWidget(FigureCanvasQTAgg(self._fig))
 
+        ##
+        ## Cropping sliders
+        ##
+        self._fixed_image_crop_callback = fixed_image_crop_callback
+        self._ignore_crop_sliders: bool = False
+        width = self._registration_data.fixed_image.size()[1]
+        height = self._registration_data.fixed_image.size()[0]
+        self._bottom_crop_slider = widgets.IntSlider(value=height, min=0, max=height, step=1, label="Crop bottom")
+        self._top_crop_slider = widgets.IntSlider(value=0, min=0, max=height, step=1, label="Crop top")
+        self._right_crop_slider = widgets.IntSlider(value=width, min=0, max=width, step=1, label="Crop right")
+        self._left_crop_slider = widgets.IntSlider(value=0, min=0, max=width, step=1, label="Crop left")
+        self._bottom_crop_slider.changed.connect(self._on_crop_slider)
+        self._top_crop_slider.changed.connect(self._on_crop_slider)
+        self._right_crop_slider.changed.connect(self._on_crop_slider)
+        self._left_crop_slider.changed.connect(self._on_crop_slider)
+        self.append(self._bottom_crop_slider)
+        self.append(self._top_crop_slider)
+        self.append(self._right_crop_slider)
+        self.append(self._left_crop_slider)
+
+        ##
+        ## Objective function and optimisation parameters
+        ##
         self._objective_function_widget = WidgetSelectData(widget_type=widgets.ComboBox,
                                                            initial_choices=objective_functions, label="Obj. func.")
 
@@ -137,18 +245,28 @@ class RegisterWidget(widgets.Container):
             widgets=[self._objective_function_widget.widget, self._eval_once_button, self._eval_result_label],
             layout="horizontal", label="Obj. func."))
 
-        self._particle_count_widget = widgets.SpinBox(value=self._particle_count, min=1, max=5000, step=1,
-                                                      label="N particles")
-        self._particle_count_widget.changed.connect(self._on_particle_count)
+        self._pso_widget = PSOWidget(particle_count=500, iteration_count=5)
+        self._local_search_widget = LocalSearchWidget()
 
-        self._iteration_count_widget = widgets.SpinBox(value=self._iteration_count, min=1, max=30, step=1,
-                                                       label="N iterations")
-        self._iteration_count_widget.changed.connect(self._on_iteration_count)
+        self._algorithm_widget = widgets.ComboBox(choices=["Particle Swarm", "Local Search"])
+        self._algorithm_widget.changed.connect(self._on_algorithm)
+        self._algorithm_container_widget = widgets.Container(widgets=[self._algorithm_widget], layout="vertical")
+        self.append(self._algorithm_container_widget)
+        self._refresh_algorithm_container_widget()
 
-        self.append(
-            widgets.Container(widgets=[self._particle_count_widget, self._iteration_count_widget], layout="horizontal",
-                              label="PSO params"))
+        ##
+        ## Hyper-parameter saving and loading
+        ##
+        self._hyper_parameters_widget = WidgetManageSaved(initial_choices={"initial": self._current_hyper_parameters()},
+                                                          DataType=HyperParameters,
+                                                          load_from_file=self._hyper_parameter_save_path,
+                                                          get_current_callback=self._current_hyper_parameters,
+                                                          set_callback=self._set_hyper_parameters)
+        self.append(self._hyper_parameters_widget)
 
+        ##
+        ## Registration
+        ##
         self._register_button = widgets.PushButton(label="Register")
         self._register_button.changed.connect(self._on_register)
         self.append(self._register_button)
@@ -170,13 +288,16 @@ class RegisterWidget(widgets.Container):
         self._eval_result_label.value = "{:.4f}".format(res.item())
 
     def _on_register(self):
+        if len(self._algorithm_container_widget) < 2:
+            logger.warning("No optimisation algorithm selected.")
+            return
         self._iteration_callback_count = 0
         self._best = None
         self._last_rendered_iteration = 0
         self._thread = QThread()
         self._worker = Worker(initial_transformation=self._transformation_widget.get_current_transformation(),
-                              objective_function=self._current_obj_func(), particle_count=self._particle_count,
-                              iteration_count=self._iteration_count)
+                              objective_function=self._current_obj_func(),
+                              optimisation_algorithm=self._algorithm_container_widget[1].get_op_algo())
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._worker.finished.connect(self._finish_callback)
@@ -218,25 +339,61 @@ class RegisterWidget(widgets.Container):
         self._fig.canvas.draw()
 
         self._last_rendered_iteration = self._iteration_callback_count
-        values = torch.tensor(value_history).cpu()
+        values = value_history.cpu()
         self._best, best_index = values.min(0)
         self._best = self._best.item()
         best_index = best_index.item()
         best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
         self._transformation_widget.set_current_transformation(best_transformation)
 
-        self._register_progress.value = "Eval. {} / {}; best = {:.4f}".format(self._iteration_callback_count,
-                                                                              self._particle_count *
-                                                                              self._iteration_count,
-                                                                              0.0 if self._best is None else self._best)
+        self._register_progress.value = "{} evaluations, best = {:.4f}".format(self._iteration_callback_count,
+                                                                               0.0 if self._best is None else
+                                                                               self._best)
 
     def _finish_callback(self, converged_transformation: Transformation):
         self._transformation_widget.set_current_transformation(converged_transformation)
         self._transformation_widget.save_transformation(converged_transformation, "registration result {}".format(
             datetime.now().strftime("%Y-%m-%d, %H:%M:%S")))
 
-    def _on_particle_count(self, *args) -> None:
-        self._particle_count = self._particle_count_widget.get_value()
+    def _on_algorithm(self, *args) -> None:
+        self._refresh_algorithm_container_widget()
 
-    def _on_iteration_count(self, *args) -> None:
-        self._iteration_count = self._iteration_count_widget.get_value()
+    def _refresh_algorithm_container_widget(self) -> None:
+        if len(self._algorithm_container_widget) > 1:
+            del self._algorithm_container_widget[-1]
+
+        value = self._algorithm_widget.get_value()
+        if value == "Particle Swarm":
+            self._algorithm_container_widget.append(self._pso_widget)
+        elif value == "Local Search":
+            self._algorithm_container_widget.append(self._local_search_widget)
+        else:
+            logger.error("Unrecognised optimisation algorithm option: '{}'.".format(value))
+
+    def _on_crop_slider(self, *args) -> None:
+        if self._ignore_crop_sliders:
+            return
+        self._ignore_crop_sliders = True
+        self._bottom_crop_slider.min = self._top_crop_slider.get_value() + 1
+        self._top_crop_slider.max = self._bottom_crop_slider.get_value() - 1
+        self._right_crop_slider.min = self._left_crop_slider.get_value() + 1
+        self._left_crop_slider.max = self._right_crop_slider.get_value() - 1
+        self._fixed_image_crop_callback(self._top_crop_slider.get_value(), self._bottom_crop_slider.get_value(),
+                                        self._left_crop_slider.get_value(), self._right_crop_slider.get_value())
+        self._ignore_crop_sliders = False
+
+    def _current_hyper_parameters(self) -> HyperParameters:
+        if len(self._algorithm_container_widget) < 2:
+            raise RuntimeError("Cannot get hyper parameters: No optimisation algorithm selected.")
+        return HyperParameters(optimisation_algorithm=self._algorithm_container_widget[1].get_op_algo(),
+                               cropping=Cropping(right=self._right_crop_slider.get_value(),
+                                                 top=self._top_crop_slider.get_value(),
+                                                 left=self._left_crop_slider.get_value(),
+                                                 bottom=self._bottom_crop_slider.get_value()))
+
+    def _set_hyper_parameters(self, new_value: HyperParameters) -> None:
+
+        self._right_crop_slider.set_value(new_value.cropping.right)
+        self._top_crop_slider.set_value(new_value.cropping.top)
+        self._left_crop_slider.set_value(new_value.cropping.left)
+        self._bottom_crop_slider.set_value(new_value.cropping.bottom)

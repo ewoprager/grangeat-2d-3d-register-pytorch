@@ -1,13 +1,17 @@
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Callable
+import pickle
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
 
+import pathlib
 from magicgui import magicgui, widgets
 
+
 class WidgetSelectData:
-    def __init__(self, widget_type: type, initial_choices: dict[str, Any] = {}, **kwargs):
-        self._widget = widget_type(choices = [key for key in initial_choices], **kwargs)
+    def __init__(self, *, widget_type: type, initial_choices: dict[str, Any] = {}, **kwargs):
+        self._widget = widget_type(choices=[key for key in initial_choices], **kwargs)
         self._data = initial_choices
 
     @property
@@ -39,6 +43,100 @@ class WidgetSelectData:
                 continue
             self._widget.del_choice(name)
             self._data.pop(name)
+
+
+class WidgetManageSaved(widgets.Container):
+    def __init__(self, *, initial_choices: dict[str, Any] = {}, DataType: type,
+                 load_from_file: str | pathlib.Path | None, get_current_callback: Callable[[], Any],
+                 set_callback: Callable[[Any], None]):
+        super().__init__()
+
+        self._get_current_callback = get_current_callback
+        self._set_callback = set_callback
+
+        self._save_button = widgets.PushButton(label="Save new")
+        self._save_button.changed.connect(self._on_save)
+
+        self._set_to_saved_button = widgets.PushButton(label="Load selected")
+        self._set_to_saved_button.changed.connect(self._on_set_to_saved)
+
+        self._del_button = widgets.PushButton(label="Delete selected")
+        self._del_button.changed.connect(self._on_del)
+
+        self.append(widgets.Container(widgets=[self._save_button, self._set_to_saved_button, self._del_button],
+                                      layout="horizontal"))
+
+        if load_from_file is not None:
+            if pathlib.Path(load_from_file).is_file():
+                with open(load_from_file, "rb") as file:
+                    loaded = pickle.load(file)
+                    valid = isinstance(loaded, dict)
+                    if valid:
+                        for k, v in loaded.items():
+                            valid = valid and isinstance(k, str) and isinstance(v, DataType)
+                    if valid:
+                        initial_choices = initial_choices | loaded
+                        logger.info("Saved data loaded from '{}'".format(str(load_from_file)))
+                    else:
+                        logger.warning("Invalid saved data at '{}'".format(str(load_from_file)))
+            else:
+                logger.warning("Save file '{}' doesn't exist.".format(str(load_from_file)))
+        self._select_saved_widget = WidgetSelectData(widget_type=widgets.Select, initial_choices=initial_choices,
+                                                     label="Saved:")
+        self.append(self._select_saved_widget.widget)
+
+        self._rename_input = widgets.LineEdit(value=datetime.now().strftime("%Y-%m-%d"))
+        self._rename_widget = widgets.PushButton(label="Rename selected")
+        self._rename_widget.changed.connect(self._on_rename)
+        self.append(
+            widgets.Container(widgets=[self._rename_input, self._rename_widget], labels=False, layout="horizontal",
+                              label="Rename to"))
+
+    def add_value(self, name: str, data: Any) -> None:
+        while self._select_saved_widget.name_exists(name):
+            name = "{} (1)".format(name)
+        self._select_saved_widget.add_choice(name, data)
+
+    def save_to_file(self, path: str | pathlib.Path) -> None:
+        with open(path, "wb") as file:
+            pickle.dump(self._select_saved_widget.data, file)
+            logger.info("Values saved to '{}'".format(str(path)))
+
+    def _on_save(self) -> None:
+        new_name = datetime.now().strftime("%Y-%m-%d, %H:%M:%S")
+        self._select_saved_widget.add_choice(new_name, self._get_current_callback())
+
+    def _on_set_to_saved(self) -> None:
+        current = self._select_saved_widget.get_selected()
+        if len(current) == 1:
+            # self.set_current_transformation(self._select_saved_widget.get_data(current[0]))
+            self._set_callback(self._select_saved_widget.get_data(current[0]))
+        elif len(current) == 0:
+            logger.warning("No value selected.")
+        else:
+            logger.warning("Multiple values selected.")
+
+    def _on_del(self) -> None:
+        current = self._select_saved_widget.get_selected()  # this actually returns a list of strings
+        if len(current) == 0:
+            logger.warning("No value selected.")
+            return
+        self._select_saved_widget.del_choices(current)
+
+    def _on_rename(self) -> None:
+        new_name = self._rename_input.get_value()
+        if self._select_saved_widget.name_exists(new_name):
+            logger.warning("Value already exists with name '{}'.".format(new_name))
+            return
+        current = self._select_saved_widget.get_selected()
+        if len(current) == 1:
+            data = self._select_saved_widget.get_data(current[0])
+            self._select_saved_widget.del_choices(current)
+            self._select_saved_widget.add_choice(new_name, data)
+        elif len(current) == 0:
+            logger.warning("No value selected.")
+        else:
+            logger.warning("Multiple values selected.")
 
 
 class ViewParams(NamedTuple):

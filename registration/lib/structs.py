@@ -1,9 +1,26 @@
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Tuple, Sequence, Any
 
 import torch
 import kornia
 import scipy
 import numpy
+
+
+class GrowingTensor:
+    def __init__(self, element_shape: Sequence[int], initial_length: int, **kwargs):
+        self.element_size = torch.Size(element_shape)
+        self.data = torch.zeros([initial_length] + list(element_shape), **kwargs)
+        self.count = 0
+
+    def push_back(self, element: torch.Tensor) -> None:
+        assert element.size() == self.element_size
+        if self.count >= self.data.size()[0]:
+            self.data = torch.cat((self.data, torch.zeros_like(self.data)), dim=0)
+        self.data[self.count] = element.to(dtype=self.data.dtype, device=self.data.device)
+        self.count += 1
+
+    def get(self) -> torch.Tensor:
+        return self.data[:self.count]
 
 
 class LinearMapping:
@@ -60,6 +77,11 @@ class Transformation(NamedTuple):
 
     def vectorised(self) -> torch.Tensor:
         return torch.cat((self.rotation, self.translation), dim=0)
+
+    @staticmethod
+    def from_vector(vector: torch.Tensor) -> 'Transformation':
+        assert vector.size() == torch.Size([6])
+        return Transformation(rotation=vector[0:3], translation=vector[3:6])
 
     def device(self):
         assert self.device_consistent()
