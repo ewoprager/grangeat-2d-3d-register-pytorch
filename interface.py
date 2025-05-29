@@ -5,6 +5,7 @@ import pathlib
 import time
 from typing import NamedTuple, Any
 from datetime import datetime
+import copy
 
 from scipy.signal import resample
 
@@ -38,7 +39,6 @@ class Interface:
 
         self._viewer = napari.Viewer()
         self._viewer.bind_key("Alt", self._on_alt_down)
-
         self._fixed_image_layer = self._viewer.add_image(self.registration_data.fixed_image.cpu().numpy(),
                                                          colormap="yellow", interpolation2d="linear",
                                                          name="Fixed image")
@@ -110,36 +110,6 @@ class Interface:
     def registration_data(self) -> RegistrationData:
         return self._registration_data
 
-    def resample_sinogram3d(self, transformation: Transformation) -> torch.Tensor:
-        # Applying the translation offset
-        translation = transformation.translation
-        translation[0:2] += self._registration_data.translation_offset.to(device=transformation.device)
-        transformation = Transformation(rotation=transformation.rotation, translation=translation)
-
-        source_position = self.registration_constants.scene_geometry.source_position(device=self.device)
-        p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-        ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=self.device).to(dtype=torch.float32))
-        return self._registration_constants.sinogram3d.resample(ph_matrix, self._registration_data.sinogram2d_grid)
-
-    def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        # Applying the translation offset
-        translation = transformation.translation
-        translation[0:2] += self._registration_data.translation_offset.to(device=transformation.device)
-        transformation = Transformation(rotation=transformation.rotation, translation=translation)
-
-        moving_image = geometry.generate_drr(self._registration_constants.ct_volume,
-                                             transformation=transformation.to(device=self.device),
-                                             voxel_spacing=self._registration_constants.ct_spacing,
-                                             detector_spacing=self._registration_constants.fixed_image_spacing,
-                                             scene_geometry=SceneGeometry(
-                                                 source_distance=self._registration_constants.scene_geometry.source_distance,
-                                                 fixed_image_offset=self._registration_data.fixed_image_offset),
-                                             output_size=self._registration_data.fixed_image.size())
-        return -objective_function.zncc(self._registration_data.fixed_image, moving_image)
-
-    def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(self._registration_data.sinogram2d, self.resample_sinogram3d(transformation))
-
     def get_view_params(self) -> ViewParams:
         return self._view_params
 
@@ -148,13 +118,40 @@ class Interface:
 
     view_params = property(get_view_params, set_view_params)
 
+    def resample_sinogram3d(self, transformation: Transformation) -> torch.Tensor:
+        # Applying the translation offset
+        translation = copy.deepcopy(transformation.translation)
+        translation[0:2] += self._registration_data.translation_offset.to(device=transformation.device)
+        transformation = Transformation(rotation=transformation.rotation, translation=translation)
+
+        source_position = self.registration_constants.scene_geometry.source_position(device=self.device)
+        p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+        ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=self.device).to(dtype=torch.float32))
+        return self._registration_constants.sinogram3d.resample(ph_matrix, self._registration_data.sinogram2d_grid)
+
+    def generate_drr(self, transformation: Transformation) -> torch.Tensor:
+        # Applying the translation offset
+        translation = copy.deepcopy(transformation.translation)
+        translation[0:2] += self._registration_data.translation_offset.to(device=transformation.device)
+        transformation = Transformation(rotation=transformation.rotation, translation=translation)
+
+        return geometry.generate_drr(self._registration_constants.ct_volume,
+                                     transformation=transformation.to(device=self.device),
+                                     voxel_spacing=self._registration_constants.ct_spacing,
+                                     detector_spacing=self._registration_constants.fixed_image_spacing,
+                                     scene_geometry=SceneGeometry(
+                                         source_distance=self._registration_constants.scene_geometry.source_distance,
+                                         fixed_image_offset=self._registration_data.fixed_image_offset),
+                                     output_size=self._registration_data.fixed_image.size())
+
+    def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
+        return -objective_function.zncc(self._registration_data.fixed_image, self.generate_drr(transformation))
+
+    def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
+        return -objective_function.zncc(self._registration_data.sinogram2d, self.resample_sinogram3d(transformation))
+
     def render_drr(self) -> None:
-        moved_drr = geometry.generate_drr(self.registration_constants.ct_volume,
-                                          transformation=self._transformation_widget.get_current_transformation(),
-                                          voxel_spacing=self.registration_constants.ct_spacing,
-                                          detector_spacing=self.registration_constants.fixed_image_spacing,
-                                          scene_geometry=self.registration_constants.scene_geometry,
-                                          output_size=self.registration_data.fixed_image.size())
+        moved_drr = self.generate_drr(self._transformation_widget.get_current_transformation())
         self._moving_image_layer.data = moved_drr.cpu().numpy()
 
     def render_moving_sinogram(self) -> None:
@@ -169,6 +166,8 @@ class Interface:
         self._registration_data.hyperparameters = HyperParameters(cropping=cropping,
                                                                   source_offset=self._registration_data.hyperparameters.source_offset)
         self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
+        self._fixed_image_layer.translate = (cropping.top, cropping.left)
+        self._moving_image_layer.translate = (cropping.top, cropping.left)
         self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
         self.render_drr()
         self.render_moving_sinogram()

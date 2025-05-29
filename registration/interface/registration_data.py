@@ -17,8 +17,7 @@ from registration.interface.registration_constants import RegistrationConstants
 
 class RegistrationData:
     """
-    @brief Class to manage the registration hyperparameters, and importantly the data that are modified according to
-    them.
+    @brief Class to manage the registration hyperparameters, and the data that are modified according to them.
     """
 
     class Cached(NamedTuple):
@@ -96,12 +95,13 @@ class RegistrationData:
         fixed_image = self.hyperparameters.cropping.apply(self._registration_constants.image_2d_full)
 
         # The fixed image is offset to adjust for the cropping, and according to the source offset
-        fixed_image_offset = self.hyperparameters.cropping.get_centre_offset(
-            self._registration_constants.image_2d_full.size()) - self.hyperparameters.source_offset
+        fixed_image_offset = (self._registration_constants.fixed_image_spacing *
+                              self.hyperparameters.cropping.get_centre_offset(
+            self._registration_constants.image_2d_full.size()) - self.hyperparameters.source_offset)
 
         # The translation offset prevents the source offset parameters from fighting the translation parameters in
         # the optimisation
-        translation_offset = - self.hyperparameters.source_offset
+        translation_offset = -self.hyperparameters.source_offset
 
         sinogram2d_counts = max(fixed_image.size()[0], fixed_image.size()[1])
         image_diag: float = (

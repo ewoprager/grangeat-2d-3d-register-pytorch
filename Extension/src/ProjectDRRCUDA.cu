@@ -32,7 +32,7 @@ __global__ void Kernel_ProjectDRR_CUDA(Texture3DCUDA volume, double sourceDistan
 		sum += volume.Sample(mappingWorldToTexCoord(samplePoint));
 		samplePoint += delta;
 	}
-	arrayOut[threadIndex] = stepSize * sum;
+	arrayOut[threadIndex] = static_cast<float>(stepSize) * sum;
 }
 
 __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &voxelSpacing,
