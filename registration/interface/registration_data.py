@@ -116,7 +116,7 @@ class RegistrationData:
                                                     detector_spacing=self._registration_constants.fixed_image_spacing,
                                                     output_grid=sinogram2d_grid)
 
-        sinogram2d_grid = sinogram2d_grid.shifted(fixed_image_offset)
+        sinogram2d_grid = sinogram2d_grid.shifted(-fixed_image_offset)
 
         self._cached = RegistrationData.Cached(at_parameters=self.hyperparameters, fixed_image=fixed_image,
                                                fixed_image_offset=fixed_image_offset,

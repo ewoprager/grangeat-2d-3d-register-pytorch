@@ -249,17 +249,6 @@ class RegisterWidget(widgets.Container):
             layout="vertical"))
 
         ##
-        ## Optimisation algorithm and parameters
-        ##
-        self._op_algo_widgets = {ParticleSwarm.algorithm_name(): PSOWidget(particle_count=500, iteration_count=5),
-                                 LocalSearch.algorithm_name(): LocalSearchWidget()}
-        self._algorithm_widget = widgets.ComboBox(choices=[name for name in self._op_algo_widgets])
-        self._algorithm_widget.changed.connect(self._on_algorithm)
-        self._algorithm_container_widget = widgets.Container(widgets=[self._algorithm_widget], layout="vertical")
-        self.append(self._algorithm_container_widget)
-        self._refresh_algorithm_container_widget()
-
-        ##
         ## Hyper-parameter saving and loading
         ##
         self._hyper_parameters_widget = WidgetManageSaved(initial_choices={"initial": self._current_hyper_parameters()},
@@ -283,6 +272,17 @@ class RegisterWidget(widgets.Container):
         self.append(widgets.Container(
             widgets=[self._objective_function_widget.widget, self._eval_once_button, self._eval_result_label],
             layout="horizontal", label="Obj. func."))
+
+        ##
+        ## Optimisation algorithm and parameters
+        ##
+        self._op_algo_widgets = {ParticleSwarm.algorithm_name(): PSOWidget(particle_count=500, iteration_count=5),
+                                 LocalSearch.algorithm_name(): LocalSearchWidget()}
+        self._algorithm_widget = widgets.ComboBox(choices=[name for name in self._op_algo_widgets])
+        self._algorithm_widget.changed.connect(self._on_algorithm)
+        self._algorithm_container_widget = widgets.Container(widgets=[self._algorithm_widget], layout="vertical")
+        self.append(self._algorithm_container_widget)
+        self._refresh_algorithm_container_widget()
 
         ##
         ## Registration
