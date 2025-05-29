@@ -30,8 +30,9 @@ def test_fixed_polar_to_moving_cartesian():
     assert ret[0, 1].item() == pytest.approx(0., abs=1e-4)
     assert ret[0, 2].item() == pytest.approx(b * sin_alpha.square().item(), abs=1e-4)
 
-    transformation = Transformation(rotation=torch.zeros(3, device=device),
-                                    translation=torch.tensor([b * sin_alpha * cos_alpha, 0., b * sin_alpha.square()]))
+    transformation = Transformation(
+        rotation=torch.zeros(3, device=device),
+        translation=torch.tensor([b * sin_alpha * cos_alpha, 0., b * sin_alpha.square()]))
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
@@ -101,8 +102,9 @@ def test_generate_drr_python():
     detector_spacing = torch.tensor([1., 1.])
     scene_geometry = SceneGeometry(source_distance=3.)
     output_size = torch.Size([3, 3])
-    ret = generate_drr_python(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
-                              detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
+    ret = generate_drr_python(
+        volume_data, transformation=transformation, voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
+        scene_geometry=scene_geometry, output_size=output_size)
     assert isinstance(ret, torch.Tensor)
     assert ret.size() == output_size
     assert ret.device == device
@@ -128,13 +130,13 @@ def test_generate_drr():
     scene_geometry = SceneGeometry(source_distance=3.)
     output_size = torch.Size([5, 5])
 
-    drr_python = generate_drr_python(density, transformation=transformation, voxel_spacing=voxel_spacing,
-                                     detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                                     output_size=output_size)
+    drr_python = generate_drr_python(
+        density, transformation=transformation, voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
+        scene_geometry=scene_geometry, output_size=output_size)
 
-    drr_diffdrr = generate_drr(density, transformation=transformation, voxel_spacing=voxel_spacing,
-                               detector_spacing=detector_spacing, scene_geometry=scene_geometry,
-                               output_size=output_size)
+    drr_diffdrr = generate_drr(
+        density, transformation=transformation, voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
+        scene_geometry=scene_geometry, output_size=output_size)
 
     # # Plotting DRR
     # _, axes = plt.subplots()
@@ -169,11 +171,12 @@ def test_plane_integrals():
     theta_values = torch.tensor([0.1])
     # theta_values = torch.tensor([torch.pi * .25])
     r_values = torch.tensor([0.])
-    from_extension = ExtensionTest.radon3d(volume_data, voxel_spacing, phi_values, theta_values, r_values,
-                                           samples_per_direction=10)
+    from_extension = ExtensionTest.radon3d(
+        volume_data, voxel_spacing, phi_values, theta_values, r_values, samples_per_direction=10)
     phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
-    from_python = plane_integrals(volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values,
-                                  theta_values=theta_values, r_values=r_values, samples_per_direction=10)
+    from_python = plane_integrals(
+        volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values, theta_values=theta_values, r_values=r_values,
+        samples_per_direction=10)
     assert from_extension.item() == pytest.approx(from_python.item())
 
     volume_data = torch.zeros((10, 10, 10), device=device)
@@ -184,9 +187,10 @@ def test_plane_integrals():
     theta_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 4, device=device)
     r_values = torch.linspace(-.5 * volume_size, .5 * volume_size, 4, device=device)
     phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
-    radon = ExtensionTest.radon3d(volume_data, voxel_spacing, phi_values, theta_values, r_values,
-                                  samples_per_direction=500)
-    radon_python = plane_integrals(volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values,
-                                   theta_values=theta_values, r_values=r_values, samples_per_direction=500)
+    radon = ExtensionTest.radon3d(
+        volume_data, voxel_spacing, phi_values, theta_values, r_values, samples_per_direction=500)
+    radon_python = plane_integrals(
+        volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values, theta_values=theta_values, r_values=r_values,
+        samples_per_direction=500)
     assert (radon_python - radon).abs().mean() / (
             .5 * (radon_python.max() - radon_python.min() + radon.max() - radon.min())) == pytest.approx(0., abs=1e-4)

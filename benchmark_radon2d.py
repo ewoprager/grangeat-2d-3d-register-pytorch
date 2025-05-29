@@ -92,8 +92,8 @@ def main(path: str):
         if discrepancy > 1e-2:
             found = True
             logger.info(
-                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                     100. * discrepancy))
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(
+                    outputs[i][0], outputs[i + 1][0], 100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")
@@ -123,8 +123,8 @@ def benchmark_dRadon2dDR(path: str):
         if discrepancy > 1e-2:
             found = True
             logger.info(
-                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                     100. * discrepancy))
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(
+                    outputs[i][0], outputs[i + 1][0], 100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")
@@ -144,8 +144,9 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
-    parser.add_argument("xray_dicom_path", type=str, help="The path to the DICOM file containing X-ray data to "
-                                                          "process.")
+    parser.add_argument(
+        "xray_dicom_path", type=str, help="The path to the DICOM file containing X-ray data to "
+                                          "process.")
     args = parser.parse_args()
 
     main(path=args.xray_dicom_path)

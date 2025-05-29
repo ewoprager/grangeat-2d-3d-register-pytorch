@@ -82,11 +82,12 @@ class ParticleSwarm(OptimisationAlgorithm):
             return ret
 
         options = {'c1': 2.525, 'c2': 1.225, 'w': 0.28}  # {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
-        initial_positions = np.random.normal(loc=starting_parameters.numpy(), size=(self.particle_count, n_dimensions),
-                                             scale=np.array([0.1, 0.1, 0.1, 2.0, 2.0, 2.0]))
+        initial_positions = np.random.normal(
+            loc=starting_parameters.numpy(), size=(self.particle_count, n_dimensions),
+            scale=np.array([0.1, 0.1, 0.1, 2.0, 2.0, 2.0]))
         initial_positions[0] = starting_parameters.numpy()
-        optimiser = pyswarms.single.GlobalBestPSO(n_particles=self.particle_count, dimensions=n_dimensions,
-                                                  init_pos=initial_positions, options=options)
+        optimiser = pyswarms.single.GlobalBestPSO(
+            n_particles=self.particle_count, dimensions=n_dimensions, init_pos=initial_positions, options=options)
 
         cost, converged_params = optimiser.optimize(objective_pso, iters=self.iteration_count)
         return torch.from_numpy(converged_params)
@@ -146,9 +147,9 @@ class Worker(QObject):
         starting_parameters: torch.Tensor = self._initial_transformation.vectorised().cpu()
 
         logger.info("Optimising with '{}'...".format(str(self._optimisation_algorithm)))
-        converged_params = self._optimisation_algorithm.run(starting_parameters=starting_parameters,
-                                                            objective_function=obj_func,
-                                                            iteration_callback=self._iteration_callback)
+        converged_params = self._optimisation_algorithm.run(
+            starting_parameters=starting_parameters, objective_function=obj_func,
+            iteration_callback=self._iteration_callback)
         logger.info("Optimisation finished.")
         res = Transformation.from_vector(converged_params)
         self.finished.emit(res)
@@ -173,13 +174,13 @@ class PSOWidget(widgets.Container, OpAlgoWidget):
         self._particle_count = particle_count
         self._iteration_count = iteration_count
 
-        self._particle_count_widget = widgets.SpinBox(value=self._particle_count, min=1, max=5000, step=1,
-                                                      label="N particles")
+        self._particle_count_widget = widgets.SpinBox(
+            value=self._particle_count, min=1, max=5000, step=1, label="N particles")
         self._particle_count_widget.changed.connect(self._on_particle_count)
         self.append(self._particle_count_widget)
 
-        self._iteration_count_widget = widgets.SpinBox(value=self._iteration_count, min=1, max=30, step=1,
-                                                       label="N iterations")
+        self._iteration_count_widget = widgets.SpinBox(
+            value=self._iteration_count, min=1, max=30, step=1, label="N iterations")
         self._iteration_count_widget.changed.connect(self._on_iteration_count)
         self.append(self._iteration_count_widget)
 
@@ -244,40 +245,43 @@ class RegisterWidget(widgets.Container):
         self._top_crop_slider.changed.connect(self._on_crop_slider)
         self._right_crop_slider.changed.connect(self._on_crop_slider)
         self._left_crop_slider.changed.connect(self._on_crop_slider)
-        self.append(widgets.Container(
-            widgets=[self._bottom_crop_slider, self._top_crop_slider, self._right_crop_slider, self._left_crop_slider],
-            layout="vertical"))
+        self.append(
+            widgets.Container(
+                widgets=[
+                    self._bottom_crop_slider, self._top_crop_slider, self._right_crop_slider, self._left_crop_slider],
+                layout="vertical"))
 
         ##
         ## Hyper-parameter saving and loading
         ##
-        self._hyper_parameters_widget = WidgetManageSaved(initial_choices={"initial": self._current_hyper_parameters()},
-                                                          DataType=HyperParameters,
-                                                          load_from_file=self._hyper_parameter_save_path,
-                                                          get_current_callback=self._current_hyper_parameters,
-                                                          set_callback=self._set_hyper_parameters)
+        self._hyper_parameters_widget = WidgetManageSaved(
+            initial_choices={"initial": self._current_hyper_parameters()}, DataType=HyperParameters,
+            load_from_file=self._hyper_parameter_save_path, get_current_callback=self._current_hyper_parameters,
+            set_callback=self._set_hyper_parameters)
         self.append(self._hyper_parameters_widget)
 
         ##
         ## Objective function
         ##
-        self._objective_function_widget = WidgetSelectData(widget_type=widgets.ComboBox,
-                                                           initial_choices=objective_functions, label="Obj. func.")
+        self._objective_function_widget = WidgetSelectData(
+            widget_type=widgets.ComboBox, initial_choices=objective_functions, label="Obj. func.")
 
         self._eval_once_button = widgets.PushButton(label="Evaluate once")
         self._eval_once_button.changed.connect(self._on_eval_once)
 
         self._eval_result_label = widgets.Label(label="Result:", value="n/a")
 
-        self.append(widgets.Container(
-            widgets=[self._objective_function_widget.widget, self._eval_once_button, self._eval_result_label],
-            layout="horizontal", label="Obj. func."))
+        self.append(
+            widgets.Container(
+                widgets=[self._objective_function_widget.widget, self._eval_once_button, self._eval_result_label],
+                layout="horizontal", label="Obj. func."))
 
         ##
         ## Optimisation algorithm and parameters
         ##
-        self._op_algo_widgets = {ParticleSwarm.algorithm_name(): PSOWidget(particle_count=500, iteration_count=5),
-                                 LocalSearch.algorithm_name(): LocalSearchWidget()}
+        self._op_algo_widgets = {
+            ParticleSwarm.algorithm_name(): PSOWidget(particle_count=500, iteration_count=5),
+            LocalSearch.algorithm_name(): LocalSearchWidget()}
         self._algorithm_widget = widgets.ComboBox(choices=[name for name in self._op_algo_widgets])
         self._algorithm_widget.changed.connect(self._on_algorithm)
         self._algorithm_container_widget = widgets.Container(widgets=[self._algorithm_widget], layout="vertical")
@@ -292,13 +296,14 @@ class RegisterWidget(widgets.Container):
 
         self._register_progress = widgets.Label(label="Progress:", value="n/a")
 
-        self._evals_per_render_widget = widgets.SpinBox(value=self._evals_per_render, min=1, max=1000, step=1,
-                                                        label="Evals./re-plot")
+        self._evals_per_render_widget = widgets.SpinBox(
+            value=self._evals_per_render, min=1, max=1000, step=1, label="Evals./re-plot")
         self._evals_per_render_widget.changed.connect(self._on_evals_per_render)
 
         self.append(
-            widgets.Container(widgets=[self._register_button, self._register_progress, self._evals_per_render_widget],
-                              layout="vertical"))
+            widgets.Container(
+                widgets=[self._register_button, self._register_progress, self._evals_per_render_widget],
+                layout="vertical"))
 
         QApplication.instance().aboutToQuit.connect(self._on_exit)
 
@@ -318,9 +323,10 @@ class RegisterWidget(widgets.Container):
         self._best = None
         self._last_rendered_iteration = 0
         self._thread = QThread()
-        self._worker = Worker(initial_transformation=self._transformation_widget.get_current_transformation(),
-                              objective_function=self._current_obj_func(),
-                              optimisation_algorithm=self._algorithm_container_widget[1].get_op_algo())
+        self._worker = Worker(
+            initial_transformation=self._transformation_widget.get_current_transformation(),
+            objective_function=self._current_obj_func(),
+            optimisation_algorithm=self._algorithm_container_widget[1].get_op_algo())
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._worker.finished.connect(self._finish_callback)
@@ -369,14 +375,14 @@ class RegisterWidget(widgets.Container):
         best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
         self._transformation_widget.set_current_transformation(best_transformation)
 
-        self._register_progress.value = "{} evaluations, best = {:.4f}".format(self._iteration_callback_count,
-                                                                               0.0 if self._best is None else
-                                                                               self._best)
+        self._register_progress.value = "{} evaluations, best = {:.4f}".format(
+            self._iteration_callback_count, 0.0 if self._best is None else self._best)
 
     def _finish_callback(self, converged_transformation: Transformation):
         self._transformation_widget.set_current_transformation(converged_transformation)
-        self._transformation_widget.save_transformation(converged_transformation, "registration result {}".format(
-            datetime.now().strftime("%Y-%m-%d, %H:%M:%S")))
+        self._transformation_widget.save_transformation(
+            converged_transformation, "registration result {}".format(
+                datetime.now().strftime("%Y-%m-%d, %H:%M:%S")))
 
     def _on_algorithm(self, *args) -> None:
         self._refresh_algorithm_container_widget()
@@ -400,14 +406,16 @@ class RegisterWidget(widgets.Container):
         self._right_crop_slider.min = self._left_crop_slider.get_value() + 1
         self._left_crop_slider.max = self._right_crop_slider.get_value() - 1
         self._fixed_image_crop_callback(
-            Cropping(top=self._top_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value(),
-                     left=self._left_crop_slider.get_value(), right=self._right_crop_slider.get_value()))
+            Cropping(
+                top=self._top_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value(),
+                left=self._left_crop_slider.get_value(), right=self._right_crop_slider.get_value()))
         self._ignore_crop_sliders = False
 
     def _current_hyper_parameters(self) -> HyperParameters:
         return HyperParameters(
-            cropping=Cropping(right=self._right_crop_slider.get_value(), top=self._top_crop_slider.get_value(),
-                              left=self._left_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value()),
+            cropping=Cropping(
+                right=self._right_crop_slider.get_value(), top=self._top_crop_slider.get_value(),
+                left=self._left_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value()),
             source_offset=torch.zeros(2))
 
     def _set_hyper_parameters(self, new_value: HyperParameters) -> None:

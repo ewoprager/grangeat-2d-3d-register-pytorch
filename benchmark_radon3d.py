@@ -60,9 +60,10 @@ def task_radon3d(function, name: str, device: str, image: torch.Tensor, spacing:
 def plot_task_radon3d(summary: TaskSummaryRadon3D, bounds: torch.Tensor):
     size = summary[1].size()
     X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])
-    fig = pgo.Figure(data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=summary[1].flatten(),
-                                     isomin=bounds[0].item(), isomax=bounds[1].item(), opacity=.2, surface_count=21),
-                     layout=pgo.Layout(title=summary[0]))
+    fig = pgo.Figure(
+        data=pgo.Volume(
+            x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=summary[1].flatten(), isomin=bounds[0].item(),
+            isomax=bounds[1].item(), opacity=.2, surface_count=21), layout=pgo.Layout(title=summary[0]))
     fig.show()
 
 
@@ -94,12 +95,13 @@ def benchmark_radon3d(path: str):
     output_size = torch.tensor([64, 64, 64])
 
     outputs: list[TaskSummaryRadon3D] = [
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.radon3d, "RT3 V1", "cpu", image, spacing, output_size,
-                 bounds),
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.radon3d, "RT3 V1", "cuda", image, spacing, output_size,
-                 bounds),
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.radon3d_v2, "RT3 V2", "cuda", image, spacing,
-                 output_size, bounds)]
+        run_task(
+            task_radon3d, plot_task_radon3d, ExtensionTest.radon3d, "RT3 V1", "cpu", image, spacing, output_size,
+            bounds), run_task(
+            task_radon3d, plot_task_radon3d, ExtensionTest.radon3d, "RT3 V1", "cuda", image, spacing, output_size,
+            bounds), run_task(
+            task_radon3d, plot_task_radon3d, ExtensionTest.radon3d_v2, "RT3 V2", "cuda", image, spacing, output_size,
+            bounds)]
 
     logger.info("Calculating discrepancies...")
     found: bool = False
@@ -109,8 +111,8 @@ def benchmark_radon3d(path: str):
         if discrepancy > 1e-2:
             found = True
             logger.info(
-                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                     100. * discrepancy))
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(
+                    outputs[i][0], outputs[i + 1][0], 100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")
@@ -137,10 +139,11 @@ def main(path: str):
     # output_size = torch.tensor([100, 100, 100])
 
     outputs: list[TaskSummaryRadon3D] = [
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.d_radon3d_dr, "dRT3-dR V1", "cuda", image, spacing,
-                 output_size, bounds),
-        run_task(task_radon3d, plot_task_radon3d, ExtensionTest.d_radon3d_dr_v2, "dRT3-dR V2", "cuda", image, spacing,
-                 output_size, bounds)]
+        run_task(
+            task_radon3d, plot_task_radon3d, ExtensionTest.d_radon3d_dr, "dRT3-dR V1", "cuda", image, spacing,
+            output_size, bounds), run_task(
+            task_radon3d, plot_task_radon3d, ExtensionTest.d_radon3d_dr_v2, "dRT3-dR V2", "cuda", image, spacing,
+            output_size, bounds)]
 
     logger.info("Calculating discrepancies...")
     found: bool = False
@@ -150,8 +153,8 @@ def main(path: str):
         if discrepancy > 1e-2:
             found = True
             logger.info(
-                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                     100. * discrepancy))
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(
+                    outputs[i][0], outputs[i + 1][0], 100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")

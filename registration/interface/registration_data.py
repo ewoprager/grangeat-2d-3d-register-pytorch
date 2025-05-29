@@ -95,8 +95,8 @@ class RegistrationData:
         fixed_image = self.hyperparameters.cropping.apply(self._registration_constants.image_2d_full)
 
         # The fixed image is offset to adjust for the cropping, and according to the source offset
-        fixed_image_offset = (self._registration_constants.fixed_image_spacing *
-                              self.hyperparameters.cropping.get_centre_offset(
+        fixed_image_offset = (
+                self._registration_constants.fixed_image_spacing * self.hyperparameters.cropping.get_centre_offset(
             self._registration_constants.image_2d_full.size()) - self.hyperparameters.source_offset)
 
         # The translation offset prevents the source offset parameters from fighting the translation parameters in
@@ -104,23 +104,20 @@ class RegistrationData:
         translation_offset = -self.hyperparameters.source_offset
 
         sinogram2d_counts = max(fixed_image.size()[0], fixed_image.size()[1])
-        image_diag: float = (
-                self._registration_constants.fixed_image_spacing.flip(dims=(0,)) * torch.tensor(fixed_image.size(),
-                                                                                                dtype=torch.float32)).square().sum().sqrt().item()
-        sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
-                                           LinearRange(-.5 * image_diag, .5 * image_diag))
+        image_diag: float = (self._registration_constants.fixed_image_spacing.flip(dims=(0,)) * torch.tensor(
+            fixed_image.size(), dtype=torch.float32)).square().sum().sqrt().item()
+        sinogram2d_range = Sinogram2dRange(
+            LinearRange(-.5 * torch.pi, .5 * torch.pi), LinearRange(-.5 * image_diag, .5 * image_diag))
         sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=self.device)
 
-        sinogram2d = grangeat.calculate_fixed_image(fixed_image,
-                                                    source_distance=self._registration_constants.scene_geometry.source_distance,
-                                                    detector_spacing=self._registration_constants.fixed_image_spacing,
-                                                    output_grid=sinogram2d_grid)
+        sinogram2d = grangeat.calculate_fixed_image(
+            fixed_image, source_distance=self._registration_constants.scene_geometry.source_distance,
+            detector_spacing=self._registration_constants.fixed_image_spacing, output_grid=sinogram2d_grid)
 
         sinogram2d_grid = sinogram2d_grid.shifted(-fixed_image_offset)
 
-        self._cached = RegistrationData.Cached(at_parameters=self.hyperparameters, fixed_image=fixed_image,
-                                               fixed_image_offset=fixed_image_offset,
-                                               translation_offset=translation_offset, sinogram2d=sinogram2d,
-                                               sinogram2d_grid=sinogram2d_grid)
+        self._cached = RegistrationData.Cached(
+            at_parameters=self.hyperparameters, fixed_image=fixed_image, fixed_image_offset=fixed_image_offset,
+            translation_offset=translation_offset, sinogram2d=sinogram2d, sinogram2d_grid=sinogram2d_grid)
         if not self.suppress_callbacks and self._image_change_callback is not None:
             self._image_change_callback()

@@ -50,8 +50,8 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
     ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device).to(dtype=torch.float32))
 
     if smooth is not None and isinstance(sinogram3d, SinogramClassic):
-        resampled = sinogram3d.resample_python(ph_matrix=ph_matrix, fixed_image_grid=fixed_image_grid, smooth=smooth,
-                                               plot=plot is not None)
+        resampled = sinogram3d.resample_python(
+            ph_matrix=ph_matrix, fixed_image_grid=fixed_image_grid, smooth=smooth, plot=plot is not None)
     else:
         if smooth is not None:
             logger.warning("Cannot resample smooth as not given a SinogramClassic")
@@ -61,7 +61,8 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(resampled.clone().cpu(), vmin=plot[0], vmax=plot[1])
         axes.axis('square')
-        axes.set_title("d/dr R3 [mu] resampled with sample smoothing" if smooth is not None else "d/dr R3 [mu] resampled")
+        axes.set_title(
+            "d/dr R3 [mu] resampled with sample smoothing" if smooth is not None else "d/dr R3 [mu] resampled")
         axes.set_xlabel("r")
         axes.set_ylabel("phi")
         plt.colorbar(mesh)
@@ -70,9 +71,9 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
                 "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else
                 "data/temp/d_dr_R3_mu_resampled.pgf")
 
-    return zncc(fixed_image,
-                resampled), resampled  # return Extension.normalised_cross_correlation(fixed_image, resampled),
-    # resampled
+    return zncc(
+        fixed_image,
+        resampled), resampled  # return Extension.normalised_cross_correlation(fixed_image, resampled),  # resampled
 
 
 def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, transformation: Transformation,
@@ -83,8 +84,8 @@ def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, tra
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
 
-    direct = grangeat.directly_calculate_radon_slice(volume_data, ph_matrix=ph_matrix, output_grid=fixed_image_grid,
-                                                     voxel_spacing=voxel_spacing)
+    direct = grangeat.directly_calculate_radon_slice(
+        volume_data, ph_matrix=ph_matrix, output_grid=fixed_image_grid, voxel_spacing=voxel_spacing)
     if plot:
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(direct.cpu())

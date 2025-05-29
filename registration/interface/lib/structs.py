@@ -95,8 +95,9 @@ class WidgetManageSaved(widgets.Container):
         self._del_button = widgets.PushButton(label="Delete selected")
         self._del_button.changed.connect(self._on_del)
 
-        self.append(widgets.Container(widgets=[self._save_button, self._set_to_saved_button, self._del_button],
-                                      layout="horizontal"))
+        self.append(
+            widgets.Container(
+                widgets=[self._save_button, self._set_to_saved_button, self._del_button], layout="horizontal"))
 
         if load_from_file is not None:
             if pathlib.Path(load_from_file).is_file():
@@ -113,16 +114,17 @@ class WidgetManageSaved(widgets.Container):
                         logger.warning("Invalid saved data at '{}'".format(str(load_from_file)))
             else:
                 logger.warning("Save file '{}' doesn't exist.".format(str(load_from_file)))
-        self._select_saved_widget = WidgetSelectData(widget_type=widgets.Select, initial_choices=initial_choices,
-                                                     label="Saved:")
+        self._select_saved_widget = WidgetSelectData(
+            widget_type=widgets.Select, initial_choices=initial_choices, label="Saved:")
         self.append(self._select_saved_widget.widget)
 
         self._rename_input = widgets.LineEdit(value=datetime.now().strftime("%Y-%m-%d"))
         self._rename_widget = widgets.PushButton(label="Rename selected")
         self._rename_widget.changed.connect(self._on_rename)
         self.append(
-            widgets.Container(widgets=[self._rename_input, self._rename_widget], labels=False, layout="horizontal",
-                              label="Rename to"))
+            widgets.Container(
+                widgets=[self._rename_input, self._rename_widget], labels=False, layout="horizontal",
+                label="Rename to"))
 
     def add_value(self, name: str, data: Any) -> None:
         while self._select_saved_widget.name_exists(name):

@@ -70,8 +70,8 @@ class Transformation(NamedTuple):
         :return: [(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation.
         Stored column-major.
         """
-        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
-                                                                                                        dtype=torch.float32)
+        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(
+            device=device, dtype=torch.float32)
         rt = torch.hstack([r, self.translation.to(device=device).t().unsqueeze(-1)])
         return torch.vstack([rt, torch.tensor([0., 0., 0., 1.], device=device).unsqueeze(0)])
 
@@ -96,10 +96,10 @@ class Transformation(NamedTuple):
 
     def distance(self, other: 'Transformation') -> float:
         device = self.translation.device
-        r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
-                                                                                                         dtype=torch.float32)
-        r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(other.rotation.unsqueeze(0))[0].to(device=device,
-                                                                                                          dtype=torch.float32)
+        r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(
+            device=device, dtype=torch.float32)
+        r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(other.rotation.unsqueeze(0))[0].to(
+            device=device, dtype=torch.float32)
         return (((self.translation - other.translation) / 100.).square().sum() + torch.tensor(
             [numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))],
             device=device).square().sum()).sqrt().item()
@@ -113,14 +113,16 @@ class Transformation(NamedTuple):
 
     @classmethod
     def random(cls, *, device=torch.device('cpu')) -> 'Transformation':
-        return Transformation(torch.pi * (-1. + 2. * torch.rand(3, device=device)),
-                              25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
-                                  device=device).translation)
+        return Transformation(
+            torch.pi * (-1. + 2. * torch.rand(3, device=device)),
+            25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
+                device=device).translation)
 
 
 class SceneGeometry(NamedTuple):
     source_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array
-    fixed_image_offset: torch.Tensor = torch.zeros(2)  # size (2,): (x, y) [mm]; offset of the fixed image relative to the source
+    fixed_image_offset: torch.Tensor = torch.zeros(
+        2)  # size (2,): (x, y) [mm]; offset of the fixed image relative to the source
 
     def source_position(self, *, device=torch.device('cpu')):
         return torch.tensor([0., 0., self.source_distance], device=device)
@@ -144,8 +146,9 @@ class SceneGeometry(NamedTuple):
         assert source_position.size() == torch.Size([3])
         assert central_ray.size() == torch.Size([3])
 
-        m_matrix: torch.Tensor = torch.outer(torch.hstack((source_position, torch.tensor([1.], device=device))),
-                                             central_ray) + torch.dot(central_ray, central_ray) * torch.vstack(
+        m_matrix: torch.Tensor = torch.outer(
+            torch.hstack((source_position, torch.tensor([1.], device=device))), central_ray) + torch.dot(
+            central_ray, central_ray) * torch.vstack(
             (torch.eye(3, device=device), torch.zeros((1, 3), device=device)))
 
         return torch.hstack((m_matrix, -torch.matmul(m_matrix, source_position.t().unsqueeze(-1))))

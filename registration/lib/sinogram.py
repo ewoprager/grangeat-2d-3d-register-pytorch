@@ -124,8 +124,9 @@ class SinogramClassic(Sinogram):
 
         del rotated_vectors
 
-        new_grid = Sinogram3dGrid(new_phis, new_thetas, grid.r.unsqueeze(-1).expand(
-            [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone()).unflip()  # need to
+        new_grid = Sinogram3dGrid(
+            new_phis, new_thetas, grid.r.unsqueeze(-1).expand(
+                [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone()).unflip()  # need to
         # clone the r grid otherwise it's just a tensor view, not a tensor in its own right
 
         del new_phis, new_thetas
@@ -173,8 +174,8 @@ class SinogramClassic(Sinogram):
         sinogram_spacing = (sinogram_range_high - sinogram_range_low) / (
                 torch.tensor(self.data.size(), dtype=torch.float32, device=device).flip(dims=(0,)) - 1)
         sinogram_range_centres = .5 * (sinogram_range_low + sinogram_range_high)
-        return Extension.resample_sinogram3d(self.data, sinogram_spacing, sinogram_range_centres, ph_matrix,
-                                             fixed_image_grid.phi, fixed_image_grid.r)
+        return Extension.resample_sinogram3d(
+            self.data, sinogram_spacing, sinogram_range_centres, ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
                         plot: bool = False) -> torch.Tensor:
@@ -182,8 +183,8 @@ class SinogramClassic(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
-        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
-                                                                        plot=plot)
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
+            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
 
         if plot:
             myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
@@ -215,11 +216,13 @@ class SinogramClassic(Sinogram):
         k_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.phi)
 
         if smooth is not None:
-            ret = self.grid_sample_smoothed(fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping,
-                                            k_mapping=k_mapping, sigma=smooth)
+            ret = self.grid_sample_smoothed(
+                fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping, k_mapping=k_mapping, sigma=smooth)
         else:
-            grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
-                                k_mapping(fixed_image_grid_sph.phi)), dim=-1)
+            grid = torch.stack(
+                (
+                    i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
+                    k_mapping(fixed_image_grid_sph.phi)), dim=-1)
             ret = Extension.grid_sample3d(self.data, grid, "wrap")
 
         del fixed_image_grid_sph
@@ -260,8 +263,8 @@ class SinogramHEALPix(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
-        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
-                                                                        plot=plot)
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
+            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
         raise Exception("Not yet implemented")
 
 
