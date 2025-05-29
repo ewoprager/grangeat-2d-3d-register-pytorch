@@ -10,3 +10,4 @@ data/temp/
 **/*.log
 Extension/src/extension.egg-info/
 figures/landscapes/
+figures/analysis/
