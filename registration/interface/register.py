@@ -23,6 +23,13 @@ from qtpy.QtWidgets import QApplication
 from registration.lib.structs import *
 from registration.interface.transformations import TransformationWidget
 from registration.interface.lib.structs import *
+from registration.lib import optimisation
+
+
+class OptimisationResult(NamedTuple):
+    params: torch.Tensor
+    param_history: torch.Tensor
+    value_history: torch.Tensor
 
 
 class OptimisationAlgorithm(ABC):
@@ -37,7 +44,7 @@ class OptimisationAlgorithm(ABC):
 
     @abstractmethod
     def run(self, *, starting_parameters: torch.Tensor, objective_function: Callable[[torch.Tensor], torch.Tensor],
-            iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> torch.Tensor:
+            iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> OptimisationResult:
         pass
 
 
@@ -62,7 +69,7 @@ class ParticleSwarm(OptimisationAlgorithm):
         return "Particle Swarm"
 
     def run(self, *, starting_parameters: torch.Tensor, objective_function: Callable[[torch.Tensor], torch.Tensor],
-            iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> torch.Tensor:
+            iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> OptimisationResult:
         n_dimensions = starting_parameters.numel()
         param_history = GrowingTensor([n_dimensions], self.particle_count * self.iteration_count)
         value_history = GrowingTensor([], self.particle_count * self.iteration_count)
@@ -90,12 +97,23 @@ class ParticleSwarm(OptimisationAlgorithm):
             n_particles=self.particle_count, dimensions=n_dimensions, init_pos=initial_positions, options=options)
 
         cost, converged_params = optimiser.optimize(objective_pso, iters=self.iteration_count)
-        return torch.from_numpy(converged_params)
+        return OptimisationResult(
+            params=torch.from_numpy(converged_params), param_history=param_history.get(),
+            value_history=value_history.get())
 
 
 class LocalSearch(OptimisationAlgorithm):
-    def __init__(self):
-        pass
+    def __init__(self, no_improvement_threshold: int, max_reductions: int):
+        self._no_improvement_threshold = no_improvement_threshold
+        self._max_reductions = max_reductions
+
+    @property
+    def no_improvement_threshold(self) -> int:
+        return self._no_improvement_threshold
+
+    @property
+    def max_reductions(self) -> int:
+        return self._max_reductions
 
     def __str__(self) -> str:
         return "Local search"
@@ -105,7 +123,7 @@ class LocalSearch(OptimisationAlgorithm):
         return "Local Search"
 
     def run(self, *, starting_parameters: torch.Tensor, objective_function: Callable[[torch.Tensor], torch.Tensor],
-            iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> torch.Tensor:
+            iteration_callback: Callable[[torch.Tensor, torch.Tensor], None]) -> OptimisationResult:
         n_dimensions = starting_parameters.numel()
         param_history = GrowingTensor([n_dimensions], 50)
         value_history = GrowingTensor([], 50)
@@ -113,25 +131,35 @@ class LocalSearch(OptimisationAlgorithm):
         param_history.push_back(starting_parameters)
         value_history.push_back(objective_function(starting_parameters))
 
-        def objective_scipy(params: np.ndarray) -> float:
+        def obj_func(params: torch.Tensor) -> torch.Tensor:
             params = torch.tensor(copy.deepcopy(params))
             param_history.push_back(params)
             value = objective_function(params)
             value_history.push_back(value)
             iteration_callback(param_history.get(), value_history.get())
-            return value.item()
+            return value
 
         tic = time.time()
-        res = scipy.optimize.minimize(objective_scipy, starting_parameters, method='Powell')
+        res = optimisation.local_search(
+            starting_position=starting_parameters, initial_step_size=torch.tensor([0.1, 0.1, 0.1, 2.0, 2.0, 2.0]),
+            objective_function=obj_func, no_improvement_threshold=self.no_improvement_threshold,
+            max_reductions=self.max_reductions)
         toc = time.time()
         logger.info("Done. Took {:.3f}s.".format(toc - tic))
-        logger.info(res)
-        return torch.from_numpy(res.x)
+        return OptimisationResult(
+            res, param_history=param_history.get(), value_history=value_history.get())
+
+        # def objective_scipy(params: np.ndarray) -> float:  #     params = torch.tensor(copy.deepcopy(params))  #  #
+        # param_history.push_back(params)  #     value = objective_function(params)  #     value_history.push_back(
+        # value)  #     iteration_callback(param_history.get(), value_history.get())  #     return value.item()  #  #
+        # tic = time.time()  # res = scipy.optimize.minimize(objective_scipy, starting_parameters, method='Powell')
+        # toc = time.time()  # logger.info("Done. Took {:.3f}s.".format(toc - tic))  # logger.info(res)  # return  #
+        # torch.from_numpy(res.x)
 
 
 class Worker(QObject):
     finished = pyqtSignal(Transformation)
-    progress = pyqtSignal(torch.Tensor, torch.Tensor)
+    progress = pyqtSignal(torch.Tensor, torch.Tensor, bool)
 
     def __init__(self, *, initial_transformation: Transformation,
                  objective_function: Callable[[Transformation], torch.Tensor], optimisation_algorithm: Any):
@@ -147,15 +175,16 @@ class Worker(QObject):
         starting_parameters: torch.Tensor = self._initial_transformation.vectorised().cpu()
 
         logger.info("Optimising with '{}'...".format(str(self._optimisation_algorithm)))
-        converged_params = self._optimisation_algorithm.run(
+        optimisation_result = self._optimisation_algorithm.run(
             starting_parameters=starting_parameters, objective_function=obj_func,
             iteration_callback=self._iteration_callback)
+        self.progress.emit(optimisation_result.param_history, optimisation_result.value_history, True)
         logger.info("Optimisation finished.")
-        res = Transformation.from_vector(converged_params)
+        res = Transformation.from_vector(optimisation_result.params)
         self.finished.emit(res)
 
     def _iteration_callback(self, param_history: torch.Tensor, value_history: torch.Tensor) -> None:
-        self.progress.emit(param_history, value_history)
+        self.progress.emit(param_history, value_history, False)
 
 
 class OpAlgoWidget(ABC):
@@ -169,44 +198,47 @@ class OpAlgoWidget(ABC):
 
 
 class PSOWidget(widgets.Container, OpAlgoWidget):
-    def __init__(self, particle_count: int, iteration_count: int):
+    def __init__(self, *, particle_count: int, iteration_count: int):
         super().__init__(layout="horizontal")
-        self._particle_count = particle_count
-        self._iteration_count = iteration_count
 
         self._particle_count_widget = widgets.SpinBox(
-            value=self._particle_count, min=1, max=5000, step=1, label="N particles")
-        self._particle_count_widget.changed.connect(self._on_particle_count)
+            value=particle_count, min=1, max=5000, step=1, label="N particles")
         self.append(self._particle_count_widget)
 
         self._iteration_count_widget = widgets.SpinBox(
-            value=self._iteration_count, min=1, max=30, step=1, label="N iterations")
-        self._iteration_count_widget.changed.connect(self._on_iteration_count)
+            value=iteration_count, min=1, max=30, step=1, label="N iterations")
         self.append(self._iteration_count_widget)
 
     def get_op_algo(self) -> ParticleSwarm:
-        return ParticleSwarm(particle_count=self._particle_count, iteration_count=self._iteration_count)
+        return ParticleSwarm(
+            particle_count=self._particle_count_widget.get_value(),
+            iteration_count=self._iteration_count_widget.get_value())
 
     def set_from_op_algo(self, particle_swarm: ParticleSwarm) -> None:
         self._particle_count_widget.set_value(particle_swarm.particle_count)
         self._iteration_count_widget.set_value(particle_swarm.iteration_count)
 
-    def _on_particle_count(self, *args) -> None:
-        self._particle_count = self._particle_count_widget.get_value()
-
-    def _on_iteration_count(self, *args) -> None:
-        self._iteration_count = self._iteration_count_widget.get_value()
-
 
 class LocalSearchWidget(widgets.Container, OpAlgoWidget):
-    def __init__(self):
+    def __init__(self, *, no_improvement_threshold: int, max_reductions: int):
         super().__init__(layout="horizontal")
 
+        self._no_improvement_threshold_widget = widgets.SpinBox(
+            value=no_improvement_threshold, min=2, max=1000, step=1, label="reduction thresh.")
+        self.append(self._no_improvement_threshold_widget)
+
+        self._max_reductions_widget = widgets.SpinBox(
+            value=max_reductions, min=0, max=500, step=1, label="max reductions")
+        self.append(self._max_reductions_widget)
+
     def get_op_algo(self) -> LocalSearch:
-        return LocalSearch()
+        return LocalSearch(
+            no_improvement_threshold=self._no_improvement_threshold_widget.get_value(),
+            max_reductions=self._max_reductions_widget.get_value())
 
     def set_from_op_algo(self, local_search: LocalSearch) -> None:
-        pass
+        self._no_improvement_threshold_widget.set_value(local_search.no_improvement_threshold)
+        self._max_reductions_widget.set_value(local_search.max_reductions)
 
 
 class RegisterWidget(widgets.Container):
@@ -281,7 +313,7 @@ class RegisterWidget(widgets.Container):
         ##
         self._op_algo_widgets = {
             ParticleSwarm.algorithm_name(): PSOWidget(particle_count=500, iteration_count=5),
-            LocalSearch.algorithm_name(): LocalSearchWidget()}
+            LocalSearch.algorithm_name(): LocalSearchWidget(no_improvement_threshold=10, max_reductions=4)}
         self._algorithm_widget = widgets.ComboBox(choices=[name for name in self._op_algo_widgets])
         self._algorithm_widget.changed.connect(self._on_algorithm)
         self._algorithm_container_widget = widgets.Container(widgets=[self._algorithm_widget], layout="vertical")
@@ -339,10 +371,10 @@ class RegisterWidget(widgets.Container):
     def _on_evals_per_render(self, *args):
         self._evals_per_render = self._evals_per_render_widget.get_value()
 
-    def _iteration_callback(self, param_history: torch.Tensor, value_history: torch.Tensor) -> None:
+    def _iteration_callback(self, param_history: torch.Tensor, value_history: torch.Tensor, force_render: bool) -> None:
         self._iteration_callback_count += 1
 
-        if self._iteration_callback_count - self._last_rendered_iteration < self._evals_per_render:
+        if not force_render and self._iteration_callback_count - self._last_rendered_iteration < self._evals_per_render:
             return
 
         self._axes.cla()
