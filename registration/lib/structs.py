@@ -83,6 +83,7 @@ class Transformation(NamedTuple):
         assert vector.size() == torch.Size([6])
         return Transformation(rotation=vector[0:3], translation=vector[3:6])
 
+    @property
     def device(self):
         assert self.device_consistent()
         return self.translation.device

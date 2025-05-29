@@ -108,7 +108,7 @@ class LocalSearch(OptimisationAlgorithm):
         n_dimensions = starting_parameters.numel()
         param_history = GrowingTensor([n_dimensions], 50)
         value_history = GrowingTensor([], 50)
-        
+
         param_history.push_back(starting_parameters)
         value_history.push_back(objective_function(starting_parameters))
 
@@ -126,18 +126,6 @@ class LocalSearch(OptimisationAlgorithm):
         logger.info("Done. Took {:.3f}s.".format(toc - tic))
         logger.info(res)
         return torch.from_numpy(res.x)
-
-
-class Cropping(NamedTuple):
-    right: int
-    top: int
-    left: int
-    bottom: int
-
-
-class HyperParameters(NamedTuple):
-    optimisation_algorithm: OptimisationAlgorithm
-    cropping: Cropping
 
 
 class Worker(QObject):
@@ -223,8 +211,8 @@ class LocalSearchWidget(widgets.Container, OpAlgoWidget):
 class RegisterWidget(widgets.Container):
     def __init__(self, *, transformation_widget: TransformationWidget,
                  objective_functions: dict[str, Callable[[Transformation], torch.Tensor]],
-                 fixed_image_crop_callback: Callable[[int, int, int, int], None],
-                 hyper_parameter_save_path: str | pathlib.Path, fixed_image_size: torch.Size):
+                 fixed_image_crop_callback: Callable[[Cropping], None], hyper_parameter_save_path: str | pathlib.Path,
+                 fixed_image_size: torch.Size):
         super().__init__(labels=False)
         self._transformation_widget = transformation_widget
         self._objective_functions = objective_functions
@@ -411,24 +399,18 @@ class RegisterWidget(widgets.Container):
         self._top_crop_slider.max = self._bottom_crop_slider.get_value() - 1
         self._right_crop_slider.min = self._left_crop_slider.get_value() + 1
         self._left_crop_slider.max = self._right_crop_slider.get_value() - 1
-        self._fixed_image_crop_callback(self._top_crop_slider.get_value(), self._bottom_crop_slider.get_value(),
-                                        self._left_crop_slider.get_value(), self._right_crop_slider.get_value())
+        self._fixed_image_crop_callback(
+            Cropping(top=self._top_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value(),
+                     left=self._left_crop_slider.get_value(), right=self._right_crop_slider.get_value()))
         self._ignore_crop_sliders = False
 
     def _current_hyper_parameters(self) -> HyperParameters:
-        if len(self._algorithm_container_widget) < 2:
-            raise RuntimeError("Cannot get hyper parameters: No optimisation algorithm selected.")
-        return HyperParameters(optimisation_algorithm=self._algorithm_container_widget[1].get_op_algo(),
-                               cropping=Cropping(right=self._right_crop_slider.get_value(),
-                                                 top=self._top_crop_slider.get_value(),
-                                                 left=self._left_crop_slider.get_value(),
-                                                 bottom=self._bottom_crop_slider.get_value()))
+        return HyperParameters(
+            cropping=Cropping(right=self._right_crop_slider.get_value(), top=self._top_crop_slider.get_value(),
+                              left=self._left_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value()),
+            source_offset=torch.zeros(2))
 
     def _set_hyper_parameters(self, new_value: HyperParameters) -> None:
-        self._algorithm_widget.set_value(new_value.optimisation_algorithm.algorithm_name())
-        self._op_algo_widgets[new_value.optimisation_algorithm.algorithm_name()].set_from_op_algo(
-            new_value.optimisation_algorithm)
-        self._refresh_algorithm_container_widget()
         self._right_crop_slider.set_value(new_value.cropping.right)
         self._top_crop_slider.set_value(new_value.cropping.top)
         self._left_crop_slider.set_value(new_value.cropping.left)

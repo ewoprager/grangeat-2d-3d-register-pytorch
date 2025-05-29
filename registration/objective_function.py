@@ -44,7 +44,7 @@ def zncc2(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
 def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation: Transformation,
              scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, save: bool = False,
              smooth: float | None = None, plot: Tuple[float, float] | None = None) -> Tuple[torch.Tensor, torch.Tensor]:
-    device = sinogram3d.device()
+    device = sinogram3d.device
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device).to(dtype=torch.float32))

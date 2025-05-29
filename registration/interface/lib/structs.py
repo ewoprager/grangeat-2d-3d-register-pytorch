@@ -5,8 +5,40 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import torch
 import pathlib
 from magicgui import magicgui, widgets
+
+
+class Cropping(NamedTuple):
+    right: int
+    top: int
+    left: int
+    bottom: int
+
+    @staticmethod
+    def zero(image_size: torch.Size) -> 'Cropping':
+        return Cropping(right=image_size[1], top=0, left=0, bottom=image_size[0])
+
+    def get_centre_offset(self, full_size: torch.Size) -> torch.Tensor:
+        top_left = torch.tensor([self.left, self.top], dtype=torch.float64)
+        size = torch.tensor([self.right - self.left, self.bottom - self.top], dtype=torch.float64)
+        return top_left + 0.5 * size - (0.5 * torch.tensor(full_size, dtype=torch.float64).flip(dims=(0,)))
+
+    def apply(self, tensor: torch.Tensor) -> torch.Tensor:
+        return tensor[self.top:self.bottom, self.left:self.right]
+
+
+class HyperParameters(NamedTuple):
+    cropping: Cropping
+    source_offset: torch.Tensor  # size = (2,), dtype = torch.float64
+
+    @staticmethod
+    def zero(image_size: torch.Size) -> 'HyperParameters':
+        return HyperParameters(cropping=Cropping.zero(image_size), source_offset=torch.zeros(2))
+
+    def is_close(self, other: 'HyperParameters') -> bool:
+        return self.cropping == other.cropping and torch.allclose(self.source_offset, other.source_offset)
 
 
 class WidgetSelectData:

@@ -82,8 +82,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             drr_spec = data.load_cached_drr(cache_directory, path)
 
         if drr_spec is None:
-            drr_spec = drr.generate_new_drr(cache_directory, path, vol_data, voxel_spacing, device=device,
-                                            save_to_cache=save_to_cache)
+            drr_spec = drr.generate_drr_as_target(cache_directory, path, vol_data, voxel_spacing, device=device,
+                                                  save_to_cache=save_to_cache)
 
         detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth = (
             drr_spec)

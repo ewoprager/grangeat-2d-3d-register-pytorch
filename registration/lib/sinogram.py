@@ -19,6 +19,7 @@ class Sinogram(ABC):
     def to(self, **kwargs) -> 'Sinogram':
         pass
 
+    @property
     @abstractmethod
     def device(self):
         pass
@@ -42,6 +43,7 @@ class SinogramClassic(Sinogram):
     def to(self, **kwargs) -> 'SinogramClassic':
         return SinogramClassic(self.data.to(**kwargs), self.sinogram_range)
 
+    @property
     def device(self):
         return self.data.device
 
@@ -65,7 +67,7 @@ class SinogramClassic(Sinogram):
         coordinates.
         """
 
-        assert grid.phi.device == self.device()
+        assert grid.phi.device == self.device
         assert grid.device_consistent()
         assert grid.size_consistent()
         assert sigma >= 0.
@@ -99,7 +101,7 @@ class SinogramClassic(Sinogram):
 
         del phis_off, thetas_off
 
-        offset_vectors = torch.stack((ct, -st * sp, st * cp), dim=-1).to(device=self.device())
+        offset_vectors = torch.stack((ct, -st * sp, st * cp), dim=-1).to(device=self.device)
 
         # Determining the rotation matrices for each input (phi, theta):
         cp = grid.phi.cos()
@@ -109,7 +111,7 @@ class SinogramClassic(Sinogram):
         row_0 = torch.stack((cp * ct, -sp, -cp * st), dim=-1)
         row_1 = torch.stack((sp * ct, cp, sp * st), dim=-1)
         row_2 = torch.stack((st, torch.zeros_like(st), ct), dim=-1)
-        rotation_matrices = torch.stack((row_0, row_1, row_2), dim=-2).to(device=self.device())
+        rotation_matrices = torch.stack((row_0, row_1, row_2), dim=-2).to(device=self.device)
         # Multiplying by the perturbed unit vectors for the perturbed, rotated unit vector:
         rotated_vectors = torch.einsum('...ij,kj->...ki', rotation_matrices, offset_vectors)
 
@@ -160,7 +162,7 @@ class SinogramClassic(Sinogram):
 
         # Applying the weights and summing along the last dimension for an output equal in size to the input tensors of
         # coordinates:
-        return torch.einsum('i,...i->...', weights.to(device=self.device()), samples)
+        return torch.einsum('i,...i->...', weights.to(device=self.device), samples)
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         device = self.data.device
@@ -177,8 +179,8 @@ class SinogramClassic(Sinogram):
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
                         plot: bool = False) -> torch.Tensor:
         assert fixed_image_grid.device_consistent()
-        assert fixed_image_grid.phi.device == self.device()
-        assert ph_matrix.device == self.device()
+        assert fixed_image_grid.phi.device == self.device
+        assert ph_matrix.device == self.device
 
         fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
                                                                         plot=plot)
@@ -245,6 +247,7 @@ class SinogramHEALPix(Sinogram):
     def to(self, **kwargs) -> 'SinogramHEALPix':
         return SinogramHEALPix(self.data.to(**kwargs), self.r_range)
 
+    @property
     def device(self):
         return self.data.device
 
@@ -254,8 +257,8 @@ class SinogramHEALPix(Sinogram):
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                         plot: bool = False) -> torch.Tensor:
         assert fixed_image_grid.device_consistent()
-        assert fixed_image_grid.phi.device == self.device()
-        assert ph_matrix.device == self.device()
+        assert fixed_image_grid.phi.device == self.device
+        assert ph_matrix.device == self.device
 
         fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
                                                                         plot=plot)

@@ -20,17 +20,21 @@ from PyQt6.QtWidgets import QDockWidget
 from registration.lib.sinogram import *
 from registration.lib import geometry
 from registration.interface.lib.structs import *
+from registration.interface.registration_constants import RegistrationConstants
 from registration.interface.registration_data import RegistrationData
 from registration.interface.transformations import TransformationWidget
 from registration.interface.view import ViewWidget
 from registration.interface.register import RegisterWidget
 from registration.interface.grangeat import GrangeatWidget
 from registration.interface.plot import PlotWidget
+from registration import objective_function
 
 
 class Interface:
-    def __init__(self, registration_data: RegistrationData):
-        self._registration_data = registration_data
+    def __init__(self, registration_constants: RegistrationConstants):
+        self._registration_constants = registration_constants
+        self._registration_data = RegistrationData(registration_constants=self._registration_constants,
+                                                   image_change_callback=self.render_moving_images)
 
         self._viewer = napari.Viewer()
         self._viewer.bind_key("Alt", self._on_alt_down)
@@ -60,17 +64,16 @@ class Interface:
         self._viewer.window.add_dock_widget(self._view_widget, name="View options", area="left",
                                             menu=self._viewer.window.window_menu)
 
-        initial_transformation = self.registration_data.transformation_ground_truth
+        initial_transformation = self.registration_constants.transformation_ground_truth
         if initial_transformation is None:
-            initial_transformation = Transformation.random(device=self.registration_data.device)
+            initial_transformation = Transformation.random(device=self.registration_constants.device)
         self._transformation_widget = TransformationWidget(initial_transformation=initial_transformation,
                                                            refresh_render_function=self.render_drr,
                                                            save_path=pathlib.Path("cache/saved_transformations.pkl"))
         self._viewer.window.add_dock_widget(self._transformation_widget, name="Transformations", area="right",
                                             menu=self._viewer.window.window_menu)
 
-        objective_functions = {"drr": self.registration_data.objective_function_drr,
-                               "grangeat": self.registration_data.objective_function_grangeat}
+        objective_functions = {"drr": self.objective_function_drr, "grangeat": self.objective_function_grangeat}
 
         self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget,
                                                objective_functions=objective_functions,
@@ -96,8 +99,46 @@ class Interface:
         self.render_moving_sinogram()
 
     @property
+    def device(self):
+        return self._registration_constants.device
+
+    @property
+    def registration_constants(self) -> RegistrationConstants:
+        return self._registration_constants
+
+    @property
     def registration_data(self) -> RegistrationData:
         return self._registration_data
+
+    def resample_sinogram3d(self, transformation: Transformation) -> torch.Tensor:
+        # Applying the translation offset
+        translation = transformation.translation
+        translation[0:2] += self._registration_data.translation_offset.to(device=transformation.device)
+        transformation = Transformation(rotation=transformation.rotation, translation=translation)
+
+        source_position = self.registration_constants.scene_geometry.source_position(device=self.device)
+        p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+        ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=self.device).to(dtype=torch.float32))
+        return self._registration_constants.sinogram3d.resample(ph_matrix, self._registration_data.sinogram2d_grid)
+
+    def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
+        # Applying the translation offset
+        translation = transformation.translation
+        translation[0:2] += self._registration_data.translation_offset.to(device=transformation.device)
+        transformation = Transformation(rotation=transformation.rotation, translation=translation)
+
+        moving_image = geometry.generate_drr(self._registration_constants.ct_volume,
+                                             transformation=transformation.to(device=self.device),
+                                             voxel_spacing=self._registration_constants.ct_spacing,
+                                             detector_spacing=self._registration_constants.fixed_image_spacing,
+                                             scene_geometry=SceneGeometry(
+                                                 source_distance=self._registration_constants.scene_geometry.source_distance,
+                                                 fixed_image_offset=self._registration_data.fixed_image_offset),
+                                             output_size=self._registration_data.fixed_image.size())
+        return -objective_function.zncc(self._registration_data.fixed_image, moving_image)
+
+    def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
+        return -objective_function.zncc(self._registration_data.sinogram2d, self.resample_sinogram3d(transformation))
 
     def get_view_params(self) -> ViewParams:
         return self._view_params
@@ -107,22 +148,26 @@ class Interface:
 
     view_params = property(get_view_params, set_view_params)
 
-    def render_drr(self):
-        moved_drr = geometry.generate_drr(self.registration_data.ct_volume,
+    def render_drr(self) -> None:
+        moved_drr = geometry.generate_drr(self.registration_constants.ct_volume,
                                           transformation=self._transformation_widget.get_current_transformation(),
-                                          voxel_spacing=self.registration_data.ct_spacing,
-                                          detector_spacing=self.registration_data.fixed_image_spacing,
-                                          scene_geometry=self.registration_data.scene_geometry,
+                                          voxel_spacing=self.registration_constants.ct_spacing,
+                                          detector_spacing=self.registration_constants.fixed_image_spacing,
+                                          scene_geometry=self.registration_constants.scene_geometry,
                                           output_size=self.registration_data.fixed_image.size())
         self._moving_image_layer.data = moved_drr.cpu().numpy()
 
-    def render_moving_sinogram(self):
-        resampled_sinogram = self.registration_data.resample_sinogram3d(
-            self._transformation_widget.get_current_transformation())
+    def render_moving_sinogram(self) -> None:
+        resampled_sinogram = self.resample_sinogram3d(self._transformation_widget.get_current_transformation())
         self._moving_sinogram_layer.data = resampled_sinogram.cpu().numpy()
 
-    def _re_crop_fixed_image(self, top: int, bottom: int, left: int, right: int) -> None:
-        self._registration_data.re_crop_fixed_image(top, bottom, left, right)
+    def render_moving_images(self) -> None:
+        self.render_drr()
+        self.render_moving_images()
+
+    def _re_crop_fixed_image(self, cropping: Cropping) -> None:
+        self._registration_data.hyperparameters = HyperParameters(cropping=cropping,
+                                                                  source_offset=self._registration_data.hyperparameters.source_offset)
         self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
         self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
         self.render_drr()
@@ -135,9 +180,9 @@ class Interface:
         self._key_states["Alt"] = False
 
     def _reset(self, layer):
-        reset_transformation = self.registration_data.transformation_ground_truth
+        reset_transformation = self.registration_constants.transformation_ground_truth
         if reset_transformation is None:
-            reset_transformation = Transformation.random(device=self.registration_data.device)
+            reset_transformation = Transformation.random(device=self.registration_constants.device)
         self._transformation_widget.set_current_transformation(reset_transformation)
         self.render_drr()
         logger.info("Reset")
@@ -209,10 +254,10 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
 
-    registration_data = RegistrationData(path, cache_directory, load_cached, regenerate_drr, save_to_cache,
-                                         sinogram_size, x_ray, device, new_drr_size=new_drr_size)
+    registration_constants = RegistrationConstants(path, cache_directory, load_cached, regenerate_drr, save_to_cache,
+                                                   sinogram_size, x_ray, device, new_drr_size=new_drr_size)
 
-    interface = Interface(registration_data)
+    interface = Interface(registration_constants)
 
     napari.run()
 

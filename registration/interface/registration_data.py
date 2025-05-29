@@ -8,132 +8,119 @@ import napari
 from magicgui import widgets
 
 from registration.lib.structs import *
+from registration.interface.lib.structs import *
 from registration.lib.sinogram import *
 from registration import script, data, drr, objective_function
 from registration.lib import grangeat
+from registration.interface.registration_constants import RegistrationConstants
 
 
 class RegistrationData:
-    def __init__(self, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool,
-                 save_to_cache: bool, sinogram_size: int, x_ray: str | None, device,
-                 new_drr_size: torch.Size = torch.Size([1000, 1000])):
-        self._ct_volume, self._ct_spacing, self._sinogram3d = script.get_volume_and_sinogram(path, cache_directory,
-                                                                                             load_cached=load_cached,
-                                                                                             save_to_cache=save_to_cache,
-                                                                                             sinogram_size=sinogram_size,
-                                                                                             device=device)
-        self._device = device
-        self._transformation_ground_truth = None
+    """
+    @brief Class to manage the registration hyperparameters, and importantly the data that are modified according to
+    them.
+    """
 
-        if x_ray is None:
-            # Load / generate a DRR through the volume
-            drr_spec = None
-            if not regenerate_drr and path is not None:
-                drr_spec = data.load_cached_drr(cache_directory, path)
+    class Cached(NamedTuple):
+        at_parameters: HyperParameters
+        fixed_image: torch.Tensor
+        fixed_image_offset: torch.Tensor
+        translation_offset: torch.Tensor
+        sinogram2d: torch.Tensor
+        sinogram2d_grid: Sinogram2dGrid
 
-            if drr_spec is None:
-                drr_spec = drr.generate_new_drr(cache_directory, path, self.ct_volume, self.ct_spacing,
-                                                device=self.device, save_to_cache=save_to_cache, size=new_drr_size)
+    def __init__(self, *, registration_constants: RegistrationConstants,
+                 image_change_callback: Callable[[], None] | None):
+        self._registration_constants = registration_constants
+        self._image_change_callback = image_change_callback
 
-            (self._fixed_image_spacing, self._scene_geometry, self._image_2d_full, self._sinogram2d, sinogram2d_range,
-             self._transformation_ground_truth) = drr_spec
-            del drr_spec
+        self._hyperparameters = HyperParameters.zero(self._registration_constants.image_2d_full.size())
 
-            self._fixed_image = self._image_2d_full
-            self._sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, self.sinogram2d.size(),
-                                                                     device=self.device)
-        else:
-            # Load the given X-ray
-            self._image_2d_full, self._fixed_image_spacing, self._scene_geometry = data.read_dicom(x_ray,
-                                                                                                   downsample_factor=4)
-            # Flip horizontally
-            self._image_2d_full = self._image_2d_full.flip(dims=(1,)).to(device=self.device)
-            self._fixed_image = self._image_2d_full
-            self._refresh_fixed_sinogram()
+        self._supress_callbacks: bool = True
+        self._cached = None
+        self._re_calculate_cache()
+        self.supress_callbacks = False
 
     @property
     def device(self):
-        return self._device
+        return self._registration_constants.device
 
     @property
-    def scene_geometry(self) -> SceneGeometry:
-        return self._scene_geometry
+    def suppress_callbacks(self) -> bool:
+        return self._supress_callbacks
+
+    @suppress_callbacks.setter
+    def suppress_callbacks(self, new_value: bool) -> None:
+        self._supress_callbacks = new_value
 
     @property
-    def ct_volume(self) -> torch.Tensor:
-        return self._ct_volume
+    def hyperparameters(self) -> HyperParameters:
+        return self._hyperparameters
 
-    @property
-    def ct_spacing(self) -> torch.Tensor:
-        return self._ct_spacing
-
-    @property
-    def sinogram3d(self) -> Sinogram:
-        return self._sinogram3d
-
-    @property
-    def image_2d_full(self) -> torch.Tensor:
-        return self._image_2d_full
+    @hyperparameters.setter
+    def hyperparameters(self, new_value: HyperParameters) -> None:
+        self._hyperparameters = new_value
 
     @property
     def fixed_image(self) -> torch.Tensor:
-        return self._fixed_image
+        if not self._cached.at_parameters.is_close(self.hyperparameters):
+            self._re_calculate_cache()
+        return self._cached.fixed_image
 
     @property
-    def fixed_image_spacing(self) -> torch.Tensor:
-        return self._fixed_image_spacing
+    def fixed_image_offset(self) -> torch.Tensor:
+        if not self._cached.at_parameters.is_close(self.hyperparameters):
+            self._re_calculate_cache()
+        return self._cached.fixed_image_offset
+
+    @property
+    def translation_offset(self) -> torch.Tensor:
+        if not self._cached.at_parameters.is_close(self.hyperparameters):
+            self._re_calculate_cache()
+        return self._cached.translation_offset
 
     @property
     def sinogram2d(self) -> torch.Tensor:
-        return self._sinogram2d
+        if not self._cached.at_parameters.is_close(self.hyperparameters):
+            self._re_calculate_cache()
+        return self._cached.sinogram2d
 
     @property
     def sinogram2d_grid(self) -> Sinogram2dGrid:
-        return self._sinogram2d_grid
+        if not self._cached.at_parameters.is_close(self.hyperparameters):
+            self._re_calculate_cache()
+        return self._cached.sinogram2d_grid
 
-    @property
-    def transformation_ground_truth(self) -> Transformation | None:
-        return self._transformation_ground_truth
+    def _re_calculate_cache(self) -> None:
+        # Cropping for the fixed image
+        fixed_image = self.hyperparameters.cropping.apply(self._registration_constants.image_2d_full)
 
-    def re_crop_fixed_image(self, top: int, bottom: int, left: int, right: int) -> None:
-        self._fixed_image = self._image_2d_full[top:bottom, left:right]
-        top_left = torch.tensor([left, top], dtype=torch.float64)
-        size = torch.tensor([right - left, bottom - top], dtype=torch.float64)
-        offset = 0.5 * torch.tensor(self._image_2d_full.size(),
-                                    dtype=torch.float64) - (
-                         top_left + 0.5 * size)
-        self._scene_geometry = SceneGeometry(source_distance=self._scene_geometry.source_distance,
-                                             fixed_image_offset=offset)
-        self._refresh_fixed_sinogram()
+        # The fixed image is offset to adjust for the cropping, and according to the source offset
+        fixed_image_offset = self.hyperparameters.cropping.get_centre_offset(
+            self._registration_constants.image_2d_full.size()) - self.hyperparameters.source_offset
 
-    def resample_sinogram3d(self, transformation: Transformation) -> torch.Tensor:
-        source_position = self.scene_geometry.source_position(device=self.device)
-        p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-        ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=self.device).to(dtype=torch.float32))
-        return self.sinogram3d.resample(ph_matrix,
-                                        self.sinogram2d_grid.shifted(-self.scene_geometry.fixed_image_offset))
+        # The translation offset prevents the source offset parameters from fighting the translation parameters in
+        # the optimisation
+        translation_offset = - self.hyperparameters.source_offset
 
-    def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        moving_image = geometry.generate_drr(self.ct_volume, transformation=transformation.to(device=self.device),
-                                             voxel_spacing=self.ct_spacing, detector_spacing=self.fixed_image_spacing,
-                                             scene_geometry=self.scene_geometry, output_size=self.fixed_image.size())
-        return -objective_function.zncc(self.fixed_image, moving_image)
-
-    def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(self.sinogram2d, self.resample_sinogram3d(transformation))
-
-    def _refresh_fixed_sinogram(self) -> None:
-        sinogram2d_counts = max(self.fixed_image.size()[0], self.fixed_image.size()[1])
-        image_diag: float = (self.fixed_image_spacing.flip(dims=(0,)) * torch.tensor(self.fixed_image.size(),
-                                                                                     dtype=torch.float32)).square(
-
-        ).sum().sqrt().item()
+        sinogram2d_counts = max(fixed_image.size()[0], fixed_image.size()[1])
+        image_diag: float = (
+                self._registration_constants.fixed_image_spacing.flip(dims=(0,)) * torch.tensor(fixed_image.size(),
+                                                                                                dtype=torch.float32)).square().sum().sqrt().item()
         sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                            LinearRange(-.5 * image_diag, .5 * image_diag))
-        self._sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts,
-                                                                 device=self.device)
+        sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=self.device)
 
-        self._sinogram2d = grangeat.calculate_fixed_image(self.fixed_image,
-                                                          source_distance=self.scene_geometry.source_distance,
-                                                          detector_spacing=self.fixed_image_spacing,
-                                                          output_grid=self._sinogram2d_grid)
+        sinogram2d = grangeat.calculate_fixed_image(fixed_image,
+                                                    source_distance=self._registration_constants.scene_geometry.source_distance,
+                                                    detector_spacing=self._registration_constants.fixed_image_spacing,
+                                                    output_grid=sinogram2d_grid)
+
+        sinogram2d_grid = sinogram2d_grid.shifted(fixed_image_offset)
+
+        self._cached = RegistrationData.Cached(at_parameters=self.hyperparameters, fixed_image=fixed_image,
+                                               fixed_image_offset=fixed_image_offset,
+                                               translation_offset=translation_offset, sinogram2d=sinogram2d,
+                                               sinogram2d_grid=sinogram2d_grid)
+        if not self.suppress_callbacks and self._image_change_callback is not None:
+            self._image_change_callback()

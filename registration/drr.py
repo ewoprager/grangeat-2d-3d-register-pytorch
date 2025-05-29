@@ -5,8 +5,9 @@ from registration import data
 from registration.lib.sinogram import *
 
 
-def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
-                     *, device, save_to_cache=True, size: torch.Size=torch.Size([1000, 1000])):
+def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor,
+                           voxel_spacing: torch.Tensor, *, device, save_to_cache=True,
+                           size: torch.Size = torch.Size([1000, 1000])):
     # transformation = Transformation(torch.tensor([0., 0., 0.]),
     #                                 torch.tensor([0., 0., 200.])).to(device=device)
     # transformation = Transformation.zero(device=volume_data.device)
@@ -34,7 +35,9 @@ def generate_new_drr(cache_directory: str, ct_volume_path: str, volume_data: tor
 
     sinogram2d_counts = max(drr_image.size()[0], drr_image.size()[1])
     image_diag: float = (detector_spacing.flip(dims=(0,)) * torch.tensor(drr_image.size(),
-        dtype=torch.float32)).square().sum().sqrt().item()
+                                                                         dtype=torch.float32)).square().sum().sqrt(
+
+    ).item()
     sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * image_diag, .5 * image_diag))
     sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=device)
