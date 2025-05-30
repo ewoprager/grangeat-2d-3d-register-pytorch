@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Grangeat-based 2D/3D image registration: reg23::Texture2DCPU Class Reference</title>
+<title>Grangeat-based 2D/3D image registration: reg23::Texture3DHEALPixCPU Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -79,7 +79,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="namespacereg23.html">reg23</a></li><li class="navelem"><a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a></li>  </ul>
+<li class="navelem"><a class="el" href="namespacereg23.html">reg23</a></li><li class="navelem"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -87,30 +87,30 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
-<a href="classreg23_1_1Texture2DCPU-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">reg23::Texture2DCPU Class Reference<div class="ingroups"><a class="el" href="group__textures.html">Texture-Related Types</a></div></div></div>
+<a href="classreg23_1_1Texture3DHEALPixCPU-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">reg23::Texture3DHEALPixCPU Class Reference<div class="ingroups"><a class="el" href="group__textures.html">Texture-Related Types</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
-<p>A 2D texture stored for access by the CPU.  
- <a href="classreg23_1_1Texture2DCPU.html#details">More...</a></p>
+<p>A 3D texture stored for access by the CPU, structured for storing an even distribution of values over the surface of S^2, according to the HEALPix mapping. ToDo: citation here.  
+ <a href="classreg23_1_1Texture3DHEALPixCPU.html#details">More...</a></p>
 
-<p><code>#include &lt;<a class="el" href="Texture2DCPU_8h_source.html">Texture2DCPU.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="Texture3DHEALPixCPU_8h_source.html">Texture3DHEALPixCPU.h</a>&gt;</code></p>
 <div class="dynheader">
-Inheritance diagram for reg23::Texture2DCPU:</div>
+Inheritance diagram for reg23::Texture3DHEALPixCPU:</div>
 <div class="dyncontent">
  <div class="center">
-  <img src="classreg23_1_1Texture2DCPU.png" usemap="#reg23::Texture2DCPU_map" alt=""/>
-  <map id="reg23::Texture2DCPU_map" name="reg23::Texture2DCPU_map">
-<area href="classreg23_1_1Texture.html" alt="reg23::Texture&lt; 2, int64_t, double &gt;" shape="rect" coords="0,0,217,24"/>
+  <img src="classreg23_1_1Texture3DHEALPixCPU.png" usemap="#reg23::Texture3DHEALPixCPU_map" alt=""/>
+  <map id="reg23::Texture3DHEALPixCPU_map" name="reg23::Texture3DHEALPixCPU_map">
+<area href="classreg23_1_1Texture.html" alt="reg23::Texture&lt; 3, int64_t, double &gt;" shape="rect" coords="0,0,217,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:aa78510495c7481023a79e518ae82a23d" id="r_aa78510495c7481023a79e518ae82a23d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#aa78510495c7481023a79e518ae82a23d">Base</a> = <a class="el" href="classreg23_1_1Texture.html">Texture</a>&lt; 2, int64_t, double &gt;</td></tr>
-<tr class="separator:aa78510495c7481023a79e518ae82a23d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_types_classreg23_1_1Texture"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classreg23_1_1Texture')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classreg23_1_1Texture.html">reg23::Texture&lt; 2, int64_t, double &gt;</a></td></tr>
+<tr class="memitem:a7777af6ea894f233cf067a026661e0a4" id="r_a7777af6ea894f233cf067a026661e0a4"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#a7777af6ea894f233cf067a026661e0a4">Base</a> = <a class="el" href="classreg23_1_1Texture.html">Texture</a>&lt; 3, int64_t, double &gt;</td></tr>
+<tr class="separator:a7777af6ea894f233cf067a026661e0a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classreg23_1_1Texture"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classreg23_1_1Texture')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classreg23_1_1Texture.html">reg23::Texture&lt; 3, int64_t, double &gt;</a></td></tr>
 <tr class="memitem:ac5bdacd39a8086b6553479ca46e8ed01 inherit pub_types_classreg23_1_1Texture" id="r_ac5bdacd39a8086b6553479ca46e8ed01"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html#ac5bdacd39a8086b6553479ca46e8ed01">IntType</a> = int64_t</td></tr>
 <tr class="separator:ac5bdacd39a8086b6553479ca46e8ed01 inherit pub_types_classreg23_1_1Texture"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a207f0df12c8a590c99947b5ffef9b25b inherit pub_types_classreg23_1_1Texture" id="r_a207f0df12c8a590c99947b5ffef9b25b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a> = double</td></tr>
@@ -124,27 +124,24 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:af01fc33d4d90e3ffcb09b671567da487" id="r_af01fc33d4d90e3ffcb09b671567da487"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#af01fc33d4d90e3ffcb09b671567da487">Texture2DCPU</a> ()=default</td></tr>
-<tr class="separator:af01fc33d4d90e3ffcb09b671567da487"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2e3206b781c7057a8784ce7e0a67ce6" id="r_ad2e3206b781c7057a8784ce7e0a67ce6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#ad2e3206b781c7057a8784ce7e0a67ce6">Texture2DCPU</a> (const float *_ptr, <a class="el" href="classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a">SizeType</a> _size, <a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> _spacing, <a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> _centrePosition={}, const <a class="el" href="classreg23_1_1Texture.html#a65de1aa8017d56d5e9d18332f5810194">AddressModeType</a> &amp;_addressModes=<a class="el" href="classreg23_1_1Vec.html#a0893e0bcceee8d894b1580bf1b98b571">AddressModeType::Full</a>(<a class="el" href="group__textures.html#gga7c59c85cf0c72d00bd5d489b4c2751b2a529e9e0beb5f85d1f132917c1a09860c">TextureAddressMode::ZERO</a>))</td></tr>
-<tr class="separator:ad2e3206b781c7057a8784ce7e0a67ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad460aa260dd8b65953a3e0384f2acc7" id="r_aad460aa260dd8b65953a3e0384f2acc7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#aad460aa260dd8b65953a3e0384f2acc7">Texture2DCPU</a> (const <a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;)=default</td></tr>
-<tr class="separator:aad460aa260dd8b65953a3e0384f2acc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13b744ed75bbf34150a27daca4e764ea" id="r_a13b744ed75bbf34150a27daca4e764ea"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#a13b744ed75bbf34150a27daca4e764ea">operator=</a> (const <a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;)=default</td></tr>
-<tr class="separator:a13b744ed75bbf34150a27daca4e764ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1a5a9c34303eb3c292feb4caf3434d8" id="r_ac1a5a9c34303eb3c292feb4caf3434d8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#ac1a5a9c34303eb3c292feb4caf3434d8">Texture2DCPU</a> (<a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;&amp;)=default</td></tr>
-<tr class="separator:ac1a5a9c34303eb3c292feb4caf3434d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59d9393f03cd738a265ba44771a42953" id="r_a59d9393f03cd738a265ba44771a42953"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#a59d9393f03cd738a265ba44771a42953">operator=</a> (<a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;&amp;)=default</td></tr>
-<tr class="separator:a59d9393f03cd738a265ba44771a42953"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d1e300fc2d61a8bd6c37dad6b7fef5f" id="r_a2d1e300fc2d61a8bd6c37dad6b7fef5f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#a2d1e300fc2d61a8bd6c37dad6b7fef5f">At</a> (const <a class="el" href="classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a">SizeType</a> &amp;index) const</td></tr>
-<tr class="separator:a2d1e300fc2d61a8bd6c37dad6b7fef5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83d57fba8eea12e11bb0545457029ca5" id="r_a83d57fba8eea12e11bb0545457029ca5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#a83d57fba8eea12e11bb0545457029ca5">Sample</a> (<a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> texCoord) const</td></tr>
-<tr class="separator:a83d57fba8eea12e11bb0545457029ca5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69c051dcd427bd06977b18f62c523ed2" id="r_a69c051dcd427bd06977b18f62c523ed2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#a69c051dcd427bd06977b18f62c523ed2">DSampleDX</a> (<a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> texCoord) const</td></tr>
-<tr class="separator:a69c051dcd427bd06977b18f62c523ed2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44e2a9621513455a7612f7681e2281fc" id="r_a44e2a9621513455a7612f7681e2281fc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#a44e2a9621513455a7612f7681e2281fc">DSampleDY</a> (<a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> texCoord) const</td></tr>
-<tr class="separator:a44e2a9621513455a7612f7681e2281fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_classreg23_1_1Texture"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classreg23_1_1Texture')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classreg23_1_1Texture.html">reg23::Texture&lt; 2, int64_t, double &gt;</a></td></tr>
+<tr class="memitem:a06cbf4dd54120b15bcd1d9c03f21e21c" id="r_a06cbf4dd54120b15bcd1d9c03f21e21c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#a06cbf4dd54120b15bcd1d9c03f21e21c">Texture3DHEALPixCPU</a> ()=default</td></tr>
+<tr class="separator:a06cbf4dd54120b15bcd1d9c03f21e21c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4044521577c7e481cb90087d2da5724e" id="r_a4044521577c7e481cb90087d2da5724e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#a4044521577c7e481cb90087d2da5724e">Texture3DHEALPixCPU</a> (const float *_ptr, <a class="el" href="classreg23_1_1Texture.html#ac5bdacd39a8086b6553479ca46e8ed01">IntType</a> _nSide, <a class="el" href="classreg23_1_1Texture.html#ac5bdacd39a8086b6553479ca46e8ed01">IntType</a> rCount, <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a> rSpacing, <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a> rRangeCentre, <a class="el" href="group__textures.html#ga7c59c85cf0c72d00bd5d489b4c2751b2">TextureAddressMode</a> addressMode=<a class="el" href="group__textures.html#gga7c59c85cf0c72d00bd5d489b4c2751b2a529e9e0beb5f85d1f132917c1a09860c">TextureAddressMode::ZERO</a>)</td></tr>
+<tr class="memdesc:a4044521577c7e481cb90087d2da5724e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct the texture with data.  <br /></td></tr>
+<tr class="separator:a4044521577c7e481cb90087d2da5724e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a421810ded2d9478ff6fcdf91a94778" id="r_a3a421810ded2d9478ff6fcdf91a94778"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#a3a421810ded2d9478ff6fcdf91a94778">Texture3DHEALPixCPU</a> (const <a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;)=default</td></tr>
+<tr class="separator:a3a421810ded2d9478ff6fcdf91a94778"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af37094dfed48e3398cf6f5057fcbd652" id="r_af37094dfed48e3398cf6f5057fcbd652"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#af37094dfed48e3398cf6f5057fcbd652">operator=</a> (const <a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;)=default</td></tr>
+<tr class="separator:af37094dfed48e3398cf6f5057fcbd652"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c5c27bc7f48d674fd51472b9d4b6f25" id="r_a4c5c27bc7f48d674fd51472b9d4b6f25"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#a4c5c27bc7f48d674fd51472b9d4b6f25">Texture3DHEALPixCPU</a> (<a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:a4c5c27bc7f48d674fd51472b9d4b6f25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4d9108396560870ce6aaa2dc4805da3" id="r_ab4d9108396560870ce6aaa2dc4805da3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#ab4d9108396560870ce6aaa2dc4805da3">operator=</a> (<a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:ab4d9108396560870ce6aaa2dc4805da3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2b17710b35faed0e1fc94177e725551" id="r_af2b17710b35faed0e1fc94177e725551"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#af2b17710b35faed0e1fc94177e725551">At</a> (const <a class="el" href="classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a">SizeType</a> &amp;index) const</td></tr>
+<tr class="separator:af2b17710b35faed0e1fc94177e725551"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd06759054366b05cac48cb1482c6210" id="r_acd06759054366b05cac48cb1482c6210"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#acd06759054366b05cac48cb1482c6210">Sample</a> (<a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> rThetaPhi) const</td></tr>
+<tr class="separator:acd06759054366b05cac48cb1482c6210"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classreg23_1_1Texture"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classreg23_1_1Texture')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classreg23_1_1Texture.html">reg23::Texture&lt; 3, int64_t, double &gt;</a></td></tr>
 <tr class="memitem:a111ad5e0c1a8330152d367e04772f7ff inherit pub_methods_classreg23_1_1Texture" id="r_a111ad5e0c1a8330152d367e04772f7ff"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> const <a class="el" href="classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a">SizeType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html#a111ad5e0c1a8330152d367e04772f7ff">Size</a> () const</td></tr>
 <tr class="memdesc:a111ad5e0c1a8330152d367e04772f7ff inherit pub_methods_classreg23_1_1Texture"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the dimensions of the texture.  <br /></td></tr>
 <tr class="separator:a111ad5e0c1a8330152d367e04772f7ff inherit pub_methods_classreg23_1_1Texture"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -163,12 +160,12 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a0aef88aaaab71976f5d5a86c74c47042" id="r_a0aef88aaaab71976f5d5a86c74c47042"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture2DCPU.html#a0aef88aaaab71976f5d5a86c74c47042">FromTensor</a> (const at::Tensor &amp;image, const at::Tensor &amp;spacing)</td></tr>
-<tr class="separator:a0aef88aaaab71976f5d5a86c74c47042"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ed39c29bdf2eb01cd38361130f410ed" id="r_a4ed39c29bdf2eb01cd38361130f410ed"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#a4ed39c29bdf2eb01cd38361130f410ed">FromTensor</a> (const at::Tensor &amp;volume, <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a> rSpacing)</td></tr>
+<tr class="separator:a4ed39c29bdf2eb01cd38361130f410ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
-<tr class="inherit_header pro_methods_classreg23_1_1Texture"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classreg23_1_1Texture')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classreg23_1_1Texture.html">reg23::Texture&lt; 2, int64_t, double &gt;</a></td></tr>
+<tr class="inherit_header pro_methods_classreg23_1_1Texture"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classreg23_1_1Texture')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classreg23_1_1Texture.html">reg23::Texture&lt; 3, int64_t, double &gt;</a></td></tr>
 <tr class="memitem:aec726a8948fbd2e3ad9cc7276cf38f31 inherit pro_methods_classreg23_1_1Texture" id="r_aec726a8948fbd2e3ad9cc7276cf38f31"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html#aec726a8948fbd2e3ad9cc7276cf38f31">Texture</a> ()=default</td></tr>
 <tr class="separator:aec726a8948fbd2e3ad9cc7276cf38f31 inherit pro_methods_classreg23_1_1Texture"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1d031f2aa79a28e8c7936bcb1db621e inherit pro_methods_classreg23_1_1Texture" id="r_ac1d031f2aa79a28e8c7936bcb1db621e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html#ac1d031f2aa79a28e8c7936bcb1db621e">Texture</a> (<a class="el" href="classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a">SizeType</a> _size, <a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> _spacing, <a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> _centrePosition={})</td></tr>
@@ -183,18 +180,19 @@ Additional Inherited Members</h2></td></tr>
 <tr class="separator:a81c209eeafd6716e5a0ccc548c02c209 inherit pro_methods_classreg23_1_1Texture"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A 2D texture stored for access by the CPU. </p>
+<div class="textblock"><p>A 3D texture stored for access by the CPU, structured for storing an even distribution of values over the surface of S^2, according to the HEALPix mapping. ToDo: citation here. </p>
+<p><a class="el" href="classreg23_1_1Texture.html" title="A parent texture class containing template data and functionality.">Texture</a> sampling is done using spherical coordinates $(r, \theta, \phi)$, but only the first dimension $r$ actually corresponds to the texture coordinate in the volume data. Across two dimensions the values are stored according to a rectangular tesselation of the HEALPix spherical projection.</p>
 <p><b>This object does not own the data it provides access to, it just holds a pointer to it</b></p>
 <p>Both copy and move-constructable. </p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="aa78510495c7481023a79e518ae82a23d" name="aa78510495c7481023a79e518ae82a23d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa78510495c7481023a79e518ae82a23d">&#9670;&#160;</a></span>Base</h2>
+<a id="a7777af6ea894f233cf067a026661e0a4" name="a7777af6ea894f233cf067a026661e0a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7777af6ea894f233cf067a026661e0a4">&#9670;&#160;</a></span>Base</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classreg23_1_1Texture2DCPU.html#aa78510495c7481023a79e518ae82a23d">reg23::Texture2DCPU::Base</a> =  <a class="el" href="classreg23_1_1Texture.html">Texture</a>&lt;2, int64_t, double&gt;</td>
+          <td class="memname">using <a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html#a7777af6ea894f233cf067a026661e0a4">reg23::Texture3DHEALPixCPU::Base</a> =  <a class="el" href="classreg23_1_1Texture.html">Texture</a>&lt;3, int64_t, double&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -202,8 +200,8 @@ Additional Inherited Members</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="af01fc33d4d90e3ffcb09b671567da487" name="af01fc33d4d90e3ffcb09b671567da487"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af01fc33d4d90e3ffcb09b671567da487">&#9670;&#160;</a></span>Texture2DCPU() <span class="overload">[1/4]</span></h2>
+<a id="a06cbf4dd54120b15bcd1d9c03f21e21c" name="a06cbf4dd54120b15bcd1d9c03f21e21c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06cbf4dd54120b15bcd1d9c03f21e21c">&#9670;&#160;</a></span>Texture3DHEALPixCPU() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -212,7 +210,7 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">reg23::Texture2DCPU::Texture2DCPU </td>
+          <td class="memname">reg23::Texture3DHEALPixCPU::Texture3DHEALPixCPU </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -227,8 +225,8 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
-<a id="ad2e3206b781c7057a8784ce7e0a67ce6" name="ad2e3206b781c7057a8784ce7e0a67ce6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad2e3206b781c7057a8784ce7e0a67ce6">&#9670;&#160;</a></span>Texture2DCPU() <span class="overload">[2/4]</span></h2>
+<a id="a4044521577c7e481cb90087d2da5724e" name="a4044521577c7e481cb90087d2da5724e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4044521577c7e481cb90087d2da5724e">&#9670;&#160;</a></span>Texture3DHEALPixCPU() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -237,7 +235,7 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">reg23::Texture2DCPU::Texture2DCPU </td>
+          <td class="memname">reg23::Texture3DHEALPixCPU::Texture3DHEALPixCPU </td>
           <td>(</td>
           <td class="paramtype">const float *&#160;</td>
           <td class="paramname"><em>_ptr</em>, </td>
@@ -245,26 +243,32 @@ Additional Inherited Members</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a">SizeType</a>&#160;</td>
-          <td class="paramname"><em>_size</em>, </td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#ac5bdacd39a8086b6553479ca46e8ed01">IntType</a>&#160;</td>
+          <td class="paramname"><em>_nSide</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a>&#160;</td>
-          <td class="paramname"><em>_spacing</em>, </td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#ac5bdacd39a8086b6553479ca46e8ed01">IntType</a>&#160;</td>
+          <td class="paramname"><em>rCount</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a>&#160;</td>
-          <td class="paramname"><em>_centrePosition</em> = <code>{}</code>, </td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a>&#160;</td>
+          <td class="paramname"><em>rSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classreg23_1_1Texture.html#a65de1aa8017d56d5e9d18332f5810194">AddressModeType</a> &amp;&#160;</td>
-          <td class="paramname"><em>_addressModes</em> = <code><a class="el" href="classreg23_1_1Vec.html#a0893e0bcceee8d894b1580bf1b98b571">AddressModeType::Full</a>(<a class="el" href="group__textures.html#gga7c59c85cf0c72d00bd5d489b4c2751b2a529e9e0beb5f85d1f132917c1a09860c">TextureAddressMode::ZERO</a>)</code>&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a>&#160;</td>
+          <td class="paramname"><em>rRangeCentre</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__textures.html#ga7c59c85cf0c72d00bd5d489b4c2751b2">TextureAddressMode</a>&#160;</td>
+          <td class="paramname"><em>addressMode</em> = <code><a class="el" href="group__textures.html#gga7c59c85cf0c72d00bd5d489b4c2751b2a529e9e0beb5f85d1f132917c1a09860c">TextureAddressMode::ZERO</a></code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -279,10 +283,28 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Construct the texture with data. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramtype"></td><td class="paramname">_ptr</td><td>A pointer to the beginning of the data </td></tr>
+    <tr><td class="paramtype">_nSide</td><td class="paramname">$N_</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<p>mathrm{side}$: The number of pixels along a side of a HEALPix base resolution pixel </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rCount</td><td>The size of the volumes first dimension; the number of $r$ values </td></tr>
+    <tr><td class="paramname">rSpacing</td><td>The spacing in world coordinates of the layers in the $r$ direction </td></tr>
+    <tr><td class="paramname">rRangeCentre</td><td>The centre in world coordinates of the layers in the $r$ direction </td></tr>
+    <tr><td class="paramname">addressMode</td><td>The address mode with which the texture should be sampled in the $r$-direction </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
-<a id="aad460aa260dd8b65953a3e0384f2acc7" name="aad460aa260dd8b65953a3e0384f2acc7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad460aa260dd8b65953a3e0384f2acc7">&#9670;&#160;</a></span>Texture2DCPU() <span class="overload">[3/4]</span></h2>
+<a id="a3a421810ded2d9478ff6fcdf91a94778" name="a3a421810ded2d9478ff6fcdf91a94778"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a421810ded2d9478ff6fcdf91a94778">&#9670;&#160;</a></span>Texture3DHEALPixCPU() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -291,9 +313,9 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">reg23::Texture2DCPU::Texture2DCPU </td>
+          <td class="memname">reg23::Texture3DHEALPixCPU::Texture3DHEALPixCPU </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -307,8 +329,8 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
-<a id="ac1a5a9c34303eb3c292feb4caf3434d8" name="ac1a5a9c34303eb3c292feb4caf3434d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac1a5a9c34303eb3c292feb4caf3434d8">&#9670;&#160;</a></span>Texture2DCPU() <span class="overload">[4/4]</span></h2>
+<a id="a4c5c27bc7f48d674fd51472b9d4b6f25" name="a4c5c27bc7f48d674fd51472b9d4b6f25"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c5c27bc7f48d674fd51472b9d4b6f25">&#9670;&#160;</a></span>Texture3DHEALPixCPU() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -317,9 +339,9 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">reg23::Texture2DCPU::Texture2DCPU </td>
+          <td class="memname">reg23::Texture3DHEALPixCPU::Texture3DHEALPixCPU </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;&amp;&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -334,8 +356,8 @@ Additional Inherited Members</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a2d1e300fc2d61a8bd6c37dad6b7fef5f" name="a2d1e300fc2d61a8bd6c37dad6b7fef5f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d1e300fc2d61a8bd6c37dad6b7fef5f">&#9670;&#160;</a></span>At()</h2>
+<a id="af2b17710b35faed0e1fc94177e725551" name="af2b17710b35faed0e1fc94177e725551"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2b17710b35faed0e1fc94177e725551">&#9670;&#160;</a></span>At()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -344,7 +366,7 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float reg23::Texture2DCPU::At </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float reg23::Texture3DHEALPixCPU::At </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a">SizeType</a> &amp;&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -367,8 +389,8 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
-<a id="a69c051dcd427bd06977b18f62c523ed2" name="a69c051dcd427bd06977b18f62c523ed2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a69c051dcd427bd06977b18f62c523ed2">&#9670;&#160;</a></span>DSampleDX()</h2>
+<a id="a4ed39c29bdf2eb01cd38361130f410ed" name="a4ed39c29bdf2eb01cd38361130f410ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ed39c29bdf2eb01cd38361130f410ed">&#9670;&#160;</a></span>FromTensor()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -377,82 +399,16 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float reg23::Texture2DCPU::DSampleDX </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a>&#160;</td>
-          <td class="paramname"><em>texCoord</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">texCoord</td><td>The texture coordinates at which to sample the texture </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>The derivative of the sample from this texture at the given texture coordinates using bilinear interpolation, with respect to the X-component of the texture coordinate. </dd></dl>
-
-</div>
-</div>
-<a id="a44e2a9621513455a7612f7681e2281fc" name="a44e2a9621513455a7612f7681e2281fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a44e2a9621513455a7612f7681e2281fc">&#9670;&#160;</a></span>DSampleDY()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float reg23::Texture2DCPU::DSampleDY </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a>&#160;</td>
-          <td class="paramname"><em>texCoord</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">texCoord</td><td>The texture coordinates at which to sample the texture </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>The derivative of the sample from this texture at the given texture coordinates using bilinear interpolation, with respect to the Y-component of the texture coordinate. </dd></dl>
-
-</div>
-</div>
-<a id="a0aef88aaaab71976f5d5a86c74c47042" name="a0aef88aaaab71976f5d5a86c74c47042"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0aef88aaaab71976f5d5a86c74c47042">&#9670;&#160;</a></span>FromTensor()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> reg23::Texture2DCPU::FromTensor </td>
+          <td class="memname">static <a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> reg23::Texture3DHEALPixCPU::FromTensor </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>image</em>, </td>
+          <td class="paramname"><em>volume</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>spacing</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a>&#160;</td>
+          <td class="paramname"><em>rSpacing</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -468,8 +424,8 @@ Additional Inherited Members</h2></td></tr>
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">image</td><td>A 2D tensor of <code>torch.float32</code>s </td></tr>
-    <tr><td class="paramname">spacing</td><td>A tensor of <code>torch.float64</code>s of size (2,) </td></tr>
+    <tr><td class="paramname">volume</td><td>A 3D tensor of <code>torch.float32</code>s </td></tr>
+    <tr><td class="paramname">rSpacing</td><td>The spacing between each HEALPix sphere </td></tr>
   </table>
   </dd>
 </dl>
@@ -477,8 +433,8 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
-<a id="a13b744ed75bbf34150a27daca4e764ea" name="a13b744ed75bbf34150a27daca4e764ea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a13b744ed75bbf34150a27daca4e764ea">&#9670;&#160;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+<a id="af37094dfed48e3398cf6f5057fcbd652" name="af37094dfed48e3398cf6f5057fcbd652"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af37094dfed48e3398cf6f5057fcbd652">&#9670;&#160;</a></span>operator=() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -487,9 +443,9 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp; reg23::Texture2DCPU::operator= </td>
+          <td class="memname"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp; reg23::Texture3DHEALPixCPU::operator= </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -503,8 +459,8 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
-<a id="a59d9393f03cd738a265ba44771a42953" name="a59d9393f03cd738a265ba44771a42953"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59d9393f03cd738a265ba44771a42953">&#9670;&#160;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+<a id="ab4d9108396560870ce6aaa2dc4805da3" name="ab4d9108396560870ce6aaa2dc4805da3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4d9108396560870ce6aaa2dc4805da3">&#9670;&#160;</a></span>operator=() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -513,9 +469,9 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp; reg23::Texture2DCPU::operator= </td>
+          <td class="memname"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp; reg23::Texture3DHEALPixCPU::operator= </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classreg23_1_1Texture2DCPU.html">Texture2DCPU</a> &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">Texture3DHEALPixCPU</a> &amp;&amp;&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -529,8 +485,8 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
-<a id="a83d57fba8eea12e11bb0545457029ca5" name="a83d57fba8eea12e11bb0545457029ca5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a83d57fba8eea12e11bb0545457029ca5">&#9670;&#160;</a></span>Sample()</h2>
+<a id="acd06759054366b05cac48cb1482c6210" name="acd06759054366b05cac48cb1482c6210"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd06759054366b05cac48cb1482c6210">&#9670;&#160;</a></span>Sample()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -539,10 +495,10 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float reg23::Texture2DCPU::Sample </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> float reg23::Texture3DHEALPixCPU::Sample </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a>&#160;</td>
-          <td class="paramname"><em>texCoord</em></td><td>)</td>
+          <td class="paramname"><em>rThetaPhi</em></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
@@ -554,16 +510,16 @@ Additional Inherited Members</h2></td></tr>
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">texCoord</td><td>The texture coordinates at which to sample the texture </td></tr>
+    <tr><td class="paramname">rThetaPhi</td><td>The location at which to sample in spherical coordinates </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>The sample from this texture at the given texture coordinates using bilinear interpolation </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>The sample from this texture at the given coordinates using trilinear interpolation </dd></dl>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>/home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/Extension/include/<a class="el" href="Texture2DCPU_8h_source.html">Texture2DCPU.h</a></li>
+<li>/home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/Extension/include/<a class="el" href="Texture3DHEALPixCPU_8h_source.html">Texture3DHEALPixCPU.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

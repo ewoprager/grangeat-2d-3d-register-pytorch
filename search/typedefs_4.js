@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['sizetype_0',['SizeType',['../classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a',1,'reg23::Texture']]]
+  ['floattype_0',['FloatType',['../classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b',1,'reg23::Texture']]]
 ];

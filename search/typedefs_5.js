@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['vectortype_0',['VectorType',['../classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc',1,'reg23::Texture']]]
+  ['inttype_0',['IntType',['../classreg23_1_1Texture.html#ac5bdacd39a8086b6553479ca46e8ed01',1,'reg23::Texture']]]
 ];

@@ -6,6 +6,8 @@ var searchData=
   ['radon3d_5fcpu_3',['Radon3D_CPU',['../group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24',1,'reg23']]],
   ['radon3d_5fcuda_4',['Radon3D_CUDA',['../group__pytorch__functions.html#ga8b088f60dae2dc0c0a6670f9f63a4468',1,'reg23']]],
   ['radon3d_5fcuda_5fv2_5',['Radon3D_CUDA_V2',['../namespacereg23.html#a87f61adbbd554c0cb26dde418d58b44c',1,'reg23']]],
-  ['resamplesinogram3d_5fcpu_6',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b',1,'reg23']]],
-  ['resamplesinogram3d_5fcuda_7',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#gaf8e60411d46afc090b0cdb75e48b763a',1,'reg23']]]
+  ['resamplehealpixsinogram3d_5fcpu_6',['resamplehealpixsinogram3d_cpu',['../group__pytorch__functions.html#gadb48e591ff8ed2211b538b754e971374',1,'reg23::ResampleHEALPixSinogram3D_CPU(const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)'],['../namespacereg23.html#ad9a64387e1a0c3e23819d918568efa8e',1,'reg23::ResampleHEALPixSinogram3D_CPU(const at::Tensor &amp;sinogram3d, double rSpacing, double rRangeCentre, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)']]],
+  ['resamplehealpixsinogram3d_5fcuda_7',['ResampleHEALPixSinogram3D_CUDA',['../group__pytorch__functions.html#ga87453eccd4052f1088d5fdf5619ea514',1,'reg23']]],
+  ['resamplesinogram3d_5fcpu_8',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b',1,'reg23']]],
+  ['resamplesinogram3d_5fcuda_9',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#gaf8e60411d46afc090b0cdb75e48b763a',1,'reg23']]]
 ];
