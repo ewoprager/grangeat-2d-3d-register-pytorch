@@ -10,7 +10,7 @@ developed as part of a PhD.
 
 ## Setup
 
-The (slower) CPU implementations should work on all platforms.
+The (much slower) CPU implementations should work on all platforms.
 
 CUDA is required for the more expensive functionality to run quickly. NVCC version information:
 
@@ -19,7 +19,8 @@ Cuda compilation tools, release 12.6, V12.6.85
 Build cuda_12.6.r12.6/compiler.35059454_0
 ```
 
-The build can be done faster with Ninja installed. Note that `setuptools` won't find the Ninja installation within
+The build can be done faster with Ninja installed. For Clion users: note that `setuptools` won't find the Ninja
+installation within
 Clion.
 
 On Ubuntu:
@@ -36,6 +37,27 @@ Initialise the virtual environment:
 uv venv
 source .venv/bin/activate
 ```
+
+## Scripts you can run
+
+### A Qt-based interface using `napari`
+
+This can be run for interactive manipulation and registration of a CT or synthetic volume with an X-ray image or DRR:
+```bash
+uv run interface.py -h
+uv run interface.py --ct-nrrd-path "/path/to/ct.nrrd" --x-ray "/path/to/x_ray.dcm"
+```
+
+Controls:
+- With the DRR selected in the 'layer list' window on the left, hold `alt` and drag with the left and right mouse  
+  buttons pressed to change the rotation and translation transformation parameters respectively. The sensitivity of this
+  is controlled in the 'View Options' window on the bottom left.
+- The numerical values of the transformation parameters can be changed, saved and loaded in the 'Transformations' 
+  tab on the right.
+- A lot of useful information is printed to std out, including warnings and errors so keep an eye on this while 
+  using the interface.
+
+![interface_2025-05-30.png](figures/interface_2025-05-30.png)
 
 ### Run Radon transform algorithms on CPU and GPU (CUDA) to compare performance:
 
@@ -145,5 +167,3 @@ All the following IDE integration advice is based on CLion 2024.3.1.1.
 
 'Extension/CMakeLists.txt' exists exclusively to aid your IDE with syntax highlighting and error detection in the
 extension .cpp and .cu source files. Configure a CMake project in your IDE to make use of this.
-
-To use
