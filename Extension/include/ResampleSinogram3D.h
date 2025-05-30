@@ -21,8 +21,8 @@ namespace reg23 {
  * desired transformation.
  * @param phiValues a tensor of any size containing `torch.float32`s: The polar coordinate `phi` values of the fixed
  * image at which to resample corresponding values in the given sinogram
-* @param rValues a tensor of the same size as `phiValues` containing `torch.float32`s: The polar coordinate `r` values
-* of the fixed image at which to resample corresponding values in the given sinogram
+ * @param rValues a tensor of the same size as `phiValues` containing `torch.float32`s: The polar coordinate `r` values
+ * of the fixed image at which to resample corresponding values in the given sinogram
  * @return a tensor of the same size as `phiValues` containing `torch.float32`s: The values sampled from the given
  * volume sinogram at the locations corresponding to the given polar coordinates (`phiValues`, `rValues`), according to
  * the 2D-3D image registration method based on Grangeat's relation:
