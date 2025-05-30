@@ -115,11 +115,13 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 2D texture stored for access by the CPU.  <a href="classExtensionTest_1_1Texture2DCPU.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classExtensionTest_1_1Texture2DCUDA.html">Texture2DCUDA</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 2D texture stored for access by an NVIDIA GPU.  <a href="classExtensionTest_1_1Texture2DCUDA.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classExtensionTest_1_1Texture3DCPU.html">Texture3DCPU</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 3D texture stored for access by the CPU.  <a href="classExtensionTest_1_1Texture3DCPU.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classExtensionTest_1_1Texture3DCUDA.html">Texture3DCUDA</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 3D texture stored for access by an NVIDIA GPU.  <a href="classExtensionTest_1_1Texture3DCUDA.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classExtensionTest_1_1Vec.html">Vec</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A simple vector class derived from <code>std::array&lt;T, N&gt;</code>, providing overrides for all useful operators.  <a href="classExtensionTest_1_1Vec.html#details">More...</a><br /></td></tr>
@@ -143,14 +145,14 @@ Functions</h2></td></tr>
 <tr class="memitem:ga068c2bd27a2a758903a03bb78d3b7a05"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, 3 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga068c2bd27a2a758903a03bb78d3b7a05">UnflipSphericalCoordinate</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, 3 &gt; &amp;coordSph)</td></tr>
 <tr class="memdesc:ga068c2bd27a2a758903a03bb78d3b7a05"><td class="mdescLeft">&#160;</td><td class="mdescRight">'Unflips' the given spherical coordinates so that theta and phi both lie between -pi/2 and pi/2  <br /></td></tr>
 <tr class="separator:ga068c2bd27a2a758903a03bb78d3b7a05"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2eec8b4d91ec79367949f23d3aae24d" id="r_aa2eec8b4d91ec79367949f23d3aae24d"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:aa2eec8b4d91ec79367949f23d3aae24d"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#aa2eec8b4d91ec79367949f23d3aae24d">Square</a> (const T &amp;x)</td></tr>
-<tr class="memdesc:aa2eec8b4d91ec79367949f23d3aae24d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the square of the given value.  <br /></td></tr>
-<tr class="separator:aa2eec8b4d91ec79367949f23d3aae24d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f8b97c667edc9a7e865e592c57f214c" id="r_a6f8b97c667edc9a7e865e592c57f214c"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a6f8b97c667edc9a7e865e592c57f214c"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a6f8b97c667edc9a7e865e592c57f214c">Modulo</a> (const T &amp;x, const T &amp;y)</td></tr>
-<tr class="memdesc:a6f8b97c667edc9a7e865e592c57f214c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Modulo operation that respect the sign.  <br /></td></tr>
-<tr class="separator:a6f8b97c667edc9a7e865e592c57f214c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa2eec8b4d91ec79367949f23d3aae24d" id="r_gaa2eec8b4d91ec79367949f23d3aae24d"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:gaa2eec8b4d91ec79367949f23d3aae24d"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__general__tools.html#gaa2eec8b4d91ec79367949f23d3aae24d">Square</a> (const T &amp;x)</td></tr>
+<tr class="memdesc:gaa2eec8b4d91ec79367949f23d3aae24d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the square of the given value.  <br /></td></tr>
+<tr class="separator:gaa2eec8b4d91ec79367949f23d3aae24d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6f8b97c667edc9a7e865e592c57f214c" id="r_ga6f8b97c667edc9a7e865e592c57f214c"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:ga6f8b97c667edc9a7e865e592c57f214c"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__general__tools.html#ga6f8b97c667edc9a7e865e592c57f214c">Modulo</a> (const T &amp;x, const T &amp;y)</td></tr>
+<tr class="memdesc:ga6f8b97c667edc9a7e865e592c57f214c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Modulo operation that respect the sign.  <br /></td></tr>
+<tr class="separator:ga6f8b97c667edc9a7e865e592c57f214c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab11fb3c9fda27956a66fc2e510e1459a" id="r_gab11fb3c9fda27956a66fc2e510e1459a"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gab11fb3c9fda27956a66fc2e510e1459a">GridSample3D_CPU</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
 <tr class="memdesc:gab11fb3c9fda27956a66fc2e510e1459a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sample the given 3D input tensor at the positions given in grid according to the given address mode using bilinear interpolation. This implementation is single-threaded.  <br /></td></tr>
 <tr class="separator:gab11fb3c9fda27956a66fc2e510e1459a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -158,9 +160,10 @@ Functions</h2></td></tr>
 <tr class="memdesc:gaa716f13160de170ffa808f0bb19d1cc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gab11fb3c9fda27956a66fc2e510e1459a" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">ExtensionTest::GridSample3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:gaa716f13160de170ffa808f0bb19d1cc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5612efef94469a70cd705287ab16273c" id="r_ga5612efef94469a70cd705287ab16273c"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c">ProjectDRR_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
+<tr class="memdesc:ga5612efef94469a70cd705287ab16273c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a DRR from the given volume at the given transformation.  <br /></td></tr>
 <tr class="separator:ga5612efef94469a70cd705287ab16273c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga8c848da57653e09140b2bdfafb389bca" id="r_ga8c848da57653e09140b2bdfafb389bca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga8c848da57653e09140b2bdfafb389bca">ProjectDRR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
-<tr class="memdesc:ga8c848da57653e09140b2bdfafb389bca"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c">ExtensionTest::ProjectDRR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="memdesc:ga8c848da57653e09140b2bdfafb389bca"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c" title="Generate a DRR from the given volume at the given transformation.">ExtensionTest::ProjectDRR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga8c848da57653e09140b2bdfafb389bca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4a111a26cdc4501146ed9f0ad622c2b7" id="r_ga4a111a26cdc4501146ed9f0ad622c2b7"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga4a111a26cdc4501146ed9f0ad622c2b7">Radon2D_CPU</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
 <tr class="memdesc:ga4a111a26cdc4501146ed9f0ad622c2b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute an approximation of the Radon transform of the given 2D image.  <br /></td></tr>
@@ -195,104 +198,133 @@ Functions</h2></td></tr>
 <tr class="memitem:ae59fc243f228121966ae3d8d0cbe8f05" id="r_ae59fc243f228121966ae3d8d0cbe8f05"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#ae59fc243f228121966ae3d8d0cbe8f05">DRadon3DDR_CUDA_V2</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
 <tr class="memdesc:ae59fc243f228121966ae3d8d0cbe8f05"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga80735de99bea07073a22071d6de57db4" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">ExtensionTest::DRadon3DDR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ae59fc243f228121966ae3d8d0cbe8f05"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa284c814794b8cd81e4fe6f93979d959" id="r_aa284c814794b8cd81e4fe6f93979d959"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#aa284c814794b8cd81e4fe6f93979d959">ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="memdesc:aa284c814794b8cd81e4fe6f93979d959"><td class="mdescLeft">&#160;</td><td class="mdescRight">Note: Assumes that the projection matrix projects onto the x-y plane, and that the radial coordinates (phi, r) in that plane measure phi right-hand rule about the z-axis from the positive x-direction.  <br /></td></tr>
-<tr class="separator:aa284c814794b8cd81e4fe6f93979d959"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae48642b2426b1c2b3acfb939984786d4" id="r_ae48642b2426b1c2b3acfb939984786d4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#ae48642b2426b1c2b3acfb939984786d4">ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="separator:ae48642b2426b1c2b3acfb939984786d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa284c814794b8cd81e4fe6f93979d959" id="r_gaa284c814794b8cd81e4fe6f93979d959"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaa284c814794b8cd81e4fe6f93979d959">ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:gaa284c814794b8cd81e4fe6f93979d959"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
+<tr class="separator:gaa284c814794b8cd81e4fe6f93979d959"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae48642b2426b1c2b3acfb939984786d4" id="r_gae48642b2426b1c2b3acfb939984786d4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gae48642b2426b1c2b3acfb939984786d4">ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:gae48642b2426b1c2b3acfb939984786d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gaa284c814794b8cd81e4fe6f93979d959" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">ExtensionTest::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:gae48642b2426b1c2b3acfb939984786d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga6dee704f3f37bd4fcc053adcebfbc045" id="r_ga6dee704f3f37bd4fcc053adcebfbc045"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga6dee704f3f37bd4fcc053adcebfbc045">NormalisedCrossCorrelation_CPU</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
 <tr class="separator:ga6dee704f3f37bd4fcc053adcebfbc045"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7dee84e027a8247d3ea72725e33d7e56" id="r_ga7dee84e027a8247d3ea72725e33d7e56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga7dee84e027a8247d3ea72725e33d7e56">NormalisedCrossCorrelation_CUDA</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
 <tr class="memdesc:ga7dee84e027a8247d3ea72725e33d7e56"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga6dee704f3f37bd4fcc053adcebfbc045">ExtensionTest::NormalisedCrossCorrelation_CPU</a> that uses CUDA parallisation.  <br /></td></tr>
 <tr class="separator:ga7dee84e027a8247d3ea72725e33d7e56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa79c8ee7cf708dfa9114203f6d11cb22" id="r_aa79c8ee7cf708dfa9114203f6d11cb22"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:aa79c8ee7cf708dfa9114203f6d11cb22"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#aa79c8ee7cf708dfa9114203f6d11cb22">operator+</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:aa79c8ee7cf708dfa9114203f6d11cb22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa01b6e532cd83ddc3c4053bdf951b1a7" id="r_aa01b6e532cd83ddc3c4053bdf951b1a7"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:aa01b6e532cd83ddc3c4053bdf951b1a7"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#aa01b6e532cd83ddc3c4053bdf951b1a7">operator+</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
-<tr class="separator:aa01b6e532cd83ddc3c4053bdf951b1a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a959bb62ab8c7cb3c4811925066d1d41a" id="r_a959bb62ab8c7cb3c4811925066d1d41a"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a959bb62ab8c7cb3c4811925066d1d41a"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a959bb62ab8c7cb3c4811925066d1d41a">operator+</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a959bb62ab8c7cb3c4811925066d1d41a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c54a508689c113f42fb5cb9e6e5da33" id="r_a7c54a508689c113f42fb5cb9e6e5da33"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a7c54a508689c113f42fb5cb9e6e5da33"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a7c54a508689c113f42fb5cb9e6e5da33">operator-</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a7c54a508689c113f42fb5cb9e6e5da33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab360fe4c056f4b410966b1138c2e6622" id="r_ab360fe4c056f4b410966b1138c2e6622"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:ab360fe4c056f4b410966b1138c2e6622"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#ab360fe4c056f4b410966b1138c2e6622">operator-</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
-<tr class="separator:ab360fe4c056f4b410966b1138c2e6622"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b039fa508974cff3bd3c9bfe0ae72b8" id="r_a0b039fa508974cff3bd3c9bfe0ae72b8"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a0b039fa508974cff3bd3c9bfe0ae72b8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a0b039fa508974cff3bd3c9bfe0ae72b8">operator-</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a0b039fa508974cff3bd3c9bfe0ae72b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab32a9b63b5e9d38a25c0a28c00d5ee36" id="r_ab32a9b63b5e9d38a25c0a28c00d5ee36"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:ab32a9b63b5e9d38a25c0a28c00d5ee36"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#ab32a9b63b5e9d38a25c0a28c00d5ee36">operator*</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:ab32a9b63b5e9d38a25c0a28c00d5ee36"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a997078d1ca2458313e784924cd381490" id="r_a997078d1ca2458313e784924cd381490"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a997078d1ca2458313e784924cd381490"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a997078d1ca2458313e784924cd381490">operator*</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
-<tr class="separator:a997078d1ca2458313e784924cd381490"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3226f9266d46d1f087760d76a53ee4f6" id="r_a3226f9266d46d1f087760d76a53ee4f6"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a3226f9266d46d1f087760d76a53ee4f6"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a3226f9266d46d1f087760d76a53ee4f6">operator*</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a3226f9266d46d1f087760d76a53ee4f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad4c2f24aebc60522307172ca9f9e5bc" id="r_aad4c2f24aebc60522307172ca9f9e5bc"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:aad4c2f24aebc60522307172ca9f9e5bc"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#aad4c2f24aebc60522307172ca9f9e5bc">operator/</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:aad4c2f24aebc60522307172ca9f9e5bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97de3e89be4e44991a2c03f7ddcfce3a" id="r_a97de3e89be4e44991a2c03f7ddcfce3a"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a97de3e89be4e44991a2c03f7ddcfce3a"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a97de3e89be4e44991a2c03f7ddcfce3a">operator/</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
-<tr class="separator:a97de3e89be4e44991a2c03f7ddcfce3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97f9bd7068006a4f75bd88fd8b71c998" id="r_a97f9bd7068006a4f75bd88fd8b71c998"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a97f9bd7068006a4f75bd88fd8b71c998"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a97f9bd7068006a4f75bd88fd8b71c998">operator/</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a97f9bd7068006a4f75bd88fd8b71c998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6705d0b0c7ff0ad89c6fbda8c742f5c8" id="r_a6705d0b0c7ff0ad89c6fbda8c742f5c8"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a6705d0b0c7ff0ad89c6fbda8c742f5c8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a6705d0b0c7ff0ad89c6fbda8c742f5c8">VecDot</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a6705d0b0c7ff0ad89c6fbda8c742f5c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6257fdea6798d379134f7d508ddcab51" id="r_a6257fdea6798d379134f7d508ddcab51"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a6257fdea6798d379134f7d508ddcab51"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a6257fdea6798d379134f7d508ddcab51">operator&gt;</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a6257fdea6798d379134f7d508ddcab51"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae3afed3fd234968f3cd0101cf12a383" id="r_aae3afed3fd234968f3cd0101cf12a383"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:aae3afed3fd234968f3cd0101cf12a383"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#aae3afed3fd234968f3cd0101cf12a383">operator&gt;</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
-<tr class="separator:aae3afed3fd234968f3cd0101cf12a383"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a224c1e8c23b13aa243859eb8ee86da42" id="r_a224c1e8c23b13aa243859eb8ee86da42"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a224c1e8c23b13aa243859eb8ee86da42"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a224c1e8c23b13aa243859eb8ee86da42">operator&gt;</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a224c1e8c23b13aa243859eb8ee86da42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31ff3464dd7a9278fecdf6d310920244" id="r_a31ff3464dd7a9278fecdf6d310920244"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a31ff3464dd7a9278fecdf6d310920244"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a31ff3464dd7a9278fecdf6d310920244">operator&gt;=</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a31ff3464dd7a9278fecdf6d310920244"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a814599ef56e3b008994479361546dcff" id="r_a814599ef56e3b008994479361546dcff"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a814599ef56e3b008994479361546dcff"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a814599ef56e3b008994479361546dcff">operator&gt;=</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
-<tr class="separator:a814599ef56e3b008994479361546dcff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1bfbf08055d574f15d53217e28082c8" id="r_aa1bfbf08055d574f15d53217e28082c8"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:aa1bfbf08055d574f15d53217e28082c8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#aa1bfbf08055d574f15d53217e28082c8">operator&gt;=</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:aa1bfbf08055d574f15d53217e28082c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afaa8fe31c4c5fd0bdb025cced14e7677" id="r_afaa8fe31c4c5fd0bdb025cced14e7677"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:afaa8fe31c4c5fd0bdb025cced14e7677"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#afaa8fe31c4c5fd0bdb025cced14e7677">operator&lt;</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:afaa8fe31c4c5fd0bdb025cced14e7677"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6e40c9b9305d5d584b4b46d380fac2b" id="r_ae6e40c9b9305d5d584b4b46d380fac2b"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:ae6e40c9b9305d5d584b4b46d380fac2b"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#ae6e40c9b9305d5d584b4b46d380fac2b">operator&lt;</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
-<tr class="separator:ae6e40c9b9305d5d584b4b46d380fac2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad634a8529c93f4cb444c97dc047858fb" id="r_ad634a8529c93f4cb444c97dc047858fb"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:ad634a8529c93f4cb444c97dc047858fb"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#ad634a8529c93f4cb444c97dc047858fb">operator&lt;</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:ad634a8529c93f4cb444c97dc047858fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a511507252c4fb2e5ddf04f3c90f7a2a9" id="r_a511507252c4fb2e5ddf04f3c90f7a2a9"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a511507252c4fb2e5ddf04f3c90f7a2a9"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a511507252c4fb2e5ddf04f3c90f7a2a9">operator&lt;=</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a511507252c4fb2e5ddf04f3c90f7a2a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4bfd972f89704d8eca2bc49d803de609" id="r_a4bfd972f89704d8eca2bc49d803de609"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a4bfd972f89704d8eca2bc49d803de609"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a4bfd972f89704d8eca2bc49d803de609">operator&lt;=</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
-<tr class="separator:a4bfd972f89704d8eca2bc49d803de609"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab20a78abeda32c623f64192d12450557" id="r_ab20a78abeda32c623f64192d12450557"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:ab20a78abeda32c623f64192d12450557"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#ab20a78abeda32c623f64192d12450557">operator&lt;=</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:ab20a78abeda32c623f64192d12450557"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a73a8f513eb4071f1d348afd8e53955c7" id="r_a73a8f513eb4071f1d348afd8e53955c7"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N1, std::size_t N2&gt; </td></tr>
-<tr class="memitem:a73a8f513eb4071f1d348afd8e53955c7"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N1+N2 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a73a8f513eb4071f1d348afd8e53955c7">VecCat</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N1 &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N2 &gt; &amp;rhs)</td></tr>
-<tr class="separator:a73a8f513eb4071f1d348afd8e53955c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8e85cd5179954f965b4e629847ed82e5" id="r_a8e85cd5179954f965b4e629847ed82e5"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a8e85cd5179954f965b4e629847ed82e5"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N+1 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a8e85cd5179954f965b4e629847ed82e5">VecCat</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
-<tr class="separator:a8e85cd5179954f965b4e629847ed82e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f0c26a5952d6b09a4df0eaf3a55964e" id="r_a3f0c26a5952d6b09a4df0eaf3a55964e"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
-<tr class="memitem:a3f0c26a5952d6b09a4df0eaf3a55964e"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N+1 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a3f0c26a5952d6b09a4df0eaf3a55964e">VecCat</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
-<tr class="separator:a3f0c26a5952d6b09a4df0eaf3a55964e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10a594bb612bbf30d8247b8bd5b90085" id="r_a10a594bb612bbf30d8247b8bd5b90085"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t R, std::size_t C&gt; </td></tr>
-<tr class="memitem:a10a594bb612bbf30d8247b8bd5b90085"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, R &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a10a594bb612bbf30d8247b8bd5b90085">MatMul</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, R &gt;, C &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, C &gt; &amp;rhs)</td></tr>
-<tr class="memdesc:a10a594bb612bbf30d8247b8bd5b90085"><td class="mdescLeft">&#160;</td><td class="mdescRight">Matrix-vector multiplication of the <a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> struct.  <br /></td></tr>
-<tr class="separator:a10a594bb612bbf30d8247b8bd5b90085"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa79c8ee7cf708dfa9114203f6d11cb22" id="r_gaa79c8ee7cf708dfa9114203f6d11cb22"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gaa79c8ee7cf708dfa9114203f6d11cb22"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gaa79c8ee7cf708dfa9114203f6d11cb22">operator+</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:gaa79c8ee7cf708dfa9114203f6d11cb22"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise addition.  <br /></td></tr>
+<tr class="separator:gaa79c8ee7cf708dfa9114203f6d11cb22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa01b6e532cd83ddc3c4053bdf951b1a7" id="r_gaa01b6e532cd83ddc3c4053bdf951b1a7"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gaa01b6e532cd83ddc3c4053bdf951b1a7"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gaa01b6e532cd83ddc3c4053bdf951b1a7">operator+</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
+<tr class="memdesc:gaa01b6e532cd83ddc3c4053bdf951b1a7"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise addition.  <br /></td></tr>
+<tr class="separator:gaa01b6e532cd83ddc3c4053bdf951b1a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga959bb62ab8c7cb3c4811925066d1d41a" id="r_ga959bb62ab8c7cb3c4811925066d1d41a"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga959bb62ab8c7cb3c4811925066d1d41a"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga959bb62ab8c7cb3c4811925066d1d41a">operator+</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga959bb62ab8c7cb3c4811925066d1d41a"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise addition.  <br /></td></tr>
+<tr class="separator:ga959bb62ab8c7cb3c4811925066d1d41a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7c54a508689c113f42fb5cb9e6e5da33" id="r_ga7c54a508689c113f42fb5cb9e6e5da33"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga7c54a508689c113f42fb5cb9e6e5da33"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga7c54a508689c113f42fb5cb9e6e5da33">operator-</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga7c54a508689c113f42fb5cb9e6e5da33"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise subtraction.  <br /></td></tr>
+<tr class="separator:ga7c54a508689c113f42fb5cb9e6e5da33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab360fe4c056f4b410966b1138c2e6622" id="r_gab360fe4c056f4b410966b1138c2e6622"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gab360fe4c056f4b410966b1138c2e6622"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gab360fe4c056f4b410966b1138c2e6622">operator-</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
+<tr class="memdesc:gab360fe4c056f4b410966b1138c2e6622"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise subtraction.  <br /></td></tr>
+<tr class="separator:gab360fe4c056f4b410966b1138c2e6622"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0b039fa508974cff3bd3c9bfe0ae72b8" id="r_ga0b039fa508974cff3bd3c9bfe0ae72b8"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga0b039fa508974cff3bd3c9bfe0ae72b8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga0b039fa508974cff3bd3c9bfe0ae72b8">operator-</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga0b039fa508974cff3bd3c9bfe0ae72b8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise subtraction.  <br /></td></tr>
+<tr class="separator:ga0b039fa508974cff3bd3c9bfe0ae72b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab32a9b63b5e9d38a25c0a28c00d5ee36" id="r_gab32a9b63b5e9d38a25c0a28c00d5ee36"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gab32a9b63b5e9d38a25c0a28c00d5ee36"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gab32a9b63b5e9d38a25c0a28c00d5ee36">operator*</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:gab32a9b63b5e9d38a25c0a28c00d5ee36"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise multiplication.  <br /></td></tr>
+<tr class="separator:gab32a9b63b5e9d38a25c0a28c00d5ee36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga997078d1ca2458313e784924cd381490" id="r_ga997078d1ca2458313e784924cd381490"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga997078d1ca2458313e784924cd381490"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga997078d1ca2458313e784924cd381490">operator*</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
+<tr class="memdesc:ga997078d1ca2458313e784924cd381490"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise multiplication.  <br /></td></tr>
+<tr class="separator:ga997078d1ca2458313e784924cd381490"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3226f9266d46d1f087760d76a53ee4f6" id="r_ga3226f9266d46d1f087760d76a53ee4f6"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga3226f9266d46d1f087760d76a53ee4f6"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga3226f9266d46d1f087760d76a53ee4f6">operator*</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga3226f9266d46d1f087760d76a53ee4f6"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise multiplication.  <br /></td></tr>
+<tr class="separator:ga3226f9266d46d1f087760d76a53ee4f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaad4c2f24aebc60522307172ca9f9e5bc" id="r_gaad4c2f24aebc60522307172ca9f9e5bc"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gaad4c2f24aebc60522307172ca9f9e5bc"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gaad4c2f24aebc60522307172ca9f9e5bc">operator/</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:gaad4c2f24aebc60522307172ca9f9e5bc"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise division.  <br /></td></tr>
+<tr class="separator:gaad4c2f24aebc60522307172ca9f9e5bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga97de3e89be4e44991a2c03f7ddcfce3a" id="r_ga97de3e89be4e44991a2c03f7ddcfce3a"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga97de3e89be4e44991a2c03f7ddcfce3a"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga97de3e89be4e44991a2c03f7ddcfce3a">operator/</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
+<tr class="memdesc:ga97de3e89be4e44991a2c03f7ddcfce3a"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise division.  <br /></td></tr>
+<tr class="separator:ga97de3e89be4e44991a2c03f7ddcfce3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga97f9bd7068006a4f75bd88fd8b71c998" id="r_ga97f9bd7068006a4f75bd88fd8b71c998"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga97f9bd7068006a4f75bd88fd8b71c998"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga97f9bd7068006a4f75bd88fd8b71c998">operator/</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga97f9bd7068006a4f75bd88fd8b71c998"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise division.  <br /></td></tr>
+<tr class="separator:ga97f9bd7068006a4f75bd88fd8b71c998"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6705d0b0c7ff0ad89c6fbda8c742f5c8" id="r_ga6705d0b0c7ff0ad89c6fbda8c742f5c8"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga6705d0b0c7ff0ad89c6fbda8c742f5c8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga6705d0b0c7ff0ad89c6fbda8c742f5c8">VecDot</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga6705d0b0c7ff0ad89c6fbda8c742f5c8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> dot product.  <br /></td></tr>
+<tr class="separator:ga6705d0b0c7ff0ad89c6fbda8c742f5c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6257fdea6798d379134f7d508ddcab51" id="r_ga6257fdea6798d379134f7d508ddcab51"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga6257fdea6798d379134f7d508ddcab51"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga6257fdea6798d379134f7d508ddcab51">operator&gt;</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga6257fdea6798d379134f7d508ddcab51"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise greater-than.  <br /></td></tr>
+<tr class="separator:ga6257fdea6798d379134f7d508ddcab51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaae3afed3fd234968f3cd0101cf12a383" id="r_gaae3afed3fd234968f3cd0101cf12a383"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gaae3afed3fd234968f3cd0101cf12a383"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gaae3afed3fd234968f3cd0101cf12a383">operator&gt;</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
+<tr class="memdesc:gaae3afed3fd234968f3cd0101cf12a383"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise greater-than.  <br /></td></tr>
+<tr class="separator:gaae3afed3fd234968f3cd0101cf12a383"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga224c1e8c23b13aa243859eb8ee86da42" id="r_ga224c1e8c23b13aa243859eb8ee86da42"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga224c1e8c23b13aa243859eb8ee86da42"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga224c1e8c23b13aa243859eb8ee86da42">operator&gt;</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga224c1e8c23b13aa243859eb8ee86da42"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise greater-than.  <br /></td></tr>
+<tr class="separator:ga224c1e8c23b13aa243859eb8ee86da42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga31ff3464dd7a9278fecdf6d310920244" id="r_ga31ff3464dd7a9278fecdf6d310920244"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga31ff3464dd7a9278fecdf6d310920244"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga31ff3464dd7a9278fecdf6d310920244">operator&gt;=</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga31ff3464dd7a9278fecdf6d310920244"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise greater-than-or-equal-to.  <br /></td></tr>
+<tr class="separator:ga31ff3464dd7a9278fecdf6d310920244"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga814599ef56e3b008994479361546dcff" id="r_ga814599ef56e3b008994479361546dcff"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga814599ef56e3b008994479361546dcff"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga814599ef56e3b008994479361546dcff">operator&gt;=</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
+<tr class="memdesc:ga814599ef56e3b008994479361546dcff"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise greater-than-or-equal-to.  <br /></td></tr>
+<tr class="separator:ga814599ef56e3b008994479361546dcff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa1bfbf08055d574f15d53217e28082c8" id="r_gaa1bfbf08055d574f15d53217e28082c8"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gaa1bfbf08055d574f15d53217e28082c8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gaa1bfbf08055d574f15d53217e28082c8">operator&gt;=</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:gaa1bfbf08055d574f15d53217e28082c8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise greater-than-or-equal-to.  <br /></td></tr>
+<tr class="separator:gaa1bfbf08055d574f15d53217e28082c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafaa8fe31c4c5fd0bdb025cced14e7677" id="r_gafaa8fe31c4c5fd0bdb025cced14e7677"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gafaa8fe31c4c5fd0bdb025cced14e7677"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gafaa8fe31c4c5fd0bdb025cced14e7677">operator&lt;</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:gafaa8fe31c4c5fd0bdb025cced14e7677"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise less-than.  <br /></td></tr>
+<tr class="separator:gafaa8fe31c4c5fd0bdb025cced14e7677"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae6e40c9b9305d5d584b4b46d380fac2b" id="r_gae6e40c9b9305d5d584b4b46d380fac2b"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gae6e40c9b9305d5d584b4b46d380fac2b"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gae6e40c9b9305d5d584b4b46d380fac2b">operator&lt;</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
+<tr class="memdesc:gae6e40c9b9305d5d584b4b46d380fac2b"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise less-than.  <br /></td></tr>
+<tr class="separator:gae6e40c9b9305d5d584b4b46d380fac2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad634a8529c93f4cb444c97dc047858fb" id="r_gad634a8529c93f4cb444c97dc047858fb"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gad634a8529c93f4cb444c97dc047858fb"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gad634a8529c93f4cb444c97dc047858fb">operator&lt;</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:gad634a8529c93f4cb444c97dc047858fb"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise less-than.  <br /></td></tr>
+<tr class="separator:gad634a8529c93f4cb444c97dc047858fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga511507252c4fb2e5ddf04f3c90f7a2a9" id="r_ga511507252c4fb2e5ddf04f3c90f7a2a9"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga511507252c4fb2e5ddf04f3c90f7a2a9"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga511507252c4fb2e5ddf04f3c90f7a2a9">operator&lt;=</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga511507252c4fb2e5ddf04f3c90f7a2a9"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise less-than-or-equal-to.  <br /></td></tr>
+<tr class="separator:ga511507252c4fb2e5ddf04f3c90f7a2a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4bfd972f89704d8eca2bc49d803de609" id="r_ga4bfd972f89704d8eca2bc49d803de609"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga4bfd972f89704d8eca2bc49d803de609"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga4bfd972f89704d8eca2bc49d803de609">operator&lt;=</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
+<tr class="memdesc:ga4bfd972f89704d8eca2bc49d803de609"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise less-than-or-equal-to.  <br /></td></tr>
+<tr class="separator:ga4bfd972f89704d8eca2bc49d803de609"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab20a78abeda32c623f64192d12450557" id="r_gab20a78abeda32c623f64192d12450557"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:gab20a78abeda32c623f64192d12450557"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#gab20a78abeda32c623f64192d12450557">operator&lt;=</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:gab20a78abeda32c623f64192d12450557"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> element-wise less-than-or-equal-to.  <br /></td></tr>
+<tr class="separator:gab20a78abeda32c623f64192d12450557"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga73a8f513eb4071f1d348afd8e53955c7" id="r_ga73a8f513eb4071f1d348afd8e53955c7"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N1, std::size_t N2&gt; </td></tr>
+<tr class="memitem:ga73a8f513eb4071f1d348afd8e53955c7"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N1+N2 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga73a8f513eb4071f1d348afd8e53955c7">VecCat</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N1 &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N2 &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga73a8f513eb4071f1d348afd8e53955c7"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> concatenation of two vectors.  <br /></td></tr>
+<tr class="separator:ga73a8f513eb4071f1d348afd8e53955c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8e85cd5179954f965b4e629847ed82e5" id="r_ga8e85cd5179954f965b4e629847ed82e5"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga8e85cd5179954f965b4e629847ed82e5"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N+1 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga8e85cd5179954f965b4e629847ed82e5">VecCat</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;lhs, const T &amp;rhs)</td></tr>
+<tr class="memdesc:ga8e85cd5179954f965b4e629847ed82e5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> concatenation of a vector and a scalar.  <br /></td></tr>
+<tr class="separator:ga8e85cd5179954f965b4e629847ed82e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3f0c26a5952d6b09a4df0eaf3a55964e" id="r_ga3f0c26a5952d6b09a4df0eaf3a55964e"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t N&gt; </td></tr>
+<tr class="memitem:ga3f0c26a5952d6b09a4df0eaf3a55964e"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N+1 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga3f0c26a5952d6b09a4df0eaf3a55964e">VecCat</a> (const T &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga3f0c26a5952d6b09a4df0eaf3a55964e"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">ExtensionTest::Vec</a> concatenation of a vector and a scalar.  <br /></td></tr>
+<tr class="separator:ga3f0c26a5952d6b09a4df0eaf3a55964e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga10a594bb612bbf30d8247b8bd5b90085" id="r_ga10a594bb612bbf30d8247b8bd5b90085"><td class="memTemplParams" colspan="2">template&lt;typename T , std::size_t R, std::size_t C&gt; </td></tr>
+<tr class="memitem:ga10a594bb612bbf30d8247b8bd5b90085"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, R &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__data__structures.html#ga10a594bb612bbf30d8247b8bd5b90085">MatMul</a> (const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, R &gt;, C &gt; &amp;lhs, const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, C &gt; &amp;rhs)</td></tr>
+<tr class="memdesc:ga10a594bb612bbf30d8247b8bd5b90085"><td class="mdescLeft">&#160;</td><td class="mdescRight">Matrix-vector multiplication of the <a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> struct.  <br /></td></tr>
+<tr class="separator:ga10a594bb612bbf30d8247b8bd5b90085"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9b2c1fcd08722248990ac388deed597b" id="r_a9b2c1fcd08722248990ac388deed597b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a9b2c1fcd08722248990ac388deed597b">PYBIND11_MODULE</a> (TORCH_EXTENSION_NAME, m)</td></tr>
 <tr class="separator:a9b2c1fcd08722248990ac388deed597b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0fc5acc40cfcc735ca0022e9ab66ee7c" id="r_a0fc5acc40cfcc735ca0022e9ab66ee7c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceExtensionTest.html#a0fc5acc40cfcc735ca0022e9ab66ee7c">TORCH_LIBRARY</a> (ExtensionTest, m)</td></tr>
@@ -368,1020 +400,6 @@ Functions</h2></td></tr>
 
 <p>An implementation of <a class="el" href="group__pytorch__functions.html#ga80735de99bea07073a22071d6de57db4" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">ExtensionTest::DRadon3DDR_CPU</a> that uses CUDA parallelisation. </p>
 <p>One kernel launch is made per plane integral, and each plane integral approximation is done by summing samples from multiple kernels in log-time. </p>
-
-</div>
-</div>
-<a id="a10a594bb612bbf30d8247b8bd5b90085" name="a10a594bb612bbf30d8247b8bd5b90085"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a10a594bb612bbf30d8247b8bd5b90085">&#9670;&#160;</a></span>MatMul()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t R, std::size_t C&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, R &gt; ExtensionTest::MatMul </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, R &gt;, C &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, C &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Matrix-vector multiplication of the <a class="el" href="classExtensionTest_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> struct. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">T</td><td>Matrix / vector elemnt type </td></tr>
-    <tr><td class="paramname">R</td><td>Number of rows in matrix, the size of the returned vector </td></tr>
-    <tr><td class="paramname">C</td><td>Number of columns in matrix, the size of the multiplied vector </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">lhs</td><td>A column-major, R x C matrix </td></tr>
-    <tr><td class="paramname">rhs</td><td>A vector of length C </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>The vector of length R that is the result of multiplication of the given vector on the left by the given matrix </dd></dl>
-
-</div>
-</div>
-<a id="a6f8b97c667edc9a7e865e592c57f214c" name="a6f8b97c667edc9a7e865e592c57f214c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6f8b97c667edc9a7e865e592c57f214c">&#9670;&#160;</a></span>Modulo()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> T ExtensionTest::Modulo </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>x</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>y</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Modulo operation that respect the sign. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">T</td><td>Type of the parameters and result </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">x</td><td></td></tr>
-    <tr><td class="paramname">y</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>x modulo y, respecting the sign of x. </dd></dl>
-
-</div>
-</div>
-<a id="a3226f9266d46d1f087760d76a53ee4f6" name="a3226f9266d46d1f087760d76a53ee4f6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3226f9266d46d1f087760d76a53ee4f6">&#9670;&#160;</a></span>operator*() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator* </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a997078d1ca2458313e784924cd381490" name="a997078d1ca2458313e784924cd381490"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a997078d1ca2458313e784924cd381490">&#9670;&#160;</a></span>operator*() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator* </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab32a9b63b5e9d38a25c0a28c00d5ee36" name="ab32a9b63b5e9d38a25c0a28c00d5ee36"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab32a9b63b5e9d38a25c0a28c00d5ee36">&#9670;&#160;</a></span>operator*() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator* </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a959bb62ab8c7cb3c4811925066d1d41a" name="a959bb62ab8c7cb3c4811925066d1d41a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a959bb62ab8c7cb3c4811925066d1d41a">&#9670;&#160;</a></span>operator+() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator+ </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa01b6e532cd83ddc3c4053bdf951b1a7" name="aa01b6e532cd83ddc3c4053bdf951b1a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa01b6e532cd83ddc3c4053bdf951b1a7">&#9670;&#160;</a></span>operator+() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator+ </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa79c8ee7cf708dfa9114203f6d11cb22" name="aa79c8ee7cf708dfa9114203f6d11cb22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa79c8ee7cf708dfa9114203f6d11cb22">&#9670;&#160;</a></span>operator+() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator+ </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a0b039fa508974cff3bd3c9bfe0ae72b8" name="a0b039fa508974cff3bd3c9bfe0ae72b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b039fa508974cff3bd3c9bfe0ae72b8">&#9670;&#160;</a></span>operator-() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator- </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab360fe4c056f4b410966b1138c2e6622" name="ab360fe4c056f4b410966b1138c2e6622"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab360fe4c056f4b410966b1138c2e6622">&#9670;&#160;</a></span>operator-() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator- </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a7c54a508689c113f42fb5cb9e6e5da33" name="a7c54a508689c113f42fb5cb9e6e5da33"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c54a508689c113f42fb5cb9e6e5da33">&#9670;&#160;</a></span>operator-() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator- </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a97f9bd7068006a4f75bd88fd8b71c998" name="a97f9bd7068006a4f75bd88fd8b71c998"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a97f9bd7068006a4f75bd88fd8b71c998">&#9670;&#160;</a></span>operator/() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator/ </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a97de3e89be4e44991a2c03f7ddcfce3a" name="a97de3e89be4e44991a2c03f7ddcfce3a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a97de3e89be4e44991a2c03f7ddcfce3a">&#9670;&#160;</a></span>operator/() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator/ </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aad4c2f24aebc60522307172ca9f9e5bc" name="aad4c2f24aebc60522307172ca9f9e5bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad4c2f24aebc60522307172ca9f9e5bc">&#9670;&#160;</a></span>operator/() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; ExtensionTest::operator/ </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ad634a8529c93f4cb444c97dc047858fb" name="ad634a8529c93f4cb444c97dc047858fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad634a8529c93f4cb444c97dc047858fb">&#9670;&#160;</a></span>operator&lt;() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&lt; </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ae6e40c9b9305d5d584b4b46d380fac2b" name="ae6e40c9b9305d5d584b4b46d380fac2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6e40c9b9305d5d584b4b46d380fac2b">&#9670;&#160;</a></span>operator&lt;() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&lt; </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="afaa8fe31c4c5fd0bdb025cced14e7677" name="afaa8fe31c4c5fd0bdb025cced14e7677"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afaa8fe31c4c5fd0bdb025cced14e7677">&#9670;&#160;</a></span>operator&lt;() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&lt; </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab20a78abeda32c623f64192d12450557" name="ab20a78abeda32c623f64192d12450557"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab20a78abeda32c623f64192d12450557">&#9670;&#160;</a></span>operator&lt;=() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&lt;= </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a4bfd972f89704d8eca2bc49d803de609" name="a4bfd972f89704d8eca2bc49d803de609"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4bfd972f89704d8eca2bc49d803de609">&#9670;&#160;</a></span>operator&lt;=() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&lt;= </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a511507252c4fb2e5ddf04f3c90f7a2a9" name="a511507252c4fb2e5ddf04f3c90f7a2a9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a511507252c4fb2e5ddf04f3c90f7a2a9">&#9670;&#160;</a></span>operator&lt;=() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&lt;= </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a224c1e8c23b13aa243859eb8ee86da42" name="a224c1e8c23b13aa243859eb8ee86da42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a224c1e8c23b13aa243859eb8ee86da42">&#9670;&#160;</a></span>operator&gt;() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&gt; </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aae3afed3fd234968f3cd0101cf12a383" name="aae3afed3fd234968f3cd0101cf12a383"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae3afed3fd234968f3cd0101cf12a383">&#9670;&#160;</a></span>operator&gt;() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&gt; </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a6257fdea6798d379134f7d508ddcab51" name="a6257fdea6798d379134f7d508ddcab51"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6257fdea6798d379134f7d508ddcab51">&#9670;&#160;</a></span>operator&gt;() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&gt; </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa1bfbf08055d574f15d53217e28082c8" name="aa1bfbf08055d574f15d53217e28082c8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1bfbf08055d574f15d53217e28082c8">&#9670;&#160;</a></span>operator&gt;=() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&gt;= </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a814599ef56e3b008994479361546dcff" name="a814599ef56e3b008994479361546dcff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a814599ef56e3b008994479361546dcff">&#9670;&#160;</a></span>operator&gt;=() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&gt;= </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a31ff3464dd7a9278fecdf6d310920244" name="a31ff3464dd7a9278fecdf6d310920244"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31ff3464dd7a9278fecdf6d310920244">&#9670;&#160;</a></span>operator&gt;=() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; bool, N &gt; ExtensionTest::operator&gt;= </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
 
 </div>
 </div>
@@ -1517,159 +535,6 @@ template&lt;typename T , std::size_t N&gt; </div>
 
 </div>
 </div>
-<a id="aa284c814794b8cd81e4fe6f93979d959" name="aa284c814794b8cd81e4fe6f93979d959"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa284c814794b8cd81e4fe6f93979d959">&#9670;&#160;</a></span>ResampleSinogram3D_CPU()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">at::Tensor ExtensionTest::ResampleSinogram3D_CPU </td>
-          <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogram3d</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramSpacing</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramRangeCentres</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>projectionMatrix</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>phiValues</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>rValues</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Note: Assumes that the projection matrix projects onto the x-y plane, and that the radial coordinates (phi, r) in that plane measure phi right-hand rule about the z-axis from the positive x-direction. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sinogram3d</td><td></td></tr>
-    <tr><td class="paramname">sinogramSpacing</td><td></td></tr>
-    <tr><td class="paramname">sinogramRangeCentres</td><td></td></tr>
-    <tr><td class="paramname">projectionMatrix</td><td></td></tr>
-    <tr><td class="paramname">phiValues</td><td></td></tr>
-    <tr><td class="paramname">rValues</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd></dd></dl>
-
-</div>
-</div>
-<a id="ae48642b2426b1c2b3acfb939984786d4" name="ae48642b2426b1c2b3acfb939984786d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae48642b2426b1c2b3acfb939984786d4">&#9670;&#160;</a></span>ResampleSinogram3D_CUDA()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::ResampleSinogram3D_CUDA </td>
-          <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogram3d</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramSpacing</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramRangeCentres</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>projectionMatrix</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>phiValues</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>rValues</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa2eec8b4d91ec79367949f23d3aae24d" name="aa2eec8b4d91ec79367949f23d3aae24d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2eec8b4d91ec79367949f23d3aae24d">&#9670;&#160;</a></span>Square()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> T ExtensionTest::Square </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>x</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Returns the square of the given value. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">T</td><td>Type of parameter and result </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">x</td><td>Input value </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>The input value squared using <code>operator*</code> </dd></dl>
-
-</div>
-</div>
 <a id="a0fc5acc40cfcc735ca0022e9ab66ee7c" name="a0fc5acc40cfcc735ca0022e9ab66ee7c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0fc5acc40cfcc735ca0022e9ab66ee7c">&#9670;&#160;</a></span>TORCH_LIBRARY()</h2>
 
@@ -1728,158 +593,6 @@ template&lt;typename T &gt; </div>
           <td></td><td></td>
         </tr>
       </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a3f0c26a5952d6b09a4df0eaf3a55964e" name="a3f0c26a5952d6b09a4df0eaf3a55964e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f0c26a5952d6b09a4df0eaf3a55964e">&#9670;&#160;</a></span>VecCat() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N+1 &gt; ExtensionTest::VecCat </td>
-          <td>(</td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a8e85cd5179954f965b4e629847ed82e5" name="a8e85cd5179954f965b4e629847ed82e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e85cd5179954f965b4e629847ed82e5">&#9670;&#160;</a></span>VecCat() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N+1 &gt; ExtensionTest::VecCat </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const T &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a73a8f513eb4071f1d348afd8e53955c7" name="a73a8f513eb4071f1d348afd8e53955c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73a8f513eb4071f1d348afd8e53955c7">&#9670;&#160;</a></span>VecCat() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N1, std::size_t N2&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N1+N2 &gt; ExtensionTest::VecCat </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N1 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N2 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a6705d0b0c7ff0ad89c6fbda8c742f5c8" name="a6705d0b0c7ff0ad89c6fbda8c742f5c8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6705d0b0c7ff0ad89c6fbda8c742f5c8">&#9670;&#160;</a></span>VecDot()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , std::size_t N&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> constexpr T ExtensionTest::VecDot </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>lhs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classExtensionTest_1_1Vec.html">Vec</a>&lt; T, N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>rhs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 </div>

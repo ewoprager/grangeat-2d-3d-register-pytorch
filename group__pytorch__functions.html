@@ -97,9 +97,10 @@ Functions</h2></td></tr>
 <tr class="memdesc:gaa716f13160de170ffa808f0bb19d1cc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gab11fb3c9fda27956a66fc2e510e1459a" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">ExtensionTest::GridSample3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:gaa716f13160de170ffa808f0bb19d1cc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5612efef94469a70cd705287ab16273c" id="r_ga5612efef94469a70cd705287ab16273c"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c">ExtensionTest::ProjectDRR_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
+<tr class="memdesc:ga5612efef94469a70cd705287ab16273c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a DRR from the given volume at the given transformation.  <br /></td></tr>
 <tr class="separator:ga5612efef94469a70cd705287ab16273c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga8c848da57653e09140b2bdfafb389bca" id="r_ga8c848da57653e09140b2bdfafb389bca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga8c848da57653e09140b2bdfafb389bca">ExtensionTest::ProjectDRR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
-<tr class="memdesc:ga8c848da57653e09140b2bdfafb389bca"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c">ExtensionTest::ProjectDRR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="memdesc:ga8c848da57653e09140b2bdfafb389bca"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c" title="Generate a DRR from the given volume at the given transformation.">ExtensionTest::ProjectDRR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga8c848da57653e09140b2bdfafb389bca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4a111a26cdc4501146ed9f0ad622c2b7" id="r_ga4a111a26cdc4501146ed9f0ad622c2b7"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga4a111a26cdc4501146ed9f0ad622c2b7">ExtensionTest::Radon2D_CPU</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
 <tr class="memdesc:ga4a111a26cdc4501146ed9f0ad622c2b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute an approximation of the Radon transform of the given 2D image.  <br /></td></tr>
@@ -125,6 +126,12 @@ Functions</h2></td></tr>
 <tr class="memitem:ga05408e761fc42b286dda944511e16cc6" id="r_ga05408e761fc42b286dda944511e16cc6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga05408e761fc42b286dda944511e16cc6">ExtensionTest::DRadon3DDR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
 <tr class="memdesc:ga05408e761fc42b286dda944511e16cc6"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga80735de99bea07073a22071d6de57db4" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">ExtensionTest::DRadon3DDR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga05408e761fc42b286dda944511e16cc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa284c814794b8cd81e4fe6f93979d959" id="r_gaa284c814794b8cd81e4fe6f93979d959"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaa284c814794b8cd81e4fe6f93979d959">ExtensionTest::ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:gaa284c814794b8cd81e4fe6f93979d959"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
+<tr class="separator:gaa284c814794b8cd81e4fe6f93979d959"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae48642b2426b1c2b3acfb939984786d4" id="r_gae48642b2426b1c2b3acfb939984786d4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gae48642b2426b1c2b3acfb939984786d4">ExtensionTest::ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:gae48642b2426b1c2b3acfb939984786d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gaa284c814794b8cd81e4fe6f93979d959" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">ExtensionTest::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:gae48642b2426b1c2b3acfb939984786d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga6dee704f3f37bd4fcc053adcebfbc045" id="r_ga6dee704f3f37bd4fcc053adcebfbc045"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga6dee704f3f37bd4fcc053adcebfbc045">ExtensionTest::NormalisedCrossCorrelation_CPU</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
 <tr class="separator:ga6dee704f3f37bd4fcc053adcebfbc045"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7dee84e027a8247d3ea72725e33d7e56" id="r_ga7dee84e027a8247d3ea72725e33d7e56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga7dee84e027a8247d3ea72725e33d7e56">ExtensionTest::NormalisedCrossCorrelation_CUDA</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
@@ -181,15 +188,15 @@ Functions</h2></td></tr>
 <p>Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the given 2D image. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">image</td><td>A 2D tensor of <code>torch.float32</code>s; the input image to take the Radon transform of </td></tr>
-    <tr><td class="paramname">imageSpacing</td><td>The spacing between the image columns and rows </td></tr>
-    <tr><td class="paramname">phiValues</td><td>A tensor of <code>torch.float32</code>s of any size; the values of the polar coordinate phi at which to calculate approximations for line integrals through the given image </td></tr>
-    <tr><td class="paramname">rValues</td><td>A tensor of <code>torch.float32</code>s of the same size as <code>phiValues</code>; the values of the polar coordinate r at which to calculate approximations for line integrals through the given image </td></tr>
+    <tr><td class="paramname">image</td><td>a tensor of size (N, M) containing <code>torch.float32</code>s: The input image to take the Radon transform of </td></tr>
+    <tr><td class="paramname">imageSpacing</td><td>a tensor of size (2,): The spacing between the image columns and rows </td></tr>
+    <tr><td class="paramname">phiValues</td><td>a tensor of any size containing <code>torch.float32</code>s: The values of the polar coordinate phi at which to calculate approximations for line integrals through the given image </td></tr>
+    <tr><td class="paramname">rValues</td><td>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The values of the polar coordinate r at which to calculate approximations for line integrals through the given image </td></tr>
     <tr><td class="paramname">samplesPerLine</td><td>The number of samples to take from the image for approximating each line integral </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>A tensor of <code>torch.float32</code>s matching <code>phiValues</code> in size; the derivatives with respect to plane-origin distance of the approximations (according to the <code>Radon2D_...</code> functions) of the line integrals through the given image at the given polar coordinate locations</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a tensor matching <code>phiValues</code> in size containing <code>torch.float32</code>s: The derivatives with respect to plane-origin distance of the approximations (according to the <code>Radon2D_...</code> functions) of the line integrals through the given image at the given polar coordinate locations</dd></dl>
 <p>The polar coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">Extension/Conventions.md</a> </p>
 
 </div>
@@ -296,16 +303,16 @@ Functions</h2></td></tr>
 <p>Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the given 3D volume. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">volume</td><td>A 3D tensor of <code>torch.float32</code>s; the input volume to take the Radon transform of </td></tr>
-    <tr><td class="paramname">volumeSpacing</td><td>The spacing between the volume layers in each cartesian direction </td></tr>
-    <tr><td class="paramname">phiValues</td><td>A tensor of <code>torch.float32</code>s of any size; the values of the spherical coordinate phi at which to calculate the derivatives of approximations for plane integrals through the given volume </td></tr>
-    <tr><td class="paramname">thetaValues</td><td>A tensor of <code>torch.float32</code>s of the same size as <code>phiValues</code>; the values of the spherical coordinate theta at which to calculate the derivatives of approximations for plane integrals through the given volume </td></tr>
-    <tr><td class="paramname">rValues</td><td>A tensor of <code>torch.float32</code>s of the same size as <code>phiValues</code>; the values of the spherical coordinate r at which to calculate the derivatives of approximations for plane integrals through the given volume </td></tr>
+    <tr><td class="paramname">volume</td><td>a tensor of size (P,Q,R) containing <code>torch.float32</code>s: The input volume to take the Radon transform of </td></tr>
+    <tr><td class="paramname">volumeSpacing</td><td>a tensor of size (3,): The spacing between the volume layers in each cartesian direction </td></tr>
+    <tr><td class="paramname">phiValues</td><td>a tensor of any size containing <code>torch.float32</code>s: The values of the spherical coordinate phi at which to calculate the derivatives of approximations for plane integrals through the given volume </td></tr>
+    <tr><td class="paramname">thetaValues</td><td>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The values of the spherical coordinate theta at which to calculate the derivatives of approximations for plane integrals through the given volume </td></tr>
+    <tr><td class="paramname">rValues</td><td>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The values of the spherical coordinate r at which to calculate the derivatives of approximations for plane integrals through the given volume </td></tr>
     <tr><td class="paramname">samplesPerDirection</td><td>The square-root of the number of samples to take from the volume for approximating each plane integral </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>A tensor of <code>torch.float32</code>s matching <code>phiValues</code> in size; the derivatives with respect to plane-origin distance of the approximations (according to the <code>Radon3D_...</code> functions) of the plane integrals through the given volume at the given spherical coordinate locations</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The derivatives with respect to plane-origin distance of the approximations (according to the <code>Radon3D_...</code> functions) of the plane integrals through the given volume at the given spherical coordinate locations</dd></dl>
 <p>The spherical coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">Extension/Conventions.md</a> </p>
 
 </div>
@@ -400,13 +407,13 @@ Functions</h2></td></tr>
 <p>Sample the given 3D input tensor at the positions given in grid according to the given address mode using bilinear interpolation. This implementation is single-threaded. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">input</td><td>A vector of <code>torch.float32</code>s; must have 3 dimensions </td></tr>
-    <tr><td class="paramname">grid</td><td>A vector of <code>torch.float32</code>s; can have any number of dimensions, but the last dimension must be 3 - representing 3D locations within the <code>input</code> volume between (-1, -1, -1) and (1, 1, 1) </td></tr>
+    <tr><td class="paramname">input</td><td>a tensor of size (P,Q,R) containing <code>torch.float32</code>s: The volume to sample </td></tr>
+    <tr><td class="paramname">grid</td><td>a tensor of size (..., 3) containing <code>torch.float32</code>s: The grid to sample at; the last dimension represents 3D locations within the <code>input</code> volume between (-1, -1, -1) and (1, 1, 1) </td></tr>
     <tr><td class="paramname">addressMode</td><td>Either "wrap" or "zero" </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>A vector of <code>torch.float32</code>s with the same size as <code>grid</code>, minus the last dimension.</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a tensor of size (...) containing <code>torch.float32</code>s: The sampled values in the given volume at the locations in the given grid; this will be the same size as <code>grid</code>, minus the last dimension.</dd></dl>
 <h1><a class="anchor" id="autotoc_md0"></a>
 Address modes</h1>
 <ul>
@@ -480,8 +487,8 @@ Address modes</h1>
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">a</td><td>A tensor of <code>torch.float32</code>s of any size </td></tr>
-    <tr><td class="paramname">b</td><td>A tensor of <code>torch.float32</code>s matching <code>a</code> in size </td></tr>
+    <tr><td class="paramname">a</td><td>a tensor of any size containing <code>torch.float32</code>s </td></tr>
+    <tr><td class="paramname">b</td><td>a tensor of the same size as <code>a</code> containing <code>torch.float32</code>s </td></tr>
   </table>
   </dd>
 </dl>
@@ -580,12 +587,22 @@ Address modes</h1>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Generate a DRR from the given volume at the given transformation. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">homographyMatrixInverse</td><td>Column-major </td></tr>
+    <tr><td class="paramname">volume</td><td>a tensor of size (P,Q,R): The CT volume through which to project the DRR </td></tr>
+    <tr><td class="paramname">voxelSpacing</td><td>a tensor of size (3,): The spacing in [mm] between the volume layers in each cartesian direction </td></tr>
+    <tr><td class="paramname">homographyMatrixInverse</td><td>a tensor of size (4, 4): The <b>column-major</b> matrix representing the homography transformation of the volume. </td></tr>
+    <tr><td class="paramname">sourceDistance</td><td>The distance in [mm] of the source from the detector array </td></tr>
+    <tr><td class="paramname">outputWidth</td><td>The width in pixels of the DRR to generate. </td></tr>
+    <tr><td class="paramname">outputHeight</td><td>The height in pixels of the DRR to generate. </td></tr>
+    <tr><td class="paramname">outputOffset</td><td>The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array. </td></tr>
+    <tr><td class="paramname">detectorSpacing</td><td>a tensor of size (2,): The spacing in [mm] between the columns and rows of the DRR image. </td></tr>
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>a tensor of size (outputHeight, outputWidth): The DRR projection through the given volume at the given transformation. </dd></dl>
 
 </div>
 </div>
@@ -651,7 +668,7 @@ Address modes</h1>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c">ExtensionTest::ProjectDRR_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c" title="Generate a DRR from the given volume at the given transformation.">ExtensionTest::ProjectDRR_CPU</a> that uses CUDA parallelisation. </p>
 
 </div>
 </div>
@@ -702,15 +719,15 @@ Address modes</h1>
 <p>Compute an approximation of the Radon transform of the given 2D image. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">image</td><td>A 2D tensor of <code>torch.float32</code>s; the input image to take the Radon transform of </td></tr>
-    <tr><td class="paramname">imageSpacing</td><td>The spacing between the image columns and rows </td></tr>
-    <tr><td class="paramname">phiValues</td><td>A tensor of <code>torch.float32</code>s of any size; the values of the polar coordinate phi at which to calculate approximations for line integrals through the given image </td></tr>
-    <tr><td class="paramname">rValues</td><td>A tensor of <code>torch.float32</code>s of the same size as <code>phiValues</code>; the values of the polar coordinate r at which to calculate approximations for line integrals through the given image </td></tr>
+    <tr><td class="paramname">image</td><td>a tensor of size (N, M) containing <code>torch.float32</code>s: The input image to take the Radon transform of </td></tr>
+    <tr><td class="paramname">imageSpacing</td><td>a tensor of size (2,): The spacing between the image columns and rows </td></tr>
+    <tr><td class="paramname">phiValues</td><td>a tensor of any size containing <code>torch.float32</code>s: The values of the polar coordinate phi at which to calculate approximations for line integrals through the given image </td></tr>
+    <tr><td class="paramname">rValues</td><td>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The values of the polar coordinate r at which to calculate approximations for line integrals through the given image </td></tr>
     <tr><td class="paramname">samplesPerLine</td><td>The number of samples to take from the image for approximating each line integral </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>A tensor of <code>torch.float32</code>s matching <code>phiValues</code> in size; approximations of the line integrals through the given image at the given polar coordinate locations</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a tensor matching <code>phiValues</code> in size containing <code>torch.float32</code>s: Approximations of the line integrals through the given image at the given polar coordinate locations</dd></dl>
 <p>The polar coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">Extension/Conventions.md</a> </p>
 
 </div>
@@ -817,16 +834,16 @@ Address modes</h1>
 <p>Compute an approximation of the Radon transform of the given 3D volume. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">volume</td><td>A 3D tensor of <code>torch.float32</code>s; the input volume to take the Radon transform of </td></tr>
-    <tr><td class="paramname">volumeSpacing</td><td>The spacing between the volume layers in each cartesian direction </td></tr>
-    <tr><td class="paramname">phiValues</td><td>A tensor of <code>torch.float32</code>s of any size; the values of the spherical coordinate phi at which to calculate approximations for plane integrals through the given volume </td></tr>
-    <tr><td class="paramname">thetaValues</td><td>A tensor of <code>torch.float32</code>s of the same size as <code>phiValues</code>; the values of the spherical coordinate theta at which to calculate approximations for plane integrals through the given volume </td></tr>
-    <tr><td class="paramname">rValues</td><td>A tensor of <code>torch.float32</code>s of the same size as <code>phiValues</code>; the values of the spherical coordinate r at which to calculate approximations for plane integrals through the given volume </td></tr>
+    <tr><td class="paramname">volume</td><td>a tensor of size (P,Q,R) containing <code>torch.float32</code>s: The input volume to take the Radon transform of </td></tr>
+    <tr><td class="paramname">volumeSpacing</td><td>a tensor of size (3,): The spacing between the volume layers in each cartesian direction </td></tr>
+    <tr><td class="paramname">phiValues</td><td>a tensor of any size containing <code>torch.float32</code>s: The values of the spherical coordinate $phi$ at which to calculate approximations for plane integrals through the given volume </td></tr>
+    <tr><td class="paramname">thetaValues</td><td>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The values of the spherical coordinate $theta$ at which to calculate approximations for plane integrals through the given volume </td></tr>
+    <tr><td class="paramname">rValues</td><td>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The values of the spherical coordinate $r$ at which to calculate approximations for plane integrals through the given volume </td></tr>
     <tr><td class="paramname">samplesPerDirection</td><td>The square-root of the number of samples to take from the volume for approximating each plane integral </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>A tensor of <code>torch.float32</code>s matching <code>phiValues</code> in size; approximations of the plane integrals through the given volume at the given spherical coordinate locations</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: Approximations of the plane integrals through the given volume at the given spherical coordinate locations</dd></dl>
 <p>The spherical coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">Extension/Conventions.md</a> </p>
 
 </div>
@@ -883,6 +900,140 @@ Address modes</h1>
 
 <p>An implementation of <a class="el" href="group__pytorch__functions.html#gac2289cbaf3e2a8391cd62784764fb333" title="Compute an approximation of the Radon transform of the given 3D volume.">ExtensionTest::Radon3D_CPU</a> that uses CUDA parallelisation. </p>
 <p>A single kernel launch is made, with each kernel calculating one plane integral approximation. </p>
+
+</div>
+</div>
+<a id="gaa284c814794b8cd81e4fe6f93979d959" name="gaa284c814794b8cd81e4fe6f93979d959"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa284c814794b8cd81e4fe6f93979d959">&#9670;&#160;</a></span>ResampleSinogram3D_CPU()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">at::Tensor ExtensionTest::ResampleSinogram3D_CPU </td>
+          <td>(</td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>sinogram3d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>sinogramSpacing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>sinogramRangeCentres</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>projectionMatrix</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>phiValues</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>rValues</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation. </p>
+<p>Note: Assumes that the projection matrix projects onto the x-y plane, and that the radial coordinates (phi, r) in that plane measure phi right-hand rule about the z-axis from the positive x-direction.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">sinogram3d</td><td>a tensor of size (P,Q,R) containing <code>torch.float32</code>s: The 3D sinogram to resample. It must contain plane integrals evenly spaced along <code>phi</code>, <code>theta</code> and <code>r</code> over each dimension respectively. This is the pre-calculated derivative of the Radon transform of the CT volume. </td></tr>
+    <tr><td class="paramname">sinogramSpacing</td><td>a tensor of size (3,) containing <code>torch.float64</code>s: The spacing of (<code>phi</code>, <code>theta</code>, <code>r</code>) between values in the given sinogram. </td></tr>
+    <tr><td class="paramname">sinogramRangeCentres</td><td>a tensor of size (3,) containing <code>torch.float64</code>s: The central values of (<code>phi</code>, <code>theta</code>, <code>r</code>) of the given sinogram. </td></tr>
+    <tr><td class="paramname">projectionMatrix</td><td>a tensor of size (4, 4) containing <code>torch.float32</code>s: The projection matrix <code>PH</code> at the desired transformation. </td></tr>
+    <tr><td class="paramname">phiValues</td><td>a tensor of any size containing <code>torch.float32</code>s: The polar coordinate <code>phi</code> values of the fixed image at which to resample corresponding values in the given sinogram </td></tr>
+    <tr><td class="paramname">rValues</td><td>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The polar coordinate <code>r</code> values of the fixed image at which to resample corresponding values in the given sinogram </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The values sampled from the given volume sinogram at the locations corresponding to the given polar coordinates (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation:</dd></dl>
+<p>Frysch R, Pfeiffer T, Rose G. A novel approach to 2D/3D registration of X-ray images using Grangeat's relation. Med Image Anal. 2021 Jan;67:101815. doi: 10.1016/j.media.2020.101815. Epub 2020 Sep 30. PMID: 33065470.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">sinogram3d</td><td></td></tr>
+    <tr><td class="paramname">sinogramSpacing</td><td></td></tr>
+    <tr><td class="paramname">sinogramRangeCentres</td><td></td></tr>
+    <tr><td class="paramname">projectionMatrix</td><td></td></tr>
+    <tr><td class="paramname">phiValues</td><td></td></tr>
+    <tr><td class="paramname">rValues</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd></dd></dl>
+
+</div>
+</div>
+<a id="gae48642b2426b1c2b3acfb939984786d4" name="gae48642b2426b1c2b3acfb939984786d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae48642b2426b1c2b3acfb939984786d4">&#9670;&#160;</a></span>ResampleSinogram3D_CUDA()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::ResampleSinogram3D_CUDA </td>
+          <td>(</td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>sinogram3d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>sinogramSpacing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>sinogramRangeCentres</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>projectionMatrix</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>phiValues</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>rValues</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#gaa284c814794b8cd81e4fe6f93979d959" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">ExtensionTest::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation. </p>
 
 </div>
 </div>

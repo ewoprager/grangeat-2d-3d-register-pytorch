@@ -18,8 +18,8 @@ var searchData=
   ['related_20types_15',['Texture-Related Types',['../group__textures.html',1,'']]],
   ['resamplesinogram3d_16',['ResampleSinogram3D',['../structExtensionTest_1_1ResampleSinogram3D.html',1,'ExtensionTest']]],
   ['resamplesinogram3d_2eh_17',['ResampleSinogram3D.h',['../ResampleSinogram3D_8h.html',1,'']]],
-  ['resamplesinogram3d_5fcpu_18',['ResampleSinogram3D_CPU',['../namespaceExtensionTest.html#aa284c814794b8cd81e4fe6f93979d959',1,'ExtensionTest']]],
-  ['resamplesinogram3d_5fcuda_19',['ResampleSinogram3D_CUDA',['../namespaceExtensionTest.html#ae48642b2426b1c2b3acfb939984786d4',1,'ExtensionTest']]],
+  ['resamplesinogram3d_5fcpu_18',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#gaa284c814794b8cd81e4fe6f93979d959',1,'ExtensionTest']]],
+  ['resamplesinogram3d_5fcuda_19',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#gae48642b2426b1c2b3acfb939984786d4',1,'ExtensionTest']]],
   ['resamplesinogram3dcpu_2ecpp_20',['ResampleSinogram3DCPU.cpp',['../ResampleSinogram3DCPU_8cpp.html',1,'']]],
   ['resamplesinogram3dcuda_2ecu_21',['ResampleSinogram3DCUDA.cu',['../ResampleSinogram3DCUDA_8cu.html',1,'']]]
 ];

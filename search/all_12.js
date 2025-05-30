@@ -11,7 +11,7 @@ var searchData=
   ['sizeworld_8',['SizeWorld',['../classExtensionTest_1_1Texture.html#aa1df0a99db7b3b335b4864f12e62d955',1,'ExtensionTest::Texture']]],
   ['spacing_9',['Spacing',['../classExtensionTest_1_1Texture.html#aa7d69514abb45a567bc9f389510da147',1,'ExtensionTest::Texture']]],
   ['spherical_20coordinates_10',['Spherical coordinates',['../conventions.html#autotoc_md5',1,'']]],
-  ['square_11',['Square',['../namespaceExtensionTest.html#aa2eec8b4d91ec79367949f23d3aae24d',1,'ExtensionTest']]],
+  ['square_11',['Square',['../group__general__tools.html#gaa2eec8b4d91ec79367949f23d3aae24d',1,'ExtensionTest']]],
   ['staticcast_12',['StaticCast',['../classExtensionTest_1_1Vec.html#a0133ca687ec29403d19150f0c509ce69',1,'ExtensionTest::Vec']]],
   ['stepsize_13',['stepSize',['../structExtensionTest_1_1ProjectDRR_1_1CommonData.html#a298d4fba95f42b9ae8022e2b964caabb',1,'ExtensionTest::ProjectDRR::CommonData']]],
   ['structures_14',['Data Structures',['../group__data__structures.html',1,'']]],

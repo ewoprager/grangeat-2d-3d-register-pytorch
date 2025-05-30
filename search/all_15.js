@@ -9,7 +9,7 @@ var searchData=
   ['vec_3c_20float_2c_20dimensionality_20_3e_6',['Vec&lt; float, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
   ['vec_3c_20int_2c_20dimensionality_20_3e_7',['Vec&lt; int, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
   ['vec_3c_20int64_5ft_2c_20dimensionality_20_3e_8',['Vec&lt; int64_t, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['veccat_9',['veccat',['../namespaceExtensionTest.html#a73a8f513eb4071f1d348afd8e53955c7',1,'ExtensionTest::VecCat(const Vec&lt; T, N1 &gt; &amp;lhs, const Vec&lt; T, N2 &gt; &amp;rhs)'],['../namespaceExtensionTest.html#a8e85cd5179954f965b4e629847ed82e5',1,'ExtensionTest::VecCat(const Vec&lt; T, N &gt; &amp;lhs, const T &amp;rhs)'],['../namespaceExtensionTest.html#a3f0c26a5952d6b09a4df0eaf3a55964e',1,'ExtensionTest::VecCat(const T &amp;lhs, const Vec&lt; T, N &gt; &amp;rhs)']]],
-  ['vecdot_10',['VecDot',['../namespaceExtensionTest.html#a6705d0b0c7ff0ad89c6fbda8c742f5c8',1,'ExtensionTest']]],
+  ['veccat_9',['veccat',['../group__data__structures.html#ga73a8f513eb4071f1d348afd8e53955c7',1,'ExtensionTest::VecCat(const Vec&lt; T, N1 &gt; &amp;lhs, const Vec&lt; T, N2 &gt; &amp;rhs)'],['../group__data__structures.html#ga8e85cd5179954f965b4e629847ed82e5',1,'ExtensionTest::VecCat(const Vec&lt; T, N &gt; &amp;lhs, const T &amp;rhs)'],['../group__data__structures.html#ga3f0c26a5952d6b09a4df0eaf3a55964e',1,'ExtensionTest::VecCat(const T &amp;lhs, const Vec&lt; T, N &gt; &amp;rhs)']]],
+  ['vecdot_10',['VecDot',['../group__data__structures.html#ga6705d0b0c7ff0ad89c6fbda8c742f5c8',1,'ExtensionTest']]],
   ['vectortype_11',['VectorType',['../classExtensionTest_1_1Texture.html#a1a6ea75df76dcec50ca04b1225a291a4',1,'ExtensionTest::Texture']]]
 ];
