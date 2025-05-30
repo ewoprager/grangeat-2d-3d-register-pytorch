@@ -1,18 +1,17 @@
 #include <torch/extension.h>
 
 #include "../include/Texture3DCPU.h"
-#include "../include/ResampleSinogram3D.h"
+#include "../include/ResampleHEALPixSinogram3D.h"
 
 namespace reg23 {
 
-using CommonData = ResampleSinogram3D<Texture3DCPU>::CommonData;
+using CommonData = ResampleHEALPixSinogram3D<Texture3DCPU>::CommonData;
 
-at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
-                                  const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
-                                  const at::Tensor &phiValues, const at::Tensor &rValues) {
-	const CommonData common = ResampleSinogram3D<Texture3DCPU>::Common(sinogram3d, sinogramSpacing,
-	                                                                   sinogramRangeCentres, projectionMatrix,
-	                                                                   phiValues, rValues, at::DeviceType::CPU);
+at::Tensor ResampleHEALPixSinogram3D_CPU(const at::Tensor &sinogram3d, double rSpacing, double rRangeCentre,
+                                         const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
+                                         const at::Tensor &rValues) {
+	const CommonData common = ResampleHEALPixSinogram3D<Texture3DCPU>::Common(
+		sinogram3d, rSpacing, rRangeCentre, projectionMatrix, phiValues, rValues, at::DeviceType::CPU);
 
 	const at::Tensor phiFlat = phiValues.flatten();
 	const at::Tensor rFlat = rValues.flatten();
@@ -44,7 +43,7 @@ at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor
 		rThetaPhi.X() = sqrt(magXY + posCartesian.Z() * posCartesian.Z());
 		rThetaPhi = UnflipSphericalCoordinate(rThetaPhi);
 
-		resultFlatPtr[i] = common.inputTexture.Sample(common.mappingRThetaPhiToTexCoord(rThetaPhi));
+		resultFlatPtr[i] = common.inputTexture.Sample(rThetaPhi);
 
 		if ((r * Vec<float, 2>{cp, sp} - .5f * originProjection).Apply<float>(&Square<float>).Sum() < squareRadius) {
 			resultFlatPtr[i] *= -1.f;

@@ -46,6 +46,8 @@ inline cudaTextureAddressMode TextureAddressModeToCuda(TextureAddressMode tam) {
  */
 template <std::size_t dimensionality, typename intType = int, typename floatType = float> class Texture {
   public:
+	using IntType = intType;
+	using FloatType = floatType;
 	using SizeType = Vec<intType, dimensionality>;
 	using VectorType = Vec<floatType, dimensionality>;
 	using AddressModeType = Vec<TextureAddressMode, dimensionality>;
