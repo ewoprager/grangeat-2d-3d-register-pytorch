@@ -1,19 +1,19 @@
 var searchData=
 [
-  ['sample_0',['sample',['../classExtensionTest_1_1Texture2DCPU.html#aa42a0ceafb06caeb9448fc692a7b2151',1,'ExtensionTest::Texture2DCPU::Sample()'],['../classExtensionTest_1_1Texture2DCUDA.html#a3c831f7913611575ddb1167a0ef16ed5',1,'ExtensionTest::Texture2DCUDA::Sample()'],['../classExtensionTest_1_1Texture3DCPU.html#a8864bddd5ab76e85ebd8d87fb1eba568',1,'ExtensionTest::Texture3DCPU::Sample()'],['../classExtensionTest_1_1Texture3DCUDA.html#a6020537b11bdea960f5f744289213f4b',1,'ExtensionTest::Texture3DCUDA::Sample()']]],
-  ['scalefactor_1',['scalefactor',['../structExtensionTest_1_1Radon2D_1_1CommonData.html#a23139584432ec3cc20e0967a33a4c411',1,'ExtensionTest::Radon2D::CommonData::scaleFactor'],['../structExtensionTest_1_1Radon3D_1_1CommonData.html#a23026c4475e2d7d6d9b335d48495584a',1,'ExtensionTest::Radon3D::CommonData::scaleFactor']]],
-  ['similarity_2',['Similarity',['../structExtensionTest_1_1Similarity.html',1,'ExtensionTest']]],
+  ['sample_0',['sample',['../classreg23_1_1Texture2DCPU.html#a83d57fba8eea12e11bb0545457029ca5',1,'reg23::Texture2DCPU::Sample()'],['../classreg23_1_1Texture2DCUDA.html#a7f9f6196c5ba83ecf6d654060af0448b',1,'reg23::Texture2DCUDA::Sample()'],['../classreg23_1_1Texture3DCPU.html#a142dd9d3b278a4b0c50f04b38ce267e1',1,'reg23::Texture3DCPU::Sample()'],['../classreg23_1_1Texture3DCUDA.html#a0eadea33010832fceffb338b38d683ea',1,'reg23::Texture3DCUDA::Sample()']]],
+  ['scalefactor_1',['scalefactor',['../structreg23_1_1Radon2D_1_1CommonData.html#a0c157ff98a28271023196404b638656e',1,'reg23::Radon2D::CommonData::scaleFactor'],['../structreg23_1_1Radon3D_1_1CommonData.html#a9620f84e7936861fa1e68afc77f32bce',1,'reg23::Radon3D::CommonData::scaleFactor']]],
+  ['similarity_2',['Similarity',['../structreg23_1_1Similarity.html',1,'reg23']]],
   ['similarity_2eh_3',['Similarity.h',['../Similarity_8h.html',1,'']]],
   ['similaritycpu_2ecpp_4',['SimilarityCPU.cpp',['../SimilarityCPU_8cpp.html',1,'']]],
   ['similaritycuda_2ecu_5',['SimilarityCUDA.cu',['../SimilarityCUDA_8cu.html',1,'']]],
-  ['size_6',['Size',['../classExtensionTest_1_1Texture.html#a14b3b8a0e24ad80ba7ab3cea43c9c23e',1,'ExtensionTest::Texture']]],
-  ['sizetype_7',['SizeType',['../classExtensionTest_1_1Texture.html#aba69aa3794e8ca20a398fd88154b1c83',1,'ExtensionTest::Texture']]],
-  ['sizeworld_8',['SizeWorld',['../classExtensionTest_1_1Texture.html#aa1df0a99db7b3b335b4864f12e62d955',1,'ExtensionTest::Texture']]],
-  ['spacing_9',['Spacing',['../classExtensionTest_1_1Texture.html#aa7d69514abb45a567bc9f389510da147',1,'ExtensionTest::Texture']]],
+  ['size_6',['Size',['../classreg23_1_1Texture.html#a111ad5e0c1a8330152d367e04772f7ff',1,'reg23::Texture']]],
+  ['sizetype_7',['SizeType',['../classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a',1,'reg23::Texture']]],
+  ['sizeworld_8',['SizeWorld',['../classreg23_1_1Texture.html#abfc8536390678e625ba68524cabdd313',1,'reg23::Texture']]],
+  ['spacing_9',['Spacing',['../classreg23_1_1Texture.html#a2d32947dcb93ddd94f55fd2d37d02641',1,'reg23::Texture']]],
   ['spherical_20coordinates_10',['Spherical coordinates',['../conventions.html#autotoc_md5',1,'']]],
-  ['square_11',['Square',['../group__general__tools.html#gaa2eec8b4d91ec79367949f23d3aae24d',1,'ExtensionTest']]],
-  ['staticcast_12',['StaticCast',['../classExtensionTest_1_1Vec.html#a0133ca687ec29403d19150f0c509ce69',1,'ExtensionTest::Vec']]],
-  ['stepsize_13',['stepSize',['../structExtensionTest_1_1ProjectDRR_1_1CommonData.html#a298d4fba95f42b9ae8022e2b964caabb',1,'ExtensionTest::ProjectDRR::CommonData']]],
+  ['square_11',['Square',['../group__general__tools.html#gac05f93968187265d84f03c8caf65736a',1,'reg23']]],
+  ['staticcast_12',['StaticCast',['../classreg23_1_1Vec.html#a01d47c2f401d48d9d26ad37ec60776a3',1,'reg23::Vec']]],
+  ['stepsize_13',['stepSize',['../structreg23_1_1ProjectDRR_1_1CommonData.html#a206801e634ff8030a45a1594f912f2d5',1,'reg23::ProjectDRR::CommonData']]],
   ['structures_14',['Data Structures',['../group__data__structures.html',1,'']]],
-  ['sum_15',['Sum',['../classExtensionTest_1_1Vec.html#ab21b13d197a05aa0ef65d670d31f2027',1,'ExtensionTest::Vec']]]
+  ['sum_15',['Sum',['../classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93',1,'reg23::Vec']]]
 ];

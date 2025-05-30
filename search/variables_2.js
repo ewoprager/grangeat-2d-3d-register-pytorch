@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['gradient_0',['gradient',['../structExtensionTest_1_1Linear.html#adc0ede9b2419b4d54486772b4c7dbd09',1,'ExtensionTest::Linear']]],
-  ['gradient1_1',['gradient1',['../structExtensionTest_1_1Linear2.html#adfb3a1c0168ccf85cdd9e1cfaa7fdb5c',1,'ExtensionTest::Linear2']]],
-  ['gradient2_2',['gradient2',['../structExtensionTest_1_1Linear2.html#a8be3965b44d3522a28e77b40861adb38',1,'ExtensionTest::Linear2']]]
+  ['gradient_0',['gradient',['../structreg23_1_1Linear.html#a1bfcfa37eba9c03676b264526aacea58',1,'reg23::Linear']]],
+  ['gradient1_1',['gradient1',['../structreg23_1_1Linear2.html#af01b4f33b68d0ca31431f9c9dac74af3',1,'reg23::Linear2']]],
+  ['gradient2_2',['gradient2',['../structreg23_1_1Linear2.html#aedd7315e9f6d19eb475e17105b93400b',1,'reg23::Linear2']]]
 ];

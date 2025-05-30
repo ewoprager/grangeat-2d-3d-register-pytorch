@@ -1,15 +1,15 @@
 var searchData=
 [
-  ['vec_0',['vec',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest::Vec&lt; T, N &gt;'],['../classExtensionTest_1_1Vec.html#a4bd74d1bb8be6f770e9468eaec6f24fb',1,'ExtensionTest::Vec::Vec(std::initializer_list&lt; T &gt; l)'],['../classExtensionTest_1_1Vec.html#a7a842bf30e6e2b731a9da7c7d715edd5',1,'ExtensionTest::Vec::Vec(Base array)'],['../classExtensionTest_1_1Vec.html#a1a69f7a5ff7b1fd42830209b4b311b1f',1,'ExtensionTest::Vec::Vec()']]],
+  ['vec_0',['vec',['../classreg23_1_1Vec.html',1,'reg23::Vec&lt; T, N &gt;'],['../classreg23_1_1Vec.html#ac2e4aa4c6ad52667c42ebfa9c6f81574',1,'reg23::Vec::Vec(std::initializer_list&lt; T &gt; l)'],['../classreg23_1_1Vec.html#aef860a8ae544053bce77811a53990259',1,'reg23::Vec::Vec(Base array)'],['../classreg23_1_1Vec.html#a7781c2259735c8e0e3ccc054ebe777f4',1,'reg23::Vec::Vec()']]],
   ['vec_2eh_1',['Vec.h',['../Vec_8h.html',1,'']]],
-  ['vec_3c_20double_2c_202_20_3e_2',['Vec&lt; double, 2 &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20double_2c_203_20_3e_3',['Vec&lt; double, 3 &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20double_2c_20dimensionality_20_3e_4',['Vec&lt; double, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20extensiontest_3a_3avec_3c_20double_2c_204_20_3e_2c_204_20_3e_5',['Vec&lt; ExtensionTest::Vec&lt; double, 4 &gt;, 4 &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20float_2c_20dimensionality_20_3e_6',['Vec&lt; float, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20int_2c_20dimensionality_20_3e_7',['Vec&lt; int, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['vec_3c_20int64_5ft_2c_20dimensionality_20_3e_8',['Vec&lt; int64_t, dimensionality &gt;',['../classExtensionTest_1_1Vec.html',1,'ExtensionTest']]],
-  ['veccat_9',['veccat',['../group__data__structures.html#ga73a8f513eb4071f1d348afd8e53955c7',1,'ExtensionTest::VecCat(const Vec&lt; T, N1 &gt; &amp;lhs, const Vec&lt; T, N2 &gt; &amp;rhs)'],['../group__data__structures.html#ga8e85cd5179954f965b4e629847ed82e5',1,'ExtensionTest::VecCat(const Vec&lt; T, N &gt; &amp;lhs, const T &amp;rhs)'],['../group__data__structures.html#ga3f0c26a5952d6b09a4df0eaf3a55964e',1,'ExtensionTest::VecCat(const T &amp;lhs, const Vec&lt; T, N &gt; &amp;rhs)']]],
-  ['vecdot_10',['VecDot',['../group__data__structures.html#ga6705d0b0c7ff0ad89c6fbda8c742f5c8',1,'ExtensionTest']]],
-  ['vectortype_11',['VectorType',['../classExtensionTest_1_1Texture.html#a1a6ea75df76dcec50ca04b1225a291a4',1,'ExtensionTest::Texture']]]
+  ['vec_3c_20double_2c_202_20_3e_2',['Vec&lt; double, 2 &gt;',['../classreg23_1_1Vec.html',1,'reg23']]],
+  ['vec_3c_20double_2c_203_20_3e_3',['Vec&lt; double, 3 &gt;',['../classreg23_1_1Vec.html',1,'reg23']]],
+  ['vec_3c_20double_2c_20dimensionality_20_3e_4',['Vec&lt; double, dimensionality &gt;',['../classreg23_1_1Vec.html',1,'reg23']]],
+  ['vec_3c_20float_2c_20dimensionality_20_3e_5',['Vec&lt; float, dimensionality &gt;',['../classreg23_1_1Vec.html',1,'reg23']]],
+  ['vec_3c_20int_2c_20dimensionality_20_3e_6',['Vec&lt; int, dimensionality &gt;',['../classreg23_1_1Vec.html',1,'reg23']]],
+  ['vec_3c_20int64_5ft_2c_20dimensionality_20_3e_7',['Vec&lt; int64_t, dimensionality &gt;',['../classreg23_1_1Vec.html',1,'reg23']]],
+  ['vec_3c_20reg23_3a_3avec_3c_20double_2c_204_20_3e_2c_204_20_3e_8',['Vec&lt; reg23::Vec&lt; double, 4 &gt;, 4 &gt;',['../classreg23_1_1Vec.html',1,'reg23']]],
+  ['veccat_9',['veccat',['../group__data__structures.html#ga34a467285774821195b4d0864922f417',1,'reg23::VecCat(const Vec&lt; T, N1 &gt; &amp;lhs, const Vec&lt; T, N2 &gt; &amp;rhs)'],['../group__data__structures.html#ga7f403ad4f5593bbdd80555b3004bc108',1,'reg23::VecCat(const Vec&lt; T, N &gt; &amp;lhs, const T &amp;rhs)'],['../group__data__structures.html#ga00be59ebbd962a06d770ba8c94b1d05b',1,'reg23::VecCat(const T &amp;lhs, const Vec&lt; T, N &gt; &amp;rhs)']]],
+  ['vecdot_10',['VecDot',['../group__data__structures.html#gac82fcb97fcea7e46256803c0c00e06da',1,'reg23']]],
+  ['vectortype_11',['VectorType',['../classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc',1,'reg23::Texture']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['extensiontest_0',['ExtensionTest',['../namespaceExtensionTest.html',1,'']]]
+  ['reg23_0',['reg23',['../namespacereg23.html',1,'']]]
 ];

@@ -90,65 +90,65 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gab11fb3c9fda27956a66fc2e510e1459a" id="r_gab11fb3c9fda27956a66fc2e510e1459a"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gab11fb3c9fda27956a66fc2e510e1459a">ExtensionTest::GridSample3D_CPU</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
-<tr class="memdesc:gab11fb3c9fda27956a66fc2e510e1459a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sample the given 3D input tensor at the positions given in grid according to the given address mode using bilinear interpolation. This implementation is single-threaded.  <br /></td></tr>
-<tr class="separator:gab11fb3c9fda27956a66fc2e510e1459a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa716f13160de170ffa808f0bb19d1cc2" id="r_gaa716f13160de170ffa808f0bb19d1cc2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaa716f13160de170ffa808f0bb19d1cc2">ExtensionTest::GridSample3D_CUDA</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
-<tr class="memdesc:gaa716f13160de170ffa808f0bb19d1cc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gab11fb3c9fda27956a66fc2e510e1459a" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">ExtensionTest::GridSample3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:gaa716f13160de170ffa808f0bb19d1cc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5612efef94469a70cd705287ab16273c" id="r_ga5612efef94469a70cd705287ab16273c"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c">ExtensionTest::ProjectDRR_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
-<tr class="memdesc:ga5612efef94469a70cd705287ab16273c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a DRR from the given volume at the given transformation.  <br /></td></tr>
-<tr class="separator:ga5612efef94469a70cd705287ab16273c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8c848da57653e09140b2bdfafb389bca" id="r_ga8c848da57653e09140b2bdfafb389bca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga8c848da57653e09140b2bdfafb389bca">ExtensionTest::ProjectDRR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
-<tr class="memdesc:ga8c848da57653e09140b2bdfafb389bca"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c" title="Generate a DRR from the given volume at the given transformation.">ExtensionTest::ProjectDRR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:ga8c848da57653e09140b2bdfafb389bca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4a111a26cdc4501146ed9f0ad622c2b7" id="r_ga4a111a26cdc4501146ed9f0ad622c2b7"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga4a111a26cdc4501146ed9f0ad622c2b7">ExtensionTest::Radon2D_CPU</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
-<tr class="memdesc:ga4a111a26cdc4501146ed9f0ad622c2b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute an approximation of the Radon transform of the given 2D image.  <br /></td></tr>
-<tr class="separator:ga4a111a26cdc4501146ed9f0ad622c2b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9f6e28c70e3b3d8654107d840f87d64e" id="r_ga9f6e28c70e3b3d8654107d840f87d64e"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga9f6e28c70e3b3d8654107d840f87d64e">ExtensionTest::DRadon2DDR_CPU</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
-<tr class="memdesc:ga9f6e28c70e3b3d8654107d840f87d64e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the given 2D image.  <br /></td></tr>
-<tr class="separator:ga9f6e28c70e3b3d8654107d840f87d64e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga02f6ffde9511d5220f21f8aa2d3d14e8" id="r_ga02f6ffde9511d5220f21f8aa2d3d14e8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga02f6ffde9511d5220f21f8aa2d3d14e8">ExtensionTest::Radon2D_CUDA</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
-<tr class="memdesc:ga02f6ffde9511d5220f21f8aa2d3d14e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga4a111a26cdc4501146ed9f0ad622c2b7" title="Compute an approximation of the Radon transform of the given 2D image.">ExtensionTest::Radon2D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:ga02f6ffde9511d5220f21f8aa2d3d14e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5473aef6070fdaaf5865dde54d16b02a" id="r_ga5473aef6070fdaaf5865dde54d16b02a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga5473aef6070fdaaf5865dde54d16b02a">ExtensionTest::DRadon2DDR_CUDA</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
-<tr class="memdesc:ga5473aef6070fdaaf5865dde54d16b02a"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga9f6e28c70e3b3d8654107d840f87d64e" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">ExtensionTest::DRadon2DDR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:ga5473aef6070fdaaf5865dde54d16b02a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac2289cbaf3e2a8391cd62784764fb333" id="r_gac2289cbaf3e2a8391cd62784764fb333"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gac2289cbaf3e2a8391cd62784764fb333">ExtensionTest::Radon3D_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
-<tr class="memdesc:gac2289cbaf3e2a8391cd62784764fb333"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute an approximation of the Radon transform of the given 3D volume.  <br /></td></tr>
-<tr class="separator:gac2289cbaf3e2a8391cd62784764fb333"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga80735de99bea07073a22071d6de57db4" id="r_ga80735de99bea07073a22071d6de57db4"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga80735de99bea07073a22071d6de57db4">ExtensionTest::DRadon3DDR_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
-<tr class="memdesc:ga80735de99bea07073a22071d6de57db4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the given 3D volume.  <br /></td></tr>
-<tr class="separator:ga80735de99bea07073a22071d6de57db4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad183f36af6d83c7bbf66b8f931f7c98c" id="r_gad183f36af6d83c7bbf66b8f931f7c98c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gad183f36af6d83c7bbf66b8f931f7c98c">ExtensionTest::Radon3D_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
-<tr class="memdesc:gad183f36af6d83c7bbf66b8f931f7c98c"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gac2289cbaf3e2a8391cd62784764fb333" title="Compute an approximation of the Radon transform of the given 3D volume.">ExtensionTest::Radon3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:gad183f36af6d83c7bbf66b8f931f7c98c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga05408e761fc42b286dda944511e16cc6" id="r_ga05408e761fc42b286dda944511e16cc6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga05408e761fc42b286dda944511e16cc6">ExtensionTest::DRadon3DDR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
-<tr class="memdesc:ga05408e761fc42b286dda944511e16cc6"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga80735de99bea07073a22071d6de57db4" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">ExtensionTest::DRadon3DDR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:ga05408e761fc42b286dda944511e16cc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa284c814794b8cd81e4fe6f93979d959" id="r_gaa284c814794b8cd81e4fe6f93979d959"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaa284c814794b8cd81e4fe6f93979d959">ExtensionTest::ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="memdesc:gaa284c814794b8cd81e4fe6f93979d959"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
-<tr class="separator:gaa284c814794b8cd81e4fe6f93979d959"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae48642b2426b1c2b3acfb939984786d4" id="r_gae48642b2426b1c2b3acfb939984786d4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gae48642b2426b1c2b3acfb939984786d4">ExtensionTest::ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="memdesc:gae48642b2426b1c2b3acfb939984786d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gaa284c814794b8cd81e4fe6f93979d959" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">ExtensionTest::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:gae48642b2426b1c2b3acfb939984786d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6dee704f3f37bd4fcc053adcebfbc045" id="r_ga6dee704f3f37bd4fcc053adcebfbc045"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga6dee704f3f37bd4fcc053adcebfbc045">ExtensionTest::NormalisedCrossCorrelation_CPU</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
-<tr class="separator:ga6dee704f3f37bd4fcc053adcebfbc045"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7dee84e027a8247d3ea72725e33d7e56" id="r_ga7dee84e027a8247d3ea72725e33d7e56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga7dee84e027a8247d3ea72725e33d7e56">ExtensionTest::NormalisedCrossCorrelation_CUDA</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
-<tr class="memdesc:ga7dee84e027a8247d3ea72725e33d7e56"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga6dee704f3f37bd4fcc053adcebfbc045">ExtensionTest::NormalisedCrossCorrelation_CPU</a> that uses CUDA parallisation.  <br /></td></tr>
-<tr class="separator:ga7dee84e027a8247d3ea72725e33d7e56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga42574897bde4ab67ae56f293efb131d9" id="r_ga42574897bde4ab67ae56f293efb131d9"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga42574897bde4ab67ae56f293efb131d9">reg23::GridSample3D_CPU</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
+<tr class="memdesc:ga42574897bde4ab67ae56f293efb131d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sample the given 3D input tensor at the positions given in grid according to the given address mode using bilinear interpolation. This implementation is single-threaded.  <br /></td></tr>
+<tr class="separator:ga42574897bde4ab67ae56f293efb131d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadedcab0650495e81477a0cbd98708492" id="r_gadedcab0650495e81477a0cbd98708492"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gadedcab0650495e81477a0cbd98708492">reg23::GridSample3D_CUDA</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
+<tr class="memdesc:gadedcab0650495e81477a0cbd98708492"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga42574897bde4ab67ae56f293efb131d9" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">reg23::GridSample3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:gadedcab0650495e81477a0cbd98708492"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf44a8ff8d993fef4bc2729267ac5efa9" id="r_gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9">reg23::ProjectDRR_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
+<tr class="memdesc:gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a DRR from the given volume at the given transformation.  <br /></td></tr>
+<tr class="separator:gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e" id="r_gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e">reg23::ProjectDRR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
+<tr class="memdesc:gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9" title="Generate a DRR from the given volume at the given transformation.">reg23::ProjectDRR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadd393ee2ab42ad76b025563b6decc3e4" id="r_gadd393ee2ab42ad76b025563b6decc3e4"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gadd393ee2ab42ad76b025563b6decc3e4">reg23::Radon2D_CPU</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
+<tr class="memdesc:gadd393ee2ab42ad76b025563b6decc3e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute an approximation of the Radon transform of the given 2D image.  <br /></td></tr>
+<tr class="separator:gadd393ee2ab42ad76b025563b6decc3e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafe0a581bb38e5ddeed2f237ca5e31c5c" id="r_gafe0a581bb38e5ddeed2f237ca5e31c5c"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gafe0a581bb38e5ddeed2f237ca5e31c5c">reg23::DRadon2DDR_CPU</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
+<tr class="memdesc:gafe0a581bb38e5ddeed2f237ca5e31c5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the given 2D image.  <br /></td></tr>
+<tr class="separator:gafe0a581bb38e5ddeed2f237ca5e31c5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6685f35545afe72a62f102ad4d6715b6" id="r_ga6685f35545afe72a62f102ad4d6715b6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga6685f35545afe72a62f102ad4d6715b6">reg23::Radon2D_CUDA</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
+<tr class="memdesc:ga6685f35545afe72a62f102ad4d6715b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gadd393ee2ab42ad76b025563b6decc3e4" title="Compute an approximation of the Radon transform of the given 2D image.">reg23::Radon2D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:ga6685f35545afe72a62f102ad4d6715b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga33206dc5e7caf417cf653f32f7158d59" id="r_ga33206dc5e7caf417cf653f32f7158d59"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga33206dc5e7caf417cf653f32f7158d59">reg23::DRadon2DDR_CUDA</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
+<tr class="memdesc:ga33206dc5e7caf417cf653f32f7158d59"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gafe0a581bb38e5ddeed2f237ca5e31c5c" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">reg23::DRadon2DDR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:ga33206dc5e7caf417cf653f32f7158d59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab9d4879b7ca80226470f6a978bebfb24" id="r_gab9d4879b7ca80226470f6a978bebfb24"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24">reg23::Radon3D_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
+<tr class="memdesc:gab9d4879b7ca80226470f6a978bebfb24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute an approximation of the Radon transform of the given 3D volume.  <br /></td></tr>
+<tr class="separator:gab9d4879b7ca80226470f6a978bebfb24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga00815aa402f5f6fa243f661db1aae430" id="r_ga00815aa402f5f6fa243f661db1aae430"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga00815aa402f5f6fa243f661db1aae430">reg23::DRadon3DDR_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
+<tr class="memdesc:ga00815aa402f5f6fa243f661db1aae430"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the given 3D volume.  <br /></td></tr>
+<tr class="separator:ga00815aa402f5f6fa243f661db1aae430"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8b088f60dae2dc0c0a6670f9f63a4468" id="r_ga8b088f60dae2dc0c0a6670f9f63a4468"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga8b088f60dae2dc0c0a6670f9f63a4468">reg23::Radon3D_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
+<tr class="memdesc:ga8b088f60dae2dc0c0a6670f9f63a4468"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24" title="Compute an approximation of the Radon transform of the given 3D volume.">reg23::Radon3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:ga8b088f60dae2dc0c0a6670f9f63a4468"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9333533a94e6ea1bed905d4914be3775" id="r_ga9333533a94e6ea1bed905d4914be3775"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga9333533a94e6ea1bed905d4914be3775">reg23::DRadon3DDR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
+<tr class="memdesc:ga9333533a94e6ea1bed905d4914be3775"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga00815aa402f5f6fa243f661db1aae430" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">reg23::DRadon3DDR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:ga9333533a94e6ea1bed905d4914be3775"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga893cec1df23860808ca040db88bc329b" id="r_ga893cec1df23860808ca040db88bc329b"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b">reg23::ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:ga893cec1df23860808ca040db88bc329b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
+<tr class="separator:ga893cec1df23860808ca040db88bc329b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf8e60411d46afc090b0cdb75e48b763a" id="r_gaf8e60411d46afc090b0cdb75e48b763a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaf8e60411d46afc090b0cdb75e48b763a">reg23::ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:gaf8e60411d46afc090b0cdb75e48b763a"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:gaf8e60411d46afc090b0cdb75e48b763a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7d3614bf0086f3d3602a2842a2c8d4ff" id="r_ga7d3614bf0086f3d3602a2842a2c8d4ff"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga7d3614bf0086f3d3602a2842a2c8d4ff">reg23::NormalisedCrossCorrelation_CPU</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
+<tr class="separator:ga7d3614bf0086f3d3602a2842a2c8d4ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga33290c947ad06df3c3aea8e18914da29" id="r_ga33290c947ad06df3c3aea8e18914da29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga33290c947ad06df3c3aea8e18914da29">reg23::NormalisedCrossCorrelation_CUDA</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
+<tr class="memdesc:ga33290c947ad06df3c3aea8e18914da29"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga7d3614bf0086f3d3602a2842a2c8d4ff">reg23::NormalisedCrossCorrelation_CPU</a> that uses CUDA parallisation.  <br /></td></tr>
+<tr class="separator:ga33290c947ad06df3c3aea8e18914da29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Functions that have Python bindings generated and are accessible in the PyTorch extension. </p>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga9f6e28c70e3b3d8654107d840f87d64e" name="ga9f6e28c70e3b3d8654107d840f87d64e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9f6e28c70e3b3d8654107d840f87d64e">&#9670;&#160;</a></span>DRadon2DDR_CPU()</h2>
+<a id="gafe0a581bb38e5ddeed2f237ca5e31c5c" name="gafe0a581bb38e5ddeed2f237ca5e31c5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafe0a581bb38e5ddeed2f237ca5e31c5c">&#9670;&#160;</a></span>DRadon2DDR_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">at::Tensor ExtensionTest::DRadon2DDR_CPU </td>
+          <td class="memname">at::Tensor reg23::DRadon2DDR_CPU </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>image</em>, </td>
@@ -201,14 +201,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga5473aef6070fdaaf5865dde54d16b02a" name="ga5473aef6070fdaaf5865dde54d16b02a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5473aef6070fdaaf5865dde54d16b02a">&#9670;&#160;</a></span>DRadon2DDR_CUDA()</h2>
+<a id="ga33206dc5e7caf417cf653f32f7158d59" name="ga33206dc5e7caf417cf653f32f7158d59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga33206dc5e7caf417cf653f32f7158d59">&#9670;&#160;</a></span>DRadon2DDR_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::DRadon2DDR_CUDA </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::DRadon2DDR_CUDA </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>image</em>, </td>
@@ -245,19 +245,19 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga9f6e28c70e3b3d8654107d840f87d64e" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">ExtensionTest::DRadon2DDR_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#gafe0a581bb38e5ddeed2f237ca5e31c5c" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">reg23::DRadon2DDR_CPU</a> that uses CUDA parallelisation. </p>
 <p>A single kernel launch is made, with each kernel calculating one line integral approximation. </p>
 
 </div>
 </div>
-<a id="ga80735de99bea07073a22071d6de57db4" name="ga80735de99bea07073a22071d6de57db4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga80735de99bea07073a22071d6de57db4">&#9670;&#160;</a></span>DRadon3DDR_CPU()</h2>
+<a id="ga00815aa402f5f6fa243f661db1aae430" name="ga00815aa402f5f6fa243f661db1aae430"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga00815aa402f5f6fa243f661db1aae430">&#9670;&#160;</a></span>DRadon3DDR_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">at::Tensor ExtensionTest::DRadon3DDR_CPU </td>
+          <td class="memname">at::Tensor reg23::DRadon3DDR_CPU </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
@@ -317,14 +317,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga05408e761fc42b286dda944511e16cc6" name="ga05408e761fc42b286dda944511e16cc6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga05408e761fc42b286dda944511e16cc6">&#9670;&#160;</a></span>DRadon3DDR_CUDA()</h2>
+<a id="ga9333533a94e6ea1bed905d4914be3775" name="ga9333533a94e6ea1bed905d4914be3775"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9333533a94e6ea1bed905d4914be3775">&#9670;&#160;</a></span>DRadon3DDR_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::DRadon3DDR_CUDA </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::DRadon3DDR_CUDA </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
@@ -367,19 +367,19 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga80735de99bea07073a22071d6de57db4" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">ExtensionTest::DRadon3DDR_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga00815aa402f5f6fa243f661db1aae430" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">reg23::DRadon3DDR_CPU</a> that uses CUDA parallelisation. </p>
 <p>A single kernel launch is made, with each kernel calculating one plane integral approximation. </p>
 
 </div>
 </div>
-<a id="gab11fb3c9fda27956a66fc2e510e1459a" name="gab11fb3c9fda27956a66fc2e510e1459a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab11fb3c9fda27956a66fc2e510e1459a">&#9670;&#160;</a></span>GridSample3D_CPU()</h2>
+<a id="ga42574897bde4ab67ae56f293efb131d9" name="ga42574897bde4ab67ae56f293efb131d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga42574897bde4ab67ae56f293efb131d9">&#9670;&#160;</a></span>GridSample3D_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">at::Tensor ExtensionTest::GridSample3D_CPU </td>
+          <td class="memname">at::Tensor reg23::GridSample3D_CPU </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>input</em>, </td>
@@ -424,14 +424,14 @@ Address modes</h1>
 
 </div>
 </div>
-<a id="gaa716f13160de170ffa808f0bb19d1cc2" name="gaa716f13160de170ffa808f0bb19d1cc2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa716f13160de170ffa808f0bb19d1cc2">&#9670;&#160;</a></span>GridSample3D_CUDA()</h2>
+<a id="gadedcab0650495e81477a0cbd98708492" name="gadedcab0650495e81477a0cbd98708492"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadedcab0650495e81477a0cbd98708492">&#9670;&#160;</a></span>GridSample3D_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::GridSample3D_CUDA </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::GridSample3D_CUDA </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>input</em>, </td>
@@ -456,18 +456,18 @@ Address modes</h1>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#gab11fb3c9fda27956a66fc2e510e1459a" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">ExtensionTest::GridSample3D_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga42574897bde4ab67ae56f293efb131d9" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">reg23::GridSample3D_CPU</a> that uses CUDA parallelisation. </p>
 
 </div>
 </div>
-<a id="ga6dee704f3f37bd4fcc053adcebfbc045" name="ga6dee704f3f37bd4fcc053adcebfbc045"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6dee704f3f37bd4fcc053adcebfbc045">&#9670;&#160;</a></span>NormalisedCrossCorrelation_CPU()</h2>
+<a id="ga7d3614bf0086f3d3602a2842a2c8d4ff" name="ga7d3614bf0086f3d3602a2842a2c8d4ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7d3614bf0086f3d3602a2842a2c8d4ff">&#9670;&#160;</a></span>NormalisedCrossCorrelation_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">at::Tensor ExtensionTest::NormalisedCrossCorrelation_CPU </td>
+          <td class="memname">at::Tensor reg23::NormalisedCrossCorrelation_CPU </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>a</em>, </td>
@@ -496,14 +496,14 @@ Address modes</h1>
 
 </div>
 </div>
-<a id="ga7dee84e027a8247d3ea72725e33d7e56" name="ga7dee84e027a8247d3ea72725e33d7e56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7dee84e027a8247d3ea72725e33d7e56">&#9670;&#160;</a></span>NormalisedCrossCorrelation_CUDA()</h2>
+<a id="ga33290c947ad06df3c3aea8e18914da29" name="ga33290c947ad06df3c3aea8e18914da29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga33290c947ad06df3c3aea8e18914da29">&#9670;&#160;</a></span>NormalisedCrossCorrelation_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::NormalisedCrossCorrelation_CUDA </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::NormalisedCrossCorrelation_CUDA </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>a</em>, </td>
@@ -522,18 +522,18 @@ Address modes</h1>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga6dee704f3f37bd4fcc053adcebfbc045">ExtensionTest::NormalisedCrossCorrelation_CPU</a> that uses CUDA parallisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga7d3614bf0086f3d3602a2842a2c8d4ff">reg23::NormalisedCrossCorrelation_CPU</a> that uses CUDA parallisation. </p>
 
 </div>
 </div>
-<a id="ga5612efef94469a70cd705287ab16273c" name="ga5612efef94469a70cd705287ab16273c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5612efef94469a70cd705287ab16273c">&#9670;&#160;</a></span>ProjectDRR_CPU()</h2>
+<a id="gaf44a8ff8d993fef4bc2729267ac5efa9" name="gaf44a8ff8d993fef4bc2729267ac5efa9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf44a8ff8d993fef4bc2729267ac5efa9">&#9670;&#160;</a></span>ProjectDRR_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">at::Tensor ExtensionTest::ProjectDRR_CPU </td>
+          <td class="memname">at::Tensor reg23::ProjectDRR_CPU </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
@@ -606,14 +606,14 @@ Address modes</h1>
 
 </div>
 </div>
-<a id="ga8c848da57653e09140b2bdfafb389bca" name="ga8c848da57653e09140b2bdfafb389bca"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga8c848da57653e09140b2bdfafb389bca">&#9670;&#160;</a></span>ProjectDRR_CUDA()</h2>
+<a id="gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e" name="gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e">&#9670;&#160;</a></span>ProjectDRR_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::ProjectDRR_CUDA </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::ProjectDRR_CUDA </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
@@ -668,18 +668,18 @@ Address modes</h1>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga5612efef94469a70cd705287ab16273c" title="Generate a DRR from the given volume at the given transformation.">ExtensionTest::ProjectDRR_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9" title="Generate a DRR from the given volume at the given transformation.">reg23::ProjectDRR_CPU</a> that uses CUDA parallelisation. </p>
 
 </div>
 </div>
-<a id="ga4a111a26cdc4501146ed9f0ad622c2b7" name="ga4a111a26cdc4501146ed9f0ad622c2b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4a111a26cdc4501146ed9f0ad622c2b7">&#9670;&#160;</a></span>Radon2D_CPU()</h2>
+<a id="gadd393ee2ab42ad76b025563b6decc3e4" name="gadd393ee2ab42ad76b025563b6decc3e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadd393ee2ab42ad76b025563b6decc3e4">&#9670;&#160;</a></span>Radon2D_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">at::Tensor ExtensionTest::Radon2D_CPU </td>
+          <td class="memname">at::Tensor reg23::Radon2D_CPU </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>image</em>, </td>
@@ -732,14 +732,14 @@ Address modes</h1>
 
 </div>
 </div>
-<a id="ga02f6ffde9511d5220f21f8aa2d3d14e8" name="ga02f6ffde9511d5220f21f8aa2d3d14e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga02f6ffde9511d5220f21f8aa2d3d14e8">&#9670;&#160;</a></span>Radon2D_CUDA()</h2>
+<a id="ga6685f35545afe72a62f102ad4d6715b6" name="ga6685f35545afe72a62f102ad4d6715b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6685f35545afe72a62f102ad4d6715b6">&#9670;&#160;</a></span>Radon2D_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::Radon2D_CUDA </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::Radon2D_CUDA </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>image</em>, </td>
@@ -776,19 +776,19 @@ Address modes</h1>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga4a111a26cdc4501146ed9f0ad622c2b7" title="Compute an approximation of the Radon transform of the given 2D image.">ExtensionTest::Radon2D_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#gadd393ee2ab42ad76b025563b6decc3e4" title="Compute an approximation of the Radon transform of the given 2D image.">reg23::Radon2D_CPU</a> that uses CUDA parallelisation. </p>
 <p>A single kernel launch is made, with each kernel calculating one line integral approximation. </p>
 
 </div>
 </div>
-<a id="gac2289cbaf3e2a8391cd62784764fb333" name="gac2289cbaf3e2a8391cd62784764fb333"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac2289cbaf3e2a8391cd62784764fb333">&#9670;&#160;</a></span>Radon3D_CPU()</h2>
+<a id="gab9d4879b7ca80226470f6a978bebfb24" name="gab9d4879b7ca80226470f6a978bebfb24"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab9d4879b7ca80226470f6a978bebfb24">&#9670;&#160;</a></span>Radon3D_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">at::Tensor ExtensionTest::Radon3D_CPU </td>
+          <td class="memname">at::Tensor reg23::Radon3D_CPU </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
@@ -848,14 +848,14 @@ Address modes</h1>
 
 </div>
 </div>
-<a id="gad183f36af6d83c7bbf66b8f931f7c98c" name="gad183f36af6d83c7bbf66b8f931f7c98c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad183f36af6d83c7bbf66b8f931f7c98c">&#9670;&#160;</a></span>Radon3D_CUDA()</h2>
+<a id="ga8b088f60dae2dc0c0a6670f9f63a4468" name="ga8b088f60dae2dc0c0a6670f9f63a4468"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8b088f60dae2dc0c0a6670f9f63a4468">&#9670;&#160;</a></span>Radon3D_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::Radon3D_CUDA </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::Radon3D_CUDA </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
@@ -898,19 +898,19 @@ Address modes</h1>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#gac2289cbaf3e2a8391cd62784764fb333" title="Compute an approximation of the Radon transform of the given 3D volume.">ExtensionTest::Radon3D_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24" title="Compute an approximation of the Radon transform of the given 3D volume.">reg23::Radon3D_CPU</a> that uses CUDA parallelisation. </p>
 <p>A single kernel launch is made, with each kernel calculating one plane integral approximation. </p>
 
 </div>
 </div>
-<a id="gaa284c814794b8cd81e4fe6f93979d959" name="gaa284c814794b8cd81e4fe6f93979d959"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa284c814794b8cd81e4fe6f93979d959">&#9670;&#160;</a></span>ResampleSinogram3D_CPU()</h2>
+<a id="ga893cec1df23860808ca040db88bc329b" name="ga893cec1df23860808ca040db88bc329b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga893cec1df23860808ca040db88bc329b">&#9670;&#160;</a></span>ResampleSinogram3D_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">at::Tensor ExtensionTest::ResampleSinogram3D_CPU </td>
+          <td class="memname">at::Tensor reg23::ResampleSinogram3D_CPU </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>sinogram3d</em>, </td>
@@ -983,14 +983,14 @@ Address modes</h1>
 
 </div>
 </div>
-<a id="gae48642b2426b1c2b3acfb939984786d4" name="gae48642b2426b1c2b3acfb939984786d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae48642b2426b1c2b3acfb939984786d4">&#9670;&#160;</a></span>ResampleSinogram3D_CUDA()</h2>
+<a id="gaf8e60411d46afc090b0cdb75e48b763a" name="gaf8e60411d46afc090b0cdb75e48b763a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf8e60411d46afc090b0cdb75e48b763a">&#9670;&#160;</a></span>ResampleSinogram3D_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor ExtensionTest::ResampleSinogram3D_CUDA </td>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::ResampleSinogram3D_CUDA </td>
           <td>(</td>
           <td class="paramtype">const at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>sinogram3d</em>, </td>
@@ -1033,7 +1033,7 @@ Address modes</h1>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#gaa284c814794b8cd81e4fe6f93979d959" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">ExtensionTest::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation. </p>
 
 </div>
 </div>

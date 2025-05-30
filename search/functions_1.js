@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['booleanall_0',['BooleanAll',['../classExtensionTest_1_1Vec.html#a2fb4c801dd4d8d61744aa619711aef8d',1,'ExtensionTest::Vec']]],
-  ['booleanany_1',['BooleanAny',['../classExtensionTest_1_1Vec.html#a0ef8aa374ff2f402f31507c64a047864',1,'ExtensionTest::Vec']]]
+  ['booleanall_0',['BooleanAll',['../classreg23_1_1Vec.html#afc14e75780c54043fe433ca9e6f02c00',1,'reg23::Vec']]],
+  ['booleanany_1',['BooleanAny',['../classreg23_1_1Vec.html#aa00a2f198c597ba03b90ef6e778deb0f',1,'reg23::Vec']]]
 ];

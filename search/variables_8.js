@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['scalefactor_0',['scalefactor',['../structExtensionTest_1_1Radon2D_1_1CommonData.html#a23139584432ec3cc20e0967a33a4c411',1,'ExtensionTest::Radon2D::CommonData::scaleFactor'],['../structExtensionTest_1_1Radon3D_1_1CommonData.html#a23026c4475e2d7d6d9b335d48495584a',1,'ExtensionTest::Radon3D::CommonData::scaleFactor']]],
-  ['stepsize_1',['stepSize',['../structExtensionTest_1_1ProjectDRR_1_1CommonData.html#a298d4fba95f42b9ae8022e2b964caabb',1,'ExtensionTest::ProjectDRR::CommonData']]]
+  ['scalefactor_0',['scalefactor',['../structreg23_1_1Radon2D_1_1CommonData.html#a0c157ff98a28271023196404b638656e',1,'reg23::Radon2D::CommonData::scaleFactor'],['../structreg23_1_1Radon3D_1_1CommonData.html#a9620f84e7936861fa1e68afc77f32bce',1,'reg23::Radon3D::CommonData::scaleFactor']]],
+  ['stepsize_1',['stepSize',['../structreg23_1_1ProjectDRR_1_1CommonData.html#a206801e634ff8030a45a1594f912f2d5',1,'reg23::ProjectDRR::CommonData']]]
 ];

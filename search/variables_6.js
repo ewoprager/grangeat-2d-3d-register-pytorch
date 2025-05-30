@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['mappingindextooffset_0',['mappingindextooffset',['../structExtensionTest_1_1Radon2D_1_1CommonData.html#a3898a3c7b0258ad607ea34656751dccc',1,'ExtensionTest::Radon2D::CommonData::mappingIndexToOffset'],['../structExtensionTest_1_1Radon3D_1_1CommonData.html#aec92d107dbdbe37b3ebfe7002ff03602',1,'ExtensionTest::Radon3D::CommonData::mappingIndexToOffset']]],
-  ['mappingrthetaphitotexcoord_1',['mappingRThetaPhiToTexCoord',['../structExtensionTest_1_1ResampleSinogram3D_1_1CommonData.html#aaf0493d0a031844deb28f5b88a3754a2',1,'ExtensionTest::ResampleSinogram3D::CommonData']]]
+  ['mappingindextooffset_0',['mappingindextooffset',['../structreg23_1_1Radon2D_1_1CommonData.html#ab10aecada763f346028ff35a370e1fef',1,'reg23::Radon2D::CommonData::mappingIndexToOffset'],['../structreg23_1_1Radon3D_1_1CommonData.html#a55b91c8ef7cd1bd11d5c394792d1e3e0',1,'reg23::Radon3D::CommonData::mappingIndexToOffset']]],
+  ['mappingrthetaphitotexcoord_1',['mappingRThetaPhiToTexCoord',['../structreg23_1_1ResampleSinogram3D_1_1CommonData.html#a2b42674b7b174f71fc98a368be706ce4',1,'reg23::ResampleSinogram3D::CommonData']]]
 ];
