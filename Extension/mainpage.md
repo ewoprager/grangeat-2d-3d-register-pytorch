@@ -2,8 +2,6 @@
 Note: Inline maths is written between $ ... \f$ as this works with MathJax when uploaded as documentation.
 -->
 
-The theory behind the implementation is detailed [here](https://ewoprager.github.io/grangeats-relation/main.pdf).
-
 For setup instructions, see
 the [README on GitHub](https://github.com/ewoprager/grangeat-2d-3d-register-pytorch/tree/main/Extension).
 

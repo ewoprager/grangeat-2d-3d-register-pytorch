@@ -6,7 +6,11 @@ namespace ExtensionTest {
 
 /**
  * @ingroup textures
+ * @brief A 3D texture stored for access by an NVIDIA GPU
  *
+ * **This object does not own the data it provides access to, it just holds a pointer to it**
+ *
+ * Move constructable but not copy constructable.
  */
 class Texture3DCUDA : public Texture<3, int64_t, double> {
   public:

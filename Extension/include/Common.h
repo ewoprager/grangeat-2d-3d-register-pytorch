@@ -10,16 +10,6 @@
 namespace ExtensionTest {
 
 /**
- * @defgroup general_tools General Tools
- * @brief Small functions used throughout the codebase.
- * @{
- */
-
-/**
- * @}
- */
-
-/**
  * @defgroup data_structures Data Structures
  * @brief Structures and classes that help with contained data manipulation and storage.
  * @{

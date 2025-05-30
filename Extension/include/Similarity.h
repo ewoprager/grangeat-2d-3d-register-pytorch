@@ -6,8 +6,8 @@ namespace ExtensionTest {
 
 /**
  * @ingroup pytorch_functions
- * @param a A tensor of `torch.float32`s of any size
- * @param b A tensor of `torch.float32`s matching `a` in size
+ * @param a a tensor of any size containing `torch.float32`s
+ * @param b a tensor of the same size as `a` containing `torch.float32`s
  * @return The zero-normalised cross-correlation between the given tensors.
  */
 at::Tensor NormalisedCrossCorrelation_CPU(const at::Tensor &a, const at::Tensor &b);

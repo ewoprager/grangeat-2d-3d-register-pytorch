@@ -7,46 +7,46 @@ namespace ExtensionTest {
 /**
  * @ingroup pytorch_functions
  * @brief Compute an approximation of the Radon transform of the given 3D volume
- * @param volume A 3D tensor of `torch.float32`s; the input volume to take the Radon transform of
- * @param volumeSpacing The spacing between the volume layers in each cartesian direction
- * @param phiValues A tensor of `torch.float32`s of any size; the values of the spherical coordinate phi at which to
- * calculate approximations for plane integrals through the given volume
- * @param thetaValues A tensor of `torch.float32`s of the same size as `phiValues`; the values of the spherical
- * coordinate theta at which to calculate approximations for plane integrals through the given volume
- * @param rValues A tensor of `torch.float32`s of the same size as `phiValues`; the values of the spherical
- * coordinate r at which to calculate approximations for plane integrals through the given volume
+ * @param volume a tensor of size (P,Q,R) containing `torch.float32`s: The input volume to take the Radon transform of
+ * @param volumeSpacing a tensor of size (3,): The spacing between the volume layers in each cartesian direction
+ * @param phiValues a tensor of any size containing `torch.float32`s: The values of the spherical coordinate $phi$ at
+ * which to calculate approximations for plane integrals through the given volume
+ * @param thetaValues a tensor of the same size as `phiValues` containing `torch.float32`s: The values of the spherical
+ * coordinate $theta$ at which to calculate approximations for plane integrals through the given volume
+ * @param rValues a tensor of the same size as `phiValues` containing `torch.float32`s: The values of the spherical
+ * coordinate $r$ at which to calculate approximations for plane integrals through the given volume
  * @param samplesPerDirection The square-root of the number of samples to take from the volume for approximating each
  * plane integral
- * @return A tensor of `torch.float32`s matching `phiValues` in size; approximations of the plane integrals through the
- * given volume at the given spherical coordinate locations
+ * @return a tensor of the same size as `phiValues` containing `torch.float32`s: Approximations of the plane integrals
+ * through the given volume at the given spherical coordinate locations
  *
  * The spherical coordinates should be defined according to the convention stated in Extension/Conventions.md
  */
 at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
-					   const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
+                       const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
  * @ingroup pytorch_functions
  * @brief Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the
  * given 3D volume
- * @param volume A 3D tensor of `torch.float32`s; the input volume to take the Radon transform of
- * @param volumeSpacing The spacing between the volume layers in each cartesian direction
- * @param phiValues A tensor of `torch.float32`s of any size; the values of the spherical coordinate phi at which to
- * calculate the derivatives of approximations for plane integrals through the given volume
- * @param thetaValues A tensor of `torch.float32`s of the same size as `phiValues`; the values of the spherical
+ * @param volume a tensor of size (P,Q,R) containing `torch.float32`s: The input volume to take the Radon transform of
+ * @param volumeSpacing a tensor of size (3,): The spacing between the volume layers in each cartesian direction
+ * @param phiValues a tensor of any size containing `torch.float32`s: The values of the spherical coordinate phi at
+ * which to calculate the derivatives of approximations for plane integrals through the given volume
+ * @param thetaValues a tensor of the same size as `phiValues` containing `torch.float32`s: The values of the spherical
  * coordinate theta at which to calculate the derivatives of approximations for plane integrals through the given volume
- * @param rValues A tensor of `torch.float32`s of the same size as `phiValues`; the values of the spherical
+ * @param rValues a tensor of the same size as `phiValues` containing `torch.float32`s: The values of the spherical
  * coordinate r at which to calculate the derivatives of approximations for plane integrals through the given volume
  * @param samplesPerDirection The square-root of the number of samples to take from the volume for approximating each
  * plane integral
- * @return A tensor of `torch.float32`s matching `phiValues` in size; the derivatives with respect to plane-origin
- * distance of the approximations (according to the `Radon3D_...` functions) of the plane integrals through the given
- * volume at the given spherical coordinate locations
+ * @return a tensor of the same size as `phiValues` containing `torch.float32`s: The derivatives with respect to
+ * plane-origin distance of the approximations (according to the `Radon3D_...` functions) of the plane integrals through
+ * the given volume at the given spherical coordinate locations
  *
  * The spherical coordinates should be defined according to the convention stated in Extension/Conventions.md
  */
 at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
-						  const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
+                          const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
  * @ingroup pytorch_functions
@@ -55,7 +55,7 @@ at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpac
  * A single kernel launch is made, with each kernel calculating one plane integral approximation.
  */
 __host__ at::Tensor Radon3D_CUDA(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
-								 const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
+                                 const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
  * @brief An implementation of ExtensionTest::Radon3D_CPU that uses CUDA parallelisation
@@ -64,8 +64,8 @@ __host__ at::Tensor Radon3D_CUDA(const at::Tensor &volume, const at::Tensor &vol
  * multiple kernels in log-time.
  */
 __host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
-									const at::Tensor &phiValues, const at::Tensor &thetaValues,
-									const at::Tensor &rValues, int64_t samplesPerDirection);
+                                    const at::Tensor &phiValues, const at::Tensor &thetaValues,
+                                    const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
  * @ingroup pytorch_functions
@@ -74,8 +74,8 @@ __host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &volume, const at::Tensor &
  * A single kernel launch is made, with each kernel calculating one plane integral approximation.
  */
 __host__ at::Tensor DRadon3DDR_CUDA(const at::Tensor &volume, const at::Tensor &volumeSpacing,
-									const at::Tensor &phiValues, const at::Tensor &thetaValues,
-									const at::Tensor &rValues, int64_t samplesPerDirection);
+                                    const at::Tensor &phiValues, const at::Tensor &thetaValues,
+                                    const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
  * @brief An implementation of ExtensionTest::DRadon3DDR_CPU that uses CUDA parallelisation
@@ -84,8 +84,8 @@ __host__ at::Tensor DRadon3DDR_CUDA(const at::Tensor &volume, const at::Tensor &
  * multiple kernels in log-time.
  */
 __host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tensor &volumeSpacing,
-									   const at::Tensor &phiValues, const at::Tensor &thetaValues,
-									   const at::Tensor &rValues, int64_t samplesPerDirection);
+                                       const at::Tensor &phiValues, const at::Tensor &thetaValues,
+                                       const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
  * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
@@ -97,14 +97,14 @@ template <typename texture_t> struct Radon3D {
 
 	struct CommonData {
 		texture_t inputTexture{};
-		Linear<Vec<double, 3>> mappingIndexToOffset{};
+		Linear<Vec<double, 3> > mappingIndexToOffset{};
 		double scaleFactor{};
 		at::Tensor flatOutput{};
 	};
 
 	__host__ static CommonData Common(const at::Tensor &volume, const at::Tensor &volumeSpacing,
-									  const at::Tensor &phiValues, const at::Tensor &thetaValues,
-									  const at::Tensor &rValues, int64_t samplesPerDirection, at::DeviceType device) {
+	                                  const at::Tensor &phiValues, const at::Tensor &thetaValues,
+	                                  const at::Tensor &rValues, int64_t samplesPerDirection, at::DeviceType device) {
 		// volume should be a 3D array of floats on the chosen device
 		TORCH_CHECK(volume.sizes().size() == 3);
 		TORCH_CHECK(volume.dtype() == at::kFloat);
@@ -143,11 +143,11 @@ template <typename texture_t> struct Radon3D {
 	 *
 	 * The mapping is generated for 3-vectors, as it will ultimately be applied to 3-vectors.
 	 */
-	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 3>> GetMappingIToOffset(double planeSize,
-																						int64_t samplesPerDirection) {
+	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 3> > GetMappingIToOffset(double planeSize,
+		int64_t samplesPerDirection) {
 
 		return {Vec<double, 3>::Full(-.5f * planeSize),
-				Vec<double, 3>::Full(planeSize / static_cast<double>(samplesPerDirection - 1))};
+		        Vec<double, 3>::Full(planeSize / static_cast<double>(samplesPerDirection - 1))};
 	}
 
 	/**
@@ -161,15 +161,15 @@ template <typename texture_t> struct Radon3D {
 	 *
 	 * The spherical coordinates should be defined according to the convention stated in Extension/Conventions.md
 	 */
-	__host__ __device__ [[nodiscard]] static Linear2<Vec<double, 3>>
+	__host__ __device__ [[nodiscard]] static Linear2<Vec<double, 3> >
 	GetMappingIndexToTexCoord(const texture_t &textureIn, double phi, double theta, double r,
-							  const Linear<Vec<double, 3>> &mappingIToOffset) {
+	                          const Linear<Vec<double, 3> > &mappingIToOffset) {
 		const double sp = sin(phi);
 		const double cp = cos(phi);
 		const double st = sin(theta);
 		const double ct = cos(theta);
-		const Linear2<Vec<double, 3>> mappingOffsetToWorld{
-			{r * ct * cp, r * ct * sp, r * st}, {-sp, cp, 0.f}, {-st * cp, -st * sp, ct}};
+		const Linear2<Vec<double, 3> > mappingOffsetToWorld{{r * ct * cp, r * ct * sp, r * st}, {-sp, cp, 0.f},
+		                                                    {-st * cp, -st * sp, ct}};
 		return textureIn.MappingWorldToTexCoord()(mappingOffsetToWorld(mappingIToOffset));
 	}
 
@@ -186,7 +186,7 @@ template <typename texture_t> struct Radon3D {
 	 * i.e. the **unsigned** distance between the orign and the plane.
 	 */
 	__host__ __device__ [[nodiscard]] static Vec<double, 3> GetDTexCoordDR(const texture_t &textureIn, double phi,
-																		   double theta, double r) {
+	                                                                       double theta, double r) {
 		const double sign = static_cast<double>(r > 0.) - static_cast<double>(r < 0.);
 		const double sp = sin(phi);
 		const double cp = cos(phi);
@@ -209,8 +209,8 @@ template <typename texture_t> struct Radon3D {
 	 * value of `mappingIndexToTexCoord`.
 	 */
 	__host__ __device__ [[nodiscard]] static float
-	IntegrateLooped(const texture_t &texture, const Linear2<Vec<double, 3>> &mappingIndexToTexCoord,
-					int64_t samplesPerDirection) {
+	IntegrateLooped(const texture_t &texture, const Linear2<Vec<double, 3> > &mappingIndexToTexCoord,
+	                int64_t samplesPerDirection) {
 		float ret = 0.f;
 		for (int64_t j = 0; j < samplesPerDirection; ++j) {
 			for (int64_t i = 0; i < samplesPerDirection; ++i) {
@@ -233,18 +233,17 @@ template <typename texture_t> struct Radon3D {
 	 * parameter (according to the value of `dTexCoordDMappingParameter`).
 	 */
 	__host__ __device__ [[nodiscard]] static float
-	DIntegrateLoopedDMappingParameter(const texture_t &texture, const Linear2<Vec<double, 3>> &mappingIndexToTexCoord,
-									  const Vec<double, 3> &dTexCoordDMappingParameter, int64_t samplesPerDirection) {
+	DIntegrateLoopedDMappingParameter(const texture_t &texture, const Linear2<Vec<double, 3> > &mappingIndexToTexCoord,
+	                                  const Vec<double, 3> &dTexCoordDMappingParameter, int64_t samplesPerDirection) {
 		float ret = 0.f;
 		for (int64_t j = 0; j < samplesPerDirection; ++j) {
 			for (int64_t i = 0; i < samplesPerDirection; ++i) {
 				const double iF = static_cast<double>(i);
 				const double jF = static_cast<double>(j);
-				const Vec<double, 3> texCoord =
-					mappingIndexToTexCoord(Vec<double, 3>::Full(iF), Vec<double, 3>::Full(jF));
-				ret += texture.DSampleDX(texCoord) * dTexCoordDMappingParameter.X() +
-					   texture.DSampleDY(texCoord) * dTexCoordDMappingParameter.Y() +
-					   texture.DSampleDZ(texCoord) * dTexCoordDMappingParameter.Z();
+				const Vec<double, 3> texCoord = mappingIndexToTexCoord(Vec<double, 3>::Full(iF),
+				                                                       Vec<double, 3>::Full(jF));
+				ret += texture.DSampleDX(texCoord) * dTexCoordDMappingParameter.X() + texture.DSampleDY(texCoord) *
+					dTexCoordDMappingParameter.Y() + texture.DSampleDZ(texCoord) * dTexCoordDMappingParameter.Z();
 			}
 		}
 		return ret;

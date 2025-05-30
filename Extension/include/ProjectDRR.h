@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Implementations of DRR projection algorithms
+ * @brief Implementations of DRR projection functions
  */
 
 #pragma once
@@ -11,8 +11,16 @@ namespace ExtensionTest {
 
 /**
  * @ingroup pytorch_functions
- * @brief
- * @param homographyMatrixInverse Column-major
+ * @brief Generate a DRR from the given volume at the given transformation.
+ * @param volume a tensor of size (P,Q,R): The CT volume through which to project the DRR
+ * @param voxelSpacing a tensor of size (3,): The spacing in [mm] between the volume layers in each cartesian direction
+ * @param homographyMatrixInverse a tensor of size (4, 4): The **column-major** matrix representing the homography transformation of the volume.
+ * @param sourceDistance The distance in [mm] of the source from the detector array
+ * @param outputWidth The width in pixels of the DRR to generate.
+ * @param outputHeight The height in pixels of the DRR to generate.
+ * @param outputOffset The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array.
+ * @param detectorSpacing a tensor of size (2,): The spacing in [mm] between the columns and rows of the DRR image.
+ * @return a tensor of size (outputHeight, outputWidth): The DRR projection through the given volume at the given transformation.
  */
 at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpacing,
                           const at::Tensor &homographyMatrixInverse, double sourceDistance, int64_t outputWidth,
@@ -37,11 +45,11 @@ template <typename texture_t> struct ProjectDRR {
 
 	struct CommonData {
 		texture_t inputTexture{};
-		Vec<Vec<double, 4>, 4> homographyMatrixInverse;
-		Vec<double, 2> outputOffset;
-		Vec<double, 2> detectorSpacing;
-		double lambdaStart;
-		double stepSize;
+		Vec<Vec<double, 4>, 4> homographyMatrixInverse{};
+		Vec<double, 2> outputOffset{};
+		Vec<double, 2> detectorSpacing{};
+		double lambdaStart{};
+		double stepSize{};
 		at::Tensor flatOutput{};
 	};
 

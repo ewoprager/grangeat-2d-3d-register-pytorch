@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief General tools
+ */
+
 #pragma once
 
 #ifdef __CUDACC__
@@ -9,6 +14,12 @@
 #endif
 
 namespace ExtensionTest {
+
+/**
+ * @defgroup general_tools General Tools
+ * @brief Small functions used throughout the codebase.
+ * @{
+ */
 
 /**
  * @brief Returns the square of the given value
@@ -26,5 +37,9 @@ template <typename T> __host__ __device__ T Square(const T &x) { return x * x; }
  * @return x modulo y, respecting the sign of x.
  */
 template <typename T> __host__ __device__ T Modulo(const T &x, const T &y) { return (x % y + y) % y; }
+
+/**
+ * @}
+ */
 
 } // namespace ExtensionTest
