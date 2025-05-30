@@ -3,7 +3,7 @@
 #include "../include/Texture3DCUDA.h"
 #include "../include/ProjectDRR.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 using CommonData = ProjectDRR<Texture3DCUDA>::CommonData;
 
@@ -56,4 +56,4 @@ __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &
 	return common.flatOutput.view(at::IntArrayRef{outputHeight, outputWidth});
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

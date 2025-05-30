@@ -8,7 +8,7 @@ import plotly.graph_objects as pgo
 import torch
 import nrrd
 
-import Extension as ExtensionTest
+import Extension as reg23
 
 TaskSummaryRadon3D = Tuple[str, torch.Tensor]
 
@@ -96,11 +96,11 @@ def benchmark_radon3d(path: str):
 
     outputs: list[TaskSummaryRadon3D] = [
         run_task(
-            task_radon3d, plot_task_radon3d, ExtensionTest.radon3d, "RT3 V1", "cpu", image, spacing, output_size,
+            task_radon3d, plot_task_radon3d, reg23.radon3d, "RT3 V1", "cpu", image, spacing, output_size,
             bounds), run_task(
-            task_radon3d, plot_task_radon3d, ExtensionTest.radon3d, "RT3 V1", "cuda", image, spacing, output_size,
+            task_radon3d, plot_task_radon3d, reg23.radon3d, "RT3 V1", "cuda", image, spacing, output_size,
             bounds), run_task(
-            task_radon3d, plot_task_radon3d, ExtensionTest.radon3d_v2, "RT3 V2", "cuda", image, spacing, output_size,
+            task_radon3d, plot_task_radon3d, reg23.radon3d_v2, "RT3 V2", "cuda", image, spacing, output_size,
             bounds)]
 
     logger.info("Calculating discrepancies...")
@@ -140,9 +140,9 @@ def main(path: str):
 
     outputs: list[TaskSummaryRadon3D] = [
         run_task(
-            task_radon3d, plot_task_radon3d, ExtensionTest.d_radon3d_dr, "dRT3-dR V1", "cuda", image, spacing,
+            task_radon3d, plot_task_radon3d, reg23.d_radon3d_dr, "dRT3-dR V1", "cuda", image, spacing,
             output_size, bounds), run_task(
-            task_radon3d, plot_task_radon3d, ExtensionTest.d_radon3d_dr_v2, "dRT3-dR V2", "cuda", image, spacing,
+            task_radon3d, plot_task_radon3d, reg23.d_radon3d_dr_v2, "dRT3-dR V2", "cuda", image, spacing,
             output_size, bounds)]
 
     logger.info("Calculating discrepancies...")

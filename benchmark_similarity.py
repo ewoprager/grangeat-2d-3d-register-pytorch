@@ -5,7 +5,7 @@ import logging.config
 import torch
 import matplotlib.pyplot as plt
 
-import Extension as ExtensionTest
+import Extension as reg23
 
 from registration.lib.structs import *
 import registration.objective_function as objective_function
@@ -53,9 +53,9 @@ def main():
         run_task(task_similarity, plot_task_similarity, objective_function.zncc, "ZNCC", "cuda", a, b),
         run_task(task_similarity, plot_task_similarity, objective_function.zncc2, "ZNCC2", "cpu", a, b),
         run_task(task_similarity, plot_task_similarity, objective_function.zncc2, "ZNCC2", "cuda", a, b), run_task(
-            task_similarity, plot_task_similarity, ExtensionTest.normalised_cross_correlation,
+            task_similarity, plot_task_similarity, reg23.normalised_cross_correlation,
             "NormalisedCrossCorrelation", "cpu", a, b), run_task(
-            task_similarity, plot_task_similarity, ExtensionTest.normalised_cross_correlation,
+            task_similarity, plot_task_similarity, reg23.normalised_cross_correlation,
             "NormalisedCrossCorrelation", "cuda", a, b)]
 
     logger.info("Calculating discrepancies...")

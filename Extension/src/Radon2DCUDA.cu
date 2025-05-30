@@ -3,7 +3,7 @@
 #include "../include/Texture2DCUDA.h"
 #include "../include/Radon2D.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 using CommonData = Radon2D<Texture2DCUDA>::CommonData;
 
@@ -141,4 +141,4 @@ __host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &i
 	return common.flatOutput.view(phiValues.sizes());
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

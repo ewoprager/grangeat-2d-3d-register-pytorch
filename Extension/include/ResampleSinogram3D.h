@@ -4,7 +4,7 @@
 #include "Vec.h"
 #include "Texture.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @ingroup pytorch_functions
@@ -36,7 +36,7 @@ at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor
 
 /**
  * @ingroup pytorch_functions
- * @brief An implementation of ExtensionTest::ResampleSinogram3D_CPU that uses CUDA parallelisation.
+ * @brief An implementation of reg23::ResampleSinogram3D_CPU that uses CUDA parallelisation.
  */
 __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
                                             const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
@@ -93,4 +93,4 @@ template <typename texture_t> struct ResampleSinogram3D {
 	}
 };
 
-} // namespace ExtensionTest
+} // namespace reg23

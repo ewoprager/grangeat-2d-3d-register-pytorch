@@ -2,7 +2,7 @@
 
 #include "Common.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @ingroup pytorch_functions
@@ -14,7 +14,7 @@ at::Tensor NormalisedCrossCorrelation_CPU(const at::Tensor &a, const at::Tensor 
 
 /**
  * @ingroup pytorch_functions
- * @brief An implementation of ExtensionTest::NormalisedCrossCorrelation_CPU that uses CUDA parallisation
+ * @brief An implementation of reg23::NormalisedCrossCorrelation_CPU that uses CUDA parallisation
  */
 __host__ at::Tensor NormalisedCrossCorrelation_CUDA(const at::Tensor &a, const at::Tensor &b);
 
@@ -30,4 +30,4 @@ struct Similarity {
 	}
 };
 
-} // namespace ExtensionTest
+} // namespace reg23

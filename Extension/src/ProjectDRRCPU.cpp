@@ -3,7 +3,7 @@
 #include "../include/Texture3DCPU.h"
 #include "../include/ProjectDRR.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 using CommonData = ProjectDRR<Texture3DCPU>::CommonData;
 
@@ -43,4 +43,4 @@ at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpaci
 	return common.flatOutput.view(at::IntArrayRef{outputHeight, outputWidth});
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

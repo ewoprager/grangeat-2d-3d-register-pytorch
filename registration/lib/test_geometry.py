@@ -3,7 +3,7 @@ import torch
 
 import matplotlib.pyplot as plt
 
-import Extension as ExtensionTest
+import Extension as reg23
 from registration.lib.geometry import *
 
 
@@ -171,7 +171,7 @@ def test_plane_integrals():
     theta_values = torch.tensor([0.1])
     # theta_values = torch.tensor([torch.pi * .25])
     r_values = torch.tensor([0.])
-    from_extension = ExtensionTest.radon3d(
+    from_extension = reg23.radon3d(
         volume_data, voxel_spacing, phi_values, theta_values, r_values, samples_per_direction=10)
     phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
     from_python = plane_integrals(
@@ -187,7 +187,7 @@ def test_plane_integrals():
     theta_values = torch.linspace(-.5 * torch.pi, .5 * torch.pi, 4, device=device)
     r_values = torch.linspace(-.5 * volume_size, .5 * volume_size, 4, device=device)
     phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
-    radon = ExtensionTest.radon3d(
+    radon = reg23.radon3d(
         volume_data, voxel_spacing, phi_values, theta_values, r_values, samples_per_direction=500)
     radon_python = plane_integrals(
         volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values, theta_values=theta_values, r_values=r_values,

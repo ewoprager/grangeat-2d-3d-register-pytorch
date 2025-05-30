@@ -7,7 +7,7 @@
 
 #include "Vec.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @defgroup data_structures Data Structures
@@ -135,4 +135,4 @@ __host__ cudaError_t CudaMemcpyToObjectSymbol(const T &symbol, T &src, cudaMemcp
  * @}
  */
 
-} // namespace ExtensionTest
+} // namespace reg23

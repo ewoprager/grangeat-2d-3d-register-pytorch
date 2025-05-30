@@ -2,7 +2,7 @@
 
 #include "Texture.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @ingroup textures
@@ -101,4 +101,4 @@ class Texture2DCUDA : public Texture<2, int64_t, double> {
 	cudaTextureObject_t textureHandle = 0;
 };
 
-} // namespace ExtensionTest
+} // namespace reg23

@@ -3,7 +3,7 @@
 #include "../include/Texture3DCPU.h"
 #include "../include/ResampleSinogram3D.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 using CommonData = ResampleSinogram3D<Texture3DCPU>::CommonData;
 
@@ -67,4 +67,4 @@ at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor
 	return common.flatOutput.view(phiValues.sizes());
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

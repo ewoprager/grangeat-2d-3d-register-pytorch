@@ -10,7 +10,7 @@
 
 #include "../include/Vec.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 using CommonData = Radon2D<Texture2DCPU>::CommonData;
 
@@ -55,4 +55,4 @@ at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacin
 	return common.flatOutput.view(phiValues.sizes());
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

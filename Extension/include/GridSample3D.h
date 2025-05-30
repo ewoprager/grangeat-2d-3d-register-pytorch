@@ -8,7 +8,7 @@
 #include "Common.h"
 #include "Texture.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @ingroup pytorch_functions
@@ -28,7 +28,7 @@ at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, con
 
 /**
  * @ingroup pytorch_functions
- * @brief An implementation of ExtensionTest::GridSample3D_CPU that uses CUDA parallelisation.
+ * @brief An implementation of reg23::GridSample3D_CPU that uses CUDA parallelisation.
  */
 __host__ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode);
 
@@ -76,4 +76,4 @@ template <typename texture_t> struct GridSample3D {
 	}
 };
 
-} // namespace ExtensionTest
+} // namespace reg23

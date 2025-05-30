@@ -4,7 +4,7 @@
 
 #include <array>
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @ingroup data_structures
@@ -15,7 +15,8 @@ namespace ExtensionTest {
  * - CUDA-compatible
  * - Provides some conversions to and from PyTorch structures (at::Tensor and at::IntArrayRef)
  * - Methods and operator overloads are constexpr, excluding PyTorch-related functionality
- * - Can be used with very limited functionality for matrix manipulation using `Vec<Vec<T, C>, R>`
+ * - Can be used with very limited functionality for matrix manipulation using `Vec<Vec<T, C>, R>`; see
+ * reg23::MatMul
  */
 template <typename T, std::size_t N> class Vec : public std::array<T, N> {
 public:
@@ -72,7 +73,7 @@ public:
 
 	/**
 	 * @brief Construct a vector from a 1D PyTorch tensor
-	 * @param t A 1D tensor of size (N,). The contained type must be consistent with the vector's type, i.e. for a
+	 * @param t a tensor of size (N,); the contained type must be consistent with the vector's type, i.e. for a
 	 * `Vec<float32_t, N>`, `t` must contain values of type `torch.float32`.
 	 * @return A `Vec` filled with the values copied from the given tensor
 	 */
@@ -85,11 +86,11 @@ public:
 
 	/**
 	 * @brief Construct a matrix from a 2D PyTorch tensor
-	 * @param t A 2D tensor of size (N, T::dimensionality). The contained type must be consistent with the vector's
+	 * @param t a tensor of size (N, T::dimensionality). The contained type must be consistent with the vector's
 	 * type, i.e. for a `Vec<Vec<float32_t, C>, R>`, `t` must contain values of type `torch.float32`.
 	 * @return A `Vec` (of `Vec`s) filled with the values copied from the given tensor
 	 *
-	 * Only valid for Vec of contained type T that is a specialisation of Vec, e.g. `Vec<Vec<float, C>, R>`
+	 * Only valid for `Vec` of contained type `T` that is a specialisation of `Vec`, e.g. `Vec<Vec<float, C>, R>`
 	 */
 	__host__ static Vec FromTensor2D(const at::Tensor &t) {
 		static_assert(std::is_same_v<std::remove_const_t<decltype(T::dimensionality)>, std::size_t>);
@@ -305,7 +306,7 @@ public:
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise addition
+ * @brief reg23::Vec element-wise addition
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator+(
 	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
@@ -316,7 +317,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise addition
+ * @brief reg23::Vec element-wise addition
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator+(
 	const Vec<T, N> &lhs, const T &rhs) {
@@ -327,7 +328,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise addition
+ * @brief reg23::Vec element-wise addition
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator+(
 	const T &lhs, const Vec<T, N> &rhs) {
@@ -340,7 +341,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise subtraction
+ * @brief reg23::Vec element-wise subtraction
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator-(
 	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
@@ -351,7 +352,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise subtraction
+ * @brief reg23::Vec element-wise subtraction
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator-(
 	const Vec<T, N> &lhs, const T &rhs) {
@@ -362,7 +363,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise subtraction
+ * @brief reg23::Vec element-wise subtraction
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator-(
 	const T &lhs, const Vec<T, N> &rhs) {
@@ -375,7 +376,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise multiplication
+ * @brief reg23::Vec element-wise multiplication
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator*(
 	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
@@ -386,7 +387,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise multiplication
+ * @brief reg23::Vec element-wise multiplication
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator*(
 	const Vec<T, N> &lhs, const T &rhs) {
@@ -397,7 +398,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise multiplication
+ * @brief reg23::Vec element-wise multiplication
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator*(
 	const T &lhs, const Vec<T, N> &rhs) {
@@ -410,7 +411,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise division
+ * @brief reg23::Vec element-wise division
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator/(
 	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
@@ -421,7 +422,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise division
+ * @brief reg23::Vec element-wise division
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator/(
 	const Vec<T, N> &lhs, const T &rhs) {
@@ -432,7 +433,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise division
+ * @brief reg23::Vec element-wise division
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> operator/(
 	const T &lhs, const Vec<T, N> &rhs) {
@@ -445,7 +446,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N> ope
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec dot product
+ * @brief reg23::Vec dot product
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr T
 VecDot(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
@@ -457,7 +458,7 @@ VecDot(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
 // Element-wise greater-than: >
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise greater-than
+ * @brief reg23::Vec element-wise greater-than
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>(
 	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
@@ -468,7 +469,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise greater-than
+ * @brief reg23::Vec element-wise greater-than
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>(
 	const Vec<T, N> &lhs, const T &rhs) {
@@ -479,7 +480,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise greater-than
+ * @brief reg23::Vec element-wise greater-than
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>(
 	const T &lhs, const Vec<T, N> &rhs) {
@@ -492,7 +493,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise greater-than-or-equal-to
+ * @brief reg23::Vec element-wise greater-than-or-equal-to
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>=(
 	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
@@ -503,7 +504,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise greater-than-or-equal-to
+ * @brief reg23::Vec element-wise greater-than-or-equal-to
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>=(
 	const Vec<T, N> &lhs, const T &rhs) {
@@ -514,7 +515,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise greater-than-or-equal-to
+ * @brief reg23::Vec element-wise greater-than-or-equal-to
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator>=(
 	const T &lhs, const Vec<T, N> &rhs) {
@@ -527,7 +528,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise less-than
+ * @brief reg23::Vec element-wise less-than
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<(
 	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
@@ -539,7 +540,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise less-than
+ * @brief reg23::Vec element-wise less-than
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<(
 	const Vec<T, N> &lhs, const T &rhs) {
@@ -551,7 +552,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise less-than
+ * @brief reg23::Vec element-wise less-than
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<(
 	const T &lhs, const Vec<T, N> &rhs) {
@@ -564,7 +565,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise less-than-or-equal-to
+ * @brief reg23::Vec element-wise less-than-or-equal-to
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<=(
 	const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
@@ -576,7 +577,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise less-than-or-equal-to
+ * @brief reg23::Vec element-wise less-than-or-equal-to
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<=(
 	const Vec<T, N> &lhs, const T &rhs) {
@@ -588,7 +589,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec element-wise less-than-or-equal-to
+ * @brief reg23::Vec element-wise less-than-or-equal-to
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> operator<=(
 	const T &lhs, const Vec<T, N> &rhs) {
@@ -601,7 +602,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<bool, N> 
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec concatenation of two vectors
+ * @brief reg23::Vec concatenation of two vectors
  */
 template <typename T, std::size_t N1, std::size_t N2> __host__ __device__ constexpr Vec<T, N1 + N2> VecCat(
 	const Vec<T, N1> &lhs, const Vec<T, N2> &rhs) {
@@ -617,7 +618,7 @@ template <typename T, std::size_t N1, std::size_t N2> __host__ __device__ conste
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec concatenation of a vector and a scalar
+ * @brief reg23::Vec concatenation of a vector and a scalar
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1> VecCat(
 	const Vec<T, N> &lhs, const T &rhs) {
@@ -631,7 +632,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1>
 
 /**
  * @ingroup data_structures
- * @brief ExtensionTest::Vec concatenation of a vector and a scalar
+ * @brief reg23::Vec concatenation of a vector and a scalar
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1> VecCat(
 	const T &lhs, const Vec<T, N> &rhs) {
@@ -645,13 +646,14 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1>
 
 /**
  * @ingroup data_structures
- * @brief Matrix-vector multiplication of the Vec struct
- * @tparam T Matrix / vector elemnt type
+ * @brief Matrix-vector multiplication of the `Vec` struct
+ * @tparam T Matrix / vector element type
  * @tparam R Number of rows in matrix, the size of the returned vector
  * @tparam C Number of columns in matrix, the size of the multiplied vector
- * @param lhs A column-major, R x C matrix
- * @param rhs A vector of length C
- * @return The vector of length R that is the result of multiplication of the given vector on the left by the given matrix
+ * @param lhs A column-major, `R` x `C` matrix
+ * @param rhs A vector of length `C`
+ * @return The vector of length `R` that is the result of multiplication of the given vector on the left by the given
+ * matrix
  */
 template <typename T, std::size_t R, std::size_t C> __host__ __device__ constexpr Vec<T, R> MatMul(
 	const Vec<Vec<T, R>, C> &lhs, const Vec<T, C> &rhs) {
@@ -665,4 +667,4 @@ template <typename T, std::size_t R, std::size_t C> __host__ __device__ constexp
 	}(std::make_index_sequence<R>{});
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

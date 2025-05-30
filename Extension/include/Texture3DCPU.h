@@ -2,7 +2,7 @@
 
 #include "Texture.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @ingroup textures
@@ -154,4 +154,4 @@ class Texture3DCPU : public Texture<3, int64_t, double> {
 	AddressModeType addressModes{}; ///< The address mode of the texture for each dimension
 };
 
-} // namespace ExtensionTest
+} // namespace reg23

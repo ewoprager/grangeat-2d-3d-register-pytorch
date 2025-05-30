@@ -7,7 +7,7 @@
 
 #include "Common.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @ingroup pytorch_functions
@@ -49,7 +49,7 @@ at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacin
 
 /**
  * @ingroup pytorch_functions
- * @brief An implementation of ExtensionTest::Radon2D_CPU that uses CUDA parallelisation
+ * @brief An implementation of reg23::Radon2D_CPU that uses CUDA parallelisation
  *
  * A single kernel launch is made, with each kernel calculating one line integral approximation.
  */
@@ -57,7 +57,7 @@ __host__ at::Tensor Radon2D_CUDA(const at::Tensor &image, const at::Tensor &imag
                                  const at::Tensor &rValues, int64_t samplesPerLine);
 
 /**
- * @brief An implementation of ExtensionTest::Radon2D_CPU that uses CUDA parallelisation
+ * @brief An implementation of reg23::Radon2D_CPU that uses CUDA parallelisation
  *
  * One kernel launch is made per line integral, and each line integral approximation is done by summing samples from
  * multiple kernels in log-time.
@@ -67,7 +67,7 @@ __host__ at::Tensor Radon2D_CUDA_V2(const at::Tensor &image, const at::Tensor &i
 
 /**
  * @ingroup pytorch_functions
- * @brief An implementation of ExtensionTest::DRadon2DDR_CPU that uses CUDA parallelisation
+ * @brief An implementation of reg23::DRadon2DDR_CPU that uses CUDA parallelisation
  *
  * A single kernel launch is made, with each kernel calculating one line integral approximation.
  */
@@ -217,4 +217,4 @@ template <typename texture_t> struct Radon2D {
 	}
 };
 
-} // namespace ExtensionTest
+} // namespace reg23

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import torch
 import pydicom
 
-import Extension as ExtensionTest
+import Extension as reg23
 
 TaskSummaryRadon2D = Tuple[str, torch.Tensor]
 
@@ -80,9 +80,9 @@ def main(path: str):
     image, spacing = read_dicom(path, 2)
 
     outputs: list[TaskSummaryRadon2D] = [
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "RT2 V1", "cpu", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d, "RT2 V1", "cuda", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.radon2d_v2, "RT2 V2", "cuda", image, spacing)]
+        run_task(task_radon2d, plot_task_radon2d, reg23.radon2d, "RT2 V1", "cpu", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, reg23.radon2d, "RT2 V1", "cuda", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, reg23.radon2d_v2, "RT2 V2", "cuda", image, spacing)]
 
     logger.info("Calculating discrepancies...")
     found: bool = False
@@ -112,8 +112,8 @@ def benchmark_dRadon2dDR(path: str):
     image, spacing = read_dicom(path, 1)
 
     outputs: list[TaskSummaryRadon2D] = [
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.d_radon2d_dr, "dRT2-dR V1", "cpu", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, ExtensionTest.d_radon2d_dr, "dRT2-dR V1", "cuda", image, spacing)]
+        run_task(task_radon2d, plot_task_radon2d, reg23.d_radon2d_dr, "dRT2-dR V1", "cpu", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, reg23.d_radon2d_dr, "dRT2-dR V1", "cuda", image, spacing)]
 
     logger.info("Calculating discrepancies...")
     found: bool = False

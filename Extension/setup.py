@@ -7,7 +7,7 @@ import torch
 from setuptools import setup, Extension
 from torch.utils.cpp_extension import CppExtension, CUDAExtension, BuildExtension, CUDA_HOME
 
-extension_name: str = "ExtensionTest"
+extension_name: str = "reg23"
 cpp_version: str = "-std=c++17"
 cpu_source_files: list[str] = glob.glob("src/*.cpp")
 cuda_source_files: list[str] = glob.glob("src/*.cu")

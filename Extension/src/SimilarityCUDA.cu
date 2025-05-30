@@ -2,7 +2,7 @@
 
 #include "../include/Similarity.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 __global__ void Kernel_NormalisedCrossCorrelation_CUDA(long numel, const float *a, const float *b,
                                                        float *blockSumsArray) {
@@ -80,4 +80,4 @@ __host__ at::Tensor NormalisedCrossCorrelation_CUDA(const at::Tensor &a, const a
 		                                             nF * sums[3] - sums[1].square()).sqrt() + 1e-10f);
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

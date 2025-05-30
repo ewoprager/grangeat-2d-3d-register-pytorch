@@ -2,7 +2,7 @@
 
 #include "Common.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @ingroup pytorch_functions
@@ -50,7 +50,7 @@ at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpac
 
 /**
  * @ingroup pytorch_functions
- * @brief An implementation of ExtensionTest::Radon3D_CPU that uses CUDA parallelisation
+ * @brief An implementation of reg23::Radon3D_CPU that uses CUDA parallelisation
  *
  * A single kernel launch is made, with each kernel calculating one plane integral approximation.
  */
@@ -58,7 +58,7 @@ __host__ at::Tensor Radon3D_CUDA(const at::Tensor &volume, const at::Tensor &vol
                                  const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
- * @brief An implementation of ExtensionTest::Radon3D_CPU that uses CUDA parallelisation
+ * @brief An implementation of reg23::Radon3D_CPU that uses CUDA parallelisation
  *
  * One kernel launch is made per plane integral, and each plane integral approximation is done by summing samples from
  * multiple kernels in log-time.
@@ -69,7 +69,7 @@ __host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &volume, const at::Tensor &
 
 /**
  * @ingroup pytorch_functions
- * @brief An implementation of ExtensionTest::DRadon3DDR_CPU that uses CUDA parallelisation
+ * @brief An implementation of reg23::DRadon3DDR_CPU that uses CUDA parallelisation
  *
  * A single kernel launch is made, with each kernel calculating one plane integral approximation.
  */
@@ -78,7 +78,7 @@ __host__ at::Tensor DRadon3DDR_CUDA(const at::Tensor &volume, const at::Tensor &
                                     const at::Tensor &rValues, int64_t samplesPerDirection);
 
 /**
- * @brief An implementation of ExtensionTest::DRadon3DDR_CPU that uses CUDA parallelisation
+ * @brief An implementation of reg23::DRadon3DDR_CPU that uses CUDA parallelisation
  *
  * One kernel launch is made per plane integral, and each plane integral approximation is done by summing samples from
  * multiple kernels in log-time.
@@ -250,4 +250,4 @@ template <typename texture_t> struct Radon3D {
 	}
 };
 
-} // namespace ExtensionTest
+} // namespace reg23

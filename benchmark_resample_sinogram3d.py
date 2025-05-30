@@ -7,7 +7,7 @@ import logging.config
 import matplotlib.pyplot as plt
 import torch
 
-import Extension as ExtensionTest
+import Extension as reg23
 
 from registration.lib.structs import *
 from registration.lib.sinogram import *

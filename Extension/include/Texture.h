@@ -3,7 +3,7 @@
 #include "Common.h"
 #include "Vec.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @defgroup textures Texture-Related Types
@@ -107,4 +107,4 @@ template <std::size_t dimensionality, typename intType = int, typename floatType
  * @}
  */
 
-} // namespace ExtensionTest
+} // namespace reg23

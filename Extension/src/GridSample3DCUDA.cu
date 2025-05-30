@@ -3,7 +3,7 @@
 #include "../include/Texture3DCUDA.h"
 #include "../include/GridSample3D.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 using CommonData = GridSample3D<Texture3DCUDA>::CommonData;
 
@@ -36,4 +36,4 @@ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, co
 	return common.flatOutput.view(grid.sizes().slice(0, grid.sizes().size() - 1));
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

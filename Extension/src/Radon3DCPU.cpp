@@ -3,7 +3,7 @@
 #include "../include/Texture3DCPU.h"
 #include "../include/Radon3D.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 using CommonData = Radon3D<Texture3DCPU>::CommonData;
 
@@ -53,4 +53,4 @@ at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpac
 	return common.flatOutput.view(phiValues.sizes());
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

@@ -3,7 +3,7 @@
 #include "../include/Similarity.h"
 #include "../include/Vec.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 at::Tensor NormalisedCrossCorrelation_CPU(const at::Tensor &a, const at::Tensor &b) {
 	Similarity::Common(a, b, at::DeviceType::CPU);
@@ -63,4 +63,4 @@ at::Tensor NormalisedCrossCorrelation_CPU(const at::Tensor &a, const at::Tensor 
 			                                      nF * sums[3] - sums[1] * sums[1]) + 1e-10f), a.options());
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

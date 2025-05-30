@@ -5,7 +5,7 @@
 
 #include "../include/Vec.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 using CommonData = GridSample3D<Texture3DCPU>::CommonData;
 
@@ -24,4 +24,4 @@ at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, con
 	return common.flatOutput.view(grid.sizes().slice(0, grid.sizes().size() - 1));
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

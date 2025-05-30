@@ -3,7 +3,7 @@
 #include "../include/Texture3DCUDA.h"
 #include "../include/Radon3D.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 using CommonData = Radon3D<Texture3DCUDA>::CommonData;
 
@@ -292,4 +292,4 @@ __host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tenso
 	return common.flatOutput.view(phiValues.sizes());
 }
 
-} // namespace ExtensionTest
+} // namespace reg23

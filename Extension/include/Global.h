@@ -9,11 +9,18 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #else
+/**
+ * Definition of CUDA macro as nothing when compiling with just C++
+ */
 #define __host__
+
+/**
+ * Definition of CUDA macro as nothing when compiling with just C++
+ */
 #define __device__
 #endif
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @defgroup general_tools General Tools
@@ -42,4 +49,4 @@ template <typename T> __host__ __device__ T Modulo(const T &x, const T &y) { ret
  * @}
  */
 
-} // namespace ExtensionTest
+} // namespace reg23

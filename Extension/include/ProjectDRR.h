@@ -7,7 +7,7 @@
 
 #include "Common.h"
 
-namespace ExtensionTest {
+namespace reg23 {
 
 /**
  * @ingroup pytorch_functions
@@ -28,7 +28,7 @@ at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpaci
 
 /**
  * @ingroup pytorch_functions
- * @brief An implementation of ExtensionTest::ProjectDRR_CPU that uses CUDA parallelisation.
+ * @brief An implementation of reg23::ProjectDRR_CPU that uses CUDA parallelisation.
  */
 __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &voxelSpacing,
                                     const at::Tensor &homographyMatrixInverse, double sourceDistance,
@@ -93,4 +93,4 @@ template <typename texture_t> struct ProjectDRR {
 	}
 };
 
-} // namespace ExtensionTest
+} // namespace reg23
