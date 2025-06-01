@@ -1,5 +1,33 @@
 \page conventions Conventions
 
+## Naming
+
+### C++
+
+- Classes, structs, types and functions are `PascalCase`.
+  - ..with the exception of functions that have different implementations for different hardware. In this case, the
+    hardware type is appended in `PascalCase` after an underscore, e.g. `FunctionName_HardwareType`.
+  - Classes that are specific to one type of hardware have the hardware type appended in `PascalCase` without an
+    underscore, e.g. `ClassNameHardwareType`.
+- Variables and namespaces are `camelCase`.
+- File names have the same rules as classes. When a file contains the implementation of a class, it should generally
+  have the same name as that class.
+
+### Python
+
+- Classes and types are `PascalCase`
+- Variables and modules are `snake_case`
+
+## Code style
+
+### C++
+
+Wherever possible, all functions and methods are:
+
+- made `constexpr`,
+- annotated with `__host__` and `__device__` for potential use in CUDA kernels (these macros are given empty definitions
+  in include/Global.h when compiling as C++).
+
 ## Cartesian coordinates
 
 ### 2D
@@ -20,10 +48,13 @@ In 2D sinograms, lines in 2D space defined in polar coordinates are done so as f
 
 The vector from the origin to the closest point on the line (which is therefor normal to the line) defines the line, and
 is parametrised by the following 2-vector:
+
 ```
 (r, phi)
 ```
+
 where
+
 - `r` is the **signed** length of the vector (the signed shortest distance between the line and the origin),
 - `phi` in (-pi/2, pi/2) is the angle anti-clockwise from the positive x-direction to the vector.
 
