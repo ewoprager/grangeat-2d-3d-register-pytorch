@@ -83,23 +83,53 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><h2><a class="anchor" id="autotoc_md1"></a>
-Cartesian coordinates</h2>
+Naming</h2>
 <h3><a class="anchor" id="autotoc_md2"></a>
+C++</h3>
+<ul>
+<li>Classes, structs, types and functions are <code>PascalCase</code>.<ul>
+<li>..with the exception of functions that have different implementations for different hardware. In this case, the hardware type is appended in <code>PascalCase</code> after an underscore, e.g. <code>FunctionName_HardwareType</code>.</li>
+<li>Classes that are specific to one type of hardware have the hardware type appended in <code>PascalCase</code> without an underscore, e.g. <code>ClassNameHardwareType</code>.</li>
+</ul>
+</li>
+<li>Variables and namespaces are <code>camelCase</code>.</li>
+<li>File names have the same rules as classes. When a file contains the implementation of a class, it should generally have the same name as that class.</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md3"></a>
+Python</h3>
+<ul>
+<li>Classes and types are <code>PascalCase</code></li>
+<li>Variables and modules are <code>snake_case</code></li>
+</ul>
+<h2><a class="anchor" id="autotoc_md4"></a>
+Code style</h2>
+<h3><a class="anchor" id="autotoc_md5"></a>
+C++</h3>
+<p>Wherever possible, all functions and methods are:</p>
+<ul>
+<li>made <code>constexpr</code>,</li>
+<li>annotated with <code>__host__</code> and <code>__device__</code> for potential use in CUDA kernels (these macros are given empty definitions in <a class="el" href="Global_8h.html" title="General tools.">include/Global.h</a> when compiling as C++).</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md6"></a>
+Cartesian coordinates</h2>
+<h3><a class="anchor" id="autotoc_md7"></a>
 2D</h3>
 <p>In image data, the dimensions from largest to smallest are (Y, X), so the 1D index in a 2D array is given by <code>width * Y + X</code>.</p>
-<h3><a class="anchor" id="autotoc_md3"></a>
+<h3><a class="anchor" id="autotoc_md8"></a>
 3D</h3>
 <p>(X, Y, Z) is always right-handed.</p>
 <p>In volume data, the origin is placed at the centre, and the dimensions from largest to smallest are (Z, Y, X), so the 1D index in a 3D array is given by <code>width * height * Z + width * Y + X</code>.</p>
-<h2><a class="anchor" id="autotoc_md4"></a>
+<h2><a class="anchor" id="autotoc_md9"></a>
 Polar coordinates</h2>
 <p>In 2D sinograms, lines in 2D space defined in polar coordinates are done so as follows:</p>
-<p>The vector from the origin to the closest point on the line (which is therefor normal to the line) defines the line, and is parametrised by the following 2-vector: </p><div class="fragment"><div class="line">(r, phi)</div>
-</div><!-- fragment --><p> where</p><ul>
+<p>The vector from the origin to the closest point on the line (which is therefor normal to the line) defines the line, and is parametrised by the following 2-vector:</p>
+<div class="fragment"><div class="line">(r, phi)</div>
+</div><!-- fragment --><p>where</p>
+<ul>
 <li><code>r</code> is the <b>signed</b> length of the vector (the signed shortest distance between the line and the origin),</li>
 <li><code>phi</code> in (-pi/2, pi/2) is the angle anti-clockwise from the positive x-direction to the vector.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md5"></a>
+<h2><a class="anchor" id="autotoc_md10"></a>
 Spherical coordinates</h2>
 <p>In 3D sinograms, planes in 3D space defined in spherical coordinates are done so as follows:</p>
 <p>The vector from the origin to the closest point on the plane (which is therefore normal to the plane) defines the plane, and is parametrised by the following 3-vector:</p>

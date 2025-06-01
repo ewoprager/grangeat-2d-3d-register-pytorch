@@ -11,10 +11,11 @@ var searchData=
   ['sizetype_8',['SizeType',['../classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a',1,'reg23::Texture']]],
   ['sizeworld_9',['SizeWorld',['../classreg23_1_1Texture.html#abfc8536390678e625ba68524cabdd313',1,'reg23::Texture']]],
   ['spacing_10',['Spacing',['../classreg23_1_1Texture.html#a2d32947dcb93ddd94f55fd2d37d02641',1,'reg23::Texture']]],
-  ['spherical_20coordinates_11',['Spherical coordinates',['../conventions.html#autotoc_md5',1,'']]],
+  ['spherical_20coordinates_11',['Spherical coordinates',['../conventions.html#autotoc_md10',1,'']]],
   ['square_12',['Square',['../group__general__tools.html#gac05f93968187265d84f03c8caf65736a',1,'reg23']]],
   ['staticcast_13',['StaticCast',['../classreg23_1_1Vec.html#a01d47c2f401d48d9d26ad37ec60776a3',1,'reg23::Vec']]],
   ['stepsize_14',['stepSize',['../structreg23_1_1ProjectDRR_1_1CommonData.html#a206801e634ff8030a45a1594f912f2d5',1,'reg23::ProjectDRR::CommonData']]],
   ['structures_15',['Data Structures',['../group__data__structures.html',1,'']]],
-  ['sum_16',['Sum',['../classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93',1,'reg23::Vec']]]
+  ['style_16',['Code style',['../conventions.html#autotoc_md4',1,'']]],
+  ['sum_17',['Sum',['../classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93',1,'reg23::Vec']]]
 ];
