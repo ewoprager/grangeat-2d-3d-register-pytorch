@@ -159,10 +159,16 @@ class Sinogram2dRange(NamedTuple):
     r: LinearRange
 
 
-class Sinogram3dRange(NamedTuple):
-    phi: LinearRange
-    theta: LinearRange
+class SinogramClassic3dRange(NamedTuple):
     r: LinearRange
+
+    @staticmethod
+    def theta(theta_count: int) -> LinearRange:
+        return LinearRange(-0.5 * torch.pi, torch.pi * (.5 - 1. / float(theta_count)))
+
+    @staticmethod
+    def phi() -> LinearRange:
+        return LinearRange(-0.5 * torch.pi, 0.5 * torch.pi)
 
     def get_spacing(self, counts: int | Tuple[int, int, int] | torch.Size, *,
                     device=torch.device('cpu')) -> torch.Tensor:
@@ -170,12 +176,14 @@ class Sinogram3dRange(NamedTuple):
             counts = (counts, counts, counts)
         elif isinstance(counts, torch.Size):
             assert len(counts) == 3
+        theta = self.theta(counts[1])
         return torch.tensor(
-            [self.r.get_spacing(counts[0]), self.theta.get_spacing(counts[1]), self.phi.get_spacing(counts[2])],
+            [
+                self.r.get_spacing(counts[0]), theta.get_spacing(counts[1]), self.phi().get_spacing(counts[2])],
             device=device)
 
     def get_centres(self, *, device=torch.device('cpu')) -> torch.Tensor:
-        return torch.tensor([self.r.get_centre(), self.theta.get_centre(), self.phi.get_centre()], device=device)
+        return torch.zeros(3, device=device)
 
 
 class Sinogram2dGrid(NamedTuple):
@@ -252,14 +260,15 @@ class Sinogram3dGrid(NamedTuple):
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
     @classmethod
-    def linear_from_range(cls, sinogram_range: Sinogram3dRange, counts: int | Tuple[int, int, int] | torch.Size, *,
-                          device=torch.device("cpu")) -> 'Sinogram3dGrid':
+    def linear_from_range(cls, sinogram_range: SinogramClassic3dRange, counts: int | Tuple[int, int, int] | torch.Size,
+                          *, device=torch.device("cpu")) -> 'Sinogram3dGrid':
         if isinstance(counts, int):
             counts = (counts, counts, counts)
         elif isinstance(counts, torch.Size):
             assert len(counts) == 3
-        phis = torch.linspace(sinogram_range.phi.low, sinogram_range.phi.high, counts[0], device=device)
-        thetas = torch.linspace(sinogram_range.theta.low, sinogram_range.theta.high, counts[1], device=device)
+        theta_range = sinogram_range.theta(counts[1])
+        phis = torch.linspace(sinogram_range.phi().low, sinogram_range.phi().high, counts[0], device=device)
+        thetas = torch.linspace(theta_range.low, theta_range.high, counts[1], device=device)
         rs = torch.linspace(sinogram_range.r.low, sinogram_range.r.high, counts[2], device=device)
         phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
         return Sinogram3dGrid(phis, thetas, rs)

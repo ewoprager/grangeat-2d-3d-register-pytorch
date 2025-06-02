@@ -13,10 +13,9 @@ namespace reg23 {
  * @param sinogram3d a tensor of size (P,Q,R) containing `torch.float32`s: The 3D sinogram to resample. It must contain
  * plane integrals evenly spaced along `phi`, `theta` and `r` over each dimension respectively. This is the
  * pre-calculated derivative of the Radon transform of the CT volume.
- * @param sinogramSpacing a tensor of size (3,) containing `torch.float64`s: The spacing of (`phi`, `theta`, `r`)
- * between values in the given sinogram.
- * @param sinogramRangeCentres a tensor of size (3,) containing `torch.float64`s: The central values of
- * (`phi`, `theta`, `r`) of the given sinogram.
+ * @param sinogramType a string; one of the following: "classic", "healpix". see documentation for `enum`
+ * `reg23::ResampleSinogram3D::SinogramType`
+ * @param rSpacing The spacing in `r` between the plane integrals in the sinogram.
  * @param projectionMatrix a tensor of size (4, 4) containing `torch.float32`s: The projection matrix `PH` at the
  * desired transformation.
  * @param phiValues a tensor of any size containing `torch.float32`s: The polar coordinate `phi` values of the fixed
@@ -33,45 +32,48 @@ namespace reg23 {
  * Note: Assumes that the projection matrix projects onto the x-y plane, and that the radial coordinates (phi, r)
  * in that plane measure phi right-hand rule about the z-axis from the positive x-direction
  */
-at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
-                                  const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
-                                  const at::Tensor &phiValues, const at::Tensor &rValues);
+at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const std::string &sinogramType, double rSpacing,
+                                  const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
+                                  const at::Tensor &rValues);
 
 /**
  * @ingroup pytorch_functions
  * @brief An implementation of reg23::ResampleSinogram3D_CPU that uses CUDA parallelisation.
  */
-__host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
-                                            const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
+__host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const std::string &sinogramType,
+                                            double rSpacing, const at::Tensor &projectionMatrix,
                                             const at::Tensor &phiValues, const at::Tensor &rValues);
 
 /**
- * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
- *
  * This struct is used as a namespace for code that is shared between different implementations of
  * `ResampleSinogram3D_...` functions
  */
-template <typename texture_t> struct ResampleSinogram3D {
+struct ResampleSinogram3D {
+
+	enum class SinogramType {
+		CLASSIC,
+		HEALPIX
+	};
+
+	struct ConstantGeometry {
+		Vec<float, 2> originProjection{};
+		float squareRadius{};
+		Vec<Vec<float, 4>, 4> projectionMatrixTranspose{};
+
+	};
 
 	struct CommonData {
-		texture_t inputTexture{};
-		Linear<Vec<double, 3> > mappingRThetaPhiToTexCoord;
+		SinogramType sinogramType{};
+		ConstantGeometry geometry{};
 		at::Tensor flatOutput{};
 	};
 
-	__host__ static CommonData Common(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
-	                                  const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
-	                                  const at::Tensor &phiValues, const at::Tensor &rValues, at::DeviceType device) {
-		// sinogram3d should be a 3D tensor of floats on the chosen device
-		TORCH_CHECK(sinogram3d.sizes().size() == 3)
+	__host__ static CommonData Common(const at::Tensor &sinogram3d, const std::string &sinogramType,
+	                                  const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
+	                                  const at::Tensor &rValues, at::DeviceType device) {
+		// sinogram3d should be a tensor of floats on the chosen device
 		TORCH_CHECK(sinogram3d.dtype() == at::kFloat)
 		TORCH_INTERNAL_ASSERT(sinogram3d.device().type() == device)
-		// sinogramSpacing should be a 1D tensor of 3 doubles
-		TORCH_CHECK(sinogramSpacing.sizes() == at::IntArrayRef{3});
-		TORCH_CHECK(sinogramSpacing.dtype() == at::kDouble);
-		// sinogramRangeCentres should be a 1D tensor of 3 doubles
-		TORCH_CHECK(sinogramRangeCentres.sizes() == at::IntArrayRef{3});
-		TORCH_CHECK(sinogramRangeCentres.dtype() == at::kDouble);
 		// projectionMatrix should be of size (4, 4), contain floats and be on the chosen device
 		TORCH_CHECK(projectionMatrix.sizes() == at::IntArrayRef({4, 4}))
 		TORCH_CHECK(projectionMatrix.dtype() == at::kFloat)
@@ -81,19 +83,57 @@ template <typename texture_t> struct ResampleSinogram3D {
 		TORCH_CHECK(phiValues.dtype() == at::kFloat)
 		TORCH_CHECK(rValues.dtype() == at::kFloat)
 		TORCH_INTERNAL_ASSERT(phiValues.device().type() == device)
-		TORCH_INTERNAL_ASSERT(rValues.device().type() == device)
+		TORCH_INTERNAL_ASSERT(rValues.device().type() == device);
+
+		SinogramType st = SinogramType::CLASSIC;
+		if (sinogramType == "healpix") {
+			st = SinogramType::HEALPIX;
+		} else if (sinogramType != "classic") {
+			TORCH_WARN(
+				"Invalid sinogram type string given. Valid values are: 'classic', 'healpix'. Assuming default value: 'classic'.")
+		}
+
+		const at::Tensor originProjectionHomogeneous = matmul(projectionMatrix,
+		                                                      torch::tensor(
+			                                                      {{0.f, 0.f, 0.f, 1.f}},
+			                                                      projectionMatrix.options()).t());
 
 		CommonData ret{};
-		const at::Tensor sinogramContiguous = sinogram3d.contiguous();
-		const float *sinogramPtr = sinogramContiguous.data_ptr<float>();
-		ret.inputTexture = texture_t{sinogramPtr, Vec<int64_t, 3>::FromIntArrayRef(sinogram3d.sizes()).Flipped(),
-		                             Vec<double, 3>::FromTensor(sinogramSpacing),
-		                             Vec<double, 3>::FromTensor(sinogramRangeCentres),
-		                             {TextureAddressMode::ZERO, TextureAddressMode::ZERO, TextureAddressMode::WRAP}};
-		ret.mappingRThetaPhiToTexCoord = ret.inputTexture.MappingWorldToTexCoord();
-		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), sinogramContiguous.options());
+		ret.sinogramType = st;
+		ret.geometry.originProjection = Vec<float, 2>{originProjectionHomogeneous[0].item().toFloat(),
+		                                              originProjectionHomogeneous[1].item().toFloat()} /
+		                                originProjectionHomogeneous[3].item().toFloat();
+		ret.geometry.squareRadius = .25f * ret.geometry.originProjection.Apply<float>(&Square<float>).Sum();
+		ret.geometry.projectionMatrixTranspose = Vec<Vec<float, 4>, 4>::FromTensor2D(projectionMatrix.t());
+		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), sinogram3d.contiguous().options());
 		return ret;
 	}
+
+	template <typename sinogram_t> __host__ __device__ static float ResamplePlane(const sinogram_t &sinogram,
+	                                                          const ConstantGeometry &geometry, float phi, float r) {
+		const float cp = cosf(phi);
+		const float sp = sinf(phi);
+		const Vec<float, 4> intermediate = MatMul(geometry.projectionMatrixTranspose, Vec<float, 4>{cp, sp, 0.f, -r});
+		const Vec<float, 3> intermediate3 = intermediate.XYZ();
+		const Vec<float, 3> posCartesian = -intermediate.W() * intermediate3 / intermediate3.Apply<float>(
+			                                   &Square<float>).Sum();
+
+		Vec<double, 3> rThetaPhi{};
+		rThetaPhi.Z() = atan2(posCartesian.Y(), posCartesian.X());
+		const float magXY = posCartesian.X() * posCartesian.X() + posCartesian.Y() * posCartesian.Y();
+		rThetaPhi.Y() = atan2(posCartesian.Z(), sqrt(magXY));
+		rThetaPhi.X() = sqrt(magXY + posCartesian.Z() * posCartesian.Z());
+		rThetaPhi = UnflipSphericalCoordinate(rThetaPhi);
+
+		float ret = sinogram.Sample(rThetaPhi);
+
+		if ((r * Vec<float, 2>{cp, sp} - .5f * geometry.originProjection).Apply<float>(&Square<float>).Sum() < geometry.
+		    squareRadius) {
+			ret *= -1.f;
+		}
+		return ret;
+	}
+
 };
 
 } // namespace reg23

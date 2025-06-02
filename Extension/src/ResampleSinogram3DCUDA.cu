@@ -1,41 +1,24 @@
 #include <torch/extension.h>
 
-#include "../include/Texture3DCUDA.h"
 #include "../include/ResampleSinogram3D.h"
+#include "../include/SinogramClassic3DCPU.h"
+#include "../include/SinogramHEALPixCPU.h"
 
 namespace reg23 {
 
-using CommonData = ResampleSinogram3D<Texture3DCUDA>::CommonData;
+using CommonData = ResampleSinogram3D::CommonData;
+using ConstantGeometry = ResampleSinogram3D::ConstantGeometry;
 
-__global__ void Kernel_ResampleSinogram3D_CUDA(Texture3DCUDA inputTexture,
-                                               Linear<Vec<double, 3> > mappingRThetaPhiToTexCoord,
-                                               const Vec<Vec<float, 4>, 4> projectionMatrixTranspose,
-                                               const float *phiValues, const float *rValues, long numelOut,
-                                               Vec<float, 2> originProjection, float squareRadius, float *resultPtr) {
+template <typename sinogram_t> __global__ void Kernel_ResampleSinogram3D_CUDA(
+	sinogram_t inputSinogram, const ConstantGeometry geometry, const float *phiValues, const float *rValues,
+	long numelOut, float *resultPtr) {
+
 	const long threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	if (threadIndex >= numelOut) return;
 
 	const float phi = phiValues[threadIndex];
 	const float r = rValues[threadIndex];
-	const float cp = cosf(phi);
-	const float sp = sinf(phi);
-	const Vec<float, 4> intermediate = MatMul(projectionMatrixTranspose, Vec<float, 4>{cp, sp, 0.f, -r});
-	const Vec<float, 3> intermediate3 = intermediate.XYZ();
-	const Vec<float, 3> posCartesian = -intermediate.W() * intermediate3 / intermediate3.Apply<float>(&Square<float>).
-	                                   Sum();
-
-	Vec<double, 3> rThetaPhi{};
-	rThetaPhi.Z() = atan2(posCartesian.Y(), posCartesian.X());
-	const float magXY = posCartesian.X() * posCartesian.X() + posCartesian.Y() * posCartesian.Y();
-	rThetaPhi.Y() = atan2(posCartesian.Z(), sqrt(magXY));
-	rThetaPhi.X() = sqrt(magXY + posCartesian.Z() * posCartesian.Z());
-	rThetaPhi = UnflipSphericalCoordinate(rThetaPhi);
-
-	resultPtr[threadIndex] = inputTexture.Sample(mappingRThetaPhiToTexCoord(rThetaPhi));
-
-	if ((r * Vec<float, 2>{cp, sp} - .5f * originProjection).Apply<float>(&Square<float>).Sum() < squareRadius) {
-		resultPtr[threadIndex] *= -1.f;
-	}
+	resultPtr[threadIndex] = ResampleSinogram3D::ResamplePlane(inputSinogram, geometry, phi, r);
 }
 
 /**
@@ -45,19 +28,18 @@ __global__ void Kernel_ResampleSinogram3D_CUDA(Texture3DCUDA inputTexture,
  *	in that plane measure phi right-hand rule about the z-axis from the positive x-direction
  *
  * @param sinogram3d
- * @param sinogramSpacing
- * @param sinogramRangeCentres
+ * @param sinogramType
+ * @param rSpacing
  * @param projectionMatrix
  * @param phiValues
  * @param rValues
  * @return
  */
-__host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const at::Tensor &sinogramSpacing,
-                                            const at::Tensor &sinogramRangeCentres, const at::Tensor &projectionMatrix,
+__host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const std::string &sinogramType,
+                                            double rSpacing, const at::Tensor &projectionMatrix,
                                             const at::Tensor &phiValues, const at::Tensor &rValues) {
-	CommonData common = ResampleSinogram3D<Texture3DCUDA>::Common(sinogram3d, sinogramSpacing, sinogramRangeCentres,
-	                                                              projectionMatrix, phiValues, rValues,
-	                                                              at::DeviceType::CUDA);
+	CommonData common = ResampleSinogram3D::Common(sinogram3d, sinogramType, projectionMatrix, phiValues, rValues,
+	                                               at::DeviceType::CUDA);
 
 	const at::Tensor phiFlatContiguous = phiValues.flatten().contiguous();
 	const float *phiFlatPtr = phiFlatContiguous.data_ptr<float>();
@@ -66,26 +48,30 @@ __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const 
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	const at::Tensor originProjectionHomogeneous = matmul(projectionMatrix,
-	                                                      torch::tensor(
-		                                                      {{0.f, 0.f, 0.f, 1.f}}, projectionMatrix.options()).t());
-	const Vec<float, 2> originProjection = Vec<float, 2>{originProjectionHomogeneous[0].item().toFloat(),
-	                                                     originProjectionHomogeneous[1].item().toFloat()} /
-	                                       originProjectionHomogeneous[3].item().toFloat();
-	const float squareRadius = .25f * originProjection.Apply<float>(&Square<float>).Sum();
+	switch (common.sinogramType) {
+	case ResampleSinogram3D::SinogramType::CLASSIC: {
+		const SinogramClassic3DCPU sinogram = SinogramClassic3DCPU::FromTensor(sinogram3d, rSpacing);
+		int minGridSize, blockSize;
+		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
+		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramClassic3DCPU>, 0, 0);
+		const int gridSize = (static_cast<unsigned>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 
-	const at::Tensor pht = projectionMatrix.t();
+		Kernel_ResampleSinogram3D_CUDA<SinogramClassic3DCPU><<<gridSize, blockSize>>>(
+			sinogram, common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
+		break;
+	}
+	case ResampleSinogram3D::SinogramType::HEALPIX: {
+		const SinogramHEALPixCPU sinogram = SinogramHEALPixCPU::FromTensor(sinogram3d, rSpacing);
+		int minGridSize, blockSize;
+		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
+		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramHEALPixCPU>, 0, 0);
+		const int gridSize = (static_cast<unsigned>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 
-	int minGridSize, blockSize;
-	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_ResampleSinogram3D_CUDA, 0, 0);
-	const int gridSize = (static_cast<unsigned>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
-
-	Kernel_ResampleSinogram3D_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture),
-	                                                        common.mappingRThetaPhiToTexCoord,
-	                                                        Vec<Vec<float, 4>, 4>::FromTensor2D(pht), phiFlatPtr,
-	                                                        rFlatPtr, common.flatOutput.numel(), originProjection,
-	                                                        squareRadius, resultFlatPtr);
-
+		Kernel_ResampleSinogram3D_CUDA<SinogramHEALPixCPU><<<gridSize, blockSize>>>(
+			sinogram, common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
+		break;
+	}
+	}
 	return common.flatOutput.view(phiValues.sizes());
 }
 

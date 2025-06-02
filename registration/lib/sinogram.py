@@ -34,21 +34,20 @@ class Sinogram(ABC):
 
 
 class SinogramClassic(Sinogram):
-    def __init__(self, data: torch.Tensor, sinogram_range: Sinogram3dRange):
+    def __init__(self, data: torch.Tensor, range: SinogramClassic3dRange):
         assert len(data.size()) == 3
-
         self.data = data
-        self.sinogram_range = sinogram_range
+        self.range = range
 
     def to(self, **kwargs) -> 'SinogramClassic':
-        return SinogramClassic(self.data.to(**kwargs), self.sinogram_range)
+        return SinogramClassic(self.data.to(**kwargs), self.range)
 
     @property
     def device(self):
         return self.data.device
 
     def get_spacing(self, *, device=torch.device('cpu')) -> torch.Tensor:
-        return self.sinogram_range.get_spacing(self.data.size(), device=device)
+        return self.range.get_spacing(self.data.size(), device=device)
 
     def grid_sample_smoothed(self, grid: Sinogram3dGrid, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
                              k_mapping: LinearMapping, sigma: float, offset_count: int = 10):
@@ -167,15 +166,9 @@ class SinogramClassic(Sinogram):
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         device = self.data.device
-        sinogram_range_low = torch.tensor(
-            [self.sinogram_range.r.low, self.sinogram_range.theta.low, self.sinogram_range.phi.low], device=device)
-        sinogram_range_high = torch.tensor(
-            [self.sinogram_range.r.high, self.sinogram_range.theta.high, self.sinogram_range.phi.high], device=device)
-        sinogram_spacing = (sinogram_range_high - sinogram_range_low) / (
-                torch.tensor(self.data.size(), dtype=torch.float32, device=device).flip(dims=(0,)) - 1)
-        sinogram_range_centres = .5 * (sinogram_range_low + sinogram_range_high)
         return Extension.resample_sinogram3d(
-            self.data, sinogram_spacing, sinogram_range_centres, ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
+            self.data, "classic", self.range.r.get_spacing(self.data.size()[2]), ph_matrix, fixed_image_grid.phi,
+            fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
                         plot: bool = False) -> torch.Tensor:
@@ -211,9 +204,9 @@ class SinogramClassic(Sinogram):
             plt.colorbar(mesh)
 
         grid_range = LinearRange.grid_sample_range()
-        i_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.r)
-        j_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.theta)
-        k_mapping: LinearMapping = grid_range.get_mapping_from(self.sinogram_range.phi)
+        i_mapping: LinearMapping = grid_range.get_mapping_from(self.range.r)
+        j_mapping: LinearMapping = grid_range.get_mapping_from(self.range.theta(self.data.size()[1]))
+        k_mapping: LinearMapping = grid_range.get_mapping_from(self.range.phi())
 
         if smooth is not None:
             ret = self.grid_sample_smoothed(

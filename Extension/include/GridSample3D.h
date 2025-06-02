@@ -40,6 +40,14 @@ __host__ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor 
  */
 template <typename texture_t> struct GridSample3D {
 
+	static_assert(texture_t::DIMENSIONALITY == 3);
+
+	using IntType = typename texture_t::IntType;
+	using FloatType = typename texture_t::FloatType;
+	using SizeType = typename texture_t::SizeType;
+	using VectorType = typename texture_t::VectorType;
+	using AddressModeType = typename texture_t::AddressModeType;
+
 	struct CommonData {
 		texture_t inputTexture{};
 		at::Tensor flatOutput{};
@@ -67,9 +75,9 @@ template <typename texture_t> struct GridSample3D {
 		CommonData ret{};
 		const at::Tensor inputContiguous = input.contiguous();
 		const float *inputPtr = inputContiguous.data_ptr<float>();
-		const Vec<int64_t, 3> inputSize = Vec<int64_t, 3>::FromIntArrayRef(input.sizes()).Flipped();
-		const Vec<double, 3> inputSpacing = 2.0 / (inputSize - static_cast<int64_t>(1)).StaticCast<double>();
-		ret.inputTexture = texture_t{inputPtr, inputSize, inputSpacing, Vec<double, 3>::Full(0.0),
+		const SizeType inputSize = SizeType::FromIntArrayRef(input.sizes()).Flipped();
+		const VectorType inputSpacing = 2.0 / (inputSize - static_cast<IntType>(1)).template StaticCast<FloatType>();
+		ret.inputTexture = texture_t{inputPtr, inputSize, inputSpacing, VectorType::Full(0.0),
 		                             texture_t::AddressModeType::Full(am)};
 		ret.flatOutput = torch::zeros(at::IntArrayRef({grid.numel() / 3}), inputContiguous.options());
 		return ret;

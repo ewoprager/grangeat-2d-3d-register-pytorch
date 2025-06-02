@@ -6,6 +6,7 @@ import logging.config
 
 import matplotlib.pyplot as plt
 import torch
+import pathlib
 
 import Extension as reg23
 
@@ -81,13 +82,13 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
         vol_data[1, 1, 1] = 1.
         voxel_spacing = torch.tensor([10., 10., 10.])
     else:
-        vol_data, voxel_spacing = data.load_volume(path, downsample_factor=volume_downsample_factor)
+        vol_data, voxel_spacing = data.load_volume(pathlib.Path(path), downsample_factor=volume_downsample_factor)
         vol_data = vol_data.to(dtype=torch.float32, device=cuda)
 
     if sinogram3d is None:
         sinogram3d = pre_computed.calculate_volume_sinogram(
-            cache_directory, vol_data, voxel_spacing, path, volume_downsample_factor, save_to_cache=save_to_cache,
-            vol_counts=sinogram_size)
+            cache_directory, vol_data, voxel_spacing=voxel_spacing, ct_volume_path=path,
+            volume_downsample_factor=volume_downsample_factor, save_to_cache=save_to_cache, vol_counts=sinogram_size)
 
     vol_diag: float = (
             torch.tensor([vol_data.size()], dtype=torch.float32) * voxel_spacing).square().sum().sqrt().item()

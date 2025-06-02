@@ -82,10 +82,18 @@ __host__ at::Tensor DRadon2DDR_CUDA(const at::Tensor &image, const at::Tensor &i
  */
 template <typename texture_t> struct Radon2D {
 
+	static_assert(texture_t::DIMENSIONALITY == 2);
+
+	using IntType = typename texture_t::IntType;
+	using FloatType = typename texture_t::FloatType;
+	using SizeType = typename texture_t::SizeType;
+	using VectorType = typename texture_t::VectorType;
+	using AddressModeType = typename texture_t::AddressModeType;
+
 	struct CommonData {
 		texture_t inputTexture{};
-		Linear<Vec<double, 2> > mappingIndexToOffset{};
-		double scaleFactor{};
+		Linear<VectorType> mappingIndexToOffset{};
+		FloatType scaleFactor{};
 		at::Tensor flatOutput{};
 	};
 
@@ -108,7 +116,8 @@ template <typename texture_t> struct Radon2D {
 
 		CommonData ret{};
 		ret.inputTexture = texture_t::FromTensor(image, imageSpacing);
-		const double lineLength = sqrt(ret.inputTexture.SizeWorld().template Apply<double>(&Square<double>).Sum());
+		const FloatType lineLength = sqrt(
+			ret.inputTexture.SizeWorld().template Apply<FloatType>(&Square<FloatType>).Sum());
 		ret.mappingIndexToOffset = GetMappingIToOffset(lineLength, samplesPerLine);
 		ret.scaleFactor = lineLength / static_cast<float>(samplesPerLine);
 		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), image.contiguous().options());
@@ -126,10 +135,10 @@ template <typename texture_t> struct Radon2D {
 	 *
 	 * The mapping is generated for 2-vectors, as it will ultimately be applied to 2-vectors.
 	 */
-	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2> > GetMappingIToOffset(double lineLength,
+	__host__ __device__ [[nodiscard]] static Linear<VectorType> GetMappingIToOffset(FloatType lineLength,
 		int64_t samplesPerLine) {
-		return {Vec<double, 2>::Full(-.5f * lineLength),
-		        Vec<double, 2>::Full(lineLength / static_cast<double>(samplesPerLine - 1))};
+		return {VectorType::Full(-.5f * lineLength),
+		        VectorType::Full(lineLength / static_cast<FloatType>(samplesPerLine - 1))};
 	}
 
 	/**
@@ -142,12 +151,12 @@ template <typename texture_t> struct Radon2D {
 	 *
 	 * The polar coordinates should be defined according to the convention stated in Extension/Conventions.md
 	 */
-	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 2> >
-	GetMappingIndexToTexCoord(const texture_t &textureIn, double phi, double r,
-	                          const Linear<Vec<double, 2> > &mappingIToOffset) {
-		const double s = sin(phi);
-		const double c = cos(phi);
-		const Linear<Vec<double, 2> > mappingOffsetToWorld{{r * c, r * s}, {-s, c}};
+	__host__ __device__ [[nodiscard]] static Linear<VectorType>
+	GetMappingIndexToTexCoord(const texture_t &textureIn, FloatType phi, FloatType r,
+	                          const Linear<VectorType> &mappingIToOffset) {
+		const FloatType s = sin(phi);
+		const FloatType c = cos(phi);
+		const Linear<VectorType> mappingOffsetToWorld{{r * c, r * s}, {-s, c}};
 		return textureIn.MappingWorldToTexCoord()(mappingOffsetToWorld(mappingIToOffset));
 	}
 
@@ -162,12 +171,12 @@ template <typename texture_t> struct Radon2D {
 	 * the parameter with respect to which this is evaluating the derivative is the **unsigned** version of `r`, i.e.
 	 * the **unsigned** distance between the orign and the line.
 	 */
-	__host__ __device__ [[nodiscard]] static Vec<double, 2> GetDTexCoordDR(const texture_t &textureIn, double phi,
-	                                                                       double r) {
-		const double sign = static_cast<double>(r > 0.) - static_cast<double>(r < 0.);
-		const double s = sin(phi);
-		const double c = cos(phi);
-		return textureIn.MappingWorldToTexCoord().gradient * sign * Vec<double, 2>{c, s};
+	__host__ __device__ [[nodiscard]] static VectorType GetDTexCoordDR(const texture_t &textureIn, FloatType phi,
+	                                                                   FloatType r) {
+		const FloatType sign = static_cast<FloatType>(r > 0.) - static_cast<FloatType>(r < 0.);
+		const FloatType s = sin(phi);
+		const FloatType c = cos(phi);
+		return textureIn.MappingWorldToTexCoord().gradient * sign * VectorType{c, s};
 	}
 
 	/**
@@ -183,12 +192,12 @@ template <typename texture_t> struct Radon2D {
 	 * of `mappingIndexToTexCoord`.
 	 */
 	__host__ __device__ [[nodiscard]] static float IntegrateLooped(const texture_t &texture,
-	                                                               const Linear<Vec<double, 2> > &
-	                                                               mappingIndexToTexCoord, int64_t samplesPerLine) {
+	                                                               const Linear<VectorType> &mappingIndexToTexCoord,
+	                                                               int64_t samplesPerLine) {
 		float ret = 0.f;
 		for (int64_t i = 0; i < samplesPerLine; ++i) {
-			const double iF = static_cast<double>(i);
-			ret += texture.Sample(mappingIndexToTexCoord(Vec<double, 2>::Full(iF)));
+			const FloatType iF = static_cast<FloatType>(i);
+			ret += texture.Sample(mappingIndexToTexCoord(VectorType::Full(iF)));
 		}
 		return ret;
 	}
@@ -204,12 +213,12 @@ template <typename texture_t> struct Radon2D {
 	 * parameter (according to the value of `dTexCoordDMappingParameter`).
 	 */
 	__host__ __device__ [[nodiscard]] static float
-	DIntegrateLoopedDMappingParameter(const texture_t &texture, const Linear<Vec<double, 2> > &mappingIndexToTexCoord,
-	                                  const Vec<double, 2> &dTexCoordDMappingParameter, int64_t samplesPerLine) {
+	DIntegrateLoopedDMappingParameter(const texture_t &texture, const Linear<VectorType> &mappingIndexToTexCoord,
+	                                  const VectorType &dTexCoordDMappingParameter, int64_t samplesPerLine) {
 		float ret = 0.f;
 		for (int64_t i = 0; i < samplesPerLine; ++i) {
-			const double iF = static_cast<double>(i);
-			const Vec<double, 2> texCoord = mappingIndexToTexCoord(Vec<double, 2>::Full(iF));
+			const FloatType iF = static_cast<FloatType>(i);
+			const VectorType texCoord = mappingIndexToTexCoord(VectorType::Full(iF));
 			ret += texture.DSampleDX(texCoord) * dTexCoordDMappingParameter.X() + texture.DSampleDY(texCoord) *
 				dTexCoordDMappingParameter.Y();
 		}

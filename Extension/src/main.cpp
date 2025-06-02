@@ -35,7 +35,7 @@ TORCH_LIBRARY(reg23, m) {
 	m.def("radon3d_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def("d_radon3d_dr(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def("d_radon3d_dr_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
-	m.def("resample_sinogram3d(Tensor sinogram, Tensor spacing, Tensor centres, Tensor projMat, Tensor phis, Tensor "
+	m.def("resample_sinogram3d(Tensor sinogram, str type, float rSpacing, Tensor projMat, Tensor phis, Tensor "
 		"rs) -> Tensor");
 	m.def("normalised_cross_correlation(Tensor a, Tensor b) -> Tensor");
 	m.def("grid_sample3d(Tensor input, Tensor grid, str address_mode) -> Tensor");

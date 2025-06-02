@@ -17,8 +17,9 @@ namespace reg23 {
  */
 enum class TextureAddressMode {
 	ZERO, ///< Sampling locations outside texture coordinate range will be read as 0
-	WRAP ///< Sampling locations outside texture coordinate range will be read wrapped back according to ((x - left) mod
-		 ///< width + left, (y - bottom) mod height + bottom, etc...
+	WRAP
+	///< Sampling locations outside texture coordinate range will be read wrapped back according to ((x - left) mod
+			///< width + left, (y - bottom) mod height + bottom, etc...
 };
 
 #ifdef __CUDACC__
@@ -45,7 +46,8 @@ inline cudaTextureAddressMode TextureAddressModeToCuda(TextureAddressMode tam) {
  * to all texture objects. It is intended to be used as a fully template-specified base class for any texture object.
  */
 template <std::size_t dimensionality, typename intType = int, typename floatType = float> class Texture {
-  public:
+public:
+	static constexpr std::size_t DIMENSIONALITY = dimensionality;
 	using IntType = intType;
 	using FloatType = floatType;
 	using SizeType = Vec<intType, dimensionality>;
@@ -63,7 +65,7 @@ template <std::size_t dimensionality, typename intType = int, typename floatType
 	 * @return The size of the texture in world coordinates
 	 */
 	[[nodiscard]] __host__ __device__ VectorType SizeWorld() const {
-		return size.template StaticCast<floatType>() * spacing;
+		return size.template StaticCast<FloatType>() * spacing;
 	}
 
 	/**
@@ -79,15 +81,16 @@ template <std::size_t dimensionality, typename intType = int, typename floatType
 	 * position and value spacing.
 	 */
 	[[nodiscard]] __host__ __device__ Linear<VectorType> MappingWorldToTexCoord() const {
-		const VectorType sizeWorldInverse = floatType{1.} / SizeWorld();
-		return {VectorType::Full(floatType{.5}) - centrePosition * sizeWorldInverse, sizeWorldInverse};
+		const VectorType sizeWorldInverse = FloatType{1.} / SizeWorld();
+		return {VectorType::Full(FloatType{.5}) - centrePosition * sizeWorldInverse, sizeWorldInverse};
 	}
 
-  protected:
+protected:
 	Texture() = default;
 
 	Texture(SizeType _size, VectorType _spacing, VectorType _centrePosition = {})
-		: size(_size), spacing(_spacing), centrePosition(_centrePosition) {}
+		: size(_size), spacing(_spacing), centrePosition(_centrePosition) {
+	}
 
 	// yes copy
 	Texture(const Texture &) = default;
@@ -99,9 +102,9 @@ template <std::size_t dimensionality, typename intType = int, typename floatType
 
 	Texture &operator=(Texture &&) noexcept = default;
 
-  private:
-	SizeType size{};			 ///< The dimensions of the texture
-	VectorType spacing{};		 ///< The spacing between the values of the texture in world coordinates
+private:
+	SizeType size{}; ///< The dimensions of the texture
+	VectorType spacing{}; ///< The spacing between the values of the texture in world coordinates
 	VectorType centrePosition{}; ///< The position of the centre of the texture in world coordinates
 };
 

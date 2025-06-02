@@ -43,13 +43,21 @@ __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &
  */
 template <typename texture_t> struct ProjectDRR {
 
+	static_assert(texture_t::DIMENSIONALITY == 3);
+
+	using IntType = typename texture_t::IntType;
+	using FloatType = typename texture_t::FloatType;
+	using SizeType = typename texture_t::SizeType;
+	using VectorType = typename texture_t::VectorType;
+	using AddressModeType = typename texture_t::AddressModeType;
+
 	struct CommonData {
 		texture_t inputTexture{};
 		Vec<Vec<double, 4>, 4> homographyMatrixInverse{};
 		Vec<double, 2> outputOffset{};
 		Vec<double, 2> detectorSpacing{};
 		double lambdaStart{};
-		double stepSize{};
+		FloatType stepSize{};
 		at::Tensor flatOutput{};
 	};
 
@@ -80,12 +88,12 @@ template <typename texture_t> struct ProjectDRR {
 		ret.homographyMatrixInverse = Vec<Vec<double, 4>, 4>::FromTensor2D(homographyMatrixInverse);
 
 		const Vec<int64_t, 3> inputSize = Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Flipped();
-		const Vec<double, 3> volumeDiagonal = inputSize.StaticCast<double>() * ret.inputTexture.Spacing();
-		const double volumeDiagLength = volumeDiagonal.Length();
-		const Vec<double, 3> sourcePosition = {0.0, 0.0, sourceDistance};
+		const VectorType volumeDiagonal = inputSize.StaticCast<FloatType>() * ret.inputTexture.Spacing();
+		const FloatType volumeDiagLength = volumeDiagonal.Length();
+		const VectorType sourcePosition = {0.0, 0.0, sourceDistance};
 		ret.lambdaStart = MatMul(ret.homographyMatrixInverse, VecCat(sourcePosition, 1.0)).XYZ().Length() - 0.5 *
 		                  volumeDiagLength;
-		ret.stepSize = volumeDiagLength / static_cast<double>(samplesPerRay);
+		ret.stepSize = volumeDiagLength / static_cast<FloatType>(samplesPerRay);
 		ret.outputOffset = Vec<double, 2>::FromTensor(outputOffset);
 		ret.detectorSpacing = Vec<double, 2>::FromTensor(detectorSpacing);
 		ret.flatOutput = torch::zeros(at::IntArrayRef({outputWidth * outputHeight}), volume.contiguous().options());

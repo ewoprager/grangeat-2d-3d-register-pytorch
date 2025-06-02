@@ -95,10 +95,18 @@ __host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &volume, const at::Tenso
  */
 template <typename texture_t> struct Radon3D {
 
+	static_assert(texture_t::DIMENSIONALITY == 3);
+
+	using IntType = typename texture_t::IntType;
+	using FloatType = typename texture_t::FloatType;
+	using SizeType = typename texture_t::SizeType;
+	using VectorType = typename texture_t::VectorType;
+	using AddressModeType = typename texture_t::AddressModeType;
+
 	struct CommonData {
 		texture_t inputTexture{};
-		Linear<Vec<double, 3> > mappingIndexToOffset{};
-		double scaleFactor{};
+		Linear<VectorType> mappingIndexToOffset{};
+		FloatType scaleFactor{};
 		at::Tensor flatOutput{};
 	};
 
@@ -124,9 +132,10 @@ template <typename texture_t> struct Radon3D {
 
 		CommonData ret{};
 		ret.inputTexture = texture_t::FromTensor(volume, volumeSpacing);
-		const double planeSize = sqrtf(ret.inputTexture.SizeWorld().template Apply<double>(&Square<double>).Sum());
+		const FloatType planeSize = sqrt(
+			ret.inputTexture.SizeWorld().template Apply<FloatType>(&Square<FloatType>).Sum());
 		ret.mappingIndexToOffset = GetMappingIToOffset(planeSize, samplesPerDirection);
-		const double rootScaleFactor = planeSize / static_cast<float>(samplesPerDirection);
+		const FloatType rootScaleFactor = planeSize / static_cast<FloatType>(samplesPerDirection);
 		ret.scaleFactor = rootScaleFactor * rootScaleFactor;
 		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), volume.contiguous().options());
 		return ret;
@@ -143,11 +152,11 @@ template <typename texture_t> struct Radon3D {
 	 *
 	 * The mapping is generated for 3-vectors, as it will ultimately be applied to 3-vectors.
 	 */
-	__host__ __device__ [[nodiscard]] static Linear<Vec<double, 3> > GetMappingIToOffset(double planeSize,
+	__host__ __device__ [[nodiscard]] static Linear<VectorType> GetMappingIToOffset(FloatType planeSize,
 		int64_t samplesPerDirection) {
 
-		return {Vec<double, 3>::Full(-.5f * planeSize),
-		        Vec<double, 3>::Full(planeSize / static_cast<double>(samplesPerDirection - 1))};
+		return {VectorType::Full(-.5 * planeSize),
+		        VectorType::Full(planeSize / static_cast<FloatType>(samplesPerDirection - 1))};
 	}
 
 	/**
@@ -161,15 +170,15 @@ template <typename texture_t> struct Radon3D {
 	 *
 	 * The spherical coordinates should be defined according to the convention stated in Extension/Conventions.md
 	 */
-	__host__ __device__ [[nodiscard]] static Linear2<Vec<double, 3> >
-	GetMappingIndexToTexCoord(const texture_t &textureIn, double phi, double theta, double r,
-	                          const Linear<Vec<double, 3> > &mappingIToOffset) {
-		const double sp = sin(phi);
-		const double cp = cos(phi);
-		const double st = sin(theta);
-		const double ct = cos(theta);
-		const Linear2<Vec<double, 3> > mappingOffsetToWorld{{r * ct * cp, r * ct * sp, r * st}, {-sp, cp, 0.f},
-		                                                    {-st * cp, -st * sp, ct}};
+	__host__ __device__ [[nodiscard]] static Linear2<VectorType>
+	GetMappingIndexToTexCoord(const texture_t &textureIn, FloatType phi, FloatType theta, FloatType r,
+	                          const Linear<VectorType> &mappingIToOffset) {
+		const FloatType sp = sin(phi);
+		const FloatType cp = cos(phi);
+		const FloatType st = sin(theta);
+		const FloatType ct = cos(theta);
+		const Linear2<VectorType> mappingOffsetToWorld{{r * ct * cp, r * ct * sp, r * st}, {-sp, cp, 0.f},
+		                                               {-st * cp, -st * sp, ct}};
 		return textureIn.MappingWorldToTexCoord()(mappingOffsetToWorld(mappingIToOffset));
 	}
 
@@ -185,14 +194,14 @@ template <typename texture_t> struct Radon3D {
 	 * however the parameter with respect to which this is evaluating the derivative is the **unsigned** version of `r`,
 	 * i.e. the **unsigned** distance between the orign and the plane.
 	 */
-	__host__ __device__ [[nodiscard]] static Vec<double, 3> GetDTexCoordDR(const texture_t &textureIn, double phi,
-	                                                                       double theta, double r) {
-		const double sign = static_cast<double>(r > 0.) - static_cast<double>(r < 0.);
-		const double sp = sin(phi);
-		const double cp = cos(phi);
-		const double st = sin(theta);
-		const double ct = cos(theta);
-		return textureIn.MappingWorldToTexCoord().gradient * sign * Vec<double, 3>{ct * cp, ct * sp, st};
+	__host__ __device__ [[nodiscard]] static VectorType GetDTexCoordDR(const texture_t &textureIn, FloatType phi,
+	                                                                   FloatType theta, FloatType r) {
+		const FloatType sign = static_cast<FloatType>(r > 0.) - static_cast<FloatType>(r < 0.);
+		const FloatType sp = sin(phi);
+		const FloatType cp = cos(phi);
+		const FloatType st = sin(theta);
+		const FloatType ct = cos(theta);
+		return textureIn.MappingWorldToTexCoord().gradient * sign * VectorType{ct * cp, ct * sp, st};
 	}
 
 	/**
@@ -209,14 +218,14 @@ template <typename texture_t> struct Radon3D {
 	 * value of `mappingIndexToTexCoord`.
 	 */
 	__host__ __device__ [[nodiscard]] static float
-	IntegrateLooped(const texture_t &texture, const Linear2<Vec<double, 3> > &mappingIndexToTexCoord,
+	IntegrateLooped(const texture_t &texture, const Linear2<VectorType> &mappingIndexToTexCoord,
 	                int64_t samplesPerDirection) {
 		float ret = 0.f;
 		for (int64_t j = 0; j < samplesPerDirection; ++j) {
 			for (int64_t i = 0; i < samplesPerDirection; ++i) {
-				const double iF = static_cast<double>(i);
-				const double jF = static_cast<double>(j);
-				ret += texture.Sample(mappingIndexToTexCoord(Vec<double, 3>::Full(iF), Vec<double, 3>::Full(jF)));
+				const FloatType iF = static_cast<FloatType>(i);
+				const FloatType jF = static_cast<FloatType>(j);
+				ret += texture.Sample(mappingIndexToTexCoord(VectorType::Full(iF), VectorType::Full(jF)));
 			}
 		}
 		return ret;
@@ -233,15 +242,14 @@ template <typename texture_t> struct Radon3D {
 	 * parameter (according to the value of `dTexCoordDMappingParameter`).
 	 */
 	__host__ __device__ [[nodiscard]] static float
-	DIntegrateLoopedDMappingParameter(const texture_t &texture, const Linear2<Vec<double, 3> > &mappingIndexToTexCoord,
-	                                  const Vec<double, 3> &dTexCoordDMappingParameter, int64_t samplesPerDirection) {
+	DIntegrateLoopedDMappingParameter(const texture_t &texture, const Linear2<VectorType> &mappingIndexToTexCoord,
+	                                  const VectorType &dTexCoordDMappingParameter, int64_t samplesPerDirection) {
 		float ret = 0.f;
 		for (int64_t j = 0; j < samplesPerDirection; ++j) {
 			for (int64_t i = 0; i < samplesPerDirection; ++i) {
-				const double iF = static_cast<double>(i);
-				const double jF = static_cast<double>(j);
-				const Vec<double, 3> texCoord = mappingIndexToTexCoord(Vec<double, 3>::Full(iF),
-				                                                       Vec<double, 3>::Full(jF));
+				const FloatType iF = static_cast<FloatType>(i);
+				const FloatType jF = static_cast<FloatType>(j);
+				const VectorType texCoord = mappingIndexToTexCoord(VectorType::Full(iF), VectorType::Full(jF));
 				ret += texture.DSampleDX(texCoord) * dTexCoordDMappingParameter.X() + texture.DSampleDY(texCoord) *
 					dTexCoordDMappingParameter.Y() + texture.DSampleDZ(texCoord) * dTexCoordDMappingParameter.Z();
 			}
