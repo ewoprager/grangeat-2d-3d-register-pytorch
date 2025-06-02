@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['textureaddressmode_0',['TextureAddressMode',['../group__textures.html#ga7c59c85cf0c72d00bd5d489b4c2751b2',1,'reg23']]]
+  ['sinogramtype_0',['SinogramType',['../structreg23_1_1ResampleSinogram3D.html#a3881b1e782477836a9be15c9dc889025',1,'reg23::ResampleSinogram3D']]]
 ];

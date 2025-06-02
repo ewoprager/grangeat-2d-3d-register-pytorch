@@ -1,7 +1,7 @@
 var searchData=
 [
   ['dehomogenise_0',['DeHomogenise',['../classreg23_1_1Vec.html#a593bdad9c83e9a10b2ce3652262a061b',1,'reg23::Vec']]],
-  ['dintegrateloopeddmappingparameter_1',['dintegrateloopeddmappingparameter',['../structreg23_1_1Radon2D.html#a3c9f0a7898d8fd44f3651ff12b3f641a',1,'reg23::Radon2D::DIntegrateLoopedDMappingParameter()'],['../structreg23_1_1Radon3D.html#a3d6c29938a4f51b0aa86b2c64f47644d',1,'reg23::Radon3D::DIntegrateLoopedDMappingParameter()']]],
+  ['dintegrateloopeddmappingparameter_1',['dintegrateloopeddmappingparameter',['../structreg23_1_1Radon2D.html#a7c50d62fe6c821109f35ab177449a560',1,'reg23::Radon2D::DIntegrateLoopedDMappingParameter()'],['../structreg23_1_1Radon3D.html#a1242c04f4665948c0629d39dbf626f3b',1,'reg23::Radon3D::DIntegrateLoopedDMappingParameter()']]],
   ['dradon2ddr_5fcpu_2',['DRadon2DDR_CPU',['../group__pytorch__functions.html#gafe0a581bb38e5ddeed2f237ca5e31c5c',1,'reg23']]],
   ['dradon2ddr_5fcuda_3',['DRadon2DDR_CUDA',['../group__pytorch__functions.html#ga33206dc5e7caf417cf653f32f7158d59',1,'reg23']]],
   ['dradon3ddr_5fcpu_4',['DRadon3DDR_CPU',['../group__pytorch__functions.html#ga00815aa402f5f6fa243f661db1aae430',1,'reg23']]],

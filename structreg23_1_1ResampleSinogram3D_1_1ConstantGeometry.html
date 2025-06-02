@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Grangeat-based 2D/3D image registration: reg23::ResampleHEALPixSinogram3D&lt; texture_t &gt;::CommonData Struct Reference</title>
+<title>Grangeat-based 2D/3D image registration: reg23::ResampleSinogram3D::ConstantGeometry Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -79,53 +79,65 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="namespacereg23.html">reg23</a></li><li class="navelem"><a class="el" href="structreg23_1_1ResampleHEALPixSinogram3D.html">ResampleHEALPixSinogram3D</a></li><li class="navelem"><a class="el" href="structreg23_1_1ResampleHEALPixSinogram3D_1_1CommonData.html">CommonData</a></li>  </ul>
+<li class="navelem"><a class="el" href="namespacereg23.html">reg23</a></li><li class="navelem"><a class="el" href="structreg23_1_1ResampleSinogram3D.html">ResampleSinogram3D</a></li><li class="navelem"><a class="el" href="structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html">ConstantGeometry</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structreg23_1_1ResampleHEALPixSinogram3D_1_1CommonData-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">reg23::ResampleHEALPixSinogram3D&lt; texture_t &gt;::CommonData Struct Reference</div></div>
+<a href="structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">reg23::ResampleSinogram3D::ConstantGeometry Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="ResampleHEALPixSinogram3D_8h_source.html">ResampleHEALPixSinogram3D.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="ResampleSinogram3D_8h_source.html">ResampleSinogram3D.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a8fae979a4bd8ff909aba8142687c085f" id="r_a8fae979a4bd8ff909aba8142687c085f"><td class="memItemLeft" align="right" valign="top">texture_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleHEALPixSinogram3D_1_1CommonData.html#a8fae979a4bd8ff909aba8142687c085f">inputTexture</a> {}</td></tr>
-<tr class="separator:a8fae979a4bd8ff909aba8142687c085f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f25d2be21a165078cac14b929faf605" id="r_a2f25d2be21a165078cac14b929faf605"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleHEALPixSinogram3D_1_1CommonData.html#a2f25d2be21a165078cac14b929faf605">flatOutput</a> {}</td></tr>
-<tr class="separator:a2f25d2be21a165078cac14b929faf605"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6cef2eec6bd335fd6e42f6d1be56529" id="r_ab6cef2eec6bd335fd6e42f6d1be56529"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; float, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html#ab6cef2eec6bd335fd6e42f6d1be56529">originProjection</a> {}</td></tr>
+<tr class="separator:ab6cef2eec6bd335fd6e42f6d1be56529"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34a537f0d1cca3564d0a5035d2b91add" id="r_a34a537f0d1cca3564d0a5035d2b91add"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html#a34a537f0d1cca3564d0a5035d2b91add">squareRadius</a> {}</td></tr>
+<tr class="separator:a34a537f0d1cca3564d0a5035d2b91add"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a829c7ffd4be39b8518f0da32501fb583" id="r_a829c7ffd4be39b8518f0da32501fb583"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; float, 4 &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html#a829c7ffd4be39b8518f0da32501fb583">projectionMatrixTranspose</a> {}</td></tr>
+<tr class="separator:a829c7ffd4be39b8518f0da32501fb583"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a2f25d2be21a165078cac14b929faf605" name="a2f25d2be21a165078cac14b929faf605"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f25d2be21a165078cac14b929faf605">&#9670;&#160;</a></span>flatOutput</h2>
+<a id="ab6cef2eec6bd335fd6e42f6d1be56529" name="ab6cef2eec6bd335fd6e42f6d1be56529"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6cef2eec6bd335fd6e42f6d1be56529">&#9670;&#160;</a></span>originProjection</h2>
 
 <div class="memitem">
 <div class="memproto">
-<div class="memtemplate">
-template&lt;typename texture_t &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">at::Tensor <a class="el" href="structreg23_1_1ResampleHEALPixSinogram3D.html">reg23::ResampleHEALPixSinogram3D</a>&lt; texture_t &gt;::CommonData::flatOutput {}</td>
+          <td class="memname"><a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt;float, 2&gt; reg23::ResampleSinogram3D::ConstantGeometry::originProjection {}</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a8fae979a4bd8ff909aba8142687c085f" name="a8fae979a4bd8ff909aba8142687c085f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8fae979a4bd8ff909aba8142687c085f">&#9670;&#160;</a></span>inputTexture</h2>
+<a id="a829c7ffd4be39b8518f0da32501fb583" name="a829c7ffd4be39b8518f0da32501fb583"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a829c7ffd4be39b8518f0da32501fb583">&#9670;&#160;</a></span>projectionMatrixTranspose</h2>
 
 <div class="memitem">
 <div class="memproto">
-<div class="memtemplate">
-template&lt;typename texture_t &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">texture_t <a class="el" href="structreg23_1_1ResampleHEALPixSinogram3D.html">reg23::ResampleHEALPixSinogram3D</a>&lt; texture_t &gt;::CommonData::inputTexture {}</td>
+          <td class="memname"><a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt;<a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt;float, 4&gt;, 4&gt; reg23::ResampleSinogram3D::ConstantGeometry::projectionMatrixTranspose {}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a34a537f0d1cca3564d0a5035d2b91add" name="a34a537f0d1cca3564d0a5035d2b91add"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34a537f0d1cca3564d0a5035d2b91add">&#9670;&#160;</a></span>squareRadius</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float reg23::ResampleSinogram3D::ConstantGeometry::squareRadius {}</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -133,7 +145,7 @@ template&lt;typename texture_t &gt; </div>
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>/home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/Extension/include/<a class="el" href="ResampleHEALPixSinogram3D_8h_source.html">ResampleHEALPixSinogram3D.h</a></li>
+<li>/home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/Extension/include/<a class="el" href="ResampleSinogram3D_8h_source.html">ResampleSinogram3D.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['wrap_0',['WRAP',['../group__textures.html#gga7c59c85cf0c72d00bd5d489b4c2751b2ae1c8555fcf0ea2bb648a6fd527d658c0',1,'reg23']]]
+  ['classic_0',['CLASSIC',['../structreg23_1_1ResampleSinogram3D.html#a3881b1e782477836a9be15c9dc889025a21994d6177b29e1128b2d7f0f8342057',1,'reg23::ResampleSinogram3D']]]
 ];

@@ -4,6 +4,5 @@ var searchData=
   ['length_1',['Length',['../classreg23_1_1Vec.html#a84a87411bcc96f2c6406e74381b30d6d',1,'reg23::Vec']]],
   ['linear_2',['Linear',['../structreg23_1_1Linear.html',1,'reg23']]],
   ['linear2_3',['Linear2',['../structreg23_1_1Linear2.html',1,'reg23']]],
-  ['linear_3c_20reg23_3a_3avec_3c_20double_2c_202_20_3e_20_3e_4',['Linear&lt; reg23::Vec&lt; double, 2 &gt; &gt;',['../structreg23_1_1Linear.html',1,'reg23']]],
-  ['linear_3c_20reg23_3a_3avec_3c_20double_2c_203_20_3e_20_3e_5',['Linear&lt; reg23::Vec&lt; double, 3 &gt; &gt;',['../structreg23_1_1Linear.html',1,'reg23']]]
+  ['linear_3c_20vectortype_20_3e_4',['Linear&lt; VectorType &gt;',['../structreg23_1_1Linear.html',1,'reg23']]]
 ];

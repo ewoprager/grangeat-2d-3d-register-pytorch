@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['zero_0',['ZERO',['../group__textures.html#gga7c59c85cf0c72d00bd5d489b4c2751b2a529e9e0beb5f85d1f132917c1a09860c',1,'reg23']]]
+  ['healpix_0',['HEALPIX',['../structreg23_1_1ResampleSinogram3D.html#a3881b1e782477836a9be15c9dc889025adf91bf67faa33802ad0078f0956d5ce2',1,'reg23::ResampleSinogram3D']]]
 ];

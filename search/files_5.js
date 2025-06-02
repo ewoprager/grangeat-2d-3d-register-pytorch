@@ -6,9 +6,7 @@ var searchData=
   ['radon3d_2eh_3',['Radon3D.h',['../Radon3D_8h.html',1,'']]],
   ['radon3dcpu_2ecpp_4',['Radon3DCPU.cpp',['../Radon3DCPU_8cpp.html',1,'']]],
   ['radon3dcuda_2ecu_5',['Radon3DCUDA.cu',['../Radon3DCUDA_8cu.html',1,'']]],
-  ['resamplehealpixsinogram3d_2eh_6',['ResampleHEALPixSinogram3D.h',['../ResampleHEALPixSinogram3D_8h.html',1,'']]],
-  ['resamplehealpixsinogram3dcpu_2ecpp_7',['ResampleHEALPixSinogram3DCPU.cpp',['../ResampleHEALPixSinogram3DCPU_8cpp.html',1,'']]],
-  ['resamplesinogram3d_2eh_8',['ResampleSinogram3D.h',['../ResampleSinogram3D_8h.html',1,'']]],
-  ['resamplesinogram3dcpu_2ecpp_9',['ResampleSinogram3DCPU.cpp',['../ResampleSinogram3DCPU_8cpp.html',1,'']]],
-  ['resamplesinogram3dcuda_2ecu_10',['ResampleSinogram3DCUDA.cu',['../ResampleSinogram3DCUDA_8cu.html',1,'']]]
+  ['resamplesinogram3d_2eh_6',['ResampleSinogram3D.h',['../ResampleSinogram3D_8h.html',1,'']]],
+  ['resamplesinogram3dcpu_2ecpp_7',['ResampleSinogram3DCPU.cpp',['../ResampleSinogram3DCPU_8cpp.html',1,'']]],
+  ['resamplesinogram3dcuda_2ecu_8',['ResampleSinogram3DCUDA.cu',['../ResampleSinogram3DCUDA_8cu.html',1,'']]]
 ];

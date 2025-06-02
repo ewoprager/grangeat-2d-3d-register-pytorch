@@ -126,18 +126,12 @@ Functions</h2></td></tr>
 <tr class="memitem:ga9333533a94e6ea1bed905d4914be3775" id="r_ga9333533a94e6ea1bed905d4914be3775"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga9333533a94e6ea1bed905d4914be3775">reg23::DRadon3DDR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
 <tr class="memdesc:ga9333533a94e6ea1bed905d4914be3775"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga00815aa402f5f6fa243f661db1aae430" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">reg23::DRadon3DDR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga9333533a94e6ea1bed905d4914be3775"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadb48e591ff8ed2211b538b754e971374" id="r_gadb48e591ff8ed2211b538b754e971374"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gadb48e591ff8ed2211b538b754e971374">reg23::ResampleHEALPixSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="memdesc:gadb48e591ff8ed2211b538b754e971374"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
-<tr class="separator:gadb48e591ff8ed2211b538b754e971374"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga87453eccd4052f1088d5fdf5619ea514" id="r_ga87453eccd4052f1088d5fdf5619ea514"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga87453eccd4052f1088d5fdf5619ea514">reg23::ResampleHEALPixSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="memdesc:ga87453eccd4052f1088d5fdf5619ea514"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gadb48e591ff8ed2211b538b754e971374" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleHEALPixSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:ga87453eccd4052f1088d5fdf5619ea514"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga893cec1df23860808ca040db88bc329b" id="r_ga893cec1df23860808ca040db88bc329b"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b">reg23::ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="memdesc:ga893cec1df23860808ca040db88bc329b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
-<tr class="separator:ga893cec1df23860808ca040db88bc329b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf8e60411d46afc090b0cdb75e48b763a" id="r_gaf8e60411d46afc090b0cdb75e48b763a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaf8e60411d46afc090b0cdb75e48b763a">reg23::ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="memdesc:gaf8e60411d46afc090b0cdb75e48b763a"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:gaf8e60411d46afc090b0cdb75e48b763a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3913bc386be8c0749edcf2ff376de2f5" id="r_ga3913bc386be8c0749edcf2ff376de2f5"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5">reg23::ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const std::string &amp;sinogramType, double rSpacing, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:ga3913bc386be8c0749edcf2ff376de2f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
+<tr class="separator:ga3913bc386be8c0749edcf2ff376de2f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga68ce72d11d4783a082f67f3055a44097" id="r_ga68ce72d11d4783a082f67f3055a44097"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097">reg23::ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const std::string &amp;sinogramType, double rSpacing, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:ga68ce72d11d4783a082f67f3055a44097"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:ga68ce72d11d4783a082f67f3055a44097"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7d3614bf0086f3d3602a2842a2c8d4ff" id="r_ga7d3614bf0086f3d3602a2842a2c8d4ff"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga7d3614bf0086f3d3602a2842a2c8d4ff">reg23::NormalisedCrossCorrelation_CPU</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
 <tr class="separator:ga7d3614bf0086f3d3602a2842a2c8d4ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga33290c947ad06df3c3aea8e18914da29" id="r_ga33290c947ad06df3c3aea8e18914da29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga33290c947ad06df3c3aea8e18914da29">reg23::NormalisedCrossCorrelation_CUDA</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
@@ -909,130 +903,8 @@ Address modes</h1>
 
 </div>
 </div>
-<a id="gadb48e591ff8ed2211b538b754e971374" name="gadb48e591ff8ed2211b538b754e971374"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gadb48e591ff8ed2211b538b754e971374">&#9670;&#160;</a></span>ResampleHEALPixSinogram3D_CPU()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">at::Tensor reg23::ResampleHEALPixSinogram3D_CPU </td>
-          <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogram3d</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramSpacing</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramRangeCentres</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>projectionMatrix</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>phiValues</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>rValues</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sinogram3d</td><td>a tensor of size (P,Q,R) containing <code>torch.float32</code>s: The 3D sinogram to resample. It must contain plane integrals evenly spaced along <code>phi</code>, <code>theta</code> and <code>r</code> over each dimension respectively. This is the pre-calculated derivative of the Radon transform of the CT volume. </td></tr>
-    <tr><td class="paramname">sinogramSpacing</td><td>a tensor of size (3,) containing <code>torch.float64</code>s: The spacing of (<code>phi</code>, <code>theta</code>, <code>r</code>) between values in the given sinogram. </td></tr>
-    <tr><td class="paramname">sinogramRangeCentres</td><td>a tensor of size (3,) containing <code>torch.float64</code>s: The central values of (<code>phi</code>, <code>theta</code>, <code>r</code>) of the given sinogram. </td></tr>
-    <tr><td class="paramname">projectionMatrix</td><td>a tensor of size (4, 4) containing <code>torch.float32</code>s: The projection matrix <code>PH</code> at the desired transformation. </td></tr>
-    <tr><td class="paramname">phiValues</td><td>a tensor of any size containing <code>torch.float32</code>s: The polar coordinate <code>phi</code> values of the fixed image at which to resample corresponding values in the given sinogram </td></tr>
-    <tr><td class="paramname">rValues</td><td>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The polar coordinate <code>r</code> values of the fixed image at which to resample corresponding values in the given sinogram </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The values sampled from the given volume sinogram at the locations corresponding to the given polar coordinates (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation:</dd></dl>
-<p>Frysch R, Pfeiffer T, Rose G. A novel approach to 2D/3D registration of X-ray images using Grangeat's relation. Med Image Anal. 2021 Jan;67:101815. doi: 10.1016/j.media.2020.101815. Epub 2020 Sep 30. PMID: 33065470.</p>
-<p>Note: Assumes that the projection matrix projects onto the x-y plane, and that the radial coordinates (phi, r) in that plane measure phi right-hand rule about the z-axis from the positive x-direction </p>
-
-</div>
-</div>
-<a id="ga87453eccd4052f1088d5fdf5619ea514" name="ga87453eccd4052f1088d5fdf5619ea514"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga87453eccd4052f1088d5fdf5619ea514">&#9670;&#160;</a></span>ResampleHEALPixSinogram3D_CUDA()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::ResampleHEALPixSinogram3D_CUDA </td>
-          <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogram3d</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramSpacing</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramRangeCentres</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>projectionMatrix</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>phiValues</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>rValues</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#gadb48e591ff8ed2211b538b754e971374" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleHEALPixSinogram3D_CPU</a> that uses CUDA parallelisation. </p>
-
-</div>
-</div>
-<a id="ga893cec1df23860808ca040db88bc329b" name="ga893cec1df23860808ca040db88bc329b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga893cec1df23860808ca040db88bc329b">&#9670;&#160;</a></span>ResampleSinogram3D_CPU()</h2>
+<a id="ga3913bc386be8c0749edcf2ff376de2f5" name="ga3913bc386be8c0749edcf2ff376de2f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3913bc386be8c0749edcf2ff376de2f5">&#9670;&#160;</a></span>ResampleSinogram3D_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1046,14 +918,14 @@ Address modes</h1>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramSpacing</em>, </td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>sinogramType</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramRangeCentres</em>, </td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>rSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1085,8 +957,8 @@ Address modes</h1>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">sinogram3d</td><td>a tensor of size (P,Q,R) containing <code>torch.float32</code>s: The 3D sinogram to resample. It must contain plane integrals evenly spaced along <code>phi</code>, <code>theta</code> and <code>r</code> over each dimension respectively. This is the pre-calculated derivative of the Radon transform of the CT volume. </td></tr>
-    <tr><td class="paramname">sinogramSpacing</td><td>a tensor of size (3,) containing <code>torch.float64</code>s: The spacing of (<code>phi</code>, <code>theta</code>, <code>r</code>) between values in the given sinogram. </td></tr>
-    <tr><td class="paramname">sinogramRangeCentres</td><td>a tensor of size (3,) containing <code>torch.float64</code>s: The central values of (<code>phi</code>, <code>theta</code>, <code>r</code>) of the given sinogram. </td></tr>
+    <tr><td class="paramname">sinogramType</td><td>a string; one of the following: "classic", "healpix". see documentation for <code>enum</code> <code><a class="el" href="structreg23_1_1ResampleSinogram3D.html#a3881b1e782477836a9be15c9dc889025">reg23::ResampleSinogram3D::SinogramType</a></code> </td></tr>
+    <tr><td class="paramname">rSpacing</td><td>The spacing in <code>r</code> between the plane integrals in the sinogram. </td></tr>
     <tr><td class="paramname">projectionMatrix</td><td>a tensor of size (4, 4) containing <code>torch.float32</code>s: The projection matrix <code>PH</code> at the desired transformation. </td></tr>
     <tr><td class="paramname">phiValues</td><td>a tensor of any size containing <code>torch.float32</code>s: The polar coordinate <code>phi</code> values of the fixed image at which to resample corresponding values in the given sinogram </td></tr>
     <tr><td class="paramname">rValues</td><td>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The polar coordinate <code>r</code> values of the fixed image at which to resample corresponding values in the given sinogram </td></tr>
@@ -1099,8 +971,8 @@ Address modes</h1>
 
 </div>
 </div>
-<a id="gaf8e60411d46afc090b0cdb75e48b763a" name="gaf8e60411d46afc090b0cdb75e48b763a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaf8e60411d46afc090b0cdb75e48b763a">&#9670;&#160;</a></span>ResampleSinogram3D_CUDA()</h2>
+<a id="ga68ce72d11d4783a082f67f3055a44097" name="ga68ce72d11d4783a082f67f3055a44097"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga68ce72d11d4783a082f67f3055a44097">&#9670;&#160;</a></span>ResampleSinogram3D_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1114,14 +986,14 @@ Address modes</h1>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramSpacing</em>, </td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>sinogramType</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
-          <td class="paramname"><em>sinogramRangeCentres</em>, </td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>rSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1149,7 +1021,7 @@ Address modes</h1>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation. </p>
 
 </div>
 </div>

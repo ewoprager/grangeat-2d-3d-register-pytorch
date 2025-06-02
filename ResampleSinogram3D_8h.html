@@ -98,9 +98,11 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleSinogram3D.html">reg23::ResampleSinogram3D&lt; texture_t &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleSinogram3D.html">reg23::ResampleSinogram3D</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleSinogram3D_1_1CommonData.html">reg23::ResampleSinogram3D&lt; texture_t &gt;::CommonData</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html">reg23::ResampleSinogram3D::ConstantGeometry</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structreg23_1_1ResampleSinogram3D_1_1CommonData.html">reg23::ResampleSinogram3D::CommonData</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
@@ -110,12 +112,12 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga893cec1df23860808ca040db88bc329b" id="r_ga893cec1df23860808ca040db88bc329b"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b">reg23::ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="memdesc:ga893cec1df23860808ca040db88bc329b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
-<tr class="separator:ga893cec1df23860808ca040db88bc329b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf8e60411d46afc090b0cdb75e48b763a" id="r_gaf8e60411d46afc090b0cdb75e48b763a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaf8e60411d46afc090b0cdb75e48b763a">reg23::ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
-<tr class="memdesc:gaf8e60411d46afc090b0cdb75e48b763a"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:gaf8e60411d46afc090b0cdb75e48b763a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3913bc386be8c0749edcf2ff376de2f5" id="r_ga3913bc386be8c0749edcf2ff376de2f5"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5">reg23::ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const std::string &amp;sinogramType, double rSpacing, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:ga3913bc386be8c0749edcf2ff376de2f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
+<tr class="separator:ga3913bc386be8c0749edcf2ff376de2f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga68ce72d11d4783a082f67f3055a44097" id="r_ga68ce72d11d4783a082f67f3055a44097"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097">reg23::ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const std::string &amp;sinogramType, double rSpacing, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memdesc:ga68ce72d11d4783a082f67f3055a44097"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:ga68ce72d11d4783a082f67f3055a44097"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->

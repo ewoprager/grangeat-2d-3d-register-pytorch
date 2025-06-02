@@ -91,6 +91,12 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1SinogramClassic3DCPU.html">reg23::SinogramClassic3DCPU</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 3D texture stored for access by the CPU, structured for storing an even distribution of values over the surface of S^2, according to the HEALPix mapping. ToDo: citation here.  <a href="classreg23_1_1SinogramClassic3DCPU.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1SinogramHEALPixCPU.html">reg23::SinogramHEALPixCPU</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 3D texture stored for access by the CPU, structured for storing an even distribution of values over the surface of S^2, according to the HEALPix mapping. ToDo: citation here.  <a href="classreg23_1_1SinogramHEALPixCPU.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html">reg23::Texture&lt; dimensionality, intType, floatType &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A parent texture class containing template data and functionality.  <a href="classreg23_1_1Texture.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -105,9 +111,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DCUDA.html">reg23::Texture3DCUDA</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 3D texture stored for access by an NVIDIA GPU.  <a href="classreg23_1_1Texture3DCUDA.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture3DHEALPixCPU.html">reg23::Texture3DHEALPixCPU</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 3D texture stored for access by the CPU, structured for storing an even distribution of values over the surface of S^2, according to the HEALPix mapping. ToDo: citation here.  <a href="classreg23_1_1Texture3DHEALPixCPU.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
@@ -143,7 +146,8 @@ Enumerations</h2></td></tr>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga7c59c85cf0c72d00bd5d489b4c2751b2a529e9e0beb5f85d1f132917c1a09860c" name="gga7c59c85cf0c72d00bd5d489b4c2751b2a529e9e0beb5f85d1f132917c1a09860c"></a>ZERO&#160;</td><td class="fielddoc"><p>Sampling locations outside texture coordinate range will be read as 0. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga7c59c85cf0c72d00bd5d489b4c2751b2ae1c8555fcf0ea2bb648a6fd527d658c0" name="gga7c59c85cf0c72d00bd5d489b4c2751b2ae1c8555fcf0ea2bb648a6fd527d658c0"></a>WRAP&#160;</td><td class="fielddoc"><p>Sampling locations outside texture coordinate range will be read wrapped back according to ((x - left) mod width + left, (y - bottom) mod height + bottom, etc... </p>
+<tr><td class="fieldname"><a id="gga7c59c85cf0c72d00bd5d489b4c2751b2ae1c8555fcf0ea2bb648a6fd527d658c0" name="gga7c59c85cf0c72d00bd5d489b4c2751b2ae1c8555fcf0ea2bb648a6fd527d658c0"></a>WRAP&#160;</td><td class="fielddoc"><p>width + left, (y - bottom) mod height + bottom, etc... </p>
+<p>Sampling locations outside texture coordinate range will be read wrapped back according to ((x - left) mod </p>
 </td></tr>
 </table>
 

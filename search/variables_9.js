@@ -1,0 +1,7 @@
+var searchData=
+[
+  ['scalefactor_0',['scalefactor',['../structreg23_1_1Radon2D_1_1CommonData.html#a7a2e22b44ff095acf87150d2a79267c9',1,'reg23::Radon2D::CommonData::scaleFactor'],['../structreg23_1_1Radon3D_1_1CommonData.html#ab361c2e5cb1b276272d376ecae21f640',1,'reg23::Radon3D::CommonData::scaleFactor']]],
+  ['sinogramtype_1',['sinogramType',['../structreg23_1_1ResampleSinogram3D_1_1CommonData.html#a8e51185920822adbff6f3f669781f890',1,'reg23::ResampleSinogram3D::CommonData']]],
+  ['squareradius_2',['squareRadius',['../structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html#a34a537f0d1cca3564d0a5035d2b91add',1,'reg23::ResampleSinogram3D::ConstantGeometry']]],
+  ['stepsize_3',['stepSize',['../structreg23_1_1ProjectDRR_1_1CommonData.html#ab8a732bbe0643c6c39572c9ef6e21ed6',1,'reg23::ProjectDRR::CommonData']]]
+];

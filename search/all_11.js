@@ -17,15 +17,11 @@ var searchData=
   ['reg23_14',['reg23',['../namespacereg23.html',1,'']]],
   ['registration_15',['Grangeat-based 2D/3D image registration',['../index.html',1,'']]],
   ['related_20types_16',['Texture-Related Types',['../group__textures.html',1,'']]],
-  ['resamplehealpixsinogram3d_17',['ResampleHEALPixSinogram3D',['../structreg23_1_1ResampleHEALPixSinogram3D.html',1,'reg23']]],
-  ['resamplehealpixsinogram3d_2eh_18',['ResampleHEALPixSinogram3D.h',['../ResampleHEALPixSinogram3D_8h.html',1,'']]],
-  ['resamplehealpixsinogram3d_5fcpu_19',['resamplehealpixsinogram3d_cpu',['../group__pytorch__functions.html#gadb48e591ff8ed2211b538b754e971374',1,'reg23::ResampleHEALPixSinogram3D_CPU(const at::Tensor &amp;sinogram3d, const at::Tensor &amp;sinogramSpacing, const at::Tensor &amp;sinogramRangeCentres, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)'],['../namespacereg23.html#ad9a64387e1a0c3e23819d918568efa8e',1,'reg23::ResampleHEALPixSinogram3D_CPU(const at::Tensor &amp;sinogram3d, double rSpacing, double rRangeCentre, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)']]],
-  ['resamplehealpixsinogram3d_5fcuda_20',['ResampleHEALPixSinogram3D_CUDA',['../group__pytorch__functions.html#ga87453eccd4052f1088d5fdf5619ea514',1,'reg23']]],
-  ['resamplehealpixsinogram3dcpu_2ecpp_21',['ResampleHEALPixSinogram3DCPU.cpp',['../ResampleHEALPixSinogram3DCPU_8cpp.html',1,'']]],
-  ['resamplesinogram3d_22',['ResampleSinogram3D',['../structreg23_1_1ResampleSinogram3D.html',1,'reg23']]],
-  ['resamplesinogram3d_2eh_23',['ResampleSinogram3D.h',['../ResampleSinogram3D_8h.html',1,'']]],
-  ['resamplesinogram3d_5fcpu_24',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga893cec1df23860808ca040db88bc329b',1,'reg23']]],
-  ['resamplesinogram3d_5fcuda_25',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#gaf8e60411d46afc090b0cdb75e48b763a',1,'reg23']]],
-  ['resamplesinogram3dcpu_2ecpp_26',['ResampleSinogram3DCPU.cpp',['../ResampleSinogram3DCPU_8cpp.html',1,'']]],
-  ['resamplesinogram3dcuda_2ecu_27',['ResampleSinogram3DCUDA.cu',['../ResampleSinogram3DCUDA_8cu.html',1,'']]]
+  ['resampleplane_17',['ResamplePlane',['../structreg23_1_1ResampleSinogram3D.html#ad00b259be3397bc816fb6808f694f0a2',1,'reg23::ResampleSinogram3D']]],
+  ['resamplesinogram3d_18',['ResampleSinogram3D',['../structreg23_1_1ResampleSinogram3D.html',1,'reg23']]],
+  ['resamplesinogram3d_2eh_19',['ResampleSinogram3D.h',['../ResampleSinogram3D_8h.html',1,'']]],
+  ['resamplesinogram3d_5fcpu_20',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5',1,'reg23']]],
+  ['resamplesinogram3d_5fcuda_21',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097',1,'reg23']]],
+  ['resamplesinogram3dcpu_2ecpp_22',['ResampleSinogram3DCPU.cpp',['../ResampleSinogram3DCPU_8cpp.html',1,'']]],
+  ['resamplesinogram3dcuda_2ecu_23',['ResampleSinogram3DCUDA.cu',['../ResampleSinogram3DCUDA_8cu.html',1,'']]]
 ];
