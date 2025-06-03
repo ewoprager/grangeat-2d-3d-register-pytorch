@@ -34,20 +34,118 @@ class Sinogram(ABC):
 
 
 class SinogramClassic(Sinogram):
-    def __init__(self, data: torch.Tensor, range: SinogramClassic3dRange):
+    phi_range = LinearRange(-0.5 * torch.pi, 0.5 * torch.pi)
+
+    @staticmethod
+    def theta_range_from_count(theta_count: int) -> LinearRange:
+        return LinearRange(-0.5 * torch.pi, torch.pi * (.5 - 1. / float(theta_count)))
+
+    @staticmethod
+    def build_grid(*, counts: int | Tuple[int, int, int] | torch.Size, r_range: LinearRange,
+                   device=torch.device("cpu")) -> Sinogram3dGrid:
+        if isinstance(counts, int):
+            counts = (counts, counts, counts)
+        elif isinstance(counts, torch.Size):
+            assert len(counts) == 3
+        phis = SinogramClassic.phi_range.generate_grid(counts[0], device=device)
+        thetas = SinogramClassic.theta_range_from_count(counts[1]).generate_grid(counts[1], device=device)
+        rs = r_range.generate_grid(counts[2], device=device)
+        phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
+        return Sinogram3dGrid(phis, thetas, rs)
+
+    def __init__(self, data: torch.Tensor, r_range: LinearRange):
         assert len(data.size()) == 3
         self.data = data
-        self.range = range
-
-    def to(self, **kwargs) -> 'SinogramClassic':
-        return SinogramClassic(self.data.to(**kwargs), self.range)
+        self.r_range = r_range
 
     @property
     def device(self):
         return self.data.device
 
-    def get_spacing(self, *, device=torch.device('cpu')) -> torch.Tensor:
-        return self.range.get_spacing(self.data.size(), device=device)
+    @property
+    def r_range(self) -> LinearRange:
+        return self.r_range
+
+    @property
+    def theta_range(self) -> LinearRange:
+        theta_count: int = self.data.size()[1]
+        return SinogramClassic.theta_range_from_count(theta_count)
+
+    @property
+    def grid(self) -> Sinogram3dGrid:
+        return SinogramClassic.build_grid(counts=self.data.size(), r_range=self.r_range, device=self.device)
+
+    def to(self, **kwargs) -> 'SinogramClassic':
+        return SinogramClassic(self.data.to(**kwargs), self.r_range)
+
+    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+        return Extension.resample_sinogram3d(
+            self.data, "classic", self.r_range.get_spacing(self.data.size()[2]), ph_matrix, fixed_image_grid.phi,
+            fixed_image_grid.r)
+
+    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
+                        plot: bool = False) -> torch.Tensor:
+        assert fixed_image_grid.device_consistent()
+        assert fixed_image_grid.phi.device == self.device
+        assert ph_matrix.device == self.device
+
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
+            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
+
+        if plot:
+            myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
+            axes.axis('square')
+            axes.set_title("phi_sph resampling values")
+            axes.set_xlabel("r_pol")
+            axes.set_ylabel("phi_pol")
+            plt.colorbar(mesh)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
+            axes.axis('square')
+            axes.set_title("theta_sph resampling values")
+            axes.set_xlabel("r_pol")
+            axes.set_ylabel("phi_pol")
+            plt.colorbar(mesh)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
+            axes.axis('square')
+            axes.set_title("r_sph resampling values")
+            axes.set_xlabel("r_pol")
+            axes.set_ylabel("phi_pol")
+            plt.colorbar(mesh)
+
+        grid_range = LinearRange.grid_sample_range()
+        i_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
+        j_mapping: LinearMapping = grid_range.get_mapping_from(self.theta_range)
+        k_mapping: LinearMapping = grid_range.get_mapping_from(self.phi_range)
+
+        if smooth is not None:
+            ret = self.grid_sample_smoothed(
+                fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping, k_mapping=k_mapping, sigma=smooth)
+        else:
+            grid = torch.stack(
+                (
+                    i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
+                    k_mapping(fixed_image_grid_sph.phi)), dim=-1)
+            ret = Extension.grid_sample3d(self.data, grid, "wrap")
+
+        del fixed_image_grid_sph
+
+        ## sign changes - this implementation relies on the convenient coordinate system
+        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
+        ##
+
+        ret[need_sign_change] *= -1.
+
+        del need_sign_change
+
+        return ret
 
     def grid_sample_smoothed(self, grid: Sinogram3dGrid, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
                              k_mapping: LinearMapping, sigma: float, offset_count: int = 10):
@@ -164,78 +262,12 @@ class SinogramClassic(Sinogram):
         # coordinates:
         return torch.einsum('i,...i->...', weights.to(device=self.device), samples)
 
-    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        device = self.data.device
-        return Extension.resample_sinogram3d(
-            self.data, "classic", self.range.r.get_spacing(self.data.size()[2]), ph_matrix, fixed_image_grid.phi,
-            fixed_image_grid.r)
-
-    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
-                        plot: bool = False) -> torch.Tensor:
-        assert fixed_image_grid.device_consistent()
-        assert fixed_image_grid.phi.device == self.device
-        assert ph_matrix.device == self.device
-
-        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
-            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
-
-        if plot:
-            myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
-            _, axes = plt.subplots()
-            mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
-            axes.axis('square')
-            axes.set_title("phi_sph resampling values")
-            axes.set_xlabel("r_pol")
-            axes.set_ylabel("phi_pol")
-            plt.colorbar(mesh)
-            _, axes = plt.subplots()
-            mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
-            axes.axis('square')
-            axes.set_title("theta_sph resampling values")
-            axes.set_xlabel("r_pol")
-            axes.set_ylabel("phi_pol")
-            plt.colorbar(mesh)
-            _, axes = plt.subplots()
-            mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
-            axes.axis('square')
-            axes.set_title("r_sph resampling values")
-            axes.set_xlabel("r_pol")
-            axes.set_ylabel("phi_pol")
-            plt.colorbar(mesh)
-
-        grid_range = LinearRange.grid_sample_range()
-        i_mapping: LinearMapping = grid_range.get_mapping_from(self.range.r)
-        j_mapping: LinearMapping = grid_range.get_mapping_from(self.range.theta(self.data.size()[1]))
-        k_mapping: LinearMapping = grid_range.get_mapping_from(self.range.phi())
-
-        if smooth is not None:
-            ret = self.grid_sample_smoothed(
-                fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping, k_mapping=k_mapping, sigma=smooth)
-        else:
-            grid = torch.stack(
-                (
-                    i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
-                    k_mapping(fixed_image_grid_sph.phi)), dim=-1)
-            ret = Extension.grid_sample3d(self.data, grid, "wrap")
-
-        del fixed_image_grid_sph
-
-        ## sign changes - this implementation relies on the convenient coordinate system
-        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
-        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
-        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
-            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
-            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
-        ##
-
-        ret[need_sign_change] *= -1.
-
-        del need_sign_change
-
-        return ret
-
 
 class SinogramHEALPix(Sinogram):
+    @staticmethod
+    def build_grid(*, n_side: int, r_range: LinearRange, r_count: int, device=torch.device("cpu")) -> Sinogram3dGrid:
+        raise Exception("Not yet implemented")
+
     def __init__(self, data: torch.Tensor, r_range: LinearRange):
         self.data = data
         self.r_range = r_range

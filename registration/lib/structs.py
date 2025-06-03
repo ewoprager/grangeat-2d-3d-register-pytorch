@@ -159,33 +159,6 @@ class Sinogram2dRange(NamedTuple):
     r: LinearRange
 
 
-class SinogramClassic3dRange(NamedTuple):
-    r: LinearRange
-
-    @staticmethod
-    def theta(theta_count: int) -> LinearRange:
-        return LinearRange(-0.5 * torch.pi, torch.pi * (.5 - 1. / float(theta_count)))
-
-    @staticmethod
-    def phi() -> LinearRange:
-        return LinearRange(-0.5 * torch.pi, 0.5 * torch.pi)
-
-    def get_spacing(self, counts: int | Tuple[int, int, int] | torch.Size, *,
-                    device=torch.device('cpu')) -> torch.Tensor:
-        if isinstance(counts, int):
-            counts = (counts, counts, counts)
-        elif isinstance(counts, torch.Size):
-            assert len(counts) == 3
-        theta = self.theta(counts[1])
-        return torch.tensor(
-            [
-                self.r.get_spacing(counts[0]), theta.get_spacing(counts[1]), self.phi().get_spacing(counts[2])],
-            device=device)
-
-    def get_centres(self, *, device=torch.device('cpu')) -> torch.Tensor:
-        return torch.zeros(3, device=device)
-
-
 class Sinogram2dGrid(NamedTuple):
     phi: torch.Tensor
     r: torch.Tensor
@@ -259,31 +232,17 @@ class Sinogram3dGrid(NamedTuple):
 
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
-    @classmethod
-    def linear_from_range(cls, sinogram_range: SinogramClassic3dRange, counts: int | Tuple[int, int, int] | torch.Size,
-                          *, device=torch.device("cpu")) -> 'Sinogram3dGrid':
-        if isinstance(counts, int):
-            counts = (counts, counts, counts)
-        elif isinstance(counts, torch.Size):
-            assert len(counts) == 3
-        theta_range = sinogram_range.theta(counts[1])
-        phis = torch.linspace(sinogram_range.phi().low, sinogram_range.phi().high, counts[0], device=device)
-        thetas = torch.linspace(theta_range.low, theta_range.high, counts[1], device=device)
-        rs = torch.linspace(sinogram_range.r.low, sinogram_range.r.high, counts[2], device=device)
-        phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
-        return Sinogram3dGrid(phis, thetas, rs)
-
-    @classmethod
-    def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None = None,
-                               device=torch.device("cpu")) -> 'Sinogram3dGrid':
-        if spiral_count is None:
-            spiral_count = r_count * r_count
-        rs = torch.linspace(r_range.low, r_range.high, r_count, device=device)
-        spiral_indices = torch.arange(spiral_count, dtype=torch.float32)
-        two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))
-        thetas = (1. - 2. * spiral_indices / float(spiral_count)).asin()
-        phis = torch.fmod(spiral_indices * two_pi_phi_inverse + torch.pi, 2. * torch.pi) - torch.pi
-        rs = rs.repeat(spiral_count, 1)
-        thetas = thetas.unsqueeze(-1).repeat(1, r_count)
-        phis = phis.unsqueeze(-1).repeat(1, r_count)
-        return Sinogram3dGrid(phis, thetas, rs)
+    # @classmethod
+    # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None = None,
+    #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':
+    #     if spiral_count is None:
+    #         spiral_count = r_count * r_count
+    #     rs = torch.linspace(r_range.low, r_range.high, r_count, device=device)
+    #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)
+    #     two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))
+    #     thetas = (1. - 2. * spiral_indices / float(spiral_count)).asin()
+    #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse + torch.pi, 2. * torch.pi) - torch.pi
+    #     rs = rs.repeat(spiral_count, 1)
+    #     thetas = thetas.unsqueeze(-1).repeat(1, r_count)
+    #     phis = phis.unsqueeze(-1).repeat(1, r_count)
+    #     return Sinogram3dGrid(phis, thetas, rs)

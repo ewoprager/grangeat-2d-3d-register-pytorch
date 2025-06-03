@@ -2,8 +2,6 @@
 
 ## Naming
 
-### C++
-
 - Classes, structs, types and functions are `PascalCase`.
   - ..with the exception of functions that have different implementations for different hardware. In this case, the
     hardware type is appended in `PascalCase` after an underscore, e.g. `FunctionName_HardwareType`.
@@ -13,14 +11,7 @@
 - File names have the same rules as classes. When a file contains the implementation of a class, it should generally
   have the same name as that class.
 
-### Python
-
-- Classes and types are `PascalCase`
-- Variables and modules are `snake_case`
-
-## Code style
-
-### C++
+## Implementation conventions
 
 Wherever possible, all functions and methods are:
 
