@@ -16,12 +16,11 @@ var searchData=
   ['sizetype_13',['sizetype',['../structreg23_1_1GridSample3D.html#ae154546a3cf876f22a5ec039054b88f9',1,'reg23::GridSample3D::SizeType'],['../structreg23_1_1ProjectDRR.html#a054283898efdf262be0411371f05b4ac',1,'reg23::ProjectDRR::SizeType'],['../structreg23_1_1Radon2D.html#a0ae12cdc2aa15a4ec8306ded7567f9b8',1,'reg23::Radon2D::SizeType'],['../structreg23_1_1Radon3D.html#aaf48b40505d84b76c939a2d5658e4e55',1,'reg23::Radon3D::SizeType'],['../classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a',1,'reg23::Texture::SizeType']]],
   ['sizeworld_14',['SizeWorld',['../classreg23_1_1Texture.html#abfc8536390678e625ba68524cabdd313',1,'reg23::Texture']]],
   ['spacing_15',['Spacing',['../classreg23_1_1Texture.html#a2d32947dcb93ddd94f55fd2d37d02641',1,'reg23::Texture']]],
-  ['spherical_20coordinates_16',['Spherical coordinates',['../conventions.html#autotoc_md10',1,'']]],
+  ['spherical_20coordinates_16',['Spherical coordinates',['../conventions.html#autotoc_md7',1,'']]],
   ['square_17',['Square',['../group__general__tools.html#gac05f93968187265d84f03c8caf65736a',1,'reg23']]],
   ['squareradius_18',['squareRadius',['../structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html#a34a537f0d1cca3564d0a5035d2b91add',1,'reg23::ResampleSinogram3D::ConstantGeometry']]],
   ['staticcast_19',['StaticCast',['../classreg23_1_1Vec.html#a01d47c2f401d48d9d26ad37ec60776a3',1,'reg23::Vec']]],
   ['stepsize_20',['stepSize',['../structreg23_1_1ProjectDRR_1_1CommonData.html#ab8a732bbe0643c6c39572c9ef6e21ed6',1,'reg23::ProjectDRR::CommonData']]],
   ['structures_21',['Data Structures',['../group__data__structures.html',1,'']]],
-  ['style_22',['Code style',['../conventions.html#autotoc_md4',1,'']]],
-  ['sum_23',['Sum',['../classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93',1,'reg23::Vec']]]
+  ['sum_22',['Sum',['../classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93',1,'reg23::Vec']]]
 ];
