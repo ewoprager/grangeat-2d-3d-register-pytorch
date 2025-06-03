@@ -9,6 +9,7 @@ import torch
 import pathlib
 
 import Extension as reg23
+from registration.data import deterministic_hash_combo
 
 from registration.lib.structs import *
 from registration.lib.sinogram import *
@@ -69,7 +70,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
     volume_spec = None
     sinogram3d = None
     if load_cached and path is not None:
-        volume_spec = data.load_cached_volume(cache_directory, path)
+        sinogram_hash = deterministic_hash_sinogram(path, SinogramClassic)
+        volume_spec = data.load_cached_volume(cache_directory, sinogram_hash)
 
     if volume_spec is None:
         volume_downsample_factor: int = 1
@@ -88,7 +90,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
     if sinogram3d is None:
         sinogram3d = pre_computed.calculate_volume_sinogram(
             cache_directory, vol_data, voxel_spacing=voxel_spacing, ct_volume_path=path,
-            volume_downsample_factor=volume_downsample_factor, save_to_cache=save_to_cache, vol_counts=sinogram_size)
+            volume_downsample_factor=volume_downsample_factor, save_to_cache=save_to_cache, vol_counts=sinogram_size,
+            sinogram_type=SinogramClassic)
 
     vol_diag: float = (
             torch.tensor([vol_data.size()], dtype=torch.float32) * voxel_spacing).square().sum().sqrt().item()

@@ -1,7 +1,6 @@
 import copy
 from typing import Tuple
 import time
-from enum import Enum
 import os
 import argparse
 import logging.config
@@ -27,11 +26,6 @@ from registration.lib.sinogram import *
 from registration import drr, data, script, objective_function
 from registration.lib import geometry, grangeat
 import registration.lib.plot as myplt
-
-
-class SinogramStructure(Enum):
-    CLASSIC = 1
-    FIBONACCI = 2
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,

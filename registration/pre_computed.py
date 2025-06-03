@@ -1,7 +1,9 @@
-import torch
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
+
+import torch
 
 from registration.lib.structs import *
 from registration.lib.sinogram import *
@@ -10,25 +12,26 @@ from registration import data
 
 
 def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor,
-                              ct_volume_path: str, volume_downsample_factor: int, save_to_cache=True,
-                              vol_counts=192) -> SinogramClassic:
+                              ct_volume_path: str, volume_downsample_factor: int, save_to_cache=True, vol_counts=192,
+                              sinogram_type: Type[SinogramType] = SinogramClassic) -> SinogramType:
     device = volume_data.device
     logger.info("Calculating 3D sinogram (the volume to resample)...")
 
     vol_diag: float = (voxel_spacing * torch.tensor(
         volume_data.size(), dtype=torch.float32, device=voxel_spacing.device)).square().sum().sqrt().item()
-    sinogram_range = SinogramClassic3dRange(r=LinearRange(-.5 * vol_diag, .5 * vol_diag))
+    r_range = LinearRange(-.5 * vol_diag, .5 * vol_diag)
 
-    sinogram3d_grid = Sinogram3dGrid.linear_from_range(sinogram_range, vol_counts, device=device)
+    sinogram3d_grid = sinogram_type.build_grid(counts=vol_counts, r_range=r_range, device=device)
     sinogram_data = grangeat.calculate_radon_volume(
         volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid, samples_per_direction=vol_counts)
 
-    sinogram3d = SinogramClassic(sinogram_data, sinogram_range)
+    sinogram3d = sinogram_type(sinogram_data, r_range)
 
     logger.info("3D sinogram calculated.")
 
     if save_to_cache:
-        save_path = cache_directory + "/volume_spec_{}.pt".format(data.deterministic_hash(ct_volume_path))
+        save_path = cache_directory + "/volume_spec_{}.pt".format(
+            deterministic_hash_sinogram(ct_volume_path, sinogram_type))
         torch.save(VolumeSpec(ct_volume_path, volume_downsample_factor, sinogram3d), save_path)
         logger.info("3D sinogram saved to '{}'".format(save_path))
 

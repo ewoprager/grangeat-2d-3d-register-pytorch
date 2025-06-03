@@ -1,6 +1,7 @@
 import logging
 import pathlib
-from typing import NamedTuple
+import hashlib
+from typing import NamedTuple, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +55,18 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
     raise Exception("Given path '{}' is not a file or directory.".format(str(path)))
 
 
-def deterministic_hash(text: str):
-    ret = 0
-    for ch in text:
-        ret = (ret * 281 ^ ord(ch) * 997) & 0xFFFFFFFF
-    return ret
+def deterministic_hash_string(string: str) -> str:
+    return hashlib.sha256(string.encode()).hexdigest()
+
+
+def deterministic_hash_type(tp: type) -> str:
+    string = "{}.{}".format(tp.__module__, tp.__qualname__)
+    return deterministic_hash_string(string)
+
+
+def deterministic_hash_combo(*hex_digests: str) -> str:
+    combined = b''.join(bytes.fromhex(h) for h in hex_digests)
+    return hashlib.sha256(combined).hexdigest()
 
 
 def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -115,8 +123,11 @@ def read_dicom(path: str, *, downsample_factor=1):
     return image, spacing, scene_geometry
 
 
-def load_cached_volume(cache_directory: str, ct_volume_path: str):
-    file: str = cache_directory + "/volume_spec_{}.pt".format(deterministic_hash(ct_volume_path))
+SinogramType = TypeVar('SinogramType')
+
+
+def load_cached_volume(cache_directory: str, sinogram_hash: str):
+    file: str = cache_directory + "/volume_spec_{}.pt".format(sinogram_hash)
     try:
         volume_spec = torch.load(file)
     except:
@@ -125,29 +136,11 @@ def load_cached_volume(cache_directory: str, ct_volume_path: str):
     if not isinstance(volume_spec, VolumeSpec):
         logger.error("Cache file '{}' invalid.".format(file))
         return None
-    assert ct_volume_path == volume_spec.ct_volume_path
     volume_downsample_factor = volume_spec.downsample_factor
     sinogram3d = volume_spec.sinogram
     logger.info(
         "Loaded cached volume spec from '{}'; sinogram size = [{} x {} x {}]".format(
             file, sinogram3d.data.size()[0], sinogram3d.data.size()[1], sinogram3d.data.size()[2]))
-    return volume_downsample_factor, sinogram3d
-
-
-def load_cached_volume_fibonacci(cache_directory: str, ct_volume_path: str):
-    file: str = cache_directory + "/volume_spec_fibonacci_{}.pt".format(deterministic_hash(ct_volume_path))
-    try:
-        volume_spec = torch.load(file)
-    except:
-        logger.warning("No cache file '{}' found.".format(file))
-        return None
-    if not isinstance(volume_spec, VolumeSpecFibonacci):
-        logger.error("Cache file '{}' invalid.".format(file))
-        return None
-    assert ct_volume_path == volume_spec.ct_volume_path
-    volume_downsample_factor = volume_spec.downsample_factor
-    sinogram3d = volume_spec.sinogram
-    logger.info("Loaded cached Fibonacci volume spec from '{}'".format(file))
     return volume_downsample_factor, sinogram3d
 
 

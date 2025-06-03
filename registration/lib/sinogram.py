@@ -1,10 +1,11 @@
-import torch
 from abc import ABC, abstractmethod
-import matplotlib.pyplot as plt
+from typing import Type, TypeVar
 import logging
 
 logger = logging.getLogger(__name__)
 
+import torch
+import matplotlib.pyplot as plt
 import pyvista as pv
 
 import Extension
@@ -12,6 +13,14 @@ import Extension
 from registration.lib.structs import *
 from registration.lib import geometry
 from registration.lib import plot as myplt
+from registration.data import deterministic_hash_combo, deterministic_hash_type, deterministic_hash_string
+
+SinogramType = TypeVar('SinogramType')
+
+
+def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType]) -> str:
+    return deterministic_hash_combo(
+        deterministic_hash_string(path), deterministic_hash_type(sinogram_type))
 
 
 class Sinogram(ABC):
@@ -22,6 +31,16 @@ class Sinogram(ABC):
     @property
     @abstractmethod
     def device(self):
+        pass
+
+    @property
+    @abstractmethod
+    def data(self):
+        pass
+
+    @property
+    @abstractmethod
+    def r_range(self):
         pass
 
     @abstractmethod
@@ -55,16 +74,20 @@ class SinogramClassic(Sinogram):
 
     def __init__(self, data: torch.Tensor, r_range: LinearRange):
         assert len(data.size()) == 3
-        self.data = data
-        self.r_range = r_range
+        self._data = data
+        self._r_range = r_range
 
     @property
     def device(self):
         return self.data.device
 
     @property
+    def data(self) -> torch.Tensor:
+        return self._data
+
+    @property
     def r_range(self) -> LinearRange:
-        return self.r_range
+        return self._r_range
 
     @property
     def theta_range(self) -> LinearRange:
@@ -266,11 +289,36 @@ class SinogramClassic(Sinogram):
 class SinogramHEALPix(Sinogram):
     @staticmethod
     def build_grid(*, n_side: int, r_range: LinearRange, r_count: int, device=torch.device("cpu")) -> Sinogram3dGrid:
-        raise Exception("Not yet implemented")
+        u = torch.arange(4 * n_side, dtype=torch.int32, device=device)
+        v = torch.arange(3 * n_side, dtype=torch.int32, device=device)
+        v, u = torch.meshgrid(v, u)
+        bot_left = torch.logical_and(u >= 3 * n_side, u + v >= 5 * n_side)
+        right = torch.logical_and((u // n_side) - (v // n_side) > 0, torch.logical_not(bot_left))
+        u[bot_left] -= 4 * n_side
+        v[bot_left] -= n_side
+        v[right] += 3 * n_side
+        i = v - u + n_side
+        j = ((u + v) // 2) + 1
+        i_f = i.to(dtype=torch.float32)
+        j_f = j.to(dtype=torch.float32)
+        z = 2. * (2. * float(n_side) - i_f) / (3. * float(n_side))
+        phi = torch.zeros_like(z)
+        phi[z > 0.6666666666667] = torch.pi * (j_f - .5) / (2. * i_f)
+        phi[torch.abs(z) <= 0.6666666666667] = torch.pi * (j_f - .5 * torch.fmod(i_f - float(n_side) + 1., 2.)) / (
+                2. * float(n_side))
+        phi[z < -0.6666666666667] = torch.pi * (j_f - .5) / (2. * (4. * float(n_side) - i_f))
+        theta = z.asin()
+        r = r_range.generate_grid(r_count, device=device)
+        r = r.unsqueeze(-1).unsqueeze(-1).expand(-1, phi.size()[0], phi.size()[1])
+        phi = phi.expand(r_count, -1, -1)
+        theta = theta.expand(r_count, -1, -1)
+        assert phi.size() == theta.size()
+        assert theta.size() == r.size()
+        return Sinogram3dGrid(phi=phi, theta=theta, r=r)
 
     def __init__(self, data: torch.Tensor, r_range: LinearRange):
-        self.data = data
-        self.r_range = r_range
+        self._data = data
+        self._r_range = r_range
 
     def to(self, **kwargs) -> 'SinogramHEALPix':
         return SinogramHEALPix(self.data.to(**kwargs), self.r_range)
@@ -278,6 +326,14 @@ class SinogramHEALPix(Sinogram):
     @property
     def device(self):
         return self.data.device
+
+    @property
+    def data(self) -> torch.Tensor:
+        return self._data
+
+    @property
+    def r_range(self) -> LinearRange:
+        return self._r_range
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         raise Exception("Not yet implemented")
@@ -293,34 +349,28 @@ class SinogramHEALPix(Sinogram):
         raise Exception("Not yet implemented")
 
 
-class SinogramFibonacci(Sinogram):
-    def __init__(self, data: torch.Tensor, r_range: LinearRange):
-        self.data = data
-        self.r_range = r_range
-
-    def to(self, **kwargs) -> 'SinogramFibonacci':
-        return SinogramFibonacci(self.data.to(**kwargs), self.r_range)
-
-    def device(self):
-        return self.data.device
-
-    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        raise Exception("Not yet implemented")
-
-    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        raise Exception("Not yet implemented")
+# class SinogramFibonacci(Sinogram):
+#     def __init__(self, data: torch.Tensor, r_range: LinearRange):
+#         self.data = data
+#         self.r_range = r_range
+#
+#     def to(self, **kwargs) -> 'SinogramFibonacci':
+#         return SinogramFibonacci(self.data.to(**kwargs), self.r_range)
+#
+#     def device(self):
+#         return self.data.device
+#
+#     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+#         raise Exception("Not yet implemented")
+#
+#     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+#         raise Exception("Not yet implemented")
 
 
 class VolumeSpec(NamedTuple):
     ct_volume_path: str
     downsample_factor: int
-    sinogram: SinogramClassic
-
-
-class VolumeSpecFibonacci(NamedTuple):
-    ct_volume_path: str
-    downsample_factor: int
-    sinogram: SinogramFibonacci
+    sinogram: Any
 
 
 class DrrSpec(NamedTuple):
