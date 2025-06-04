@@ -294,6 +294,8 @@ class SinogramHEALPix(Sinogram):
         v, u = torch.meshgrid(v, u)
         bot_left = torch.logical_and(u >= 3 * n_side, u + v >= 5 * n_side)
         right = torch.logical_and((u // n_side) - (v // n_side) > 0, torch.logical_not(bot_left))
+        u = u.clone()
+        v = v.clone()
         u[bot_left] -= 4 * n_side
         v[bot_left] -= n_side
         v[right] += 3 * n_side
@@ -301,12 +303,19 @@ class SinogramHEALPix(Sinogram):
         j = ((u + v) // 2) + 1
         i_f = i.to(dtype=torch.float32)
         j_f = j.to(dtype=torch.float32)
-        z = 2. * (2. * float(n_side) - i_f) / (3. * float(n_side))
-        phi = torch.zeros_like(z)
-        phi[z > 0.6666666666667] = torch.pi * (j_f - .5) / (2. * i_f)
-        phi[torch.abs(z) <= 0.6666666666667] = torch.pi * (j_f - .5 * torch.fmod(i_f - float(n_side) + 1., 2.)) / (
-                2. * float(n_side))
-        phi[z < -0.6666666666667] = torch.pi * (j_f - .5) / (2. * (4. * float(n_side) - i_f))
+        y_s = torch.pi * (2.0 * float(n_side) - i_f) / (4.0 * float(n_side))
+        polar_top = y_s > 0.25 * torch.pi
+        equatorial_zone = torch.abs(y_s) <= 0.25 * torch.pi
+        polar_bot = y_s < -0.25 * torch.pi
+        polar_caps = torch.logical_or(polar_bot, polar_top)
+        z = torch.zeros_like(i_f)
+        z[equatorial_zone] = (8.0 * y_s / (3.0 * torch.pi))[equatorial_zone]
+        z[polar_caps] = ((1.0 - (2.0 - 4.0 * y_s.abs() / torch.pi).square() / 3.0) * y_s.sign())[polar_caps]
+        phi = torch.zeros_like(i_f)
+        phi[polar_top] = (torch.pi * (j_f - .5) / (2. * i_f))[polar_top]
+        phi[equatorial_zone] = \
+            (torch.pi * (j_f - .5 * torch.fmod(i_f - float(n_side) + 1., 2.)) / (2. * float(n_side)))[equatorial_zone]
+        phi[polar_bot] = (torch.pi * (j_f - .5) / (2. * (4. * float(n_side) - i_f)))[polar_bot]
         theta = z.asin()
         r = r_range.generate_grid(r_count, device=device)
         r = r.unsqueeze(-1).unsqueeze(-1).expand(-1, phi.size()[0], phi.size()[1])
@@ -336,7 +345,9 @@ class SinogramHEALPix(Sinogram):
         return self._r_range
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        raise Exception("Not yet implemented")
+        return Extension.resample_sinogram3d(
+            self.data, "healpix", self.r_range.get_spacing(self.data.size()[2]), ph_matrix, fixed_image_grid.phi,
+            fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                         plot: bool = False) -> torch.Tensor:
@@ -346,7 +357,68 @@ class SinogramHEALPix(Sinogram):
 
         fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
             fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
-        raise Exception("Not yet implemented")
+
+        z = fixed_image_grid_sph.theta.sin()
+        n_side_f = float(self.data.size()[1] // 4)
+        polar_bot = z < -2. / 3.
+        equatorial_zone = z.abs() <= 2. / 3.
+        polar_top = z > 2. / 3.
+        polar_caps = torch.logical_or(polar_bot, polar_top)
+        i = torch.zeros_like(z)
+        i[polar_caps] = (n_side_f * (3.0 * (1.0 - z)).sqrt())[polar_caps]
+        i[equatorial_zone] = (n_side_f * (2.0 - 1.5 * z))[equatorial_zone]
+
+        j = torch.zeros_like(z)
+        j[polar_top] = (2.0 * i * fixed_image_grid_sph.phi / torch.pi + 0.5)[polar_top]
+        j[equatorial_zone] = \
+            (2.0 * n_side_f * fixed_image_grid_sph.phi / torch.pi + 0.5 * torch.fmod(i - n_side_f + 1.0, 2.0))[
+                equatorial_zone]
+        j[polar_bot] = (2.0 * (4.0 * n_side_f - i) * fixed_image_grid_sph.phi / torch.pi + 0.5)[polar_bot]
+
+        j_equiv = torch.zeros_like(z)
+        j_equiv[polar_top] = torch.tensor(
+            n_side_f * ((j - 1.0) / i).floor() + 1.0 + torch.tensor(0.5 * (n_side_f - 1.0)).floor() + torch.fmod(
+                j - 1.0, i))[polar_top]
+        j_equiv[equatorial_zone] = j[equatorial_zone]
+        j_equiv[polar_bot] = (n_side_f * ((j - 1.0) / (4.0 * n_side_f - i)).floor() + 1.0 + torch.tensor(
+            0.5 * (n_side_f - 1.0)).floor() + torch.fmod(
+            j - 1.0, 4.0 * n_side_f - i))[polar_bot]
+
+        delta_v48 = torch.zeros_like(i)
+        zone = j_equiv - (0.5 * i).floor() + 1.0 < 0.0
+        delta_v48[zone] = n_side_f
+
+        # r,u,v is the order of the texture dimensions
+        u, v = torch.fmod(j_equiv - (0.5 * i).floor() + 1.0, 4.0 * n_side_f), torch.fmod(
+            j_equiv + (0.5 * (i + 1.0)).floor() - 3.0 + delta_v48, 3.0 * n_side_f)
+
+        # texCoord is in the reverse order: (X, Y, Z)
+
+        grid_range = LinearRange.grid_sample_range()
+        i_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=3. * n_side_f - 1.))
+        j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=4. * n_side_f - 1.))
+        k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
+
+        grid = torch.stack(
+            (
+                i_mapping(v), j_mapping(u), k_mapping(fixed_image_grid_sph.r)), dim=-1)
+        ret = Extension.grid_sample3d(self.data, grid, "wrap")
+
+        del fixed_image_grid_sph
+
+        ## sign changes - this implementation relies on the convenient coordinate system
+        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
+        ##
+
+        ret[need_sign_change] *= -1.
+
+        del need_sign_change
+
+        return ret
 
 
 # class SinogramFibonacci(Sinogram):

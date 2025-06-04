@@ -1,4 +1,4 @@
-from typing import Tuple, NamedTuple
+from typing import Tuple, NamedTuple, Type, TypeVar
 import time
 import os
 import argparse
@@ -7,15 +7,13 @@ import logging.config
 import matplotlib.pyplot as plt
 import torch
 import pathlib
-
-import Extension as reg23
-from registration.data import deterministic_hash_combo
+import plotly.graph_objects as pgo
 
 from registration.lib.structs import *
-from registration.lib.sinogram import *
+from registration.lib import sinogram
 import registration.data as data
 import registration.pre_computed as pre_computed
-from registration.lib.structs import LinearRange, SceneGeometry
+from registration import script
 
 
 class TaskSummary(NamedTuple):
@@ -24,7 +22,7 @@ class TaskSummary(NamedTuple):
 
 
 class FunctionParams(NamedTuple):
-    sinogram3d: SinogramClassic
+    sinogram3d: sinogram.Sinogram
     ph_matrix: torch.Tensor
     fixed_image_grid: Sinogram2dGrid
 
@@ -62,39 +60,28 @@ def run_task(task, task_plot, function, name: str, device: str, params: Function
     return summary
 
 
-def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_size: int, save_to_cache: bool = True):
+def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_size: int, save_to_cache: bool = True,
+         sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic):
     logger.info("----- Benchmarking resample_sinogram3d -----")
 
     cuda = torch.device('cuda')
 
-    volume_spec = None
-    sinogram3d = None
-    if load_cached and path is not None:
-        sinogram_hash = deterministic_hash_sinogram(path, SinogramClassic)
-        volume_spec = data.load_cached_volume(cache_directory, sinogram_hash)
+    vol_data, voxel_spacing, sinogram3d = script.get_volume_and_sinogram(
+        path, cache_directory, load_cached=load_cached, save_to_cache=save_to_cache, sinogram_size=sinogram_size,
+        sinogram_type=sinogram_type, device=cuda)
 
-    if volume_spec is None:
-        volume_downsample_factor: int = 1
-    else:
-        volume_downsample_factor, sinogram3d = volume_spec
+    size = sinogram3d.data.size()
+    X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])
+    fig = pgo.Figure(
+        data=pgo.Volume(
+            x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=sinogram3d.data.cpu().flatten(),
+            isomin=sinogram3d.data.min().item(), isomax=sinogram3d.data.max().item(), opacity=.2, surface_count=21),
+        layout=pgo.Layout(title="Sinogram"))
+    fig.show()
 
-    if path is None:
-        save_to_cache = False
-        vol_data = torch.zeros((3, 3, 3))
-        vol_data[1, 1, 1] = 1.
-        voxel_spacing = torch.tensor([10., 10., 10.])
-    else:
-        vol_data, voxel_spacing = data.load_volume(pathlib.Path(path), downsample_factor=volume_downsample_factor)
-        vol_data = vol_data.to(dtype=torch.float32, device=cuda)
-
-    if sinogram3d is None:
-        sinogram3d = pre_computed.calculate_volume_sinogram(
-            cache_directory, vol_data, voxel_spacing=voxel_spacing, ct_volume_path=path,
-            volume_downsample_factor=volume_downsample_factor, save_to_cache=save_to_cache, vol_counts=sinogram_size,
-            sinogram_type=SinogramClassic)
-
-    vol_diag: float = (
-            torch.tensor([vol_data.size()], dtype=torch.float32) * voxel_spacing).square().sum().sqrt().item()
+    vol_diag: float = (torch.tensor(
+        [vol_data.size()], dtype=torch.float32,
+        device=voxel_spacing.device) * voxel_spacing).square().sum().sqrt().item()
 
     fixed_image_range = Sinogram2dRange(
         LinearRange(-.5 * torch.pi, .5 * torch.pi), LinearRange(-.5 * vol_diag, .5 * vol_diag))
@@ -111,13 +98,13 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
 
     outputs: list[TaskSummary] = [
         run_task(
-            task_resample_sinogram3d, plot_task_resample_sinogram3d, SinogramClassic.resample, "Sinogram3D.resample",
+            task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample, "Sinogram3D.resample",
             "cpu", params), run_task(
-            task_resample_sinogram3d, plot_task_resample_sinogram3d, SinogramClassic.resample, "Sinogram3D.resample",
+            task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample, "Sinogram3D.resample",
             "cuda", params), run_task(
-            task_resample_sinogram3d, plot_task_resample_sinogram3d, SinogramClassic.resample_python,
+            task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
             "Sinogram3D.resample_python", "cpu", params), run_task(
-            task_resample_sinogram3d, plot_task_resample_sinogram3d, SinogramClassic.resample_python,
+            task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
             "Sinogram3D.resample_python", "cuda", params)]
 
     plt.show()
@@ -170,12 +157,21 @@ if __name__ == "__main__":
         help="The number of values of r, theta and phi to calculate plane integrals for, "
              "and the width and height of the grid of samples taken to approximate each integral. The "
              "computational expense of the 3D Radon transform is O(sinogram_size^5).")
+    parser.add_argument(
+        "-t", "--sinogram-type", type=str, default="classic",
+        help="The memory structure of the 3D sinogram to use. Available options are 'classic', 'healpix'.")
     args = parser.parse_args()
 
     # create cache directory
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
+    _sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic
+    if args.sinogram_type == "healpix":
+        _sinogram_type = sinogram.SinogramHEALPix
+    elif args.sinogram_type != "classic":
+        logger.warning("Unrecognised sinogram type given: '{}'; defaulting to 'classic'.".format(args.sinogram_type))
+
     main(
         path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
-        save_to_cache=not args.no_save, sinogram_size=args.sinogram_size)
+        save_to_cache=not args.no_save, sinogram_size=args.sinogram_size, sinogram_type=_sinogram_type)

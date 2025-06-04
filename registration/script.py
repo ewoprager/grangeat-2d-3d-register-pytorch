@@ -1,18 +1,21 @@
-from typing import Tuple
+from typing import Tuple, Type
 import pathlib
 
 import torch
 
 from registration import data
 from registration import pre_computed
+from registration.lib import sinogram
 
 
 def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *, load_cached: bool, save_to_cache: bool,
-                            sinogram_size: int, device) -> Tuple:
+                            sinogram_size: int, device,
+                            sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic) -> Tuple:
     volume_spec = None
     sinogram3d = None
     if load_cached and ct_volume_path is not None:
-        volume_spec = data.load_cached_volume(cache_directory, ct_volume_path)
+        sinogram_hash = sinogram.deterministic_hash_sinogram(ct_volume_path, sinogram_type)
+        volume_spec = data.load_cached_volume(cache_directory, sinogram_hash)
 
     if volume_spec is None:
         volume_downsample_factor: int = 2
@@ -35,7 +38,8 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
     if sinogram3d is None:
         sinogram3d = pre_computed.calculate_volume_sinogram(
             cache_directory, vol_data, voxel_spacing=voxel_spacing, ct_volume_path=ct_volume_path,
-            volume_downsample_factor=volume_downsample_factor, save_to_cache=save_to_cache, vol_counts=sinogram_size)
+            volume_downsample_factor=volume_downsample_factor, save_to_cache=save_to_cache, vol_counts=sinogram_size,
+            sinogram_type=sinogram_type)
 
     voxel_spacing = voxel_spacing.to(device=device)
 

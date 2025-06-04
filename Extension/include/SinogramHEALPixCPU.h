@@ -64,7 +64,7 @@ public:
 	[[nodiscard]] __host__ __device__ float Sample(VectorType rThetaPhi) const {
 		const FloatType z = sin(rThetaPhi.Y());
 		const FloatType nSideF = static_cast<FloatType>(nSide);
-		const FloatType i = nSideF * (2.0 - 1.5 * z);
+		const FloatType i = abs(z) > 0.666666666666667 ? nSideF * sqrt(3.0 * (1.0 - z)) : nSideF * (2.0 - 1.5 * z);
 		FloatType jEquiv;
 		if (z > 0.666666666666666667) {
 			// HEALPix top polar cap
@@ -85,7 +85,7 @@ public:
 		const VectorType ruv = {rThetaPhi.X(), fmod(jEquiv - floor(0.5 * i) + 1.0, 4.0 * nSideF),
 		                        fmod(jEquiv + floor(0.5 * (i + 1.0)) - 3.0 + deltaV48, 3.0 * nSideF)};
 		// texCoord is in the reverse order: (X, Y, Z)
-		return Base::Sample(ruv.Flipped());
+		return Base::Sample(ruv.Flipped() / (Size() - IntType{1}).StaticCast<FloatType>());
 	}
 
 private:

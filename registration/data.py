@@ -10,7 +10,6 @@ import nrrd
 import pydicom
 
 from registration.lib.structs import *
-from registration.lib.sinogram import *
 
 
 class LoadedVolume(NamedTuple):
@@ -133,9 +132,6 @@ def load_cached_volume(cache_directory: str, sinogram_hash: str):
     except:
         logger.warning("No cache file '{}' found.".format(file))
         return None
-    if not isinstance(volume_spec, VolumeSpec):
-        logger.error("Cache file '{}' invalid.".format(file))
-        return None
     volume_downsample_factor = volume_spec.downsample_factor
     sinogram3d = volume_spec.sinogram
     logger.info(
@@ -145,14 +141,11 @@ def load_cached_volume(cache_directory: str, sinogram_hash: str):
 
 
 def load_cached_drr(cache_directory: str, ct_volume_path: str):
-    file: str = cache_directory + "/drr_spec_{}.pt".format(deterministic_hash(ct_volume_path))
+    file: str = cache_directory + "/drr_spec_{}.pt".format(deterministic_hash_string(ct_volume_path))
     try:
         drr_spec = torch.load(file)
     except:
         logger.warning("No cache file '{}' found.".format(file))
-        return None
-    if not isinstance(drr_spec, DrrSpec):
-        logger.error("Cache file '{}' invalid.".format(file))
         return None
     assert drr_spec.ct_volume_path == ct_volume_path
     detector_spacing = drr_spec.detector_spacing
