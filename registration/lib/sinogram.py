@@ -289,34 +289,47 @@ class SinogramClassic(Sinogram):
 class SinogramHEALPix(Sinogram):
     @staticmethod
     def build_grid(*, n_side: int, r_range: LinearRange, r_count: int, device=torch.device("cpu")) -> Sinogram3dGrid:
-        u = torch.arange(4 * n_side, dtype=torch.int32, device=device)
-        v = torch.arange(3 * n_side, dtype=torch.int32, device=device)
+        u = torch.arange(3 * n_side, dtype=torch.int32, device=device)
+        v = torch.arange(2 * n_side, dtype=torch.int32, device=device)
         v, u = torch.meshgrid(v, u)
-        bot_left = torch.logical_and(u >= 3 * n_side, u + v >= 5 * n_side)
-        right = torch.logical_and((u // n_side) - (v // n_side) > 0, torch.logical_not(bot_left))
+
+        # to i, j_equiv
         u = u.clone()
         v = v.clone()
-        u[bot_left] -= 4 * n_side
-        v[bot_left] -= n_side
-        v[right] += 3 * n_side
-        i = v - u + n_side
-        j = ((u + v) // 2) + 1
+        base_pixel_9 = torch.logical_and(u >= 2 * n_side, v < n_side)
+        base_pixel_4_left = ((u + v) // 2) - 1 < 1
+        u[base_pixel_9] -= n_side
+        v[base_pixel_4_left] += 2 * n_side
+        v[torch.logical_or(base_pixel_9, base_pixel_4_left)] += 2 * n_side
+        del base_pixel_9, base_pixel_4_left
+        i = v - u + 2 * n_side
+        j = ((u + v) // 2) - 1
+        del u, v
+
+        # to x_s, y_s
         i_f = i.to(dtype=torch.float32)
         j_f = j.to(dtype=torch.float32)
+        del i, j
+        x_s = torch.pi * (j_f - 0.5 * torch.fmod(i_f - float(n_side) + 1.0, 2.0)) / (2.0 * float(n_side))
         y_s = torch.pi * (2.0 * float(n_side) - i_f) / (4.0 * float(n_side))
-        polar_top = y_s > 0.25 * torch.pi
-        equatorial_zone = torch.abs(y_s) <= 0.25 * torch.pi
-        polar_bot = y_s < -0.25 * torch.pi
-        polar_caps = torch.logical_or(polar_bot, polar_top)
-        z = torch.zeros_like(i_f)
+        del i_f, j_f
+
+        # to phi, theta
+        y_s_abs = y_s.abs()
+        equatorial_zone = y_s_abs <= 0.25 * torch.pi
+        polar_caps = torch.logical_not(equatorial_zone)
+        z = torch.zeros_like(x_s)
         z[equatorial_zone] = (8.0 * y_s / (3.0 * torch.pi))[equatorial_zone]
-        z[polar_caps] = ((1.0 - (2.0 - 4.0 * y_s.abs() / torch.pi).square() / 3.0) * y_s.sign())[polar_caps]
-        phi = torch.zeros_like(i_f)
-        phi[polar_top] = (torch.pi * (j_f - .5) / (2. * i_f))[polar_top]
-        phi[equatorial_zone] = \
-            (torch.pi * (j_f - .5 * torch.fmod(i_f - float(n_side) + 1., 2.)) / (2. * float(n_side)))[equatorial_zone]
-        phi[polar_bot] = (torch.pi * (j_f - .5) / (2. * (4. * float(n_side) - i_f)))[polar_bot]
-        theta = z.asin()
+        z[polar_caps] = ((1.0 - (2.0 - 4.0 * y_s_abs / torch.pi).square() / 3.0) * y_s.sign())[polar_caps]
+        phi = torch.zeros_like(x_s)
+        phi[equatorial_zone] = x_s[equatorial_zone] - 0.5 * torch.pi  # with pi/2 adjustment
+        phi[polar_caps] = (x_s - (torch.fmod(x_s, 0.5 * torch.pi) - 0.25 * torch.pi) * (y_s_abs - 0.25 * torch.pi) / (
+                y_s_abs - 0.5 * torch.pi))[polar_caps] - 0.5 * torch.pi  # with pi/2 adjustment
+        del x_s, y_s, y_s_abs, equatorial_zone, polar_caps
+        theta = z.asin()  # instead of cos, for adjustment
+        del z
+
+        # generating the r grid and assembling
         r = r_range.generate_grid(r_count, device=device)
         r = r.unsqueeze(-1).unsqueeze(-1).expand(-1, phi.size()[0], phi.size()[1])
         phi = phi.expand(r_count, -1, -1)
@@ -346,7 +359,7 @@ class SinogramHEALPix(Sinogram):
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         return Extension.resample_sinogram3d(
-            self.data, "healpix", self.r_range.get_spacing(self.data.size()[2]), ph_matrix, fixed_image_grid.phi,
+            self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]), ph_matrix, fixed_image_grid.phi,
             fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
@@ -355,54 +368,54 @@ class SinogramHEALPix(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
+        assert self.data.size()[1] % 2 == 0
+        assert self.data.size()[2] % 3 == 0
+        assert self.data.size()[1] // 2 == self.data.size()[2] // 3
+
+        n_side: int = self.data.size()[1] // 2
+
         fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
             fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
 
+        # to x_s, y_s
         z = fixed_image_grid_sph.theta.sin()
-        n_side_f = float(self.data.size()[1] // 4)
-        polar_bot = z < -2. / 3.
-        equatorial_zone = z.abs() <= 2. / 3.
-        polar_top = z > 2. / 3.
-        polar_caps = torch.logical_or(polar_bot, polar_top)
-        i = torch.zeros_like(z)
-        i[polar_caps] = (n_side_f * (3.0 * (1.0 - z)).sqrt())[polar_caps]
-        i[equatorial_zone] = (n_side_f * (2.0 - 1.5 * z))[equatorial_zone]
+        z_abs = z.abs()
+        sigma = z.sign() * (2.0 - (3.0 * (1.0 - z_abs)).sqrt())
+        equatorial_zone = z_abs <= 2. / 3.
+        polar_caps = torch.logical_not(equatorial_zone)
+        x_s = torch.zeros_like(z)
+        x_s[equatorial_zone] = fixed_image_grid_sph.phi[equatorial_zone] + 0.5 * torch.pi  # with pi/2 adjustment
+        x_s[polar_caps] = (fixed_image_grid_sph.phi - (sigma.abs() - 1.0) * (torch.fmod(
+            fixed_image_grid_sph.phi, 0.5 * torch.pi) - 0.25 * torch.pi))[
+                              polar_caps] + 0.5 * torch.pi  # with pi/2 adjustment
+        y_s = torch.zeros_like(z)
+        y_s[equatorial_zone] = 3.0 * torch.pi * z[equatorial_zone] / 8.0
+        y_s[polar_caps] = torch.pi * sigma[polar_caps] / 4.0
+        del equatorial_zone, polar_caps, sigma, z, z_abs
 
-        j = torch.zeros_like(z)
-        j[polar_top] = (2.0 * i * fixed_image_grid_sph.phi / torch.pi + 0.5)[polar_top]
-        j[equatorial_zone] = \
-            (2.0 * n_side_f * fixed_image_grid_sph.phi / torch.pi + 0.5 * torch.fmod(i - n_side_f + 1.0, 2.0))[
-                equatorial_zone]
-        j[polar_bot] = (2.0 * (4.0 * n_side_f - i) * fixed_image_grid_sph.phi / torch.pi + 0.5)[polar_bot]
+        i = 2.0 * float(n_side) * (1.0 - 2.0 * y_s / torch.pi)
+        j = 2.0 * float(n_side) * x_s / torch.pi + 0.5 * torch.fmod(i - float(n_side) + 1.0, 2.0)
+        del x_s, y_s
 
-        j_equiv = torch.zeros_like(z)
-        j_equiv[polar_top] = torch.tensor(
-            n_side_f * ((j - 1.0) / i).floor() + 1.0 + torch.tensor(0.5 * (n_side_f - 1.0)).floor() + torch.fmod(
-                j - 1.0, i))[polar_top]
-        j_equiv[equatorial_zone] = j[equatorial_zone]
-        j_equiv[polar_bot] = (n_side_f * ((j - 1.0) / (4.0 * n_side_f - i)).floor() + 1.0 + torch.tensor(
-            0.5 * (n_side_f - 1.0)).floor() + torch.fmod(
-            j - 1.0, 4.0 * n_side_f - i))[polar_bot]
-
-        delta_v48 = torch.zeros_like(i)
-        zone = j_equiv - (0.5 * i).floor() + 1.0 < 0.0
-        delta_v48[zone] = n_side_f
-
-        # r,u,v is the order of the texture dimensions
-        u, v = torch.fmod(j_equiv - (0.5 * i).floor() + 1.0, 4.0 * n_side_f), torch.fmod(
-            j_equiv + (0.5 * (i + 1.0)).floor() - 3.0 + delta_v48, 3.0 * n_side_f)
+        u = j + 1.0 - (0.5 * i).floor() + float(n_side)
+        v = j + 1.0 + (0.5 * (i + 1.0)).floor() - float(n_side)
+        v_high = v >= 2.0 * float(n_side)
+        u_high = u >= 2.0 * float(n_side)
+        u[torch.logical_and(v_high, u_high)] -= 2.0 * float(n_side)
+        u[torch.logical_and(v_high, torch.logical_not(u_high))] += float(n_side)
+        v[v_high] -= 2.0 * float(n_side)
+        del i, j, v_high, u_high
 
         # texCoord is in the reverse order: (X, Y, Z)
-
         grid_range = LinearRange.grid_sample_range()
-        i_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=3. * n_side_f - 1.))
-        j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=4. * n_side_f - 1.))
+        i_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=3. * float(n_side) - 1.))
+        j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=2. * float(n_side) - 1.))
         k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
 
         grid = torch.stack(
             (
-                i_mapping(v), j_mapping(u), k_mapping(fixed_image_grid_sph.r)), dim=-1)
-        ret = Extension.grid_sample3d(self.data, grid, "wrap")
+                i_mapping(u), j_mapping(v), k_mapping(fixed_image_grid_sph.r)), dim=-1)
+        ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
 
         del fixed_image_grid_sph
 

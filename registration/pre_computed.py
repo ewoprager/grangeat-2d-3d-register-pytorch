@@ -25,7 +25,7 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
         sinogram3d_grid = SinogramClassic.build_grid(counts=vol_counts, r_range=r_range, device=device)
     elif sinogram_type == SinogramHEALPix:
         sinogram3d_grid = SinogramHEALPix.build_grid(
-            n_side=int(torch.ceil(torch.tensor(float(vol_counts) / 3.5)).item()), r_count=vol_counts, r_range=r_range,
+            n_side=int(torch.ceil(torch.tensor(float(vol_counts) / 2.5)).item()), r_count=vol_counts, r_range=r_range,
             device=device)
     else:
         raise TypeError(

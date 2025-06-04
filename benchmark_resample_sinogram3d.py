@@ -89,7 +89,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
 
     scene_geometry = SceneGeometry(source_distance=1000.)
     # transformation = Transformation(rotation=torch.tensor([0., 0., 0.]), translation=torch.tensor([0., 0., 0.]))
-    transformation = Transformation.random()
+    transformation = Transformation.zero()
     source_position = scene_geometry.source_position()
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32)
@@ -97,11 +97,12 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
     params = FunctionParams(sinogram3d, ph_matrix, fixed_image_grid)
 
     outputs: list[TaskSummary] = [
+        # run_task(
+        #     task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample, "Sinogram3D.resample",
+        #     "cpu", params), run_task(
+        #     task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample, "Sinogram3D.resample",
+        #     "cuda", params),
         run_task(
-            task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample, "Sinogram3D.resample",
-            "cpu", params), run_task(
-            task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample, "Sinogram3D.resample",
-            "cuda", params), run_task(
             task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
             "Sinogram3D.resample_python", "cpu", params), run_task(
             task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,

@@ -59,8 +59,10 @@ def normalised_cross_correlation(a: torch.Tensor, b: torch.Tensor) -> torch.Tens
     return torch.ops.reg23.normalised_cross_correlation.default(a, b)
 
 
-def grid_sample3d(input_: torch.Tensor, grid: torch.Tensor, address_mode: str = "zero") -> torch.Tensor:
-    return torch.ops.reg23.grid_sample3d.default(input_, grid.to(dtype=torch.float32), address_mode)
+def grid_sample3d(input_: torch.Tensor, grid: torch.Tensor, address_mode_x: str = "zero", address_mode_y: str = "zero",
+                  address_mode_z: str = "zero") -> torch.Tensor:
+    return torch.ops.reg23.grid_sample3d.default(
+        input_, grid.to(dtype=torch.float32), address_mode_x, address_mode_y, address_mode_z)
 
 
 def project_drr(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,

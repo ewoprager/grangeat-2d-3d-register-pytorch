@@ -38,9 +38,9 @@ TORCH_LIBRARY(reg23, m) {
 	m.def("resample_sinogram3d(Tensor sinogram, str type, float rSpacing, Tensor projMat, Tensor phis, Tensor "
 		"rs) -> Tensor");
 	m.def("normalised_cross_correlation(Tensor a, Tensor b) -> Tensor");
-	m.def("grid_sample3d(Tensor input, Tensor grid, str address_mode) -> Tensor");
+	m.def("grid_sample3d(Tensor input, Tensor grid, str am_x, str am_y, str am_z) -> Tensor");
 	m.def(
-		"project_drr(Tensor volume, Tensor spacing, Tensor hInverse, float sourceDist, int outW, int outH, Tensor outOff, Tensor  outSpacing) -> Tensor");
+		"project_drr(Tensor volume, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, Tensor outOff, Tensor outSpacing) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(reg23, CPU, m) {

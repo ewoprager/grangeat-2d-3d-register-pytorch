@@ -16,7 +16,9 @@ namespace reg23 {
  * bilinear interpolation. This implementation is single-threaded.
  * @param input a tensor of size (P,Q,R) containing `torch.float32`s: The volume to sample
  * @param grid a tensor of size (..., 3) containing `torch.float32`s: The grid to sample at; the last dimension represents 3D locations within the `input` volume between (-1, -1, -1) and (1, 1, 1)
- * @param addressMode Either "wrap" or "zero"
+ * @param addressModeX either "wrap" or "zero": The address mode used for dimension X
+ * @param addressModeY either "wrap" or "zero": The address mode used for dimension Y
+ * @param addressModeZ either "wrap" or "zero": The address mode used for dimension Z
  * @return a tensor of size (...) containing `torch.float32`s: The sampled values in the given volume at the locations in the given grid; this will be the same size as `grid`, minus the last dimension.
  *
  * # Address modes
@@ -24,13 +26,15 @@ namespace reg23 {
  * - "wrap": sampling locations (x, y, z) outside (-1, -1, -1) and (1, 1, 1) will be read wrapped back according to ((x
  * + 1) mod 2 - 1, (y + 1) mod 2 - 1, (z + 1) mod 2 - 1)
  */
-at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode);
+at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, const std::string &addressModeX,
+                            const std::string &addressModeY, const std::string &addressModeZ);
 
 /**
  * @ingroup pytorch_functions
  * @brief An implementation of reg23::GridSample3D_CPU that uses CUDA parallelisation.
  */
-__host__ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode);
+__host__ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, const std::string &addressModeX,
+                                      const std::string &addressModeY, const std::string &addressModeZ);
 
 /**
  * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
@@ -53,7 +57,8 @@ template <typename texture_t> struct GridSample3D {
 		at::Tensor flatOutput{};
 	};
 
-	__host__ static CommonData Common(const at::Tensor &input, const at::Tensor &grid, const std::string &addressMode,
+	__host__ static CommonData Common(const at::Tensor &input, const at::Tensor &grid, const std::string &addressModeX,
+	                                  const std::string &addressModeY, const std::string &addressModeZ,
 	                                  at::DeviceType device) {
 		// input should be a 3D tensor of floats on the chosen device
 		TORCH_CHECK(input.sizes().size() == 3)
@@ -63,13 +68,19 @@ template <typename texture_t> struct GridSample3D {
 		TORCH_CHECK(grid.sizes().back() == 3);
 		TORCH_CHECK(grid.dtype() == at::kFloat);
 		TORCH_INTERNAL_ASSERT(grid.device().type() == device)
-		// addressMode should be one of the valid values:
-		TextureAddressMode am = TextureAddressMode::ZERO;
-		if (addressMode == "wrap") {
-			am = TextureAddressMode::WRAP;
-		} else if (addressMode != "zero") {
-			TORCH_WARN(
-				"Invalid address mode string given. Valid values are: 'zero', 'wrap'. Using default value: 'zero'.")
+
+		// All addressMode<dim>s should be one of the valid values:
+		AddressModeType addressModes = AddressModeType::Full(TextureAddressMode::ZERO);
+		int dim = 0;
+		for (const std::string_view &str : std::array<std::string_view, 3>
+		     {{addressModeX, addressModeY, addressModeZ}}) {
+			if (str == "wrap") {
+				addressModes[dim] = TextureAddressMode::WRAP;
+			} else if (str != "zero") {
+				TORCH_WARN(
+					"Invalid address mode string given. Valid values are: 'zero', 'wrap'. Using default value: 'zero'.")
+			}
+			++dim;
 		}
 
 		CommonData ret{};
@@ -77,8 +88,7 @@ template <typename texture_t> struct GridSample3D {
 		const float *inputPtr = inputContiguous.data_ptr<float>();
 		const SizeType inputSize = SizeType::FromIntArrayRef(input.sizes()).Flipped();
 		const VectorType inputSpacing = 2.0 / (inputSize - static_cast<IntType>(1)).template StaticCast<FloatType>();
-		ret.inputTexture = texture_t{inputPtr, inputSize, inputSpacing, VectorType::Full(0.0),
-		                             texture_t::AddressModeType::Full(am)};
+		ret.inputTexture = texture_t{inputPtr, inputSize, inputSpacing, VectorType::Full(0.0), addressModes};
 		ret.flatOutput = torch::zeros(at::IntArrayRef({grid.numel() / 3}), inputContiguous.options());
 		return ret;
 	}
