@@ -90,12 +90,12 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga42574897bde4ab67ae56f293efb131d9" id="r_ga42574897bde4ab67ae56f293efb131d9"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga42574897bde4ab67ae56f293efb131d9">reg23::GridSample3D_CPU</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
-<tr class="memdesc:ga42574897bde4ab67ae56f293efb131d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sample the given 3D input tensor at the positions given in grid according to the given address mode using bilinear interpolation. This implementation is single-threaded.  <br /></td></tr>
-<tr class="separator:ga42574897bde4ab67ae56f293efb131d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadedcab0650495e81477a0cbd98708492" id="r_gadedcab0650495e81477a0cbd98708492"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gadedcab0650495e81477a0cbd98708492">reg23::GridSample3D_CUDA</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressMode)</td></tr>
-<tr class="memdesc:gadedcab0650495e81477a0cbd98708492"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga42574897bde4ab67ae56f293efb131d9" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">reg23::GridSample3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
-<tr class="separator:gadedcab0650495e81477a0cbd98708492"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga933e1f316f254422ccb79485d45a0b95" id="r_ga933e1f316f254422ccb79485d45a0b95"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga933e1f316f254422ccb79485d45a0b95">reg23::GridSample3D_CPU</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressModeX, const std::string &amp;addressModeY, const std::string &amp;addressModeZ)</td></tr>
+<tr class="memdesc:ga933e1f316f254422ccb79485d45a0b95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sample the given 3D input tensor at the positions given in grid according to the given address mode using bilinear interpolation. This implementation is single-threaded.  <br /></td></tr>
+<tr class="separator:ga933e1f316f254422ccb79485d45a0b95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaca8a9fb99bfa624e8fa2fc4220b99ddd" id="r_gaca8a9fb99bfa624e8fa2fc4220b99ddd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaca8a9fb99bfa624e8fa2fc4220b99ddd">reg23::GridSample3D_CUDA</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressModeX, const std::string &amp;addressModeY, const std::string &amp;addressModeZ)</td></tr>
+<tr class="memdesc:gaca8a9fb99bfa624e8fa2fc4220b99ddd"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga933e1f316f254422ccb79485d45a0b95" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">reg23::GridSample3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
+<tr class="separator:gaca8a9fb99bfa624e8fa2fc4220b99ddd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf44a8ff8d993fef4bc2729267ac5efa9" id="r_gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9">reg23::ProjectDRR_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
 <tr class="memdesc:gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a DRR from the given volume at the given transformation.  <br /></td></tr>
 <tr class="separator:gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -372,8 +372,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga42574897bde4ab67ae56f293efb131d9" name="ga42574897bde4ab67ae56f293efb131d9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga42574897bde4ab67ae56f293efb131d9">&#9670;&#160;</a></span>GridSample3D_CPU()</h2>
+<a id="ga933e1f316f254422ccb79485d45a0b95" name="ga933e1f316f254422ccb79485d45a0b95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga933e1f316f254422ccb79485d45a0b95">&#9670;&#160;</a></span>GridSample3D_CPU()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -394,7 +394,19 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>addressMode</em>&#160;</td>
+          <td class="paramname"><em>addressModeX</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>addressModeY</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>addressModeZ</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -409,7 +421,9 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">input</td><td>a tensor of size (P,Q,R) containing <code>torch.float32</code>s: The volume to sample </td></tr>
     <tr><td class="paramname">grid</td><td>a tensor of size (..., 3) containing <code>torch.float32</code>s: The grid to sample at; the last dimension represents 3D locations within the <code>input</code> volume between (-1, -1, -1) and (1, 1, 1) </td></tr>
-    <tr><td class="paramname">addressMode</td><td>Either "wrap" or "zero" </td></tr>
+    <tr><td class="paramname">addressModeX</td><td>either "wrap" or "zero": The address mode used for dimension X </td></tr>
+    <tr><td class="paramname">addressModeY</td><td>either "wrap" or "zero": The address mode used for dimension Y </td></tr>
+    <tr><td class="paramname">addressModeZ</td><td>either "wrap" or "zero": The address mode used for dimension Z </td></tr>
   </table>
   </dd>
 </dl>
@@ -424,8 +438,8 @@ Address modes</h1>
 
 </div>
 </div>
-<a id="gadedcab0650495e81477a0cbd98708492" name="gadedcab0650495e81477a0cbd98708492"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gadedcab0650495e81477a0cbd98708492">&#9670;&#160;</a></span>GridSample3D_CUDA()</h2>
+<a id="gaca8a9fb99bfa624e8fa2fc4220b99ddd" name="gaca8a9fb99bfa624e8fa2fc4220b99ddd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaca8a9fb99bfa624e8fa2fc4220b99ddd">&#9670;&#160;</a></span>GridSample3D_CUDA()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -446,7 +460,19 @@ Address modes</h1>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>addressMode</em>&#160;</td>
+          <td class="paramname"><em>addressModeX</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>addressModeY</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>addressModeZ</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -456,7 +482,7 @@ Address modes</h1>
       </table>
 </div><div class="memdoc">
 
-<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga42574897bde4ab67ae56f293efb131d9" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">reg23::GridSample3D_CPU</a> that uses CUDA parallelisation. </p>
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga933e1f316f254422ccb79485d45a0b95" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">reg23::GridSample3D_CPU</a> that uses CUDA parallelisation. </p>
 
 </div>
 </div>

@@ -13,8 +13,8 @@ var searchData=
   ['grangeat_20based_202d_203d_20image_20registration_10',['Grangeat-based 2D/3D image registration',['../index.html',1,'']]],
   ['gridsample3d_11',['GridSample3D',['../structreg23_1_1GridSample3D.html',1,'reg23']]],
   ['gridsample3d_2eh_12',['GridSample3D.h',['../GridSample3D_8h.html',1,'']]],
-  ['gridsample3d_5fcpu_13',['GridSample3D_CPU',['../group__pytorch__functions.html#ga42574897bde4ab67ae56f293efb131d9',1,'reg23']]],
-  ['gridsample3d_5fcuda_14',['GridSample3D_CUDA',['../group__pytorch__functions.html#gadedcab0650495e81477a0cbd98708492',1,'reg23']]],
+  ['gridsample3d_5fcpu_13',['GridSample3D_CPU',['../group__pytorch__functions.html#ga933e1f316f254422ccb79485d45a0b95',1,'reg23']]],
+  ['gridsample3d_5fcuda_14',['GridSample3D_CUDA',['../group__pytorch__functions.html#gaca8a9fb99bfa624e8fa2fc4220b99ddd',1,'reg23']]],
   ['gridsample3dcpu_2ecpp_15',['GridSample3DCPU.cpp',['../GridSample3DCPU_8cpp.html',1,'']]],
   ['gridsample3dcuda_2ecu_16',['GridSample3DCUDA.cu',['../GridSample3DCUDA_8cu.html',1,'']]]
 ];
