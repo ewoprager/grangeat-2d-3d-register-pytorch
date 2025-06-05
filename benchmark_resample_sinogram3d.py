@@ -90,8 +90,8 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
     fixed_image_grid = Sinogram2dGrid.linear_from_range(fixed_image_range, (1000, 1000))
 
     scene_geometry = SceneGeometry(source_distance=1000.)
-    # transformation = Transformation(rotation=torch.tensor([0., 0., 0.]), translation=torch.tensor([0., 0., 0.]))
-    transformation = Transformation.zero()
+    # transformation = Transformation.zero()
+    transformation = Transformation(rotation=torch.tensor([1.0, 2.0, 3.0]), translation=torch.tensor([0.2, 0.4, -0.2]))
     source_position = scene_geometry.source_position()
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32)

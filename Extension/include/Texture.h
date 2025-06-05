@@ -19,7 +19,7 @@ enum class TextureAddressMode {
 	ZERO, ///< Sampling locations outside texture coordinate range will be read as 0
 	WRAP
 	///< Sampling locations outside texture coordinate range will be read wrapped back according to ((x - left) mod
-			///< width + left, (y - bottom) mod height + bottom, etc...
+	///< width + left, (y - bottom) mod height + bottom, etc...
 };
 
 #ifdef __CUDACC__
@@ -46,7 +46,7 @@ inline cudaTextureAddressMode TextureAddressModeToCuda(TextureAddressMode tam) {
  * to all texture objects. It is intended to be used as a fully template-specified base class for any texture object.
  */
 template <std::size_t dimensionality, typename intType = int, typename floatType = float> class Texture {
-public:
+  public:
 	static constexpr std::size_t DIMENSIONALITY = dimensionality;
 	using IntType = intType;
 	using FloatType = floatType;
@@ -54,15 +54,16 @@ public:
 	using VectorType = Vec<floatType, dimensionality>;
 	using AddressModeType = Vec<TextureAddressMode, dimensionality>;
 
-	/// Get the dimensions of the texture
+	/// Get the dimensions of the texture as (X size, Y size, Z size); this will be the reverse order to the values
+	/// returned by `at::Tensor::sizes()`
 	[[nodiscard]] __host__ __device__ const SizeType &Size() const { return size; }
-	/// Get the spacing of the texture's values in world coordinates
+	/// Get the spacing of the texture's values in world coordinates as (X, Y, Z)
 	[[nodiscard]] __host__ __device__ const VectorType &Spacing() const { return spacing; }
-	/// Get the position of the centre of the texture in world coordinates
+	/// Get the position of the centre of the texture in world coordinates as (X, Y, Z)
 	[[nodiscard]] __host__ __device__ const VectorType &CentrePosition() const { return centrePosition; }
 
 	/**
-	 * @return The size of the texture in world coordinates
+	 * @return The size of the texture in world coordinates as (X size, Y size, Z size)
 	 */
 	[[nodiscard]] __host__ __device__ VectorType SizeWorld() const {
 		return size.template StaticCast<FloatType>() * spacing;
@@ -82,15 +83,15 @@ public:
 	 */
 	[[nodiscard]] __host__ __device__ Linear<VectorType> MappingWorldToTexCoord() const {
 		const VectorType sizeWorldInverse = FloatType{1.} / SizeWorld();
-		return {VectorType::Full(FloatType{.5}) - centrePosition * sizeWorldInverse, sizeWorldInverse};
+		return Linear<VectorType>{VectorType::Full(FloatType{.5}) - centrePosition * sizeWorldInverse,
+								  sizeWorldInverse};
 	}
 
-protected:
+  protected:
 	Texture() = default;
 
 	Texture(SizeType _size, VectorType _spacing, VectorType _centrePosition = {})
-		: size(_size), spacing(_spacing), centrePosition(_centrePosition) {
-	}
+		: size(_size), spacing(_spacing), centrePosition(_centrePosition) {}
 
 	// yes copy
 	Texture(const Texture &) = default;
@@ -102,10 +103,12 @@ protected:
 
 	Texture &operator=(Texture &&) noexcept = default;
 
-private:
-	SizeType size{}; ///< The dimensions of the texture
-	VectorType spacing{}; ///< The spacing between the values of the texture in world coordinates
-	VectorType centrePosition{}; ///< The position of the centre of the texture in world coordinates
+  private:
+	/// The dimensions of the texture as (X size, Y size, Z size); this will be the reverse order to the values returned
+	/// by `at::Tensor::sizes()`
+	SizeType size{};
+	VectorType spacing{};		 ///< The spacing between the values of the texture in world coordinates as (X, Y, Z)
+	VectorType centrePosition{}; ///< The position of the centre of the texture in world coordinates as (X, Y, Z)
 };
 
 /**

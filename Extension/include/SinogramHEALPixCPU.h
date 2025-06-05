@@ -64,13 +64,13 @@ class SinogramHEALPixCPU : Texture3DCPU {
 		const FloatType nSideF = static_cast<FloatType>(nSide);
 
 		// to x_s, y_s
-		const FloatType z = sin(rThetaPhi.Y());
+		const FloatType z = sin(rThetaPhi[1]);
 		const FloatType zAbs = abs(z);
 		const FloatType sigma = Sign(z) * (2.0 - sqrt(3.0 * (1.0 - zAbs)));
-		const FloatType xS = zAbs <= 2.0 / 3.0 ?			// equatorial zone
-								 rThetaPhi.Z() + 0.5 * M_PI // with pi/2 adjustment
-											   :			// polar cap
-								 rThetaPhi.Z() - (abs(sigma) - 1.0) * (fmod(rThetaPhi.Z(), 0.5 * M_PI) - 0.25 * M_PI) +
+		const FloatType xS = zAbs <= 2.0 / 3.0 ?		   // equatorial zone
+								 rThetaPhi[2] + 0.5 * M_PI // with pi/2 adjustment
+											   :		   // polar cap
+								 rThetaPhi[2] - (abs(sigma) - 1.0) * (fmod(rThetaPhi[2], 0.5 * M_PI) - 0.25 * M_PI) +
 									 0.5 * M_PI;					  // with pi/2 adjustment
 		const FloatType yS = zAbs <= 2.0 / 3.0 ? 2.0 * M_PI * z / 8.0 // equatorial zone
 											   : M_PI * sigma / 4.0;  // polar cap
@@ -92,9 +92,11 @@ class SinogramHEALPixCPU : Texture3DCPU {
 				u += nSideF;
 		}
 
-		// u,v,r is the order of the texture dimensions
-		const VectorType uvr = {u, v, rThetaPhi.X()};
-		return Base::Sample(uvr / (Size() - IntType{1}).StaticCast<FloatType>().Flipped());
+		// u,v,r is the order of the texture dimensions (X, Y, Z)
+		const Vec<FloatType, 2> texCoordOrientation =
+			Vec<FloatType, 2>{u, v} / (Size().XY() - IntType{1}).StaticCast<FloatType>();
+		const FloatType texCoordR = .5 + rThetaPhi[0] / (static_cast<FloatType>(Size().Z()) * Spacing().Z());
+		return Base::Sample(VecCat(texCoordOrientation, texCoordR));
 	}
 
   private:

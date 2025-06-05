@@ -46,7 +46,7 @@ template <typename T> __host__ __device__ T Square(const T &x) { return x * x; }
 template <typename T> __host__ __device__ T Modulo(const T &x, const T &y) { return (x % y + y) % y; }
 
 
-template <typename T> __host__ __device__ T Sign(const T &x) { return static_cast<T>(x > 0 - x < 0); }
+template <typename T> __host__ __device__ T Sign(const T &x) { return static_cast<T>((x > 0) - (x < 0)); }
 
 /**
  * @}
