@@ -114,13 +114,12 @@ Public Types</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a111ad5e0c1a8330152d367e04772f7ff" id="r_a111ad5e0c1a8330152d367e04772f7ff"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> const <a class="el" href="classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a">SizeType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html#a111ad5e0c1a8330152d367e04772f7ff">Size</a> () const</td></tr>
-<tr class="memdesc:a111ad5e0c1a8330152d367e04772f7ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the dimensions of the texture.  <br /></td></tr>
 <tr class="separator:a111ad5e0c1a8330152d367e04772f7ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d32947dcb93ddd94f55fd2d37d02641" id="r_a2d32947dcb93ddd94f55fd2d37d02641"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> const <a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html#a2d32947dcb93ddd94f55fd2d37d02641">Spacing</a> () const</td></tr>
-<tr class="memdesc:a2d32947dcb93ddd94f55fd2d37d02641"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the spacing of the texture's values in world coordinates.  <br /></td></tr>
+<tr class="memdesc:a2d32947dcb93ddd94f55fd2d37d02641"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the spacing of the texture's values in world coordinates as (X, Y, Z)  <br /></td></tr>
 <tr class="separator:a2d32947dcb93ddd94f55fd2d37d02641"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88f6753b8256a335c69f9c71f7bfcd50" id="r_a88f6753b8256a335c69f9c71f7bfcd50"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> const <a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html#a88f6753b8256a335c69f9c71f7bfcd50">CentrePosition</a> () const</td></tr>
-<tr class="memdesc:a88f6753b8256a335c69f9c71f7bfcd50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the position of the centre of the texture in world coordinates.  <br /></td></tr>
+<tr class="memdesc:a88f6753b8256a335c69f9c71f7bfcd50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the position of the centre of the texture in world coordinates as (X, Y, Z)  <br /></td></tr>
 <tr class="separator:a88f6753b8256a335c69f9c71f7bfcd50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfc8536390678e625ba68524cabdd313" id="r_abfc8536390678e625ba68524cabdd313"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Texture.html#a7d59507064c22bb23ed89c174f0c77bc">VectorType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Texture.html#abfc8536390678e625ba68524cabdd313">SizeWorld</a> () const</td></tr>
 <tr class="separator:abfc8536390678e625ba68524cabdd313"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -396,7 +395,7 @@ template&lt;std::size_t dimensionality, typename intType  = int, typename floatT
 </table>
 </div><div class="memdoc">
 
-<p>Get the position of the centre of the texture in world coordinates. </p>
+<p>Get the position of the centre of the texture in world coordinates as (X, Y, Z) </p>
 
 </div>
 </div>
@@ -543,8 +542,7 @@ template&lt;std::size_t dimensionality, typename intType  = int, typename floatT
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Get the dimensions of the texture. </p>
+<p>Get the dimensions of the texture as (X size, Y size, Z size); this will be the reverse order to the values returned by <code>at::Tensor::sizes()</code> </p>
 
 </div>
 </div>
@@ -572,7 +570,7 @@ template&lt;std::size_t dimensionality, typename intType  = int, typename floatT
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>The size of the texture in world coordinates </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>The size of the texture in world coordinates as (X size, Y size, Z size) </dd></dl>
 
 </div>
 </div>
@@ -601,7 +599,7 @@ template&lt;std::size_t dimensionality, typename intType  = int, typename floatT
 </table>
 </div><div class="memdoc">
 
-<p>Get the spacing of the texture's values in world coordinates. </p>
+<p>Get the spacing of the texture's values in world coordinates as (X, Y, Z) </p>
 
 </div>
 </div>
