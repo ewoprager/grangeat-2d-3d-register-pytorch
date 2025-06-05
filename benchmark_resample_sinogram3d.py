@@ -27,8 +27,8 @@ class FunctionParams(NamedTuple):
     fixed_image_grid: Sinogram2dGrid
 
     def to(self, **kwargs) -> 'FunctionParams':
-        return FunctionParams(
-            self.sinogram3d.to(**kwargs), self.ph_matrix.to(**kwargs), self.fixed_image_grid.to(**kwargs))
+        return FunctionParams(self.sinogram3d.to(**kwargs), self.ph_matrix.to(**kwargs),
+                              self.fixed_image_grid.to(**kwargs))
 
 
 def task_resample_sinogram3d(function, params: FunctionParams) -> torch.Tensor:
@@ -64,27 +64,29 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
          sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic):
     logger.info("----- Benchmarking resample_sinogram3d -----")
 
-    cuda = torch.device('cuda')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    vol_data, voxel_spacing, sinogram3d = script.get_volume_and_sinogram(
-        path, cache_directory, load_cached=load_cached, save_to_cache=save_to_cache, sinogram_size=sinogram_size,
-        sinogram_type=sinogram_type, device=cuda)
+    vol_data, voxel_spacing, sinogram3d = script.get_volume_and_sinogram(path, cache_directory, load_cached=load_cached,
+                                                                         save_to_cache=save_to_cache,
+                                                                         sinogram_size=sinogram_size,
+                                                                         sinogram_type=sinogram_type, device=device)
 
-    size = sinogram3d.data.size()
-    X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])
-    fig = pgo.Figure(
-        data=pgo.Volume(
-            x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=sinogram3d.data.cpu().flatten(),
-            isomin=sinogram3d.data.min().item(), isomax=sinogram3d.data.max().item(), opacity=.2, surface_count=21),
-        layout=pgo.Layout(title="Sinogram"))
-    fig.show()
+    plot_radon_volume: bool = False
+    if plot_radon_volume:
+        size = sinogram3d.data.size()
+        X, Y, Z = torch.meshgrid(
+            [torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])
+        fig = pgo.Figure(
+            data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=sinogram3d.data.cpu().flatten(),
+                            isomin=sinogram3d.data.min().item(), isomax=sinogram3d.data.max().item(), opacity=.2,
+                            surface_count=21), layout=pgo.Layout(title="Sinogram"))
+        fig.show()
 
-    vol_diag: float = (torch.tensor(
-        [vol_data.size()], dtype=torch.float32,
-        device=voxel_spacing.device) * voxel_spacing).square().sum().sqrt().item()
+    vol_diag: float = (torch.tensor([vol_data.size()], dtype=torch.float32,
+                                    device=voxel_spacing.device) * voxel_spacing).square().sum().sqrt().item()
 
-    fixed_image_range = Sinogram2dRange(
-        LinearRange(-.5 * torch.pi, .5 * torch.pi), LinearRange(-.5 * vol_diag, .5 * vol_diag))
+    fixed_image_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
+                                        LinearRange(-.5 * vol_diag, .5 * vol_diag))
     fixed_image_grid = Sinogram2dGrid.linear_from_range(fixed_image_range, (1000, 1000))
 
     scene_geometry = SceneGeometry(source_distance=1000.)
@@ -97,16 +99,18 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
     params = FunctionParams(sinogram3d, ph_matrix, fixed_image_grid)
 
     outputs: list[TaskSummary] = [
-        # run_task(
-        #     task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample, "Sinogram3D.resample",
-        #     "cpu", params), run_task(
-        #     task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample, "Sinogram3D.resample",
-        #     "cuda", params),
-        run_task(
-            task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
-            "Sinogram3D.resample_python", "cpu", params), run_task(
-            task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
-            "Sinogram3D.resample_python", "cuda", params)]
+        run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
+                 "Sinogram3D.resample_python", "cpu", params)]
+    if device == torch.device("cuda"):
+        outputs += [run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
+                             "Sinogram3D.resample_python", "cuda", params)]
+    run_extension: bool = True
+    if run_extension:
+        outputs += [run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
+                             "Sinogram3D.resample", "cpu", params)]
+        if device == torch.device("cuda"):
+            outputs += [run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
+                                 "Sinogram3D.resample", "cuda", params)]
 
     plt.show()
 
@@ -119,16 +123,13 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
         # if discrepancy > 1e-2:
         #     found = True
         logger.info(
-            "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(
-                outputs[i].name, outputs[i + 1].name, 100. * discrepancy))
+            "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i].name, outputs[i + 1].name,
+                                                                                 100. * discrepancy))
     # if not found:
     #     logger.info("\tNo discrepancies found.")
     logger.info("Done.")
 
-    # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0,
-    # size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(),
-    # y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #  # opacity=.1,
-    # surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
+    # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0,  # size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(),  # y=Y.flatten(), z=Z.flatten(), value=image.flatten(), isomin=.0, isomax=2000.,  #  # opacity=.1,  # surface_count=21), layout=pgo.Layout(title="Input"))  # fig.show()
 
 
 if __name__ == "__main__":
@@ -138,29 +139,24 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
-    parser.add_argument(
-        "-c", "--cache-directory", type=str, default="cache",
-        help="Set the directory where data that is expensive to calculate will be saved. The default "
-             "is 'cache'.")
-    parser.add_argument(
-        "-p", "--ct-nrrd-path", type=str,
-        help="Give a path to a NRRD file containing CT data to process. If not provided, some simple "
-             "synthetic data will be used instead - note that in this case, data will not be saved to "
-             "the cache.")
-    parser.add_argument(
-        "-i", "--no-load", action='store_true', help="Do not load any pre-calculated data from the cache.")
-    parser.add_argument(
-        "-r", "--regenerate-drr", action='store_true',
-        help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
+    parser.add_argument("-c", "--cache-directory", type=str, default="cache",
+                        help="Set the directory where data that is expensive to calculate will be saved. The default "
+                             "is 'cache'.")
+    parser.add_argument("-p", "--ct-nrrd-path", type=str,
+                        help="Give a path to a NRRD file containing CT data to process. If not provided, some simple "
+                             "synthetic data will be used instead - note that in this case, data will not be saved to "
+                             "the cache.")
+    parser.add_argument("-i", "--no-load", action='store_true',
+                        help="Do not load any pre-calculated data from the cache.")
+    parser.add_argument("-r", "--regenerate-drr", action='store_true',
+                        help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
     parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
-    parser.add_argument(
-        "-s", "--sinogram-size", type=int, default=256,
-        help="The number of values of r, theta and phi to calculate plane integrals for, "
-             "and the width and height of the grid of samples taken to approximate each integral. The "
-             "computational expense of the 3D Radon transform is O(sinogram_size^5).")
-    parser.add_argument(
-        "-t", "--sinogram-type", type=str, default="classic",
-        help="The memory structure of the 3D sinogram to use. Available options are 'classic', 'healpix'.")
+    parser.add_argument("-s", "--sinogram-size", type=int, default=256,
+                        help="The number of values of r, theta and phi to calculate plane integrals for, "
+                             "and the width and height of the grid of samples taken to approximate each integral. The "
+                             "computational expense of the 3D Radon transform is O(sinogram_size^5).")
+    parser.add_argument("-t", "--sinogram-type", type=str, default="classic",
+                        help="The memory structure of the 3D sinogram to use. Available options are 'classic', 'healpix'.")
     args = parser.parse_args()
 
     # create cache directory
@@ -173,6 +169,5 @@ if __name__ == "__main__":
     elif args.sinogram_type != "classic":
         logger.warning("Unrecognised sinogram type given: '{}'; defaulting to 'classic'.".format(args.sinogram_type))
 
-    main(
-        path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
-        save_to_cache=not args.no_save, sinogram_size=args.sinogram_size, sinogram_type=_sinogram_type)
+    main(path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
+         save_to_cache=not args.no_save, sinogram_size=args.sinogram_size, sinogram_type=_sinogram_type)

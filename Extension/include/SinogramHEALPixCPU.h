@@ -18,7 +18,7 @@ namespace reg23 {
  * Both copy and move-constructable.
  */
 class SinogramHEALPixCPU : Texture3DCPU {
-public:
+  public:
 	using Base = Texture3DCPU;
 
 	SinogramHEALPixCPU() = default;
@@ -31,8 +31,7 @@ public:
 	 * @param rSpacing The spacing in world coordinates of the layers in the $r$ direction
 	 */
 	SinogramHEALPixCPU(const float *_ptr, IntType _nSide, IntType rCount, FloatType rSpacing)
-		: Base(_ptr, {4 * _nSide, 3 * _nSide, rCount}, {1., 1., rSpacing}), nSide(_nSide) {
-	}
+		: Base(_ptr, {3 * _nSide, 2 * _nSide, rCount}, {1., 1., rSpacing}), nSide(_nSide) {}
 
 	// yes copy
 	SinogramHEALPixCPU(const SinogramHEALPixCPU &) = default;
@@ -51,10 +50,10 @@ public:
 	 */
 	static SinogramHEALPixCPU FromTensor(const at::Tensor &tensor, FloatType rSpacing) {
 		const SizeType tensorSize = SizeType::FromIntArrayRef(tensor.sizes()).Flipped();
-		TORCH_CHECK(tensorSize.X() % 4 == 0)
-		TORCH_CHECK(tensorSize.Y() % 3 == 0)
-		TORCH_CHECK(tensorSize.X() / 4 == tensorSize.Y() / 3)
-		return {tensor.contiguous().data_ptr<float>(), tensorSize.X() / 4, tensorSize.Z(), rSpacing};
+		TORCH_CHECK(tensorSize.X() % 3 == 0)
+		TORCH_CHECK(tensorSize.Y() % 2 == 0)
+		TORCH_CHECK(tensorSize.X() / 3 == tensorSize.Y() / 2)
+		return {tensor.contiguous().data_ptr<float>(), tensorSize.X() / 3, tensorSize.Z(), rSpacing};
 	}
 
 	/**
@@ -62,33 +61,43 @@ public:
 	 * @return The sample from this texture at the given coordinates using trilinear interpolation
 	 */
 	[[nodiscard]] __host__ __device__ float Sample(VectorType rThetaPhi) const {
-		const FloatType z = sin(rThetaPhi.Y());
 		const FloatType nSideF = static_cast<FloatType>(nSide);
-		const FloatType i = abs(z) > 0.666666666666667 ? nSideF * sqrt(3.0 * (1.0 - z)) : nSideF * (2.0 - 1.5 * z);
-		FloatType jEquiv;
-		if (z > 0.666666666666666667) {
-			// HEALPix top polar cap
-			const FloatType j = 2.0 * i * rThetaPhi.Z() / M_PI + 0.5;
-			jEquiv = nSideF * floor((j - 1.0) / i) + 1.0 + floor(0.5 * (nSideF - 1.0)) + fmod(j - 1.0, i);
-		} else if (z > -0.66666666666667) {
-			// HEALPix equatorial zone
-			const FloatType j = 2.0 * nSideF * rThetaPhi.Z() / M_PI + 0.5 * fmod(i - nSideF + 1.0, 2.0);
-			jEquiv = j;
-		} else {
-			// HEALPix bottom polar cap
-			const FloatType j = 2.0 * (4.0 * nSideF - i) * rThetaPhi.Z() / M_PI + 0.5;
-			jEquiv = nSideF * floor((j - 1.0) / (4.0 * nSideF - i)) + 1.0 + floor(0.5 * (nSideF - 1.0)) + fmod(
-				         j - 1.0, 4.0 * nSideF - i);
+
+		// to x_s, y_s
+		const FloatType z = sin(rThetaPhi.Y());
+		const FloatType zAbs = abs(z);
+		const FloatType sigma = Sign(z) * (2.0 - sqrt(3.0 * (1.0 - zAbs)));
+		const FloatType xS = zAbs <= 2.0 / 3.0 ?			// equatorial zone
+								 rThetaPhi.Z() + 0.5 * M_PI // with pi/2 adjustment
+											   :			// polar cap
+								 rThetaPhi.Z() - (abs(sigma) - 1.0) * (fmod(rThetaPhi.Z(), 0.5 * M_PI) - 0.25 * M_PI) +
+									 0.5 * M_PI;					  // with pi/2 adjustment
+		const FloatType yS = zAbs <= 2.0 / 3.0 ? 2.0 * M_PI * z / 8.0 // equatorial zone
+											   : M_PI * sigma / 4.0;  // polar cap
+
+		// to i, j
+		const FloatType i = 2.0 * nSideF * (1.0 - 2.0 * yS / M_PI);
+		const FloatType j = 2.0 * nSideF * xS / M_PI + 0.5 * fmod(i - nSideF + 1.0, 2.0);
+
+		// to u, v
+		FloatType u = j + 1.0 - floor(0.5 * i) + nSideF;
+		FloatType v = j + 1.0 + floor(0.5 * (i + 1.0)) - nSideF;
+		const bool vHigh = v >= 2.0 * nSideF;
+		const bool uHigh = u >= 2.0 * nSideF;
+		if (vHigh) {
+			v -= 2.0 * nSideF;
+			if (uHigh)
+				u -= 2.0 * nSideF;
+			else
+				u += nSideF;
 		}
-		const FloatType deltaV48 = jEquiv - floor(0.5 * i) + 1.0 < 0.0 ? nSideF : 0.0;
-		// r,u,v is the order of the texture dimensions
-		const VectorType ruv = {rThetaPhi.X(), fmod(jEquiv - floor(0.5 * i) + 1.0, 4.0 * nSideF),
-		                        fmod(jEquiv + floor(0.5 * (i + 1.0)) - 3.0 + deltaV48, 3.0 * nSideF)};
-		// texCoord is in the reverse order: (X, Y, Z)
-		return Base::Sample(ruv.Flipped() / (Size() - IntType{1}).StaticCast<FloatType>());
+
+		// u,v,r is the order of the texture dimensions
+		const VectorType uvr = {u, v, rThetaPhi.X()};
+		return Base::Sample(uvr / (Size() - IntType{1}).StaticCast<FloatType>().Flipped());
 	}
 
-private:
+  private:
 	IntType nSide{}; ///< The number of points per side of a HEALPix base resolution pixel
 };
 

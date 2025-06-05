@@ -1,5 +1,5 @@
 [project]
-name = "pytorchextensiontest"
+name = "reg23_experiments"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -30,7 +30,7 @@ dependencies = [
     "deprecated==1.2.16",
     "einops==0.8.0",
     "executing==2.2.0",
-    "extension",
+    "reg23",
     "fastcore==1.7.28",
     "fastjsonschema==2.21.1",
     "filelock==3.16.1",
@@ -192,4 +192,4 @@ cache-keys = [
 members = ["Extension"]
 
 [tool.uv.sources]
-extension = { workspace = true }
+reg23 = { workspace = true }

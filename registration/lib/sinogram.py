@@ -378,7 +378,7 @@ class SinogramHEALPix(Sinogram):
             fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
 
         # to x_s, y_s
-        z = fixed_image_grid_sph.theta.sin()
+        z = fixed_image_grid_sph.theta.sin() # sin instead of cos for adjustment
         z_abs = z.abs()
         sigma = z.sign() * (2.0 - (3.0 * (1.0 - z_abs)).sqrt())
         equatorial_zone = z_abs <= 2. / 3.
@@ -393,10 +393,12 @@ class SinogramHEALPix(Sinogram):
         y_s[polar_caps] = torch.pi * sigma[polar_caps] / 4.0
         del equatorial_zone, polar_caps, sigma, z, z_abs
 
+        # to i, j
         i = 2.0 * float(n_side) * (1.0 - 2.0 * y_s / torch.pi)
         j = 2.0 * float(n_side) * x_s / torch.pi + 0.5 * torch.fmod(i - float(n_side) + 1.0, 2.0)
         del x_s, y_s
 
+        # to u, v
         u = j + 1.0 - (0.5 * i).floor() + float(n_side)
         v = j + 1.0 + (0.5 * (i + 1.0)).floor() - float(n_side)
         v_high = v >= 2.0 * float(n_side)
