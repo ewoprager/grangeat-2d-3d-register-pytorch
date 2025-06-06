@@ -19,8 +19,7 @@ SinogramType = TypeVar('SinogramType')
 
 
 def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType]) -> str:
-    return deterministic_hash_combo(
-        deterministic_hash_string(path), deterministic_hash_type(sinogram_type))
+    return deterministic_hash_combo(deterministic_hash_string(path), deterministic_hash_type(sinogram_type))
 
 
 class Sinogram(ABC):
@@ -102,9 +101,8 @@ class SinogramClassic(Sinogram):
         return SinogramClassic(self.data.to(**kwargs), self.r_range)
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        return Extension.resample_sinogram3d(
-            self.data, "classic", self.r_range.get_spacing(self.data.size()[2]), ph_matrix, fixed_image_grid.phi,
-            fixed_image_grid.r)
+        return Extension.resample_sinogram3d(self.data, "classic", self.r_range.get_spacing(self.data.size()[2]),
+            ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
                         plot: bool = False) -> torch.Tensor:
@@ -112,8 +110,8 @@ class SinogramClassic(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
-        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
-            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+            plot=plot)
 
         if plot:
             myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
@@ -145,14 +143,12 @@ class SinogramClassic(Sinogram):
         k_mapping: LinearMapping = grid_range.get_mapping_from(self.phi_range)
 
         if smooth is not None:
-            ret = self.grid_sample_smoothed(
-                fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping, k_mapping=k_mapping, sigma=smooth)
+            ret = self.grid_sample_smoothed(fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping,
+                k_mapping=k_mapping, sigma=smooth)
         else:
-            grid = torch.stack(
-                (
-                    i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
-                    k_mapping(fixed_image_grid_sph.phi)), dim=-1)
-            ret = Extension.grid_sample3d(self.data, grid, "wrap")
+            grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
+                                k_mapping(fixed_image_grid_sph.phi)), dim=-1)
+            ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "wrap")
 
         del fixed_image_grid_sph
 
@@ -244,9 +240,8 @@ class SinogramClassic(Sinogram):
 
         del rotated_vectors
 
-        new_grid = Sinogram3dGrid(
-            new_phis, new_thetas, grid.r.unsqueeze(-1).expand(
-                [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone()).unflip()  # need to
+        new_grid = Sinogram3dGrid(new_phis, new_thetas,
+            grid.r.unsqueeze(-1).expand([-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone()).unflip()  # need to
         # clone the r grid otherwise it's just a tensor view, not a tensor in its own right
 
         del new_phis, new_thetas
@@ -358,9 +353,8 @@ class SinogramHEALPix(Sinogram):
         return self._r_range
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        return Extension.resample_sinogram3d(
-            self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]), ph_matrix, fixed_image_grid.phi,
-            fixed_image_grid.r)
+        return Extension.resample_sinogram3d(self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]),
+            ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                         plot: bool = False) -> torch.Tensor:
@@ -374,19 +368,19 @@ class SinogramHEALPix(Sinogram):
 
         n_side: int = self.data.size()[1] // 2
 
-        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
-            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+            plot=plot)
 
         # to x_s, y_s
-        z = fixed_image_grid_sph.theta.sin() # sin instead of cos for adjustment
+        z = fixed_image_grid_sph.theta.sin()  # sin instead of cos for adjustment
         z_abs = z.abs()
         sigma = z.sign() * (2.0 - (3.0 * (1.0 - z_abs)).sqrt())
         equatorial_zone = z_abs <= 2. / 3.
         polar_caps = torch.logical_not(equatorial_zone)
         x_s = torch.zeros_like(z)
         x_s[equatorial_zone] = fixed_image_grid_sph.phi[equatorial_zone] + 0.5 * torch.pi  # with pi/2 adjustment
-        x_s[polar_caps] = (fixed_image_grid_sph.phi - (sigma.abs() - 1.0) * (torch.fmod(
-            fixed_image_grid_sph.phi, 0.5 * torch.pi) - 0.25 * torch.pi))[
+        x_s[polar_caps] = (fixed_image_grid_sph.phi - (sigma.abs() - 1.0) * (
+                    torch.fmod(fixed_image_grid_sph.phi, 0.5 * torch.pi) - 0.25 * torch.pi))[
                               polar_caps] + 0.5 * torch.pi  # with pi/2 adjustment
         y_s = torch.zeros_like(z)
         y_s[equatorial_zone] = 3.0 * torch.pi * z[equatorial_zone] / 8.0
@@ -414,9 +408,7 @@ class SinogramHEALPix(Sinogram):
         j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=2. * float(n_side) - 1.))
         k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
 
-        grid = torch.stack(
-            (
-                i_mapping(u), j_mapping(v), k_mapping(fixed_image_grid_sph.r)), dim=-1)
+        grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(fixed_image_grid_sph.r)), dim=-1)
         ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
 
         del fixed_image_grid_sph

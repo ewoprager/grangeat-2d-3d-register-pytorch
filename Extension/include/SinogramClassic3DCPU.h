@@ -18,7 +18,7 @@ namespace reg23 {
  * Both copy and move-constructable.
  */
 class SinogramClassic3DCPU : Texture3DCPU {
-public:
+  public:
 	using Base = Texture3DCPU;
 
 	static constexpr FloatType THETA_RANGE_LOW = -.5 * M_PI;
@@ -37,7 +37,7 @@ public:
 	 * @param rSpacing The spacing in world coordinates of the layers in the $r$ direction
 	 */
 	SinogramClassic3DCPU(const float *_ptr, SizeType _size, VectorType _spacing, VectorType _rangeCentres,
-	                     AddressModeType _addressModes)
+						 AddressModeType _addressModes)
 		: Base(_ptr, std::move(_size), std::move(_spacing), std::move(_rangeCentres), std::move(_addressModes)) {
 		mappingRThetaPhiToTexCoord = MappingWorldToTexCoord();
 	}
@@ -60,12 +60,15 @@ public:
 	 * @return An instance of this texture object that points to the data in the given image
 	 */
 	static SinogramClassic3DCPU FromTensor(const at::Tensor &tensor, FloatType rSpacing) {
-		const FloatType thetaSpacing = (THETA_RANGE_HIGH(tensor.sizes()[1]) - THETA_RANGE_LOW) / static_cast<FloatType>(
-			                               tensor.sizes()[1] - 1);
+		const FloatType thetaRangeHigh = THETA_RANGE_HIGH(tensor.sizes()[1]);
+		const FloatType thetaSpacing =
+			(thetaRangeHigh - THETA_RANGE_LOW) / static_cast<FloatType>(tensor.sizes()[1] - 1);
 		const FloatType phiSpacing = (PHI_RANGE_HIGH - PHI_RANGE_LOW) / static_cast<FloatType>(tensor.sizes()[0] - 1);
-		return {tensor.contiguous().data_ptr<float>(), Vec<int64_t, 3>::FromIntArrayRef(tensor.sizes()).Flipped(),
-		        {rSpacing, thetaSpacing, phiSpacing}, VectorType::Full(0.),
-		        {TextureAddressMode::ZERO, TextureAddressMode::ZERO, TextureAddressMode::WRAP}};
+		return {tensor.contiguous().data_ptr<float>(),
+				Vec<int64_t, 3>::FromIntArrayRef(tensor.sizes()).Flipped(),
+				{rSpacing, thetaSpacing, phiSpacing},
+				{0.0, 0.5 * (THETA_RANGE_LOW + thetaRangeHigh), 0.5 * (PHI_RANGE_LOW + PHI_RANGE_HIGH)},
+				{TextureAddressMode::ZERO, TextureAddressMode::ZERO, TextureAddressMode::WRAP}};
 	}
 
 	/**
@@ -76,7 +79,7 @@ public:
 		return Base::Sample(mappingRThetaPhiToTexCoord(rThetaPhi));
 	}
 
-private:
+  private:
 	Linear<VectorType> mappingRThetaPhiToTexCoord{};
 };
 
