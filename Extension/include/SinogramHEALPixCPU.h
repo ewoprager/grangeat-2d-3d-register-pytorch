@@ -49,6 +49,9 @@ class SinogramHEALPixCPU : Texture3DCPU {
 	 * @return An instance of this texture object that points to the data in the given image
 	 */
 	static SinogramHEALPixCPU FromTensor(const at::Tensor &tensor, FloatType rSpacing) {
+		// tensor should be a 3D array of floats
+		TORCH_CHECK(tensor.sizes().size() == 3)
+		TORCH_CHECK(tensor.dtype() == at::kFloat)
 		const SizeType tensorSize = SizeType::FromIntArrayRef(tensor.sizes()).Flipped();
 		TORCH_CHECK(tensorSize.X() % 3 == 0)
 		TORCH_CHECK(tensorSize.Y() % 2 == 0)

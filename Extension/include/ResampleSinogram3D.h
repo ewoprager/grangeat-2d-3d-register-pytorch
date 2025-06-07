@@ -71,8 +71,7 @@ struct ResampleSinogram3D {
 	__host__ static CommonData Common(const at::Tensor &sinogram3d, const std::string &sinogramType,
 	                                  const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
 	                                  const at::Tensor &rValues, at::DeviceType device) {
-		// sinogram3d should be a tensor of floats on the chosen device
-		TORCH_CHECK(sinogram3d.dtype() == at::kFloat)
+		// sinogram3d should be on the chosen device; other assertions will be made in sinogram_t::FromTensor
 		TORCH_INTERNAL_ASSERT(sinogram3d.device().type() == device)
 		// projectionMatrix should be of size (4, 4), contain floats and be on the chosen device
 		TORCH_CHECK(projectionMatrix.sizes() == at::IntArrayRef({4, 4}))

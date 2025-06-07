@@ -60,12 +60,17 @@ class SinogramClassic3DCPU : Texture3DCPU {
 	 * @return An instance of this texture object that points to the data in the given image
 	 */
 	static SinogramClassic3DCPU FromTensor(const at::Tensor &tensor, FloatType rSpacing) {
-		const FloatType thetaRangeHigh = THETA_RANGE_HIGH(tensor.sizes()[1]);
+		// tensor should be a 3D array of floats
+		TORCH_CHECK(tensor.sizes().size() == 3)
+		TORCH_CHECK(tensor.dtype() == at::kFloat)
+		const SizeType tensorSizeRThetaPhi = SizeType::FromIntArrayRef(tensor.sizes()).Flipped();
+		const FloatType thetaRangeHigh = THETA_RANGE_HIGH(tensorSizeRThetaPhi[1]);
 		const FloatType thetaSpacing =
-			(thetaRangeHigh - THETA_RANGE_LOW) / static_cast<FloatType>(tensor.sizes()[1] - 1);
-		const FloatType phiSpacing = (PHI_RANGE_HIGH - PHI_RANGE_LOW) / static_cast<FloatType>(tensor.sizes()[0] - 1);
+			(thetaRangeHigh - THETA_RANGE_LOW) / static_cast<FloatType>(tensorSizeRThetaPhi[1] - 1);
+		const FloatType phiSpacing =
+			(PHI_RANGE_HIGH - PHI_RANGE_LOW) / static_cast<FloatType>(tensorSizeRThetaPhi[2] - 1);
 		return {tensor.contiguous().data_ptr<float>(),
-				Vec<int64_t, 3>::FromIntArrayRef(tensor.sizes()).Flipped(),
+				tensorSizeRThetaPhi,
 				{rSpacing, thetaSpacing, phiSpacing},
 				{0.0, 0.5 * (THETA_RANGE_LOW + thetaRangeHigh), 0.5 * (PHI_RANGE_LOW + PHI_RANGE_HIGH)},
 				{TextureAddressMode::ZERO, TextureAddressMode::ZERO, TextureAddressMode::WRAP}};
