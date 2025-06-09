@@ -457,6 +457,4 @@ class DrrSpec(NamedTuple):
     detector_spacing: torch.Tensor  # [mm] distances between the detectors: (vertical, horizontal)
     scene_geometry: SceneGeometry
     image: torch.Tensor
-    sinogram: torch.Tensor
-    sinogram_range: Sinogram2dRange
     transformation: Transformation
