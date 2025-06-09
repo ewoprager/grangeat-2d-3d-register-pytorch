@@ -102,7 +102,7 @@ class SinogramClassic(Sinogram):
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         return Extension.resample_sinogram3d(self.data, "classic", self.r_range.get_spacing(self.data.size()[2]),
-            ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
+                                             ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
                         plot: bool = False) -> torch.Tensor:
@@ -111,7 +111,7 @@ class SinogramClassic(Sinogram):
         assert ph_matrix.device == self.device
 
         fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
-            plot=plot)
+                                                                        plot=plot)
 
         if plot:
             myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
@@ -144,7 +144,7 @@ class SinogramClassic(Sinogram):
 
         if smooth is not None:
             ret = self.grid_sample_smoothed(fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping,
-                k_mapping=k_mapping, sigma=smooth)
+                                            k_mapping=k_mapping, sigma=smooth)
         else:
             grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
                                 k_mapping(fixed_image_grid_sph.phi)), dim=-1)
@@ -240,8 +240,8 @@ class SinogramClassic(Sinogram):
 
         del rotated_vectors
 
-        new_grid = Sinogram3dGrid(new_phis, new_thetas,
-            grid.r.unsqueeze(-1).expand([-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone()).unflip()  # need to
+        new_grid = Sinogram3dGrid(new_phis, new_thetas, grid.r.unsqueeze(-1).expand(
+            [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone()).unflip()  # need to
         # clone the r grid otherwise it's just a tensor view, not a tensor in its own right
 
         del new_phis, new_thetas
@@ -283,14 +283,72 @@ class SinogramClassic(Sinogram):
 
 class SinogramHEALPix(Sinogram):
     @staticmethod
-    def build_grid(*, n_side: int, r_range: LinearRange, r_count: int, device=torch.device("cpu")) -> Sinogram3dGrid:
-        u = torch.arange(3 * n_side, dtype=torch.int32, device=device)
-        v = torch.arange(2 * n_side, dtype=torch.int32, device=device)
-        v, u = torch.meshgrid(v, u)
+    def spherical_to_tex_coord(spherical_grid: Sinogram3dGrid, n_side: float) -> Tuple[torch.Tensor, torch.Tensor]:
+        # to x_s, y_s
+        z = spherical_grid.theta.sin()  # sin instead of cos for adjustment
+        z_abs = z.abs()
+        sigma = z.sign() * (2.0 - (3.0 * (1.0 - z_abs)).sqrt())
+        equatorial_zone = z_abs <= 2. / 3.
+        polar_caps = torch.logical_not(equatorial_zone)
+        x_s = torch.zeros_like(z)
+        x_s[equatorial_zone] = spherical_grid.phi[equatorial_zone] + 0.5 * torch.pi  # with pi/2 adjustment
+        x_s[polar_caps] = (spherical_grid.phi + 0.5 * torch.pi - (sigma.abs() - 1.0) * (
+                torch.fmod(spherical_grid.phi + 0.5 * torch.pi, 0.5 * torch.pi) - 0.25 * torch.pi))[
+            polar_caps]  # with pi/2 adjustment
+        y_s = torch.zeros_like(z)
+        y_s[equatorial_zone] = 3.0 * torch.pi * z[equatorial_zone] / 8.0
+        y_s[polar_caps] = torch.pi * sigma[polar_caps] / 4.0
+        del equatorial_zone, polar_caps, sigma, z, z_abs
+
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), (x_s / torch.pi).numpy())
+        plt.colorbar(mesh)
+        axes.set_xlabel("phi")
+        axes.set_ylabel("theta")
+        axes.set_title("x_s / pi")
+
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), (y_s / torch.pi).numpy())
+        plt.colorbar(mesh)
+        axes.set_xlabel("phi")
+        axes.set_ylabel("theta")
+        axes.set_title("y_s / pi")
+
+        # to i, j
+        i = 2.0 * n_side * (1.0 - 2.0 * y_s / torch.pi)
+        j = 2.0 * n_side * x_s / torch.pi + 0.5 * torch.fmod(i - n_side + 1.0, 2.0)
+        del x_s, y_s
+
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), i.numpy())
+        plt.colorbar(mesh)
+        axes.set_xlabel("phi")
+        axes.set_ylabel("theta")
+        axes.set_title("i")
+
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), j.numpy())
+        plt.colorbar(mesh)
+        axes.set_xlabel("phi")
+        axes.set_ylabel("theta")
+        axes.set_title("j")
+
+        # to u, v
+        u = j - (0.5 * i).floor() - 1.0 + torch.tensor(0.5 * n_side).floor() + n_side
+        v = j + (0.5 * (i + 1.0)).floor() - 1.0 - torch.tensor(0.5 * (n_side + 1.0)).floor()
+        v_high = v >= 2.0 * n_side
+        u_high = u >= 2.0 * n_side
+        u[torch.logical_and(v_high, u_high)] -= 2.0 * n_side
+        u[torch.logical_and(v_high, torch.logical_not(u_high))] += n_side
+        v[v_high] -= 2.0 * n_side
+
+        return u, v
+
+    @staticmethod
+    def tex_coord_to_spherical(u: torch.Tensor, v: torch.Tensor, n_side: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        assert u.size() == v.size()
 
         # to i, j_equiv
-        u = u.clone()
-        v = v.clone()
         base_pixel_9 = torch.logical_and(u >= 2 * n_side, v < n_side)
         base_pixel_4_left = ((u + v) // 2) - 1 < 1
         u[base_pixel_9] -= n_side
@@ -324,6 +382,16 @@ class SinogramHEALPix(Sinogram):
         theta = z.asin()  # instead of cos, for adjustment
         del z
 
+        return phi, theta
+
+    @staticmethod
+    def build_grid(*, n_side: int, r_range: LinearRange, r_count: int, device=torch.device("cpu")) -> Sinogram3dGrid:
+        u = torch.arange(3 * n_side, dtype=torch.int32, device=device)
+        v = torch.arange(2 * n_side, dtype=torch.int32, device=device)
+        v, u = torch.meshgrid(v, u)
+
+        phi, theta = SinogramHEALPix.tex_coord_to_spherical(u.clone(), v.clone(), n_side)
+
         # generating the r grid and assembling
         r = r_range.generate_grid(r_count, device=device)
         r = r.unsqueeze(-1).unsqueeze(-1).expand(-1, phi.size()[0], phi.size()[1])
@@ -354,7 +422,7 @@ class SinogramHEALPix(Sinogram):
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         return Extension.resample_sinogram3d(self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]),
-            ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
+                                             ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                         plot: bool = False) -> torch.Tensor:
@@ -369,38 +437,9 @@ class SinogramHEALPix(Sinogram):
         n_side: int = self.data.size()[1] // 2
 
         fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
-            plot=plot)
+                                                                        plot=plot)
 
-        # to x_s, y_s
-        z = fixed_image_grid_sph.theta.sin()  # sin instead of cos for adjustment
-        z_abs = z.abs()
-        sigma = z.sign() * (2.0 - (3.0 * (1.0 - z_abs)).sqrt())
-        equatorial_zone = z_abs <= 2. / 3.
-        polar_caps = torch.logical_not(equatorial_zone)
-        x_s = torch.zeros_like(z)
-        x_s[equatorial_zone] = fixed_image_grid_sph.phi[equatorial_zone] + 0.5 * torch.pi  # with pi/2 adjustment
-        x_s[polar_caps] = (fixed_image_grid_sph.phi - (sigma.abs() - 1.0) * (
-                    torch.fmod(fixed_image_grid_sph.phi, 0.5 * torch.pi) - 0.25 * torch.pi))[
-                              polar_caps] + 0.5 * torch.pi  # with pi/2 adjustment
-        y_s = torch.zeros_like(z)
-        y_s[equatorial_zone] = 3.0 * torch.pi * z[equatorial_zone] / 8.0
-        y_s[polar_caps] = torch.pi * sigma[polar_caps] / 4.0
-        del equatorial_zone, polar_caps, sigma, z, z_abs
-
-        # to i, j
-        i = 2.0 * float(n_side) * (1.0 - 2.0 * y_s / torch.pi)
-        j = 2.0 * float(n_side) * x_s / torch.pi + 0.5 * torch.fmod(i - float(n_side) + 1.0, 2.0)
-        del x_s, y_s
-
-        # to u, v
-        u = j + 1.0 - (0.5 * i).floor() + float(n_side)
-        v = j + 1.0 + (0.5 * (i + 1.0)).floor() - float(n_side)
-        v_high = v >= 2.0 * float(n_side)
-        u_high = u >= 2.0 * float(n_side)
-        u[torch.logical_and(v_high, u_high)] -= 2.0 * float(n_side)
-        u[torch.logical_and(v_high, torch.logical_not(u_high))] += float(n_side)
-        v[v_high] -= 2.0 * float(n_side)
-        del i, j, v_high, u_high
+        u, v = SinogramHEALPix.spherical_to_tex_coord(fixed_image_grid_sph, float(n_side))
 
         # texCoord is in the reverse order: (X, Y, Z)
         grid_range = LinearRange.grid_sample_range()
@@ -458,3 +497,28 @@ class DrrSpec(NamedTuple):
     scene_geometry: SceneGeometry
     image: torch.Tensor
     transformation: Transformation
+
+
+if __name__ == "__main__":
+    _phi = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
+    _theta = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
+    _phi, _theta = torch.meshgrid(_phi, _theta)
+    _grid = Sinogram3dGrid(phi=_phi, theta=_theta, r=torch.zeros_like(_phi))
+
+    _u, _v = SinogramHEALPix.spherical_to_tex_coord(_grid, 40)
+
+    _, _axes = plt.subplots()
+    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _u.numpy())
+    plt.colorbar(_mesh)
+    _axes.set_xlabel("phi")
+    _axes.set_ylabel("theta")
+    _axes.set_title("u")
+
+    _, _axes = plt.subplots()
+    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _v.numpy())
+    plt.colorbar(_mesh)
+    _axes.set_xlabel("phi")
+    _axes.set_ylabel("theta")
+    _axes.set_title("v")
+
+    plt.show()
