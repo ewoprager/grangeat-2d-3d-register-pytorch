@@ -63,7 +63,7 @@ class SinogramHEALPixCPU : Texture3DCPU {
 	 * @param rThetaPhi The location at which to sample in spherical coordinates
 	 * @return The sample from this texture at the given coordinates using trilinear interpolation
 	 */
-	[[nodiscard]] __host__ __device__ float Sample(VectorType rThetaPhi) const {
+	[[nodiscard]] __host__ __device__ float Sample(const VectorType &rThetaPhi) const {
 		const FloatType nSideF = static_cast<FloatType>(nSide);
 
 		// to x_s, y_s

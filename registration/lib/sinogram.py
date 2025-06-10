@@ -384,9 +384,10 @@ class SinogramHEALPix(Sinogram):
         assert theta.size() == r.size()
         return Sinogram3dGrid(phi=phi, theta=theta, r=r)
 
-    def __init__(self, data: torch.Tensor, r_range: LinearRange, pad: bool=True):
+    def __init__(self, data: torch.Tensor, r_range: LinearRange, pad: bool = True):
         if pad:
             # size is r, v, u
+            assert len(data.size()) == 3
             assert data.size()[2] % 3 == 0
             assert data.size()[1] % 2 == 0
             assert data.size()[2] // 3 == data.size()[1] // 2
@@ -429,12 +430,12 @@ class SinogramHEALPix(Sinogram):
                                bp_8_bot_right[:, :, -2].unsqueeze(1),  #
                                bp_9[:, 1, :].unsqueeze(1),  #
                                bp_6_bot_left[:, :, 1].unsqueeze(1)), dim=-1)
-            rows_3_to_n = torch.cat((bp_9_top_right[:, :, :-2].flip(dims=(-1,)).transpose(1, 2),  #
+            rows_3_to_n = torch.cat((bp_9_top_right[:, :, :-2].transpose(1, 2),  #
                                      self._data[:, :(n_side - 2), :(2 * n_side)],  #
                                      bp_1_top_left[:, :, 2:].flip(dims=(-1,)).transpose(1, 2),  #
                                      bp_8_bot_right[:, :, :-2].flip(dims=(-1,)).transpose(1, 2),  #
                                      bp_9[:, 2:, :],  #
-                                     bp_6_bot_left[:, :, 2:].flip(dims=(-1,)).transpose(1, 2)), dim=-1)
+                                     bp_6_bot_left[:, :, 2:].transpose(1, 2)), dim=-1)
             row_np1 = torch.cat((bp_9_top_right[:, :, -2].unsqueeze(1),  #
                                  self._data[:, n_side - 2, :(2 * n_side)].unsqueeze(1),  #
                                  bp_8_bot_right[:, :, -1].unsqueeze(1),  #
@@ -455,7 +456,8 @@ class SinogramHEALPix(Sinogram):
                                   self._data[:, 0, n_side].unsqueeze(1).unsqueeze(1),  #
                                   torch.zeros(r_count, 1, 2)), dim=-1)
 
-            self._data = torch.cat((row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3), dim=1)
+            self._data = torch.cat((row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3),
+                                   dim=1)
         else:
             assert (data.size()[2] - 4) % 3 == 0
             assert (data.size()[1] - 4) % 2 == 0
@@ -489,7 +491,7 @@ class SinogramHEALPix(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
-        n_side: int = self.data.size()[1] // 2
+        n_side: int = (self.data.size()[1] - 4) // 2
 
         fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
                                                                         plot=plot)
@@ -498,8 +500,10 @@ class SinogramHEALPix(Sinogram):
 
         # texCoord is in the reverse order: (X, Y, Z)
         grid_range = LinearRange.grid_sample_range()
-        i_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=3. * float(n_side) - 1.))
-        j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=2. * float(n_side) - 1.))
+        i_mapping: LinearMapping = grid_range.get_mapping_from(
+            LinearRange(low=0., high=float(self._data.size()[2] - 1)))
+        j_mapping: LinearMapping = grid_range.get_mapping_from(
+            LinearRange(low=0., high=float(self._data.size()[1] - 1)))
         k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
 
         grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(fixed_image_grid_sph.r)), dim=-1)
@@ -557,46 +561,44 @@ class DrrSpec(NamedTuple):
 if __name__ == "__main__":
     n_side: int = 7
 
-    _phi = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
-    _theta = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
-    _phi, _theta = torch.meshgrid(_phi, _theta)
-    _grid = Sinogram3dGrid(phi=_phi, theta=_theta, r=torch.zeros_like(_phi))
-
-    _u, _v = SinogramHEALPix.spherical_to_tex_coord(_grid, n_side)
-
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _u.numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("phi")
-    _axes.set_ylabel("theta")
-    _axes.set_title("u")
-
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _v.numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("phi")
-    _axes.set_ylabel("theta")
-    _axes.set_title("v")
-
-
-    _phi2, _theta2 = SinogramHEALPix.tex_coord_to_spherical(_u, _v, n_side)
-
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _phi2.numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("phi")
-    _axes.set_ylabel("theta")
-    _axes.set_title("phi")
-
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _theta2.numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("phi")
-    _axes.set_ylabel("theta")
-    _axes.set_title("theta")
-
-    plt.show()
-
+    # _phi = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
+    # _theta = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
+    # _phi, _theta = torch.meshgrid(_phi, _theta)
+    # _grid = Sinogram3dGrid(phi=_phi, theta=_theta, r=torch.zeros_like(_phi))
+    #
+    # _u, _v = SinogramHEALPix.spherical_to_tex_coord(_grid, n_side)
+    #
+    # _, _axes = plt.subplots()
+    # _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _u.numpy())
+    # plt.colorbar(_mesh)
+    # _axes.set_xlabel("phi")
+    # _axes.set_ylabel("theta")
+    # _axes.set_title("u")
+    #
+    # _, _axes = plt.subplots()
+    # _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _v.numpy())
+    # plt.colorbar(_mesh)
+    # _axes.set_xlabel("phi")
+    # _axes.set_ylabel("theta")
+    # _axes.set_title("v")
+    #
+    # _phi2, _theta2 = SinogramHEALPix.tex_coord_to_spherical(_u, _v, n_side)
+    #
+    # _, _axes = plt.subplots()
+    # _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _phi2.numpy())
+    # plt.colorbar(_mesh)
+    # _axes.set_xlabel("phi")
+    # _axes.set_ylabel("theta")
+    # _axes.set_title("phi")
+    #
+    # _, _axes = plt.subplots()
+    # _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _theta2.numpy())
+    # plt.colorbar(_mesh)
+    # _axes.set_xlabel("phi")
+    # _axes.set_ylabel("theta")
+    # _axes.set_title("theta")
+    #
+    # plt.show()
 
     _u = torch.arange(3 * n_side)
     _v = torch.arange(2 * n_side)
@@ -604,18 +606,22 @@ if __name__ == "__main__":
 
     _s = SinogramHEALPix(_u.unsqueeze(0), LinearRange(0.0, 1.0))
     _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(), _s.data[0].numpy())
+    _mesh = _axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
+                             _s.data[0].numpy())
     plt.colorbar(_mesh)
     _axes.set_xlabel("u")
     _axes.set_ylabel("v")
+    _axes.invert_yaxis()
     _axes.set_title("u")
 
     _s = SinogramHEALPix(_v.unsqueeze(0), LinearRange(0.0, 1.0))
     _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(), _s.data[0].numpy())
+    _mesh = _axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
+                             _s.data[0].numpy())
     plt.colorbar(_mesh)
     _axes.set_xlabel("u")
     _axes.set_ylabel("v")
+    _axes.invert_yaxis()
     _axes.set_title("v")
 
     plt.show()
