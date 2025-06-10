@@ -312,9 +312,9 @@ class SinogramHEALPix(Sinogram):
         u_high = u >= 2.0 * n_side
         base_pixel_9 = torch.logical_and(v_high, torch.logical_not(u_high))
         u[torch.logical_and(v_high, u_high)] -= 2.0 * n_side
-        u[base_pixel_9] += n_side + 2  # the 2 adjusts for padding
+        u[base_pixel_9] += n_side + 2.0  # the 2 adjusts for padding
         v[v_high] -= 2.0 * n_side
-        v[base_pixel_9] -= 2  # this adjusts for padding
+        v[base_pixel_9] -= 2.0  # this adjusts for padding
 
         return u + 1.0, v + 3.0  # the 1 and 3 adjust for padding
 
@@ -384,83 +384,88 @@ class SinogramHEALPix(Sinogram):
         assert theta.size() == r.size()
         return Sinogram3dGrid(phi=phi, theta=theta, r=r)
 
-    def __init__(self, data: torch.Tensor, r_range: LinearRange):
-        # size is r, v, u
-        assert data.size()[2] % 3 == 0
-        assert data.size()[1] % 2 == 0
-        assert data.size()[2] // 3 == data.size()[1] // 2
-        n_side: int = data.size()[1] // 2
+    def __init__(self, data: torch.Tensor, r_range: LinearRange, pad: bool=True):
+        if pad:
+            # size is r, v, u
+            assert data.size()[2] % 3 == 0
+            assert data.size()[1] % 2 == 0
+            assert data.size()[2] // 3 == data.size()[1] // 2
+            n_side: int = data.size()[1] // 2
 
-        self._data = data
+            self._data = data
 
-        bp_9 = self._data[:, :n_side, (2 * n_side):]
+            bp_9 = self._data[:, :n_side, (2 * n_side):]
 
-        bp_0_top_left = self._data[:, 0, n_side:(2 * n_side)].unsqueeze(1)
-        bp_0_top_right = self._data[:, :n_side, 2 * n_side - 1].unsqueeze(1)
-        bp_1_top_left = self._data[:, n_side, (2 * n_side):].unsqueeze(1)
-        bp_1_top_right = self._data[:, n_side:, -1].unsqueeze(1)
-        bp_1_bot_right = self._data[:, -1, (2 * n_side):].unsqueeze(1)
-        bp_5_bot_right = self._data[:, -1, n_side:(2 * n_side)].unsqueeze(1)
-        bp_8_bot_right = self._data[:, -1, :n_side].unsqueeze(1)
-        bp_8_bot_left = self._data[:, n_side:, 0].unsqueeze(1)
-        bp_9_top_left = self._data[:, 0, (2 * n_side):].unsqueeze(1)
-        bp_9_top_right = self._data[:, :n_side, -1].unsqueeze(1)
-        bp_9_bot_right = self._data[:, n_side - 1, (2 * n_side):].unsqueeze(1)
-        bp_9_bot_left = self._data[:, :n_side, 2 * n_side].unsqueeze(1)
-        bp_6_top_left = self._data[:, 0, :n_side].unsqueeze(1)
-        bp_6_bot_left = self._data[:, :n_side, 0].unsqueeze(1)
+            bp_0_top_left = self._data[:, 0, n_side:(2 * n_side)].unsqueeze(1)
+            bp_0_top_right = self._data[:, :n_side, 2 * n_side - 1].unsqueeze(1)
+            bp_1_top_left = self._data[:, n_side, (2 * n_side):].unsqueeze(1)
+            bp_1_top_right = self._data[:, n_side:, -1].unsqueeze(1)
+            bp_1_bot_right = self._data[:, -1, (2 * n_side):].unsqueeze(1)
+            bp_5_bot_right = self._data[:, -1, n_side:(2 * n_side)].unsqueeze(1)
+            bp_8_bot_right = self._data[:, -1, :n_side].unsqueeze(1)
+            bp_8_bot_left = self._data[:, n_side:, 0].unsqueeze(1)
+            bp_9_top_left = self._data[:, 0, (2 * n_side):].unsqueeze(1)
+            bp_9_top_right = self._data[:, :n_side, -1].unsqueeze(1)
+            bp_9_bot_right = self._data[:, n_side - 1, (2 * n_side):].unsqueeze(1)
+            bp_9_bot_left = self._data[:, :n_side, 2 * n_side].unsqueeze(1)
+            bp_6_top_left = self._data[:, 0, :n_side].unsqueeze(1)
+            bp_6_bot_left = self._data[:, :n_side, 0].unsqueeze(1)
 
-        pad_left = torch.cat((bp_9_top_right, bp_9_bot_right), dim=-1).transpose(1, 2)
-        pad_bot = torch.cat((bp_9_bot_left, bp_9_top_left, bp_6_top_left), dim=-1)
-        pad_top_a = torch.cat((bp_1_bot_right, bp_1_top_right), dim=-1)
+            pad_bot = torch.cat((bp_9_bot_left.flip(dims=(-1,)), bp_9_top_left, bp_6_top_left), dim=-1)
+            pad_top_a = torch.cat((bp_1_bot_right, bp_1_top_right.flip(dims=(-1,))), dim=-1)
 
-        r_count = data.size()[0]
-        row_0 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2),  #
-                           self._data[:, -1, n_side - 1].unsqueeze(1).unsqueeze(1),  #
-                           bp_5_bot_right,  #
-                           self._data[:, -1, 2 * n_side].unsqueeze(1).unsqueeze(1)), dim=-1)
-        row_1 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2),  #
-                           bp_8_bot_right[:, :, -1].unsqueeze(1),  #
-                           bp_9[:, 0, :].unsqueeze(1),  #
-                           bp_6_bot_left[:, :, 0].unsqueeze(1)), dim=-1)
-        row_2 = torch.cat((self._data[:, 2 * n_side - 1, 2 * n_side - 1].unsqueeze(1).unsqueeze(1),  #
-                           pad_top_a,  #
-                           self._data[:, n_side, -1].unsqueeze(1).unsqueeze(1),  #
-                           bp_8_bot_right[:, :, -2].unsqueeze(1),  #
-                           bp_9[:, 1, :].unsqueeze(1),  #
-                           bp_6_bot_left[:, :, 1].unsqueeze(1)), dim=-1)
-        rows_3_to_n = torch.cat((bp_9_top_right[:, :, :-2].flip(dims=(-1,)).transpose(1, 2),  #
-                                 self._data[:, :(n_side - 2), :(2 * n_side)],  #
-                                 bp_1_top_left[:, :, 2:].flip(dims=(-1,)).transpose(1, 2),  #
-                                 bp_8_bot_right[:, :, :-2].flip(dims=(-1,)).transpose(1, 2),  #
-                                 bp_9[:, 2:, :],  #
-                                 bp_6_bot_left[:, :, 2:].flip(dims=(-1,)).transpose(1, 2)), dim=-1)
-        row_np1 = torch.cat((bp_9_top_right[:, :, -2].unsqueeze(1),  #
-                             self._data[:, n_side - 2, :(2 * n_side)].unsqueeze(1),  #
-                             bp_8_bot_right[:, :, -1].unsqueeze(1),  #
-                             self._data[:, -1, 0].unsqueeze(1).unsqueeze(1),  #
-                             bp_8_bot_left,  #
-                             self._data[:, n_side, 0].unsqueeze(1).unsqueeze(1)), dim=-1)
-        row_np2 = torch.cat((bp_9_top_right[:, :, -1].unsqueeze(1),  #
-                             self._data[:, n_side - 1, :(2 * n_side)].unsqueeze(1),  #
-                             bp_0_top_right.flip(dims=(-1,)),  #
-                             self._data[:, 0, 2 * n_side - 1].unsqueeze(1).unsqueeze(1),  #
-                             torch.zeros(r_count, 1, 2)), dim=-1)
-        rows_np3_to_2np2 = torch.cat((bp_9_bot_right.flip(dims=(-1,)).transpose(1, 2),  #
-                                      self._data[:, n_side:, :],  #
-                                      bp_0_top_left.flip(dims=(-1,)).transpose(1, 2),  #
-                                      torch.zeros(r_count, n_side, 2)), dim=-1)
-        row_2np3 = torch.cat((self._data[:, n_side - 1, 2 * n_side].unsqueeze(1).unsqueeze(1),  #
-                              pad_bot,  #
-                              self._data[:, 0, n_side].unsqueeze(1).unsqueeze(1),  #
-                              torch.zeros(r_count, 1, 2)), dim=-1)
+            r_count = data.size()[0]
+            row_0 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2),  #
+                               self._data[:, -1, n_side - 1].unsqueeze(1).unsqueeze(1),  #
+                               bp_5_bot_right,  #
+                               self._data[:, -1, 2 * n_side].unsqueeze(1).unsqueeze(1)), dim=-1)
+            row_1 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2),  #
+                               bp_8_bot_right[:, :, -1].unsqueeze(1),  #
+                               bp_9[:, 0, :].unsqueeze(1),  #
+                               bp_6_bot_left[:, :, 0].unsqueeze(1)), dim=-1)
+            row_2 = torch.cat((self._data[:, 2 * n_side - 1, 2 * n_side - 1].unsqueeze(1).unsqueeze(1),  #
+                               pad_top_a,  #
+                               self._data[:, n_side, -1].unsqueeze(1).unsqueeze(1),  #
+                               bp_8_bot_right[:, :, -2].unsqueeze(1),  #
+                               bp_9[:, 1, :].unsqueeze(1),  #
+                               bp_6_bot_left[:, :, 1].unsqueeze(1)), dim=-1)
+            rows_3_to_n = torch.cat((bp_9_top_right[:, :, :-2].flip(dims=(-1,)).transpose(1, 2),  #
+                                     self._data[:, :(n_side - 2), :(2 * n_side)],  #
+                                     bp_1_top_left[:, :, 2:].flip(dims=(-1,)).transpose(1, 2),  #
+                                     bp_8_bot_right[:, :, :-2].flip(dims=(-1,)).transpose(1, 2),  #
+                                     bp_9[:, 2:, :],  #
+                                     bp_6_bot_left[:, :, 2:].flip(dims=(-1,)).transpose(1, 2)), dim=-1)
+            row_np1 = torch.cat((bp_9_top_right[:, :, -2].unsqueeze(1),  #
+                                 self._data[:, n_side - 2, :(2 * n_side)].unsqueeze(1),  #
+                                 bp_8_bot_right[:, :, -1].unsqueeze(1),  #
+                                 self._data[:, -1, 0].unsqueeze(1).unsqueeze(1),  #
+                                 bp_8_bot_left.flip(dims=(-1,)),  #
+                                 self._data[:, n_side, 0].unsqueeze(1).unsqueeze(1)), dim=-1)
+            row_np2 = torch.cat((bp_9_top_right[:, :, -1].unsqueeze(1),  #
+                                 self._data[:, n_side - 1, :(2 * n_side)].unsqueeze(1),  #
+                                 bp_0_top_right.flip(dims=(-1,)),  #
+                                 self._data[:, 0, 2 * n_side - 1].unsqueeze(1).unsqueeze(1),  #
+                                 torch.zeros(r_count, 1, 2)), dim=-1)
+            rows_np3_to_2np2 = torch.cat((bp_9_bot_right.flip(dims=(-1,)).transpose(1, 2),  #
+                                          self._data[:, n_side:, :],  #
+                                          bp_0_top_left.flip(dims=(-1,)).transpose(1, 2),  #
+                                          torch.zeros(r_count, n_side, 2)), dim=-1)
+            row_2np3 = torch.cat((self._data[:, n_side - 1, 2 * n_side].unsqueeze(1).unsqueeze(1),  #
+                                  pad_bot,  #
+                                  self._data[:, 0, n_side].unsqueeze(1).unsqueeze(1),  #
+                                  torch.zeros(r_count, 1, 2)), dim=-1)
 
-        self._data = torch.cat((row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3), dim=1)
+            self._data = torch.cat((row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3), dim=1)
+        else:
+            assert (data.size()[2] - 4) % 3 == 0
+            assert (data.size()[1] - 4) % 2 == 0
+            assert (data.size()[2] - 4) // 3 == (data.size()[1] - 4) // 2
+            self._data = data
 
         self._r_range = r_range
 
     def to(self, **kwargs) -> 'SinogramHEALPix':
-        return SinogramHEALPix(self.data.to(**kwargs), self.r_range)
+        return SinogramHEALPix(self.data.to(**kwargs), self.r_range, pad=False)
 
     @property
     def device(self):
@@ -596,22 +601,21 @@ if __name__ == "__main__":
     _u = torch.arange(3 * n_side)
     _v = torch.arange(2 * n_side)
     _v, _u = torch.meshgrid(_v, _u)
-    _phi, _theta = SinogramHEALPix.tex_coord_to_spherical(_u, _v, n_side)
 
-    _s = SinogramHEALPix(_phi.unsqueeze(0), LinearRange(0.0, 1.0))
+    _s = SinogramHEALPix(_u.unsqueeze(0), LinearRange(0.0, 1.0))
     _, _axes = plt.subplots()
     _mesh = _axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(), _s.data[0].numpy())
     plt.colorbar(_mesh)
     _axes.set_xlabel("u")
     _axes.set_ylabel("v")
-    _axes.set_title("phi")
+    _axes.set_title("u")
 
-    _s = SinogramHEALPix(_theta.unsqueeze(0), LinearRange(0.0, 1.0))
+    _s = SinogramHEALPix(_v.unsqueeze(0), LinearRange(0.0, 1.0))
     _, _axes = plt.subplots()
     _mesh = _axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(), _s.data[0].numpy())
     plt.colorbar(_mesh)
     _axes.set_xlabel("u")
     _axes.set_ylabel("v")
-    _axes.set_title("theta")
+    _axes.set_title("v")
 
     plt.show()

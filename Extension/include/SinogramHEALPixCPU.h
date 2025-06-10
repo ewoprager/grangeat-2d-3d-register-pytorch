@@ -31,7 +31,7 @@ class SinogramHEALPixCPU : Texture3DCPU {
 	 * @param rSpacing The spacing in world coordinates of the layers in the $r$ direction
 	 */
 	SinogramHEALPixCPU(const float *_ptr, IntType _nSide, IntType rCount, FloatType rSpacing)
-		: Base(_ptr, {3 * _nSide, 2 * _nSide, rCount}, {1., 1., rSpacing}), nSide(_nSide) {}
+		: Base(_ptr, {3 * _nSide + 4, 2 * _nSide + 4, rCount}, {1., 1., rSpacing}), nSide(_nSide) {}
 
 	// yes copy
 	SinogramHEALPixCPU(const SinogramHEALPixCPU &) = default;
@@ -53,10 +53,10 @@ class SinogramHEALPixCPU : Texture3DCPU {
 		TORCH_CHECK(tensor.sizes().size() == 3)
 		TORCH_CHECK(tensor.dtype() == at::kFloat)
 		const SizeType tensorSize = SizeType::FromIntArrayRef(tensor.sizes()).Flipped();
-		TORCH_CHECK(tensorSize.X() % 3 == 0)
-		TORCH_CHECK(tensorSize.Y() % 2 == 0)
-		TORCH_CHECK(tensorSize.X() / 3 == tensorSize.Y() / 2)
-		return {tensor.contiguous().data_ptr<float>(), tensorSize.X() / 3, tensorSize.Z(), rSpacing};
+		TORCH_CHECK((tensorSize.X() - 4) % 3 == 0)
+		TORCH_CHECK((tensorSize.Y() - 4) % 2 == 0)
+		TORCH_CHECK((tensorSize.X() - 4) / 3 == (tensorSize.Y() - 4) / 2)
+		return {tensor.contiguous().data_ptr<float>(), (tensorSize.X() - 4) / 3, tensorSize.Z(), rSpacing};
 	}
 
 	/**
@@ -92,13 +92,16 @@ class SinogramHEALPixCPU : Texture3DCPU {
 			v -= 2.0 * nSideF;
 			if (uHigh)
 				u -= 2.0 * nSideF;
-			else
-				u += nSideF;
+			else {
+				u += nSideF + 2.0; // the 2 adjusts for padding
+				v -= 2.0;		   // this adjusts for padding
+			}
 		}
 
 		// u,v,r is the order of the texture dimensions (X, Y, Z)
 		const Vec<FloatType, 2> texCoordOrientation =
-			Vec<FloatType, 2>{u, v} / (Size().XY() - IntType{1}).StaticCast<FloatType>();
+			Vec<FloatType, 2>{u + 1.0, v + 3.0} /
+			(Size().XY() - IntType{1}).StaticCast<FloatType>(); // the 1 and 3 adjust for padding
 		const FloatType texCoordR = .5 + rThetaPhi[0] / (static_cast<FloatType>(Size().Z()) * Spacing().Z());
 		return Base::Sample(VecCat(texCoordOrientation, texCoordR));
 	}
