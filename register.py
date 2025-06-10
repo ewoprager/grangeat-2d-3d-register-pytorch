@@ -29,8 +29,7 @@ import registration.lib.plot as myplt
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
-         sinogram_size: int, sinogram_structure: SinogramStructure = SinogramStructure.CLASSIC,
-         x_ray: str | None = None):
+         sinogram_size: int, x_ray: str | None = None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
     # device = "cpu"

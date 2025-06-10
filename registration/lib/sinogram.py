@@ -300,16 +300,44 @@ class SinogramHEALPix(Sinogram):
         y_s[polar_caps] = torch.pi * sigma[polar_caps] / 4.0
         del equatorial_zone, polar_caps, sigma, z, z_abs
 
+        # _, axes = plt.subplots()
+        # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), x_s.numpy())
+        # plt.colorbar(mesh)
+        # axes.set_xlabel("phi")
+        # axes.set_ylabel("theta")
+        # axes.set_title("x_s")
+        #
+        # _, axes = plt.subplots()
+        # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), y_s.numpy())
+        # plt.colorbar(mesh)
+        # axes.set_xlabel("phi")
+        # axes.set_ylabel("theta")
+        # axes.set_title("y_s")
+
         # to x_p, y_p
         x_p = 2.0 * n_side * x_s / torch.pi
         y_p = n_side * (1.0 - 2.0 * y_s / torch.pi)
         del x_s, y_s
 
-        # to x_s, y_s
-        u = x_p - y_p + 1.5 * n_side
-        v = x_p + y_p - 0.5 * n_side
-        v_high = v >= 2.0 * n_side
-        u_high = u >= 2.0 * n_side
+        # _, axes = plt.subplots()
+        # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), x_p.numpy())
+        # plt.colorbar(mesh)
+        # axes.set_xlabel("phi")
+        # axes.set_ylabel("theta")
+        # axes.set_title("x_p")
+        #
+        # _, axes = plt.subplots()
+        # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), y_p.numpy())
+        # plt.colorbar(mesh)
+        # axes.set_xlabel("phi")
+        # axes.set_ylabel("theta")
+        # axes.set_title("y_p")
+
+        # to u, v
+        u = x_p - y_p + 1.5 * n_side - 0.5
+        v = x_p + y_p - 0.5 * n_side - 0.5
+        v_high = v >= 2.0 * n_side - 0.5
+        u_high = u >= 2.0 * n_side - 0.5
         base_pixel_9 = torch.logical_and(v_high, torch.logical_not(u_high))
         u[torch.logical_and(v_high, u_high)] -= 2.0 * n_side
         u[base_pixel_9] += n_side + 2.0  # the 2 adjusts for padding
@@ -324,18 +352,18 @@ class SinogramHEALPix(Sinogram):
 
         u_f = u.to(dtype=torch.float32).clone()
         v_f = v.to(dtype=torch.float32).clone()
-        base_pixel_9 = torch.logical_and(u_f >= 2.0 * n_side + 2.0,
-                                         v_f < n_side + 2.0)  # the added 2s adjust for padding
+        base_pixel_9 = torch.logical_and(u_f >= 2.0 * n_side - 0.5 + 2.0,
+                                         v_f < n_side - 0.5 + 2.0)  # the added 2s adjust for padding
         u_f -= 1.0  # this adjusts for padding
         v_f -= 3.0  # this adjusts for padding
         u_f[base_pixel_9] -= 2.0 + n_side  # the 2 adjusts for padding
-        v_f[base_pixel_9] += 2  # this adjusts for padding
-        base_pixel_4_left = u_f + v_f < n_side
+        v_f[base_pixel_9] += 2.0  # this adjusts for padding
+        base_pixel_4_left = u_f + v_f < n_side - 1.0
         u_f[base_pixel_4_left] += 2.0 * n_side
         v_f[torch.logical_or(base_pixel_9, base_pixel_4_left)] += 2.0 * n_side
         del base_pixel_9, base_pixel_4_left
 
-        x_p = 0.5 * (u_f + v_f - n_side)
+        x_p = 0.5 * (u_f + v_f - n_side + 1.0)
         y_p = 0.5 * (v_f - u_f) + n_side
         del u_f, v_f
 
@@ -561,44 +589,50 @@ class DrrSpec(NamedTuple):
 if __name__ == "__main__":
     n_side: int = 7
 
-    # _phi = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
-    # _theta = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
-    # _phi, _theta = torch.meshgrid(_phi, _theta)
-    # _grid = Sinogram3dGrid(phi=_phi, theta=_theta, r=torch.zeros_like(_phi))
-    #
-    # _u, _v = SinogramHEALPix.spherical_to_tex_coord(_grid, n_side)
-    #
-    # _, _axes = plt.subplots()
-    # _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _u.numpy())
-    # plt.colorbar(_mesh)
-    # _axes.set_xlabel("phi")
-    # _axes.set_ylabel("theta")
-    # _axes.set_title("u")
-    #
-    # _, _axes = plt.subplots()
-    # _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _v.numpy())
-    # plt.colorbar(_mesh)
-    # _axes.set_xlabel("phi")
-    # _axes.set_ylabel("theta")
-    # _axes.set_title("v")
-    #
-    # _phi2, _theta2 = SinogramHEALPix.tex_coord_to_spherical(_u, _v, n_side)
-    #
-    # _, _axes = plt.subplots()
-    # _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _phi2.numpy())
-    # plt.colorbar(_mesh)
-    # _axes.set_xlabel("phi")
-    # _axes.set_ylabel("theta")
-    # _axes.set_title("phi")
-    #
-    # _, _axes = plt.subplots()
-    # _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _theta2.numpy())
-    # plt.colorbar(_mesh)
-    # _axes.set_xlabel("phi")
-    # _axes.set_ylabel("theta")
-    # _axes.set_title("theta")
-    #
-    # plt.show()
+    _phi = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
+    _theta = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
+    _phi, _theta = torch.meshgrid(_phi, _theta)
+    _grid = Sinogram3dGrid(phi=_phi, theta=_theta, r=torch.zeros_like(_phi))
+
+    _u, _v = SinogramHEALPix.spherical_to_tex_coord(_grid, n_side)
+
+    print("n_side = {}".format(n_side))
+    print("desired u range: 0.5 to {}".format(3.0 * n_side + 2.5))
+    print("u range: {} to {}".format(_u.min().item(), _u.max().item()))
+    print("desired v range: 0.5 to {}".format(2.0 * n_side + 2.5))
+    print("v range: {} to {}".format(_v.min().item(), _v.max().item()))
+
+    _, _axes = plt.subplots()
+    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _u.numpy())
+    plt.colorbar(_mesh)
+    _axes.set_xlabel("phi")
+    _axes.set_ylabel("theta")
+    _axes.set_title("u")
+
+    _, _axes = plt.subplots()
+    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _v.numpy())
+    plt.colorbar(_mesh)
+    _axes.set_xlabel("phi")
+    _axes.set_ylabel("theta")
+    _axes.set_title("v")
+
+    _phi2, _theta2 = SinogramHEALPix.tex_coord_to_spherical(_u, _v, n_side)
+
+    _, _axes = plt.subplots()
+    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _phi2.numpy())
+    plt.colorbar(_mesh)
+    _axes.set_xlabel("phi")
+    _axes.set_ylabel("theta")
+    _axes.set_title("phi")
+
+    _, _axes = plt.subplots()
+    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _theta2.numpy())
+    plt.colorbar(_mesh)
+    _axes.set_xlabel("phi")
+    _axes.set_ylabel("theta")
+    _axes.set_title("theta")
+
+    plt.show()
 
     _u = torch.arange(3 * n_side)
     _v = torch.arange(2 * n_side)
