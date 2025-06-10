@@ -300,42 +300,14 @@ class SinogramHEALPix(Sinogram):
         y_s[polar_caps] = torch.pi * sigma[polar_caps] / 4.0
         del equatorial_zone, polar_caps, sigma, z, z_abs
 
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), (x_s / torch.pi).numpy())
-        plt.colorbar(mesh)
-        axes.set_xlabel("phi")
-        axes.set_ylabel("theta")
-        axes.set_title("x_s / pi")
-
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), (y_s / torch.pi).numpy())
-        plt.colorbar(mesh)
-        axes.set_xlabel("phi")
-        axes.set_ylabel("theta")
-        axes.set_title("y_s / pi")
-
-        # to i, j
-        i = 2.0 * n_side * (1.0 - 2.0 * y_s / torch.pi)
-        j = 2.0 * n_side * x_s / torch.pi + 0.5 * torch.fmod(i - n_side + 1.0, 2.0)
+        # to x_p, y_p
+        x_p = 2.0 * n_side * x_s / torch.pi
+        y_p = n_side * (1.0 - 2.0 * y_s / torch.pi)
         del x_s, y_s
 
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), i.numpy())
-        plt.colorbar(mesh)
-        axes.set_xlabel("phi")
-        axes.set_ylabel("theta")
-        axes.set_title("i")
-
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), j.numpy())
-        plt.colorbar(mesh)
-        axes.set_xlabel("phi")
-        axes.set_ylabel("theta")
-        axes.set_title("j")
-
-        # to u, v
-        u = j - (0.5 * i).floor() - 1.0 + torch.tensor(0.5 * n_side).floor() + n_side
-        v = j + (0.5 * (i + 1.0)).floor() - 1.0 - torch.tensor(0.5 * (n_side + 1.0)).floor()
+        # to x_s, y_s
+        u = x_p - y_p + 1.5 * n_side
+        v = x_p + y_p - 0.5 * n_side
         v_high = v >= 2.0 * n_side
         u_high = u >= 2.0 * n_side
         u[torch.logical_and(v_high, u_high)] -= 2.0 * n_side
@@ -348,24 +320,24 @@ class SinogramHEALPix(Sinogram):
     def tex_coord_to_spherical(u: torch.Tensor, v: torch.Tensor, n_side: int) -> Tuple[torch.Tensor, torch.Tensor]:
         assert u.size() == v.size()
 
-        # to i, j_equiv
         base_pixel_9 = torch.logical_and(u >= 2 * n_side, v < n_side)
         base_pixel_4_left = ((u + v) // 2) - 1 < 1
         u[base_pixel_9] -= n_side
         v[base_pixel_4_left] += 2 * n_side
         v[torch.logical_or(base_pixel_9, base_pixel_4_left)] += 2 * n_side
         del base_pixel_9, base_pixel_4_left
-        i = v - u + 2 * n_side
-        j = ((u + v) // 2) - 1
+
+        u_f = u.to(dtype=torch.float32)
+        v_f = v.to(dtype=torch.float32)
         del u, v
 
-        # to x_s, y_s
-        i_f = i.to(dtype=torch.float32)
-        j_f = j.to(dtype=torch.float32)
-        del i, j
-        x_s = torch.pi * (j_f - 0.5 * torch.fmod(i_f - float(n_side) + 1.0, 2.0)) / (2.0 * float(n_side))
-        y_s = torch.pi * (2.0 * float(n_side) - i_f) / (4.0 * float(n_side))
-        del i_f, j_f
+        x_p = 0.5 * (u_f + v_f - float(n_side))
+        y_p = 0.5 * (v_f - u_f) + float(n_side)
+        del u_f, v_f
+
+        x_s = 0.5 * torch.pi * x_p / float(n_side)
+        y_s = 0.5 * torch.pi * (1.0 - y_p / float(n_side))
+        del x_p, y_p
 
         # to phi, theta
         y_s_abs = y_s.abs()
@@ -505,7 +477,7 @@ if __name__ == "__main__":
     _phi, _theta = torch.meshgrid(_phi, _theta)
     _grid = Sinogram3dGrid(phi=_phi, theta=_theta, r=torch.zeros_like(_phi))
 
-    _u, _v = SinogramHEALPix.spherical_to_tex_coord(_grid, 40)
+    _u, _v = SinogramHEALPix.spherical_to_tex_coord(_grid, 7)
 
     _, _axes = plt.subplots()
     _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _u.numpy())

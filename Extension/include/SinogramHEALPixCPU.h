@@ -69,22 +69,23 @@ class SinogramHEALPixCPU : Texture3DCPU {
 		// to x_s, y_s
 		const FloatType z = sin(rThetaPhi[1]);
 		const FloatType zAbs = abs(z);
+		const bool equatorialZone = zAbs <= 2.0 / 3.0;
 		const FloatType sigma = Sign(z) * (2.0 - sqrt(3.0 * (1.0 - zAbs)));
-		const FloatType xS = zAbs <= 2.0 / 3.0 ?		   // equatorial zone
-								 rThetaPhi[2] + 0.5 * M_PI // with pi/2 adjustment
-											   :		   // polar cap
-								 rThetaPhi[2] - (abs(sigma) - 1.0) * (fmod(rThetaPhi[2], 0.5 * M_PI) - 0.25 * M_PI) +
-									 0.5 * M_PI;					  // with pi/2 adjustment
-		const FloatType yS = zAbs <= 2.0 / 3.0 ? 2.0 * M_PI * z / 8.0 // equatorial zone
-											   : M_PI * sigma / 4.0;  // polar cap
+		const FloatType xS = equatorialZone ? rThetaPhi[2] + 0.5 * M_PI // with pi/2 adjustment
+											:							// polar cap
+								 rThetaPhi[2] + 0.5 * M_PI -
+									 (abs(sigma) - 1.0) * (fmod(rThetaPhi[2] + 0.5 * M_PI, 0.5 * M_PI) -
+														   0.25 * M_PI); // with pi/2 adjustment
+		const FloatType yS = equatorialZone ? 3.0 * M_PI * z / 8.0 :	 // polar cap
+								 M_PI * sigma / 4.0;
 
-		// to i, j
-		const FloatType i = 2.0 * nSideF * (1.0 - 2.0 * yS / M_PI);
-		const FloatType j = 2.0 * nSideF * xS / M_PI + 0.5 * fmod(i - nSideF + 1.0, 2.0);
+		// to x_p, y_p
+		const FloatType xP = 2.0 * nSideF * xS / M_PI;
+		const FloatType yP = nSideF * (1.0 - 2.0 * yS / M_PI);
 
 		// to u, v
-		FloatType u = j + 1.0 - floor(0.5 * i) + nSideF;
-		FloatType v = j + 1.0 + floor(0.5 * (i + 1.0)) - nSideF;
+		FloatType u = xP - yP + 1.5 * nSideF;
+		FloatType v = xP + yP - 0.5 * nSideF;
 		const bool vHigh = v >= 2.0 * nSideF;
 		const bool uHigh = u >= 2.0 * nSideF;
 		if (vHigh) {

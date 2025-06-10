@@ -60,57 +60,62 @@ def run_task(task, task_plot, function, name: str, device: str, params: Function
     return summary
 
 
-def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_size: int, save_to_cache: bool = True,
-         sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic):
+def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_size: int, save_to_cache: bool = True):
     logger.info("----- Benchmarking resample_sinogram3d -----")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    vol_data, voxel_spacing, sinogram3d = script.get_volume_and_sinogram(path, cache_directory, load_cached=load_cached,
-                                                                         save_to_cache=save_to_cache,
-                                                                         sinogram_size=sinogram_size,
-                                                                         sinogram_type=sinogram_type, device=device)
-
-    plot_radon_volume: bool = False
-    if plot_radon_volume:
-        size = sinogram3d.data.size()
-        X, Y, Z = torch.meshgrid(
-            [torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])
-        fig = pgo.Figure(
-            data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=sinogram3d.data.cpu().flatten(),
-                            isomin=sinogram3d.data.min().item(), isomax=sinogram3d.data.max().item(), opacity=.2,
-                            surface_count=21), layout=pgo.Layout(title="Sinogram"))
-        fig.show()
-
-    vol_diag: float = (torch.tensor([vol_data.size()], dtype=torch.float32,
-                                    device=voxel_spacing.device) * voxel_spacing).square().sum().sqrt().item()
-
-    fixed_image_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
-                                        LinearRange(-.5 * vol_diag, .5 * vol_diag))
-    fixed_image_grid = Sinogram2dGrid.linear_from_range(fixed_image_range, (1000, 1000))
-
     scene_geometry = SceneGeometry(source_distance=1000.)
-    transformation = Transformation.zero()
+    # transformation = Transformation.zero()
     # transformation = Transformation(rotation=torch.tensor([1.0, 2.0, 3.0]), translation=torch.tensor([0.2, 0.4, -0.2]))
+    transformation = Transformation.random()
     source_position = scene_geometry.source_position()
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32)
 
-    params = FunctionParams(sinogram3d, ph_matrix, fixed_image_grid)
+    sinogram_types = [sinogram.SinogramClassic, sinogram.SinogramHEALPix]
+    outputs: list[TaskSummary] = []
+    for sinogram_type in sinogram_types:
 
-    outputs: list[TaskSummary] = [
-        run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
-                 "Sinogram3D.resample_python", "cpu", params)]
-    if device == torch.device("cuda"):
-        outputs += [run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
-                             "Sinogram3D.resample_python", "cuda", params)]
-    run_extension: bool = True
-    if run_extension:
-        outputs += [run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
-                             "Sinogram3D.resample", "cpu", params)]
+        vol_data, voxel_spacing, sinogram3d = script.get_volume_and_sinogram(path, cache_directory,
+                                                                             load_cached=load_cached,
+                                                                             save_to_cache=save_to_cache,
+                                                                             sinogram_size=sinogram_size,
+                                                                             sinogram_type=sinogram_type, device=device)
+
+        plot_radon_volume: bool = False
+        if plot_radon_volume:
+            size = sinogram3d.data.size()
+            X, Y, Z = torch.meshgrid(
+                [torch.arange(0, size[0], 1), torch.arange(0, size[1], 1), torch.arange(0, size[2], 1)])
+            fig = pgo.Figure(
+                data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(), value=sinogram3d.data.cpu().flatten(),
+                                isomin=sinogram3d.data.min().item(), isomax=sinogram3d.data.max().item(), opacity=.2,
+                                surface_count=21), layout=pgo.Layout(title="Sinogram"))
+            fig.show()
+
+        vol_diag: float = (torch.tensor([vol_data.size()], dtype=torch.float32,
+                                        device=voxel_spacing.device) * voxel_spacing).square().sum().sqrt().item()
+
+        fixed_image_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
+                                            LinearRange(-.5 * vol_diag, .5 * vol_diag))
+        fixed_image_grid = Sinogram2dGrid.linear_from_range(fixed_image_range, (1000, 1000))
+
+        params = FunctionParams(sinogram3d, ph_matrix, fixed_image_grid)
+
+        outputs.append(run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
+                                "{}.resample_python".format(sinogram_type.__name__), "cpu", params))
         if device == torch.device("cuda"):
-            outputs += [run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
-                                 "Sinogram3D.resample", "cuda", params)]
+            outputs.append(
+                run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
+                         "{}.resample_python".format(sinogram_type.__name__), "cuda", params))
+        run_extension: bool = True
+        if run_extension:
+            outputs.append(run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
+                                    "{}.resample".format(sinogram_type.__name__), "cpu", params))
+            if device == torch.device("cuda"):
+                outputs.append(run_task(task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
+                                        "{}.resample".format(sinogram_type.__name__), "cuda", params))
 
     plt.show()
 
@@ -155,19 +160,11 @@ if __name__ == "__main__":
                         help="The number of values of r, theta and phi to calculate plane integrals for, "
                              "and the width and height of the grid of samples taken to approximate each integral. The "
                              "computational expense of the 3D Radon transform is O(sinogram_size^5).")
-    parser.add_argument("-t", "--sinogram-type", type=str, default="classic",
-                        help="The memory structure of the 3D sinogram to use. Available options are 'classic', 'healpix'.")
     args = parser.parse_args()
 
     # create cache directory
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
-    _sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic
-    if args.sinogram_type == "healpix":
-        _sinogram_type = sinogram.SinogramHEALPix
-    elif args.sinogram_type != "classic":
-        logger.warning("Unrecognised sinogram type given: '{}'; defaulting to 'classic'.".format(args.sinogram_type))
-
     main(path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
-         save_to_cache=not args.no_save, sinogram_size=args.sinogram_size, sinogram_type=_sinogram_type)
+         save_to_cache=not args.no_save, sinogram_size=args.sinogram_size)

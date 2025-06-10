@@ -25,11 +25,11 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
     if ct_volume_path is None:
         save_to_cache = False
         vol_data = torch.zeros((7, 7, 7), device=device)
-        vol_data[0, 0, 0] = 1.
-        # vol_data[1, 1, 1] = 1.
-        # vol_data[0, 3, :] = 0.7
-        # vol_data[6, :, :] = 0.2
-        # vol_data[3:6, 2, 3] = 0.8
+        # vol_data[0, 0, 0] = 1.
+        vol_data[1, 1, 1] = 1.
+        vol_data[0, 3, :] = 0.7
+        vol_data[6, :, :] = 0.2
+        vol_data[3:6, 2, 3] = 0.8
         voxel_spacing = torch.tensor([10., 10., 10.])
     else:
         vol_data, voxel_spacing = data.load_volume(
