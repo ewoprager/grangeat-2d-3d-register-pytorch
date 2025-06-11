@@ -351,10 +351,18 @@ class SinogramHEALPix(Sinogram):
         v = x_p + y_p - 0.5 * n_side
         v_high = v >= 2.0 * n_side
         u_high = u >= 2.0 * n_side
-        base_pixel_9 = torch.logical_and(v_high, torch.logical_not(u_high))
-        u[torch.logical_and(v_high, u_high)] -= 2.0 * n_side
-        u[base_pixel_9] += n_side + 2.0  # the 2 adjusts for padding
+        base_pixel_6 = torch.logical_and(v_high, u_high)
+        u[base_pixel_6] -= 2.0 * n_side
         v[v_high] -= 2.0 * n_side
+
+        # flipping base pixel 6 upside-down
+        temp = u[base_pixel_6]
+        u[base_pixel_6] = v[base_pixel_6]
+        v[base_pixel_6] = temp
+        del temp
+
+        base_pixel_9 = torch.logical_and(v_high, torch.logical_not(u_high))
+        u[base_pixel_9] += n_side + 2.0  # the 2 adjusts for padding
         v[base_pixel_9] -= 2.0  # this adjusts for padding
 
         return u + 1.0, v + 3.0  # the 1 and 3 adjust for padding
@@ -374,7 +382,7 @@ class SinogramHEALPix(Sinogram):
         base_pixel_4_left = u_star + v_star < n_side
         u_star[base_pixel_4_left] += 2.0 * n_side
         v_star[torch.logical_or(base_pixel_9, base_pixel_4_left)] += 2.0 * n_side
-        del base_pixel_9, base_pixel_4_left
+        del base_pixel_9
 
         x_p = 0.5 * (u_star + v_star - n_side)
         y_p = 0.5 * (v_star - u_star) + n_side
@@ -383,6 +391,9 @@ class SinogramHEALPix(Sinogram):
         x_s = 0.5 * torch.pi * x_p / n_side
         y_s = 0.5 * torch.pi * (1.0 - y_p / n_side)
         del x_p, y_p
+
+        y_s[base_pixel_4_left] *= -1.0 # theta is flipped for base pixel 6
+        del base_pixel_4_left
 
         # to phi, theta
         y_s_abs = y_s.abs()
@@ -545,7 +556,7 @@ class SinogramHEALPix(Sinogram):
             assert (data.size()[2] - 4) // 3 == (data.size()[1] - 4) // 2
             self._data = data
 
-            self._r_range = r_range
+        self._r_range = r_range
 
     def to(self, **kwargs) -> 'SinogramHEALPix':
         return SinogramHEALPix(self.data.to(**kwargs), self.r_range, pad=False)
