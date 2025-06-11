@@ -84,10 +84,10 @@ class SinogramHEALPixCPU : Texture3DCPU {
 		const FloatType yP = nSideF * (1.0 - 2.0 * yS / M_PI);
 
 		// to u, v
-		FloatType u = xP - yP + 1.5 * nSideF - 0.5;
-		FloatType v = xP + yP - 0.5 * nSideF - 0.5;
-		const bool vHigh = v >= 2.0 * nSideF - 0.5;
-		const bool uHigh = u >= 2.0 * nSideF - 0.5;
+		FloatType u = xP - yP + 1.5 * nSideF;
+		FloatType v = xP + yP - 0.5 * nSideF;
+		const bool vHigh = v >= 2.0 * nSideF;
+		const bool uHigh = u >= 2.0 * nSideF;
 		if (vHigh) {
 			v -= 2.0 * nSideF;
 			if (uHigh)
@@ -100,7 +100,7 @@ class SinogramHEALPixCPU : Texture3DCPU {
 
 		// u,v,r is the order of the texture dimensions (X, Y, Z)
 		const Vec<FloatType, 2> texCoordOrientation =
-			(Vec<FloatType, 2>{u + 1.0, v + 3.0} - .5) / Size().XY().StaticCast<FloatType>(); // the 1 and 3 adjust for padding
+			Vec<FloatType, 2>{u + 1.0, v + 3.0} / Size().XY().StaticCast<FloatType>(); // the 1 and 3 adjust for padding
 		const FloatType texCoordR = .5 + rThetaPhi[0] / (static_cast<FloatType>(Size().Z()) * Spacing().Z());
 		return Base::Sample(VecCat(texCoordOrientation, texCoordR));
 	}
