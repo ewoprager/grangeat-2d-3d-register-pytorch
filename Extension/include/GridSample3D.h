@@ -87,7 +87,7 @@ template <typename texture_t> struct GridSample3D {
 		const at::Tensor inputContiguous = input.contiguous();
 		const float *inputPtr = inputContiguous.data_ptr<float>();
 		const SizeType inputSize = SizeType::FromIntArrayRef(input.sizes()).Flipped();
-		const VectorType inputSpacing = 2.0 / (inputSize - static_cast<IntType>(1)).template StaticCast<FloatType>();
+		const VectorType inputSpacing = 2.0 / inputSize.template StaticCast<FloatType>();
 		ret.inputTexture = texture_t{inputPtr, inputSize, inputSpacing, VectorType::Full(0.0), addressModes};
 		ret.flatOutput = torch::zeros(at::IntArrayRef({grid.numel() / 3}), inputContiguous.options());
 		return ret;

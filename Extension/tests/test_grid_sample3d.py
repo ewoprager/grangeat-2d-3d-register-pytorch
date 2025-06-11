@@ -3,6 +3,7 @@ import torch
 
 from Extension import grid_sample3d
 
+
 def test_grid_sample3d():
     input_ = torch.rand((11, 12, 8))
     grid = torch.rand((10, 7, 3))
@@ -28,3 +29,33 @@ def test_grid_sample3d():
     grid = torch.rand((10, 7, 4))
     with pytest.raises(RuntimeError):
         grid_sample3d(input_, grid)
+
+
+def test_grid_sample3d_against_torch():
+    # on cpu:
+    device = torch.device("cpu")
+    texture = torch.tensor([[[1.0, 2.0], [4.0, 3.0]]], device=device)
+    xs = torch.linspace(-2.5, 2.5, 50, device=device)
+    ys = torch.linspace(-2.5, 2.5, 50, device=device)
+    zs = torch.zeros(1, device=device)
+    zs, ys, xs = torch.meshgrid(zs, ys, xs)
+    grid = torch.stack((xs, ys, zs), dim=-1)
+    res = grid_sample3d(texture, grid, "zero", "zero", "zero")
+    res_torch = \
+    torch.nn.functional.grid_sample(texture.unsqueeze(0).unsqueeze(0), grid.unsqueeze(0), padding_mode="zeros")[0, 0]
+    assert res == pytest.approx(res_torch, abs=1e-5)
+
+    # on cuda:
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        texture = torch.tensor([[[1.0, 2.0], [4.0, 3.0]]], device=device)
+        xs = torch.linspace(-2.5, 2.5, 50, device=device)
+        ys = torch.linspace(-2.5, 2.5, 50, device=device)
+        zs = torch.zeros(1, device=device)
+        zs, ys, xs = torch.meshgrid(zs, ys, xs)
+        grid = torch.stack((xs, ys, zs), dim=-1)
+        res = grid_sample3d(texture, grid, "zero", "zero", "zero")
+        res_torch = \
+        torch.nn.functional.grid_sample(texture.unsqueeze(0).unsqueeze(0), grid.unsqueeze(0), padding_mode="zeros")[
+            0, 0]
+        assert res == pytest.approx(res_torch, abs=1e-5)
