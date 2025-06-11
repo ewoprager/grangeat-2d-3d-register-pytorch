@@ -14,7 +14,7 @@ var searchData=
   ['texture_3c_202_2c_20int64_5ft_2c_20double_20_3e_11',['Texture&lt; 2, int64_t, double &gt;',['../classreg23_1_1Texture.html',1,'reg23']]],
   ['texture_3c_203_2c_20int64_5ft_2c_20double_20_3e_12',['Texture&lt; 3, int64_t, double &gt;',['../classreg23_1_1Texture.html',1,'reg23']]],
   ['textureaddressmode_13',['TextureAddressMode',['../group__textures.html#ga7c59c85cf0c72d00bd5d489b4c2751b2',1,'reg23']]],
-  ['theta_5frange_5fhigh_14',['THETA_RANGE_HIGH',['../classreg23_1_1SinogramClassic3DCPU.html#a9af0567772485b3f75f9f5b99dfa188a',1,'reg23::SinogramClassic3DCPU']]],
+  ['theta_5frange_5fhigh_14',['THETA_RANGE_HIGH',['../classreg23_1_1SinogramClassic3DCPU.html#ab0e2cffae96d2f189fb5b6849e4a9d1b',1,'reg23::SinogramClassic3DCPU']]],
   ['theta_5frange_5flow_15',['THETA_RANGE_LOW',['../classreg23_1_1SinogramClassic3DCPU.html#ae292629912bfd8e59984c8c7a69337f4',1,'reg23::SinogramClassic3DCPU']]],
   ['tointarrayref_16',['ToIntArrayRef',['../classreg23_1_1Vec.html#a1f5b89951dd4a1dae6b0e25a261a3668',1,'reg23::Vec']]],
   ['tools_17',['General Tools',['../group__general__tools.html',1,'']]],

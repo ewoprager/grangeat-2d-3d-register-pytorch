@@ -132,8 +132,6 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a9af0567772485b3f75f9f5b99dfa188a" id="r_a9af0567772485b3f75f9f5b99dfa188a"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1SinogramClassic3DCPU.html#a9af0567772485b3f75f9f5b99dfa188a">THETA_RANGE_HIGH</a> (<a class="el" href="classreg23_1_1Texture.html#ac5bdacd39a8086b6553479ca46e8ed01">IntType</a> thetaCount)</td></tr>
-<tr class="separator:a9af0567772485b3f75f9f5b99dfa188a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9f4fa351d90be40291c74504242fa91" id="r_ae9f4fa351d90be40291c74504242fa91"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classreg23_1_1SinogramClassic3DCPU.html">SinogramClassic3DCPU</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1SinogramClassic3DCPU.html#ae9f4fa351d90be40291c74504242fa91">FromTensor</a> (const at::Tensor &amp;tensor, <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a> rSpacing)</td></tr>
 <tr class="separator:ae9f4fa351d90be40291c74504242fa91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -141,6 +139,8 @@ Static Public Member Functions</h2></td></tr>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:ae292629912bfd8e59984c8c7a69337f4" id="r_ae292629912bfd8e59984c8c7a69337f4"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1SinogramClassic3DCPU.html#ae292629912bfd8e59984c8c7a69337f4">THETA_RANGE_LOW</a> = -.5 * M_PI</td></tr>
 <tr class="separator:ae292629912bfd8e59984c8c7a69337f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0e2cffae96d2f189fb5b6849e4a9d1b" id="r_ab0e2cffae96d2f189fb5b6849e4a9d1b"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1SinogramClassic3DCPU.html#ab0e2cffae96d2f189fb5b6849e4a9d1b">THETA_RANGE_HIGH</a> = .5 * M_PI</td></tr>
+<tr class="separator:ab0e2cffae96d2f189fb5b6849e4a9d1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfb62abe67bd42b1c4f80600adf2353b" id="r_adfb62abe67bd42b1c4f80600adf2353b"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1SinogramClassic3DCPU.html#adfb62abe67bd42b1c4f80600adf2353b">PHI_RANGE_LOW</a> = -.5 * M_PI</td></tr>
 <tr class="separator:adfb62abe67bd42b1c4f80600adf2353b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f8287fec30d4574f737aefb5326dd65" id="r_a1f8287fec30d4574f737aefb5326dd65"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1SinogramClassic3DCPU.html#a1f8287fec30d4574f737aefb5326dd65">PHI_RANGE_HIGH</a> = .5 * M_PI</td></tr>
@@ -437,32 +437,6 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a9af0567772485b3f75f9f5b99dfa188a" name="a9af0567772485b3f75f9f5b99dfa188a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9af0567772485b3f75f9f5b99dfa188a">&#9670;&#160;</a></span>THETA_RANGE_HIGH()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static constexpr <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a> reg23::SinogramClassic3DCPU::THETA_RANGE_HIGH </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classreg23_1_1Texture.html#ac5bdacd39a8086b6553479ca46e8ed01">IntType</a>&#160;</td>
-          <td class="paramname"><em>thetaCount</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a1f8287fec30d4574f737aefb5326dd65" name="a1f8287fec30d4574f737aefb5326dd65"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1f8287fec30d4574f737aefb5326dd65">&#9670;&#160;</a></span>PHI_RANGE_HIGH</h2>
@@ -497,6 +471,28 @@ Static Public Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">constexpr <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a> reg23::SinogramClassic3DCPU::PHI_RANGE_LOW = -.5 * M_PI</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab0e2cffae96d2f189fb5b6849e4a9d1b" name="ab0e2cffae96d2f189fb5b6849e4a9d1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0e2cffae96d2f189fb5b6849e4a9d1b">&#9670;&#160;</a></span>THETA_RANGE_HIGH</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="classreg23_1_1Texture.html#a207f0df12c8a590c99947b5ffef9b25b">FloatType</a> reg23::SinogramClassic3DCPU::THETA_RANGE_HIGH = .5 * M_PI</td>
         </tr>
       </table>
   </td>
