@@ -22,12 +22,9 @@ class SinogramClassic3DCPU : Texture3DCPU {
 	using Base = Texture3DCPU;
 
 	static constexpr FloatType THETA_RANGE_LOW = -.5 * M_PI;
+	static constexpr FloatType THETA_RANGE_HIGH = .5 * M_PI;
 	static constexpr FloatType PHI_RANGE_LOW = -.5 * M_PI;
 	static constexpr FloatType PHI_RANGE_HIGH = .5 * M_PI;
-
-	static constexpr FloatType THETA_RANGE_HIGH(IntType thetaCount) {
-		return M_PI * (.5 - 1. / static_cast<FloatType>(thetaCount));
-	}
 
 	SinogramClassic3DCPU() = default;
 
@@ -64,16 +61,15 @@ class SinogramClassic3DCPU : Texture3DCPU {
 		TORCH_CHECK(tensor.sizes().size() == 3)
 		TORCH_CHECK(tensor.dtype() == at::kFloat)
 		const SizeType tensorSizeRThetaPhi = SizeType::FromIntArrayRef(tensor.sizes()).Flipped();
-		const FloatType thetaRangeHigh = THETA_RANGE_HIGH(tensorSizeRThetaPhi[1]);
 		const FloatType thetaSpacing =
-			(thetaRangeHigh - THETA_RANGE_LOW) / static_cast<FloatType>(tensorSizeRThetaPhi[1] - 1);
+			(THETA_RANGE_HIGH - THETA_RANGE_LOW) / static_cast<FloatType>(tensorSizeRThetaPhi[1] - 2);
 		const FloatType phiSpacing =
-			(PHI_RANGE_HIGH - PHI_RANGE_LOW) / static_cast<FloatType>(tensorSizeRThetaPhi[2] - 1);
+			(PHI_RANGE_HIGH - PHI_RANGE_LOW) / static_cast<FloatType>(tensorSizeRThetaPhi[2] - 2);
 		return {tensor.contiguous().data_ptr<float>(),
 				tensorSizeRThetaPhi,
 				{rSpacing, thetaSpacing, phiSpacing},
-				{0.0, 0.5 * (THETA_RANGE_LOW + thetaRangeHigh), 0.5 * (PHI_RANGE_LOW + PHI_RANGE_HIGH)},
-				{TextureAddressMode::ZERO, TextureAddressMode::ZERO, TextureAddressMode::WRAP}};
+				VectorType::Full(0),
+				{TextureAddressMode::ZERO, TextureAddressMode::ZERO, TextureAddressMode::ZERO}};
 	}
 
 	/**

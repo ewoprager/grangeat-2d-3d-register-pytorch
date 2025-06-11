@@ -126,10 +126,10 @@ struct ResampleSinogram3D {
 
 		float ret = sinogram.Sample(rThetaPhi);
 
-		if ((r * Vec<float, 2>{cp, sp} - .5f * geometry.originProjection).Apply<float>(&Square<float>).Sum() < geometry.
-		    squareRadius) {
-			ret *= -1.f;
-		}
+		// if ((r * Vec<float, 2>{cp, sp} - .5f * geometry.originProjection).Apply<float>(&Square<float>).Sum() < geometry.
+		//     squareRadius) {
+		// 	ret *= -1.f;
+		// }
 		return ret;
 	}
 

@@ -33,12 +33,16 @@ class LinearMapping:
 
 
 class LinearRange:
-    def __init__(self, low: float, high: float, ):
+    def __init__(self, low: float, high: float):
         self.low = low
         self.high = high
 
     def generate_grid(self, count: int, *, device=torch.device('cpu')) -> torch.Tensor:
         return torch.linspace(self.low, self.high, count, device=device)
+
+    def generate_tex_coord_grid(self, count: int, *, device=torch.device('cpu')) -> torch.Tensor:
+        half_cell_size = 0.5 * (self.high - self.low) / float(count)
+        return torch.linspace(self.low + half_cell_size, self.high - half_cell_size, count, device=device)
 
     def get_mapping_from(self, other: 'LinearRange') -> LinearMapping:
         frac: float = (self.high - self.low) / (other.high - other.low)
@@ -46,6 +50,9 @@ class LinearRange:
 
     def get_spacing(self, count: int) -> float:
         return (self.high - self.low) / float(count - 1)
+
+    def get_tex_coord_spacing(self, count: int) -> float:
+        return (self.high - self.low) / float(count)
 
     def get_centre(self) -> float:
         return .5 * (self.low + self.high)

@@ -53,10 +53,7 @@ class Sinogram(ABC):
 
 class SinogramClassic(Sinogram):
     phi_range = LinearRange(-0.5 * torch.pi, 0.5 * torch.pi)
-
-    @staticmethod
-    def theta_range_from_count(theta_count: int) -> LinearRange:
-        return LinearRange(-0.5 * torch.pi, torch.pi * (.5 - 1. / float(theta_count)))
+    theta_range = LinearRange(-0.5 * torch.pi, 0.5 * torch.pi)
 
     @staticmethod
     def build_grid(*, counts: int | Tuple[int, int, int] | torch.Size, r_range: LinearRange,
@@ -65,16 +62,30 @@ class SinogramClassic(Sinogram):
             counts = (counts, counts, counts)
         elif isinstance(counts, torch.Size):
             assert len(counts) == 3
-        phis = SinogramClassic.phi_range.generate_grid(counts[0], device=device)
-        thetas = SinogramClassic.theta_range_from_count(counts[1]).generate_grid(counts[1], device=device)
-        rs = r_range.generate_grid(counts[2], device=device)
+        phis = SinogramClassic.phi_range.generate_tex_coord_grid(counts[0], device=device)
+        thetas = SinogramClassic.theta_range.generate_tex_coord_grid(counts[1], device=device)
+        rs = r_range.generate_tex_coord_grid(counts[2], device=device)
         phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
         return Sinogram3dGrid(phis, thetas, rs)
 
-    def __init__(self, data: torch.Tensor, r_range: LinearRange):
+    def __init__(self, data: torch.Tensor, r_range: LinearRange, *, pad: bool = True):
         assert len(data.size()) == 3
+        # dimensions should be (phi, theta, r) in decreasing size
         self._data = data
         self._r_range = r_range
+
+        if pad:
+            # cant wrap in theta or phi directions, so we pad:
+            at_phi_left = self._data[0, :, :].unsqueeze(0)
+            at_phi_right = self._data[-1, :, :].unsqueeze(0)
+            left_padding = at_phi_right.flip(dims=(1, 2))  # flipped in r and theta directions
+            right_padding = at_phi_left.flip(dims=(1, 2))  # flipped in r and theta directions
+            self._data = torch.cat((left_padding, self._data, right_padding), dim=0)
+            at_theta_top = self._data[:, 0, :].unsqueeze(1)
+            at_theta_bot = self._data[:, -1, :].unsqueeze(1)
+            top_padding = at_theta_bot.flip(dims=(2,))  # flipped in r direction
+            bot_padding = at_theta_top.flip(dims=(2,))  # flipped in r direction
+            self._data = torch.cat((top_padding, self._data, bot_padding), dim=1)
 
     @property
     def device(self):
@@ -89,20 +100,18 @@ class SinogramClassic(Sinogram):
         return self._r_range
 
     @property
-    def theta_range(self) -> LinearRange:
-        theta_count: int = self.data.size()[1]
-        return SinogramClassic.theta_range_from_count(theta_count)
-
-    @property
     def grid(self) -> Sinogram3dGrid:
-        return SinogramClassic.build_grid(counts=self.data.size(), r_range=self.r_range, device=self.device)
+        return SinogramClassic.build_grid(
+            counts=(self.data.size()[0] - 2, self.data.size()[1] - 2, self.data.size()[2]), r_range=self.r_range,
+            device=self.device)  # the '-2's adjust for padding
 
     def to(self, **kwargs) -> 'SinogramClassic':
-        return SinogramClassic(self.data.to(**kwargs), self.r_range)
+        return SinogramClassic(self.data.to(**kwargs), self.r_range, pad=False)
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        return Extension.resample_sinogram3d(self.data, "classic", self.r_range.get_spacing(self.data.size()[2]),
-                                             ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
+        return Extension.resample_sinogram3d(self.data, "classic",
+                                             self.r_range.get_tex_coord_spacing(self.data.size()[2]), ph_matrix,
+                                             fixed_image_grid.phi, fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
                         plot: bool = False) -> torch.Tensor:
@@ -139,8 +148,12 @@ class SinogramClassic(Sinogram):
 
         grid_range = LinearRange.grid_sample_range()
         i_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
-        j_mapping: LinearMapping = grid_range.get_mapping_from(self.theta_range)
-        k_mapping: LinearMapping = grid_range.get_mapping_from(self.phi_range)
+        theta_grid_padding_offsets: float = 2.0 / float(self._data.size()[1])
+        theta_grid_sample_range_padded = LinearRange(-1. + theta_grid_padding_offsets, 1. - theta_grid_padding_offsets)
+        j_mapping: LinearMapping = theta_grid_sample_range_padded.get_mapping_from(self.theta_range)
+        phi_grid_padding_offsets: float = 2.0 / float(self._data.size()[0])
+        phi_grid_sample_range_padded = LinearRange(-1. + phi_grid_padding_offsets, 1. - phi_grid_padding_offsets)
+        k_mapping: LinearMapping = phi_grid_sample_range_padded.get_mapping_from(self.phi_range)
 
         if smooth is not None:
             ret = self.grid_sample_smoothed(fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping,
@@ -148,21 +161,21 @@ class SinogramClassic(Sinogram):
         else:
             grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
                                 k_mapping(fixed_image_grid_sph.phi)), dim=-1)
-            ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "wrap")
+            ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
 
         del fixed_image_grid_sph
 
         ## sign changes - this implementation relies on the convenient coordinate system
-        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
-        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
-        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
-            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
-            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
+        # moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+        # square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+        # need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+        #     (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+        #     dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
         ##
-
-        ret[need_sign_change] *= -1.
-
-        del need_sign_change
+        #
+        # ret[need_sign_change] *= -1.
+        #
+        # del need_sign_change
 
         return ret
 
