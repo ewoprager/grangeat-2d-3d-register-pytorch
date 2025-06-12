@@ -391,7 +391,7 @@ class SinogramHEALPix(Sinogram):
         y_s = 0.5 * torch.pi * (1.0 - y_p / n_side)
         del x_p, y_p
 
-        y_s[base_pixel_4_left] *= -1.0 # theta is flipped for base pixel 6
+        y_s[base_pixel_4_left] *= -1.0  # theta is flipped for base pixel 6
         del base_pixel_4_left
 
         # to phi, theta
@@ -573,6 +573,23 @@ class SinogramHEALPix(Sinogram):
     def r_range(self) -> LinearRange:
         return self._r_range
 
+    def sample(self, grid: Sinogram3dGrid) -> torch.Tensor:
+        assert grid.device_consistent()
+        assert grid.phi.device == self.device
+
+        n_side: int = (self.data.size()[1] - 4) // 2
+
+        u, v = SinogramHEALPix.spherical_to_tex_coord(grid, float(n_side))
+
+        # texCoord is in the reverse order: (X, Y, Z)
+        grid_range = LinearRange.grid_sample_range()
+        i_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[2])))
+        j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[1])))
+        k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
+
+        grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(grid.r)), dim=-1)
+        return Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
+
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         return Extension.resample_sinogram3d(self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]),
                                              ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
@@ -583,22 +600,10 @@ class SinogramHEALPix(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
-        n_side: int = (self.data.size()[1] - 4) // 2
-
         fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
                                                                         plot=plot)
 
-        u, v = SinogramHEALPix.spherical_to_tex_coord(fixed_image_grid_sph, float(n_side))
-
-        # texCoord is in the reverse order: (X, Y, Z)
-        grid_range = LinearRange.grid_sample_range()
-        i_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[2])))
-        j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[1])))
-        k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
-
-        grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(fixed_image_grid_sph.r)), dim=-1)
-        ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
-
+        ret = self.sample(fixed_image_grid_sph)
         del fixed_image_grid_sph
 
         # ## sign changes - this implementation relies on the convenient coordinate system

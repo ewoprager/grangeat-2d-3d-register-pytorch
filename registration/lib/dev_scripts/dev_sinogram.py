@@ -2,11 +2,13 @@ import argparse
 import logging.config
 
 import torch
+import numpy as np
 import matplotlib.pyplot as plt
 import pyvista as pv
 
 from registration.lib.structs import *
 from registration.lib import sinogram
+from registration import pre_computed
 
 
 def map_back_and_forth():
@@ -95,12 +97,82 @@ def show_padding():
 
 
 def plot_sphere():
-    pass
+    n_side: int = 4
+
+    sphere = pv.Sphere(theta_resolution=360, phi_resolution=180)  # high resolution
+
+    points = torch.tensor(sphere.points)  # shape (N, 3)
+
+    # Compute spherical UV coordinates
+    x, y, z = points[:, 0], points[:, 1], points[:, 2]
+    phi = torch.atan2(y, x)
+    theta = (z / points.norm(dim=1)).asin()
+
+    print("theta in ({}, {})".format(theta.min(), theta.max()))
+    print("phi in ({}, {})".format(phi.min(), phi.max()))
+
+    grid = Sinogram3dGrid(phi=phi, theta=theta, r=40.0 * torch.ones_like(phi)).unflip()
+
+    u, v = sinogram.SinogramHEALPix.spherical_to_tex_coord(grid, n_side)
+
+    print("u in ({}, {})".format(u.min(), u.max()))
+    print("v in ({}, {})".format(v.min(), v.max()))
+    u_min = 0.0
+    u_max = 3.0 * float(n_side) + 4.0
+    v_min = 0.0
+    v_max = 2.0 * float(n_side) + 4.0
+    print("u limits = ({}, {})".format(u_min, u_max))
+    print("v limits = ({}, {})".format(v_min, v_max))
+
+    u_mapped = 255.0 * (u - u_min) / (u_max - u_min)
+    v_mapped = 255.0 * (v - v_min) / (v_max - v_min)
+
+    # Example: color by UV (as RGB)
+    colors = torch.stack((u_mapped, u_mapped, u_mapped), dim=-1).cpu().numpy()
+    colors = colors.astype(np.uint8)
+    # Assign colors to vertices
+    sphere.point_data["colors"] = colors
+    plotter = pv.Plotter()
+    plotter.add_mesh(sphere, scalars="colors", rgb=True)
+    plotter.show()
+
+    # Example: color by UV (as RGB)
+    colors = torch.stack((v_mapped, v_mapped, v_mapped), dim=-1).cpu().numpy()
+    colors = colors.astype(np.uint8)
+    # Assign colors to vertices
+    sphere.point_data["colors"] = colors
+    plotter = pv.Plotter()
+    plotter.add_mesh(sphere, scalars="colors", rgb=True)
+    plotter.show()
+
+    vol_data = torch.zeros((7, 7, 7))
+    vol_data[1, 1, 1] = 1.
+    vol_data[0, 3, :] = 0.7
+    vol_data[6, :, :] = 0.2
+    vol_data[3:6, 2, 3] = 0.8
+    voxel_spacing = torch.tensor([10., 10., 10.])
+    sinogram3d = pre_computed.calculate_volume_sinogram(None, vol_data, voxel_spacing=voxel_spacing,
+        ct_volume_path=None, volume_downsample_factor=1, save_to_cache=False, vol_counts=12,
+        sinogram_type=sinogram.SinogramHEALPix)
+
+    sampled = sinogram3d.sample(grid)
+    _min = sampled.min()
+    _max = sampled.max()
+    sampled_mapped = 255.0 * (sampled - _min) /(_max - _min)
+    colors = torch.stack((sampled_mapped, sampled_mapped, sampled_mapped), dim=-1).cpu().numpy()
+    colors = colors.astype(np.uint8)
+    # Assign colors to vertices
+    sphere.point_data["colors"] = colors
+    plotter = pv.Plotter()
+    plotter.add_mesh(sphere, scalars="colors", rgb=True)
+    plotter.show()
+
+
 
 
 if __name__ == "__main__":
     # set up logger
-    logging.config.fileConfig("../../../logging.conf", disable_existing_loggers=False)
+    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
     logger = logging.getLogger("radonRegistration")
 
     # parse arguments

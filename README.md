@@ -93,18 +93,16 @@ but note that this will not check for correctly install packages, nor initialise
 source code has changed, as `uv` is not run here, so make sure to run `uv sync` beforehand if you have changed any
 dependencies or the extension.
 
-Any scripts that aren't contained in the root directory must be run in their directory, with the `PYTHONPATH` variable
+Any scripts that aren't contained in the root directory must from the root directory, with the `PYTHONPATH` variable
 set to the root directory.
 
-In a JetBrains IDE, this is trivial as this is the default behaviour for a run configuration for a Python script: just
-add a Python script run configuration, with the script file and the working directory set to it's containing directory.
-
-If running from the command line, see the following example:
-
-To run the script `registration/lib/dev_scripts/dev_sinogram.py`:
+For example, to run the script `registration/lib/dev_scripts/dev_sinogram.py`:
 ```bash
-cd registration/lib/dev_scripts/
-PYTHONPATH="/path/to/root directory/" python dev_sinogram.py --help 
+PYTHONPATH=$PWD uv run registration/lib/dev_scripts/dev_sinogram.py --help 
+```
+or
+```bash
+PYTHONPATH=$PWD python registration/lib/dev_scripts/dev_sinogram.py --help 
 ```
 
 ## Experiments so far
