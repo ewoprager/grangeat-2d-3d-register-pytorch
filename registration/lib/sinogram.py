@@ -295,7 +295,8 @@ class SinogramClassic(Sinogram):
 
 class SinogramHEALPix(Sinogram):
     @staticmethod
-    def spherical_to_tex_coord(spherical_grid: Sinogram3dGrid, n_side: float) -> Tuple[torch.Tensor, torch.Tensor]:
+    def spherical_to_tex_coord(spherical_grid: Sinogram3dGrid, n_side: float) -> Tuple[
+        torch.Tensor, torch.Tensor, torch.Tensor]:
         # to x_s, y_s
         z = spherical_grid.theta.sin()  # sin instead of cos for adjustment
         z_abs = z.abs()
@@ -359,15 +360,17 @@ class SinogramHEALPix(Sinogram):
         u[base_pixel_6] = v[base_pixel_6]
         v[base_pixel_6] = temp
         del temp
+        r = spherical_grid.r.clone()
+        r[base_pixel_6] *= -1.0  # r is flipped for base pixel 6
 
         base_pixel_9 = torch.logical_and(v_high, torch.logical_not(u_high))
         u[base_pixel_9] += n_side + 2.0  # the 2 adjusts for padding
         v[base_pixel_9] -= 2.0  # this adjusts for padding
 
-        return u + 1.0, v + 3.0  # the 1 and 3 adjust for padding
+        return u + 1.0, v + 3.0, r  # the 1 and 3 adjust for padding
 
     @staticmethod
-    def tex_coord_to_spherical(u: torch.Tensor, v: torch.Tensor, n_side: float) -> Tuple[torch.Tensor, torch.Tensor]:
+    def tex_coord_to_spherical(u: torch.Tensor, v: torch.Tensor, r: torch.Tensor, n_side: float) -> Sinogram3dGrid:
         assert u.size() == v.size()
 
         u_star = u.clone()
@@ -378,9 +381,9 @@ class SinogramHEALPix(Sinogram):
         v_star -= 3.0  # this adjusts for padding
         u_star[base_pixel_9] -= 2.0 + n_side  # the 2 adjusts for padding
         v_star[base_pixel_9] += 2.0  # this adjusts for padding
-        base_pixel_4_left = u_star + v_star < n_side
-        u_star[base_pixel_4_left] += 2.0 * n_side
-        v_star[torch.logical_or(base_pixel_9, base_pixel_4_left)] += 2.0 * n_side
+        base_pixel_6 = u_star + v_star < n_side
+        u_star[base_pixel_6] += 2.0 * n_side
+        v_star[torch.logical_or(base_pixel_9, base_pixel_6)] += 2.0 * n_side
         del base_pixel_9
 
         x_p = 0.5 * (u_star + v_star - n_side)
@@ -391,8 +394,10 @@ class SinogramHEALPix(Sinogram):
         y_s = 0.5 * torch.pi * (1.0 - y_p / n_side)
         del x_p, y_p
 
-        y_s[base_pixel_4_left] *= -1.0  # theta is flipped for base pixel 6
-        del base_pixel_4_left
+        y_s[base_pixel_6] *= -1.0  # theta is flipped for base pixel 6
+        r_ = r.clone()
+        r_[base_pixel_6] *= -1.0  # r is flipped for base pixel 6
+        del base_pixel_6
 
         # to phi, theta
         y_s_abs = y_s.abs()
@@ -410,31 +415,26 @@ class SinogramHEALPix(Sinogram):
         theta = z.asin()  # instead of cos, for adjustment
         del z
 
-        return phi, theta
+        return Sinogram3dGrid(phi=phi, theta=theta, r=r_)
 
     @staticmethod
     def build_grid(*, n_side: int, r_range: LinearRange, r_count: int, device=torch.device("cpu")) -> Sinogram3dGrid:
         u = LinearRange(0.0, 3.0 * float(n_side)).generate_tex_coord_grid(3 * n_side, device=device)
         v = LinearRange(0.0, 2.0 * float(n_side)).generate_tex_coord_grid(2 * n_side, device=device)
-        v, u = torch.meshgrid(v, u)
+        r = r_range.generate_grid(r_count, device=device)
+        r, v, u = torch.meshgrid(r, v, u)
         u = u.clone()
         v = v.clone()
+        r = r.clone()
         base_pixel_9 = torch.logical_and(u >= 2.0 * float(n_side), v < float(n_side))
         u += 1.0
         v += 3.0
         u[base_pixel_9] += 2.0
         v[base_pixel_9] -= 2.0
 
-        phi, theta = SinogramHEALPix.tex_coord_to_spherical(u, v, n_side)
+        grid = SinogramHEALPix.tex_coord_to_spherical(u, v, r, n_side)
 
-        # generating the r grid and assembling
-        r = r_range.generate_grid(r_count, device=device)
-        r = r.unsqueeze(-1).unsqueeze(-1).expand(-1, phi.size()[0], phi.size()[1])
-        phi = phi.expand(r_count, -1, -1)
-        theta = theta.expand(r_count, -1, -1)
-        assert phi.size() == theta.size()
-        assert theta.size() == r.size()
-        return Sinogram3dGrid(phi=phi, theta=theta, r=r)
+        return grid
 
     def __init__(self, data: torch.Tensor, r_range: LinearRange, pad: bool = True):
         assert len(data.size()) == 3
@@ -464,19 +464,23 @@ class SinogramHEALPix(Sinogram):
             bp_6_top_left = self._data[:, 0, :n_side].unsqueeze(1)
             bp_6_bot_left = self._data[:, :n_side, 0].unsqueeze(1)
 
-            pad_6_top_left = bp_9_top_right  # other side of 6 because 6 is flipped
             pad_0_top_left = bp_9_bot_right.flip(dims=(0, -1))  # wraps causing flip in theta and r
             pad_0_top_right = bp_1_top_left.flip(dims=(-1,))
             pad_1_top_left = bp_0_top_right.flip(dims=(-1,))
             pad_1_top_right = bp_8_bot_left.flip(dims=(0, -1))  # wraps causing flip in theta and r
-            pad_1_bot_right = bp_6_bot_left  # other side of 6 because 6 is flipped
+            pad_1_bot_right = bp_6_bot_left.flip(
+                dims=(0,))  # other side of 6 because 6 is flipped, flipped in r because so is 6
             pad_5_bot_right = bp_9_top_left
             pad_8_bot_right = bp_9_bot_left.flip(dims=(-1,))
             pad_8_bot_left = bp_1_top_right.flip(dims=(0, -1))  # wraps causing flip in theta and r
-            pad_6_bot_left = bp_1_bot_right  # other side of 6 because 6 is flipped
+            pad_6_bot_left = bp_1_bot_right.flip(
+                dims=(0,))  # other side of 6 because 6 is flipped, flipped in r because so is 6
+            pad_6_top_left = bp_9_top_right.flip(
+                dims=(0,))  # other side of 6 because 6 is flipped, flipped in r because so is 6
 
             pad_9_top_left = bp_5_bot_right
-            pad_9_top_right = bp_6_top_left  # other side of 6 because 6 is flipped
+            pad_9_top_right = bp_6_top_left.flip(
+                dims=(0,))  # other side of 6 because 6 is flipped, flipped in r because so is 6
             pad_9_bot_right = bp_0_top_left.flip(dims=(0, -1))  # wraps causing flip in theta and r
             pad_9_bot_left = bp_8_bot_right.flip(dims=(-1,))
 
@@ -492,7 +496,7 @@ class SinogramHEALPix(Sinogram):
             corner_8_right = self._data[:, -1, n_side - 1].unsqueeze(1).unsqueeze(1)
             corner_9_bot = self._data[:, n_side - 1, 2 * n_side].unsqueeze(1).unsqueeze(1)
 
-            pad_6_corner_left = corner_5_right
+            pad_6_corner_left = corner_5_right.flip(dims=(0,))  # flipped in r because so is 6
             pad_0_corner_top = corner_8_bot.flip(dims=(0,))  # wraps causing flip in r
             pad_1_corner_top = corner_9_bot.flip(dims=(0,))  # wraps causing flip in r
             pad_1_corner_right = corner_8_left.flip(dims=(0,))  # wraps causing flip in r
@@ -579,7 +583,7 @@ class SinogramHEALPix(Sinogram):
 
         n_side: int = (self.data.size()[1] - 4) // 2
 
-        u, v = SinogramHEALPix.spherical_to_tex_coord(grid, float(n_side))
+        u, v, r = SinogramHEALPix.spherical_to_tex_coord(grid, float(n_side))
 
         # texCoord is in the reverse order: (X, Y, Z)
         grid_range = LinearRange.grid_sample_range()
@@ -587,7 +591,7 @@ class SinogramHEALPix(Sinogram):
         j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[1])))
         k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
 
-        grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(grid.r)), dim=-1)
+        grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(r)), dim=-1)
         return Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:

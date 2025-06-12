@@ -111,39 +111,7 @@ def plot_sphere():
     print("theta in ({}, {})".format(theta.min(), theta.max()))
     print("phi in ({}, {})".format(phi.min(), phi.max()))
 
-    grid = Sinogram3dGrid(phi=phi, theta=theta, r=40.0 * torch.ones_like(phi)).unflip()
-
-    u, v = sinogram.SinogramHEALPix.spherical_to_tex_coord(grid, n_side)
-
-    print("u in ({}, {})".format(u.min(), u.max()))
-    print("v in ({}, {})".format(v.min(), v.max()))
-    u_min = 0.0
-    u_max = 3.0 * float(n_side) + 4.0
-    v_min = 0.0
-    v_max = 2.0 * float(n_side) + 4.0
-    print("u limits = ({}, {})".format(u_min, u_max))
-    print("v limits = ({}, {})".format(v_min, v_max))
-
-    u_mapped = 255.0 * (u - u_min) / (u_max - u_min)
-    v_mapped = 255.0 * (v - v_min) / (v_max - v_min)
-
-    # Example: color by UV (as RGB)
-    colors = torch.stack((u_mapped, u_mapped, u_mapped), dim=-1).cpu().numpy()
-    colors = colors.astype(np.uint8)
-    # Assign colors to vertices
-    sphere.point_data["colors"] = colors
-    plotter = pv.Plotter()
-    plotter.add_mesh(sphere, scalars="colors", rgb=True)
-    plotter.show()
-
-    # Example: color by UV (as RGB)
-    colors = torch.stack((v_mapped, v_mapped, v_mapped), dim=-1).cpu().numpy()
-    colors = colors.astype(np.uint8)
-    # Assign colors to vertices
-    sphere.point_data["colors"] = colors
-    plotter = pv.Plotter()
-    plotter.add_mesh(sphere, scalars="colors", rgb=True)
-    plotter.show()
+    grid = Sinogram3dGrid(phi=phi, theta=theta, r=20.0 * torch.ones_like(phi)).unflip()
 
     vol_data = torch.zeros((7, 7, 7))
     vol_data[1, 1, 1] = 1.
@@ -152,7 +120,7 @@ def plot_sphere():
     vol_data[3:6, 2, 3] = 0.8
     voxel_spacing = torch.tensor([10., 10., 10.])
     sinogram3d = pre_computed.calculate_volume_sinogram(None, vol_data, voxel_spacing=voxel_spacing,
-        ct_volume_path=None, volume_downsample_factor=1, save_to_cache=False, vol_counts=12,
+        ct_volume_path=None, volume_downsample_factor=1, save_to_cache=False, vol_counts=24,
         sinogram_type=sinogram.SinogramHEALPix)
 
     sampled = sinogram3d.sample(grid)
