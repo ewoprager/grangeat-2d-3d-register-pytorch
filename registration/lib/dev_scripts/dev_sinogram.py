@@ -19,7 +19,7 @@ def map_back_and_forth():
     _phi, _theta = torch.meshgrid(_phi, _theta)
     _grid = Sinogram3dGrid(phi=_phi, theta=_theta, r=torch.zeros_like(_phi))
 
-    _u, _v = sinogram.SinogramHEALPix.spherical_to_tex_coord(_grid, n_side)
+    _u, _v, _r = sinogram.SinogramHEALPix.spherical_to_tex_coord(_grid, n_side)
 
     print("n_side = {}".format(n_side))
     print("desired u range: 0.5 to {}".format(3.0 * n_side + 2.5))
@@ -43,7 +43,7 @@ def map_back_and_forth():
     _axes.set_aspect('equal', 'box')
     _axes.set_title("v")
 
-    _phi2, _theta2 = sinogram.SinogramHEALPix.tex_coord_to_spherical(_u, _v, n_side)
+    _phi2, _theta2 = sinogram.SinogramHEALPix.tex_coord_to_spherical(_u, _v, _r, n_side)
 
     _, _axes = plt.subplots()
     _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _phi2.numpy())
@@ -120,13 +120,14 @@ def plot_sphere():
     vol_data[3:6, 2, 3] = 0.8
     voxel_spacing = torch.tensor([10., 10., 10.])
     sinogram3d = pre_computed.calculate_volume_sinogram(None, vol_data, voxel_spacing=voxel_spacing,
-        ct_volume_path=None, volume_downsample_factor=1, save_to_cache=False, vol_counts=24,
-        sinogram_type=sinogram.SinogramHEALPix)
+                                                        ct_volume_path=None, volume_downsample_factor=1,
+                                                        save_to_cache=False, vol_counts=24,
+                                                        sinogram_type=sinogram.SinogramHEALPix)
 
     sampled = sinogram3d.sample(grid)
     _min = sampled.min()
     _max = sampled.max()
-    sampled_mapped = 255.0 * (sampled - _min) /(_max - _min)
+    sampled_mapped = 255.0 * (sampled - _min) / (_max - _min)
     colors = torch.stack((sampled_mapped, sampled_mapped, sampled_mapped), dim=-1).cpu().numpy()
     colors = colors.astype(np.uint8)
     # Assign colors to vertices
@@ -134,8 +135,6 @@ def plot_sphere():
     plotter = pv.Plotter()
     plotter.add_mesh(sphere, scalars="colors", rgb=True)
     plotter.show()
-
-
 
 
 if __name__ == "__main__":

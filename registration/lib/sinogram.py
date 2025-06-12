@@ -432,9 +432,7 @@ class SinogramHEALPix(Sinogram):
         u[base_pixel_9] += 2.0
         v[base_pixel_9] -= 2.0
 
-        grid = SinogramHEALPix.tex_coord_to_spherical(u, v, r, n_side)
-
-        return grid
+        return SinogramHEALPix.tex_coord_to_spherical(u, v, r, n_side)
 
     def __init__(self, data: torch.Tensor, r_range: LinearRange, pad: bool = True):
         assert len(data.size()) == 3
@@ -610,17 +608,17 @@ class SinogramHEALPix(Sinogram):
         ret = self.sample(fixed_image_grid_sph)
         del fixed_image_grid_sph
 
-        # ## sign changes - this implementation relies on the convenient coordinate system
-        # moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
-        # square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
-        # need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
-        #     (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
-        #     dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
-        # ##
-        #
-        # ret[need_sign_change] *= -1.
-        #
-        # del need_sign_change
+        ## sign changes - this implementation relies on the convenient coordinate system
+        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
+        ##
+
+        ret[need_sign_change] *= -1.
+
+        del need_sign_change
 
         return ret
 

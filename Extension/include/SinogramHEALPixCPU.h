@@ -67,32 +67,33 @@ class SinogramHEALPixCPU : Texture3DCPU {
 		const FloatType nSideF = static_cast<FloatType>(nSide);
 
 		// to x_s, y_s
-		const FloatType z = sin(rThetaPhi[1]);
+		const FloatType phiAdjusted = rThetaPhi[2] + 0.5 * M_PI; // with pi/2 adjustment
+		const FloatType z = sin(rThetaPhi[1]); // sin instead of cos for adjustment
 		const FloatType zAbs = abs(z);
 		const bool equatorialZone = zAbs <= 2.0 / 3.0;
 		const FloatType sigma = Sign(z) * (2.0 - sqrt(3.0 * (1.0 - zAbs)));
-		const FloatType xS = equatorialZone ? rThetaPhi[2] + 0.5 * M_PI // with pi/2 adjustment
-											:							// polar cap
-								 rThetaPhi[2] + 0.5 * M_PI -
-									 (abs(sigma) - 1.0) * (fmod(rThetaPhi[2] + 0.5 * M_PI, 0.5 * M_PI) -
-														   0.25 * M_PI); // with pi/2 adjustment
-		const FloatType yS = equatorialZone ? 3.0 * M_PI * z / 8.0 :	 // polar cap
-								 M_PI * sigma / 4.0;
+		const FloatType xS = equatorialZone
+								 ? phiAdjusted
+								 : phiAdjusted - (abs(sigma) - 1.0) * (fmod(phiAdjusted, 0.5 * M_PI) - 0.25 * M_PI);
+		const FloatType yS = equatorialZone ? 3.0 * M_PI * z / 8.0 : M_PI * sigma / 4.0;
 
 		// to x_p, y_p
 		const FloatType xP = 2.0 * nSideF * xS / M_PI;
 		const FloatType yP = nSideF * (1.0 - 2.0 * yS / M_PI);
 
-		// to u, v
+		// to u, v, r
+		FloatType r = rThetaPhi[0];
 		FloatType u = xP - yP + 1.5 * nSideF;
 		FloatType v = xP + yP - 0.5 * nSideF;
 		const bool vHigh = v >= 2.0 * nSideF;
 		const bool uHigh = u >= 2.0 * nSideF;
-		if (vHigh) {
+		if (vHigh) { // either in base pixel 6 or 9
 			v -= 2.0 * nSideF;
-			if (uHigh)
+			if (uHigh) { // in base pixel 6
 				u -= 2.0 * nSideF;
-			else {
+				std::swap(u, v);   // theta is flipped for base pixel 6
+				r *= -1.0;		   // r is flipped for base pixel 6
+			} else {			   // in base pixel 9
 				u += nSideF + 2.0; // the 2 adjusts for padding
 				v -= 2.0;		   // this adjusts for padding
 			}
@@ -101,7 +102,7 @@ class SinogramHEALPixCPU : Texture3DCPU {
 		// u,v,r is the order of the texture dimensions (X, Y, Z)
 		const Vec<FloatType, 2> texCoordOrientation =
 			Vec<FloatType, 2>{u + 1.0, v + 3.0} / Size().XY().StaticCast<FloatType>(); // the 1 and 3 adjust for padding
-		const FloatType texCoordR = .5 + rThetaPhi[0] / (static_cast<FloatType>(Size().Z()) * Spacing().Z());
+		const FloatType texCoordR = .5 + r / (static_cast<FloatType>(Size().Z()) * Spacing().Z());
 		return Base::Sample(VecCat(texCoordOrientation, texCoordR));
 	}
 
