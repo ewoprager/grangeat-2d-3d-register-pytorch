@@ -65,8 +65,8 @@ def map_back_and_forth():
     plt.show()
 
 
-def show_padding(output_directory: str | None):
-    n_side: int = 5
+def show_padding(output_directory: str | None, no_show: bool):
+    n_side: int = 4
 
     u = torch.arange(3 * n_side)
     v = torch.arange(2 * n_side)
@@ -75,30 +75,34 @@ def show_padding(output_directory: str | None):
     u_sinogram = sinogram.SinogramHEALPix(u.unsqueeze(0) + 1.0, LinearRange(0.0, 1.0))
     u_padding = u_sinogram.data[0] < 0.5
     u_sinogram._data -= 1.0
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
-                           u_sinogram.data[0].numpy())
-    plt.colorbar(mesh)
-    axes.set_xlabel("u")
-    axes.set_ylabel("v")
-    axes.invert_yaxis()
-    axes.set_aspect('equal', 'box')
-    axes.set_title("u")
+
+    if not no_show:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
+                               u_sinogram.data[0].numpy())
+        plt.colorbar(mesh)
+        axes.set_xlabel("u")
+        axes.set_ylabel("v")
+        axes.invert_yaxis()
+        axes.set_aspect('equal', 'box')
+        axes.set_title("u")
 
     v_sinogram = sinogram.SinogramHEALPix(v.unsqueeze(0) + 1.0, LinearRange(0.0, 1.0))
     v_padding = v_sinogram.data[0] < 0.5
     v_sinogram._data -= 1.0
-    _, axes = plt.subplots()
-    mesh = axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
-                           v_sinogram.data[0].numpy())
-    plt.colorbar(mesh)
-    axes.set_xlabel("u")
-    axes.set_ylabel("v")
-    axes.invert_yaxis()
-    axes.set_aspect('equal', 'box')
-    axes.set_title("v")
 
-    plt.show()
+    if not no_show:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
+                               v_sinogram.data[0].numpy())
+        plt.colorbar(mesh)
+        axes.set_xlabel("u")
+        axes.set_ylabel("v")
+        axes.invert_yaxis()
+        axes.set_aspect('equal', 'box')
+        axes.set_title("v")
+
+        plt.show()
 
     if output_directory is not None:
         output_directory = pathlib.Path(output_directory)
@@ -133,10 +137,10 @@ def show_padding(output_directory: str | None):
         with open(u_labels_path, "w") as file:
             for row in range(i.size()[0]):
                 for col in range(i.size()[1]):
-                    file.write("\\node at (axis cs:{},{}) {{\\small {}}};\n".format(i[row, col], j[row, col],
-                                                                                    "-" if u_padding[
-                                                                                        i.size()[0] - row - 1, col] else
-                                                                                    u[i.size()[0] - row - 1, col]))
+                    file.write("\\node at (axis cs:{},{}) {{\\scriptsize {}}};\n".format(i[row, col], j[row, col],
+                                                                                         "-" if u_padding[i.size()[
+                                                                                                              0] - row - 1, col] else
+                                                                                         u[i.size()[0] - row - 1, col]))
                 file.write("\n")
         logger.info("`u` coord labels saved to '{}'".format(str(u_labels_path)))
 
@@ -144,10 +148,10 @@ def show_padding(output_directory: str | None):
         with open(v_labels_path, "w") as file:
             for row in range(i.size()[0]):
                 for col in range(i.size()[1]):
-                    file.write("\\node at (axis cs:{},{}) {{\\small {}}};\n".format(i[row, col], j[row, col],
-                                                                                    "-" if v_padding[
-                                                                                        i.size()[0] - row - 1, col] else
-                                                                                    v[i.size()[0] - row - 1, col]))
+                    file.write("\\node at (axis cs:{},{}) {{\\scriptsize {}}};\n".format(i[row, col], j[row, col],
+                                                                                         "-" if v_padding[i.size()[
+                                                                                                              0] - row - 1, col] else
+                                                                                         v[i.size()[0] - row - 1, col]))
                 file.write("\n")
         logger.info("`v` coord labels saved to '{}'".format(str(v_labels_path)))
 
@@ -201,15 +205,20 @@ if __name__ == "__main__":
     # parse arguments
     _parser = argparse.ArgumentParser()
     _subparsers = _parser.add_subparsers(dest="command")
+
     _parser_map = _subparsers.add_parser("map-back-and-forth", help="")
+
     _parser_pad = _subparsers.add_parser("show-padding", help="")
     _parser_pad.add_argument("-o", "--output-dir", type=str, help="")
+    _parser_pad.add_argument("-n", "--no-show", action="store_true", help="")
+
     _parser_run = _subparsers.add_parser("plot-sphere", help="")
+
     _args = _parser.parse_args()
 
     if _args.command == "map-back-and-forth":
         map_back_and_forth()
     elif _args.command == "show-padding":
-        show_padding(output_directory=_args.output_dir)
+        show_padding(output_directory=_args.output_dir, no_show=_args.no_show)
     else:  # _args.command == "plot-sphere"
         plot_sphere()
