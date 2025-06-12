@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 
 import torch
 import matplotlib.pyplot as plt
-import pyvista as pv
 
 import Extension
 
@@ -165,17 +164,17 @@ class SinogramClassic(Sinogram):
 
         del fixed_image_grid_sph
 
-        ## sign changes - this implementation relies on the convenient coordinate system
-        # moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
-        # square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
-        # need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
-        #     (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
-        #     dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
-        ##
+        # sign changes - this implementation relies on the convenient coordinate system
+        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) < square_radius)
         #
-        # ret[need_sign_change] *= -1.
-        #
-        # del need_sign_change
+
+        ret[need_sign_change] *= -1.
+
+        del need_sign_change
 
         return ret
 
@@ -402,10 +401,11 @@ class SinogramHEALPix(Sinogram):
         z = torch.zeros_like(x_s)
         z[equatorial_zone] = (8.0 * y_s / (3.0 * torch.pi))[equatorial_zone]
         z[polar_caps] = ((1.0 - (2.0 - 4.0 * y_s_abs / torch.pi).square() / 3.0) * y_s.sign())[polar_caps]
+
         phi = torch.zeros_like(x_s)
         phi[equatorial_zone] = x_s[equatorial_zone] - 0.5 * torch.pi  # with pi/2 adjustment
         phi[polar_caps] = (x_s - (torch.fmod(x_s, 0.5 * torch.pi) - 0.25 * torch.pi) * (y_s_abs - 0.25 * torch.pi) / (
-                y_s_abs - 0.5 * torch.pi))[polar_caps] - 0.5 * torch.pi  # with pi/2 adjustment
+                y_s_abs - 0.5 * torch.pi - 1e-5))[polar_caps] - 0.5 * torch.pi  # with pi/2 adjustment
         del x_s, y_s, y_s_abs, equatorial_zone, polar_caps
         theta = z.asin()  # instead of cos, for adjustment
         del z
@@ -493,14 +493,14 @@ class SinogramHEALPix(Sinogram):
             corner_9_bot = self._data[:, n_side - 1, 2 * n_side].unsqueeze(1).unsqueeze(1)
 
             pad_6_corner_left = corner_5_right
-            pad_0_corner_top = corner_9_bot.flip(dims=(0,))  # wraps causing flip in r
-            pad_1_corner_top = corner_8_bot.flip(dims=(0,))  # wraps causing flip in r
+            pad_0_corner_top = corner_8_bot.flip(dims=(0,))  # wraps causing flip in r
+            pad_1_corner_top = corner_9_bot.flip(dims=(0,))  # wraps causing flip in r
             pad_1_corner_right = corner_8_left.flip(dims=(0,))  # wraps causing flip in r
-            pad_8_corner_bot = corner_1_top.flip(dims=(0,))  # wraps causing flip in r
+            pad_8_corner_bot = corner_0_top.flip(dims=(0,))  # wraps causing flip in r
             pad_9_corner_left = corner_8_right
             pad_9_corner_top = corner_1_bot
             pad_9_corner_right = corner_0_left.flip(dims=(0,))  # wraps causing flip in r
-            pad_9_corner_bot = corner_0_top.flip(dims=(0,))  # wraps causing flip in r
+            pad_9_corner_bot = corner_1_top.flip(dims=(0,))  # wraps causing flip in r
 
             del corner_5_right, corner_0_top, corner_0_left, corner_1_top, corner_1_bot, corner_8_bot, corner_8_left, corner_8_right, corner_9_bot
 
@@ -646,78 +646,3 @@ class DrrSpec(NamedTuple):
     scene_geometry: SceneGeometry
     image: torch.Tensor
     transformation: Transformation
-
-
-if __name__ == "__main__":
-    n_side: int = 3
-
-    _phi = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
-    _theta = torch.linspace(-0.5 * torch.pi, 0.5 * torch.pi, 400)
-    _phi, _theta = torch.meshgrid(_phi, _theta)
-    _grid = Sinogram3dGrid(phi=_phi, theta=_theta, r=torch.zeros_like(_phi))
-
-    _u, _v = SinogramHEALPix.spherical_to_tex_coord(_grid, n_side)
-
-    print("n_side = {}".format(n_side))
-    print("desired u range: 0.5 to {}".format(3.0 * n_side + 2.5))
-    print("u range: {} to {}".format(_u.min().item(), _u.max().item()))
-    print("desired v range: 0.5 to {}".format(2.0 * n_side + 2.5))
-    print("v range: {} to {}".format(_v.min().item(), _v.max().item()))
-
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _u.numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("phi")
-    _axes.set_ylabel("theta")
-    _axes.set_title("u")
-
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _v.numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("phi")
-    _axes.set_ylabel("theta")
-    _axes.set_title("v")
-
-    _phi2, _theta2 = SinogramHEALPix.tex_coord_to_spherical(_u, _v, n_side)
-
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _phi2.numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("phi")
-    _axes.set_ylabel("theta")
-    _axes.set_title("phi")
-
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(_phi.numpy(), _theta.numpy(), _theta2.numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("phi")
-    _axes.set_ylabel("theta")
-    _axes.set_title("theta")
-
-    plt.show()
-
-    _u = torch.arange(3 * n_side)
-    _v = torch.arange(2 * n_side)
-    _v, _u = torch.meshgrid(_v, _u)
-
-    _s = SinogramHEALPix(_u.unsqueeze(0), LinearRange(0.0, 1.0))
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
-                             _s.data[0].numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("u")
-    _axes.set_ylabel("v")
-    _axes.invert_yaxis()
-    _axes.set_title("u")
-
-    _s = SinogramHEALPix(_v.unsqueeze(0), LinearRange(0.0, 1.0))
-    _, _axes = plt.subplots()
-    _mesh = _axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
-                             _s.data[0].numpy())
-    plt.colorbar(_mesh)
-    _axes.set_xlabel("u")
-    _axes.set_ylabel("v")
-    _axes.invert_yaxis()
-    _axes.set_title("v")
-
-    plt.show()
