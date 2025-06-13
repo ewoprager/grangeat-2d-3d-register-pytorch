@@ -25,8 +25,8 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
         sinogram3d_grid = SinogramClassic.build_grid(counts=vol_counts, r_range=r_range, device=device)
     elif sinogram_type == SinogramHEALPix:
         sinogram3d_grid = SinogramHEALPix.build_grid(
-            n_side=int(torch.ceil(torch.tensor(float(vol_counts) / 2.5)).item()), r_count=vol_counts, r_range=r_range,
-            device=device)
+            n_side=int(torch.ceil(0.5 * torch.tensor(float(vol_counts)) / torch.tensor(2.).sqrt()).item()),
+            r_count=vol_counts, r_range=r_range, device=device)
     else:
         raise TypeError(
             "Unrecognised sinogram type '{}.{}'".format(sinogram_type.__module__, sinogram_type.__qualname__))

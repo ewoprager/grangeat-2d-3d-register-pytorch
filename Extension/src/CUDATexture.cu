@@ -13,6 +13,14 @@ int64_t CUDATexture3D::Handle() const {
 	return textureHandle;
 }
 
+at::Tensor CUDATexture2D::SizeTensor() const {
+	return at::tensor(backingTensor.sizes(), at::dtype(at::kInt)).flip({0});
+}
+
+at::Tensor CUDATexture3D::SizeTensor() const {
+	return at::tensor(backingTensor.sizes(), at::dtype(at::kInt)).flip({0});
+}
+
 CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, const std::string &addressModeX, const std::string &addressModeY)
 	: CUDATexture2D(tensor, StringsToAddressModes<2>({{addressModeX, addressModeY}})) {
 }

@@ -90,6 +90,15 @@ class SinogramClassic(Sinogram):
         if self.device.type == "cuda":
             self.texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
 
+    def __getstate__(self):
+        return {"_data": self._data, "_r_range": self._r_range}
+
+    def __setstate__(self, state):
+        self._data = state["_data"]
+        self._r_range = state["_r_range"]
+        if self.device.type == "cuda":
+            self.texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
+
     @property
     def device(self):
         return self.data.device
@@ -119,8 +128,7 @@ class SinogramClassic(Sinogram):
     def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         assert self.device.type == "cuda"
         return Extension.resample_sinogram3d_cuda_texture(
-            self.texture.handle(), self.data.size()[2], self.data.size()[1], self.data.size()[0], "classic",
-            self.r_range.get_tex_coord_spacing(
+            self.texture, "classic", self.r_range.get_tex_coord_spacing(
                 self.data.size()[2]), ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
@@ -596,6 +604,15 @@ class SinogramHEALPix(Sinogram):
         if self.device.type == "cuda":
             self.texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
 
+    def __getstate__(self):
+        return {"_data": self._data, "_r_range": self._r_range}
+
+    def __setstate__(self, state):
+        self._data = state["_data"]
+        self._r_range = state["_r_range"]
+        if self.device.type == "cuda":
+            self.texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
+
     def to(self, **kwargs) -> 'SinogramHEALPix':
         return SinogramHEALPix(self.data.to(**kwargs), self.r_range, pad=False)
 
@@ -636,8 +653,8 @@ class SinogramHEALPix(Sinogram):
     def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         assert self.device.type == "cuda"
         return Extension.resample_sinogram3d_cuda_texture(
-            self.texture.handle(), self.data.size()[2], self.data.size()[1], self.data.size()[0], "healpix",
-            self.r_range.get_spacing(self.data.size()[0]), ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
+            self.texture, "healpix", self.r_range.get_spacing(self.data.size()[0]), ph_matrix, fixed_image_grid.phi,
+            fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                         plot: bool = False) -> torch.Tensor:

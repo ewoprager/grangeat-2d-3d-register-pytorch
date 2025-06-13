@@ -12,6 +12,8 @@ public:
 
 	[[nodiscard]] int64_t Handle() const;
 
+	[[nodiscard]] at::Tensor SizeTensor() const;
+
 #ifdef __CUDACC__
 
 	[[nodiscard]] Vec<int64_t, 2> Size() const {
@@ -63,6 +65,8 @@ public:
 	CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3> addressModes);
 
 	[[nodiscard]] int64_t Handle() const;
+
+	[[nodiscard]] at::Tensor SizeTensor() const;
 
 #ifdef __CUDACC__
 

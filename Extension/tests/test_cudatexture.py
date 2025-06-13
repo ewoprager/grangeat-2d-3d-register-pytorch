@@ -36,5 +36,5 @@ def test_resampling():
     d3 = torch.tensor([[[1, 2], [3, 4]], [[5, 6], [7, 8]]], device=device, dtype=torch.float32)
     texture = reg23.CUDATexture3D(d3, "zero", "zero", "zero")
     res = resample_sinogram3d_cuda_texture(
-        texture.handle(), d3.size()[2], d3.size()[1], d3.size()[0], "classic", 0.1, torch.eye(4, device=device),
-        torch.zeros(1, device=device), torch.zeros(1, device=device))
+        texture, "classic", 0.1, torch.eye(4, device=device), torch.zeros(1, device=device),
+        torch.zeros(1, device=device))
