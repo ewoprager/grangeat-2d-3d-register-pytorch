@@ -13,35 +13,39 @@ int64_t CUDATexture3D::Handle() const {
 	return textureHandle;
 }
 
-CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, const std::string &addressModeX,
-                             const std::string &addressModeY) {
+CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, const std::string &addressModeX, const std::string &addressModeY)
+	: CUDATexture2D(tensor, StringsToAddressModes<2>({{addressModeX, addressModeY}})) {
+}
+
+CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2> addressModes) {
+	cudaError_t err;
+
 	// tensor should be a 2-dimensional array of floats on the GPU
 	TORCH_CHECK(tensor.sizes().size() == 2);
 	TORCH_CHECK(tensor.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(tensor.device().type() == at::DeviceType::CUDA);
 
-	const float *const data = tensor.contiguous().data_ptr<float>();
+	backingTensor = tensor.contiguous();
 
-	size = Vec<int64_t, 2>::FromIntArrayRef(tensor.sizes()).Flipped();
+	const float *const data = backingTensor.data_ptr<float>();
 
-	// All addressMode<dim>s should be one of the valid values:
-	Vec<TextureAddressMode, 2> addressModes = Vec<TextureAddressMode, 2>::Full(TextureAddressMode::ZERO);
-	int dim = 0;
-	for (const std::string_view &str : std::array<std::string_view, 2>{{addressModeX, addressModeY}}) {
-		if (str == "wrap") {
-			addressModes[dim] = TextureAddressMode::WRAP;
-		} else if (str != "zero") {
-			TORCH_WARN(
-				"Invalid address mode string given. Valid values are: 'zero', 'wrap'. Using default value: 'zero'.")
-		}
-		++dim;
-	}
+	const Vec<int64_t, 2> size = Vec<int64_t, 2>::FromIntArrayRef(backingTensor.sizes()).Flipped();
 
 	// Copy the given data into a CUDA array
 	const cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-	cudaMallocArray(&arrayHandle, &channelDesc, size.X(), size.Y());
-	cudaMemcpy2DToArray(arrayHandle, 0, 0, data, size.X() * sizeof(float), size.X() * sizeof(float), size.Y(),
-	                    cudaMemcpyHostToDevice);
+
+	err = cudaMallocArray(&arrayHandle, &channelDesc, size.X(), size.Y());
+	if (err != cudaSuccess) {
+		std::cerr << "cudaMallocArray failed: " << cudaGetErrorString(err) << std::endl;
+		throw std::runtime_error("cudaMallocArray failed");
+	}
+
+	err = cudaMemcpy2DToArray(arrayHandle, 0, 0, data, size.X() * sizeof(float), size.X() * sizeof(float), size.Y(),
+	                          cudaMemcpyHostToDevice);
+	if (err != cudaSuccess) {
+		std::cerr << "cudaMemcpy2DToArray failed: " << cudaGetErrorString(err) << std::endl;
+		throw std::runtime_error("cudaMemcpy2DToArray failed");
+	}
 
 	// Create the texture object from the CUDA array
 	const cudaResourceDesc resourceDescriptor = {.resType = cudaResourceTypeArray,
@@ -51,47 +55,52 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, const std::string &addres
 	for (int i = 0; i < 2; ++i) {
 		textureDescriptor.addressMode[i] = TextureAddressModeToCuda(addressModes[i]);
 	}
-	cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
+	err = cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
+	if (err != cudaSuccess) {
+		std::cerr << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+		throw std::runtime_error("cudaCreateTextureObject failed");
+	}
 }
 
 CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, const std::string &addressModeX, const std::string &addressModeY,
-                             const std::string &addressModeZ) {
+                             const std::string &addressModeZ) : CUDATexture3D(
+	tensor, StringsToAddressModes<3>({{addressModeX, addressModeY, addressModeZ}})) {
+}
+
+CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3> addressModes) {
+	cudaError_t err;
+
 	// tensor should be a 3-dimensional array of floats on the GPU
 	TORCH_CHECK(tensor.sizes().size() == 3);
 	TORCH_CHECK(tensor.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(tensor.device().type() == at::DeviceType::CUDA);
 
-	const float *const data = tensor.contiguous().data_ptr<float>();
+	backingTensor = tensor.contiguous();
 
-	size = Vec<int64_t, 3>::FromIntArrayRef(tensor.sizes()).Flipped();
+	const float *const data = backingTensor.data_ptr<float>();
 
-	// All addressMode<dim>s should be one of the valid values:
-	Vec<TextureAddressMode, 3> addressModes = Vec<TextureAddressMode, 3>::Full(TextureAddressMode::ZERO);
-	int dim = 0;
-	for (const std::string_view &str : std::array<std::string_view, 3>{{addressModeX, addressModeY, addressModeZ}}) {
-		if (str == "wrap") {
-			addressModes[dim] = TextureAddressMode::WRAP;
-		} else if (str != "zero") {
-			TORCH_WARN(
-				"Invalid address mode string given. Valid values are: 'zero', 'wrap'. Using default value: 'zero'.")
-		}
-		++dim;
-	}
+	const Vec<int64_t, 3> size = Vec<int64_t, 3>::FromIntArrayRef(backingTensor.sizes()).Flipped();
 
 	const cudaExtent extent = {.width = static_cast<size_t>(size.X()), .height = static_cast<size_t>(size.Y()),
 	                           .depth = static_cast<size_t>(size.Z())};
 
 	// Copy the given data into a CUDA array
 	const cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-	// cudaMallocArray(&arrayHandle, &channelDesc, _width, _height);
-	cudaMalloc3DArray(&arrayHandle, &channelDesc, extent);
-	// cudaMemcpy2DToArray(arrayHandle, 0, 0, data, _width * sizeof(float), _width * sizeof(float), _height,
-	//                     cudaMemcpyHostToDevice);
+
+	err = cudaMalloc3DArray(&arrayHandle, &channelDesc, extent);
+	if (err != cudaSuccess) {
+		std::cerr << "cudaMalloc3DArray failed: " << cudaGetErrorString(err) << std::endl;
+		throw std::runtime_error("cudaMalloc3DArray failed");
+	}
 
 	const cudaMemcpy3DParms params = {
 		.srcPtr = make_cudaPitchedPtr((void *)data, size.X() * sizeof(float), size.X(), size.Y()),
 		.dstArray = arrayHandle, .extent = extent, .kind = cudaMemcpyHostToDevice};
-	cudaMemcpy3D(&params);
+	err = cudaMemcpy3D(&params);
+	if (err != cudaSuccess) {
+		std::cerr << "cudaMemcpy3D failed: " << cudaGetErrorString(err) << std::endl;
+		throw std::runtime_error("cudaMemcpy3D failed");
+	}
 
 	// Create the texture object from the CUDA array
 	const cudaResourceDesc resourceDescriptor = {.resType = cudaResourceTypeArray,
@@ -101,7 +110,11 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, const std::string &addres
 	for (int i = 0; i < 3; ++i) {
 		textureDescriptor.addressMode[i] = TextureAddressModeToCuda(addressModes[i]);
 	}
-	cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
+	err = cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
+	if (err != cudaSuccess) {
+		std::cerr << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+		throw std::runtime_error("cudaCreateTextureObject failed");
+	}
 }
 
 } // namespace reg23

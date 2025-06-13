@@ -115,7 +115,7 @@ template <typename texture_t> struct Radon2D {
 		TORCH_INTERNAL_ASSERT(rValues.device().type() == device);
 
 		CommonData ret{};
-		ret.inputTexture = texture_t::FromTensor(image, imageSpacing);
+		ret.inputTexture = texture_t::FromTensor(image, VectorType::FromTensor(imageSpacing));
 		const FloatType lineLength = sqrt(
 			ret.inputTexture.SizeWorld().template Apply<FloatType>(&Square<FloatType>).Sum());
 		ret.mappingIndexToOffset = GetMappingIToOffset(lineLength, samplesPerLine);

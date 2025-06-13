@@ -18,10 +18,11 @@ public:
 
 	Texture2DCPU() = default;
 
-	Texture2DCPU(const float *_ptr, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
-	             const AddressModeType &_addressModes = AddressModeType::Full(TextureAddressMode::ZERO))
+	Texture2DCPU(const float *_ptr, SizeType _size, VectorType _spacing,
+	             VectorType _centrePosition = VectorType::Full(0),
+	             AddressModeType _addressModes = AddressModeType::Full(TextureAddressMode::ZERO))
 		: Base(std::move(_size), std::move(_spacing), std::move(_centrePosition)), ptr(_ptr),
-		  addressModes(_addressModes) {
+		  addressModes(std::move(_addressModes)) {
 	}
 
 	// yes copy
@@ -37,11 +38,15 @@ public:
 	/**
 	 * @param image A 2D tensor of `torch.float32`s
 	 * @param spacing A tensor of `torch.float64`s of size (2,)
+	 * @param centrePosition
+	 * @param addressModes
 	 * @return An instance of this texture object that points to the data in the given image
 	 */
-	static Texture2DCPU FromTensor(const at::Tensor &image, const at::Tensor &spacing) {
+	static Texture2DCPU FromTensor(const at::Tensor &image, VectorType spacing,
+	                               VectorType centrePosition = VectorType::Full(0),
+	                               AddressModeType addressModes = AddressModeType::Full(TextureAddressMode::ZERO)) {
 		return {image.contiguous().data_ptr<float>(), Vec<int64_t, 2>::FromIntArrayRef(image.sizes()).Flipped(),
-		        Vec<double, 2>::FromTensor(spacing)};
+		        std::move(spacing), std::move(centrePosition), std::move(addressModes)};
 	}
 
 	/**

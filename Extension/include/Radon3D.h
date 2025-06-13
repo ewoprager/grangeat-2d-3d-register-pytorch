@@ -131,7 +131,7 @@ template <typename texture_t> struct Radon3D {
 		TORCH_INTERNAL_ASSERT(rValues.device().type() == device);
 
 		CommonData ret{};
-		ret.inputTexture = texture_t::FromTensor(volume, volumeSpacing);
+		ret.inputTexture = texture_t::FromTensor(volume, VectorType::FromTensor(volumeSpacing));
 		const FloatType planeSize = sqrt(
 			ret.inputTexture.SizeWorld().template Apply<FloatType>(&Square<FloatType>).Sum());
 		ret.mappingIndexToOffset = GetMappingIToOffset(planeSize, samplesPerDirection);

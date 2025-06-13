@@ -34,17 +34,25 @@ public:
 	Texture2DCUDA &operator=(const Texture2DCUDA &) = default;
 
 	// yes move
-	Texture2DCUDA(Texture2DCUDA &&other) noexcept = default;
+	Texture2DCUDA(Texture2DCUDA &&) noexcept = default;
 
 	Texture2DCUDA &operator=(Texture2DCUDA &&other) noexcept = default;
 
-	static Texture2DCUDA FromTensor(const at::Tensor &image, const at::Tensor &spacing,
-	                                const Vec<std::string, 2> &addressModes = Vec<std::string, 2>::Full("zero")) {
-		return {std::make_shared<CUDATexture2D>(image, addressModes[0], addressModes[1]),
-		        Vec<double, 2>::FromTensor(spacing)};
+	/**
+	 *
+	 * @param image
+	 * @param spacing
+	 * @param centrePosition
+	 * @param addressModes
+	 * @return
+	 */
+	static Texture2DCUDA FromTensor(const at::Tensor &image, VectorType spacing,
+	                                VectorType centrePosition = VectorType::Full(0),
+	                                AddressModeType addressModes = AddressModeType::Full(TextureAddressMode::ZERO)) {
+		return {std::make_shared<CUDATexture2D>(image, addressModes), std::move(spacing), std::move(centrePosition)};
 	}
 
-	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
+	__host__ __device__ [[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
 
 	[[nodiscard]] __device__ float Sample(const VectorType &texCoord) const {
 		return tex2D<float>(textureHandle, texCoord.X(), texCoord.Y());

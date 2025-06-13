@@ -40,7 +40,7 @@ public:
 	 * @brief Construct the texture with data.
 	 * @param texture
 	 */
-	explicit SinogramClassic3D(Base &texture) : Base(std::move(texture)) {
+	explicit SinogramClassic3D(Base texture) : Base(std::move(texture)) {
 		mappingRThetaPhiToTexCoord = Base::MappingWorldToTexCoord();
 	}
 
@@ -70,8 +70,22 @@ public:
 			                               tensorSizeRThetaPhi[1] - 2);
 		const FloatType phiSpacing = (PHI_RANGE_HIGH - PHI_RANGE_LOW) / static_cast<FloatType>(
 			                             tensorSizeRThetaPhi[2] - 2);
-		return {tensor.contiguous().data_ptr<float>(), tensorSizeRThetaPhi, {rSpacing, thetaSpacing, phiSpacing},
-		        VectorType::Full(0), {TextureAddressMode::ZERO, TextureAddressMode::ZERO, TextureAddressMode::ZERO}};
+		return SinogramClassic3D{Base::FromTensor(tensor, {rSpacing, thetaSpacing, phiSpacing})};
+	}
+
+	/**
+	 * @param textureHandle
+	 * @param sizeRThetaPhi
+	 * @param rSpacing The spacing between each HEALPix sphere
+	 * @return An instance of this texture object that points to the data in the given image
+	 */
+	static SinogramClassic3D FromCUDAHandle(int64_t textureHandle, const Vec<int64_t, 3> &sizeRThetaPhi,
+	                                        FloatType rSpacing) {
+		const FloatType thetaSpacing = (THETA_RANGE_HIGH - THETA_RANGE_LOW) / static_cast<FloatType>(
+			                               sizeRThetaPhi[1] - 2);
+		const FloatType phiSpacing = (PHI_RANGE_HIGH - PHI_RANGE_LOW) / static_cast<FloatType>(sizeRThetaPhi[2] - 2);
+		return SinogramClassic3D{
+			Base{textureHandle, sizeRThetaPhi, {rSpacing, thetaSpacing, phiSpacing}, VectorType::Full(0)}};
 	}
 
 	/**

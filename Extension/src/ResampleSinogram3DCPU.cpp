@@ -12,7 +12,7 @@ using CommonData = ResampleSinogram3D::CommonData;
 at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const std::string &sinogramType, const double rSpacing,
                                   const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
                                   const at::Tensor &rValues) {
-	const CommonData common = ResampleSinogram3D::Common(sinogram3d, sinogramType, projectionMatrix, phiValues, rValues,
+	const CommonData common = ResampleSinogram3D::Common(sinogramType, projectionMatrix, phiValues, rValues,
 	                                                     at::DeviceType::CPU);
 
 	const at::Tensor phiFlat = phiValues.flatten();

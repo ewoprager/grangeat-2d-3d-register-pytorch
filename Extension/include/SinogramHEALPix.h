@@ -32,13 +32,9 @@ public:
 
 	/**
 	 * @brief Construct the texture with data.
-	 * @param _ptr A pointer to the beginning of the data
-	 * @param _nSide $N_\mathrm{side}$: The number of pixels along a side of a HEALPix base resolution pixel
-	 * @param rCount The size of the volumes first dimension; the number of $r$ values
-	 * @param rSpacing The spacing in world coordinates of the layers in the $r$ direction
+	 * @param texture
 	 */
-	SinogramHEALPix(const float *_ptr, IntType _nSide, IntType rCount, FloatType rSpacing)
-		: Base(_ptr, {3 * _nSide + 4, 2 * _nSide + 4, rCount}, {1., 1., rSpacing}), nSide(_nSide) {
+	SinogramHEALPix(Base texture) : Base(std::move(texture)) {
 	}
 
 	// yes copy
@@ -64,7 +60,20 @@ public:
 		TORCH_CHECK((tensorSize.X() - 4) % 3 == 0)
 		TORCH_CHECK((tensorSize.Y() - 4) % 2 == 0)
 		TORCH_CHECK((tensorSize.X() - 4) / 3 == (tensorSize.Y() - 4) / 2)
-		return {tensor.contiguous().data_ptr<float>(), (tensorSize.X() - 4) / 3, tensorSize.Z(), rSpacing};
+		return SinogramHEALPix{Base::FromTensor(tensor, {1.0, 1.0, rSpacing})};
+	}
+
+	/**
+	 * @param textureHandle
+	 * @param sizeUVR
+	 * @param rSpacing The spacing between each HEALPix sphere
+	 * @return An instance of this texture object that points to the data in the given image
+	 */
+	static SinogramHEALPix FromCUDAHandle(int64_t textureHandle, const Vec<int64_t, 3> &sizeUVR, FloatType rSpacing) {
+		TORCH_CHECK((sizeUVR.X() - 4) % 3 == 0)
+		TORCH_CHECK((sizeUVR.Y() - 4) % 2 == 0)
+		TORCH_CHECK((sizeUVR.X() - 4) / 3 == (sizeUVR.Y() - 4) / 2)
+		return SinogramHEALPix{Base{textureHandle, sizeUVR, {1.0, 1.0, rSpacing}, VectorType::Full(0)}};
 	}
 
 	/**
@@ -72,7 +81,7 @@ public:
 	 * @return The sample from this texture at the given coordinates using trilinear interpolation
 	 */
 	[[nodiscard]] __host__ __device__ float Sample(const VectorType &rThetaPhi) const {
-		const FloatType nSideF = static_cast<FloatType>(nSide);
+		const FloatType nSideF = static_cast<FloatType>((Base::Size().X() - 4) / 3);
 
 		// to x_s, y_s
 		const FloatType phiAdjusted = rThetaPhi[2] + 0.5 * M_PI; // with pi/2 adjustment
@@ -120,9 +129,6 @@ public:
 		const FloatType texCoordR = .5 + r / (static_cast<FloatType>(Base::Size().Z()) * Base::Spacing().Z());
 		return Base::Sample(VecCat(texCoordOrientation, texCoordR));
 	}
-
-private:
-	IntType nSide{}; ///< The number of points per side of a HEALPix base resolution pixel
 };
 
 } // namespace reg23

@@ -35,14 +35,22 @@ public:
 	Texture3DCUDA &operator=(const Texture3DCUDA &) = default;
 
 	// yes move
-	Texture3DCUDA(Texture3DCUDA &&other) noexcept = default;
+	Texture3DCUDA(Texture3DCUDA &&) noexcept = default;
 
-	Texture3DCUDA &operator=(Texture3DCUDA &&other) noexcept = default;
+	Texture3DCUDA &operator=(Texture3DCUDA &&) noexcept = default;
 
-	static Texture3DCUDA FromTensor(const at::Tensor &volume, const at::Tensor &spacing,
-	                                const Vec<std::string, 3> &addressModes = Vec<std::string, 3>::Full("zero")) {
-		return {std::make_shared<CUDATexture3D>(volume, addressModes[0], addressModes[1], addressModes[2]),
-		        Vec<double, 3>::FromTensor(spacing)};
+	/**
+	 *
+	 * @param volume
+	 * @param spacing
+	 * @param centrePosition
+	 * @param addressModes
+	 * @return
+	 */
+	static Texture3DCUDA FromTensor(const at::Tensor &volume, VectorType spacing,
+	                                VectorType centrePosition = VectorType::Full(0),
+	                                AddressModeType addressModes = AddressModeType::Full(TextureAddressMode::ZERO)) {
+		return {std::make_shared<CUDATexture3D>(volume, addressModes), std::move(spacing), std::move(centrePosition)};
 	}
 
 	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }

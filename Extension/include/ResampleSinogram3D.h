@@ -47,9 +47,11 @@ __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const 
  * @brief An implementation of reg23::ResampleSinogram3D_CUDA that takes a handle to a pre-allocated CUDA texture
  * instead of a PyTorch tensor.
  */
-__host__ at::Tensor ResampleSinogram3DCUDATexture(int64_t sinogram3dTextureHandle, const std::string &sinogramType,
-                                                  double rSpacing, const at::Tensor &projectionMatrix,
-                                                  const at::Tensor &phiValues, const at::Tensor &rValues);
+__host__ at::Tensor ResampleSinogram3DCUDATexture(int64_t sinogram3dTextureHandle, int64_t sinogramWidth,
+                                                  int64_t sinogramHeight, int64_t sinogramDepth,
+                                                  const std::string &sinogramType, double rSpacing,
+                                                  const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
+                                                  const at::Tensor &rValues);
 
 
 /**
@@ -72,9 +74,8 @@ struct ResampleSinogram3D {
 		at::Tensor flatOutput{};
 	};
 
-	__host__ static CommonData Common(const std::string &sinogramType,
-	                                  const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
-	                                  const at::Tensor &rValues, at::DeviceType device) {
+	__host__ static CommonData Common(const std::string &sinogramType, const at::Tensor &projectionMatrix,
+	                                  const at::Tensor &phiValues, const at::Tensor &rValues, at::DeviceType device) {
 		// projectionMatrix should be of size (4, 4), contain floats and be on the chosen device
 		TORCH_CHECK(projectionMatrix.sizes() == at::IntArrayRef({4, 4}))
 		TORCH_CHECK(projectionMatrix.dtype() == at::kFloat)

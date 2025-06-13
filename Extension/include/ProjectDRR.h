@@ -84,7 +84,7 @@ template <typename texture_t> struct ProjectDRR {
 		TORCH_CHECK(detectorSpacing.dtype() == at::kDouble);
 
 		CommonData ret{};
-		ret.inputTexture = texture_t::FromTensor(volume, voxelSpacing);
+		ret.inputTexture = texture_t::FromTensor(volume, VectorType::FromTensor(voxelSpacing));
 		ret.homographyMatrixInverse = Vec<Vec<double, 4>, 4>::FromTensor2D(homographyMatrixInverse);
 
 		const Vec<int64_t, 3> inputSize = Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Flipped();

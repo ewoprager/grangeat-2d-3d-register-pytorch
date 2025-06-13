@@ -40,7 +40,7 @@ template <typename sinogram_t> __global__ void Kernel_ResampleSinogram3D_CUDA(
 __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const std::string &sinogramType,
                                             double rSpacing, const at::Tensor &projectionMatrix,
                                             const at::Tensor &phiValues, const at::Tensor &rValues) {
-	CommonData common = ResampleSinogram3D::Common(sinogram3d, sinogramType, projectionMatrix, phiValues, rValues,
+	CommonData common = ResampleSinogram3D::Common(sinogramType, projectionMatrix, phiValues, rValues,
 	                                               at::DeviceType::CUDA);
 
 	const at::Tensor phiFlatContiguous = phiValues.flatten().contiguous();
@@ -83,7 +83,10 @@ __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const 
  *	Note: Assumes that the projection matrix projects onto the x-y plane, and that the radial coordinates (phi, r)
  *	in that plane measure phi right-hand rule about the z-axis from the positive x-direction
  *
- * @param sinogram3d
+ * @param sinogram3dTextureHandle
+ * @param sinogramWidth
+ * @param sinogramHeight
+ * @param sinogramDepth
  * @param sinogramType
  * @param rSpacing
  * @param projectionMatrix
@@ -110,18 +113,20 @@ __host__ at::Tensor ResampleSinogram3DCUDATexture(int64_t sinogram3dTextureHandl
 
 	switch (common.sinogramType) {
 	case ResampleSinogram3D::SinogramType::CLASSIC: {
-		SinogramClassic3D<Texture3DCUDA> sinogram{sinogram3dTextureHandle, sinogramSize, rSpacing};
+		SinogramClassic3D<Texture3DCUDA> sinogram = SinogramClassic3D<Texture3DCUDA>::FromCUDAHandle(
+			sinogram3dTextureHandle, sinogramSize, rSpacing);
 		int minGridSize, blockSize;
 		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> >, 0, 0);
 		const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 
-		Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> ><<<gridSize, blockSize>>>(
+		Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCUDA> ><<<gridSize, blockSize>>>(
 			std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
 		break;
 	}
 	case ResampleSinogram3D::SinogramType::HEALPIX: {
-		SinogramHEALPix<Texture3DCUDA> sinogram = SinogramHEALPix<Texture3DCUDA>::FromTensor(sinogram3d, rSpacing);
+		SinogramHEALPix<Texture3DCUDA> sinogram = SinogramHEALPix<Texture3DCUDA>::FromCUDAHandle(
+			sinogram3dTextureHandle, sinogramSize, rSpacing);
 		int minGridSize, blockSize;
 		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
 		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCUDA> >, 0, 0);
