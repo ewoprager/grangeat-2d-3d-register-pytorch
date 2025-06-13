@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Texture.h"
+#include "CUDATexture.h"
 
 namespace reg23 {
 
@@ -13,64 +14,34 @@ namespace reg23 {
  * Move constructable but not copy constructable.
  */
 class Texture2DCUDA : public Texture<2, int64_t, double> {
-  public:
+public:
 	using Base = Texture<2, int64_t, double>;
 
 	Texture2DCUDA() = default;
 
-	Texture2DCUDA(const float *data, SizeType _size, VectorType _spacing, VectorType _centrePosition = {},
-				  const AddressModeType &addressModes = AddressModeType::Full(TextureAddressMode::ZERO))
-		: Base(std::move(_size), std::move(_spacing), std::move(_centrePosition)) {
-
-		// Copy the given data into a CUDA array
-		const cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-		cudaMallocArray(&arrayHandle, &channelDesc, _size.X(), _size.Y());
-		cudaMemcpy2DToArray(arrayHandle, 0, 0, data, _size.X() * sizeof(float), _size.X() * sizeof(float), _size.Y(),
-							cudaMemcpyHostToDevice);
-
-		// Create the texture object from the CUDA array
-		const cudaResourceDesc resourceDescriptor = {.resType = cudaResourceTypeArray,
-													 .res = {.array = {.array = arrayHandle}}};
-		cudaTextureDesc textureDescriptor = {.filterMode = cudaFilterModeLinear,
-											 .readMode = cudaReadModeElementType,
-											 .borderColor = {0.f, 0.f, 0.f, 0.f},
-											 .normalizedCoords = true};
-		for (int i = 0; i < 2; ++i) {
-			textureDescriptor.addressMode[i] = TextureAddressModeToCuda(addressModes[i]);
-		}
-		cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
+	Texture2DCUDA(int64_t _textureHandle, SizeType _size, VectorType _spacing, VectorType _centrePosition = {})
+		: Base(std::move(_size), std::move(_spacing), std::move(_centrePosition)), textureHandle(_textureHandle) {
 	}
 
-	// no copy
-	Texture2DCUDA(const Texture2DCUDA &) = delete;
+	Texture2DCUDA(std::shared_ptr<CUDATexture2D> cudaTexture, VectorType _spacing, VectorType _centrePosition = {})
+		: Base(cudaTexture->Size(), std::move(_spacing), std::move(_centrePosition)),
+		  textureHandle(cudaTexture->Handle()), ownedTexture(std::move(cudaTexture)) {
+	}
 
-	void operator=(const Texture2DCUDA &) = delete;
+	// yes copy
+	Texture2DCUDA(const Texture2DCUDA &) = default;
+
+	Texture2DCUDA &operator=(const Texture2DCUDA &) = default;
 
 	// yes move
-	Texture2DCUDA(Texture2DCUDA &&other) noexcept
-		: Base(other), arrayHandle(other.arrayHandle), textureHandle(other.textureHandle) {
-		other.arrayHandle = nullptr;
-		other.textureHandle = 0;
-	}
+	Texture2DCUDA(Texture2DCUDA &&other) noexcept = default;
 
-	Texture2DCUDA &operator=(Texture2DCUDA &&other) noexcept {
-		this->~Texture2DCUDA();
-		arrayHandle = other.arrayHandle;
-		textureHandle = other.textureHandle;
-		other.arrayHandle = nullptr;
-		other.textureHandle = 0;
-		Base::operator=(std::move(other));
-		return *this;
-	}
+	Texture2DCUDA &operator=(Texture2DCUDA &&other) noexcept = default;
 
-	~Texture2DCUDA() {
-		if (textureHandle) cudaDestroyTextureObject(textureHandle);
-		if (arrayHandle) cudaFreeArray(arrayHandle);
-	}
-
-	static Texture2DCUDA FromTensor(const at::Tensor &image, const at::Tensor &spacing) {
-		return {image.contiguous().data_ptr<float>(), Vec<int64_t, 2>::FromIntArrayRef(image.sizes()).Flipped(),
-				Vec<double, 2>::FromTensor(spacing)};
+	static Texture2DCUDA FromTensor(const at::Tensor &image, const at::Tensor &spacing,
+	                                const Vec<std::string, 2> &addressModes = Vec<std::string, 2>::Full("zero")) {
+		return {std::make_shared<CUDATexture2D>(image, addressModes[0], addressModes[1]),
+		        Vec<double, 2>::FromTensor(spacing)};
 	}
 
 	[[nodiscard]] cudaTextureObject_t GetHandle() const { return textureHandle; }
@@ -92,13 +63,13 @@ class Texture2DCUDA : public Texture<2, int64_t, double> {
 		const float y = floorf(-.5f + texCoord.Y() * heightF);
 		const float y0 = (y + .5f) / heightF;
 		const float y1 = (y + 1.5f) / heightF;
-		return heightF *
-			   (tex2D<float>(textureHandle, texCoord.X(), y1) - tex2D<float>(textureHandle, texCoord.X(), y0));
+		return heightF * (tex2D<float>(textureHandle, texCoord.X(), y1) - tex2D<
+			                  float>(textureHandle, texCoord.X(), y0));
 	}
 
-  private:
-	cudaArray_t arrayHandle = nullptr;
+private:
 	cudaTextureObject_t textureHandle = 0;
+	std::shared_ptr<CUDATexture2D> ownedTexture = nullptr;
 };
 
 } // namespace reg23

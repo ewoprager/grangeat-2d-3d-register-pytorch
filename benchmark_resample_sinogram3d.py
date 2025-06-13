@@ -51,7 +51,7 @@ def run_task(task, task_plot, function, name: str, device: str, params: Function
     tic = time.time()
     output = task(function, params_device)
     toc = time.time()
-    logger.info("Done; took {:.3f}s. Saving and plotting...".format(toc - tic))
+    logger.info("Done; took {:.5f}s. Saving and plotting...".format(toc - tic))
     name: str = "{}_on_{}".format(name, device)
     summary = TaskSummary(name, output.cpu())
     torch.save(summary.result, "cache/{}.pt".format(summary.name))

@@ -1,4 +1,5 @@
 from typing import Any
+import time
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,6 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
                               ct_volume_path: str, volume_downsample_factor: int, save_to_cache=True, vol_counts=192,
                               sinogram_type: Type[SinogramType] = SinogramClassic) -> SinogramType:
     device = volume_data.device
-    logger.info("Calculating 3D sinogram (the volume to resample)...")
 
     vol_diag: float = (voxel_spacing * torch.tensor(
         volume_data.size(), dtype=torch.float32, device=voxel_spacing.device)).square().sum().sqrt().item()
@@ -31,12 +31,14 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
         raise TypeError(
             "Unrecognised sinogram type '{}.{}'".format(sinogram_type.__module__, sinogram_type.__qualname__))
 
+    logger.info("Calculating 3D sinogram (the volume to resample)...")
+    tic = time.time()
     sinogram_data = grangeat.calculate_radon_volume(
         volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid, samples_per_direction=vol_counts)
+    toc = time.time()
+    logger.info("3D sinogram calculated; took {:.4f}s.".format(toc - tic))
 
     sinogram3d = sinogram_type(sinogram_data, r_range)
-
-    logger.info("3D sinogram calculated.")
 
     if save_to_cache:
         save_path = cache_directory + "/volume_spec_{}.pt".format(

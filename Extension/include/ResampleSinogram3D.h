@@ -1,8 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include "Texture.h"
-#include "Vec.h"
 
 namespace reg23 {
 
@@ -33,16 +31,26 @@ namespace reg23 {
  * in that plane measure phi right-hand rule about the z-axis from the positive x-direction
  */
 at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const std::string &sinogramType, double rSpacing,
-								  const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
-								  const at::Tensor &rValues);
+                                  const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
+                                  const at::Tensor &rValues);
 
 /**
  * @ingroup pytorch_functions
  * @brief An implementation of reg23::ResampleSinogram3D_CPU that uses CUDA parallelisation.
  */
 __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const std::string &sinogramType,
-											double rSpacing, const at::Tensor &projectionMatrix,
-											const at::Tensor &phiValues, const at::Tensor &rValues);
+                                            double rSpacing, const at::Tensor &projectionMatrix,
+                                            const at::Tensor &phiValues, const at::Tensor &rValues);
+
+/**
+ * @ingroup pytorch_functions
+ * @brief An implementation of reg23::ResampleSinogram3D_CUDA that takes a handle to a pre-allocated CUDA texture
+ * instead of a PyTorch tensor.
+ */
+__host__ at::Tensor ResampleSinogram3DCUDATexture(int64_t sinogram3dTextureHandle, const std::string &sinogramType,
+                                                  double rSpacing, const at::Tensor &projectionMatrix,
+                                                  const at::Tensor &phiValues, const at::Tensor &rValues);
+
 
 /**
  * This struct is used as a namespace for code that is shared between different implementations of
@@ -64,11 +72,9 @@ struct ResampleSinogram3D {
 		at::Tensor flatOutput{};
 	};
 
-	__host__ static CommonData Common(const at::Tensor &sinogram3d, const std::string &sinogramType,
-									  const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
-									  const at::Tensor &rValues, at::DeviceType device) {
-		// sinogram3d should be on the chosen device; other assertions will be made in sinogram_t::FromTensor
-		TORCH_INTERNAL_ASSERT(sinogram3d.device().type() == device)
+	__host__ static CommonData Common(const std::string &sinogramType,
+	                                  const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
+	                                  const at::Tensor &rValues, at::DeviceType device) {
 		// projectionMatrix should be of size (4, 4), contain floats and be on the chosen device
 		TORCH_CHECK(projectionMatrix.sizes() == at::IntArrayRef({4, 4}))
 		TORCH_CHECK(projectionMatrix.dtype() == at::kFloat)
@@ -85,32 +91,33 @@ struct ResampleSinogram3D {
 			st = SinogramType::HEALPIX;
 		} else if (sinogramType != "classic") {
 			TORCH_WARN("Invalid sinogram type string given. Valid values are: 'classic', 'healpix'. Assuming default "
-					   "value: 'classic'.")
+				"value: 'classic'.")
 		}
 
-		const at::Tensor originProjectionHomogeneous =
-			matmul(projectionMatrix, torch::tensor({{0.f, 0.f, 0.f, 1.f}}, projectionMatrix.options()).t());
+		const at::Tensor originProjectionHomogeneous = matmul(projectionMatrix,
+		                                                      torch::tensor(
+			                                                      {{0.f, 0.f, 0.f, 1.f}},
+			                                                      projectionMatrix.options()).t());
 
 		CommonData ret{};
 		ret.sinogramType = st;
 		ret.geometry.originProjection = Vec<float, 2>{originProjectionHomogeneous[0].item().toFloat(),
-													  originProjectionHomogeneous[1].item().toFloat()} /
-										originProjectionHomogeneous[3].item().toFloat();
+		                                              originProjectionHomogeneous[1].item().toFloat()} /
+		                                originProjectionHomogeneous[3].item().toFloat();
 		ret.geometry.squareRadius = .25f * ret.geometry.originProjection.Apply<float>(&Square<float>).Sum();
 		ret.geometry.projectionMatrixTranspose = Vec<Vec<float, 4>, 4>::FromTensor2D(projectionMatrix.t());
-		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), sinogram3d.contiguous().options());
+		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), at::TensorOptions{device});
 		return ret;
 	}
 
-	template <typename sinogram_t>
-	__host__ __device__ static float ResamplePlane(const sinogram_t &sinogram, const ConstantGeometry &geometry,
-												   float phi, float r) {
+	template <typename sinogram_t> __host__ __device__ static float ResamplePlane(
+		const sinogram_t &sinogram, const ConstantGeometry &geometry, float phi, float r) {
 		const float cp = cosf(phi);
 		const float sp = sinf(phi);
 		const Vec<float, 4> intermediate = MatMul(geometry.projectionMatrixTranspose, Vec<float, 4>{cp, sp, 0.f, -r});
 		const Vec<float, 3> intermediate3 = intermediate.XYZ();
-		const Vec<float, 3> posCartesian =
-			-intermediate.W() * intermediate3 / intermediate3.Apply<float>(&Square<float>).Sum();
+		const Vec<float, 3> posCartesian = -intermediate.W() * intermediate3 / intermediate3.Apply<float>(
+			                                   &Square<float>).Sum();
 
 		Vec<double, 3> rThetaPhi{};
 		rThetaPhi.Z() = atan2(posCartesian.Y(), posCartesian.X());
@@ -121,8 +128,8 @@ struct ResampleSinogram3D {
 
 		float ret = sinogram.Sample(rThetaPhi);
 
-		if ((r * Vec<float, 2>{cp, sp} - .5f * geometry.originProjection).Apply<float>(&Square<float>).Sum() <
-			geometry.squareRadius) {
+		if ((r * Vec<float, 2>{cp, sp} - .5f * geometry.originProjection).Apply<float>(&Square<float>).Sum() < geometry.
+		    squareRadius) {
 			ret *= -1.f;
 		}
 		return ret;

@@ -1,8 +1,9 @@
 #include <torch/extension.h>
 
 #include "../include/ResampleSinogram3D.h"
-#include "../include/SinogramClassic3DCPU.h"
-#include "../include/SinogramHEALPixCPU.h"
+#include "../include/SinogramClassic3D.h"
+#include "../include/SinogramHEALPix.h"
+#include "../include/Texture3DCPU.h"
 
 namespace reg23 {
 
@@ -21,7 +22,8 @@ at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const std::strin
 
 	switch (common.sinogramType) {
 	case ResampleSinogram3D::SinogramType::CLASSIC: {
-		const SinogramClassic3DCPU sinogram = SinogramClassic3DCPU::FromTensor(sinogram3d, rSpacing);
+		const SinogramClassic3D<Texture3DCPU> sinogram = SinogramClassic3D<Texture3DCPU>::FromTensor(
+			sinogram3d, rSpacing);
 		for (int i = 0; i < common.flatOutput.numel(); ++i) {
 			const float phi = phiFlat[i].item().toFloat();
 			const float r = rFlat[i].item().toFloat();
@@ -30,7 +32,7 @@ at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const std::strin
 		break;
 	}
 	case ResampleSinogram3D::SinogramType::HEALPIX: {
-		const SinogramHEALPixCPU sinogram = SinogramHEALPixCPU::FromTensor(sinogram3d, rSpacing);
+		const SinogramHEALPix<Texture3DCPU> sinogram = SinogramHEALPix<Texture3DCPU>::FromTensor(sinogram3d, rSpacing);
 		for (int i = 0; i < common.flatOutput.numel(); ++i) {
 			const float phi = phiFlat[i].item().toFloat();
 			const float r = rFlat[i].item().toFloat();

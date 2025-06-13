@@ -108,9 +108,9 @@ class SinogramClassic(Sinogram):
         return SinogramClassic(self.data.to(**kwargs), self.r_range, pad=False)
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        return Extension.resample_sinogram3d(self.data, "classic",
-                                             self.r_range.get_tex_coord_spacing(self.data.size()[2]), ph_matrix,
-                                             fixed_image_grid.phi, fixed_image_grid.r)
+        return Extension.resample_sinogram3d(
+            self.data, "classic", self.r_range.get_tex_coord_spacing(self.data.size()[2]), ph_matrix,
+            fixed_image_grid.phi, fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
                         plot: bool = False) -> torch.Tensor:
@@ -118,8 +118,8 @@ class SinogramClassic(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
-        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
-                                                                        plot=plot)
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
+            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
 
         if plot:
             myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
@@ -155,11 +155,13 @@ class SinogramClassic(Sinogram):
         k_mapping: LinearMapping = phi_grid_sample_range_padded.get_mapping_from(self.phi_range)
 
         if smooth is not None:
-            ret = self.grid_sample_smoothed(fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping,
-                                            k_mapping=k_mapping, sigma=smooth)
+            ret = self.grid_sample_smoothed(
+                fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping, k_mapping=k_mapping, sigma=smooth)
         else:
-            grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
-                                k_mapping(fixed_image_grid_sph.phi)), dim=-1)
+            grid = torch.stack(
+                (
+                    i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
+                    k_mapping(fixed_image_grid_sph.phi)), dim=-1)
             ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
 
         del fixed_image_grid_sph
@@ -252,8 +254,9 @@ class SinogramClassic(Sinogram):
 
         del rotated_vectors
 
-        new_grid = Sinogram3dGrid(new_phis, new_thetas, grid.r.unsqueeze(-1).expand(
-            [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone()).unflip()  # need to
+        new_grid = Sinogram3dGrid(
+            new_phis, new_thetas, grid.r.unsqueeze(-1).expand(
+                [-1] * len(grid.r.size()) + [new_phis.size()[-1]]).clone()).unflip()  # need to
         # clone the r grid otherwise it's just a tensor view, not a tensor in its own right
 
         del new_phis, new_thetas
@@ -375,8 +378,8 @@ class SinogramHEALPix(Sinogram):
 
         u_star = u.clone()
         v_star = v.clone()
-        base_pixel_9 = torch.logical_and(u_star >= 2.0 * n_side + 2.0,
-                                         v_star < n_side + 2.0)  # the added 2s adjust for padding
+        base_pixel_9 = torch.logical_and(
+            u_star >= 2.0 * n_side + 2.0, v_star < n_side + 2.0)  # the added 2s adjust for padding
         u_star -= 1.0  # this adjusts for padding
         v_star -= 3.0  # this adjusts for padding
         u_star[base_pixel_9] -= 2.0 + n_side  # the 2 adjusts for padding
@@ -482,7 +485,9 @@ class SinogramHEALPix(Sinogram):
             pad_9_bot_right = bp_0_top_left.flip(dims=(0, -1))  # wraps causing flip in theta and r
             pad_9_bot_left = bp_8_bot_right.flip(dims=(-1,))
 
-            del bp_0_top_left, bp_0_top_right, bp_1_top_left, bp_1_top_right, bp_1_bot_right, bp_5_bot_right, bp_8_bot_right, bp_8_bot_left, bp_9_top_left, bp_9_top_right, bp_9_bot_right, bp_9_bot_left, bp_6_top_left, bp_6_bot_left
+            del bp_0_top_left, bp_0_top_right, bp_1_top_left, bp_1_top_right, bp_1_bot_right, bp_5_bot_right, (
+                bp_8_bot_right), bp_8_bot_left, bp_9_top_left, bp_9_top_right, bp_9_bot_right, bp_9_bot_left, (
+                bp_6_top_left), bp_6_bot_left
 
             corner_5_right = self._data[:, 2 * n_side - 1, 2 * n_side - 1].unsqueeze(1).unsqueeze(1)
             corner_0_top = self._data[:, 0, 2 * n_side - 1].unsqueeze(1).unsqueeze(1)
@@ -504,54 +509,71 @@ class SinogramHEALPix(Sinogram):
             pad_9_corner_right = corner_0_left.flip(dims=(0,))  # wraps causing flip in r
             pad_9_corner_bot = corner_1_top.flip(dims=(0,))  # wraps causing flip in r
 
-            del corner_5_right, corner_0_top, corner_0_left, corner_1_top, corner_1_bot, corner_8_bot, corner_8_left, corner_8_right, corner_9_bot
+            del corner_5_right, corner_0_top, corner_0_left, corner_1_top, corner_1_bot, corner_8_bot, corner_8_left,\
+                corner_8_right, corner_9_bot
 
             r_count = data.size()[0]
-            row_0 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2),  #
-                               pad_9_corner_left,  #
-                               pad_9_top_left,  #
-                               pad_9_corner_top), dim=-1)
-            row_1 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2),  #
-                               pad_9_bot_left[:, :, 0].unsqueeze(1),  #
-                               bp_9[:, 0, :].unsqueeze(1),  #
-                               pad_9_top_right[:, :, 0].unsqueeze(1)), dim=-1)
-            row_2 = torch.cat((pad_6_corner_left,  #
-                               pad_6_top_left,  #
-                               pad_0_top_left,  #
-                               pad_0_corner_top,  #
-                               pad_9_bot_left[:, :, 1].unsqueeze(1),  #
-                               bp_9[:, 1, :].unsqueeze(1),  #
-                               pad_9_top_right[:, :, 1].unsqueeze(1)), dim=-1)
-            rows_3_to_n = torch.cat((pad_6_bot_left[:, :, :-2].transpose(1, 2),  #
-                                     self._data[:, :(n_side - 2), :(2 * n_side)],  #
-                                     pad_0_top_right[:, :, :-2].transpose(1, 2),  #
-                                     pad_9_bot_left[:, :, 2:].transpose(1, 2),  #
-                                     bp_9[:, 2:, :],  #
-                                     pad_9_top_right[:, :, 2:].transpose(1, 2)), dim=-1)
-            row_np1 = torch.cat((pad_6_bot_left[:, :, -2].unsqueeze(1),  #
-                                 self._data[:, n_side - 2, :(2 * n_side)].unsqueeze(1),  #
-                                 pad_0_top_right[:, :, -2].unsqueeze(1),  #
-                                 pad_9_corner_bot,  #
-                                 pad_9_bot_right,  #
-                                 pad_9_corner_right), dim=-1)
-            row_np2 = torch.cat((pad_6_bot_left[:, :, -1].unsqueeze(1),  #
-                                 self._data[:, n_side - 1, :(2 * n_side)].unsqueeze(1),  #
-                                 pad_1_top_left,  #
-                                 pad_1_corner_top,  #
-                                 torch.zeros(r_count, 1, 2)), dim=-1)
-            rows_np3_to_2np2 = torch.cat((pad_8_bot_left.transpose(1, 2),  #
-                                          self._data[:, n_side:, :],  #
-                                          pad_1_top_right.transpose(1, 2),  #
-                                          torch.zeros(r_count, n_side, 2)), dim=-1)
-            row_2np3 = torch.cat((pad_8_corner_bot,  #
-                                  pad_8_bot_right,  #
-                                  pad_5_bot_right,  #
-                                  pad_1_bot_right,  #
-                                  pad_1_corner_right,  #
-                                  torch.zeros(r_count, 1, 2)), dim=-1)
+            row_0 = torch.cat(
+                (
+                    torch.zeros(r_count, 1, 2 * n_side + 2, device=self.device),  #
+                    pad_9_corner_left,  #
+                    pad_9_top_left,  #
+                    pad_9_corner_top), dim=-1)
+            row_1 = torch.cat(
+                (
+                    torch.zeros(r_count, 1, 2 * n_side + 2, device=self.device),  #
+                    pad_9_bot_left[:, :, 0].unsqueeze(1),  #
+                    bp_9[:, 0, :].unsqueeze(1),  #
+                    pad_9_top_right[:, :, 0].unsqueeze(1)), dim=-1)
+            row_2 = torch.cat(
+                (
+                    pad_6_corner_left,  #
+                    pad_6_top_left,  #
+                    pad_0_top_left,  #
+                    pad_0_corner_top,  #
+                    pad_9_bot_left[:, :, 1].unsqueeze(1),  #
+                    bp_9[:, 1, :].unsqueeze(1),  #
+                    pad_9_top_right[:, :, 1].unsqueeze(1)), dim=-1)
+            rows_3_to_n = torch.cat(
+                (
+                    pad_6_bot_left[:, :, :-2].transpose(1, 2),  #
+                    self._data[:, :(n_side - 2), :(2 * n_side)],  #
+                    pad_0_top_right[:, :, :-2].transpose(1, 2),  #
+                    pad_9_bot_left[:, :, 2:].transpose(1, 2),  #
+                    bp_9[:, 2:, :],  #
+                    pad_9_top_right[:, :, 2:].transpose(1, 2)), dim=-1)
+            row_np1 = torch.cat(
+                (
+                    pad_6_bot_left[:, :, -2].unsqueeze(1),  #
+                    self._data[:, n_side - 2, :(2 * n_side)].unsqueeze(1),  #
+                    pad_0_top_right[:, :, -2].unsqueeze(1),  #
+                    pad_9_corner_bot,  #
+                    pad_9_bot_right,  #
+                    pad_9_corner_right), dim=-1)
+            row_np2 = torch.cat(
+                (
+                    pad_6_bot_left[:, :, -1].unsqueeze(1),  #
+                    self._data[:, n_side - 1, :(2 * n_side)].unsqueeze(1),  #
+                    pad_1_top_left,  #
+                    pad_1_corner_top,  #
+                    torch.zeros(r_count, 1, 2, device=self.device)), dim=-1)
+            rows_np3_to_2np2 = torch.cat(
+                (
+                    pad_8_bot_left.transpose(1, 2),  #
+                    self._data[:, n_side:, :],  #
+                    pad_1_top_right.transpose(1, 2),  #
+                    torch.zeros(r_count, n_side, 2, device=self.device)), dim=-1)
+            row_2np3 = torch.cat(
+                (
+                    pad_8_corner_bot,  #
+                    pad_8_bot_right,  #
+                    pad_5_bot_right,  #
+                    pad_1_bot_right,  #
+                    pad_1_corner_right,  #
+                    torch.zeros(r_count, 1, 2, device=self.device)), dim=-1)
 
-            self._data = torch.cat((row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3),
-                                   dim=1)
+            self._data = torch.cat(
+                (row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3), dim=1)
         else:
             assert (data.size()[2] - 4) % 3 == 0
             assert (data.size()[1] - 4) % 2 == 0
@@ -593,8 +615,9 @@ class SinogramHEALPix(Sinogram):
         return Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
-        return Extension.resample_sinogram3d(self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]),
-                                             ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
+        return Extension.resample_sinogram3d(
+            self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]), ph_matrix, fixed_image_grid.phi,
+            fixed_image_grid.r)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                         plot: bool = False) -> torch.Tensor:
@@ -602,8 +625,8 @@ class SinogramHEALPix(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
-        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
-                                                                        plot=plot)
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
+            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
 
         ret = self.sample(fixed_image_grid_sph)
         del fixed_image_grid_sph

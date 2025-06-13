@@ -12,6 +12,10 @@
 #include "../include/ResampleSinogram3D.h"
 #include "../include/Similarity.h"
 
+#ifdef USE_CUDA
+#include "../include/CUDATexture.h"
+#endif
+
 namespace reg23 {
 
 /**
@@ -23,6 +27,13 @@ namespace reg23 {
 
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+#ifdef USE_CUDA
+	py::class_<CUDATexture2D>(m, "CUDATexture2D").def(
+		py::init<const at::Tensor &, const std::string &, const std::string &>()).def("handle", &CUDATexture2D::Handle);
+
+	py::class_<CUDATexture3D>(m, "CUDATexture3D").def(
+		py::init<const at::Tensor &, const std::string &, const std::string &, const std::string &>()).def("handle", &CUDATexture3D::Handle);
+#endif
 }
 
 TORCH_LIBRARY(reg23, m) {
