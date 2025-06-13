@@ -91,8 +91,9 @@ $(function() {
 <div class="contents">
 <div class="textblock"><code>#include &lt;torch/extension.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="ResampleSinogram3D_8h_source.html">../include/ResampleSinogram3D.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="SinogramClassic3DCPU_8h_source.html">../include/SinogramClassic3DCPU.h</a>&quot;</code><br />
-<code>#include &quot;<a class="el" href="SinogramHEALPixCPU_8h_source.html">../include/SinogramHEALPixCPU.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SinogramClassic3D_8h_source.html">../include/SinogramClassic3D.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SinogramHEALPix_8h_source.html">../include/SinogramHEALPix.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="Texture3DCPU_8h_source.html">../include/Texture3DCPU.h</a>&quot;</code><br />
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -101,7 +102,7 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga3913bc386be8c0749edcf2ff376de2f5" id="r_ga3913bc386be8c0749edcf2ff376de2f5"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5">reg23::ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const std::string &amp;sinogramType, double rSpacing, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memitem:ga3913bc386be8c0749edcf2ff376de2f5" id="r_ga3913bc386be8c0749edcf2ff376de2f5"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5">reg23::ResampleSinogram3D_CPU</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">sinogram3d</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;sinogramType, <a class="el" href="classreg23_1_1Vec.html">double</a> <a class="el" href="classreg23_1_1Vec.html">rSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">projectionMatrix</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>)</td></tr>
 <tr class="memdesc:ga3913bc386be8c0749edcf2ff376de2f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
 <tr class="separator:ga3913bc386be8c0749edcf2ff376de2f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>

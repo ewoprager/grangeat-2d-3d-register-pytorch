@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['normalisedcrosscorrelation_5fcpu_0',['NormalisedCrossCorrelation_CPU',['../group__pytorch__functions.html#ga7d3614bf0086f3d3602a2842a2c8d4ff',1,'reg23']]],
-  ['normalisedcrosscorrelation_5fcuda_1',['NormalisedCrossCorrelation_CUDA',['../group__pytorch__functions.html#ga33290c947ad06df3c3aea8e18914da29',1,'reg23']]]
+  ['mappingworldtotexcoord_0',['MappingWorldToTexCoord',['../classreg23_1_1Texture.html#ab2bad495de620b2fc68f1cf3722780ed',1,'reg23::Texture']]],
+  ['matmul_1',['MatMul',['../group__data__structures.html#gaed0b516ddbb4192d9e81ceda8f730f7b',1,'reg23']]],
+  ['modulo_2',['Modulo',['../group__general__tools.html#ga4e29f108e1aff3e20801f902034a8e94',1,'reg23']]]
 ];

@@ -23,5 +23,6 @@ var searchData=
   ['resamplesinogram3d_5fcpu_20',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5',1,'reg23']]],
   ['resamplesinogram3d_5fcuda_21',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097',1,'reg23']]],
   ['resamplesinogram3dcpu_2ecpp_22',['ResampleSinogram3DCPU.cpp',['../ResampleSinogram3DCPU_8cpp.html',1,'']]],
-  ['resamplesinogram3dcuda_2ecu_23',['ResampleSinogram3DCUDA.cu',['../ResampleSinogram3DCUDA_8cu.html',1,'']]]
+  ['resamplesinogram3dcuda_2ecu_23',['ResampleSinogram3DCUDA.cu',['../ResampleSinogram3DCUDA_8cu.html',1,'']]],
+  ['resamplesinogram3dcudatexture_24',['ResampleSinogram3DCUDATexture',['../group__pytorch__functions.html#ga1c2d8e82cf060f4c308326bc3629b776',1,'reg23']]]
 ];

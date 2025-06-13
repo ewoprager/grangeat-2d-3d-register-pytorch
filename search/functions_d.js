@@ -1,13 +1,13 @@
 var searchData=
 [
-  ['sample_0',['sample',['../classreg23_1_1SinogramHEALPixCPU.html#a2a5b793f02d3e462bafd7bce7a08544a',1,'reg23::SinogramHEALPixCPU::Sample()'],['../classreg23_1_1Texture2DCPU.html#a83d57fba8eea12e11bb0545457029ca5',1,'reg23::Texture2DCPU::Sample()'],['../classreg23_1_1Texture2DCUDA.html#a7f9f6196c5ba83ecf6d654060af0448b',1,'reg23::Texture2DCUDA::Sample()'],['../classreg23_1_1Texture3DCPU.html#a142dd9d3b278a4b0c50f04b38ce267e1',1,'reg23::Texture3DCPU::Sample()'],['../classreg23_1_1Texture3DCUDA.html#a0eadea33010832fceffb338b38d683ea',1,'reg23::Texture3DCUDA::Sample()'],['../classreg23_1_1SinogramClassic3DCPU.html#aa2e80b87e307651e7f5b517bce179cfe',1,'reg23::SinogramClassic3DCPU::Sample()']]],
-  ['sign_1',['Sign',['../group__general__tools.html#ga4be145d2e42b129e2a744064a009417f',1,'reg23']]],
-  ['sinogramclassic3dcpu_2',['sinogramclassic3dcpu',['../classreg23_1_1SinogramClassic3DCPU.html#a0ba3c9a3d8a5cf302f16de0be35aeb10',1,'reg23::SinogramClassic3DCPU::SinogramClassic3DCPU()=default'],['../classreg23_1_1SinogramClassic3DCPU.html#a6fbbe80374388b6ff6313c4b0d39c55b',1,'reg23::SinogramClassic3DCPU::SinogramClassic3DCPU(const float *_ptr, SizeType _size, VectorType _spacing, VectorType _rangeCentres, AddressModeType _addressModes)'],['../classreg23_1_1SinogramClassic3DCPU.html#aba5f6543b4ef54f28b1d451b6cc24267',1,'reg23::SinogramClassic3DCPU::SinogramClassic3DCPU(const SinogramClassic3DCPU &amp;)=default'],['../classreg23_1_1SinogramClassic3DCPU.html#a048eaa47fead19833f3231a030003ab1',1,'reg23::SinogramClassic3DCPU::SinogramClassic3DCPU(SinogramClassic3DCPU &amp;&amp;)=default']]],
-  ['sinogramhealpixcpu_3',['sinogramhealpixcpu',['../classreg23_1_1SinogramHEALPixCPU.html#ad8fba0990e4e8b0dcb92f0e4e2062233',1,'reg23::SinogramHEALPixCPU::SinogramHEALPixCPU()=default'],['../classreg23_1_1SinogramHEALPixCPU.html#ae113d79cd9eff78fe491e956fb4419a8',1,'reg23::SinogramHEALPixCPU::SinogramHEALPixCPU(SinogramHEALPixCPU &amp;&amp;)=default'],['../classreg23_1_1SinogramHEALPixCPU.html#ae141fb0d7f5b78a8f8eaec5227053d2f',1,'reg23::SinogramHEALPixCPU::SinogramHEALPixCPU(const SinogramHEALPixCPU &amp;)=default'],['../classreg23_1_1SinogramHEALPixCPU.html#aa16d8912abb6aa9e28fbb7793575c36f',1,'reg23::SinogramHEALPixCPU::SinogramHEALPixCPU(const float *_ptr, IntType _nSide, IntType rCount, FloatType rSpacing)']]],
-  ['size_4',['Size',['../classreg23_1_1Texture.html#a111ad5e0c1a8330152d367e04772f7ff',1,'reg23::Texture']]],
-  ['sizeworld_5',['SizeWorld',['../classreg23_1_1Texture.html#abfc8536390678e625ba68524cabdd313',1,'reg23::Texture']]],
-  ['spacing_6',['Spacing',['../classreg23_1_1Texture.html#a2d32947dcb93ddd94f55fd2d37d02641',1,'reg23::Texture']]],
-  ['square_7',['Square',['../group__general__tools.html#gac05f93968187265d84f03c8caf65736a',1,'reg23']]],
-  ['staticcast_8',['StaticCast',['../classreg23_1_1Vec.html#a01d47c2f401d48d9d26ad37ec60776a3',1,'reg23::Vec']]],
-  ['sum_9',['Sum',['../classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93',1,'reg23::Vec']]]
+  ['radon2d_5fcpu_0',['Radon2D_CPU',['../group__pytorch__functions.html#gadd393ee2ab42ad76b025563b6decc3e4',1,'reg23']]],
+  ['radon2d_5fcuda_1',['Radon2D_CUDA',['../group__pytorch__functions.html#ga6685f35545afe72a62f102ad4d6715b6',1,'reg23']]],
+  ['radon2d_5fcuda_5fv2_2',['Radon2D_CUDA_V2',['../namespacereg23.html#adfa4467dc900648682b65ab073b9e1a2',1,'reg23']]],
+  ['radon3d_5fcpu_3',['Radon3D_CPU',['../group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24',1,'reg23']]],
+  ['radon3d_5fcuda_4',['Radon3D_CUDA',['../group__pytorch__functions.html#ga8b088f60dae2dc0c0a6670f9f63a4468',1,'reg23']]],
+  ['radon3d_5fcuda_5fv2_5',['Radon3D_CUDA_V2',['../namespacereg23.html#a87f61adbbd554c0cb26dde418d58b44c',1,'reg23']]],
+  ['resampleplane_6',['ResamplePlane',['../structreg23_1_1ResampleSinogram3D.html#ad00b259be3397bc816fb6808f694f0a2',1,'reg23::ResampleSinogram3D']]],
+  ['resamplesinogram3d_5fcpu_7',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5',1,'reg23']]],
+  ['resamplesinogram3d_5fcuda_8',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097',1,'reg23']]],
+  ['resamplesinogram3dcudatexture_9',['ResampleSinogram3DCUDATexture',['../group__pytorch__functions.html#ga1c2d8e82cf060f4c308326bc3629b776',1,'reg23']]]
 ];

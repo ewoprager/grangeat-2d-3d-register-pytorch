@@ -90,51 +90,54 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga933e1f316f254422ccb79485d45a0b95" id="r_ga933e1f316f254422ccb79485d45a0b95"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga933e1f316f254422ccb79485d45a0b95">reg23::GridSample3D_CPU</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressModeX, const std::string &amp;addressModeY, const std::string &amp;addressModeZ)</td></tr>
+<tr class="memitem:ga933e1f316f254422ccb79485d45a0b95" id="r_ga933e1f316f254422ccb79485d45a0b95"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga933e1f316f254422ccb79485d45a0b95">reg23::GridSample3D_CPU</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">input</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">grid</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;<a class="el" href="classreg23_1_1Vec.html">addressModeX</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;<a class="el" href="classreg23_1_1Vec.html">addressModeY</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;<a class="el" href="classreg23_1_1Vec.html">addressModeZ</a>)</td></tr>
 <tr class="memdesc:ga933e1f316f254422ccb79485d45a0b95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sample the given 3D input tensor at the positions given in grid according to the given address mode using bilinear interpolation. This implementation is single-threaded.  <br /></td></tr>
 <tr class="separator:ga933e1f316f254422ccb79485d45a0b95"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaca8a9fb99bfa624e8fa2fc4220b99ddd" id="r_gaca8a9fb99bfa624e8fa2fc4220b99ddd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaca8a9fb99bfa624e8fa2fc4220b99ddd">reg23::GridSample3D_CUDA</a> (const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressModeX, const std::string &amp;addressModeY, const std::string &amp;addressModeZ)</td></tr>
+<tr class="memitem:gaca8a9fb99bfa624e8fa2fc4220b99ddd" id="r_gaca8a9fb99bfa624e8fa2fc4220b99ddd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaca8a9fb99bfa624e8fa2fc4220b99ddd">reg23::GridSample3D_CUDA</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">input</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">grid</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;<a class="el" href="classreg23_1_1Vec.html">addressModeX</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;<a class="el" href="classreg23_1_1Vec.html">addressModeY</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;<a class="el" href="classreg23_1_1Vec.html">addressModeZ</a>)</td></tr>
 <tr class="memdesc:gaca8a9fb99bfa624e8fa2fc4220b99ddd"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga933e1f316f254422ccb79485d45a0b95" title="Sample the given 3D input tensor at the positions given in grid according to the given address mode u...">reg23::GridSample3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:gaca8a9fb99bfa624e8fa2fc4220b99ddd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf44a8ff8d993fef4bc2729267ac5efa9" id="r_gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9">reg23::ProjectDRR_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
+<tr class="memitem:gaf44a8ff8d993fef4bc2729267ac5efa9" id="r_gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9">reg23::ProjectDRR_CPU</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volume</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">voxelSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;homographyMatrixInverse, <a class="el" href="classreg23_1_1Vec.html">double</a> <a class="el" href="classreg23_1_1Vec.html">sourceDistance</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">outputWidth</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">outputHeight</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;outputOffset, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;detectorSpacing)</td></tr>
 <tr class="memdesc:gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate a DRR from the given volume at the given transformation.  <br /></td></tr>
 <tr class="separator:gaf44a8ff8d993fef4bc2729267ac5efa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e" id="r_gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e">reg23::ProjectDRR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</td></tr>
+<tr class="memitem:gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e" id="r_gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e">reg23::ProjectDRR_CUDA</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volume</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">voxelSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;homographyMatrixInverse, <a class="el" href="classreg23_1_1Vec.html">double</a> <a class="el" href="classreg23_1_1Vec.html">sourceDistance</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">outputWidth</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">outputHeight</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;outputOffset, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;detectorSpacing)</td></tr>
 <tr class="memdesc:gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9" title="Generate a DRR from the given volume at the given transformation.">reg23::ProjectDRR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadd393ee2ab42ad76b025563b6decc3e4" id="r_gadd393ee2ab42ad76b025563b6decc3e4"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gadd393ee2ab42ad76b025563b6decc3e4">reg23::Radon2D_CPU</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
+<tr class="memitem:gadd393ee2ab42ad76b025563b6decc3e4" id="r_gadd393ee2ab42ad76b025563b6decc3e4"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gadd393ee2ab42ad76b025563b6decc3e4">reg23::Radon2D_CPU</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">image</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">imageSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">samplesPerLine</a>)</td></tr>
 <tr class="memdesc:gadd393ee2ab42ad76b025563b6decc3e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute an approximation of the Radon transform of the given 2D image.  <br /></td></tr>
 <tr class="separator:gadd393ee2ab42ad76b025563b6decc3e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafe0a581bb38e5ddeed2f237ca5e31c5c" id="r_gafe0a581bb38e5ddeed2f237ca5e31c5c"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gafe0a581bb38e5ddeed2f237ca5e31c5c">reg23::DRadon2DDR_CPU</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
+<tr class="memitem:gafe0a581bb38e5ddeed2f237ca5e31c5c" id="r_gafe0a581bb38e5ddeed2f237ca5e31c5c"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gafe0a581bb38e5ddeed2f237ca5e31c5c">reg23::DRadon2DDR_CPU</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">image</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">imageSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">samplesPerLine</a>)</td></tr>
 <tr class="memdesc:gafe0a581bb38e5ddeed2f237ca5e31c5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the given 2D image.  <br /></td></tr>
 <tr class="separator:gafe0a581bb38e5ddeed2f237ca5e31c5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6685f35545afe72a62f102ad4d6715b6" id="r_ga6685f35545afe72a62f102ad4d6715b6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga6685f35545afe72a62f102ad4d6715b6">reg23::Radon2D_CUDA</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
+<tr class="memitem:ga6685f35545afe72a62f102ad4d6715b6" id="r_ga6685f35545afe72a62f102ad4d6715b6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga6685f35545afe72a62f102ad4d6715b6">reg23::Radon2D_CUDA</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">image</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">imageSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">samplesPerLine</a>)</td></tr>
 <tr class="memdesc:ga6685f35545afe72a62f102ad4d6715b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gadd393ee2ab42ad76b025563b6decc3e4" title="Compute an approximation of the Radon transform of the given 2D image.">reg23::Radon2D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga6685f35545afe72a62f102ad4d6715b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga33206dc5e7caf417cf653f32f7158d59" id="r_ga33206dc5e7caf417cf653f32f7158d59"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga33206dc5e7caf417cf653f32f7158d59">reg23::DRadon2DDR_CUDA</a> (const at::Tensor &amp;image, const at::Tensor &amp;imageSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues, int64_t samplesPerLine)</td></tr>
+<tr class="memitem:ga33206dc5e7caf417cf653f32f7158d59" id="r_ga33206dc5e7caf417cf653f32f7158d59"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga33206dc5e7caf417cf653f32f7158d59">reg23::DRadon2DDR_CUDA</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">image</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">imageSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">samplesPerLine</a>)</td></tr>
 <tr class="memdesc:ga33206dc5e7caf417cf653f32f7158d59"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gafe0a581bb38e5ddeed2f237ca5e31c5c" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">reg23::DRadon2DDR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga33206dc5e7caf417cf653f32f7158d59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab9d4879b7ca80226470f6a978bebfb24" id="r_gab9d4879b7ca80226470f6a978bebfb24"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24">reg23::Radon3D_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
+<tr class="memitem:gab9d4879b7ca80226470f6a978bebfb24" id="r_gab9d4879b7ca80226470f6a978bebfb24"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24">reg23::Radon3D_CPU</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volume</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volumeSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">thetaValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">samplesPerDirection</a>)</td></tr>
 <tr class="memdesc:gab9d4879b7ca80226470f6a978bebfb24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute an approximation of the Radon transform of the given 3D volume.  <br /></td></tr>
 <tr class="separator:gab9d4879b7ca80226470f6a978bebfb24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga00815aa402f5f6fa243f661db1aae430" id="r_ga00815aa402f5f6fa243f661db1aae430"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga00815aa402f5f6fa243f661db1aae430">reg23::DRadon3DDR_CPU</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
+<tr class="memitem:ga00815aa402f5f6fa243f661db1aae430" id="r_ga00815aa402f5f6fa243f661db1aae430"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga00815aa402f5f6fa243f661db1aae430">reg23::DRadon3DDR_CPU</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volume</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volumeSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">thetaValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">samplesPerDirection</a>)</td></tr>
 <tr class="memdesc:ga00815aa402f5f6fa243f661db1aae430"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the derivative with respect to plane-origin distance of an approximation of the Radon transform of the given 3D volume.  <br /></td></tr>
 <tr class="separator:ga00815aa402f5f6fa243f661db1aae430"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8b088f60dae2dc0c0a6670f9f63a4468" id="r_ga8b088f60dae2dc0c0a6670f9f63a4468"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga8b088f60dae2dc0c0a6670f9f63a4468">reg23::Radon3D_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
+<tr class="memitem:ga8b088f60dae2dc0c0a6670f9f63a4468" id="r_ga8b088f60dae2dc0c0a6670f9f63a4468"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga8b088f60dae2dc0c0a6670f9f63a4468">reg23::Radon3D_CUDA</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volume</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volumeSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">thetaValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">samplesPerDirection</a>)</td></tr>
 <tr class="memdesc:ga8b088f60dae2dc0c0a6670f9f63a4468"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24" title="Compute an approximation of the Radon transform of the given 3D volume.">reg23::Radon3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga8b088f60dae2dc0c0a6670f9f63a4468"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9333533a94e6ea1bed905d4914be3775" id="r_ga9333533a94e6ea1bed905d4914be3775"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga9333533a94e6ea1bed905d4914be3775">reg23::DRadon3DDR_CUDA</a> (const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</td></tr>
+<tr class="memitem:ga9333533a94e6ea1bed905d4914be3775" id="r_ga9333533a94e6ea1bed905d4914be3775"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga9333533a94e6ea1bed905d4914be3775">reg23::DRadon3DDR_CUDA</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volume</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">volumeSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">thetaValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>, <a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">samplesPerDirection</a>)</td></tr>
 <tr class="memdesc:ga9333533a94e6ea1bed905d4914be3775"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga00815aa402f5f6fa243f661db1aae430" title="Compute the derivative with respect to plane-origin distance of an approximation of the Radon transfo...">reg23::DRadon3DDR_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga9333533a94e6ea1bed905d4914be3775"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3913bc386be8c0749edcf2ff376de2f5" id="r_ga3913bc386be8c0749edcf2ff376de2f5"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5">reg23::ResampleSinogram3D_CPU</a> (const at::Tensor &amp;sinogram3d, const std::string &amp;sinogramType, double rSpacing, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memitem:ga3913bc386be8c0749edcf2ff376de2f5" id="r_ga3913bc386be8c0749edcf2ff376de2f5"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5">reg23::ResampleSinogram3D_CPU</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">sinogram3d</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;sinogramType, <a class="el" href="classreg23_1_1Vec.html">double</a> <a class="el" href="classreg23_1_1Vec.html">rSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">projectionMatrix</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>)</td></tr>
 <tr class="memdesc:ga3913bc386be8c0749edcf2ff376de2f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (<code>phiValues</code>, <code>rValues</code>), according to the 2D-3D image registration method based on Grangeat's relation.  <br /></td></tr>
 <tr class="separator:ga3913bc386be8c0749edcf2ff376de2f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga68ce72d11d4783a082f67f3055a44097" id="r_ga68ce72d11d4783a082f67f3055a44097"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097">reg23::ResampleSinogram3D_CUDA</a> (const at::Tensor &amp;sinogram3d, const std::string &amp;sinogramType, double rSpacing, const at::Tensor &amp;projectionMatrix, const at::Tensor &amp;phiValues, const at::Tensor &amp;rValues)</td></tr>
+<tr class="memitem:ga68ce72d11d4783a082f67f3055a44097" id="r_ga68ce72d11d4783a082f67f3055a44097"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097">reg23::ResampleSinogram3D_CUDA</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">sinogram3d</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;sinogramType, <a class="el" href="classreg23_1_1Vec.html">double</a> <a class="el" href="classreg23_1_1Vec.html">rSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">projectionMatrix</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>)</td></tr>
 <tr class="memdesc:ga68ce72d11d4783a082f67f3055a44097"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga68ce72d11d4783a082f67f3055a44097"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7d3614bf0086f3d3602a2842a2c8d4ff" id="r_ga7d3614bf0086f3d3602a2842a2c8d4ff"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga7d3614bf0086f3d3602a2842a2c8d4ff">reg23::NormalisedCrossCorrelation_CPU</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
+<tr class="memitem:ga1c2d8e82cf060f4c308326bc3629b776" id="r_ga1c2d8e82cf060f4c308326bc3629b776"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga1c2d8e82cf060f4c308326bc3629b776">reg23::ResampleSinogram3DCUDATexture</a> (<a class="el" href="classreg23_1_1Vec.html">int64_t</a> <a class="el" href="classreg23_1_1Vec.html">sinogram3dTextureHandle</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;sinogramType, <a class="el" href="classreg23_1_1Vec.html">double</a> <a class="el" href="classreg23_1_1Vec.html">rSpacing</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">projectionMatrix</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">phiValues</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">rValues</a>)</td></tr>
+<tr class="memdesc:ga1c2d8e82cf060f4c308326bc3629b776"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097" title="An implementation of reg23::ResampleSinogram3D_CPU that uses CUDA parallelisation.">reg23::ResampleSinogram3D_CUDA</a> that takes a handle to a pre-allocated CUDA texture instead of a PyTorch tensor.  <br /></td></tr>
+<tr class="separator:ga1c2d8e82cf060f4c308326bc3629b776"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7d3614bf0086f3d3602a2842a2c8d4ff" id="r_ga7d3614bf0086f3d3602a2842a2c8d4ff"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga7d3614bf0086f3d3602a2842a2c8d4ff">reg23::NormalisedCrossCorrelation_CPU</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">a</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">b</a>)</td></tr>
 <tr class="separator:ga7d3614bf0086f3d3602a2842a2c8d4ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga33290c947ad06df3c3aea8e18914da29" id="r_ga33290c947ad06df3c3aea8e18914da29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga33290c947ad06df3c3aea8e18914da29">reg23::NormalisedCrossCorrelation_CUDA</a> (const at::Tensor &amp;a, const at::Tensor &amp;b)</td></tr>
+<tr class="memitem:ga33290c947ad06df3c3aea8e18914da29" id="r_ga33290c947ad06df3c3aea8e18914da29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga33290c947ad06df3c3aea8e18914da29">reg23::NormalisedCrossCorrelation_CUDA</a> (<a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">a</a>, <a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;<a class="el" href="classreg23_1_1Vec.html">b</a>)</td></tr>
 <tr class="memdesc:ga33290c947ad06df3c3aea8e18914da29"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#ga7d3614bf0086f3d3602a2842a2c8d4ff">reg23::NormalisedCrossCorrelation_CPU</a> that uses CUDA parallisation.  <br /></td></tr>
 <tr class="separator:ga33290c947ad06df3c3aea8e18914da29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -150,31 +153,31 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">at::Tensor reg23::DRadon2DDR_CPU </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>image</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>imageSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>samplesPerLine</em>&#160;</td>
         </tr>
         <tr>
@@ -210,31 +213,31 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::DRadon2DDR_CUDA </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>image</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>imageSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>samplesPerLine</em>&#160;</td>
         </tr>
         <tr>
@@ -259,37 +262,37 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">at::Tensor reg23::DRadon3DDR_CPU </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volumeSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>thetaValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>samplesPerDirection</em>&#160;</td>
         </tr>
         <tr>
@@ -326,37 +329,37 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::DRadon3DDR_CUDA </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volumeSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>thetaValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>samplesPerDirection</em>&#160;</td>
         </tr>
         <tr>
@@ -381,31 +384,31 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">at::Tensor reg23::GridSample3D_CPU </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>input</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>grid</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;&#160;</td>
           <td class="paramname"><em>addressModeX</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;&#160;</td>
           <td class="paramname"><em>addressModeY</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;&#160;</td>
           <td class="paramname"><em>addressModeZ</em>&#160;</td>
         </tr>
         <tr>
@@ -447,31 +450,31 @@ Address modes</h1>
         <tr>
           <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::GridSample3D_CUDA </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>input</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>grid</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;&#160;</td>
           <td class="paramname"><em>addressModeX</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;&#160;</td>
           <td class="paramname"><em>addressModeY</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;&#160;</td>
           <td class="paramname"><em>addressModeZ</em>&#160;</td>
         </tr>
         <tr>
@@ -495,13 +498,13 @@ Address modes</h1>
         <tr>
           <td class="memname">at::Tensor reg23::NormalisedCrossCorrelation_CPU </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>b</em>&#160;</td>
         </tr>
         <tr>
@@ -531,13 +534,13 @@ Address modes</h1>
         <tr>
           <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::NormalisedCrossCorrelation_CUDA </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>b</em>&#160;</td>
         </tr>
         <tr>
@@ -561,49 +564,49 @@ Address modes</h1>
         <tr>
           <td class="memname">at::Tensor reg23::ProjectDRR_CPU </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>voxelSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>homographyMatrixInverse</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">double</a>&#160;</td>
           <td class="paramname"><em>sourceDistance</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>outputWidth</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>outputHeight</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>outputOffset</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>detectorSpacing</em>&#160;</td>
         </tr>
         <tr>
@@ -641,49 +644,49 @@ Address modes</h1>
         <tr>
           <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::ProjectDRR_CUDA </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>voxelSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>homographyMatrixInverse</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">double</a>&#160;</td>
           <td class="paramname"><em>sourceDistance</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>outputWidth</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>outputHeight</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>outputOffset</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>detectorSpacing</em>&#160;</td>
         </tr>
         <tr>
@@ -707,31 +710,31 @@ Address modes</h1>
         <tr>
           <td class="memname">at::Tensor reg23::Radon2D_CPU </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>image</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>imageSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>samplesPerLine</em>&#160;</td>
         </tr>
         <tr>
@@ -767,31 +770,31 @@ Address modes</h1>
         <tr>
           <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::Radon2D_CUDA </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>image</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>imageSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>samplesPerLine</em>&#160;</td>
         </tr>
         <tr>
@@ -816,37 +819,37 @@ Address modes</h1>
         <tr>
           <td class="memname">at::Tensor reg23::Radon3D_CPU </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volumeSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>thetaValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>samplesPerDirection</em>&#160;</td>
         </tr>
         <tr>
@@ -883,37 +886,37 @@ Address modes</h1>
         <tr>
           <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::Radon3D_CUDA </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volume</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>volumeSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>thetaValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
           <td class="paramname"><em>samplesPerDirection</em>&#160;</td>
         </tr>
         <tr>
@@ -938,37 +941,37 @@ Address modes</h1>
         <tr>
           <td class="memname">at::Tensor reg23::ResampleSinogram3D_CPU </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>sinogram3d</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;&#160;</td>
           <td class="paramname"><em>sinogramType</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">double</a>&#160;</td>
           <td class="paramname"><em>rSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>projectionMatrix</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>&#160;</td>
         </tr>
         <tr>
@@ -1006,37 +1009,37 @@ Address modes</h1>
         <tr>
           <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::ResampleSinogram3D_CUDA </td>
           <td>(</td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>sinogram3d</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;&#160;</td>
           <td class="paramname"><em>sinogramType</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">double&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">double</a>&#160;</td>
           <td class="paramname"><em>rSpacing</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>projectionMatrix</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>phiValues</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const at::Tensor &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
           <td class="paramname"><em>rValues</em>&#160;</td>
         </tr>
         <tr>
@@ -1048,6 +1051,60 @@ Address modes</h1>
 </div><div class="memdoc">
 
 <p>An implementation of <a class="el" href="group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5" title="Resample the given 3D sinogram at locations corresponding to the given 2D sinogram grid (phiValues,...">reg23::ResampleSinogram3D_CPU</a> that uses CUDA parallelisation. </p>
+
+</div>
+</div>
+<a id="ga1c2d8e82cf060f4c308326bc3629b776" name="ga1c2d8e82cf060f4c308326bc3629b776"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1c2d8e82cf060f4c308326bc3629b776">&#9670;&#160;</a></span>ResampleSinogram3DCUDATexture()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::ResampleSinogram3DCUDATexture </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">int64_t</a>&#160;</td>
+          <td class="paramname"><em>sinogram3dTextureHandle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> std::string &amp;&#160;</td>
+          <td class="paramname"><em>sinogramType</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">double</a>&#160;</td>
+          <td class="paramname"><em>rSpacing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>projectionMatrix</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>phiValues</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classreg23_1_1Vec.html">const</a> at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>rValues</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>An implementation of <a class="el" href="group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097" title="An implementation of reg23::ResampleSinogram3D_CPU that uses CUDA parallelisation.">reg23::ResampleSinogram3D_CUDA</a> that takes a handle to a pre-allocated CUDA texture instead of a PyTorch tensor. </p>
 
 </div>
 </div>

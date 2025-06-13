@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['in_0',['In',['../classreg23_1_1Texture.html#adf5d0c4b272632abb112b4f41b2c419c',1,'reg23::Texture']]],
-  ['integratelooped_1',['integratelooped',['../structreg23_1_1Radon2D.html#a26d8a9e346a65b899abc2efe784b1682',1,'reg23::Radon2D::IntegrateLooped()'],['../structreg23_1_1Radon3D.html#a7172b6be1c8acce9283ea51db4001887',1,'reg23::Radon3D::IntegrateLooped()']]]
+  ['handle_0',['handle',['../classreg23_1_1CUDATexture2D.html#a04d9c4cf505f61ee95db3f572edf53bf',1,'reg23::CUDATexture2D::Handle()'],['../classreg23_1_1CUDATexture3D.html#a3cba07dbcba4c85df5eb3671e32489db',1,'reg23::CUDATexture3D::Handle()']]]
 ];

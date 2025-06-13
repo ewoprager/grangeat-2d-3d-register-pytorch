@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['phi_5frange_5fhigh_0',['PHI_RANGE_HIGH',['../classreg23_1_1SinogramClassic3DCPU.html#a1f8287fec30d4574f737aefb5326dd65',1,'reg23::SinogramClassic3DCPU']]],
-  ['phi_5frange_5flow_1',['PHI_RANGE_LOW',['../classreg23_1_1SinogramClassic3DCPU.html#adfb62abe67bd42b1c4f80600adf2353b',1,'reg23::SinogramClassic3DCPU']]],
+  ['phi_5frange_5fhigh_0',['PHI_RANGE_HIGH',['../classreg23_1_1SinogramClassic3D.html#a3f9d0b17279886b6d5e98cc48e0c8c42',1,'reg23::SinogramClassic3D']]],
+  ['phi_5frange_5flow_1',['PHI_RANGE_LOW',['../classreg23_1_1SinogramClassic3D.html#a6013d25cb8e7c12c2365857bc5e9cb35',1,'reg23::SinogramClassic3D']]],
   ['polar_20coordinates_2',['Polar coordinates',['../conventions.html#autotoc_md6',1,'']]],
   ['projectdrr_3',['ProjectDRR',['../structreg23_1_1ProjectDRR.html',1,'reg23']]],
   ['projectdrr_2eh_4',['ProjectDRR.h',['../ProjectDRR_8h.html',1,'']]],
