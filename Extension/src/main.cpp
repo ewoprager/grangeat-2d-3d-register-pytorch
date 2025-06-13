@@ -80,7 +80,7 @@ TORCH_LIBRARY_IMPL(reg23, CUDA, m) {
 	m.impl("d_radon3d_dr", &DRadon3DDR_CUDA);
 	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CUDA_V2);
 	m.impl("resample_sinogram3d", &ResampleSinogram3D_CUDA);
-	// m.impl("resample_sinogram3d_cuda_texture", &ResampleSinogram3DCUDATexture);
+	m.impl("resample_sinogram3d_cuda_texture", &ResampleSinogram3DCUDATexture);
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CUDA);
 	m.impl("grid_sample3d", &GridSample3D_CUDA);
 	m.impl("project_drr", &ProjectDRR_CUDA);

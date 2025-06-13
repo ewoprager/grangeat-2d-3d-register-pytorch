@@ -1,5 +1,6 @@
 import torch
 
+
 def radon2d(image: torch.Tensor, image_spacing: torch.Tensor, phi_values: torch.Tensor, r_values: torch.Tensor,
             samples_per_line: int) -> torch.Tensor:
     return torch.ops.reg23.radon2d.default(
@@ -52,6 +53,14 @@ def resample_sinogram3d(sinogram3d: torch.Tensor, sinogram_type: str, r_spacing:
                         phi_values: torch.Tensor, r_values: torch.Tensor) -> torch.Tensor:
     return torch.ops.reg23.resample_sinogram3d.default(
         sinogram3d, sinogram_type, r_spacing, projection_matrix, phi_values, r_values)
+
+
+def resample_sinogram3d_cuda_texture(handle: int, sinogram_width: int, sinogram_height: int, sinogram_depth: int,
+                                     sinogram_type: str, r_spacing: float, projection_matrix: torch.Tensor,
+                                     phi_values: torch.Tensor, r_values: torch.Tensor) -> torch.Tensor:
+    return torch.ops.reg23.resample_sinogram3d_cuda_texture.default(
+        handle, sinogram_width, sinogram_height, sinogram_depth, sinogram_type, r_spacing, projection_matrix,
+        phi_values, r_values)
 
 
 def normalised_cross_correlation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:

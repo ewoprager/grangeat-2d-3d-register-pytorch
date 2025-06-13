@@ -3,13 +3,14 @@ import pytest
 import torch
 
 from Extension import reg23
+from Extension import resample_sinogram3d_cuda_texture
 
 
 def test_cuda_texture():
     if not torch.cuda.is_available():
         return
-
     device = torch.device("cuda")
+
     d2 = torch.tensor([[1, 2], [3, 4]], device=device, dtype=torch.float32)
 
     reg23.CUDATexture2D(d2, "zero", "zero")
@@ -27,3 +28,13 @@ def test_cuda_texture():
         reg23.CUDATexture3D(d3.to(device=torch.device("cpu")), "zero", "zero", "zero")
 
 
+def test_resampling():
+    if not torch.cuda.is_available():
+        return
+    device = torch.device("cuda")
+
+    d3 = torch.tensor([[[1, 2], [3, 4]], [[5, 6], [7, 8]]], device=device, dtype=torch.float32)
+    texture = reg23.CUDATexture3D(d3, "zero", "zero", "zero")
+    res = resample_sinogram3d_cuda_texture(
+        texture.handle(), d3.size()[2], d3.size()[1], d3.size()[0], "classic", 0.1, torch.eye(4, device=device),
+        torch.zeros(1, device=device), torch.zeros(1, device=device))

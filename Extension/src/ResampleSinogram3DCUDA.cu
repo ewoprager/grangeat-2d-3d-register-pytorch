@@ -52,24 +52,24 @@ __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const 
 
 	switch (common.sinogramType) {
 	case ResampleSinogram3D::SinogramType::CLASSIC: {
-		SinogramClassic3D<Texture3DCUDA> sinogram = SinogramClassic3D<Texture3DCUDA>::FromTensor(sinogram3d, rSpacing);
+		SinogramClassic3D<Texture3DCPU> sinogram = SinogramClassic3D<Texture3DCPU>::FromTensor(sinogram3d, rSpacing);
 		int minGridSize, blockSize;
 		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
-		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCUDA> >, 0, 0);
+		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> >, 0, 0);
 		const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 
-		Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCUDA> ><<<gridSize, blockSize>>>(
+		Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> ><<<gridSize, blockSize>>>(
 			std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
 		break;
 	}
 	case ResampleSinogram3D::SinogramType::HEALPIX: {
-		SinogramHEALPix<Texture3DCUDA> sinogram = SinogramHEALPix<Texture3DCUDA>::FromTensor(sinogram3d, rSpacing);
+		SinogramHEALPix<Texture3DCPU> sinogram = SinogramHEALPix<Texture3DCPU>::FromTensor(sinogram3d, rSpacing);
 		int minGridSize, blockSize;
 		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
-		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCUDA> >, 0, 0);
+		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCPU> >, 0, 0);
 		const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 
-		Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCUDA> ><<<gridSize, blockSize>>>(
+		Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCPU> ><<<gridSize, blockSize>>>(
 			std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
 		break;
 	}

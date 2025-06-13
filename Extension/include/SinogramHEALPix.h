@@ -21,7 +21,7 @@ namespace reg23 {
 template <typename texture_t> class SinogramHEALPix : texture_t {
 public:
 	using Base = texture_t;
-	static_assert(Base::DIMENSIONALITY == 3, "The texture type of a `SinogramClassic3D` must have dimensionality 3.");
+	static_assert(Base::DIMENSIONALITY == 3, "The texture type of a `SinogramHEALPix` must have dimensionality 3.");
 	using IntType = typename Base::IntType;
 	using FloatType = typename Base::FloatType;
 	using SizeType = typename Base::SizeType;
@@ -34,7 +34,7 @@ public:
 	 * @brief Construct the texture with data.
 	 * @param texture
 	 */
-	SinogramHEALPix(Base texture) : Base(std::move(texture)) {
+	explicit SinogramHEALPix(Base texture) : Base(std::move(texture)) {
 	}
 
 	// yes copy
