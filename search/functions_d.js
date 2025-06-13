@@ -9,5 +9,5 @@ var searchData=
   ['resampleplane_6',['ResamplePlane',['../structreg23_1_1ResampleSinogram3D.html#ad00b259be3397bc816fb6808f694f0a2',1,'reg23::ResampleSinogram3D']]],
   ['resamplesinogram3d_5fcpu_7',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5',1,'reg23']]],
   ['resamplesinogram3d_5fcuda_8',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097',1,'reg23']]],
-  ['resamplesinogram3dcudatexture_9',['ResampleSinogram3DCUDATexture',['../group__pytorch__functions.html#ga1c2d8e82cf060f4c308326bc3629b776',1,'reg23']]]
+  ['resamplesinogram3dcudatexture_9',['ResampleSinogram3DCUDATexture',['../group__pytorch__functions.html#ga640524022379d2b08b9c8815d6f1772e',1,'reg23']]]
 ];

@@ -3,7 +3,7 @@ var searchData=
   ['general_20tools_0',['General Tools',['../group__general__tools.html',1,'']]],
   ['geometry_1',['geometry',['../structreg23_1_1ResampleSinogram3D_1_1CommonData.html#a854c2b46bf8eb7120058a51c64a7dd67',1,'reg23::ResampleSinogram3D::CommonData']]],
   ['getdtexcoorddr_2',['getdtexcoorddr',['../structreg23_1_1Radon2D.html#a049d725ef5bf1e38dbac6d84474a0f29',1,'reg23::Radon2D::GetDTexCoordDR()'],['../structreg23_1_1Radon3D.html#af72aee4be460159875ff00b92f95f5e7',1,'reg23::Radon3D::GetDTexCoordDR()']]],
-  ['gethandle_3',['gethandle',['../classreg23_1_1Texture2DCUDA.html#ac662f1064081c3d431a692a5ee377c83',1,'reg23::Texture2DCUDA::GetHandle()'],['../classreg23_1_1Texture3DCUDA.html#a7ec756513169cc7944c57ff7fbf859c6',1,'reg23::Texture3DCUDA::GetHandle()']]],
+  ['gethandle_3',['gethandle',['../classreg23_1_1Texture2DCUDA.html#a0baab8438f711e70341891f41a95e73f',1,'reg23::Texture2DCUDA::GetHandle()'],['../classreg23_1_1Texture3DCUDA.html#a7ec756513169cc7944c57ff7fbf859c6',1,'reg23::Texture3DCUDA::GetHandle()']]],
   ['getmappingindextotexcoord_4',['getmappingindextotexcoord',['../structreg23_1_1Radon3D.html#a4811e4e624fa9592a62f0e932589ad8a',1,'reg23::Radon3D::GetMappingIndexToTexCoord()'],['../structreg23_1_1Radon2D.html#a061eb7b5631ccd78e6013cb2f2e6628e',1,'reg23::Radon2D::GetMappingIndexToTexCoord()']]],
   ['getmappingitooffset_5',['getmappingitooffset',['../structreg23_1_1Radon3D.html#a9a64d386af4d531964390ddd283238b6',1,'reg23::Radon3D::GetMappingIToOffset()'],['../structreg23_1_1Radon2D.html#aa274d3428e0b6f8e46695c87024a3ec9',1,'reg23::Radon2D::GetMappingIToOffset()']]],
   ['global_2eh_6',['Global.h',['../Global_8h.html',1,'']]],

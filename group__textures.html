@@ -81,7 +81,8 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#enum-members">Enumerations</a>  </div>
+<a href="#enum-members">Enumerations</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">Texture-Related Types</div></div>
 </div><!--header-->
 <div class="contents">
@@ -119,6 +120,12 @@ Enumerations</h2></td></tr>
 , <a class="el" href="group__textures.html#gga7c59c85cf0c72d00bd5d489b4c2751b2ae1c8555fcf0ea2bb648a6fd527d658c0">reg23::TextureAddressMode::WRAP</a>
  }</td></tr>
 <tr class="separator:ga7c59c85cf0c72d00bd5d489b4c2751b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ga41e11281be1b986d4fb9beeea39504f2" id="r_ga41e11281be1b986d4fb9beeea39504f2"><td class="memTemplParams" colspan="2">template&lt;std::size_t DIMENSIONALITY&gt; </td></tr>
+<tr class="memitem:ga41e11281be1b986d4fb9beeea39504f2"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga7c59c85cf0c72d00bd5d489b4c2751b2">TextureAddressMode</a>, DIMENSIONALITY &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">reg23::StringsToAddressModes</a> (const std::array&lt; std::string_view, DIMENSIONALITY &gt; &amp;strings)</td></tr>
+<tr class="separator:ga41e11281be1b986d4fb9beeea39504f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Classes and enumerations related to accessing data as textures. </p>
@@ -133,7 +140,7 @@ Enumerations</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classreg23_1_1Vec.html">enum</a> <a class="el" href="classreg23_1_1Vec.html">class</a> <a class="el" href="group__textures.html#ga7c59c85cf0c72d00bd5d489b4c2751b2">reg23::TextureAddressMode</a></td>
+          <td class="memname"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">enum</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">class</a> <a class="el" href="group__textures.html#ga7c59c85cf0c72d00bd5d489b4c2751b2">reg23::TextureAddressMode</a></td>
         </tr>
       </table>
   </td>
@@ -149,6 +156,40 @@ Enumerations</h2></td></tr>
 <tr><td class="fieldname"><a id="gga7c59c85cf0c72d00bd5d489b4c2751b2ae1c8555fcf0ea2bb648a6fd527d658c0" name="gga7c59c85cf0c72d00bd5d489b4c2751b2ae1c8555fcf0ea2bb648a6fd527d658c0"></a>WRAP&#160;</td><td class="fielddoc"><p>Sampling locations outside texture coordinate range will be read wrapped back according to ((x - left) mod width + left, (y - bottom) mod height + bottom, etc... </p>
 </td></tr>
 </table>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="ga41e11281be1b986d4fb9beeea39504f2" name="ga41e11281be1b986d4fb9beeea39504f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga41e11281be1b986d4fb9beeea39504f2">&#9670;&#160;</a></span>StringsToAddressModes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;std::size_t DIMENSIONALITY&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga7c59c85cf0c72d00bd5d489b4c2751b2">TextureAddressMode</a>, DIMENSIONALITY &gt; reg23::StringsToAddressModes </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; std::string_view, DIMENSIONALITY &gt; &amp;&#160;</td>
+          <td class="paramname"><em>strings</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">DIMENSIONALITY</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">strings</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd></dd></dl>
 
 </div>
 </div>
