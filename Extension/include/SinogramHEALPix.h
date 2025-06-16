@@ -81,17 +81,19 @@ public:
 	 * @return The sample from this texture at the given coordinates using trilinear interpolation
 	 */
 	[[nodiscard]] __host__ __device__ float Sample(const VectorType &rThetaPhi) const {
+#if false
 		const FloatType nSideF = static_cast<FloatType>((Base::Size().X() - 4) / 3);
 
 		// to x_s, y_s
 		const FloatType phiAdjusted = rThetaPhi[2] + 0.5 * M_PI; // with pi/2 adjustment
-		const FloatType z = sin(rThetaPhi[1]); // sin instead of cos for adjustment
-		const FloatType zAbs = abs(z);
+		const FloatType z = std::sin(rThetaPhi[1]); // sin instead of cos for adjustment
+		const FloatType zAbs = std::abs(z);
 		const bool equatorialZone = zAbs <= 2.0 / 3.0;
-		const FloatType sigma = Sign(z) * (2.0 - sqrt(3.0 * (1.0 - zAbs)));
+		const FloatType sigma = Sign(z) * (2.0 - std::sqrt(3.0 * (1.0 - zAbs)));
 		const FloatType xS = equatorialZone
 			                     ? phiAdjusted
-			                     : phiAdjusted - (abs(sigma) - 1.0) * (fmod(phiAdjusted, 0.5 * M_PI) - 0.25 * M_PI);
+			                     : phiAdjusted - (std::abs(sigma) - 1.0) * (
+				                       std::fmod(phiAdjusted, 0.5 * M_PI) - 0.25 * M_PI);
 		const FloatType yS = equatorialZone ? 3.0 * M_PI * z / 8.0 : M_PI * sigma / 4.0;
 
 		// to x_p, y_p
@@ -128,6 +130,47 @@ public:
 		// the 1 and 3 adjust for padding
 		const FloatType texCoordR = .5 + r / (static_cast<FloatType>(Base::Size().Z()) * Base::Spacing().Z());
 		return Base::Sample(VecCat(texCoordOrientation, texCoordR));
+#else
+		const FloatType nSideF = static_cast<FloatType>((Base::Size().X() - 4) / 3);
+
+		// to x_s, y_s
+		FloatType a = rThetaPhi[2] / M_PI + 0.5; // a is phiAdjusted/pi, == x_s/pi in equatorial zone
+		FloatType c = std::sin(rThetaPhi[1]); // c is z
+		FloatType d = std::abs(c); // d is abs(z)
+		FloatType e = static_cast<FloatType>(d > 2.0 / 3.0); // e is polarCap
+		FloatType f = Sign(c) * (2.0 - std::sqrt(3.0 * (1.0 - d))); // f is sigma
+		FloatType b = a - e * (std::abs(f) - 1.0) * (std::fmod(a, 0.5) - 0.25); // b is x_s/pi in both zones
+		a = (1.0 - e) * (3.0 * c / 8.0) + e * (f / 4.0); // a is now y_s/pi in both zones
+
+		// to x_p, y_p
+		c = 2.0 * b; // c is now x_p/n_side
+		d = 1.0 - 2.0 * a; // d is now y_p/n_side
+
+		// to u, v, r
+		a = c - d + 1.5; // a is now u/n_side
+		b = c + d - 0.5; // b is now v/n_side
+		c = static_cast<FloatType>(b >= 2.0); // c is v_high
+		b -= c * 2.0;
+		d = static_cast<FloatType>(a >= 2.0); // d is u_high
+		e = c * d; // e is both u_high and v_high
+		a -= e * 2.0;
+		f = 1. - e; // f is not u_high or not v_high
+		c *= 1. - d; // c is v_high and not u_high
+
+		d = f * a + e * b; // d is now u/n_side
+		b = f * b + e * a; // b is still v/n_side
+		f = rThetaPhi[0] - 2.0 * rThetaPhi[0] * e; // f is r
+
+		e = nSideF * d + c * (nSideF + 2.0); // e is now u
+		a = nSideF * b - c * 2.0; // a is now v
+
+		// u,v,r is the order of the texture dimensions (X, Y, Z)
+		const Vec<FloatType, 2> texCoordOrientation =
+			Vec<FloatType, 2>{e + 1.0, a + 3.0} / Base::Size().XY().template StaticCast<FloatType>();
+		// the 1 and 3 adjust for padding
+		const FloatType texCoordR = .5 + f / (static_cast<FloatType>(Base::Size().Z()) * Base::Spacing().Z());
+		return Base::Sample(VecCat(texCoordOrientation, texCoordR));
+#endif
 	}
 };
 

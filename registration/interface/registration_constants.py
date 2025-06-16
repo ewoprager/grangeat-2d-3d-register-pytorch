@@ -21,7 +21,7 @@ class RegistrationConstants:
                  new_drr_size: torch.Size = torch.Size([1000, 1000])):
         self._ct_volume, self._ct_spacing, self._sinogram3d = script.get_volume_and_sinogram(
             path, cache_directory, load_cached=load_cached, save_to_cache=save_to_cache, sinogram_size=sinogram_size,
-            device=device, sinogram_type=SinogramHEALPix)
+            device=device)
         self._device = device
         self._transformation_ground_truth = None
 

@@ -1,0 +1,14 @@
+Hostname: seesPC022
+Timestamp: 2025-06-16_17-03-16
+Command: /home/eprager/Documents/PyTorchExtensionTest/benchmark_resample_sinogram3d.py --sinogram-size 350 --ct-nrrd-path /home/eprager/Documents/Data/4th year project/First/ct.nrrd 
+
+[  INFO  ] at [2025-06-16 17:03:16,863] ----- Benchmarking resample_sinogram3d -----                     in [Function 'main'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_resample_sinogram3d.py:111]
+[  INFO  ] at [2025-06-16 17:03:17,097] Loaded cached volume spec from 'cache/volume_spec_68a26d0f895043470d719720ccea8e946b949c564b3dc441f2a0aa199bd0730a.pt'; sinogram size = [352 x 352 x 350]                     in [Function 'load_cached_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:139]
+[  INFO  ] at [2025-06-16 17:03:17,097] Loading CT data file '/home/eprager/Documents/Data/4th year project/First/ct.nrrd'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:22]
+[  INFO  ] at [2025-06-16 17:03:17,703] CT data file loaded.                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:27]
+[  INFO  ] at [2025-06-16 17:03:17,718] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:75]
+[  INFO  ] at [2025-06-16 17:03:17,718] CT data volume size = [512 x 512 x 279]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:77]
+[  INFO  ] at [2025-06-16 17:03:18,379] CT volume size after down-sampling = [16 x 16 x 8]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:86]
+[  INFO  ] at [2025-06-16 17:03:18,380] CT voxel spacing after down-sampling = [9.600000000000001 x 11.423999999999998 x 11.423999999999998] mm                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:88]
+[  INFO  ] at [2025-06-16 17:03:18,380] CT data file processed.                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:89]
+[  INFO  ] at [2025-06-16 17:03:18,413] Running SinogramClassic.resample_python on cuda...                     in [Function 'run_task'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_resample_sinogram3d.py:71]

@@ -113,18 +113,18 @@ struct ResampleSinogram3D {
 
 	template <typename sinogram_t> __host__ __device__ static float ResamplePlane(
 		const sinogram_t &sinogram, const ConstantGeometry &geometry, float phi, float r) {
-		const float cp = cosf(phi);
-		const float sp = sinf(phi);
+		const float cp = std::cos(phi);
+		const float sp = std::sin(phi);
 		const Vec<float, 4> intermediate = MatMul(geometry.projectionMatrixTranspose, Vec<float, 4>{cp, sp, 0.f, -r});
 		const Vec<float, 3> intermediate3 = intermediate.XYZ();
 		const Vec<float, 3> posCartesian = -intermediate.W() * intermediate3 / intermediate3.Apply<float>(
 			                                   &Square<float>).Sum();
 
 		Vec<double, 3> rThetaPhi{};
-		rThetaPhi.Z() = atan2(posCartesian.Y(), posCartesian.X());
+		rThetaPhi[2] = std::atan2(posCartesian.Y(), posCartesian.X());
 		const float magXY = posCartesian.X() * posCartesian.X() + posCartesian.Y() * posCartesian.Y();
-		rThetaPhi.Y() = atan2(posCartesian.Z(), sqrt(magXY));
-		rThetaPhi.X() = sqrt(magXY + posCartesian.Z() * posCartesian.Z());
+		rThetaPhi[1] = std::atan2(posCartesian.Z(), std::sqrt(magXY));
+		rThetaPhi[0] = std::sqrt(magXY + posCartesian.Z() * posCartesian.Z());
 		rThetaPhi = UnflipSphericalCoordinate(rThetaPhi);
 
 		float ret = sinogram.Sample(rThetaPhi);

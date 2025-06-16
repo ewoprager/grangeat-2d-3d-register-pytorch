@@ -1,0 +1,24 @@
+Hostname: seesPC022
+Timestamp: 2025-06-16_15-49-06
+Command: /home/eprager/Documents/PyTorchExtensionTest/interface.py --ct-nrrd-path /home/eprager/Documents/Data/4th year project/First/ct.nrrd --x-ray /home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm 
+
+[  INFO  ] at [2025-06-16 15:49:07,011] Using device: cuda                     in [Function 'main'] [File /home/eprager/Documents/PyTorchExtensionTest/interface.py:253]
+[  INFO  ] at [2025-06-16 15:49:07,171] Loaded cached volume spec from 'cache/volume_spec_02c18e5442abea82a6a9126cd642df52d9bf1744b1b6666c7853288be9a5ff0a.pt'; sinogram size = [256 x 186 x 277]                     in [Function 'load_cached_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:139]
+[  INFO  ] at [2025-06-16 15:49:07,171] Loading CT data file '/home/eprager/Documents/Data/4th year project/First/ct.nrrd'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:22]
+[  INFO  ] at [2025-06-16 15:49:07,777] CT data file loaded.                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:27]
+[  INFO  ] at [2025-06-16 15:49:07,789] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:75]
+[  INFO  ] at [2025-06-16 15:49:07,789] CT data volume size = [512 x 512 x 279]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:77]
+[  INFO  ] at [2025-06-16 15:49:08,427] CT volume size after down-sampling = [256 x 256 x 139]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:86]
+[  INFO  ] at [2025-06-16 15:49:08,427] CT voxel spacing after down-sampling = [0.6000000000000001 x 0.7139999999999999 x 0.7139999999999999] mm                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:88]
+[  INFO  ] at [2025-06-16 15:49:08,428] CT data file processed.                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:89]
+[  INFO  ] at [2025-06-16 15:49:08,438] Loading X-ray DICOM file /home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm...                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:94]
+[  INFO  ] at [2025-06-16 15:49:08,440] DICOM file loaded.                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:96]
+[  INFO  ] at [2025-06-16 15:49:08,440] Processing DICOM data...                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:97]
+[  INFO  ] at [2025-06-16 15:49:08,441] X-ray image size = [1080 x 1219]                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:99]
+[  INFO  ] at [2025-06-16 15:49:08,442] X-ray image size after down-sampling = [270 x 304]                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:103]
+[  INFO  ] at [2025-06-16 15:49:08,442] X-ray pixel spacing = [0.758400022983551 x 0.758400022983551] mm                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:110]
+[  INFO  ] at [2025-06-16 15:49:08,442] X-ray distance source-to-patient = 948.000000 mm                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:112]
+[  INFO  ] at [2025-06-16 15:49:08,442] X-ray DICOM file processed.                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:123]
+[  INFO  ] at [2025-06-16 15:49:10,812] Saved data loaded from 'cache/saved_transformations.pkl'                     in [Function '__init__'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/interface/lib/structs.py:112]
+[  INFO  ] at [2025-06-16 15:49:10,840] Saved data loaded from 'cache/saved_hyperparameters.pkl'                     in [Function '__init__'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/interface/lib/structs.py:112]
+[  INFO  ] at [2025-06-16 15:49:31,142] Optimising with 'Particle swarm with 1000 particles for 5 iterations'...                     in [Function 'run'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/interface/register.py:177]

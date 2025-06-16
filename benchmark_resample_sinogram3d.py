@@ -3,10 +3,15 @@ import time
 import os
 import argparse
 
+import numpy as np
 import matplotlib.pyplot as plt
 import torch
 import pathlib
 import plotly.graph_objects as pgo
+from pynvml import *
+
+nvmlInit()
+gpu_handle = nvmlDeviceGetHandleByIndex(0)
 
 import logs_setup
 from registration.lib.structs import *
@@ -19,6 +24,7 @@ from registration import script
 class TaskSummary(NamedTuple):
     name: str
     result: torch.Tensor
+    gpu_status: np.ndarray
 
 
 class FunctionParams(NamedTuple):
@@ -43,6 +49,13 @@ def plot_task_resample_sinogram3d(summary: TaskSummary):
     axes.set_ylabel("phi")
     plt.colorbar(mesh)
 
+    _, axes = plt.subplots()
+    axes.plot(summary.gpu_status[0, :], summary.gpu_status[1, :], label="Temp. [C]")
+    axes.plot(summary.gpu_status[0, :], summary.gpu_status[2, :], label="Utilisation [%]")
+    axes.plot(summary.gpu_status[0, :], summary.gpu_status[3, :], label="Clock freq. [Hz]")
+    axes.plot(summary.gpu_status[0, :], summary.gpu_status[4, :], label="Max clock freq. [Hz]")
+    axes.legend()
+
 
 def random_ph_matrix() -> torch.Tensor:
     scene_geometry = SceneGeometry(source_distance=1000.)
@@ -56,21 +69,36 @@ def run_task(task, task_plot, function, name: str, device: str, params: Function
              ph_matrices: list[torch.Tensor]) -> TaskSummary:
     params_device = params.to(device=device)
     logger.info("Running {} on {}...".format(name, device))
+    to_plot = np.zeros((5, len(ph_matrices)))
     summed = 0.0
+    i = 0
     for ph_matrix in ph_matrices[:-1]:
         tic = time.time()
         task(function, params_device, ph_matrix)
         toc = time.time()
         summed += toc - tic
+        to_plot[:, i] = np.array(
+            [
+                toc, nvmlDeviceGetTemperature(gpu_handle, NVML_TEMPERATURE_GPU),
+                nvmlDeviceGetUtilizationRates(gpu_handle).gpu, nvmlDeviceGetClockInfo(gpu_handle, NVML_CLOCK_SM),
+                nvmlDeviceGetMaxClockInfo(gpu_handle, NVML_CLOCK_SM)])
+        i += 1
+
     tic = time.time()
     output = task(function, params_device, ph_matrices[-1])
     toc = time.time()
     summed += toc - tic
+    to_plot[:, i] = np.array(
+        [
+            toc, nvmlDeviceGetTemperature(gpu_handle, NVML_TEMPERATURE_GPU),
+            nvmlDeviceGetUtilizationRates(gpu_handle).gpu, nvmlDeviceGetClockInfo(gpu_handle, NVML_CLOCK_SM),
+            nvmlDeviceGetMaxClockInfo(gpu_handle, NVML_CLOCK_SM)])
+
     logger.info(
         "Done; took {:.5f}s total; {:.5f}s per evaluation. Saving and plotting...".format(
             summed, summed / float(len(ph_matrices))))
     name: str = "{}_on_{}".format(name, device)
-    summary = TaskSummary(name, output.cpu())
+    summary = TaskSummary(name, output.cpu(), to_plot)
     torch.save(summary.result, "cache/{}.pt".format(summary.name))
     task_plot(summary)
     logger.info("Done.")
