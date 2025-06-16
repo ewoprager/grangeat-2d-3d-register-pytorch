@@ -57,6 +57,8 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
 def deterministic_hash_string(string: str) -> str:
     return hashlib.sha256(string.encode()).hexdigest()
 
+def deterministic_hash_int(x: int) -> str:
+    return hashlib.sha256(x.to_bytes(64)).hexdigest()
 
 def deterministic_hash_type(tp: type) -> str:
     string = "{}.{}".format(tp.__module__, tp.__qualname__)

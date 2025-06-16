@@ -23,16 +23,15 @@ class TaskSummary(NamedTuple):
 
 class FunctionParams(NamedTuple):
     sinogram3d: sinogram.Sinogram
-    ph_matrix: torch.Tensor
     fixed_image_grid: Sinogram2dGrid
 
     def to(self, **kwargs) -> 'FunctionParams':
         return FunctionParams(
-            self.sinogram3d.to(**kwargs), self.ph_matrix.to(**kwargs), self.fixed_image_grid.to(**kwargs))
+            self.sinogram3d.to(**kwargs), self.fixed_image_grid.to(**kwargs))
 
 
-def task_resample_sinogram3d(function, params: FunctionParams) -> torch.Tensor:
-    return function(params.sinogram3d, params.ph_matrix, params.fixed_image_grid)
+def task_resample_sinogram3d(function, params: FunctionParams, ph_matrix: torch.Tensor) -> torch.Tensor:
+    return function(params.sinogram3d, ph_matrix, params.fixed_image_grid)
 
 
 def plot_task_resample_sinogram3d(summary: TaskSummary):
@@ -45,13 +44,31 @@ def plot_task_resample_sinogram3d(summary: TaskSummary):
     plt.colorbar(mesh)
 
 
-def run_task(task, task_plot, function, name: str, device: str, params: FunctionParams) -> TaskSummary:
+def random_ph_matrix() -> torch.Tensor:
+    scene_geometry = SceneGeometry(source_distance=1000.)
+    transformation = Transformation.random()
+    source_position = scene_geometry.source_position()
+    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    return torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32)
+
+
+def run_task(task, task_plot, function, name: str, device: str, params: FunctionParams,
+             ph_matrices: list[torch.Tensor]) -> TaskSummary:
     params_device = params.to(device=device)
     logger.info("Running {} on {}...".format(name, device))
+    summed = 0.0
+    for ph_matrix in ph_matrices[:-1]:
+        tic = time.time()
+        task(function, params_device, ph_matrix)
+        toc = time.time()
+        summed += toc - tic
     tic = time.time()
-    output = task(function, params_device)
+    output = task(function, params_device, ph_matrices[-1])
     toc = time.time()
-    logger.info("Done; took {:.5f}s. Saving and plotting...".format(toc - tic))
+    summed += toc - tic
+    logger.info(
+        "Done; took {:.5f}s total; {:.5f}s per evaluation. Saving and plotting...".format(
+            summed, summed / float(len(ph_matrices))))
     name: str = "{}_on_{}".format(name, device)
     summary = TaskSummary(name, output.cpu())
     torch.save(summary.result, "cache/{}.pt".format(summary.name))
@@ -65,14 +82,9 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    scene_geometry = SceneGeometry(source_distance=1000.)
-    # transformation = Transformation.zero()
-    # transformation = Transformation(rotation=torch.tensor([1.0, 2.0, 3.0]), translation=torch.tensor([0.2, 0.4,
-    # -0.2]))
-    transformation = Transformation.random()
-    source_position = scene_geometry.source_position()
-    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-    ph_matrix = torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32)
+    ph_matrices_cpu = [random_ph_matrix() for _ in range(1)]
+    if device.type == "cuda":
+        ph_matrices_cuda = [m.to(device=device) for m in ph_matrices_cpu]
 
     sinogram_types = [sinogram.SinogramClassic, sinogram.SinogramHEALPix]
     outputs: list[TaskSummary] = []
@@ -80,7 +92,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
 
         vol_data, voxel_spacing, sinogram3d = script.get_volume_and_sinogram(
             path, cache_directory, load_cached=load_cached, save_to_cache=save_to_cache, sinogram_size=sinogram_size,
-            sinogram_type=sinogram_type, device=device)
+            sinogram_type=sinogram_type, device=device, volume_downsample_factor=32)
 
         plot_radon_volume: bool = False
         if plot_radon_volume:
@@ -102,33 +114,33 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
             LinearRange(-.5 * torch.pi, .5 * torch.pi), LinearRange(-.5 * vol_diag, .5 * vol_diag))
         fixed_image_grid = Sinogram2dGrid.linear_from_range(fixed_image_range, (1000, 1000))
 
-        params = FunctionParams(sinogram3d, ph_matrix, fixed_image_grid)
+        params = FunctionParams(sinogram3d, fixed_image_grid)
 
-        outputs.append(
-            run_task(
-                task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
-                "{}.resample_python".format(sinogram_type.__name__), "cpu", params))
+        # outputs.append(
+        #     run_task(
+        #         task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
+        #         "{}.resample_python".format(sinogram_type.__name__), "cpu", params, ph_matrices_cpu))
         if device.type == "cuda":
             outputs.append(
                 run_task(
                     task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
-                    "{}.resample_python".format(sinogram_type.__name__), "cuda", params))
+                    "{}.resample_python".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda))
         run_extension: bool = True
         if run_extension:
-            outputs.append(
-                run_task(
-                    task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
-                    "{}.resample".format(sinogram_type.__name__), "cpu", params))
+            # outputs.append(
+            #     run_task(
+            #         task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
+            #         "{}.resample".format(sinogram_type.__name__), "cpu", params, ph_matrices_cpu))
             if device.type == "cuda":
                 outputs.append(
                     run_task(
                         task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
-                        "{}.resample".format(sinogram_type.__name__), "cuda", params))
+                        "{}.resample".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda))
 
                 outputs.append(
                     run_task(
                         task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_cuda_texture,
-                        "{}.resample_cuda_texture".format(sinogram_type.__name__), "cuda", params))
+                        "{}.resample_cuda_texture".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda))
 
     plt.show()
 

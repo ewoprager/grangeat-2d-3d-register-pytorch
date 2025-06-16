@@ -10,15 +10,17 @@ from registration.lib import sinogram
 
 def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *, load_cached: bool, save_to_cache: bool,
                             sinogram_size: int, device,
-                            sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic) -> Tuple:
+                            sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic,
+                            volume_downsample_factor: int = 2) -> Tuple:
     volume_spec = None
     sinogram3d = None
     if load_cached and ct_volume_path is not None:
-        sinogram_hash = sinogram.deterministic_hash_sinogram(ct_volume_path, sinogram_type)
+        sinogram_hash = sinogram.deterministic_hash_sinogram(
+            ct_volume_path, sinogram_type, volume_downsample_factor)
         volume_spec = data.load_cached_volume(cache_directory, sinogram_hash)
 
     if volume_spec is None:
-        volume_downsample_factor: int = 2
+        volume_downsample_factor: int = volume_downsample_factor
     else:
         volume_downsample_factor, sinogram3d = volume_spec
 
