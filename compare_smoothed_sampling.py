@@ -1,6 +1,5 @@
 import argparse
 import os
-import logging.config
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +8,7 @@ import nrrd
 
 import Extension
 
+import logs_setup
 from registration.lib.structs import *
 from registration.lib.sinogram import *
 from registration import drr
@@ -84,8 +84,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
 if __name__ == "__main__":
     # set up logger
-    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
-    logger = logging.getLogger("radonRegistration")
+    logger = logs_setup.setup_logger()
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")

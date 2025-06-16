@@ -1,10 +1,8 @@
-import logging.config
-
+import logs_setup
 from registration.lib import test_geometry
 
 if __name__ == "__main__":
     # set up logger
-    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
-    logger = logging.getLogger("radonRegistration")
+    logger = logs_setup.setup_logger()
 
     test_geometry.test_plane_integrals()

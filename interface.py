@@ -1,23 +1,22 @@
 import os
 import argparse
-import logging.config
-import pathlib
 import time
 from typing import NamedTuple, Any
 from datetime import datetime
 import copy
 
-from scipy.signal import resample
-
 os.environ["QT_API"] = "PyQt6"
 
+import pathlib
 import numpy as np
 import torch
 import napari
 import scipy
 from magicgui import magicgui, widgets
 from PyQt6.QtWidgets import QDockWidget
+from scipy.signal import resample
 
+import logs_setup
 from registration.lib.sinogram import *
 from registration.lib import geometry
 from registration.interface.lib.structs import *
@@ -266,8 +265,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
 if __name__ == "__main__":
     # set up logger
-    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
-    logger = logging.getLogger("radonRegistration")
+    logger = logs_setup.setup_logger()
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")

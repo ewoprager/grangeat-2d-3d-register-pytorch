@@ -1,7 +1,6 @@
 from typing import Tuple
 import time
 import argparse
-import logging.config
 
 import matplotlib.cm
 import matplotlib.pyplot as plt
@@ -9,6 +8,8 @@ import torch
 import pydicom
 
 import Extension as reg23
+
+import logs_setup
 
 TaskSummaryRadon2D = Tuple[str, torch.Tensor]
 
@@ -139,8 +140,7 @@ def benchmark_dRadon2dDR(path: str):
 
 if __name__ == "__main__":
     # set up logger
-    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
-    logger = logging.getLogger("radonRegistration")
+    logger = logs_setup.setup_logger()
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")

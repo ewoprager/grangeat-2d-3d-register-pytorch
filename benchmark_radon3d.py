@@ -1,7 +1,6 @@
 from typing import Tuple
 import time
 import argparse
-import logging.config
 
 import matplotlib.pyplot as plt
 import plotly.graph_objects as pgo
@@ -9,6 +8,8 @@ import torch
 import nrrd
 
 import Extension as reg23
+
+import logs_setup
 
 TaskSummaryRadon3D = Tuple[str, torch.Tensor]
 
@@ -162,8 +163,7 @@ def main(path: str):
 
 if __name__ == "__main__":
     # set up logger
-    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
-    logger = logging.getLogger("radonRegistration")
+    logger = logs_setup.setup_logger()
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")

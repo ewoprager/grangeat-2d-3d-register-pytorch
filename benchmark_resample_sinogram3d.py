@@ -2,13 +2,13 @@ from typing import Tuple, NamedTuple, Type, TypeVar
 import time
 import os
 import argparse
-import logging.config
 
 import matplotlib.pyplot as plt
 import torch
 import pathlib
 import plotly.graph_objects as pgo
 
+import logs_setup
 from registration.lib.structs import *
 from registration.lib import sinogram
 import registration.data as data
@@ -82,7 +82,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ph_matrices_cpu = [random_ph_matrix() for _ in range(1)]
+    ph_matrices_cpu = [random_ph_matrix() for _ in range(10)]
     if device.type == "cuda":
         ph_matrices_cuda = [m.to(device=device) for m in ph_matrices_cpu]
 
@@ -167,8 +167,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
 
 if __name__ == "__main__":
     # set up logger
-    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
-    logger = logging.getLogger("radonRegistration")
+    logger = logs_setup.setup_logger()
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
