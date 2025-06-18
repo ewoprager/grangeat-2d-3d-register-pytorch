@@ -7,7 +7,7 @@ var searchData=
   ['radon3d_5fcuda_4',['Radon3D_CUDA',['../group__pytorch__functions.html#ga8b088f60dae2dc0c0a6670f9f63a4468',1,'reg23']]],
   ['radon3d_5fcuda_5fv2_5',['Radon3D_CUDA_V2',['../namespacereg23.html#a87f61adbbd554c0cb26dde418d58b44c',1,'reg23']]],
   ['resampleplane_6',['ResamplePlane',['../structreg23_1_1ResampleSinogram3D.html#ad00b259be3397bc816fb6808f694f0a2',1,'reg23::ResampleSinogram3D']]],
-  ['resamplesinogram3d_5fcpu_7',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga3913bc386be8c0749edcf2ff376de2f5',1,'reg23']]],
-  ['resamplesinogram3d_5fcuda_8',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#ga68ce72d11d4783a082f67f3055a44097',1,'reg23']]],
-  ['resamplesinogram3dcudatexture_9',['ResampleSinogram3DCUDATexture',['../group__pytorch__functions.html#ga640524022379d2b08b9c8815d6f1772e',1,'reg23']]]
+  ['resamplesinogram3d_5fcpu_7',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga4d46ac88a0dcaf74d1edeecf2719ff1d',1,'reg23']]],
+  ['resamplesinogram3d_5fcuda_8',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#gad786889c18e2d7f2adfa9561a539037b',1,'reg23']]],
+  ['resamplesinogram3dcudatexture_9',['ResampleSinogram3DCUDATexture',['../group__pytorch__functions.html#ga9fb0a5b2144685bdea16c62bd59454fa',1,'reg23']]]
 ];
