@@ -49,7 +49,7 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2
 	}
 
 	err = cudaMemcpy2DToArray(arrayHandle, 0, 0, data, size.X() * sizeof(float), size.X() * sizeof(float), size.Y(),
-	                          cudaMemcpyHostToDevice);
+	                          cudaMemcpyDeviceToDevice);
 	if (err != cudaSuccess) {
 		std::cerr << "cudaMemcpy2DToArray failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaMemcpy2DToArray failed");
@@ -103,7 +103,7 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 
 	const cudaMemcpy3DParms params = {
 		.srcPtr = make_cudaPitchedPtr((void *)data, size.X() * sizeof(float), size.X(), size.Y()),
-		.dstArray = arrayHandle, .extent = extent, .kind = cudaMemcpyHostToDevice};
+		.dstArray = arrayHandle, .extent = extent, .kind = cudaMemcpyDeviceToDevice};
 	err = cudaMemcpy3D(&params);
 	if (err != cudaSuccess) {
 		std::cerr << "cudaMemcpy3D failed: " << cudaGetErrorString(err) << std::endl;

@@ -10,6 +10,7 @@ import torch
 import pathlib
 import plotly.graph_objects as pgo
 from pynvml import *
+import objgraph
 
 nvmlInit()
 gpu_handle = nvmlDeviceGetHandleByIndex(0)
@@ -106,6 +107,7 @@ def run_task(task, task_plot, function, name: str, device: str, params: Function
 def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_size: int, save_to_cache: bool = True,
          plot: bool = True):
     logger.info("----- Benchmarking resample_sinogram3d -----")
+    debug_print_count = 0
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -176,8 +178,25 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
                     outputs.append(res)
 
         del vol_data, voxel_spacing, sinogram3d, fixed_image_grid, out, params
-        torch.cuda.empty_cache()
+
         gc.collect()
+        for obj in gc.get_objects():
+            if torch.is_tensor(obj) and len(obj.size()) == 3:
+                print(type(obj), obj.size(), obj.device)
+                for name, val in globals().items():
+                    if val is obj:
+                        print("Global:", name)
+                for name, val in locals().items():
+                    if val is obj:
+                        print("Local:", name)
+                # refs = gc.get_referrers(obj)
+                # for i, ref in enumerate(refs):
+                #     if isinstance(ref, dict):
+                #         print("Dicionary hold reference:")
+                #         for key, value in ref.items():
+                #             print(key, ":", value)
+                objgraph.show_backrefs([obj], max_depth=50, filename="refs{}.png".format(debug_print_count))
+                debug_print_count += 1
 
         if sinogram_type != sinogram_types[-1]:
             logger.info("Sleeping...")
