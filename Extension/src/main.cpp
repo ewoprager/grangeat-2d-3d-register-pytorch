@@ -51,11 +51,11 @@ TORCH_LIBRARY(reg23, m) {
 	m.def("d_radon3d_dr(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def("d_radon3d_dr_v2(Tensor vol, Tensor spacing, Tensor phis, Tensor thetas, Tensor rs, int sc) -> Tensor");
 	m.def("resample_sinogram3d(Tensor sinogram, str type, float rSpacing, Tensor projMat, Tensor phis, Tensor "
-		"rs) -> Tensor");
+		"rs, Tensor? out=None) -> Tensor");
 	m.def("resample_sinogram3d_cuda_texture(int handle, int w, int h, int d, str type, float rSpacing, Tensor projMat, "
-		"Tensor phis, Tensor rs) -> Tensor");
+		"Tensor phis, Tensor rs, Tensor? out=None) -> Tensor");
 	m.def("normalised_cross_correlation(Tensor a, Tensor b) -> Tensor");
-	m.def("grid_sample3d(Tensor input, Tensor grid, str am_x, str am_y, str am_z) -> Tensor");
+	m.def("grid_sample3d(Tensor input, Tensor grid, str am_x, str am_y, str am_z, Tensor? out=None) -> Tensor");
 	m.def(
 		"project_drr(Tensor volume, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, Tensor outOff, Tensor outSpacing) -> Tensor");
 }

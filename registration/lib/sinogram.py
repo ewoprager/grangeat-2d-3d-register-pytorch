@@ -123,19 +123,29 @@ class SinogramClassic(Sinogram):
     def to(self, **kwargs) -> 'SinogramClassic':
         return SinogramClassic(self.data.to(**kwargs), self.r_range, pad=False)
 
-    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                 out: torch.Tensor | None = None) -> torch.Tensor:
         return Extension.resample_sinogram3d(
-            self.data, "classic", self.r_range.get_tex_coord_spacing(self.data.size()[2]), ph_matrix,
-            fixed_image_grid.phi, fixed_image_grid.r)
+            self.data, "classic", self.r_range.get_spacing(self.data.size()[2]), ph_matrix, fixed_image_grid.phi,
+            fixed_image_grid.r, out=out)
 
-    def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+    def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                              out: torch.Tensor | None = None) -> torch.Tensor:
         assert self.device.type == "cuda"
         return Extension.resample_sinogram3d_cuda_texture(
-            self.texture, "classic", self.r_range.get_tex_coord_spacing(
-                self.data.size()[2]), ph_matrix, fixed_image_grid.phi, fixed_image_grid.r)
+            self.texture, "classic", self.r_range.get_spacing(
+                self.data.size()[2]), ph_matrix, fixed_image_grid.phi, fixed_image_grid.r, out=out)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
-                        plot: bool = False) -> torch.Tensor:
+                        plot: bool = False, out: torch.Tensor | None = None) -> torch.Tensor:
+        """
+        :param ph_matrix:
+        :param fixed_image_grid:
+        :param smooth:
+        :param plot:
+        :param out:
+        :return:
+        """
         assert fixed_image_grid.device_consistent()
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
@@ -176,15 +186,13 @@ class SinogramClassic(Sinogram):
         phi_grid_sample_range_padded = LinearRange(-1. + phi_grid_padding_offsets, 1. - phi_grid_padding_offsets)
         k_mapping: LinearMapping = phi_grid_sample_range_padded.get_mapping_from(self.phi_range)
 
-        if smooth is not None:
-            ret = self.grid_sample_smoothed(
-                fixed_image_grid_sph, i_mapping=i_mapping, j_mapping=j_mapping, k_mapping=k_mapping, sigma=smooth)
-        else:
-            grid = torch.stack(
-                (
-                    i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
-                    k_mapping(fixed_image_grid_sph.phi)), dim=-1)
-            ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
+        if out is None:
+            out = torch.zeros_like(fixed_image_grid_sph.phi)
+        grid = torch.stack(
+            (
+                i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
+                k_mapping(fixed_image_grid_sph.phi)), dim=-1)
+        ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero", out=out)
 
         del fixed_image_grid_sph
 
@@ -202,9 +210,11 @@ class SinogramClassic(Sinogram):
 
         return ret
 
+
+"""
     def grid_sample_smoothed(self, grid: Sinogram3dGrid, *, i_mapping: LinearMapping, j_mapping: LinearMapping,
                              k_mapping: LinearMapping, sigma: float, offset_count: int = 10):
-        """
+        
         Sample the sinogram at the given phi, theta, r spherical coordinates, with extra samples in a Gaussian layout
         around the sampling positions to make the sampling more even over S^2, even if the point distribution is less
         even.
@@ -217,7 +227,7 @@ class SinogramClassic(Sinogram):
         :param sigma: The standard deviation of the Gaussian pattern
         :return: A tensor matching size of `phi_values`  - the weighted sums of offset samples around the given
         coordinates.
-        """
+        
 
         assert grid.phi.device == self.device
         assert grid.device_consistent()
@@ -316,6 +326,7 @@ class SinogramClassic(Sinogram):
         # Applying the weights and summing along the last dimension for an output equal in size to the input tensors of
         # coordinates:
         return torch.einsum('i,...i->...', weights.to(device=self.device), samples)
+    """
 
 
 class SinogramHEALPix(Sinogram):
@@ -594,8 +605,13 @@ class SinogramHEALPix(Sinogram):
                     pad_1_corner_right,  #
                     torch.zeros(r_count, 1, 2, device=self.device)), dim=-1)
 
+            del pad_6_corner_left, pad_0_corner_top, pad_1_corner_top, pad_1_corner_right, pad_8_corner_bot, (
+                pad_9_corner_left), pad_9_corner_top, pad_9_corner_right, pad_9_corner_bot
+
             self._data = torch.cat(
                 (row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3), dim=1)
+
+            del row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3
         else:
             assert (data.size()[2] - 4) % 3 == 0
             assert (data.size()[1] - 4) % 2 == 0
@@ -631,9 +647,11 @@ class SinogramHEALPix(Sinogram):
     def r_range(self) -> LinearRange:
         return self._r_range
 
-    def sample(self, grid: Sinogram3dGrid) -> torch.Tensor:
+    def sample(self, grid: Sinogram3dGrid, out: torch.Tensor | None = None) -> torch.Tensor:
         assert grid.device_consistent()
         assert grid.phi.device == self.device
+        if out is not None:
+            assert out.device == self.device
 
         n_side: int = (self.data.size()[1] - 4) // 2
 
@@ -645,22 +663,33 @@ class SinogramHEALPix(Sinogram):
         j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[1])))
         k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
 
+        if out is None:
+            out = torch.zeros_like(grid.phi)
         grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(r)), dim=-1)
-        return Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero")
+        return Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero", out=out)
 
-    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                 out: torch.Tensor | None = None) -> torch.Tensor:
         return Extension.resample_sinogram3d(
             self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]), ph_matrix, fixed_image_grid.phi,
-            fixed_image_grid.r)
+            fixed_image_grid.r, out=out)
 
-    def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+    def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                              out: torch.Tensor | None = None) -> torch.Tensor:
         assert self.device.type == "cuda"
         return Extension.resample_sinogram3d_cuda_texture(
             self.texture, "healpix", self.r_range.get_spacing(self.data.size()[0]), ph_matrix, fixed_image_grid.phi,
-            fixed_image_grid.r)
+            fixed_image_grid.r, out=out)
 
-    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
-                        plot: bool = False) -> torch.Tensor:
+    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, plot: bool = False,
+                        out: torch.Tensor | None = None) -> torch.Tensor:
+        """
+        :param ph_matrix:
+        :param fixed_image_grid:
+        :param plot:
+        :param out:
+        :return:
+        """
         assert fixed_image_grid.device_consistent()
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
@@ -668,7 +697,9 @@ class SinogramHEALPix(Sinogram):
         fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
             fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
 
-        ret = self.sample(fixed_image_grid_sph)
+        if out is None:
+            out = torch.zeros_like(fixed_image_grid_sph.phi)
+        ret = self.sample(fixed_image_grid_sph, out=out)
         del fixed_image_grid_sph
 
         ## sign changes - this implementation relies on the convenient coordinate system

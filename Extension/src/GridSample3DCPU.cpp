@@ -10,9 +10,10 @@ namespace reg23 {
 using CommonData = GridSample3D<Texture3DCPU>::CommonData;
 
 at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, const std::string &addressModeX,
-                            const std::string &addressModeY, const std::string &addressModeZ) {
+                            const std::string &addressModeY, const std::string &addressModeZ,
+                            c10::optional<at::Tensor> out) {
 	const CommonData common = GridSample3D<Texture3DCPU>::Common(input, grid, addressModeX, addressModeY, addressModeZ,
-	                                                             at::DeviceType::CPU);
+	                                                             at::DeviceType::CPU, out);
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 	const Linear<Texture3DCPU::VectorType> mappingGridToTexCoord = common.inputTexture.MappingWorldToTexCoord();
 

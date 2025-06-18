@@ -32,7 +32,7 @@ namespace reg23 {
  */
 at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const std::string &sinogramType, double rSpacing,
                                   const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
-                                  const at::Tensor &rValues);
+                                  const at::Tensor &rValues, c10::optional<at::Tensor> out);
 
 /**
  * @ingroup pytorch_functions
@@ -40,7 +40,8 @@ at::Tensor ResampleSinogram3D_CPU(const at::Tensor &sinogram3d, const std::strin
  */
 __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const std::string &sinogramType,
                                             double rSpacing, const at::Tensor &projectionMatrix,
-                                            const at::Tensor &phiValues, const at::Tensor &rValues);
+                                            const at::Tensor &phiValues, const at::Tensor &rValues,
+                                            c10::optional<at::Tensor> out);
 
 /**
  * @ingroup pytorch_functions
@@ -51,7 +52,7 @@ __host__ at::Tensor ResampleSinogram3DCUDATexture(int64_t sinogram3dTextureHandl
                                                   int64_t sinogramHeight, int64_t sinogramDepth,
                                                   const std::string &sinogramType, double rSpacing,
                                                   const at::Tensor &projectionMatrix, const at::Tensor &phiValues,
-                                                  const at::Tensor &rValues);
+                                                  const at::Tensor &rValues, c10::optional<at::Tensor> out);
 
 
 /**
@@ -75,7 +76,8 @@ struct ResampleSinogram3D {
 	};
 
 	__host__ static CommonData Common(const std::string &sinogramType, const at::Tensor &projectionMatrix,
-	                                  const at::Tensor &phiValues, const at::Tensor &rValues, at::DeviceType device) {
+	                                  const at::Tensor &phiValues, const at::Tensor &rValues, at::DeviceType device,
+	                                  c10::optional<at::Tensor> out) {
 		// projectionMatrix should be of size (4, 4), contain floats and be on the chosen device
 		TORCH_CHECK(projectionMatrix.sizes() == at::IntArrayRef({4, 4}))
 		TORCH_CHECK(projectionMatrix.dtype() == at::kFloat)
@@ -86,6 +88,11 @@ struct ResampleSinogram3D {
 		TORCH_CHECK(rValues.dtype() == at::kFloat)
 		TORCH_INTERNAL_ASSERT(phiValues.device().type() == device)
 		TORCH_INTERNAL_ASSERT(rValues.device().type() == device);
+		if (out) {
+			TORCH_CHECK(out.value().sizes() == phiValues.sizes())
+			TORCH_CHECK(out.value().dtype() == at::kFloat)
+			TORCH_INTERNAL_ASSERT(out.value().device().type() == device)
+		}
 
 		SinogramType st = SinogramType::CLASSIC;
 		if (sinogramType == "healpix") {
@@ -107,7 +114,9 @@ struct ResampleSinogram3D {
 		                                originProjectionHomogeneous[3].item().toFloat();
 		ret.geometry.squareRadius = .25f * ret.geometry.originProjection.Apply<float>(&Square<float>).Sum();
 		ret.geometry.projectionMatrixTranspose = Vec<Vec<float, 4>, 4>::FromTensor2D(projectionMatrix.t());
-		ret.flatOutput = torch::zeros(at::IntArrayRef({phiValues.numel()}), at::TensorOptions{device});
+		ret.flatOutput = out
+			                 ? out.value().view({-1})
+			                 : torch::zeros(at::IntArrayRef({phiValues.numel()}), at::TensorOptions{device});
 		return ret;
 	}
 

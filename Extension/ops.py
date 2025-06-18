@@ -52,18 +52,20 @@ def d_radon3d_dr_v2(volume: torch.Tensor, volume_spacing: torch.Tensor, phi_valu
 
 
 def resample_sinogram3d(sinogram3d: torch.Tensor, sinogram_type: str, r_spacing: float, projection_matrix: torch.Tensor,
-                        phi_values: torch.Tensor, r_values: torch.Tensor) -> torch.Tensor:
+                        phi_values: torch.Tensor, r_values: torch.Tensor,
+                        out: torch.Tensor | None = None) -> torch.Tensor:
     return torch.ops.reg23.resample_sinogram3d.default(
-        sinogram3d, sinogram_type, r_spacing, projection_matrix, phi_values, r_values)
+        sinogram3d, sinogram_type, r_spacing, projection_matrix, phi_values, r_values, out)
 
 
 if torch.cuda.is_available():
     def resample_sinogram3d_cuda_texture(texture: reg23.CUDATexture3D, sinogram_type: str, r_spacing: float,
                                          projection_matrix: torch.Tensor, phi_values: torch.Tensor,
-                                         r_values: torch.Tensor) -> torch.Tensor:
+                                         r_values: torch.Tensor, out: torch.Tensor | None = None) -> torch.Tensor:
         size = texture.size()
         return torch.ops.reg23.resample_sinogram3d_cuda_texture.default(
-            texture.handle(), size[0], size[1], size[2], sinogram_type, r_spacing, projection_matrix, phi_values, r_values)
+            texture.handle(), size[0], size[1], size[2], sinogram_type, r_spacing, projection_matrix, phi_values,
+            r_values, out)
 
 
 def normalised_cross_correlation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
@@ -71,14 +73,14 @@ def normalised_cross_correlation(a: torch.Tensor, b: torch.Tensor) -> torch.Tens
 
 
 def grid_sample3d(input_: torch.Tensor, grid: torch.Tensor, address_mode_x: str = "zero", address_mode_y: str = "zero",
-                  address_mode_z: str = "zero") -> torch.Tensor:
+                  address_mode_z: str = "zero", out: torch.Tensor | None = None) -> torch.Tensor:
     return torch.ops.reg23.grid_sample3d.default(
-        input_, grid.to(dtype=torch.float32), address_mode_x, address_mode_y, address_mode_z)
+        input_, grid.to(dtype=torch.float32), address_mode_x, address_mode_y, address_mode_z, out=out)
 
 
 def project_drr(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,
                 source_distance: float, output_width: int, output_height: int, output_offset: torch.Tensor,
-                detector_spacing: torch.Tensor) -> (torch.Tensor):
+                detector_spacing: torch.Tensor) -> torch.Tensor:
     return torch.ops.reg23.project_drr.default(
         volume, voxel_spacing.to(dtype=torch.float64), homography_matrix_inverse.to(dtype=torch.float64),
         source_distance, output_width, output_height, output_offset, detector_spacing.to(dtype=torch.float64))

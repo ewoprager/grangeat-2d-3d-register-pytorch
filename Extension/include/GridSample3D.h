@@ -27,14 +27,16 @@ namespace reg23 {
  * + 1) mod 2 - 1, (y + 1) mod 2 - 1, (z + 1) mod 2 - 1)
  */
 at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, const std::string &addressModeX,
-                            const std::string &addressModeY, const std::string &addressModeZ);
+                            const std::string &addressModeY, const std::string &addressModeZ,
+                            c10::optional<at::Tensor> out);
 
 /**
  * @ingroup pytorch_functions
  * @brief An implementation of reg23::GridSample3D_CPU that uses CUDA parallelisation.
  */
 __host__ at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, const std::string &addressModeX,
-                                      const std::string &addressModeY, const std::string &addressModeZ);
+                                      const std::string &addressModeY, const std::string &addressModeZ,
+                                      c10::optional<at::Tensor> out);
 
 /**
  * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
@@ -59,7 +61,7 @@ template <typename texture_t> struct GridSample3D {
 
 	__host__ static CommonData Common(const at::Tensor &input, const at::Tensor &grid, const std::string &addressModeX,
 	                                  const std::string &addressModeY, const std::string &addressModeZ,
-	                                  at::DeviceType device) {
+	                                  at::DeviceType device, c10::optional<at::Tensor> out) {
 		// input should be a 3D tensor of floats on the chosen device
 		TORCH_CHECK(input.sizes().size() == 3)
 		TORCH_CHECK(input.dtype() == at::kFloat)
@@ -68,6 +70,12 @@ template <typename texture_t> struct GridSample3D {
 		TORCH_CHECK(grid.sizes().back() == 3);
 		TORCH_CHECK(grid.dtype() == at::kFloat);
 		TORCH_INTERNAL_ASSERT(grid.device().type() == device)
+		if (out) {
+			// out should be a tensor of floats matching all but the last dimension of grid in size, on the chosen device
+			TORCH_CHECK(out.value().sizes() == grid.sizes().slice(0, grid.sizes().size() - 1))
+			TORCH_CHECK(out.value().dtype() == at::kFloat)
+			TORCH_INTERNAL_ASSERT(out.value().device().type() == device)
+		}
 
 		// All addressMode<dim>s should be one of the valid values:
 		AddressModeType addressModes = StringsToAddressModes<3>({{addressModeX, addressModeY, addressModeZ}});
@@ -76,7 +84,9 @@ template <typename texture_t> struct GridSample3D {
 		const SizeType inputSize = SizeType::FromIntArrayRef(input.sizes()).Flipped();
 		const VectorType inputSpacing = 2.0 / inputSize.template StaticCast<FloatType>();
 		ret.inputTexture = texture_t::FromTensor(input, inputSpacing, VectorType::Full(0.0), std::move(addressModes));
-		ret.flatOutput = torch::zeros(at::IntArrayRef({grid.numel() / 3}), input.contiguous().options());
+		ret.flatOutput = out
+			                 ? out.value().view({-1})
+			                 : torch::zeros(at::IntArrayRef({grid.numel() / 3}), input.contiguous().options());
 		return ret;
 	}
 };

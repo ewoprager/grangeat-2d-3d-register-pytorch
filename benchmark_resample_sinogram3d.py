@@ -2,6 +2,7 @@ from typing import Tuple, NamedTuple, Type, TypeVar
 import time
 import os
 import argparse
+import gc
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,20 +25,21 @@ from registration import script
 class TaskSummary(NamedTuple):
     name: str
     result: torch.Tensor
-    gpu_status: np.ndarray
+    gpu_status: np.ndarray = np.zeros(1)
 
 
 class FunctionParams(NamedTuple):
     sinogram3d: sinogram.Sinogram
     fixed_image_grid: Sinogram2dGrid
+    out: torch.Tensor
 
     def to(self, **kwargs) -> 'FunctionParams':
         return FunctionParams(
-            self.sinogram3d.to(**kwargs), self.fixed_image_grid.to(**kwargs))
+            self.sinogram3d.to(**kwargs), self.fixed_image_grid.to(**kwargs), self.out.to(**kwargs))
 
 
 def task_resample_sinogram3d(function, params: FunctionParams, ph_matrix: torch.Tensor) -> torch.Tensor:
-    return function(params.sinogram3d, ph_matrix, params.fixed_image_grid)
+    function(params.sinogram3d, ph_matrix, params.fixed_image_grid, out=params.out)
 
 
 def plot_task_resample_sinogram3d(summary: TaskSummary):
@@ -49,12 +51,10 @@ def plot_task_resample_sinogram3d(summary: TaskSummary):
     axes.set_ylabel("phi")
     plt.colorbar(mesh)
 
-    _, axes = plt.subplots()
-    axes.plot(summary.gpu_status[0, :], summary.gpu_status[1, :], label="Temp. [C]")
-    axes.plot(summary.gpu_status[0, :], summary.gpu_status[2, :], label="Utilisation [%]")
-    axes.plot(summary.gpu_status[0, :], summary.gpu_status[3, :], label="Clock freq. [Hz]")
-    axes.plot(summary.gpu_status[0, :], summary.gpu_status[4, :], label="Max clock freq. [Hz]")
-    axes.legend()
+    # _, axes = plt.subplots()  # axes.plot(summary.gpu_status[0, :], summary.gpu_status[1, :], label="Temp. [C]")  #
+    # axes.plot(summary.gpu_status[0, :], summary.gpu_status[2, :], label="Utilisation [%]")  # axes.plot(
+    # summary.gpu_status[0, :], summary.gpu_status[3, :], label="Clock freq. [Hz]")  # axes.plot(summary.gpu_status[
+    # 0, :], summary.gpu_status[4, :], label="Max clock freq. [Hz]")  # axes.legend()
 
 
 def random_ph_matrix() -> torch.Tensor:
@@ -65,52 +65,51 @@ def random_ph_matrix() -> torch.Tensor:
     return torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32)
 
 
-def run_task(task, task_plot, function, name: str, device: str, params: FunctionParams,
-             ph_matrices: list[torch.Tensor]) -> TaskSummary:
+def run_task(task, task_plot, function, name: str, device: str, params: FunctionParams, ph_matrices: list[torch.Tensor],
+             plot: bool = True) -> TaskSummary:
     params_device = params.to(device=device)
     logger.info("Running {} on {}...".format(name, device))
-    to_plot = np.zeros((5, len(ph_matrices)))
-    summed = 0.0
-    i = 0
-    for ph_matrix in ph_matrices[:-1]:
+    # to_plot = np.zeros((5, len(ph_matrices)))
+    if torch.cuda.is_available():
+        torch.cuda.synchronize()
         tic = time.time()
-        task(function, params_device, ph_matrix)
+        for ph_matrix in ph_matrices:
+            task(
+                function, params_device,
+                ph_matrix)  # to_plot[:, i] = np.array(  #     [  #         toc, nvmlDeviceGetTemperature(gpu_handle,
+            # NVML_TEMPERATURE_GPU),  #         nvmlDeviceGetUtilizationRates(gpu_handle).gpu,
+            # nvmlDeviceGetClockInfo(gpu_handle, NVML_CLOCK_SM),  #         nvmlDeviceGetMaxClockInfo(gpu_handle,
+            # NVML_CLOCK_SM)])
+
+        torch.cuda.synchronize()
         toc = time.time()
-        summed += toc - tic
-        to_plot[:, i] = np.array(
-            [
-                toc, nvmlDeviceGetTemperature(gpu_handle, NVML_TEMPERATURE_GPU),
-                nvmlDeviceGetUtilizationRates(gpu_handle).gpu, nvmlDeviceGetClockInfo(gpu_handle, NVML_CLOCK_SM),
-                nvmlDeviceGetMaxClockInfo(gpu_handle, NVML_CLOCK_SM)])
-        i += 1
+    else:
+        tic = time.time()
+        for ph_matrix in ph_matrices:
+            task(function, params_device, ph_matrix)
+        toc = time.time()
 
-    tic = time.time()
-    output = task(function, params_device, ph_matrices[-1])
-    toc = time.time()
-    summed += toc - tic
-    to_plot[:, i] = np.array(
-        [
-            toc, nvmlDeviceGetTemperature(gpu_handle, NVML_TEMPERATURE_GPU),
-            nvmlDeviceGetUtilizationRates(gpu_handle).gpu, nvmlDeviceGetClockInfo(gpu_handle, NVML_CLOCK_SM),
-            nvmlDeviceGetMaxClockInfo(gpu_handle, NVML_CLOCK_SM)])
-
+    elapsed = toc - tic
     logger.info(
-        "Done; took {:.5f}s total; {:.5f}s per evaluation. Saving and plotting...".format(
-            summed, summed / float(len(ph_matrices))))
+        "Done; took {:.5f}s total; {:.5f}s per evaluation.".format(
+            elapsed, elapsed / float(len(ph_matrices))))
     name: str = "{}_on_{}".format(name, device)
-    summary = TaskSummary(name, output.cpu(), to_plot)
+    summary = TaskSummary(name, params_device.out.cpu())  # , to_plot)
     torch.save(summary.result, "cache/{}.pt".format(summary.name))
-    task_plot(summary)
-    logger.info("Done.")
+    if plot:
+        logger.info("Plotting...")
+        task_plot(summary)
+        logger.info("Done.")
     return summary
 
 
-def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_size: int, save_to_cache: bool = True):
+def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_size: int, save_to_cache: bool = True,
+         plot: bool = True):
     logger.info("----- Benchmarking resample_sinogram3d -----")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ph_matrices_cpu = [random_ph_matrix() for _ in range(10)]
+    ph_matrices_cpu = [random_ph_matrix() for _ in range(100)]
     if device.type == "cuda":
         ph_matrices_cuda = [m.to(device=device) for m in ph_matrices_cpu]
 
@@ -142,50 +141,67 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
             LinearRange(-.5 * torch.pi, .5 * torch.pi), LinearRange(-.5 * vol_diag, .5 * vol_diag))
         fixed_image_grid = Sinogram2dGrid.linear_from_range(fixed_image_range, (1000, 1000))
 
-        params = FunctionParams(sinogram3d, fixed_image_grid)
+        out = torch.zeros_like(fixed_image_grid.phi)
+        params = FunctionParams(sinogram3d, fixed_image_grid, out)
+
+        store = False
 
         # outputs.append(
         #     run_task(
         #         task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
-        #         "{}.resample_python".format(sinogram_type.__name__), "cpu", params, ph_matrices_cpu))
+        #         "{}.resample_python".format(sinogram_type.__name__), "cpu", params, ph_matrices_cpu, plot))
         if device.type == "cuda":
-            outputs.append(
-                run_task(
-                    task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
-                    "{}.resample_python".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda))
+            res = run_task(
+                task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
+                "{}.resample_python".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda, plot)
+            if store:
+                outputs.append(res)
         run_extension: bool = True
         if run_extension:
             # outputs.append(
             #     run_task(
             #         task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
-            #         "{}.resample".format(sinogram_type.__name__), "cpu", params, ph_matrices_cpu))
+            #         "{}.resample".format(sinogram_type.__name__), "cpu", params, ph_matrices_cpu, plot))
             if device.type == "cuda":
-                outputs.append(
-                    run_task(
-                        task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
-                        "{}.resample".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda))
+                res = run_task(
+                    task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
+                    "{}.resample".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda, plot)
+                if store:
+                    outputs.append(res)
 
-                outputs.append(
-                    run_task(
-                        task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_cuda_texture,
-                        "{}.resample_cuda_texture".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda))
+                res = run_task(
+                    task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_cuda_texture,
+                    "{}.resample_cuda_texture".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda, plot)
+                if store:
+                    outputs.append(res)
 
-    plt.show()
+        del vol_data, voxel_spacing, sinogram3d, fixed_image_grid, out, params
+        torch.cuda.empty_cache()
+        gc.collect()
 
-    logger.info("Calculating discrepancies...")
-    # found: bool = False
-    for i in range(len(outputs) - 1):
-        discrepancy = (outputs[i].result - outputs[i + 1].result).abs().mean() / (.5 * (
-                outputs[i].result.max() - outputs[i].result.min() + outputs[i + 1].result.max() - outputs[
-            i + 1].result.min()))
-        # if discrepancy > 1e-2:
-        #     found = True
-        logger.info(
-            "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(
-                outputs[i].name, outputs[i + 1].name, 100. * discrepancy))
-    # if not found:
-    #     logger.info("\tNo discrepancies found.")
-    logger.info("Done.")
+        if sinogram_type != sinogram_types[-1]:
+            logger.info("Sleeping...")
+            time.sleep(10.0)
+            logger.info("Done sleeping.")
+
+    if plot:
+        plt.show()
+
+    if store:
+        logger.info("Calculating discrepancies...")
+        # found: bool = False
+        for i in range(len(outputs) - 1):
+            discrepancy = (outputs[i].result - outputs[i + 1].result).abs().mean() / (.5 * (
+                    outputs[i].result.max() - outputs[i].result.min() + outputs[i + 1].result.max() - outputs[
+                i + 1].result.min()))
+            # if discrepancy > 1e-2:
+            #     found = True
+            logger.info(
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(
+                    outputs[i].name, outputs[i + 1].name, 100. * discrepancy))
+        # if not found:
+        #     logger.info("\tNo discrepancies found.")
+        logger.info("Done.")
 
     # logger.info("Showing plots...")  # X, Y, Z = torch.meshgrid([torch.arange(0, size[0], 1), torch.arange(0,
     # size[1], 1), torch.arange(0, size[2], 1)])  # fig = pgo.Figure(  #     data=pgo.Volume(x=X.flatten(),
@@ -219,6 +235,8 @@ if __name__ == "__main__":
         help="The number of values of r, theta and phi to calculate plane integrals for, "
              "and the width and height of the grid of samples taken to approximate each integral. The "
              "computational expense of the 3D Radon transform is O(sinogram_size^5).")
+    parser.add_argument(
+        "-d", "--display", action='store_true', help="Display/plot the resulting data.")
     args = parser.parse_args()
 
     # create cache directory
@@ -227,4 +245,4 @@ if __name__ == "__main__":
 
     main(
         path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
-        save_to_cache=not args.no_save, sinogram_size=args.sinogram_size)
+        save_to_cache=not args.no_save, sinogram_size=args.sinogram_size, plot=args.display)

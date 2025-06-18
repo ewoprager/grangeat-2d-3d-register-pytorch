@@ -19,9 +19,10 @@ __global__ void Kernel_GridSample3D_CUDA(Texture3DCUDA inputTexture, Linear<Vec<
 }
 
 at::Tensor GridSample3D_CUDA(const at::Tensor &input, const at::Tensor &grid, const std::string &addressModeX,
-                             const std::string &addressModeY, const std::string &addressModeZ) {
+                             const std::string &addressModeY, const std::string &addressModeZ,
+                             c10::optional<at::Tensor> out) {
 	CommonData common = GridSample3D<Texture3DCUDA>::Common(input, grid, addressModeX, addressModeY, addressModeZ,
-	                                                        at::DeviceType::CUDA);
+	                                                        at::DeviceType::CUDA, out);
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 	const Linear<Texture3DCUDA::VectorType> mappingGridToTexCoord = common.inputTexture.MappingWorldToTexCoord();
 
