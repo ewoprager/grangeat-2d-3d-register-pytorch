@@ -17,7 +17,7 @@ public:
 #ifdef __CUDACC__
 
 	[[nodiscard]] Vec<int64_t, 2> Size() const {
-		return Vec<int64_t, 2>::FromIntArrayRef(backingTensor.sizes()).Flipped();
+		return size;
 	}
 
 	// no copy
@@ -27,8 +27,7 @@ public:
 
 	// yes move
 	CUDATexture2D(CUDATexture2D &&other) noexcept
-		: backingTensor(std::move(other.backingTensor)), arrayHandle(other.arrayHandle),
-		  textureHandle(other.textureHandle) {
+		: size(std::move(other.size)), arrayHandle(other.arrayHandle), textureHandle(other.textureHandle) {
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
 	}
@@ -36,7 +35,7 @@ public:
 	CUDATexture2D &operator=(CUDATexture2D &&other) noexcept {
 		if (textureHandle) cudaDestroyTextureObject(textureHandle);
 		if (arrayHandle) cudaFreeArray(arrayHandle);
-		backingTensor = std::move(other.backingTensor);
+		size = std::move(other.size);
 		arrayHandle = other.arrayHandle;
 		textureHandle = other.textureHandle;
 		other.arrayHandle = nullptr;
@@ -50,7 +49,7 @@ public:
 	}
 
 private:
-	at::Tensor backingTensor;
+	Vec<int64_t, 2> size;
 	cudaArray_t arrayHandle = nullptr;
 	cudaTextureObject_t textureHandle = 0;
 
@@ -71,7 +70,7 @@ public:
 #ifdef __CUDACC__
 
 	[[nodiscard]] Vec<int64_t, 3> Size() const {
-		return Vec<int64_t, 3>::FromIntArrayRef(backingTensor.sizes()).Flipped();
+		return size;
 	}
 
 	// no copy
@@ -81,7 +80,7 @@ public:
 
 	// yes move
 	CUDATexture3D(CUDATexture3D &&other) noexcept
-		: backingTensor(std::move(other.backingTensor)), arrayHandle(other.arrayHandle),
+		: size(std::move(other.size)), arrayHandle(other.arrayHandle),
 		  textureHandle(other.textureHandle) {
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
@@ -90,7 +89,7 @@ public:
 	CUDATexture3D &operator=(CUDATexture3D &&other) noexcept {
 		if (textureHandle) cudaDestroyTextureObject(textureHandle);
 		if (arrayHandle) cudaFreeArray(arrayHandle);
-		backingTensor = std::move(other.backingTensor);
+		size = std::move(other.size);
 		arrayHandle = other.arrayHandle;
 		textureHandle = other.textureHandle;
 		other.arrayHandle = nullptr;
@@ -104,7 +103,7 @@ public:
 	}
 
 private:
-	at::Tensor backingTensor{};
+	Vec<int64_t, 3> size{};
 	cudaArray_t arrayHandle = nullptr;
 	cudaTextureObject_t textureHandle = 0;
 
