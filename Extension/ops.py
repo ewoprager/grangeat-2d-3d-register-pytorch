@@ -57,12 +57,13 @@ def resample_sinogram3d(sinogram3d: torch.Tensor, sinogram_type: str, r_spacing:
         sinogram3d, sinogram_type, r_spacing, projection_matrix, phi_values, r_values)
 
 
-def resample_sinogram3d_cuda_texture(texture: reg23.CUDATexture3D, sinogram_type: str, r_spacing: float,
-                                     projection_matrix: torch.Tensor, phi_values: torch.Tensor,
-                                     r_values: torch.Tensor) -> torch.Tensor:
-    size = texture.size()
-    return torch.ops.reg23.resample_sinogram3d_cuda_texture.default(
-        texture.handle(), size[0], size[1], size[2], sinogram_type, r_spacing, projection_matrix, phi_values, r_values)
+if torch.cuda.is_available():
+    def resample_sinogram3d_cuda_texture(texture: reg23.CUDATexture3D, sinogram_type: str, r_spacing: float,
+                                         projection_matrix: torch.Tensor, phi_values: torch.Tensor,
+                                         r_values: torch.Tensor) -> torch.Tensor:
+        size = texture.size()
+        return torch.ops.reg23.resample_sinogram3d_cuda_texture.default(
+            texture.handle(), size[0], size[1], size[2], sinogram_type, r_spacing, projection_matrix, phi_values, r_values)
 
 
 def normalised_cross_correlation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
