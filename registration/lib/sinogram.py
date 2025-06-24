@@ -89,6 +89,7 @@ class SinogramClassic(Sinogram):
         return {"_data": self._data, "_r_range": self._r_range}
 
     def __setstate__(self, state):
+        logger.info("SetState called on classic")
         self._data = state["_data"]
         self._r_range = state["_r_range"]
         if self.device.type == "cuda":
@@ -619,6 +620,7 @@ class SinogramHEALPix(Sinogram):
         return {"_data": self._data, "_r_range": self._r_range}
 
     def __setstate__(self, state):
+        logger.info("SetState called on HEALPix")
         self._data = state["_data"]
         self._r_range = state["_r_range"]
         if self.device.type == "cuda":

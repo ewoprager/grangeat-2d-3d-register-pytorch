@@ -33,8 +33,21 @@ public:
 	}
 
 	CUDATexture2D &operator=(CUDATexture2D &&other) noexcept {
-		if (textureHandle) cudaDestroyTextureObject(textureHandle);
-		if (arrayHandle) cudaFreeArray(arrayHandle);
+		cudaError_t err;
+		if (textureHandle) {
+			err = cudaDestroyTextureObject(textureHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+				throw std::runtime_error("cudaDestroyTextureObject failed");
+			}
+		}
+		if (arrayHandle) {
+			err = cudaFreeArray(arrayHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+				throw std::runtime_error("cudaFreeArray failed");
+			}
+		}
 		size = std::move(other.size);
 		arrayHandle = other.arrayHandle;
 		textureHandle = other.textureHandle;
@@ -44,8 +57,21 @@ public:
 	}
 
 	~CUDATexture2D() {
-		if (textureHandle) cudaDestroyTextureObject(textureHandle);
-		if (arrayHandle) cudaFreeArray(arrayHandle);
+		cudaError_t err;
+		if (textureHandle) {
+			err = cudaDestroyTextureObject(textureHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+				throw std::runtime_error("cudaDestroyTextureObject failed");
+			}
+		}
+		if (arrayHandle) {
+			err = cudaFreeArray(arrayHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+				throw std::runtime_error("cudaFreeArray failed");
+			}
+		}
 	}
 
 private:
@@ -80,15 +106,31 @@ public:
 
 	// yes move
 	CUDATexture3D(CUDATexture3D &&other) noexcept
-		: size(std::move(other.size)), arrayHandle(other.arrayHandle),
-		  textureHandle(other.textureHandle) {
+		: size(std::move(other.size)), arrayHandle(other.arrayHandle), textureHandle(other.textureHandle) {
+		std::cout << "CUDATexture3D move constructing; texture handle: " << textureHandle << ", arrayHandle: " <<
+			arrayHandle << std::endl;
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
 	}
 
 	CUDATexture3D &operator=(CUDATexture3D &&other) noexcept {
-		if (textureHandle) cudaDestroyTextureObject(textureHandle);
-		if (arrayHandle) cudaFreeArray(arrayHandle);
+		std::cout << "CUDATexture3D move assigned; texture handle: " << other.textureHandle << ", arrayHandle: " <<
+			other.arrayHandle << std::endl;
+		cudaError_t err;
+		if (textureHandle) {
+			err = cudaDestroyTextureObject(textureHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+				throw std::runtime_error("cudaDestroyTextureObject failed");
+			}
+		}
+		if (arrayHandle) {
+			err = cudaFreeArray(arrayHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+				throw std::runtime_error("cudaFreeArray failed");
+			}
+		}
 		size = std::move(other.size);
 		arrayHandle = other.arrayHandle;
 		textureHandle = other.textureHandle;
@@ -98,8 +140,23 @@ public:
 	}
 
 	~CUDATexture3D() {
-		if (textureHandle) cudaDestroyTextureObject(textureHandle);
-		if (arrayHandle) cudaFreeArray(arrayHandle);
+		std::cout << "CUDATexture3D destructing; texture handle: " << textureHandle << ", arrayHandle: " << arrayHandle
+			<< std::endl;
+		cudaError_t err;
+		if (textureHandle) {
+			err = cudaDestroyTextureObject(textureHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+				throw std::runtime_error("cudaDestroyTextureObject failed");
+			}
+		}
+		if (arrayHandle) {
+			err = cudaFreeArray(arrayHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+				throw std::runtime_error("cudaFreeArray failed");
+			}
+		}
 	}
 
 private:
