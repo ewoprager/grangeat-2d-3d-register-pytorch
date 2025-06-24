@@ -2,10 +2,11 @@
 
 ## Build
 
-### Directly with setuptools:
-
-`python setup.py develop`
-
+Do this directly with setuptools:
+```bash
+source .venv/bin/activate
+python setup.py develop
+```
 - In debug: `--debug`
 - Without CUDA: `--no-cuda`
 

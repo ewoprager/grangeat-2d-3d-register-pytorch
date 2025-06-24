@@ -21,6 +21,7 @@ import Extension
 # from diffdrr.visualization import plot_drr
 # from diffdrr.pose import RigidTransform, make_matrix
 
+import logs_setup
 from registration.lib.structs import *
 from registration.lib.sinogram import *
 from registration import drr, data, script, objective_function
@@ -78,8 +79,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
             drr_spec = drr.generate_drr_as_target(
                 cache_directory, path, vol_data, voxel_spacing, device=device, save_to_cache=save_to_cache)
 
-        detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth = (
-            drr_spec)
+        detector_spacing, scene_geometry, drr_image, transformation_ground_truth = (drr_spec)
         del drr_spec
     else:
         # Load the given X-ray
@@ -89,21 +89,17 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         drr_image = drr_image[int(float(drr_image.size()[0]) * .5 * (1. - f_middle)):int(
             float(drr_image.size()[0]) * .5 * (1. + f_middle)), :]
 
-        logger.info("Calculating 2D sinogram (the fixed image)...")
-
-        sinogram2d_counts = 1024
-        image_diag: float = (
-                detector_spacing * torch.tensor(drr_image.size(), dtype=torch.float32)).square().sum().sqrt().item()
-        sinogram2d_range = Sinogram2dRange(
-            LinearRange(-.5 * torch.pi, .5 * torch.pi), LinearRange(-.5 * image_diag, .5 * image_diag))
-        sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=device)
-
-        fixed_image = grangeat.calculate_fixed_image(
-            drr_image, source_distance=scene_geometry.source_distance, detector_spacing=detector_spacing,
-            output_grid=sinogram2d_grid)
-
-        del sinogram2d_grid
-        logger.info("X-ray sinogram calculated.")
+    logger.info("Calculating 2D sinogram (the fixed image)...")
+    sinogram2d_counts = 1024
+    image_diag: float = (
+            detector_spacing * torch.tensor(drr_image.size(), dtype=torch.float32)).square().sum().sqrt().item()
+    sinogram2d_range = Sinogram2dRange(
+        LinearRange(-.5 * torch.pi, .5 * torch.pi), LinearRange(-.5 * image_diag, .5 * image_diag))
+    sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=device)
+    fixed_image = grangeat.calculate_fixed_image(
+        drr_image, source_distance=scene_geometry.source_distance, detector_spacing=detector_spacing,
+        output_grid=sinogram2d_grid)
+    logger.info("X-ray sinogram calculated.")
 
     logger.info("Plotting DRR/X-ray and fixed image...")
     # Plotting DRR/X-ray
@@ -128,8 +124,6 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     # Getting the limits to use for other colour mesh plots:
     colour_limits: Tuple[float, float] = mesh.get_clim()
     logger.info("DRR/X-ray and fixed image plotted.")
-
-    sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, fixed_image.size(), device=device)
 
     tr = transformation_ground_truth if x_ray is None else Transformation.random()
     logger.info("Evaluating at ground truth..." if x_ray is None else "Evaluating at random transformation")
@@ -347,8 +341,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
 
 if __name__ == "__main__":
     # set up logger
-    logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
-    logger = logging.getLogger("radonRegistration")
+    logger = logs_setup.setup_logger()
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
@@ -385,4 +378,4 @@ if __name__ == "__main__":
     main(
         path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
         regenerate_drr=args.regenerate_drr, save_to_cache=not args.no_save, sinogram_size=args.sinogram_size,
-        sinogram_structure=SinogramStructure.CLASSIC, x_ray=args.x_ray if "x_ray" in vars(args) else None)
+        x_ray=args.x_ray if "x_ray" in vars(args) else None)

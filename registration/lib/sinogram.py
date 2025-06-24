@@ -13,16 +13,8 @@ from Extension import reg23
 from registration.lib.structs import *
 from registration.lib import geometry
 from registration.lib import plot as myplt
-from registration.data import deterministic_hash_combo, deterministic_hash_type, deterministic_hash_string, \
-    deterministic_hash_int
 
 SinogramType = TypeVar('SinogramType')
-
-
-def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType], downsample_factor: int) -> str:
-    return deterministic_hash_combo(
-        deterministic_hash_string(path), deterministic_hash_type(sinogram_type),
-        deterministic_hash_int(downsample_factor))
 
 
 class Sinogram(ABC):

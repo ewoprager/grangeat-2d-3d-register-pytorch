@@ -1,0 +1,10 @@
+Hostname: seesPC022
+Timestamp: 2025-06-24_17-51-54
+Command: benchmark_resample_sinogram3d.py --sinogram-size 350 --ct-nrrd-path /home/eprager/Documents/Data/4th year project/First/ct.nrrd 
+
+[  INFO  ] at [2025-06-24 17:51:54,720] ----- Benchmarking resample_sinogram3d -----                     in [Function 'main'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_resample_sinogram3d.py:109]
+[  INFO  ] at [2025-06-24 17:51:54,888] Loaded cached volume spec from 'cache/volume_spec_68a26d0f895043470d719720ccea8e946b949c564b3dc441f2a0aa199bd0730a.pt'; sinogram size = [130 x 130 x 128]                     in [Function 'load_cached_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:154]
+[  INFO  ] at [2025-06-24 17:51:54,888] Loading CT data file '/home/eprager/Documents/Data/4th year project/First/ct.nrrd'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:26]
+[  INFO  ] at [2025-06-24 17:51:55,534] CT data file loaded.                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:31]
+[  INFO  ] at [2025-06-24 17:51:55,550] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:90]
+[  INFO  ] at [2025-06-24 17:51:55,551] CT data volume size = [512 x 512 x 279]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:92]

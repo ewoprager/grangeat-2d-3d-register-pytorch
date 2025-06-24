@@ -90,39 +90,39 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 	at::Tensor tensorContiguous = tensor.contiguous();
 
 	const float *const data = tensorContiguous.data_ptr<float>();
-	std::cout << "Hello, world0!\n";
+	// std::cout << "Hello, world0!\n";
 
 	size = Vec<int64_t, 3>::FromIntArrayRef(tensorContiguous.sizes()).Flipped();
-	std::cout << "Hello, world0.1!\n";
+	// std::cout << "Hello, world0.1!\n";
 
-	cudaExtent extent;
+	cudaExtent extent{};
 	extent.width = static_cast<size_t>(size.X());
 	extent.height = static_cast<size_t>(size.Y());
 	extent.depth = static_cast<size_t>(size.Z());
 
-	std::cout << "Hello, world0.2!\n";
+	// std::cout << "Hello, world0.2!\n";
 
 	// Copy the given data into a CUDA array
-	cudaChannelFormatDesc channelDesc = {};
+	cudaChannelFormatDesc channelDesc {};
 	channelDesc.f = cudaChannelFormatKindFloat;
 	channelDesc.x = (int)sizeof(float) * 8;
 	channelDesc.y = 0;
 	channelDesc.z = 0;
 	channelDesc.w = 0;
-	std::cout << "Hello, world0.3!\n";
+	// std::cout << "Hello, world0.3!\n";
 
 	err = cudaMalloc3DArray(&arrayHandle, &channelDesc, extent);
 	if (err != cudaSuccess) {
 		std::cerr << "cudaMalloc3DArray failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaMalloc3DArray failed");
 	}
-	std::cout << "Hello, world0.4!\n";
+	// std::cout << "Hello, world0.4!\n";
 
 	cudaDeviceSynchronize(); // Ensure the copy is finished before tensorContiguous is destroyed
 
-	std::cout << "Hello, world1!\n";
+	// std::cout << "Hello, world1!\n";
 
-	cudaMemcpy3DParms params;
+	cudaMemcpy3DParms params{};
 	params.srcPtr = make_cudaPitchedPtr((void *)data, size.X() * sizeof(float), size.X(), size.Y());
 	params.dstArray = arrayHandle;
 	params.extent = extent;
@@ -133,16 +133,16 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 		std::cerr << "cudaMemcpy3D failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaMemcpy3D failed");
 	}
-	std::cout << "Hello, world2!\n";
+	// std::cout << "Hello, world2!\n";
 
 	cudaDeviceSynchronize(); // Ensure the copy is finished before tensorContiguous is destroyed
 
 	// Create the texture object from the CUDA array
-	cudaResourceDesc resourceDescriptor;
+	cudaResourceDesc resourceDescriptor{};
 	resourceDescriptor.resType = cudaResourceTypeArray;
 	resourceDescriptor.res = {.array = {.array = arrayHandle}};
 
-	cudaTextureDesc textureDescriptor;
+	cudaTextureDesc textureDescriptor{};
 	textureDescriptor.filterMode = cudaFilterModeLinear;
 	textureDescriptor.readMode = cudaReadModeElementType;
 	textureDescriptor.borderColor[0] = 0.f;
@@ -159,11 +159,11 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 		std::cerr << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaCreateTextureObject failed");
 	}
-	std::cout << "Hello, world3!\n";
+	// std::cout << "Hello, world3!\n";
 
 	cudaDeviceSynchronize(); // Ensure the copy is finished before tensorContiguous is destroyed
 
-	std::cout << "Hello, world4!\n";
+	// std::cout << "Hello, world4!\n";
 }
 
 } // namespace reg23
