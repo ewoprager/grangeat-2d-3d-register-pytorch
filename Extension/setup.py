@@ -51,9 +51,9 @@ extra_compile_args = {
 }
 extra_link_args = []
 if debug:
-    extra_compile_args["cxx"].append("-g")
+    extra_compile_args["cxx"].extend(["-g", "-fsanitize=address", "-fno-omit-frame-pointer"])
     extra_compile_args["nvcc"].extend(["-g", "-G", "-DTORCH_USE_CUDA_DSA=1", "-DCUDA_LAUNCH_BLOCKING=1"])
-    extra_link_args.extend(["-O0", "-g"])
+    extra_link_args.extend(["-O0", "-g", "-fsanitize=address"])
 
 setup(name=extension_name,
       ext_modules=[extension_object(name=extension_name,
