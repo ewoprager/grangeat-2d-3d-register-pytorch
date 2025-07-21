@@ -5,20 +5,20 @@
 
 namespace reg23 {
 
-int64_t CUDATexture2D::Handle() const {
-	return textureHandle;
+unsigned long long CUDATexture2D::Handle() const {
+	return static_cast<unsigned long long>(textureHandle);
 }
 
-int64_t CUDATexture3D::Handle() const {
-	return textureHandle;
+unsigned long long CUDATexture3D::Handle() const {
+	return static_cast<unsigned long long>(textureHandle);
 }
 
 at::Tensor CUDATexture2D::SizeTensor() const {
-	return at::tensor(size, at::dtype(at::kInt));
+	return at::tensor(backingTensor.sizes(), at::dtype(at::kInt)).flip({0});
 }
 
 at::Tensor CUDATexture3D::SizeTensor() const {
-	return at::tensor(size, at::dtype(at::kInt));
+	return at::tensor(backingTensor.sizes(), at::dtype(at::kInt)).flip({0});
 }
 
 CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, const std::string &addressModeX, const std::string &addressModeY)
@@ -33,11 +33,11 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2
 	TORCH_CHECK(tensor.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(tensor.device().type() == at::DeviceType::CUDA);
 
-	const at::Tensor tensorContiguous = tensor.contiguous();
+	backingTensor = tensor.contiguous();
 
-	const float *const data = tensorContiguous.data_ptr<float>();
+	const float *const data = backingTensor.data_ptr<float>();
 
-	size = Vec<int64_t, 2>::FromIntArrayRef(tensorContiguous.sizes()).Flipped();
+	const Vec<int64_t, 2> size = Vec<int64_t, 2>::FromIntArrayRef(backingTensor.sizes()).Flipped();
 
 	// Copy the given data into a CUDA array
 	const cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
@@ -55,8 +55,6 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2
 		throw std::runtime_error("cudaMemcpy2DToArray failed");
 	}
 
-	cudaDeviceSynchronize(); // Ensure the copy is finished before tensorContiguous is destroyed
-
 	// Create the texture object from the CUDA array
 	const cudaResourceDesc resourceDescriptor = {.resType = cudaResourceTypeArray,
 	                                             .res = {.array = {.array = arrayHandle}}};
@@ -71,7 +69,8 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2
 		throw std::runtime_error("cudaCreateTextureObject failed");
 	}
 
-	cudaDeviceSynchronize(); // Ensure the copy is finished before tensorContiguous is destroyed
+	// Ensure the tensor is no longer being used by the device before anything else can happen to it
+	cudaDeviceSynchronize();
 }
 
 CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, const std::string &addressModeX, const std::string &addressModeY,
@@ -80,8 +79,6 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, const std::string &addres
 }
 
 CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3> addressModes) {
-	std::cout << "CUDATexture3D constructing" << std::endl;
-
 	cudaError_t err;
 
 	// tensor should be a 3-dimensional array of floats on the GPU
@@ -89,40 +86,30 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 	TORCH_CHECK(tensor.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(tensor.device().type() == at::DeviceType::CUDA);
 
-	at::Tensor tensorContiguous = tensor.contiguous();
+	backingTensor = tensor.contiguous();
 
-	const float *const data = tensorContiguous.data_ptr<float>();
-	std::cout << "Hello, world0!\n";
+	const float *const data = backingTensor.data_ptr<float>();
 
-	size = Vec<int64_t, 3>::FromIntArrayRef(tensorContiguous.sizes()).Flipped();
-	std::cout << "Hello, world0.1!\n";
+	const Vec<int64_t, 3> size = Vec<int64_t, 3>::FromIntArrayRef(backingTensor.sizes()).Flipped();
 
 	cudaExtent extent{};
 	extent.width = static_cast<size_t>(size.X());
 	extent.height = static_cast<size_t>(size.Y());
 	extent.depth = static_cast<size_t>(size.Z());
 
-	std::cout << "Hello, world0.2!\n";
-
 	// Copy the given data into a CUDA array
-	cudaChannelFormatDesc channelDesc {};
+	cudaChannelFormatDesc channelDesc{};
 	channelDesc.f = cudaChannelFormatKindFloat;
 	channelDesc.x = (int)sizeof(float) * 8;
 	channelDesc.y = 0;
 	channelDesc.z = 0;
 	channelDesc.w = 0;
-	std::cout << "Hello, world0.3!\n";
 
 	err = cudaMalloc3DArray(&arrayHandle, &channelDesc, extent);
 	if (err != cudaSuccess) {
 		std::cerr << "cudaMalloc3DArray failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaMalloc3DArray failed");
 	}
-	std::cout << "Hello, world0.4!\n";
-
-	cudaDeviceSynchronize(); // Ensure the copy is finished before tensorContiguous is destroyed
-
-	std::cout << "Hello, world1!\n";
 
 	cudaMemcpy3DParms params{};
 	params.srcPtr = make_cudaPitchedPtr((void *)data, size.X() * sizeof(float), size.X(), size.Y());
@@ -135,9 +122,6 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 		std::cerr << "cudaMemcpy3D failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaMemcpy3D failed");
 	}
-	std::cout << "Hello, world2!\n";
-
-	cudaDeviceSynchronize(); // Ensure the copy is finished before tensorContiguous is destroyed
 
 	// Create the texture object from the CUDA array
 	cudaResourceDesc resourceDescriptor{};
@@ -161,11 +145,9 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 		std::cerr << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaCreateTextureObject failed");
 	}
-	std::cout << "Hello, world3!\n";
 
-	cudaDeviceSynchronize(); // Ensure the copy is finished before tensorContiguous is destroyed
-
-	std::cout << "Hello, world4!\n";
+	// Ensure the tensor is no longer being used by the device before anything else can happen to it
+	cudaDeviceSynchronize();
 }
 
 } // namespace reg23

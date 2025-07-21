@@ -10,14 +10,14 @@ public:
 
 	CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2> addressModes);
 
-	[[nodiscard]] int64_t Handle() const;
+	[[nodiscard]] unsigned long long Handle() const;
 
 	[[nodiscard]] at::Tensor SizeTensor() const;
 
 #ifdef __CUDACC__
 
 	[[nodiscard]] Vec<int64_t, 2> Size() const {
-		return size;
+		return Vec<int64_t, 2>::FromIntArrayRef(backingTensor.sizes()).Flipped();
 	}
 
 	// no copy
@@ -27,29 +27,29 @@ public:
 
 	// yes move
 	CUDATexture2D(CUDATexture2D &&other) noexcept
-		: size(std::move(other.size)), arrayHandle(other.arrayHandle), textureHandle(other.textureHandle) {
+		: backingTensor(std::move(other.backingTensor)), arrayHandle(other.arrayHandle),
+		  textureHandle(other.textureHandle) {
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
 	}
 
-	// ToDo: Uncomment noexcept, and replace throws with `std::terminate()`
-	CUDATexture2D &operator=(CUDATexture2D &&other) /*noexcept*/ {
+	CUDATexture2D &operator=(CUDATexture2D &&other) noexcept {
 		cudaError_t err;
 		if (textureHandle) {
 			err = cudaDestroyTextureObject(textureHandle);
 			if (err != cudaSuccess) {
 				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
-				throw std::runtime_error("cudaDestroyTextureObject failed");
+				std::terminate();
 			}
 		}
 		if (arrayHandle) {
 			err = cudaFreeArray(arrayHandle);
 			if (err != cudaSuccess) {
 				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
-				throw std::runtime_error("cudaFreeArray failed");
+				std::terminate();
 			}
 		}
-		size = std::move(other.size);
+		backingTensor = std::move(other.backingTensor);
 		arrayHandle = other.arrayHandle;
 		textureHandle = other.textureHandle;
 		other.arrayHandle = nullptr;
@@ -76,7 +76,7 @@ public:
 	}
 
 private:
-	Vec<int64_t, 2> size;
+	at::Tensor backingTensor{};
 	cudaArray_t arrayHandle = nullptr;
 	cudaTextureObject_t textureHandle = 0;
 
@@ -90,14 +90,14 @@ public:
 
 	CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3> addressModes);
 
-	[[nodiscard]] int64_t Handle() const;
+	[[nodiscard]] unsigned long long Handle() const;
 
 	[[nodiscard]] at::Tensor SizeTensor() const;
 
 #ifdef __CUDACC__
 
 	[[nodiscard]] Vec<int64_t, 3> Size() const {
-		return size;
+		return Vec<int64_t, 3>::FromIntArrayRef(backingTensor.sizes()).Flipped();
 	}
 
 	// no copy
@@ -107,33 +107,29 @@ public:
 
 	// yes move
 	CUDATexture3D(CUDATexture3D &&other) noexcept
-		: size(std::move(other.size)), arrayHandle(other.arrayHandle), textureHandle(other.textureHandle) {
-		std::cout << "CUDATexture3D move constructing; texture handle: " << textureHandle << ", arrayHandle: " <<
-			arrayHandle << std::endl;
+		: backingTensor(std::move(other.backingTensor)), arrayHandle(other.arrayHandle),
+		  textureHandle(other.textureHandle) {
 		other.arrayHandle = nullptr;
 		other.textureHandle = 0;
 	}
 
-	// ToDo: Uncomment noexcept, and replace throws with `std::terminate()`
-	CUDATexture3D &operator=(CUDATexture3D &&other) /*noexcept*/ {
-		std::cout << "CUDATexture3D move assigned; texture handle: " << other.textureHandle << ", arrayHandle: " <<
-			other.arrayHandle << std::endl;
+	CUDATexture3D &operator=(CUDATexture3D &&other) noexcept {
 		cudaError_t err;
 		if (textureHandle) {
 			err = cudaDestroyTextureObject(textureHandle);
 			if (err != cudaSuccess) {
 				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
-				throw std::runtime_error("cudaDestroyTextureObject failed");
+				std::terminate();
 			}
 		}
 		if (arrayHandle) {
 			err = cudaFreeArray(arrayHandle);
 			if (err != cudaSuccess) {
 				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
-				throw std::runtime_error("cudaFreeArray failed");
+				std::terminate();
 			}
 		}
-		size = std::move(other.size);
+		backingTensor = std::move(other.backingTensor);
 		arrayHandle = other.arrayHandle;
 		textureHandle = other.textureHandle;
 		other.arrayHandle = nullptr;
@@ -142,8 +138,6 @@ public:
 	}
 
 	~CUDATexture3D() {
-		std::cout << "CUDATexture3D destructing; texture handle: " << textureHandle << ", arrayHandle: " << arrayHandle
-			<< std::endl;
 		cudaError_t err;
 		if (textureHandle) {
 			err = cudaDestroyTextureObject(textureHandle);
@@ -162,7 +156,7 @@ public:
 	}
 
 private:
-	Vec<int64_t, 3> size{};
+	at::Tensor backingTensor{};
 	cudaArray_t arrayHandle = nullptr;
 	cudaTextureObject_t textureHandle = 0;
 
