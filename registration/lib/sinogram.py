@@ -82,6 +82,10 @@ class SinogramClassic(Sinogram):
             bot_padding = at_theta_top.flip(dims=(2,))  # flipped in r direction
             self._data = torch.cat((top_padding, self._data, bot_padding), dim=1)
 
+        logger.info(
+            "SinogramClassic initialised with size (phi count + 2, theta count + 2, r count) = ({}, {}, {})".format(
+                self._data.size()[0], self._data.size()[1], self._data.size()[2]))
+
         if self.device.type == "cuda":
             self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
 
@@ -89,7 +93,6 @@ class SinogramClassic(Sinogram):
         return {"_data": self._data, "_r_range": self._r_range}
 
     def __setstate__(self, state):
-        logger.info("SetState called on classic")
         self._data = state["_data"]
         self._r_range = state["_r_range"]
         if self.device.type == "cuda":
@@ -611,6 +614,10 @@ class SinogramHEALPix(Sinogram):
             assert (data.size()[2] - 4) // 3 == (data.size()[1] - 4) // 2
             self._data = data
 
+        logger.info(
+            "SinogramHEALPix initialised with size (r count, 2*N_side + 4, 3*N_side + 4) = ({}, {}, {})".format(
+                self._data.size()[0], self._data.size()[1], self._data.size()[2]))
+
         self._r_range = r_range
 
         if self.device.type == "cuda":
@@ -620,7 +627,6 @@ class SinogramHEALPix(Sinogram):
         return {"_data": self._data, "_r_range": self._r_range}
 
     def __setstate__(self, state):
-        logger.info("SetState called on HEALPix")
         self._data = state["_data"]
         self._r_range = state["_r_range"]
         if self.device.type == "cuda":

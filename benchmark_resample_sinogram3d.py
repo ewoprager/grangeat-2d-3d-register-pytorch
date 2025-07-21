@@ -9,11 +9,7 @@ import matplotlib.pyplot as plt
 import torch
 import pathlib
 import plotly.graph_objects as pgo
-from pynvml import *
 import objgraph
-
-nvmlInit()
-gpu_handle = nvmlDeviceGetHandleByIndex(0)
 
 import logs_setup
 from registration.lib.structs import *
@@ -39,7 +35,7 @@ class FunctionParams(NamedTuple):
             self.sinogram3d.to(**kwargs), self.fixed_image_grid.to(**kwargs), self.out.to(**kwargs))
 
 
-def task_resample_sinogram3d(function, params: FunctionParams, ph_matrix: torch.Tensor) -> torch.Tensor:
+def task_resample_sinogram3d(function, params: FunctionParams, ph_matrix: torch.Tensor) -> torch.Tensor | None:
     function(params.sinogram3d, ph_matrix, params.fixed_image_grid, out=params.out)
 
 
@@ -52,11 +48,6 @@ def plot_task_resample_sinogram3d(summary: TaskSummary):
     axes.set_ylabel("phi")
     plt.colorbar(mesh)
 
-    # _, axes = plt.subplots()  # axes.plot(summary.gpu_status[0, :], summary.gpu_status[1, :], label="Temp. [C]")  #
-    # axes.plot(summary.gpu_status[0, :], summary.gpu_status[2, :], label="Utilisation [%]")  # axes.plot(
-    # summary.gpu_status[0, :], summary.gpu_status[3, :], label="Clock freq. [Hz]")  # axes.plot(summary.gpu_status[
-    # 0, :], summary.gpu_status[4, :], label="Max clock freq. [Hz]")  # axes.legend()
-
 
 def random_ph_matrix() -> torch.Tensor:
     scene_geometry = SceneGeometry(source_distance=1000.)
@@ -68,19 +59,18 @@ def random_ph_matrix() -> torch.Tensor:
 
 def run_task(task, task_plot, function, name: str, device: str, params: FunctionParams, ph_matrices: list[torch.Tensor],
              plot: bool = True) -> TaskSummary:
+    gc.collect()
+    if device == "cuda":
+        # Empty the CUDA cache
+        torch.cuda.empty_cache()
+    # Copy params to the chosen device
     params_device = params.to(device=device)
     logger.info("Running {} on {}...".format(name, device))
-    # to_plot = np.zeros((5, len(ph_matrices)))
     if torch.cuda.is_available():
         torch.cuda.synchronize()
         tic = time.time()
         for ph_matrix in ph_matrices:
-            task(
-                function, params_device,
-                ph_matrix)  # to_plot[:, i] = np.array(  #     [  #         toc, nvmlDeviceGetTemperature(gpu_handle,
-            # NVML_TEMPERATURE_GPU),  #         nvmlDeviceGetUtilizationRates(gpu_handle).gpu,
-            # nvmlDeviceGetClockInfo(gpu_handle, NVML_CLOCK_SM),  #         nvmlDeviceGetMaxClockInfo(gpu_handle,
-            # NVML_CLOCK_SM)])
+            task(function, params_device, ph_matrix)
 
         torch.cuda.synchronize()
         toc = time.time()
@@ -95,7 +85,7 @@ def run_task(task, task_plot, function, name: str, device: str, params: Function
         "Done; took {:.5f}s total; {:.5f}s per evaluation.".format(
             elapsed, elapsed / float(len(ph_matrices))))
     name: str = "{}_on_{}".format(name, device)
-    summary = TaskSummary(name, params_device.out.cpu())  # , to_plot)
+    summary = TaskSummary(name, params_device.out.cpu())
     torch.save(summary.result, "cache/{}.pt".format(summary.name))
     if plot:
         logger.info("Plotting...")
@@ -107,14 +97,17 @@ def run_task(task, task_plot, function, name: str, device: str, params: Function
 def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_size: int, save_to_cache: bool = True,
          plot: bool = True):
     logger.info("----- Benchmarking resample_sinogram3d -----")
-    debug_print_count = 0
 
+    # Use CUDA if available for loading data, as this makes sinogram calculation faster
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # Random transformations at which to run the resampling
     ph_matrices_cpu = [random_ph_matrix() for _ in range(100)]
-    if device.type == "cuda":
+    if torch.cuda.is_available():
+        # Copies on the GPU if CUDA is available
         ph_matrices_cuda = [m.to(device=device) for m in ph_matrices_cpu]
 
+    # Sinogram types to compare
     sinogram_types = [sinogram.SinogramClassic, sinogram.SinogramHEALPix]
     outputs: list[TaskSummary] = []
     for sinogram_type in sinogram_types:
@@ -141,7 +134,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
 
         fixed_image_range = Sinogram2dRange(
             LinearRange(-.5 * torch.pi, .5 * torch.pi), LinearRange(-.5 * vol_diag, .5 * vol_diag))
-        fixed_image_grid = Sinogram2dGrid.linear_from_range(fixed_image_range, (1000, 1000))
+        fixed_image_grid = Sinogram2dGrid.linear_from_range(fixed_image_range, (1000, 1000), device=device)
 
         out = torch.zeros_like(fixed_image_grid.phi)
         params = FunctionParams(sinogram3d, fixed_image_grid, out)
@@ -152,7 +145,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
         #     run_task(
         #         task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
         #         "{}.resample_python".format(sinogram_type.__name__), "cpu", params, ph_matrices_cpu, plot))
-        if device.type == "cuda":
+        if torch.cuda.is_available():
             res = run_task(
                 task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample_python,
                 "{}.resample_python".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda, plot)
@@ -164,7 +157,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
             #     run_task(
             #         task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
             #         "{}.resample".format(sinogram_type.__name__), "cpu", params, ph_matrices_cpu, plot))
-            if device.type == "cuda":
+            if torch.cuda.is_available():
                 res = run_task(
                     task_resample_sinogram3d, plot_task_resample_sinogram3d, sinogram_type.resample,
                     "{}.resample".format(sinogram_type.__name__), "cuda", params, ph_matrices_cuda, plot)
@@ -178,25 +171,6 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
                     outputs.append(res)
 
         del vol_data, voxel_spacing, sinogram3d, fixed_image_grid, out, params
-
-        gc.collect()
-        for obj in gc.get_objects():
-            if torch.is_tensor(obj) and len(obj.size()) == 3:
-                print(type(obj), obj.size(), obj.device)
-                for name, val in globals().items():
-                    if val is obj:
-                        print("Global:", name)
-                for name, val in locals().items():
-                    if val is obj:
-                        print("Local:", name)
-                # refs = gc.get_referrers(obj)
-                # for i, ref in enumerate(refs):
-                #     if isinstance(ref, dict):
-                #         print("Dicionary hold reference:")
-                #         for key, value in ref.items():
-                #             print(key, ":", value)
-                objgraph.show_backrefs([obj], max_depth=50, filename="refs{}.png".format(debug_print_count))
-                debug_print_count += 1
 
         if sinogram_type != sinogram_types[-1]:
             logger.info("Sleeping...")

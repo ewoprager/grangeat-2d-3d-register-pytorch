@@ -81,9 +81,10 @@ def deterministic_hash_combo(*hex_digests: str) -> str:
 SinogramType = TypeVar('SinogramType')
 
 
-def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType], downsample_factor: int) -> str:
+def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType], sinogram_size: int,
+                                downsample_factor: int) -> str:
     return deterministic_hash_combo(
-        deterministic_hash_string(path), deterministic_hash_type(sinogram_type),
+        deterministic_hash_string(path), deterministic_hash_type(sinogram_type), deterministic_hash_int(sinogram_size),
         deterministic_hash_int(downsample_factor))
 
 

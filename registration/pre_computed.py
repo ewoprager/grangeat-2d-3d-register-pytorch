@@ -13,7 +13,7 @@ from registration import data
 
 
 def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor,
-                              ct_volume_path: str, volume_downsample_factor: int, save_to_cache=True, vol_counts=192,
+                              ct_volume_path: str, volume_downsample_factor: int, save_to_cache=True, sinogram_size=192,
                               sinogram_type: Type[SinogramType] = SinogramClassic) -> SinogramType:
     device = volume_data.device
 
@@ -22,11 +22,11 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
     r_range = LinearRange(-.5 * vol_diag, .5 * vol_diag)
 
     if sinogram_type == SinogramClassic:
-        sinogram3d_grid = SinogramClassic.build_grid(counts=vol_counts, r_range=r_range, device=device)
+        sinogram3d_grid = SinogramClassic.build_grid(counts=sinogram_size, r_range=r_range, device=device)
     elif sinogram_type == SinogramHEALPix:
         sinogram3d_grid = SinogramHEALPix.build_grid(
-            n_side=int(torch.ceil(0.5 * torch.tensor(float(vol_counts)) / torch.tensor(2.).sqrt()).item()),
-            r_count=vol_counts, r_range=r_range, device=device)
+            n_side=int(torch.ceil(0.5 * torch.tensor(float(sinogram_size)) / torch.tensor(2.).sqrt()).item()),
+            r_count=sinogram_size, r_range=r_range, device=device)
     else:
         raise TypeError(
             "Unrecognised sinogram type '{}.{}'".format(sinogram_type.__module__, sinogram_type.__qualname__))
@@ -34,7 +34,7 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
     logger.info("Calculating 3D sinogram (the volume to resample)...")
     tic = time.time()
     sinogram_data = grangeat.calculate_radon_volume(
-        volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid, samples_per_direction=vol_counts)
+        volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid, samples_per_direction=sinogram_size)
     toc = time.time()
     logger.info("3D sinogram calculated; took {:.4f}s.".format(toc - tic))
 
@@ -42,12 +42,13 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
 
     if save_to_cache:
         save_path = cache_directory + "/volume_spec_{}.pt".format(
-            deterministic_hash_sinogram(ct_volume_path, sinogram_type, volume_downsample_factor))
+            deterministic_hash_sinogram(ct_volume_path, sinogram_type, sinogram_size, volume_downsample_factor))
         torch.save(VolumeSpec(ct_volume_path, volume_downsample_factor, sinogram3d), save_path)
         logger.info("3D sinogram saved to '{}'".format(save_path))
 
-    # X, Y, Z = torch.meshgrid(  #     [torch.arange(0, vol_counts, 1), torch.arange(0, vol_counts, 1), torch.arange(
-    # 0, vol_counts, 1)])  # fig = pgo.Figure(data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(),
+    # X, Y, Z = torch.meshgrid(  #     [torch.arange(0, sinogram_size, 1), torch.arange(0, sinogram_size, 1),
+    # torch.arange(
+    # 0, sinogram_size, 1)])  # fig = pgo.Figure(data=pgo.Volume(x=X.flatten(), y=Y.flatten(), z=Z.flatten(),
     # value=sinogram3d.cpu().flatten(),  #                                  isomin=sinogram3d.min().item(),
     # isomax=sinogram3d.max().item(), opacity=.2, surface_count=21))  # fig.show()
 
@@ -56,16 +57,16 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
 # def calculate_volume_sinogram_fibonacci(cache_directory: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
 #                                         ct_volume_path: str, volume_downsample_factor: int, *,
 #                                         device=torch.device('cpu'), save_to_cache=True,
-#                                         vol_counts=256) -> SinogramFibonacci:
+#                                         sinogram_size=256) -> SinogramFibonacci:
 #     logger.info("Calculating 3D Fibonacci sinogram (the volume to resample)...")
 #
 #     vol_diag: float = (voxel_spacing * torch.tensor(
 #         volume_data.size(), dtype=torch.float32, device=voxel_spacing.device)).square().sum().sqrt().item()
 #     r_range = LinearRange(-.5 * vol_diag, .5 * vol_diag)
 #
-#     sinogram3d_grid = Sinogram3dGrid.fibonacci_from_r_range(r_range, vol_counts, device=device)
+#     sinogram3d_grid = Sinogram3dGrid.fibonacci_from_r_range(r_range, sinogram_size, device=device)
 #     sinogram_data = grangeat.calculate_radon_volume(
-#         volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid, samples_per_direction=vol_counts)
+#         volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid, samples_per_direction=sinogram_size)
 #
 #     sinogram3d = SinogramFibonacci(sinogram_data, r_range)
 #
