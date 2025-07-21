@@ -125,13 +125,11 @@ dependencies = [
     "sniffio==1.3.1",
     "soupsieve==2.6",
     "stack-data==0.6.3",
-    "sympy==1.13.1",
     "tenacity==9.0.0",
     "terminado==0.18.1",
     "timm==1.0.14",
     "tinycss2==1.4.0",
-    "torchio==0.20.3",
-    "torchvision==0.20.1",
+    "torchio==0.20.13",
     "tornado==6.4.2",
     "tqdm==4.67.1",
     "traitlets==5.14.3",
@@ -140,7 +138,6 @@ dependencies = [
     "trame-server==3.3.0",
     "trame-vtk==2.8.14",
     "trame-vuetify==2.8.1",
-    "triton==3.1.0; sys_platform == 'linux'",
     "typer==0.15.1",
     "types-python-dateutil==2.9.0.20241206",
     "typing-extensions==4.12.2",
@@ -158,39 +155,60 @@ dependencies = [
     "yarl==1.18.3",
 ]
 
+# sets of optional dependencies (distinct from the normal dependencies above) are defined
 [project.optional-dependencies]
 cpu = [
-    "torch==2.5.1",
+    "torch==2.7.1+cpu",
+    "torchvision==0.22.1+cpu",
 ]
 cuda = [
-    "torch==2.5.1",
-    "nvidia-cublas-cu12==12.4.5.8",
-    "nvidia-cuda-cupti-cu12==12.4.127",
-    "nvidia-cuda-nvrtc-cu12==12.4.127",
-    "nvidia-cuda-runtime-cu12==12.4.127",
-    "nvidia-cudnn-cu12==9.1.0.70",
-    "nvidia-cufft-cu12==11.2.1.3",
-    "nvidia-curand-cu12==10.3.5.147",
-    "nvidia-cusolver-cu12==11.6.1.9",
-    "nvidia-cusparse-cu12==12.3.1.170",
-    "nvidia-nccl-cu12==2.21.5",
-    "nvidia-nvjitlink-cu12==12.4.127",
-    "nvidia-nvtx-cu12==12.4.127",
+    "torch==2.7.1+cu126",
+    "torchvision==0.22.1+cu126",
 ]
 
 [build-system]
 requires = [
     "numpy==2.2.1",
-    "torch==2.5.1",
+    "torch==2.7.1",
     "setuptools==75.8.0",
 ]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]
+# the project is re-built when any of the following globbed files are modified
 cache-keys = [
-    {file = "pyproject.toml"},
-    {file = "setup.py"},
-    {file = "include/*.h"},
-    {file = "src/*.cpp"},
-    {file = "src/*.cu"},
+    { file = "pyproject.toml" },
+    { file = "setup.py" },
+    { file = "include/*.h" },
+    { file = "src/*.cpp" },
+    { file = "src/*.cu" },
 ]
+# conflicts between optional dependencies are stated so that uv doesn't try to install them by default and complain
+conflicts = [
+    [
+        { extra = "cpu" },
+        { extra = "cuda" },
+    ],
+]
+
+# these define which sources to install some particular packages from
+[tool.uv.sources]
+# torch and torchvision are installed from the named indexes, according to which 'extra' (optional dependencies) is installed
+torch = [
+    { index = "torch-cpu", extra = "cpu" },
+    { index = "torch-cuda", extra = "cuda" },
+]
+torchvision = [
+    { index = "torch-cpu", extra = "cpu" },
+    { index = "torch-cuda", extra = "cuda" },
+]
+
+# this defines an index (a type of source from which a package can be installed) called `torch-cpu` at a particular url
+[[tool.uv.index]]
+name = "torch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+
+# this defines an index (a type of source from which a package can be installed) called `torch-cuda` at a particular url
+[[tool.uv.index]]
+name = "torch-cuda"
+url = "https://download.pytorch.org/whl/cu126"

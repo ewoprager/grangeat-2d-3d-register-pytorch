@@ -10,6 +10,12 @@ import nrrd
 import pydicom
 
 from registration.lib.structs import *
+from registration.lib import sinogram
+
+torch.serialization.add_safe_globals(
+    [
+        sinogram.VolumeSpec, sinogram.DrrSpec, sinogram.SinogramClassic, sinogram.SinogramHEALPix, LinearRange,
+        SceneGeometry, Transformation])
 
 
 class LoadedVolume(NamedTuple):
@@ -57,8 +63,10 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
 def deterministic_hash_string(string: str) -> str:
     return hashlib.sha256(string.encode()).hexdigest()
 
+
 def deterministic_hash_int(x: int) -> str:
     return hashlib.sha256(x.to_bytes(64)).hexdigest()
+
 
 def deterministic_hash_type(tp: type) -> str:
     string = "{}.{}".format(tp.__module__, tp.__qualname__)
@@ -68,6 +76,16 @@ def deterministic_hash_type(tp: type) -> str:
 def deterministic_hash_combo(*hex_digests: str) -> str:
     combined = b''.join(bytes.fromhex(h) for h in hex_digests)
     return hashlib.sha256(combined).hexdigest()
+
+
+SinogramType = TypeVar('SinogramType')
+
+
+def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType], sinogram_size: int,
+                                downsample_factor: int) -> str:
+    return deterministic_hash_combo(
+        deterministic_hash_string(path), deterministic_hash_type(sinogram_type), deterministic_hash_int(sinogram_size),
+        deterministic_hash_int(downsample_factor))
 
 
 def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -131,7 +149,7 @@ def load_cached_volume(cache_directory: str, sinogram_hash: str):
     file: str = cache_directory + "/volume_spec_{}.pt".format(sinogram_hash)
     try:
         volume_spec = torch.load(file)
-    except:
+    except FileNotFoundError:
         logger.warning("No cache file '{}' found.".format(file))
         return None
     volume_downsample_factor = volume_spec.downsample_factor
@@ -146,15 +164,13 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
     file: str = cache_directory + "/drr_spec_{}.pt".format(deterministic_hash_string(ct_volume_path))
     try:
         drr_spec = torch.load(file)
-    except:
+    except FileNotFoundError:
         logger.warning("No cache file '{}' found.".format(file))
         return None
     assert drr_spec.ct_volume_path == ct_volume_path
     detector_spacing = drr_spec.detector_spacing
     scene_geometry = drr_spec.scene_geometry
     drr_image = drr_spec.image
-    fixed_image = drr_spec.sinogram
-    sinogram2d_range = drr_spec.sinogram_range
     transformation_ground_truth = drr_spec.transformation
     logger.info("Loaded cached drr spec from '{}'".format(file))
-    return detector_spacing, scene_geometry, drr_image, fixed_image, sinogram2d_range, transformation_ground_truth
+    return detector_spacing, scene_geometry, drr_image, transformation_ground_truth

@@ -4,9 +4,10 @@
 **/build/
 **/cmake-build-*/
 cache/
-**/__pycache__
+**/__pycache__/
 **/*.so
 data/temp/
 Extension/src/extension.egg-info/
 figures/landscapes/
 figures/analysis/
+**/*.egg-info/

@@ -10,7 +10,7 @@ public:
 
 	CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2> addressModes);
 
-	[[nodiscard]] int64_t Handle() const;
+	[[nodiscard]] unsigned long long Handle() const;
 
 	[[nodiscard]] at::Tensor SizeTensor() const;
 
@@ -34,8 +34,21 @@ public:
 	}
 
 	CUDATexture2D &operator=(CUDATexture2D &&other) noexcept {
-		if (textureHandle) cudaDestroyTextureObject(textureHandle);
-		if (arrayHandle) cudaFreeArray(arrayHandle);
+		cudaError_t err;
+		if (textureHandle) {
+			err = cudaDestroyTextureObject(textureHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+				std::terminate();
+			}
+		}
+		if (arrayHandle) {
+			err = cudaFreeArray(arrayHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+				std::terminate();
+			}
+		}
 		backingTensor = std::move(other.backingTensor);
 		arrayHandle = other.arrayHandle;
 		textureHandle = other.textureHandle;
@@ -45,12 +58,25 @@ public:
 	}
 
 	~CUDATexture2D() {
-		if (textureHandle) cudaDestroyTextureObject(textureHandle);
-		if (arrayHandle) cudaFreeArray(arrayHandle);
+		cudaError_t err;
+		if (textureHandle) {
+			err = cudaDestroyTextureObject(textureHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+				std::terminate();
+			}
+		}
+		if (arrayHandle) {
+			err = cudaFreeArray(arrayHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+				std::terminate();
+			}
+		}
 	}
 
 private:
-	at::Tensor backingTensor;
+	at::Tensor backingTensor{};
 	cudaArray_t arrayHandle = nullptr;
 	cudaTextureObject_t textureHandle = 0;
 
@@ -64,7 +90,7 @@ public:
 
 	CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3> addressModes);
 
-	[[nodiscard]] int64_t Handle() const;
+	[[nodiscard]] unsigned long long Handle() const;
 
 	[[nodiscard]] at::Tensor SizeTensor() const;
 
@@ -88,8 +114,21 @@ public:
 	}
 
 	CUDATexture3D &operator=(CUDATexture3D &&other) noexcept {
-		if (textureHandle) cudaDestroyTextureObject(textureHandle);
-		if (arrayHandle) cudaFreeArray(arrayHandle);
+		cudaError_t err;
+		if (textureHandle) {
+			err = cudaDestroyTextureObject(textureHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+				std::terminate();
+			}
+		}
+		if (arrayHandle) {
+			err = cudaFreeArray(arrayHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+				std::terminate();
+			}
+		}
 		backingTensor = std::move(other.backingTensor);
 		arrayHandle = other.arrayHandle;
 		textureHandle = other.textureHandle;
@@ -99,8 +138,21 @@ public:
 	}
 
 	~CUDATexture3D() {
-		if (textureHandle) cudaDestroyTextureObject(textureHandle);
-		if (arrayHandle) cudaFreeArray(arrayHandle);
+		cudaError_t err;
+		if (textureHandle) {
+			err = cudaDestroyTextureObject(textureHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+				std::terminate();
+			}
+		}
+		if (arrayHandle) {
+			err = cudaFreeArray(arrayHandle);
+			if (err != cudaSuccess) {
+				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+				std::terminate();
+			}
+		}
 	}
 
 private:

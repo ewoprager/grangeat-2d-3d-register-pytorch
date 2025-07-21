@@ -15,7 +15,7 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
     volume_spec = None
     sinogram3d = None
     if load_cached and ct_volume_path is not None:
-        sinogram_hash = sinogram.deterministic_hash_sinogram(
+        sinogram_hash = data.deterministic_hash_sinogram(
             ct_volume_path, sinogram_type, sinogram_size, volume_downsample_factor)
         volume_spec = data.load_cached_volume(cache_directory, sinogram_hash)
 

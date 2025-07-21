@@ -50,7 +50,7 @@ def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_dat
     # logger.info("DRR sinogram calculated.")
 
     if save_to_cache and ct_volume_path is not None:
-        save_path = cache_directory + "/drr_spec_{}.pt".format(data.deterministic_hash(ct_volume_path))
+        save_path = cache_directory + "/drr_spec_{}.pt".format(data.deterministic_hash_string(ct_volume_path))
         torch.save(
             DrrSpec(
                 ct_volume_path, detector_spacing, scene_geometry, drr_image, transformation), save_path)
