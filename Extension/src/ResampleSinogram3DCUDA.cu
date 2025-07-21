@@ -51,30 +51,30 @@ __host__ at::Tensor ResampleSinogram3D_CUDA(const at::Tensor &sinogram3d, const 
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	// switch (common.sinogramType) {
-	// case ResampleSinogram3D::SinogramType::CLASSIC: {
-	SinogramClassic3D<Texture3DCPU> sinogram = SinogramClassic3D<Texture3DCPU>::FromTensor(sinogram3d, rSpacing);
-	int minGridSize, blockSize;
-	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
-	                                   &Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> >, 0, 0);
-	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
+	switch (common.sinogramType) {
+	case ResampleSinogram3D::SinogramType::CLASSIC: {
+		SinogramClassic3D<Texture3DCPU> sinogram = SinogramClassic3D<Texture3DCPU>::FromTensor(sinogram3d, rSpacing);
+		int minGridSize, blockSize;
+		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
+		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> >, 0, 0);
+		const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 
-	Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> ><<<gridSize, blockSize>>>(
-		std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
-	// 	break;
-	// }
-	// case ResampleSinogram3D::SinogramType::HEALPIX: {
-	// SinogramHEALPix<Texture3DCPU> sinogram = SinogramHEALPix<Texture3DCPU>::FromTensor(sinogram3d, rSpacing);
-	// int minGridSize, blockSize;
-	// cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
-	//                                    &Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCPU> >, 0, 0);
-	// const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
-	//
-	// Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCPU> ><<<gridSize, blockSize>>>(
-	// 	std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
-	// 	break;
-	// }
-	// }
+		Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> ><<<gridSize, blockSize>>>(
+			std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
+		break;
+	}
+	case ResampleSinogram3D::SinogramType::HEALPIX: {
+		SinogramHEALPix<Texture3DCPU> sinogram = SinogramHEALPix<Texture3DCPU>::FromTensor(sinogram3d, rSpacing);
+		int minGridSize, blockSize;
+		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
+		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCPU> >, 0, 0);
+		const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
+
+		Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCPU> ><<<gridSize, blockSize>>>(
+			std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
+		break;
+	}
+	}
 	return common.flatOutput.view(phiValues.sizes());
 }
 
@@ -112,32 +112,32 @@ __host__ at::Tensor ResampleSinogram3DCUDATexture(int64_t sinogram3dTextureHandl
 
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
-	// switch (common.sinogramType) {
-	// case ResampleSinogram3D::SinogramType::CLASSIC: {
-	SinogramClassic3D<Texture3DCUDA> sinogram = SinogramClassic3D<Texture3DCUDA>::FromCUDAHandle(
-		sinogram3dTextureHandle, sinogramSize, rSpacing);
-	int minGridSize, blockSize;
-	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
-	                                   &Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> >, 0, 0);
-	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
+	switch (common.sinogramType) {
+	case ResampleSinogram3D::SinogramType::CLASSIC: {
+		SinogramClassic3D<Texture3DCUDA> sinogram = SinogramClassic3D<Texture3DCUDA>::FromCUDAHandle(
+			sinogram3dTextureHandle, sinogramSize, rSpacing);
+		int minGridSize, blockSize;
+		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
+		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCPU> >, 0, 0);
+		const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 
-	Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCUDA> ><<<gridSize, blockSize>>>(
-		std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
-	// break;
-	// }
-	// case ResampleSinogram3D::SinogramType::HEALPIX: {
-	// 	SinogramHEALPix<Texture3DCUDA> sinogram = SinogramHEALPix<Texture3DCUDA>::FromCUDAHandle(
-	// 		sinogram3dTextureHandle, sinogramSize, rSpacing);
-	// 	int minGridSize, blockSize;
-	// 	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
-	// 	                                   &Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCUDA> >, 0, 0);
-	// 	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
-	//
-	// 	Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCUDA> ><<<gridSize, blockSize>>>(
-	// 		std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
-	// 	break;
-	// }
-	// }
+		Kernel_ResampleSinogram3D_CUDA<SinogramClassic3D<Texture3DCUDA> ><<<gridSize, blockSize>>>(
+			std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
+		break;
+	}
+	case ResampleSinogram3D::SinogramType::HEALPIX: {
+		SinogramHEALPix<Texture3DCUDA> sinogram = SinogramHEALPix<Texture3DCUDA>::FromCUDAHandle(
+			sinogram3dTextureHandle, sinogramSize, rSpacing);
+		int minGridSize, blockSize;
+		cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
+		                                   &Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCUDA> >, 0, 0);
+		const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
+
+		Kernel_ResampleSinogram3D_CUDA<SinogramHEALPix<Texture3DCUDA> ><<<gridSize, blockSize>>>(
+			std::move(sinogram), common.geometry, phiFlatPtr, rFlatPtr, common.flatOutput.numel(), resultFlatPtr);
+		break;
+	}
+	}
 	return common.flatOutput.view(phiValues.sizes());
 }
 

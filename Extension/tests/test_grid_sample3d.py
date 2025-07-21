@@ -48,14 +48,10 @@ def test_grid_sample3d_against_torch():
     # on cuda:
     if torch.cuda.is_available():
         device = torch.device("cuda")
-        texture = torch.tensor([[[1.0, 2.0], [4.0, 3.0]]], device=device)
-        xs = torch.linspace(-2.5, 2.5, 50, device=device)
-        ys = torch.linspace(-2.5, 2.5, 50, device=device)
-        zs = torch.zeros(1, device=device)
-        zs, ys, xs = torch.meshgrid(zs, ys, xs)
-        grid = torch.stack((xs, ys, zs), dim=-1)
+        texture = texture.to(device=device)
+        grid = grid.to(device=device)
         res = grid_sample3d(texture, grid, "zero", "zero", "zero")
         res_torch = \
         torch.nn.functional.grid_sample(texture.unsqueeze(0).unsqueeze(0), grid.unsqueeze(0), padding_mode="zeros")[
             0, 0]
-        assert res == pytest.approx(res_torch, abs=1e-5)
+        assert res.cpu() == pytest.approx(res_torch.cpu(), abs=1e-5)

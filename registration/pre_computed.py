@@ -42,7 +42,7 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
 
     if save_to_cache:
         save_path = cache_directory + "/volume_spec_{}.pt".format(
-            deterministic_hash_sinogram(ct_volume_path, sinogram_type, sinogram_size, volume_downsample_factor))
+            data.deterministic_hash_sinogram(ct_volume_path, sinogram_type, sinogram_size, volume_downsample_factor))
         torch.save(VolumeSpec(ct_volume_path, volume_downsample_factor, sinogram3d), save_path)
         logger.info("3D sinogram saved to '{}'".format(save_path))
 
