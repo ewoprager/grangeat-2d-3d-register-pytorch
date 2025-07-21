@@ -16,7 +16,7 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
     sinogram3d = None
     if load_cached and ct_volume_path is not None:
         sinogram_hash = sinogram.deterministic_hash_sinogram(
-            ct_volume_path, sinogram_type, volume_downsample_factor)
+            ct_volume_path, sinogram_type, sinogram_size, volume_downsample_factor)
         volume_spec = data.load_cached_volume(cache_directory, sinogram_hash)
 
     if volume_spec is None:
@@ -41,7 +41,7 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
     if sinogram3d is None:
         sinogram3d = pre_computed.calculate_volume_sinogram(
             cache_directory, vol_data, voxel_spacing=voxel_spacing, ct_volume_path=ct_volume_path,
-            volume_downsample_factor=volume_downsample_factor, save_to_cache=save_to_cache, vol_counts=sinogram_size,
+            volume_downsample_factor=volume_downsample_factor, save_to_cache=save_to_cache, sinogram_size=sinogram_size,
             sinogram_type=sinogram_type)
 
     voxel_spacing = voxel_spacing.to(device=device)

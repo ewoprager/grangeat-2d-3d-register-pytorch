@@ -78,8 +78,8 @@ def show_padding(output_directory: str | None, no_show: bool):
 
     if not no_show:
         _, axes = plt.subplots()
-        mesh = axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
-                               u_sinogram.data[0].numpy())
+        mesh = axes.pcolormesh(
+            torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(), u_sinogram.data[0].numpy())
         plt.colorbar(mesh)
         axes.set_xlabel("u")
         axes.set_ylabel("v")
@@ -93,8 +93,8 @@ def show_padding(output_directory: str | None, no_show: bool):
 
     if not no_show:
         _, axes = plt.subplots()
-        mesh = axes.pcolormesh(torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(),
-                               v_sinogram.data[0].numpy())
+        mesh = axes.pcolormesh(
+            torch.arange(3 * n_side + 4).numpy(), torch.arange(2 * n_side + 4).numpy(), v_sinogram.data[0].numpy())
         plt.colorbar(mesh)
         axes.set_xlabel("u")
         axes.set_ylabel("v")
@@ -137,10 +137,10 @@ def show_padding(output_directory: str | None, no_show: bool):
         with open(u_labels_path, "w") as file:
             for row in range(i.size()[0]):
                 for col in range(i.size()[1]):
-                    file.write("\\node at (axis cs:{},{}) {{\\scriptsize {}}};\n".format(i[row, col], j[row, col],
-                                                                                         "-" if u_padding[i.size()[
-                                                                                                              0] - row - 1, col] else
-                                                                                         u[i.size()[0] - row - 1, col]))
+                    file.write(
+                        "\\node at (axis cs:{},{}) {{\\scriptsize {}}};\n".format(
+                            i[row, col], j[row, col],
+                            "-" if u_padding[i.size()[0] - row - 1, col] else u[i.size()[0] - row - 1, col]))
                 file.write("\n")
         logger.info("`u` coord labels saved to '{}'".format(str(u_labels_path)))
 
@@ -148,10 +148,10 @@ def show_padding(output_directory: str | None, no_show: bool):
         with open(v_labels_path, "w") as file:
             for row in range(i.size()[0]):
                 for col in range(i.size()[1]):
-                    file.write("\\node at (axis cs:{},{}) {{\\scriptsize {}}};\n".format(i[row, col], j[row, col],
-                                                                                         "-" if v_padding[i.size()[
-                                                                                                              0] - row - 1, col] else
-                                                                                         v[i.size()[0] - row - 1, col]))
+                    file.write(
+                        "\\node at (axis cs:{},{}) {{\\scriptsize {}}};\n".format(
+                            i[row, col], j[row, col],
+                            "-" if v_padding[i.size()[0] - row - 1, col] else v[i.size()[0] - row - 1, col]))
                 file.write("\n")
         logger.info("`v` coord labels saved to '{}'".format(str(v_labels_path)))
 
@@ -179,10 +179,9 @@ def plot_sphere():
     vol_data[6, :, :] = 0.2
     vol_data[3:6, 2, 3] = 0.8
     voxel_spacing = torch.tensor([10., 10., 10.])
-    sinogram3d = pre_computed.calculate_volume_sinogram(None, vol_data, voxel_spacing=voxel_spacing,
-                                                        ct_volume_path=None, volume_downsample_factor=1,
-                                                        save_to_cache=False, vol_counts=24,
-                                                        sinogram_type=sinogram.SinogramHEALPix)
+    sinogram3d = pre_computed.calculate_volume_sinogram(
+        None, vol_data, voxel_spacing=voxel_spacing, ct_volume_path=None, volume_downsample_factor=1,
+        save_to_cache=False, sinogram_size=24, sinogram_type=sinogram.SinogramHEALPix)
 
     sampled = sinogram3d.sample(grid)
     _min = sampled.min()

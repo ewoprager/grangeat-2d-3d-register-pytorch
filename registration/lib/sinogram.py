@@ -19,9 +19,10 @@ from registration.data import deterministic_hash_combo, deterministic_hash_type,
 SinogramType = TypeVar('SinogramType')
 
 
-def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType], downsample_factor: int) -> str:
+def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType], sinogram_size: int,
+                                downsample_factor: int) -> str:
     return deterministic_hash_combo(
-        deterministic_hash_string(path), deterministic_hash_type(sinogram_type),
+        deterministic_hash_string(path), deterministic_hash_type(sinogram_type), deterministic_hash_int(sinogram_size),
         deterministic_hash_int(downsample_factor))
 
 
@@ -89,6 +90,10 @@ class SinogramClassic(Sinogram):
             top_padding = at_theta_bot.flip(dims=(2,))  # flipped in r direction
             bot_padding = at_theta_top.flip(dims=(2,))  # flipped in r direction
             self._data = torch.cat((top_padding, self._data, bot_padding), dim=1)
+
+        logger.info(
+            "SinogramClassic initialised with size (phi count + 2, theta count + 2, r count) = ({}, {}, {})".format(
+                self._data.size()[0], self._data.size()[1], self._data.size()[2]))
 
         if self.device.type == "cuda":
             self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
@@ -617,6 +622,10 @@ class SinogramHEALPix(Sinogram):
             assert (data.size()[1] - 4) % 2 == 0
             assert (data.size()[2] - 4) // 3 == (data.size()[1] - 4) // 2
             self._data = data
+
+        logger.info(
+            "SinogramHEALPix initialised with size (r count, 2*N_side + 4, 3*N_side + 4) = ({}, {}, {})".format(
+                self._data.size()[0], self._data.size()[1], self._data.size()[2]))
 
         self._r_range = r_range
 
