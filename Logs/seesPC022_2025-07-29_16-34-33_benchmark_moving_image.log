@@ -1,0 +1,11 @@
+Hostname: seesPC022
+Timestamp: 2025-07-29_16-34-33
+Command: /home/eprager/Documents/PyTorchExtensionTest/benchmark_moving_image.py 
+
+[  INFO  ] at [2025-07-29 16:34:33,133] Loading CT DICOM data from directory '/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:38]
+[  INFO  ] at [2025-07-29 16:34:34,725] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:93]
+[  INFO  ] at [2025-07-29 16:34:34,725] CT data volume size = [117 x 512 x 512]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:95]
+[  INFO  ] at [2025-07-29 16:34:34,754] CT voxel spacing after down-sampling = [0.408203125 x 0.408203125 x 0.40000152587890625] mm                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:106]
+[  INFO  ] at [2025-07-29 16:34:34,754] CT data file processed.                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:107]
+[WARNING ] at [2025-07-29 16:34:34,901] No cache file 'cache/volume_spec_a8b0545328287608914da105c2e7160fa7af1d29ec585981fbe291481420d28e.pt' found.                     in [Function 'load_cached_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:153]
+[  INFO  ] at [2025-07-29 16:34:34,902] Calculating 3D sinogram (the volume to resample): volume size = [117 x 512 x 512], sinogram size = 314...                     in [Function 'calculate_volume_sinogram'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/pre_computed.py:34]

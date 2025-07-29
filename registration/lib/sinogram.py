@@ -54,7 +54,8 @@ class SinogramClassic(Sinogram):
     def build_grid(*, counts: int | Tuple[int, int, int] | torch.Size, r_range: LinearRange,
                    device=torch.device("cpu")) -> Sinogram3dGrid:
         if isinstance(counts, int):
-            counts = (counts, counts, counts)
+            counts = (int(torch.ceil(2.0 * float(counts) * torch.tensor(0.25 * torch.pi).sqrt())),
+                      int(torch.ceil(float(counts) * torch.tensor(0.25 * torch.pi).sqrt())), counts)
         elif isinstance(counts, torch.Size):
             assert len(counts) == 3
         phis = SinogramClassic.phi_range.generate_tex_coord_grid(counts[0], device=device)
@@ -121,16 +122,15 @@ class SinogramClassic(Sinogram):
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                  out: torch.Tensor | None = None) -> torch.Tensor:
-        return Extension.resample_sinogram3d(
-            self.data, "classic", self.r_range.get_spacing(self.data.size()[2]), ph_matrix, fixed_image_grid.phi,
-            fixed_image_grid.r, out=out)
+        return Extension.resample_sinogram3d(self.data, "classic", self.r_range.get_spacing(self.data.size()[2]),
+                                             ph_matrix, fixed_image_grid.phi, fixed_image_grid.r, out=out)
 
     def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                               out: torch.Tensor | None = None) -> torch.Tensor:
         assert self.device.type == "cuda"
-        return Extension.resample_sinogram3d_cuda_texture(
-            self._texture, "classic", self.r_range.get_spacing(
-                self.data.size()[2]), ph_matrix, fixed_image_grid.phi, fixed_image_grid.r, out=out)
+        return Extension.resample_sinogram3d_cuda_texture(self._texture, "classic",
+                                                          self.r_range.get_spacing(self.data.size()[2]), ph_matrix,
+                                                          fixed_image_grid.phi, fixed_image_grid.r, out=out)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
                         plot: bool = False, out: torch.Tensor | None = None) -> torch.Tensor:
@@ -146,8 +146,8 @@ class SinogramClassic(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
-        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
-            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+                                                                        plot=plot)
 
         if plot:
             myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
@@ -184,10 +184,8 @@ class SinogramClassic(Sinogram):
 
         if out is None:
             out = torch.zeros_like(fixed_image_grid_sph.phi)
-        grid = torch.stack(
-            (
-                i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
-                k_mapping(fixed_image_grid_sph.phi)), dim=-1)
+        grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
+                            k_mapping(fixed_image_grid_sph.phi)), dim=-1)
         ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero", out=out)
 
         del fixed_image_grid_sph
@@ -407,8 +405,8 @@ class SinogramHEALPix(Sinogram):
 
         u_star = u.clone()
         v_star = v.clone()
-        base_pixel_9 = torch.logical_and(
-            u_star >= 2.0 * n_side + 2.0, v_star < n_side + 2.0)  # the added 2s adjust for padding
+        base_pixel_9 = torch.logical_and(u_star >= 2.0 * n_side + 2.0,
+                                         v_star < n_side + 2.0)  # the added 2s adjust for padding
         u_star -= 1.0  # this adjusts for padding
         v_star -= 3.0  # this adjusts for padding
         u_star[base_pixel_9] -= 2.0 + n_side  # the 2 adjusts for padding
@@ -538,74 +536,57 @@ class SinogramHEALPix(Sinogram):
             pad_9_corner_right = corner_0_left.flip(dims=(0,))  # wraps causing flip in r
             pad_9_corner_bot = corner_1_top.flip(dims=(0,))  # wraps causing flip in r
 
-            del corner_5_right, corner_0_top, corner_0_left, corner_1_top, corner_1_bot, corner_8_bot, corner_8_left,\
-                corner_8_right, corner_9_bot
+            del corner_5_right, corner_0_top, corner_0_left, corner_1_top, corner_1_bot, corner_8_bot, corner_8_left, corner_8_right, corner_9_bot
 
             r_count = data.size()[0]
-            row_0 = torch.cat(
-                (
-                    torch.zeros(r_count, 1, 2 * n_side + 2, device=self.device),  #
-                    pad_9_corner_left,  #
-                    pad_9_top_left,  #
-                    pad_9_corner_top), dim=-1)
-            row_1 = torch.cat(
-                (
-                    torch.zeros(r_count, 1, 2 * n_side + 2, device=self.device),  #
-                    pad_9_bot_left[:, :, 0].unsqueeze(1),  #
-                    bp_9[:, 0, :].unsqueeze(1),  #
-                    pad_9_top_right[:, :, 0].unsqueeze(1)), dim=-1)
-            row_2 = torch.cat(
-                (
-                    pad_6_corner_left,  #
-                    pad_6_top_left,  #
-                    pad_0_top_left,  #
-                    pad_0_corner_top,  #
-                    pad_9_bot_left[:, :, 1].unsqueeze(1),  #
-                    bp_9[:, 1, :].unsqueeze(1),  #
-                    pad_9_top_right[:, :, 1].unsqueeze(1)), dim=-1)
-            rows_3_to_n = torch.cat(
-                (
-                    pad_6_bot_left[:, :, :-2].transpose(1, 2),  #
-                    self._data[:, :(n_side - 2), :(2 * n_side)],  #
-                    pad_0_top_right[:, :, :-2].transpose(1, 2),  #
-                    pad_9_bot_left[:, :, 2:].transpose(1, 2),  #
-                    bp_9[:, 2:, :],  #
-                    pad_9_top_right[:, :, 2:].transpose(1, 2)), dim=-1)
-            row_np1 = torch.cat(
-                (
-                    pad_6_bot_left[:, :, -2].unsqueeze(1),  #
-                    self._data[:, n_side - 2, :(2 * n_side)].unsqueeze(1),  #
-                    pad_0_top_right[:, :, -2].unsqueeze(1),  #
-                    pad_9_corner_bot,  #
-                    pad_9_bot_right,  #
-                    pad_9_corner_right), dim=-1)
-            row_np2 = torch.cat(
-                (
-                    pad_6_bot_left[:, :, -1].unsqueeze(1),  #
-                    self._data[:, n_side - 1, :(2 * n_side)].unsqueeze(1),  #
-                    pad_1_top_left,  #
-                    pad_1_corner_top,  #
-                    torch.zeros(r_count, 1, 2, device=self.device)), dim=-1)
-            rows_np3_to_2np2 = torch.cat(
-                (
-                    pad_8_bot_left.transpose(1, 2),  #
-                    self._data[:, n_side:, :],  #
-                    pad_1_top_right.transpose(1, 2),  #
-                    torch.zeros(r_count, n_side, 2, device=self.device)), dim=-1)
-            row_2np3 = torch.cat(
-                (
-                    pad_8_corner_bot,  #
-                    pad_8_bot_right,  #
-                    pad_5_bot_right,  #
-                    pad_1_bot_right,  #
-                    pad_1_corner_right,  #
-                    torch.zeros(r_count, 1, 2, device=self.device)), dim=-1)
+            row_0 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2, device=self.device),  #
+                               pad_9_corner_left,  #
+                               pad_9_top_left,  #
+                               pad_9_corner_top), dim=-1)
+            row_1 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2, device=self.device),  #
+                               pad_9_bot_left[:, :, 0].unsqueeze(1),  #
+                               bp_9[:, 0, :].unsqueeze(1),  #
+                               pad_9_top_right[:, :, 0].unsqueeze(1)), dim=-1)
+            row_2 = torch.cat((pad_6_corner_left,  #
+                               pad_6_top_left,  #
+                               pad_0_top_left,  #
+                               pad_0_corner_top,  #
+                               pad_9_bot_left[:, :, 1].unsqueeze(1),  #
+                               bp_9[:, 1, :].unsqueeze(1),  #
+                               pad_9_top_right[:, :, 1].unsqueeze(1)), dim=-1)
+            rows_3_to_n = torch.cat((pad_6_bot_left[:, :, :-2].transpose(1, 2),  #
+                                     self._data[:, :(n_side - 2), :(2 * n_side)],  #
+                                     pad_0_top_right[:, :, :-2].transpose(1, 2),  #
+                                     pad_9_bot_left[:, :, 2:].transpose(1, 2),  #
+                                     bp_9[:, 2:, :],  #
+                                     pad_9_top_right[:, :, 2:].transpose(1, 2)), dim=-1)
+            row_np1 = torch.cat((pad_6_bot_left[:, :, -2].unsqueeze(1),  #
+                                 self._data[:, n_side - 2, :(2 * n_side)].unsqueeze(1),  #
+                                 pad_0_top_right[:, :, -2].unsqueeze(1),  #
+                                 pad_9_corner_bot,  #
+                                 pad_9_bot_right,  #
+                                 pad_9_corner_right), dim=-1)
+            row_np2 = torch.cat((pad_6_bot_left[:, :, -1].unsqueeze(1),  #
+                                 self._data[:, n_side - 1, :(2 * n_side)].unsqueeze(1),  #
+                                 pad_1_top_left,  #
+                                 pad_1_corner_top,  #
+                                 torch.zeros(r_count, 1, 2, device=self.device)), dim=-1)
+            rows_np3_to_2np2 = torch.cat((pad_8_bot_left.transpose(1, 2),  #
+                                          self._data[:, n_side:, :],  #
+                                          pad_1_top_right.transpose(1, 2),  #
+                                          torch.zeros(r_count, n_side, 2, device=self.device)), dim=-1)
+            row_2np3 = torch.cat((pad_8_corner_bot,  #
+                                  pad_8_bot_right,  #
+                                  pad_5_bot_right,  #
+                                  pad_1_bot_right,  #
+                                  pad_1_corner_right,  #
+                                  torch.zeros(r_count, 1, 2, device=self.device)), dim=-1)
 
             del pad_6_corner_left, pad_0_corner_top, pad_1_corner_top, pad_1_corner_right, pad_8_corner_bot, (
                 pad_9_corner_left), pad_9_corner_top, pad_9_corner_right, pad_9_corner_bot
 
-            self._data = torch.cat(
-                (row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3), dim=1)
+            self._data = torch.cat((row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3),
+                                   dim=1)
 
             del row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3
         else:
@@ -614,9 +595,8 @@ class SinogramHEALPix(Sinogram):
             assert (data.size()[2] - 4) // 3 == (data.size()[1] - 4) // 2
             self._data = data
 
-        logger.info(
-            "SinogramHEALPix initialised with size (r count, 2*N_side + 4, 3*N_side + 4) = ({}, {}, {})".format(
-                self._data.size()[0], self._data.size()[1], self._data.size()[2]))
+        logger.info("SinogramHEALPix initialised with size (r count, 2*N_side + 4, 3*N_side + 4) = ({}, {}, {})".format(
+            self._data.size()[0], self._data.size()[1], self._data.size()[2]))
 
         self._r_range = r_range
 
@@ -670,16 +650,15 @@ class SinogramHEALPix(Sinogram):
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                  out: torch.Tensor | None = None) -> torch.Tensor:
-        return Extension.resample_sinogram3d(
-            self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]), ph_matrix, fixed_image_grid.phi,
-            fixed_image_grid.r, out=out)
+        return Extension.resample_sinogram3d(self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]),
+                                             ph_matrix, fixed_image_grid.phi, fixed_image_grid.r, out=out)
 
     def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                               out: torch.Tensor | None = None) -> torch.Tensor:
         assert self.device.type == "cuda"
-        return Extension.resample_sinogram3d_cuda_texture(
-            self._texture, "healpix", self.r_range.get_spacing(self.data.size()[0]), ph_matrix, fixed_image_grid.phi,
-            fixed_image_grid.r, out=out)
+        return Extension.resample_sinogram3d_cuda_texture(self._texture, "healpix",
+                                                          self.r_range.get_spacing(self.data.size()[0]), ph_matrix,
+                                                          fixed_image_grid.phi, fixed_image_grid.r, out=out)
 
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, plot: bool = False,
                         out: torch.Tensor | None = None) -> torch.Tensor:
@@ -694,8 +673,8 @@ class SinogramHEALPix(Sinogram):
         assert fixed_image_grid.phi.device == self.device
         assert ph_matrix.device == self.device
 
-        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(
-            fixed_image_grid, ph_matrix=ph_matrix, plot=plot)
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+                                                                        plot=plot)
 
         if out is None:
             out = torch.zeros_like(fixed_image_grid_sph.phi)
