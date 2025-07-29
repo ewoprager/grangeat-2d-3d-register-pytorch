@@ -1,0 +1,28 @@
+Hostname: seesPC022
+Timestamp: 2025-07-29_11-39-55
+Command: /home/eprager/Documents/PyTorchExtensionTest/benchmark_moving_image.py 
+
+[  INFO  ] at [2025-07-29 11:39:55,622] Loading CT DICOM data from directory '/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:38]
+[  INFO  ] at [2025-07-29 11:39:57,283] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:93]
+[  INFO  ] at [2025-07-29 11:39:57,283] CT data volume size = [117 x 512 x 512]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:95]
+[  INFO  ] at [2025-07-29 11:39:57,311] CT voxel spacing after down-sampling = [0.408203125 x 0.408203125 x 0.40000152587890625] mm                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:106]
+[  INFO  ] at [2025-07-29 11:39:57,311] CT data file processed.                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:107]
+[  INFO  ] at [2025-07-29 11:39:57,434] Loaded cached volume spec from 'cache/volume_spec_bf9e5c98778cd68c548d9342eaf860a53cc819310a6e97cd4425b6409718542f.pt'; sinogram size = [34 x 34 x 32]                     in [Function 'load_cached_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:157]
+[  INFO  ] at [2025-07-29 11:39:57,435] Loading CT DICOM data from directory '/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:38]
+[  INFO  ] at [2025-07-29 11:39:59,127] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:93]
+[  INFO  ] at [2025-07-29 11:39:59,127] CT data volume size = [117 x 512 x 512]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:95]
+[  INFO  ] at [2025-07-29 11:39:59,182] CT volume size after down-sampling = [58 x 256 x 256]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:104]
+[  INFO  ] at [2025-07-29 11:39:59,182] CT voxel spacing after down-sampling = [0.81640625 x 0.81640625 x 0.8000030517578125] mm                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:106]
+[  INFO  ] at [2025-07-29 11:39:59,182] CT data file processed.                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:107]
+[  INFO  ] at [2025-07-29 11:39:59,186] Loading CT DICOM data from directory '/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:38]
+[  INFO  ] at [2025-07-29 11:40:00,813] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:93]
+[  INFO  ] at [2025-07-29 11:40:00,813] CT data volume size = [117 x 512 x 512]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:95]
+[  INFO  ] at [2025-07-29 11:40:00,861] CT volume size after down-sampling = [29 x 128 x 128]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:104]
+[  INFO  ] at [2025-07-29 11:40:00,861] CT voxel spacing after down-sampling = [1.6328125 x 1.6328125 x 1.600006103515625] mm                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:106]
+[  INFO  ] at [2025-07-29 11:40:00,861] CT data file processed.                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:107]
+[  INFO  ] at [2025-07-29 11:40:00,864] Loading CT DICOM data from directory '/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:38]
+[  INFO  ] at [2025-07-29 11:40:02,496] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:93]
+[  INFO  ] at [2025-07-29 11:40:02,496] CT data volume size = [117 x 512 x 512]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:95]
+[  INFO  ] at [2025-07-29 11:40:02,550] CT volume size after down-sampling = [14 x 64 x 64]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:104]
+[  INFO  ] at [2025-07-29 11:40:02,550] CT voxel spacing after down-sampling = [3.265625 x 3.265625 x 3.20001220703125] mm                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:106]
+[  INFO  ] at [2025-07-29 11:40:02,550] CT data file processed.                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:107]

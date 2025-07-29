@@ -18,7 +18,7 @@ namespace reg23 {
  * @param sourceDistance The distance in [mm] of the source from the detector array
  * @param outputWidth The width in pixels of the DRR to generate.
  * @param outputHeight The height in pixels of the DRR to generate.
- * @param outputOffset The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array.
+ * @param outputOffset a tensor of size (2,) containing `torch.float64`s: The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array.
  * @param detectorSpacing a tensor of size (2,): The spacing in [mm] between the columns and rows of the DRR image.
  * @return a tensor of size (outputHeight, outputWidth): The DRR projection through the given volume at the given transformation.
  */

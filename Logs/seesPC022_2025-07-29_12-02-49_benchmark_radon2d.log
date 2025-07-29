@@ -1,0 +1,23 @@
+Hostname: seesPC022
+Timestamp: 2025-07-29_12-02-49
+Command: /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py /home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm 
+
+[  INFO  ] at [2025-07-29 12:02:49,457] ----- Benchmarking radon2d -----                     in [Function 'main'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:75]
+[  INFO  ] at [2025-07-29 12:02:49,457] Loading X-ray data file /home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm...                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:18]
+[  INFO  ] at [2025-07-29 12:02:49,458] X-ray data file loaded.                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:20]
+[  INFO  ] at [2025-07-29 12:02:49,458] Processing X-ray data...                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:21]
+[  INFO  ] at [2025-07-29 12:02:49,460] 	X-ray size = [1080 x 1219]                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:24]
+[  INFO  ] at [2025-07-29 12:02:49,471] X-ray size after down-sampling = [540 x 609]                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:30]
+[  INFO  ] at [2025-07-29 12:02:49,471] X-ray value range = (0.000, 16383.000)                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:32]
+[  INFO  ] at [2025-07-29 12:02:49,471] X-ray pixel spacing = [0.3792000114917755 x 0.3792000114917755] mm                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:36]
+[  INFO  ] at [2025-07-29 12:02:49,471] Done.                     in [Function 'read_dicom'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:37]
+[  INFO  ] at [2025-07-29 12:02:49,472] Running RT2 V1 on cpu...                     in [Function 'run_task'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:65]
+[  INFO  ] at [2025-07-29 12:03:15,633] Done; took 26.161s. Plotting summary...                     in [Function 'run_task'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:69]
+[  INFO  ] at [2025-07-29 12:03:15,745] Running RT2 V1 on cuda...                     in [Function 'run_task'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:65]
+[  INFO  ] at [2025-07-29 12:03:16,348] Done; took 0.602s. Plotting summary...                     in [Function 'run_task'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:69]
+[  INFO  ] at [2025-07-29 12:03:16,363] Running RT2 V2 on cuda...                     in [Function 'run_task'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:65]
+[  INFO  ] at [2025-07-29 12:03:23,899] Done; took 7.535s. Plotting summary...                     in [Function 'run_task'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:69]
+[  INFO  ] at [2025-07-29 12:03:23,914] Calculating discrepancies...                     in [Function 'main'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:88]
+[  INFO  ] at [2025-07-29 12:03:23,914] 	No discrepancies found.                     in [Function 'main'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:99]
+[  INFO  ] at [2025-07-29 12:03:23,914] Done.                     in [Function 'main'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:100]
+[  INFO  ] at [2025-07-29 12:03:23,914] Showing plots...                     in [Function 'main'] [File /home/eprager/Documents/PyTorchExtensionTest/benchmark_radon2d.py:102]

@@ -14,7 +14,7 @@ from registration import data
 
 def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor,
                               ct_volume_path: str, volume_downsample_factor: int, save_to_cache=True, sinogram_size=192,
-                              sinogram_type: Type[SinogramType] = SinogramClassic) -> SinogramType:
+                              sinogram_type: Type[SinogramType] = SinogramClassic) -> Tuple[SinogramType, float]:
     device = volume_data.device
 
     vol_diag: float = (voxel_spacing * torch.tensor(
@@ -31,12 +31,15 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
         raise TypeError(
             "Unrecognised sinogram type '{}.{}'".format(sinogram_type.__module__, sinogram_type.__qualname__))
 
-    logger.info("Calculating 3D sinogram (the volume to resample)...")
+    logger.info(
+        "Calculating 3D sinogram (the volume to resample): volume size = [{} x {} x {}], sinogram size = {}...".format(
+            volume_data.size()[0], volume_data.size()[1], volume_data.size()[2], sinogram_size))
     tic = time.time()
     sinogram_data = grangeat.calculate_radon_volume(
         volume_data, voxel_spacing=voxel_spacing, output_grid=sinogram3d_grid, samples_per_direction=sinogram_size)
     toc = time.time()
-    logger.info("3D sinogram calculated; took {:.4f}s.".format(toc - tic))
+    sinogram_evaluation_time: float = toc - tic
+    logger.info("3D sinogram calculated; took {:.4f}s.".format(sinogram_evaluation_time))
 
     sinogram3d = sinogram_type(sinogram_data, r_range)
 
@@ -52,7 +55,7 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
     # value=sinogram3d.cpu().flatten(),  #                                  isomin=sinogram3d.min().item(),
     # isomax=sinogram3d.max().item(), opacity=.2, surface_count=21))  # fig.show()
 
-    return sinogram3d
+    return sinogram3d, sinogram_evaluation_time
 
 # def calculate_volume_sinogram_fibonacci(cache_directory: str, volume_data: torch.Tensor, voxel_spacing: torch.Tensor,
 #                                         ct_volume_path: str, volume_downsample_factor: int, *,

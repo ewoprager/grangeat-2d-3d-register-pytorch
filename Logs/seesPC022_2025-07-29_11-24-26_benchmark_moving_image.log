@@ -1,0 +1,18 @@
+Hostname: seesPC022
+Timestamp: 2025-07-29_11-24-26
+Command: /home/eprager/Documents/PyTorchExtensionTest/benchmark_moving_image.py --no-load 
+
+[  INFO  ] at [2025-07-29 11:24:26,110] Loading CT DICOM data from directory '/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:38]
+[  INFO  ] at [2025-07-29 11:24:27,703] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:93]
+[  INFO  ] at [2025-07-29 11:24:27,703] CT data volume size = [117 x 512 x 512]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:95]
+[  INFO  ] at [2025-07-29 11:24:27,732] CT voxel spacing after down-sampling = [0.408203125 x 0.408203125 x 0.40000152587890625] mm                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:106]
+[  INFO  ] at [2025-07-29 11:24:27,732] CT data file processed.                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:107]
+[  INFO  ] at [2025-07-29 11:24:27,882] Calculating 3D sinogram (the volume to resample)...                     in [Function 'calculate_volume_sinogram'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/pre_computed.py:34]
+[  INFO  ] at [2025-07-29 11:24:28,564] 3D sinogram calculated; took 0.6826s.                     in [Function 'calculate_volume_sinogram'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/pre_computed.py:39]
+[  INFO  ] at [2025-07-29 11:24:28,570] SinogramClassic initialised with size (phi count + 2, theta count + 2, r count) = (34, 34, 32)                     in [Function '__init__'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/lib/sinogram.py:85]
+[  INFO  ] at [2025-07-29 11:24:28,571] 3D sinogram saved to 'cache/volume_spec_bf9e5c98778cd68c548d9342eaf860a53cc819310a6e97cd4425b6409718542f.pt'                     in [Function 'calculate_volume_sinogram'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/pre_computed.py:47]
+[  INFO  ] at [2025-07-29 11:24:28,571] Calculating 3D sinogram (the volume to resample)...                     in [Function 'calculate_volume_sinogram'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/pre_computed.py:34]
+[  INFO  ] at [2025-07-29 11:24:48,925] 3D sinogram calculated; took 20.3534s.                     in [Function 'calculate_volume_sinogram'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/pre_computed.py:39]
+[  INFO  ] at [2025-07-29 11:24:48,925] SinogramClassic initialised with size (phi count + 2, theta count + 2, r count) = (66, 66, 64)                     in [Function '__init__'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/lib/sinogram.py:85]
+[  INFO  ] at [2025-07-29 11:24:48,927] 3D sinogram saved to 'cache/volume_spec_534947d98f3f141c91e458f624c777a4d579adafb50f22862eb46e9a8e6cc7ff.pt'                     in [Function 'calculate_volume_sinogram'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/pre_computed.py:47]
+[  INFO  ] at [2025-07-29 11:24:48,927] Calculating 3D sinogram (the volume to resample)...                     in [Function 'calculate_volume_sinogram'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/pre_computed.py:34]

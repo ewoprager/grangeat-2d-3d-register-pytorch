@@ -1,0 +1,14 @@
+Hostname: seesPC022
+Timestamp: 2025-07-29_09-18-49
+Command: /home/eprager/Documents/PyTorchExtensionTest/interface.py --ct-nrrd-path /home/eprager/Documents/Data/4th year project/First/ct.nrrd --x-ray /home/eprager/Documents/Data/4th year project/First/x_ray/x_ray.dcm 
+
+[  INFO  ] at [2025-07-29 09:18:49,795] Using device: cuda                     in [Function 'main'] [File /home/eprager/Documents/PyTorchExtensionTest/interface.py:253]
+[WARNING ] at [2025-07-29 09:18:49,795] No cache file 'cache/volume_spec_3ac5072e25cc44a55620d676bcf4aeacebc254323ddb9ec7f2c68ddb7d3b3774.pt' found.                     in [Function 'load_cached_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:153]
+[  INFO  ] at [2025-07-29 09:18:49,796] Loading CT data file '/home/eprager/Documents/Data/4th year project/First/ct.nrrd'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:28]
+[  INFO  ] at [2025-07-29 09:18:50,448] CT data file loaded.                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:33]
+[  INFO  ] at [2025-07-29 09:18:50,468] Processing CT data...                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:93]
+[  INFO  ] at [2025-07-29 09:18:50,468] CT data volume size = [512 x 512 x 279]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:95]
+[  INFO  ] at [2025-07-29 09:18:51,204] CT volume size after down-sampling = [256 x 256 x 139]                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:104]
+[  INFO  ] at [2025-07-29 09:18:51,204] CT voxel spacing after down-sampling = [0.6000000000000001 x 0.7139999999999999 x 0.7139999999999999] mm                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:106]
+[  INFO  ] at [2025-07-29 09:18:51,205] CT data file processed.                     in [Function 'load_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:107]
+[  INFO  ] at [2025-07-29 09:18:51,369] Calculating 3D sinogram (the volume to resample)...                     in [Function 'calculate_volume_sinogram'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/pre_computed.py:34]
