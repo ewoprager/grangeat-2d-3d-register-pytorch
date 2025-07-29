@@ -638,7 +638,7 @@ Address modes</h1>
     <tr><td class="paramname">sourceDistance</td><td>The distance in [mm] of the source from the detector array </td></tr>
     <tr><td class="paramname">outputWidth</td><td>The width in pixels of the DRR to generate. </td></tr>
     <tr><td class="paramname">outputHeight</td><td>The height in pixels of the DRR to generate. </td></tr>
-    <tr><td class="paramname">outputOffset</td><td>The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array. </td></tr>
+    <tr><td class="paramname">outputOffset</td><td>a tensor of size (2,) containing <code>torch.float64</code>s: The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array. </td></tr>
     <tr><td class="paramname">detectorSpacing</td><td>a tensor of size (2,): The spacing in [mm] between the columns and rows of the DRR image. </td></tr>
   </table>
   </dd>
