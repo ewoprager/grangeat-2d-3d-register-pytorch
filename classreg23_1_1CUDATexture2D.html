@@ -102,6 +102,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a32676e0842574a517dc4c3ab5286d464"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88895a17472217a7a3b553bd01b8cc98" id="r_a88895a17472217a7a3b553bd01b8cc98"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1CUDATexture2D.html#a88895a17472217a7a3b553bd01b8cc98">SizeTensor</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
 <tr class="separator:a88895a17472217a7a3b553bd01b8cc98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea4bf19ce3ae383877f9c94bebf10f5b" id="r_aea4bf19ce3ae383877f9c94bebf10f5b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">void</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1CUDATexture2D.html#aea4bf19ce3ae383877f9c94bebf10f5b">CleanUp</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">noexcept</a></td></tr>
+<tr class="memdesc:aea4bf19ce3ae383877f9c94bebf10f5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleans up the underlying PyTorch tensor, CUDA texture and CUDA array.  <br /></td></tr>
+<tr class="separator:aea4bf19ce3ae383877f9c94bebf10f5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a54e1de7b231ec26a78c9b034c5e10205" name="a54e1de7b231ec26a78c9b034c5e10205"></a>
@@ -167,6 +170,34 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="aea4bf19ce3ae383877f9c94bebf10f5b" name="aea4bf19ce3ae383877f9c94bebf10f5b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea4bf19ce3ae383877f9c94bebf10f5b">&#9670;&#160;</a></span>CleanUp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">void</a> reg23::CUDATexture2D::CleanUp </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Cleans up the underlying PyTorch tensor, CUDA texture and CUDA array. </p>
+<p>This is effectively the destructor, but it is defined separately so it can be called independently. This is because it doesn't seem to be possible to have the destructor of this class called automatically on destruction when used via Python bindings. </p>
+
+</div>
+</div>
 <a id="a32676e0842574a517dc4c3ab5286d464" name="a32676e0842574a517dc4c3ab5286d464"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a32676e0842574a517dc4c3ab5286d464">&#9670;&#160;</a></span>Handle()</h2>
 
