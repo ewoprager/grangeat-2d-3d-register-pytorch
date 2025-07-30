@@ -8,6 +8,7 @@ import math
 import pathlib
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 
 import logs_setup
 from registration import script
@@ -22,8 +23,8 @@ import Extension as reg23
 
 
 def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_path: str | pathlib.Path,
-                  load_cached: bool = False, save_to_cache: bool = True,
-                  downsample_factor: int = 1) -> plot_data.DrrVsGrangeatPlotData.Dataset:
+                  load_cached: bool = False, save_to_cache: bool = True, downsample_factor: int = 1,
+                  plot: bool = False) -> plot_data.DrrVsGrangeatPlotData.Dataset:
     device = torch.device("cuda")
 
     # Load volumes with a number of downsample factors, and sinograms with a number of sizes
@@ -31,27 +32,28 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     volume = volume.to(device=device, dtype=torch.float32)
 
     sinogram3d_size: int = int(math.ceil(pow(volume.numel(), 1.0 / 3.0)))
-    sinogram3d: None | torch.Tensor = None
+    sinogram3d: None | sinogram.Sinogram = None
     sinogram_evaluation_time: None | float = None
 
-    volume_spec = None
+    loaded_volume_info = None
     if load_cached:
-        sinogram_hash = data.deterministic_hash_sinogram(ct_path, sinogram.SinogramClassic, sinogram3d_size, 1)
-        volume_spec = data.load_cached_volume(cache_directory, sinogram_hash)
+        sinogram_hash = data.deterministic_hash_sinogram(ct_path, sinogram.SinogramClassic, sinogram3d_size,
+                                                         downsample_factor)
+        loaded_volume_info = data.load_cached_volume(cache_directory, sinogram_hash)
 
-    if volume_spec is None:
-        volume_downsample_factor: int = 1
-    else:
-        volume_downsample_factor, sinogram3d = volume_spec
+    if loaded_volume_info is not None:
+        _, sinogram3d = loaded_volume_info
 
     if sinogram3d is None:
         sinogram3d, sinogram_evaluation_time = pre_computed.calculate_volume_sinogram(cache_directory, volume,
                                                                                       voxel_spacing=volume_spacing,
                                                                                       ct_volume_path=ct_path,
-                                                                                      volume_downsample_factor=volume_downsample_factor,
+                                                                                      volume_downsample_factor=downsample_factor,
                                                                                       save_to_cache=save_to_cache,
                                                                                       sinogram_size=sinogram3d_size,
                                                                                       sinogram_type=sinogram.SinogramClassic)
+        with open("data/sinogram3d_evaluation_times.txt", "a") as file:
+            file.write("\n{} {} {}".format("SinogramClassic", sinogram3d_size, sinogram_evaluation_time))
 
     # Load the X-ray images
     x_ray, detector_spacing, scene_geometry = data.read_dicom(xray_dicom_path)
@@ -77,12 +79,20 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     toc = time.time()
     x_ray_sinogram_evaluation_time = toc - tic
     logger.info("X-ray sinogram calculated; took {:.4f}s".format(x_ray_sinogram_evaluation_time))
+    if plot:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(x_ray_sinogram.cpu().numpy())
+        axes.axis('square')
+        axes.set_title("R2 [g^tilde]")
+        axes.set_xlabel("r_pol")
+        axes.set_ylabel("phi_pol")
+        plt.colorbar(mesh)
 
     # Measure evaluation time of DRR vs grangeat resampling
     transformation = Transformation.random(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=scene_geometry.source_position())
     ph_matrix = torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32, device=device)
-    h_matrix_inv = transformation.inverse().get_h().to(device=device)
+    h_matrix_inv = transformation.inverse().get_h(device=device)
     output_width = x_ray.size()[1]
     output_height = x_ray.size()[0]
     # DRR:
@@ -93,13 +103,25 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     toc = time.time()
     drr_evaluation_time: float = toc - tic
     logger.info("DRR projected; took {:.4f}s".format(drr_evaluation_time))
+    if plot:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(drr.cpu().numpy())
+        axes.set_title("DRR")
+        plt.colorbar(mesh)
     # Grangeat:
     logger.info("Resampling sinogram...")
     tic = time.time()
     resampling = sinogram3d.resample_cuda_texture(ph_matrix, sinogram2d_grid)
     toc = time.time()
     resampling_time: float = toc - tic
-    logger.info("Sinogram resampled; took {:.4f}s".format(drr_evaluation_time))
+    logger.info("Sinogram resampled; took {:.4f}s".format(resampling_time))
+    if plot:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(resampling.cpu().numpy())
+        axes.axis('square')
+        axes.set_title("Resampling")
+        plt.colorbar(mesh)
+        plt.show()
 
     return plot_data.DrrVsGrangeatPlotData.Dataset(ct_volume_numel=volume.numel(), sinogram3d_size=sinogram3d_size,
                                                    x_ray_numel=x_ray.numel(), sinogram2d_size=sinogram2d_size,
@@ -124,7 +146,7 @@ XRAY_DICOM_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_co
                     "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray014.dcm"]
 
 
-def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool = True):
+def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool = True, plot_first: bool = False):
     count: int = len(CT_PATHS)
     assert len(XRAY_DICOM_PATHS) == count
 
@@ -132,13 +154,15 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
         logger.error("CUDA not available; cannot run any useful benchmarks.")
         exit(1)
 
-    downsample_factors = [1, 2, 4, 8]
+    downsample_factors = [4, 8]
 
     datasets: list[plot_data.DrrVsGrangeatPlotData.Dataset] = []
+    first: bool = True
     for i in range(count):
         for downsample_factor in downsample_factors:
             datasets.append(run_benchmark(cache_directory, CT_PATHS[i], XRAY_DICOM_PATHS[i], load_cached, save_to_cache,
-                                          downsample_factor))
+                                          downsample_factor, plot=plot_first and first))
+            first = False
     pdata = plot_data.DrrVsGrangeatPlotData(datasets=datasets)
 
     torch.save(pdata, "data/drr_vs_grangeat.pkl")
@@ -169,12 +193,13 @@ if __name__ == "__main__":
     #     help="The number of values of r, theta and phi to calculate plane integrals for, "
     #          "and the width and height of the grid of samples taken to approximate each integral. The "
     #          "computational expense of the 3D Radon transform is O(sinogram_size^5).")
-    # parser.add_argument(
-    #     "-d", "--display", action='store_true', help="Display/plot the resulting data.")
+    parser.add_argument("-d", "--display", action='store_true',
+                        help="Display/plot the resulting data for the first dataset.")
     args = parser.parse_args()
 
     # create cache directory
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
-    main(cache_directory=args.cache_directory, load_cached=not args.no_load, save_to_cache=not args.no_save)
+    main(cache_directory=args.cache_directory, load_cached=not args.no_load, save_to_cache=not args.no_save,
+         plot_first=args.display)

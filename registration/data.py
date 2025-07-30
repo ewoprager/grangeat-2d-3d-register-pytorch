@@ -14,7 +14,7 @@ from registration.lib import sinogram
 
 torch.serialization.add_safe_globals(
     [sinogram.VolumeSpec, sinogram.DrrSpec, sinogram.SinogramClassic, sinogram.SinogramHEALPix, LinearRange,
-        SceneGeometry, Transformation])
+     SceneGeometry, Transformation])
 
 
 class LoadedVolume(NamedTuple):
@@ -49,9 +49,9 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
         slice_spacing = (torch.tensor([slices[0]["ImagePositionPatient"][i] for i in range(3)]) - torch.tensor(
             [slices[1]["ImagePositionPatient"][i] for i in range(3)])).norm()
         spacing = torch.tensor([pixel_spacing[1],  # column spacing (x-direction)
-            pixel_spacing[0],  # row spacing (y-direction)
-            slice_spacing  # slice spacing (z-direction)
-        ])
+                                pixel_spacing[0],  # row spacing (y-direction)
+                                slice_spacing  # slice spacing (z-direction)
+                                ])
         volume = torch.stack([torch.tensor(pydicom.pixels.pixel_array(s)) for s in slices])
         return LoadedVolume(volume, spacing)
     raise Exception("Given path '{}' is not a file or directory.".format(str(path)))
@@ -81,7 +81,7 @@ SinogramType = TypeVar('SinogramType')
 def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType], sinogram_size: int,
                                 downsample_factor: int) -> str:
     return deterministic_hash_combo(deterministic_hash_string(path), deterministic_hash_type(sinogram_type),
-        deterministic_hash_int(sinogram_size), deterministic_hash_int(downsample_factor))
+                                    deterministic_hash_int(sinogram_size), deterministic_hash_int(downsample_factor))
 
 
 def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -117,16 +117,16 @@ def read_dicom(path: str, *, downsample_factor=1):
         logger.info("X-ray image size after down-sampling = [{} x {}]".format(image.size()[0], image.size()[1]))
     if "PixelSpacing" in dataset:
         spacing = float(downsample_factor) * torch.tensor([dataset["PixelSpacing"][1],  # column spacing (x-direction)
-            dataset["PixelSpacing"][0]  # row spacing (y-direction)
-        ])
+                                                           dataset["PixelSpacing"][0]  # row spacing (y-direction)
+                                                           ])
         logger.info("X-ray pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
         scene_geometry = SceneGeometry(dataset["DistanceSourceToPatient"].value)
         logger.info("X-ray distance source-to-patient = {} mm".format(scene_geometry.source_distance))
     else:
         spacing = float(downsample_factor) * torch.tensor(
             [dataset["ImagerPixelSpacing"][1],  # column spacing (x-direction)
-                dataset["ImagerPixelSpacing"][0]  # row spacing (y-direction)
-            ])
+             dataset["ImagerPixelSpacing"][0]  # row spacing (y-direction)
+             ])
         logger.info("X-ray imager pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
         scene_geometry = SceneGeometry(dataset["DistanceSourceToDetector"].value)
         logger.info("X-ray distance source-to-detector = {} mm".format(scene_geometry.source_distance))
@@ -135,7 +135,7 @@ def read_dicom(path: str, *, downsample_factor=1):
     return image, spacing, scene_geometry
 
 
-def load_cached_volume(cache_directory: str, sinogram_hash: str):
+def load_cached_volume(cache_directory: str, sinogram_hash: str) -> Tuple[int, sinogram.Sinogram] | None:
     file: str = cache_directory + "/volume_spec_{}.pt".format(sinogram_hash)
     try:
         volume_spec = torch.load(file)
@@ -146,7 +146,8 @@ def load_cached_volume(cache_directory: str, sinogram_hash: str):
     sinogram3d = volume_spec.sinogram
     logger.info(
         "Loaded cached volume spec from '{}'; sinogram size = [{} x {} x {}]".format(file, sinogram3d.data.size()[0],
-            sinogram3d.data.size()[1], sinogram3d.data.size()[2]))
+                                                                                     sinogram3d.data.size()[1],
+                                                                                     sinogram3d.data.size()[2]))
     return volume_downsample_factor, sinogram3d
 
 

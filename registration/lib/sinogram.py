@@ -42,6 +42,10 @@ class Sinogram(ABC):
         pass
 
     @abstractmethod
+    def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
+        pass
+
+    @abstractmethod
     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
         pass
 
@@ -717,7 +721,7 @@ class SinogramHEALPix(Sinogram):
 class VolumeSpec(NamedTuple):
     ct_volume_path: str
     downsample_factor: int
-    sinogram: Any
+    sinogram: Sinogram
 
 
 class DrrSpec(NamedTuple):

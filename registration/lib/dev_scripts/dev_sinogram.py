@@ -179,7 +179,7 @@ def plot_sphere():
     vol_data[6, :, :] = 0.2
     vol_data[3:6, 2, 3] = 0.8
     voxel_spacing = torch.tensor([10., 10., 10.])
-    sinogram3d = pre_computed.calculate_volume_sinogram(
+    sinogram3d, _ = pre_computed.calculate_volume_sinogram(
         None, vol_data, voxel_spacing=voxel_spacing, ct_volume_path=None, volume_downsample_factor=1,
         save_to_cache=False, sinogram_size=24, sinogram_type=sinogram.SinogramHEALPix)
 
