@@ -1,3 +1,4 @@
+import gc
 from abc import ABC, abstractmethod
 from typing import Type, TypeVar
 import logging
@@ -8,7 +9,6 @@ import torch
 import matplotlib.pyplot as plt
 
 import Extension
-from Extension import reg23
 
 from registration.lib.structs import *
 from registration.lib import geometry
@@ -88,7 +88,7 @@ class SinogramClassic(Sinogram):
                 self._data.size()[0], self._data.size()[1], self._data.size()[2]))
 
         if self.device.type == "cuda":
-            self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
+            self._texture = Extension.CUDATexture3D(self.data, "zero", "zero", "zero")
 
     def __getstate__(self):
         return {"_data": self._data, "_r_range": self._r_range}
@@ -97,7 +97,7 @@ class SinogramClassic(Sinogram):
         self._data = state["_data"]
         self._r_range = state["_r_range"]
         if self.device.type == "cuda":
-            self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
+            self._texture = Extension.CUDATexture3D(self.data, "zero", "zero", "zero")
 
     @property
     def device(self):
@@ -601,7 +601,7 @@ class SinogramHEALPix(Sinogram):
         self._r_range = r_range
 
         if self.device.type == "cuda":
-            self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
+            self._texture = Extension.CUDATexture3D(self.data, "zero", "zero", "zero")
 
     def __getstate__(self):
         return {"_data": self._data, "_r_range": self._r_range}
@@ -610,7 +610,7 @@ class SinogramHEALPix(Sinogram):
         self._data = state["_data"]
         self._r_range = state["_r_range"]
         if self.device.type == "cuda":
-            self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
+            self._texture = Extension.CUDATexture3D(self.data, "zero", "zero", "zero")
 
     def to(self, **kwargs) -> 'SinogramHEALPix':
         return SinogramHEALPix(self.data.to(**kwargs), self.r_range, pad=False)

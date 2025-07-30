@@ -14,6 +14,15 @@ public:
 
 	[[nodiscard]] at::Tensor SizeTensor() const;
 
+	/**
+	 * @brief Cleans up the underlying PyTorch tensor, CUDA texture and CUDA array.
+	 *
+	 * This is effectively the destructor, but it is defined separately so it can be called independently. This is
+	 * because it doesn't seem to be possible to have the destructor of this class called automatically on destruction
+	 * when used via Python bindings.
+	 */
+	void CleanUp() noexcept;
+
 #ifdef __CUDACC__
 
 	[[nodiscard]] Vec<int64_t, 2> Size() const {
@@ -41,6 +50,9 @@ public:
 				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
 				std::terminate();
 			}
+#ifdef DEBUG
+			std::cout << "[C++] CUDA texture " << static_cast<uint64_t>(textureHandle) << " destroyed." << std::endl;
+#endif
 		}
 		if (arrayHandle) {
 			err = cudaFreeArray(arrayHandle);
@@ -48,6 +60,9 @@ public:
 				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
 				std::terminate();
 			}
+#ifdef DEBUG
+			std::cout << "[C++] CUDA array freed." << std::endl;
+#endif
 		}
 		backingTensor = std::move(other.backingTensor);
 		arrayHandle = other.arrayHandle;
@@ -58,21 +73,7 @@ public:
 	}
 
 	~CUDATexture2D() {
-		cudaError_t err;
-		if (textureHandle) {
-			err = cudaDestroyTextureObject(textureHandle);
-			if (err != cudaSuccess) {
-				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
-				std::terminate();
-			}
-		}
-		if (arrayHandle) {
-			err = cudaFreeArray(arrayHandle);
-			if (err != cudaSuccess) {
-				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
-				std::terminate();
-			}
-		}
+		CleanUp();
 	}
 
 private:
@@ -93,6 +94,15 @@ public:
 	[[nodiscard]] unsigned long long Handle() const;
 
 	[[nodiscard]] at::Tensor SizeTensor() const;
+
+	/**
+	 * @brief Cleans up the underlying PyTorch tensor, CUDA texture and CUDA array.
+	 *
+	 * This is effectively the destructor, but it is defined separately so it can be called independently. This is
+	 * because it doesn't seem to be possible to have the destructor of this class called automatically on destruction
+	 * when used via Python bindings.
+	 */
+	void CleanUp() noexcept;
 
 #ifdef __CUDACC__
 
@@ -118,16 +128,23 @@ public:
 		if (textureHandle) {
 			err = cudaDestroyTextureObject(textureHandle);
 			if (err != cudaSuccess) {
-				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl << std::flush;
 				std::terminate();
 			}
+#ifdef DEBUG
+			std::cout << "[C++] CUDA texture " << static_cast<uint64_t>(textureHandle) << " destroyed." << std::endl <<
+				std::flush;
+#endif
 		}
 		if (arrayHandle) {
 			err = cudaFreeArray(arrayHandle);
 			if (err != cudaSuccess) {
-				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl << std::flush;
 				std::terminate();
 			}
+#ifdef DEBUG
+			std::cout << "[C++] CUDA array freed." << std::endl << std::flush;
+#endif
 		}
 		backingTensor = std::move(other.backingTensor);
 		arrayHandle = other.arrayHandle;
@@ -138,21 +155,10 @@ public:
 	}
 
 	~CUDATexture3D() {
-		cudaError_t err;
-		if (textureHandle) {
-			err = cudaDestroyTextureObject(textureHandle);
-			if (err != cudaSuccess) {
-				std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
-				std::terminate();
-			}
-		}
-		if (arrayHandle) {
-			err = cudaFreeArray(arrayHandle);
-			if (err != cudaSuccess) {
-				std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
-				std::terminate();
-			}
-		}
+#ifdef DEBUG
+		std::cout << "[C++] CUDATexture3D destructing." << std::endl << std::flush;
+#endif
+		CleanUp();
 	}
 
 private:

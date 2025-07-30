@@ -1,4 +1,5 @@
 import argparse
+import gc
 import os
 import time
 import pickle
@@ -99,6 +100,7 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     toc = time.time()
     resampling_time: float = toc - tic
     logger.info("Sinogram resampled; took {:.4f}s".format(drr_evaluation_time))
+
     return plot_data.DrrVsGrangeatPlotData.Dataset(ct_volume_numel=volume.numel(), sinogram3d_size=sinogram3d_size,
                                                    x_ray_numel=x_ray.numel(), sinogram2d_size=sinogram2d_size,
                                                    drr_time=drr_evaluation_time, resample_time=resampling_time)

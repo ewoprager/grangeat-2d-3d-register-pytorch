@@ -1,4 +1,6 @@
 import pytest
+import weakref
+import gc
 
 import torch
 
@@ -36,3 +38,13 @@ if torch.cuda.is_available():
         res = resample_sinogram3d_cuda_texture(
             texture, "classic", 0.1, torch.eye(4, device=device), torch.zeros(1, device=device),
             torch.zeros(1, device=device))
+
+    def test_cyclic_reference():
+        tensor = torch.zeros(3, 3, 3, device=torch.device("cuda"))
+        texture = reg23.CUDATexture3D(tensor, "zero", "zero", "zero")
+        ref = weakref.ref(texture)
+        assert ref() is not None
+        texture.clean_up()
+        del texture
+        gc.collect()
+        assert ref() is None

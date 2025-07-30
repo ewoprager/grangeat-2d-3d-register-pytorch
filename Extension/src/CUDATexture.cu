@@ -47,6 +47,9 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2
 		std::cerr << "cudaMallocArray failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaMallocArray failed");
 	}
+#ifdef DEBUG
+	std::cout << "[C++] Array allocated." << std::endl;
+#endif
 
 	err = cudaMemcpy2DToArray(arrayHandle, 0, 0, data, size.X() * sizeof(float), size.X() * sizeof(float), size.Y(),
 	                          cudaMemcpyDeviceToDevice);
@@ -68,10 +71,42 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2
 		std::cerr << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaCreateTextureObject failed");
 	}
+#ifdef DEBUG
+	std::cout << "[C++] Texture " << static_cast<uint64_t>(textureHandle) << " created." << std::endl;
+#endif
 
 	// Ensure the tensor is no longer being used by the device before anything else can happen to it
 	cudaDeviceSynchronize();
 }
+
+void CUDATexture2D::CleanUp() noexcept {
+#ifdef DEBUG
+	std::cout << "[C++] CUDATexture2D cleaning up." << std::endl;
+#endif
+	cudaError_t err;
+	if (textureHandle) {
+		err = cudaDestroyTextureObject(textureHandle);
+		if (err != cudaSuccess) {
+			std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+			std::terminate();
+		}
+#ifdef DEBUG
+		std::cout << "[C++] CUDA texture " << static_cast<uint64_t>(textureHandle) << " destroyed." << std::endl;
+#endif
+	}
+	if (arrayHandle) {
+		err = cudaFreeArray(arrayHandle);
+		if (err != cudaSuccess) {
+			std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+			std::terminate();
+		}
+#ifdef DEBUG
+		std::cout << "[C++] CUDA array freed." << std::endl;
+#endif
+	}
+	backingTensor.reset();
+}
+
 
 CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, const std::string &addressModeX, const std::string &addressModeY,
                              const std::string &addressModeZ) : CUDATexture3D(
@@ -107,9 +142,12 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 
 	err = cudaMalloc3DArray(&arrayHandle, &channelDesc, extent);
 	if (err != cudaSuccess) {
-		std::cerr << "cudaMalloc3DArray failed: " << cudaGetErrorString(err) << std::endl;
+		std::cerr << "cudaMalloc3DArray failed: " << cudaGetErrorString(err) << std::endl << std::flush;
 		throw std::runtime_error("cudaMalloc3DArray failed");
 	}
+#ifdef DEBUG
+	std::cout << "[C++] Array allocated." << std::endl << std::flush;
+#endif
 
 	cudaMemcpy3DParms params{};
 	params.srcPtr = make_cudaPitchedPtr((void *)data, size.X() * sizeof(float), size.X(), size.Y());
@@ -119,7 +157,7 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 
 	err = cudaMemcpy3D(&params);
 	if (err != cudaSuccess) {
-		std::cerr << "cudaMemcpy3D failed: " << cudaGetErrorString(err) << std::endl;
+		std::cerr << "cudaMemcpy3D failed: " << cudaGetErrorString(err) << std::endl << std::flush;
 		throw std::runtime_error("cudaMemcpy3D failed");
 	}
 
@@ -142,12 +180,44 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 
 	err = cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
 	if (err != cudaSuccess) {
-		std::cerr << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+		std::cerr << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl << std::flush;
 		throw std::runtime_error("cudaCreateTextureObject failed");
 	}
+#ifdef DEBUG
+	std::cout << "[C++] Texture " << static_cast<uint64_t>(textureHandle) << " created." << std::endl << std::flush;
+#endif
 
 	// Ensure the tensor is no longer being used by the device before anything else can happen to it
 	cudaDeviceSynchronize();
+}
+
+void CUDATexture3D::CleanUp() noexcept {
+#ifdef DEBUG
+	std::cout << "[C++] CUDATexture3D cleaning up." << std::endl << std::flush;
+#endif
+	cudaError_t err;
+	if (textureHandle) {
+		err = cudaDestroyTextureObject(textureHandle);
+		if (err != cudaSuccess) {
+			std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl << std::flush;
+			std::terminate();
+		}
+#ifdef DEBUG
+		std::cout << "[C++] CUDA texture " << static_cast<uint64_t>(textureHandle) << " destroyed." << std::endl <<
+			std::flush;
+#endif
+	}
+	if (arrayHandle) {
+		err = cudaFreeArray(arrayHandle);
+		if (err != cudaSuccess) {
+			std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl << std::flush;
+			std::terminate();
+		}
+#ifdef DEBUG
+		std::cout << "[C++] CUDA array freed." << std::endl << std::flush;
+#endif
+	}
+	backingTensor.reset();
 }
 
 } // namespace reg23

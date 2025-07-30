@@ -25,18 +25,19 @@ namespace reg23 {
  * @}
  */
 
-
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
 #ifdef USE_CUDA
-	py::class_<CUDATexture2D>(m, "CUDATexture2D") //
+	py::class_<CUDATexture2D>(m, "CUDATexture2DInternal") //
 		.def(py::init<const at::Tensor &, const std::string &, const std::string &>()) //
 		.def("handle", &CUDATexture2D::Handle) //
-		.def("size", &CUDATexture2D::SizeTensor);
+		.def("size", &CUDATexture2D::SizeTensor) //
+		.def("clean_up", &CUDATexture2D::CleanUp);
 
-	py::class_<CUDATexture3D>(m, "CUDATexture3D") //
+	py::class_<CUDATexture3D>(m, "CUDATexture3DInternal") //
 		.def(py::init<const at::Tensor &, const std::string &, const std::string &, const std::string &>()) //
 		.def("handle", &CUDATexture3D::Handle) //
-		.def("size", &CUDATexture3D::SizeTensor);
+		.def("size", &CUDATexture3D::SizeTensor) //
+		.def("clean_up", &CUDATexture3D::CleanUp);
 #endif
 }
 
