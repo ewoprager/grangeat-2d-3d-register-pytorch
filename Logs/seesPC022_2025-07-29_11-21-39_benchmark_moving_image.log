@@ -1,5 +1,0 @@
-Hostname: seesPC022
-Timestamp: 2025-07-29_11-21-39
-Command: /home/eprager/Documents/PyTorchExtensionTest/benchmark_moving_image.py --no-load 
-
-[  INFO  ] at [2025-07-29 11:21:48,146] Loading CT DICOM data from directory '/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001'...                     in [Function 'read_volume'] [File /home/eprager/Documents/PyTorchExtensionTest/registration/data.py:38]
