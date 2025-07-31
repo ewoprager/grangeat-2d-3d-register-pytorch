@@ -87,6 +87,8 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     toc = time.time()
     x_ray_sinogram_evaluation_time = toc - tic
     logger.info("X-ray sinogram calculated; took {:.4f}s".format(x_ray_sinogram_evaluation_time))
+    with open("data/sinogram2d_evaluation_times.txt", "a") as file:
+        file.write("\n{} {}".format(sinogram2d_size, x_ray_sinogram_evaluation_time))
     if plot:
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(x_ray_sinogram.cpu().numpy())

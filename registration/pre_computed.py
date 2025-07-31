@@ -21,15 +21,21 @@ def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *
                                                     device=voxel_spacing.device)).square().sum().sqrt().item()
     r_range = LinearRange(-.5 * vol_diag, .5 * vol_diag)
 
-    if sinogram_type == SinogramClassic:
-        sinogram3d_grid = SinogramClassic.build_grid(counts=sinogram_size, r_range=r_range, device=device)
-    elif sinogram_type == SinogramHEALPix:
-        sinogram3d_grid = SinogramHEALPix.build_grid(
-            n_side=int(torch.ceil(torch.tensor(float(sinogram_size)) / torch.tensor(6.).sqrt()).item()),
-            r_count=sinogram_size, r_range=r_range, device=device)
-    else:
-        raise TypeError(
-            "Unrecognised sinogram type '{}.{}'".format(sinogram_type.__module__, sinogram_type.__qualname__))
+    try:
+        if sinogram_type == SinogramClassic:
+            sinogram3d_grid = SinogramClassic.build_grid(counts=sinogram_size, r_range=r_range, device=device)
+        elif sinogram_type == SinogramHEALPix:
+            sinogram3d_grid = SinogramHEALPix.build_grid(
+                n_side=int(torch.ceil(torch.tensor(float(sinogram_size)) / torch.tensor(6.).sqrt()).item()),
+                r_count=sinogram_size, r_range=r_range, device=device)
+        else:
+            raise TypeError(
+                "Unrecognised sinogram type '{}.{}'".format(sinogram_type.__module__, sinogram_type.__qualname__))
+    except torch.OutOfMemoryError:
+        logger.error(
+            "Insufficient memory to generate grid for Radon volume of size {} on device '{}'.".format(sinogram_size,
+                                                                                                      volume_data.device))
+        return None
 
     logger.info(
         "Calculating 3D sinogram (the volume to resample): volume size = [{} x {} x {}], sinogram size = {}...".format(

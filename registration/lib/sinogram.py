@@ -419,19 +419,31 @@ class SinogramHEALPix(Sinogram):
         u_star[base_pixel_6] += 2.0 * n_side
         v_star[torch.logical_or(base_pixel_9, base_pixel_6)] += 2.0 * n_side
         del base_pixel_9
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         x_p = 0.5 * (u_star + v_star - n_side)
         y_p = 0.5 * (v_star - u_star) + n_side
         del u_star, v_star
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         x_s = 0.5 * torch.pi * x_p / n_side
         y_s = 0.5 * torch.pi * (1.0 - y_p / n_side)
         del x_p, y_p
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         y_s[base_pixel_6] *= -1.0  # theta is flipped for base pixel 6
         r_ = r.clone()
         r_[base_pixel_6] *= -1.0  # r is flipped for base pixel 6
         del base_pixel_6
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         # to phi, theta
         y_s_abs = y_s.abs()
@@ -446,8 +458,14 @@ class SinogramHEALPix(Sinogram):
         phi[polar_caps] = (x_s - (torch.fmod(x_s, 0.5 * torch.pi) - 0.25 * torch.pi) * (y_s_abs - 0.25 * torch.pi) / (
                 y_s_abs - 0.5 * torch.pi - 1e-5))[polar_caps] - 0.5 * torch.pi  # with pi/2 adjustment
         del x_s, y_s, y_s_abs, equatorial_zone, polar_caps
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
         theta = z.asin()  # instead of cos, for adjustment
         del z
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         return Sinogram3dGrid(phi=phi, theta=theta, r=r_)
 
