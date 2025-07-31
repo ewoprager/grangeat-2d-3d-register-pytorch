@@ -38,8 +38,9 @@ def main():
     axes.set_title("DRR vs. Resample time against CT volume size")
     axes.set_xlabel("CT volume element count")
     axes.set_ylabel("Evaluation time [s]")
-    plt.legend()
-    plt.savefig("data/temp/against_volume_size.svg")
+    plt.tight_layout()
+    plt.legend(loc="upper left")
+    plt.savefig("data/temp/against_volume_size.pgf")
 
     fig, axes = plt.subplots()
     axes.scatter(x_ray_numels, drr_times, label="DRR")
@@ -54,8 +55,9 @@ def main():
     axes.set_title("DRR vs. Resample time against output element count")
     axes.set_xlabel("DRR / resampling element count")
     axes.set_ylabel("Evaluation time [s]")
-    plt.legend()
-    plt.savefig("data/temp/against_drr_size.svg")
+    plt.tight_layout()
+    plt.legend(loc="upper left")
+    plt.savefig("data/temp/against_drr_size.pgf")
 
     sinogram3d_evaluation_times = np.genfromtxt("data/sinogram3d_evaluation_times.txt", dtype=None)
     classic_sizes = np.array([float(tup[1]) for tup in sinogram3d_evaluation_times if tup[0] == "SinogramClassic"])
@@ -72,8 +74,9 @@ def main():
     axes.set_title("Classic vs. HEALPix 3D sinogram time against size")
     axes.set_xlabel("Sinogram size")
     axes.set_ylabel("Evaluation time [s]")
-    plt.legend()
-    plt.savefig("data/temp/sinogram3d_against_size.svg")
+    plt.tight_layout()
+    plt.legend(loc="upper left")
+    plt.savefig("data/temp/sinogram3d_against_size.pgf")
 
     fig, axes = plt.subplots()
     axes.scatter(np.log(classic_sizes), np.log(classic_times), label="Classic")
@@ -88,8 +91,9 @@ def main():
     axes.set_title("Classic vs. HEALPix 3D sinogram time against size")
     axes.set_xlabel("ln(Sinogram size)")
     axes.set_ylabel("ln(Evaluation time / s)")
-    plt.legend()
-    plt.savefig("data/temp/ln_sinogram3d_against_ln_size.svg")
+    plt.tight_layout()
+    plt.legend(loc="upper left")
+    plt.savefig("data/temp/ln_sinogram3d_against_ln_size.pgf")
 
     plt.show()
 
@@ -118,6 +122,10 @@ def main():
 if __name__ == "__main__":
     # set up logger
     logger = logs_setup.setup_logger()
+
+    # for outputting PGFs
+    plt.rcParams["text.usetex"] = True
+    plt.rcParams["font.family"] = "serif"
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
