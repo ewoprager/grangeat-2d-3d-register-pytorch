@@ -25,8 +25,8 @@ import Extension as reg23
 
 def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_path: str | pathlib.Path,
                   load_cached: bool = False, save_to_cache: bool = True, downsample_factor: int = 1,
-                  sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic,
-                  plot: bool = False) -> plot_data.DrrVsGrangeatPlotData.Dataset:
+                  sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic, plot: bool = False,
+                  max_sinogram3d_size: int | None = None) -> plot_data.DrrVsGrangeatPlotData.Dataset | None:
     device = torch.device("cuda")
 
     # Load volumes with a number of downsample factors, and sinograms with a number of sizes
@@ -40,18 +40,24 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     if load_cached:
         sinogram_hash = data.deterministic_hash_sinogram(ct_path, sinogram_type, sinogram3d_size, downsample_factor)
         loaded_volume_info = data.load_cached_volume(cache_directory, sinogram_hash)
+        if loaded_volume_info is None and max_sinogram3d_size is not None and sinogram3d_size > max_sinogram3d_size:
+            sinogram3d_size = max_sinogram3d_size
+            sinogram_hash = data.deterministic_hash_sinogram(ct_path, sinogram_type, sinogram3d_size, downsample_factor)
+            loaded_volume_info = data.load_cached_volume(cache_directory, sinogram_hash)
 
     if loaded_volume_info is not None:
         _, sinogram3d = loaded_volume_info
 
     if sinogram3d is None:
-        sinogram3d, sinogram_evaluation_time = pre_computed.calculate_volume_sinogram(cache_directory, volume,
-                                                                                      voxel_spacing=volume_spacing,
-                                                                                      ct_volume_path=ct_path,
-                                                                                      volume_downsample_factor=downsample_factor,
-                                                                                      save_to_cache=save_to_cache,
-                                                                                      sinogram_size=sinogram3d_size,
-                                                                                      sinogram_type=sinogram_type)
+        gc.collect()
+        torch.cuda.empty_cache()
+        res = pre_computed.calculate_volume_sinogram(cache_directory, volume, voxel_spacing=volume_spacing,
+                                                     ct_volume_path=ct_path, volume_downsample_factor=downsample_factor,
+                                                     save_to_cache=save_to_cache, sinogram_size=sinogram3d_size,
+                                                     sinogram_type=sinogram_type)
+        if res is None:
+            return None
+        sinogram3d, sinogram_evaluation_time = res
         with open("data/sinogram3d_evaluation_times.txt", "a") as file:
             file.write("\n{} {} {}".format(sinogram_type.__name__, sinogram3d_size, sinogram_evaluation_time))
 
@@ -91,21 +97,25 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
         plt.colorbar(mesh)
 
     # Measure evaluation time of DRR vs grangeat resampling
-    transformation = Transformation.random(device=device)
+    repeats: int = 30
+    assert repeats >= 1
+    transformations = [Transformation.random(device=device) for _ in range(repeats)]
     p_matrix = SceneGeometry.projection_matrix(source_position=scene_geometry.source_position())
-    ph_matrix = torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32, device=device)
-    h_matrix_inv = transformation.inverse().get_h(device=device)
+    ph_matrices = [torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32, device=device) for
+                   transformation in transformations]
+    h_matrix_invs = [transformation.inverse().get_h(device=device) for transformation in transformations]
     output_width = x_ray.size()[1]
     output_height = x_ray.size()[0]
     # DRR:
     logger.info("Projecting DRR...")
     torch.cuda.synchronize()
     tic = time.time()
-    drr = reg23.project_drr(volume, volume_spacing, h_matrix_inv, scene_geometry.source_distance, output_width,
-                            output_height, torch.zeros(2, dtype=torch.float64), detector_spacing)
+    for i in range(repeats):
+        drr = reg23.project_drr(volume, volume_spacing, h_matrix_invs[i], scene_geometry.source_distance, output_width,
+                                output_height, torch.zeros(2, dtype=torch.float64), detector_spacing)
     torch.cuda.synchronize()
     toc = time.time()
-    drr_evaluation_time: float = toc - tic
+    drr_evaluation_time: float = (toc - tic) / float(repeats)
     logger.info("DRR projected; took {:.4f}s".format(drr_evaluation_time))
     if plot:
         _, axes = plt.subplots()
@@ -116,10 +126,11 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     logger.info("Resampling sinogram...")
     torch.cuda.synchronize()
     tic = time.time()
-    resampling = sinogram3d.resample_cuda_texture(ph_matrix, sinogram2d_grid)
+    for i in range(repeats):
+        resampling = sinogram3d.resample_cuda_texture(ph_matrices[i], sinogram2d_grid)
     torch.cuda.synchronize()
     toc = time.time()
-    resampling_time: float = toc - tic
+    resampling_time: float = (toc - tic) / float(repeats)
     logger.info("Sinogram resampled; took {:.4f}s".format(resampling_time))
     if plot:
         _, axes = plt.subplots()
@@ -154,7 +165,8 @@ XRAY_DICOM_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_co
                     "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray014.dcm"]
 
 
-def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool = True, plot_first: bool = False):
+def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool = True, plot_first: bool = False,
+         max_sinogram_size: int | None = None):
     count: int = len(CT_PATHS)
     assert len(XRAY_DICOM_PATHS) == count
 
@@ -162,7 +174,7 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
         logger.error("CUDA not available; cannot run any useful benchmarks.")
         exit(1)
 
-    downsample_factors = [4, 8]
+    downsample_factors = [1, 2, 4, 8]
     sinogram_types = [sinogram.SinogramClassic, sinogram.SinogramHEALPix]
 
     datasets: list[plot_data.DrrVsGrangeatPlotData.Dataset] = []
@@ -170,10 +182,12 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
         first: bool = True
         for i in range(count):
             for downsample_factor in downsample_factors:
-                datasets.append(
-                    run_benchmark(cache_directory, CT_PATHS[i], XRAY_DICOM_PATHS[i], load_cached, save_to_cache,
-                                  downsample_factor, sinogram_type=sinogram_type, plot=plot_first and first))
-                first = False
+                res = run_benchmark(cache_directory, CT_PATHS[i], XRAY_DICOM_PATHS[i], load_cached, save_to_cache,
+                                    downsample_factor, sinogram_type=sinogram_type, plot=plot_first and first,
+                                    max_sinogram3d_size=max_sinogram_size)
+                if res is not None:
+                    datasets.append(res)
+                    first = False
     pdata = plot_data.DrrVsGrangeatPlotData(datasets=datasets)
 
     torch.save(pdata, "data/drr_vs_grangeat.pkl")
@@ -199,11 +213,12 @@ if __name__ == "__main__":
     #     "-r", "--regenerate-drr", action='store_true',
     #     help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
     parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
-    # parser.add_argument(
-    #     "-s", "--sinogram-size", type=int, default=256,
-    #     help="The number of values of r, theta and phi to calculate plane integrals for, "
-    #          "and the width and height of the grid of samples taken to approximate each integral. The "
-    #          "computational expense of the 3D Radon transform is O(sinogram_size^5).")
+    parser.add_argument("-s", "--max-sinogram-size", type=int, default=None,
+                        help="The maximum sinogram size to attempt to calculate. If the '--no-load' flag is not present"
+                             ", sinograms of a larger size may still be loaded from the cache. Sinogram size is the "
+                             "number of values of r, theta and phi to calculate plane integrals for, and the width and "
+                             "height of the grid of samples taken to approximate each integral. The computational "
+                             "expense of the 3D Radon transform is O(sinogram_size^5).")
     parser.add_argument("-d", "--display", action='store_true',
                         help="Display/plot the resulting data for the first dataset.")
     args = parser.parse_args()
@@ -213,4 +228,4 @@ if __name__ == "__main__":
         os.makedirs(args.cache_directory)
 
     main(cache_directory=args.cache_directory, load_cached=not args.no_load, save_to_cache=not args.no_save,
-         plot_first=args.display)
+         plot_first=args.display, max_sinogram_size=args.max_sinogram_size)

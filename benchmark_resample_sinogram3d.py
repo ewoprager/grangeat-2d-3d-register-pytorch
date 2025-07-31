@@ -112,9 +112,14 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, sinogram_
     outputs: list[TaskSummary] = []
     for sinogram_type in sinogram_types:
 
-        vol_data, voxel_spacing, sinogram3d = script.get_volume_and_sinogram(
+        res = script.get_volume_and_sinogram(
             path, cache_directory, load_cached=load_cached, save_to_cache=save_to_cache, sinogram_size=sinogram_size,
             sinogram_type=sinogram_type, device=device, volume_downsample_factor=32)
+
+        if res is None:
+            continue
+
+        vol_data, voxel_spacing, sinogram3d = res
 
         plot_radon_volume: bool = False
         if plot_radon_volume:

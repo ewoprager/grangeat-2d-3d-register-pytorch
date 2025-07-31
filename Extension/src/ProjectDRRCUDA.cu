@@ -40,7 +40,7 @@ __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &
                                     int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
                                     const at::Tensor &detectorSpacing) {
 	CommonData common = ProjectDRR<Texture3DCUDA>::Common(volume, voxelSpacing, homographyMatrixInverse, sourceDistance,
-	                                                      outputWidth, outputHeight, outputOffset, detectorSpacing, 500,
+	                                                      outputWidth, outputHeight, outputOffset, detectorSpacing,
 	                                                      at::DeviceType::CUDA);
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 

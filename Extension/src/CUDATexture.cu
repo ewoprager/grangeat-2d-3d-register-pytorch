@@ -44,8 +44,8 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2
 
 	err = cudaMallocArray(&arrayHandle, &channelDesc, size.X(), size.Y());
 	if (err != cudaSuccess) {
-		std::cerr << "cudaMallocArray failed: " << cudaGetErrorString(err) << std::endl;
-		throw std::runtime_error("cudaMallocArray failed");
+		std::cout << "cudaMallocArray failed: " << cudaGetErrorString(err) << std::endl;
+		throw std::bad_alloc();
 	}
 #ifdef DEBUG
 	std::cout << "[C++] Array allocated." << std::endl;
@@ -54,7 +54,7 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2
 	err = cudaMemcpy2DToArray(arrayHandle, 0, 0, data, size.X() * sizeof(float), size.X() * sizeof(float), size.Y(),
 	                          cudaMemcpyDeviceToDevice);
 	if (err != cudaSuccess) {
-		std::cerr << "cudaMemcpy2DToArray failed: " << cudaGetErrorString(err) << std::endl;
+		std::cout << "cudaMemcpy2DToArray failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaMemcpy2DToArray failed");
 	}
 
@@ -68,7 +68,7 @@ CUDATexture2D::CUDATexture2D(const at::Tensor &tensor, Vec<TextureAddressMode, 2
 	}
 	err = cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
 	if (err != cudaSuccess) {
-		std::cerr << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+		std::cout << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl;
 		throw std::runtime_error("cudaCreateTextureObject failed");
 	}
 #ifdef DEBUG
@@ -87,7 +87,7 @@ void CUDATexture2D::CleanUp() noexcept {
 	if (textureHandle) {
 		err = cudaDestroyTextureObject(textureHandle);
 		if (err != cudaSuccess) {
-			std::cerr << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
+			std::cout << "cudaDestroyTextureObject failed: " << cudaGetErrorString(err) << std::endl;
 			std::terminate();
 		}
 #ifdef DEBUG
@@ -97,7 +97,7 @@ void CUDATexture2D::CleanUp() noexcept {
 	if (arrayHandle) {
 		err = cudaFreeArray(arrayHandle);
 		if (err != cudaSuccess) {
-			std::cerr << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
+			std::cout << "cudaFreeArray failed: " << cudaGetErrorString(err) << std::endl;
 			std::terminate();
 		}
 #ifdef DEBUG
@@ -142,8 +142,8 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 
 	err = cudaMalloc3DArray(&arrayHandle, &channelDesc, extent);
 	if (err != cudaSuccess) {
-		std::cerr << "cudaMalloc3DArray failed: " << cudaGetErrorString(err) << std::endl << std::flush;
-		throw std::runtime_error("cudaMalloc3DArray failed");
+		std::cout << "cudaMalloc3DArray failed: " << cudaGetErrorString(err) << std::endl << std::flush;
+		throw std::bad_alloc();
 	}
 #ifdef DEBUG
 	std::cout << "[C++] Array allocated." << std::endl << std::flush;
@@ -157,7 +157,7 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 
 	err = cudaMemcpy3D(&params);
 	if (err != cudaSuccess) {
-		std::cerr << "cudaMemcpy3D failed: " << cudaGetErrorString(err) << std::endl << std::flush;
+		std::cout << "cudaMemcpy3D failed: " << cudaGetErrorString(err) << std::endl << std::flush;
 		throw std::runtime_error("cudaMemcpy3D failed");
 	}
 
@@ -180,7 +180,7 @@ CUDATexture3D::CUDATexture3D(const at::Tensor &tensor, Vec<TextureAddressMode, 3
 
 	err = cudaCreateTextureObject(&textureHandle, &resourceDescriptor, &textureDescriptor, nullptr);
 	if (err != cudaSuccess) {
-		std::cerr << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl << std::flush;
+		std::cout << "cudaCreateTextureObject failed: " << cudaGetErrorString(err) << std::endl << std::flush;
 		throw std::runtime_error("cudaCreateTextureObject failed");
 	}
 #ifdef DEBUG

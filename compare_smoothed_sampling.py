@@ -26,9 +26,12 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     logger.info("Using device: {}".format(device))
 
     # Load the volume and get its sinogram
-    vol_data, voxel_spacing, sinogram3d = script.get_volume_and_sinogram(
+    res = script.get_volume_and_sinogram(
         path, cache_directory, load_cached=load_cached, save_to_cache=save_to_cache, sinogram_size=sinogram_size,
         device=device)
+    if res is None:
+        return
+    vol_data, voxel_spacing, sinogram3d = res
 
     # Load / generate a DRR through the volume
     drr_spec = None

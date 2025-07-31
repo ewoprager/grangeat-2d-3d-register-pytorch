@@ -11,7 +11,7 @@ from registration.lib import sinogram
 def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *, load_cached: bool, save_to_cache: bool,
                             sinogram_size: int, device,
                             sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic,
-                            volume_downsample_factor: int = 2) -> Tuple:
+                            volume_downsample_factor: int = 2) -> Tuple | None:
     volume_spec = None
     sinogram3d = None
     if load_cached and ct_volume_path is not None:
@@ -39,10 +39,13 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
         vol_data = vol_data.to(device=device, dtype=torch.float32)
 
     if sinogram3d is None:
-        sinogram3d, _ = pre_computed.calculate_volume_sinogram(
+        res = pre_computed.calculate_volume_sinogram(
             cache_directory, vol_data, voxel_spacing=voxel_spacing, ct_volume_path=ct_volume_path,
             volume_downsample_factor=volume_downsample_factor, save_to_cache=save_to_cache, sinogram_size=sinogram_size,
             sinogram_type=sinogram_type)
+        if res is None:
+            return None
+        sinogram3d, _ = res
 
     voxel_spacing = voxel_spacing.to(device=device)
 

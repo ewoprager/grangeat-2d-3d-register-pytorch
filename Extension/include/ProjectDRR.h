@@ -21,6 +21,8 @@ namespace reg23 {
  * @param outputOffset a tensor of size (2,) containing `torch.float64`s: The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array.
  * @param detectorSpacing a tensor of size (2,): The spacing in [mm] between the columns and rows of the DRR image.
  * @return a tensor of size (outputHeight, outputWidth): The DRR projection through the given volume at the given transformation.
+ *
+ * The number of samples taken along each ray through the volume for approximation of each ray integral is equal to the largest dimension of the given volume.
  */
 at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpacing,
                           const at::Tensor &homographyMatrixInverse, double sourceDistance, int64_t outputWidth,
@@ -64,7 +66,8 @@ template <typename texture_t> struct ProjectDRR {
 	__host__ static CommonData Common(const at::Tensor &volume, const at::Tensor &voxelSpacing,
 	                                  const at::Tensor &homographyMatrixInverse, double sourceDistance,
 	                                  int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
-	                                  const at::Tensor &detectorSpacing, int64_t samplesPerRay, at::DeviceType device) {
+	                                  const at::Tensor &detectorSpacing, at::DeviceType device,
+	                                  std::optional<int64_t> samplesPerRay = std::nullopt) {
 		// volume should be a 3D tensor of floats on the chosen device
 		TORCH_CHECK(volume.sizes().size() == 3);
 		TORCH_CHECK(volume.dtype() == at::kFloat);
@@ -83,6 +86,9 @@ template <typename texture_t> struct ProjectDRR {
 		TORCH_CHECK(detectorSpacing.sizes() == at::IntArrayRef{2});
 		TORCH_CHECK(detectorSpacing.dtype() == at::kDouble);
 
+		const int64_t samplesPerRayValue = samplesPerRay.value_or(
+			Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Max());
+
 		CommonData ret{};
 		ret.inputTexture = texture_t::FromTensor(volume, VectorType::FromTensor(voxelSpacing));
 		ret.homographyMatrixInverse = Vec<Vec<double, 4>, 4>::FromTensor2D(homographyMatrixInverse);
@@ -93,7 +99,7 @@ template <typename texture_t> struct ProjectDRR {
 		const VectorType sourcePosition = {0.0, 0.0, sourceDistance};
 		ret.lambdaStart = MatMul(ret.homographyMatrixInverse, VecCat(sourcePosition, 1.0)).XYZ().Length() - 0.5 *
 		                  volumeDiagLength;
-		ret.stepSize = volumeDiagLength / static_cast<FloatType>(samplesPerRay);
+		ret.stepSize = volumeDiagLength / static_cast<FloatType>(samplesPerRayValue);
 		ret.outputOffset = Vec<double, 2>::FromTensor(outputOffset);
 		ret.detectorSpacing = Vec<double, 2>::FromTensor(detectorSpacing);
 		ret.flatOutput = torch::zeros(at::IntArrayRef({outputWidth * outputHeight}), volume.contiguous().options());

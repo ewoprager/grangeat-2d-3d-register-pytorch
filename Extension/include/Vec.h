@@ -129,6 +129,47 @@ public:
 	}
 
 	/**
+	 * @return The smallest element in the vector. No ordering is assumed; operation is O(N).
+	 */
+	__host__ __device__ [[nodiscard]] constexpr T Min() const {
+		T ret = (*this)[0];
+		[&]<std::size_t... indices>(std::index_sequence<indices...>) -> void {
+			([&] {
+				if ((*this)[indices + 1] < ret) ret = (*this)[indices + 1];
+			}(), ...);
+		}(std::make_index_sequence<N - 1>{});
+		return ret;
+	}
+
+	/**
+	 * @return The largest element in the vector. No ordering is assumed; operation is O(N).
+	 */
+	__host__ __device__ [[nodiscard]] constexpr T Max() const {
+		T ret = (*this)[0];
+		[&]<std::size_t... indices>(std::index_sequence<indices...>) -> void {
+			([&] {
+				if ((*this)[indices + 1] > ret) ret = (*this)[indices + 1];
+			}(), ...);
+		}(std::make_index_sequence<N - 1>{});
+		return ret;
+	}
+
+	/**
+	 * @return A pair containing the smallest and largest elements in the vector. No ordering is assumed; operation is
+	 * O(N).
+	 */
+	__host__ __device__ [[nodiscard]] constexpr std::pair<T, T> MinMax() const {
+		std::pair<T, T> ret = {(*this)[0], (*this)[0]};
+		[&]<std::size_t... indices>(std::index_sequence<indices...>) -> void {
+			([&] {
+				if ((*this)[indices + 1] < ret.first) ret.first = (*this)[indices + 1];
+				if ((*this)[indices + 1] > ret.second) ret.second = (*this)[indices + 1];
+			}(), ...);
+		}(std::make_index_sequence<N - 1>{});
+		return ret;
+	}
+
+	/**
 	 * @return The 3-vector corresponding to this homogeneous 4-vector, i.e. (x, y, z) / w
 	 *
 	 * For floating-point 4-vectors only.
@@ -209,56 +250,56 @@ public:
 
 	__host__ __device__ Vec &operator+=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() { (*this)[indices] += other[indices]; }(), ...);
+			([&] { (*this)[indices] += other[indices]; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator+=(const T &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() { (*this)[indices] += scalar; }(), ...);
+			([&] { (*this)[indices] += scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator-=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() { (*this)[indices] -= other[indices]; }(), ...);
+			([&] { (*this)[indices] -= other[indices]; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator-=(const T &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() { (*this)[indices] -= scalar; }(), ...);
+			([&] { (*this)[indices] -= scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator*=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() { (*this)[indices] *= other[indices]; }(), ...);
+			([&] { (*this)[indices] *= other[indices]; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator*=(const T &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() { (*this)[indices] *= scalar; }(), ...);
+			([&] { (*this)[indices] *= scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator/=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() { (*this)[indices] /= other[indices]; }(), ...);
+			([&] { (*this)[indices] /= other[indices]; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
 
 	__host__ __device__ Vec &operator/=(const T &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-			([&]() { (*this)[indices] /= scalar; }(), ...);
+			([&] { (*this)[indices] /= scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
 		return *this;
 	}
@@ -608,10 +649,10 @@ template <typename T, std::size_t N1, std::size_t N2> __host__ __device__ conste
 	const Vec<T, N1> &lhs, const Vec<T, N2> &rhs) {
 	Vec<T, N1 + N2> ret;
 	[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-		([&]() { ret[indices] = lhs[indices]; }(), ...);
+		([&] { ret[indices] = lhs[indices]; }(), ...);
 	}(std::make_index_sequence<N1>{});
 	[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-		([&]() { ret[N1 + indices] = rhs[indices]; }(), ...);
+		([&] { ret[N1 + indices] = rhs[indices]; }(), ...);
 	}(std::make_index_sequence<N2>{});
 	return ret;
 }
@@ -624,7 +665,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1>
 	const Vec<T, N> &lhs, const T &rhs) {
 	Vec<T, N + 1> ret;
 	[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-		([&]() { ret[indices] = lhs[indices]; }(), ...);
+		([&] { ret[indices] = lhs[indices]; }(), ...);
 	}(std::make_index_sequence<N>{});
 	ret[N] = rhs;
 	return ret;
@@ -639,7 +680,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1>
 	Vec<T, N + 1> ret;
 	ret[0] = lhs;
 	[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-		([&]() { ret[1 + indices] = rhs[indices]; }(), ...);
+		([&] { ret[1 + indices] = rhs[indices]; }(), ...);
 	}(std::make_index_sequence<N>{});
 	return ret;
 }

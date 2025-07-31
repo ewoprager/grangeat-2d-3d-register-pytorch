@@ -12,7 +12,7 @@ at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpaci
                           int64_t outputHeight, const at::Tensor &outputOffset, const at::Tensor &detectorSpacing) {
 	const CommonData common = ProjectDRR<Texture3DCPU>::Common(volume, voxelSpacing, homographyMatrixInverse,
 	                                                           sourceDistance, outputWidth, outputHeight, outputOffset,
-	                                                           detectorSpacing, 500, at::DeviceType::CPU);
+	                                                           detectorSpacing, at::DeviceType::CPU);
 	const Linear<Texture3DCPU::VectorType> mappingWorldToTexCoord = common.inputTexture.MappingWorldToTexCoord();
 	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
 
