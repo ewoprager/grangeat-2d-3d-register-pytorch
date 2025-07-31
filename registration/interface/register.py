@@ -329,7 +329,7 @@ class RegisterWidget(widgets.Container):
         self._register_progress = widgets.Label(label="Progress:", value="n/a")
 
         self._evals_per_render_widget = widgets.SpinBox(
-            value=self._evals_per_render, min=1, max=1000, step=1, label="Evals./re-plot")
+            value=self._evals_per_render, min=1, max=10000, step=1, label="Evals./re-plot")
         self._evals_per_render_widget.changed.connect(self._on_evals_per_render)
 
         self.append(
