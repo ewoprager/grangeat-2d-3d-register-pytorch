@@ -130,9 +130,10 @@ class RegistrationTask:
 
 
 def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_path: str | pathlib.Path,
-                  obj_func_name: str, load_cached: bool = False, save_to_cache: bool = True, downsample_factor: int = 1,
-                  sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic, plot: bool = False,
-                  iteration_count: int = 10, particle_count: int = 2000) -> plot_data.RegisterPlotData.Dataset | None:
+                  obj_func_names: list[str], load_cached: bool = False, save_to_cache: bool = True,
+                  downsample_factor: int = 1, sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic,
+                  plot: bool = False, iteration_count: int = 10,
+                  particle_count: int = 2000) -> list[plot_data.RegisterPlotData.Dataset] | None:
     device = torch.device("cuda")
     try:
         registration_constants = RegistrationConstants(path=ct_path, cache_directory=cache_directory,
@@ -166,32 +167,36 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
         axes.set_ylabel("y")
         plt.colorbar(mesh)
 
-    res, time_per_iteration = task.run(starting_transformation=starting_transformation,
-                                       objective_function_name=obj_func_name, iteration_count=iteration_count)
-    print(res, time_per_iteration)
-    print("Close = {}; converged params = {}; g.t. = {}".format(torch.allclose(res.param_history[-1].cpu(),
-                                                                               registration_constants.transformation_ground_truth.vectorised().cpu()),
-                                                                res.param_history[-1].cpu(),
-                                                                registration_constants.transformation_ground_truth.vectorised().cpu()))
+    datasets = []
+    for obj_func_name in obj_func_names:
 
-    if plot:
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(task.generate_drr(Transformation.from_vector(res.param_history[-1])).cpu())
-        axes.axis('square')
-        axes.set_title("Converged transformation")
-        axes.set_xlabel("x")
-        axes.set_ylabel("y")
-        plt.colorbar(mesh)
-        plt.show()
+        res, time_per_iteration = task.run(starting_transformation=starting_transformation,
+                                           objective_function_name=obj_func_name, iteration_count=iteration_count)
+        print(res, time_per_iteration)
+        print("Close = {}; converged params = {}; g.t. = {}".format(torch.allclose(res.param_history[-1].cpu(),
+                                                                                   registration_constants.transformation_ground_truth.vectorised().cpu()),
+                                                                    res.param_history[-1].cpu(),
+                                                                    registration_constants.transformation_ground_truth.vectorised().cpu()))
 
-    return plot_data.RegisterPlotData.Dataset(ct_volume_numel=registration_constants.ct_volume.numel(),
-                                              obj_func_name=obj_func_name, sinogram_type=sinogram_type,
-                                              time_per_iteration=time_per_iteration,
-                                              ground_truth_transformation=registration_constants.transformation_ground_truth,
-                                              starting_transformation=starting_transformation.to(
-                                                  device=torch.device("cpu")),
-                                              converged_transformation=Transformation.from_vector(
-                                                  res.param_history[-1].cpu()))
+        if plot:
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(task.generate_drr(Transformation.from_vector(res.param_history[-1])).cpu())
+            axes.axis('square')
+            axes.set_title("Converged transformation")
+            axes.set_xlabel("x")
+            axes.set_ylabel("y")
+            plt.colorbar(mesh)
+            plt.show()
+
+        datasets.append(plot_data.RegisterPlotData.Dataset(ct_volume_numel=registration_constants.ct_volume.numel(),
+                                                           obj_func_name=obj_func_name, sinogram_type=sinogram_type,
+                                                           time_per_iteration=time_per_iteration,
+                                                           ground_truth_transformation=registration_constants.transformation_ground_truth,
+                                                           starting_transformation=starting_transformation.to(
+                                                               device=torch.device("cpu")),
+                                                           converged_transformation=Transformation.from_vector(
+                                                               res.param_history[-1].cpu())))
+    return datasets
 
 
 CT_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001",
@@ -223,25 +228,24 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
     iteration_count: int = 5
     particle_count: int = 500
 
-    downsample_factors = [4, 8]  # [1, 2, 4, 8] # !!!
+    downsample_factors = [4]  # [1, 2, 4, 8] # !!!
     sinogram_types = [sinogram.SinogramClassic, sinogram.SinogramHEALPix]
     obj_func_names: list[str] = ["grangeat", "drr"]
-    repeats = 2
+    repeats = 1
 
     datasets: list[plot_data.RegisterPlotData.Dataset] = []
     for sinogram_type in sinogram_types:
-        for obj_func_name in obj_func_names:
-            first: bool = True
-            for i in range(count):
-                for downsample_factor in downsample_factors:
-                    for _ in range(repeats):
-                        res = run_benchmark(cache_directory, CT_PATHS[i], XRAY_DICOM_PATHS[i], obj_func_name,
-                                            load_cached, save_to_cache, downsample_factor, sinogram_type=sinogram_type,
-                                            plot=plot_first and first, iteration_count=iteration_count,
-                                            particle_count=particle_count)
-                        if res is not None:
-                            datasets.append(res)
-                            first = False
+        first: bool = True
+        for i in range(1): # !!!
+            for downsample_factor in downsample_factors:
+                for _ in range(repeats):
+                    res = run_benchmark(cache_directory, CT_PATHS[i], XRAY_DICOM_PATHS[i], obj_func_names, load_cached,
+                                        save_to_cache, downsample_factor, sinogram_type=sinogram_type,
+                                        plot=plot_first and first, iteration_count=iteration_count,
+                                        particle_count=particle_count)
+                    if res is not None:
+                        datasets.extend(res)
+                        first = False
     pdata = plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count,
                                        datasets=datasets)
 

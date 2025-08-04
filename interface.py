@@ -250,12 +250,14 @@ class Interface:
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
-         sinogram_size: int | None, x_ray: str | None = None, new_drr_size: torch.Size = torch.Size([1000, 1000])) -> int:
+         sinogram_size: int | None, x_ray: str | None = None, new_drr_size: torch.Size = torch.Size([1000, 1000]),
+         sinogram_type: Type[SinogramType] = SinogramClassic) -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
 
     registration_constants = RegistrationConstants(path, cache_directory, load_cached, regenerate_drr, save_to_cache,
-                                                   sinogram_size, x_ray, device, new_drr_size=new_drr_size)
+                                                   sinogram_size, x_ray, device, new_drr_size=new_drr_size,
+                                                   sinogram_type=sinogram_type)
 
     interface = Interface(registration_constants)
 
@@ -292,15 +294,25 @@ if __name__ == "__main__":
                              "this is provided, the X-ray will by used instead of any DRR.")
     parser.add_argument("-d", "--drr-size", type=int, default=1000,
                         help="The size of the square DRR to generate as the fixed image if no X-ray is given.")
+    parser.add_argument("-t", "--sinogram-type", type=str, default="classic",
+                        help="String name of the storage method for the 3D sinogram. Must be one of: 'classic', "
+                             "'healpix'.")
     args = parser.parse_args()
 
     # create cache directory
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
+    # Get sinogram type
+    sinogram_type = SinogramClassic
+    if args.sinogram_type == "healpix":
+        sinogram_type = SinogramHEALPix
+    elif args.sinogram_type != "classic":
+        logger.warn("Unrecognised sinogram type '{}'; defaulting to 'classic'.".format(args.sinogram_type))
+
     ret = main(path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
                regenerate_drr=args.regenerate_drr, save_to_cache=not args.no_save, sinogram_size=args.sinogram_size,
                x_ray=args.x_ray if "x_ray" in vars(args) else None,
-               new_drr_size=torch.Size([args.drr_size, args.drr_size]))
+               new_drr_size=torch.Size([args.drr_size, args.drr_size]), sinogram_type=sinogram_type)
 
     exit(ret)
