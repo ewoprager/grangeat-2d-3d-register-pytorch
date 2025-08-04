@@ -23,4 +23,7 @@ def setup_logger():
         file.write("{}\n\n".format(header_string))
 
     logging.config.fileConfig("logging.conf", disable_existing_loggers=False, defaults={"logs_path": str(logs_path)})
+    # redirect warnings to logging
+    logging.captureWarnings(True)
+    logging.getLogger("py.warnings").setLevel(logging.WARNING)
     return logging.getLogger("radonRegistration")

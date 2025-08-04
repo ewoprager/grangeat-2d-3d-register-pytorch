@@ -1,3 +1,5 @@
+import math
+
 import torch
 
 from registration.lib import grangeat
@@ -6,15 +8,13 @@ from registration.lib.sinogram import *
 
 
 def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor,
-                           voxel_spacing: torch.Tensor, *, device, save_to_cache=True,
-                           size: torch.Size = torch.Size([1000, 1000])):
+                           voxel_spacing: torch.Tensor, *, device, save_to_cache=True, size: torch.Size | None = None):
     # transformation = Transformation(torch.tensor([0., 0., 0.]),
     #                                 torch.tensor([0., 0., 200.])).to(device=device)
     # transformation = Transformation.zero(device=volume_data.device)
     transformation = Transformation.random(device=volume_data.device)
-    logger.info(
-        "Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(
-            transformation.rotation, transformation.translation))
+    logger.info("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
+                                                                                  transformation.translation))
 
     # # plot_drr(drr_image, ticks=False)
     # drr_image = drr_image[0, 0]
@@ -23,12 +23,18 @@ def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_dat
     # axes.axis('square')
     # plt.colorbar(mesh)
 
-    detector_spacing = torch.tensor([.25, .25])
+    if size is None:
+        side_length = int(
+            math.ceil(pow(volume_data.size()[0] * volume_data.size()[1] * volume_data.size()[2], 1.0 / 3.0)))
+        size = torch.Size([side_length, side_length])
+
+    detector_spacing = 250.0 / torch.tensor(size) # assume the detector is 250 x 250 mm in size
     scene_geometry = SceneGeometry(source_distance=1000.)
 
-    drr_image = geometry.generate_drr(
-        volume_data, transformation=transformation, voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
-        scene_geometry=scene_geometry, output_size=size)
+
+    drr_image = geometry.generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
+                                      detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                      output_size=size)
 
     logger.info("DRR generated.")
 
@@ -51,9 +57,7 @@ def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_dat
 
     if save_to_cache and ct_volume_path is not None:
         save_path = cache_directory + "/drr_spec_{}.pt".format(data.deterministic_hash_string(ct_volume_path))
-        torch.save(
-            DrrSpec(
-                ct_volume_path, detector_spacing, scene_geometry, drr_image, transformation), save_path)
+        torch.save(DrrSpec(ct_volume_path, detector_spacing, scene_geometry, drr_image, transformation), save_path)
         logger.info("DRR sinogram saved to '{}'".format(save_path))
 
     return detector_spacing, scene_geometry, drr_image, transformation

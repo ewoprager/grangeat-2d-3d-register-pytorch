@@ -250,7 +250,7 @@ class Interface:
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
-         sinogram_size: int, x_ray: str | None = None, new_drr_size: torch.Size = torch.Size([1000, 1000])) -> int:
+         sinogram_size: int | None, x_ray: str | None = None, new_drr_size: torch.Size = torch.Size([1000, 1000])) -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
 
@@ -282,10 +282,11 @@ if __name__ == "__main__":
     parser.add_argument("-r", "--regenerate-drr", action='store_true',
                         help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
     parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
-    parser.add_argument("-s", "--sinogram-size", type=int, default=256,
+    parser.add_argument("-s", "--sinogram-size", type=int, default=None,
                         help="The number of values of r, theta and phi to calculate plane integrals for, "
                              "and the width and height of the grid of samples taken to approximate each integral. The "
-                             "computational expense of the 3D Radon transform is O(sinogram_size^5).")
+                             "computational expense of the 3D Radon transform is O(sinogram_size^5). If not given, the "
+                             "default is determined by the size of the CT volume.")
     parser.add_argument("-x", "--x-ray", type=str,
                         help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
                              "this is provided, the X-ray will by used instead of any DRR.")

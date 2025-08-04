@@ -17,12 +17,15 @@ from registration.lib import grangeat
 
 class RegistrationConstants:
     def __init__(self, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool,
-                 save_to_cache: bool, sinogram_size: int, x_ray: str | None, device,
-                 new_drr_size: torch.Size = torch.Size([1000, 1000])):
+                 save_to_cache: bool, sinogram_size: int | None, x_ray: str | None, device,
+                 new_drr_size: torch.Size | None = None, sinogram_type: Type[SinogramType] = SinogramClassic,
+                 volume_downsample_factor: int = 2):
         res = script.get_volume_and_sinogram(path, cache_directory, load_cached=load_cached,
-                                             save_to_cache=save_to_cache, sinogram_size=sinogram_size, device=device)
+                                             save_to_cache=save_to_cache, sinogram_size=sinogram_size, device=device,
+                                             sinogram_type=sinogram_type,
+                                             volume_downsample_factor=volume_downsample_factor)
         if res is None:
-            exit(1)
+            raise MemoryError("Insufficient memory for sinogram.")
         self._ct_volume, self._ct_spacing, self._sinogram3d = res
         self._device = device
         self._transformation_ground_truth = None
