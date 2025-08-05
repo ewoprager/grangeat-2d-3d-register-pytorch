@@ -45,37 +45,18 @@ def main():
     # DRR vs. Grangeat resampling
     #
     lin_coeffs_xnumel_drr = np.polyfit(x_ray_numels, drr_times, 1)
-    lin_coeffs_xnumel_resample = np.polyfit(x_ray_numels, resample_times, 1)
+    lin_coeffs_xnumel_classic = np.polyfit(x_ray_numels_classic, resample_times_classic, 1)
+    lin_coeffs_xnumel_healpix = np.polyfit(x_ray_numels_healpix, resample_times_healpix, 1)
 
     fig, axes = plt.subplots()
     axes.scatter(x_ray_numels, drr_times, label="DRR")
-    axes.scatter(x_ray_numels, resample_times, label="Grangeat resampling")
+    axes.scatter(x_ray_numels_classic, resample_times_classic, label="Grangeat classic")
+    axes.scatter(x_ray_numels_healpix, resample_times_healpix, label="Grangeat HEALPix")
     xs = np.array(plt.xlim())
     ys_xnumel_drr = lin_coeffs_xnumel_drr[0] * xs + lin_coeffs_xnumel_drr[1]
     axes.plot(xs, ys_xnumel_drr, label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_drr[0]),
                                                                          to_latex_scientific(lin_coeffs_xnumel_drr[1],
                                                                                              include_plus=True)))
-    ys_xnumel_resample = lin_coeffs_xnumel_resample[0] * xs + lin_coeffs_xnumel_resample[1]
-    axes.plot(xs, ys_xnumel_resample,
-              label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_resample[0]),
-                                                      to_latex_scientific(lin_coeffs_xnumel_resample[1],
-                                                                          include_plus=True)))
-    axes.set_xlabel("DRR / resampling element count")
-    axes.set_ylabel("Evaluation time [s]")
-    plt.tight_layout()
-    plt.legend(loc="upper left")
-    plt.savefig("data/temp/against_drr_size.pgf")
-
-    #
-    # Classic vs. HEALPix resampling
-    #
-    lin_coeffs_xnumel_classic = np.polyfit(x_ray_numels_classic, resample_times_classic, 1)
-    lin_coeffs_xnumel_healpix = np.polyfit(x_ray_numels_healpix, resample_times_healpix, 1)
-
-    fig, axes = plt.subplots()
-    axes.scatter(x_ray_numels_classic, resample_times_classic, label="Classic")
-    axes.scatter(x_ray_numels_healpix, resample_times_healpix, label="HEALPix")
-    xs = np.array(plt.xlim())
     ys_xnumel_classic = lin_coeffs_xnumel_classic[0] * xs + lin_coeffs_xnumel_classic[1]
     axes.plot(xs, ys_xnumel_classic,
               label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_classic[0]),
@@ -86,11 +67,11 @@ def main():
               label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_healpix[0]),
                                                       to_latex_scientific(lin_coeffs_xnumel_healpix[1],
                                                                           include_plus=True)))
-    axes.set_xlabel("Resampling element count")
+    axes.set_xlabel("DRR / resampling element count")
     axes.set_ylabel("Evaluation time [s]")
     plt.tight_layout()
     plt.legend(loc="upper left")
-    plt.savefig("data/temp/structure_resampling.pgf")
+    plt.savefig("data/temp/against_drr_size.pgf")
 
     #
     # Sinogram 3D evaluation time
@@ -155,14 +136,12 @@ def main():
     xs = np.array(plt.xlim())
     ys = lin_coeffs[0] * xs + lin_coeffs[1]
     axes.plot(xs, ys, label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs[0]),
-                                                                      to_latex_scientific(lin_coeffs[1],
-                                                                                          include_plus=True)))
+                                                              to_latex_scientific(lin_coeffs[1], include_plus=True)))
     axes.set_xlabel("ln(Sinogram size $M$)")
     axes.set_ylabel("ln(Evaluation time / s)")
     plt.tight_layout()
     plt.legend(loc="upper left")
     plt.savefig("data/temp/ln_sinogram2d_against_ln_size.pgf")
-
 
     plt.show()
 

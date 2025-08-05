@@ -255,9 +255,11 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
 
-    registration_constants = RegistrationConstants(path, cache_directory, load_cached, regenerate_drr, save_to_cache,
-                                                   sinogram_size, x_ray, device, new_drr_size=new_drr_size,
-                                                   sinogram_type=sinogram_type)
+    registration_constants = RegistrationConstants(path=path, cache_directory=cache_directory, load_cached=load_cached,
+                                                   regenerate_drr=regenerate_drr, save_to_cache=save_to_cache,
+                                                   sinogram_size=sinogram_size, x_ray=x_ray, device=device,
+                                                   new_drr_size=new_drr_size, sinogram_type=sinogram_type,
+                                                   volume_downsample_factor=2)
 
     interface = Interface(registration_constants)
 
@@ -271,48 +273,48 @@ if __name__ == "__main__":
     logger = logs_setup.setup_logger()
 
     # parse arguments
-    parser = argparse.ArgumentParser(description="", epilog="")
-    parser.add_argument("-c", "--cache-directory", type=str, default="cache",
-                        help="Set the directory where data that is expensive to calculate will be saved. The default "
-                             "is 'cache'.")
-    parser.add_argument("-p", "--ct-nrrd-path", type=str,
-                        help="Give a path to a NRRD file containing CT data to process. If not provided, some simple "
-                             "synthetic data will be used instead - note that in this case, data will not be saved to "
-                             "the cache.")
-    parser.add_argument("-i", "--no-load", action='store_true',
-                        help="Do not load any pre-calculated data from the cache.")
-    parser.add_argument("-r", "--regenerate-drr", action='store_true',
-                        help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
-    parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
-    parser.add_argument("-s", "--sinogram-size", type=int, default=None,
-                        help="The number of values of r, theta and phi to calculate plane integrals for, "
-                             "and the width and height of the grid of samples taken to approximate each integral. The "
-                             "computational expense of the 3D Radon transform is O(sinogram_size^5). If not given, the "
-                             "default is determined by the size of the CT volume.")
-    parser.add_argument("-x", "--x-ray", type=str,
-                        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
-                             "this is provided, the X-ray will by used instead of any DRR.")
-    parser.add_argument("-d", "--drr-size", type=int, default=1000,
-                        help="The size of the square DRR to generate as the fixed image if no X-ray is given.")
-    parser.add_argument("-t", "--sinogram-type", type=str, default="classic",
-                        help="String name of the storage method for the 3D sinogram. Must be one of: 'classic', "
-                             "'healpix'.")
-    args = parser.parse_args()
+    _parser = argparse.ArgumentParser(description="", epilog="")
+    _parser.add_argument("-c", "--cache-directory", type=str, default="cache",
+                         help="Set the directory where data that is expensive to calculate will be saved. The default "
+                              "is 'cache'.")
+    _parser.add_argument("-p", "--ct-nrrd-path", type=str,
+                         help="Give a path to a NRRD file containing CT data to process. If not provided, some simple "
+                              "synthetic data will be used instead - note that in this case, data will not be saved to "
+                              "the cache.")
+    _parser.add_argument("-i", "--no-load", action='store_true',
+                         help="Do not load any pre-calculated data from the cache.")
+    _parser.add_argument("-r", "--regenerate-drr", action='store_true',
+                         help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
+    _parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
+    _parser.add_argument("-s", "--sinogram-size", type=int, default=None,
+                         help="The number of values of r, theta and phi to calculate plane integrals for, "
+                              "and the width and height of the grid of samples taken to approximate each integral. The "
+                              "computational expense of the 3D Radon transform is O(sinogram_size^5). If not given, the "
+                              "default is determined by the size of the CT volume.")
+    _parser.add_argument("-x", "--x-ray", type=str,
+                         help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
+                              "this is provided, the X-ray will by used instead of any DRR.")
+    _parser.add_argument("-d", "--drr-size", type=int, default=1000,
+                         help="The size of the square DRR to generate as the fixed image if no X-ray is given.")
+    _parser.add_argument("-t", "--sinogram-type", type=str, default="classic",
+                         help="String name of the storage method for the 3D sinogram. Must be one of: 'classic', "
+                              "'healpix'.")
+    _args = _parser.parse_args()
 
     # create cache directory
-    if not os.path.exists(args.cache_directory):
-        os.makedirs(args.cache_directory)
+    if not os.path.exists(_args.cache_directory):
+        os.makedirs(_args.cache_directory)
 
     # Get sinogram type
-    sinogram_type = SinogramClassic
-    if args.sinogram_type == "healpix":
-        sinogram_type = SinogramHEALPix
-    elif args.sinogram_type != "classic":
-        logger.warn("Unrecognised sinogram type '{}'; defaulting to 'classic'.".format(args.sinogram_type))
+    _sinogram_type = SinogramClassic
+    if _args.sinogram_type == "healpix":
+        _sinogram_type = SinogramHEALPix
+    elif _args.sinogram_type != "classic":
+        logger.warn("Unrecognised sinogram type '{}'; defaulting to 'classic'.".format(_args.sinogram_type))
 
-    ret = main(path=args.ct_nrrd_path, cache_directory=args.cache_directory, load_cached=not args.no_load,
-               regenerate_drr=args.regenerate_drr, save_to_cache=not args.no_save, sinogram_size=args.sinogram_size,
-               x_ray=args.x_ray if "x_ray" in vars(args) else None,
-               new_drr_size=torch.Size([args.drr_size, args.drr_size]), sinogram_type=sinogram_type)
+    _ret = main(path=_args.ct_nrrd_path, cache_directory=_args.cache_directory, load_cached=not _args.no_load,
+                regenerate_drr=_args.regenerate_drr, save_to_cache=not _args.no_save, sinogram_size=_args.sinogram_size,
+                x_ray=_args.x_ray if "x_ray" in vars(_args) else None,
+                new_drr_size=torch.Size([_args.drr_size, _args.drr_size]), sinogram_type=_sinogram_type)
 
-    exit(ret)
+    exit(_ret)

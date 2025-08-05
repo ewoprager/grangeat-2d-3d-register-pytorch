@@ -114,8 +114,8 @@ def main():
     #           label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_resample[0]),
     #                                                   to_latex_scientific(lin_coeffs_xnumel_resample[1],
     #                                                                       include_plus=True)))
-    axes.set_xlabel("Distance of starting alignment in SE(3) from g.t.")
-    axes.set_ylabel("Distance of converged alignment in SE(3) from g.t.")
+    axes.set_xlabel("Starting to G.T. distance in SE(3)")
+    axes.set_ylabel("Converged to G.T. distance in SE(3)")
     plt.tight_layout()
     plt.legend(loc="upper left")
     plt.savefig("data/temp/conv_dist_vs_start_dist.pgf")

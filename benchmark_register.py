@@ -48,6 +48,10 @@ class RegistrationTask:
     def registration_constants(self) -> RegistrationConstants:
         return self._registration_constants
 
+    @property
+    def registration_data(self) -> RegistrationData:
+        return self._registration_data
+
     def resample_sinogram3d(self, transformation: Transformation) -> torch.Tensor:
         # Applying the translation offset
         translation = copy.deepcopy(transformation.translation)
@@ -162,18 +166,18 @@ def save_append(new_data: plot_data.RegisterPlotData.Dataset | list[plot_data.Re
     torch.save(current_data, SAVE_FILE)
 
 
-def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_path: str | pathlib.Path,
-                  obj_func_names: list[str], load_cached: bool = False, save_to_cache: bool = True,
-                  downsample_factor: int = 1, sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic,
-                  plot: bool = False, iteration_count: int = 10, particle_count: int = 2000) -> list[
-                                                                                                    plot_data.RegisterPlotData.Dataset] | None:
+def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_path: str | pathlib.Path,
+                  obj_func_names: list[str], iteration_count, particle_count, load_cached: bool = False,
+                  save_to_cache: bool = True, downsample_factor: int = 1,
+                  sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic, save_figures: bool = False,
+                  show_figures: bool = False) -> list[plot_data.RegisterPlotData.Dataset] | None:
     device = torch.device("cuda")
     try:
         registration_constants = RegistrationConstants(path=ct_path, cache_directory=cache_directory,
                                                        load_cached=load_cached, regenerate_drr=True,
                                                        save_to_cache=save_to_cache, sinogram_size=None, x_ray=None,
                                                        device=device, sinogram_type=sinogram_type,
-                                                       volume_downsample_factor=downsample_factor)
+                                                       volume_downsample_factor=downsample_factor, new_drr_size=None)
     except MemoryError:
         return None
     starting_params = registration_constants.transformation_ground_truth.vectorised()
@@ -183,22 +187,40 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
 
     task = RegistrationTask(registration_constants, particle_count=particle_count)
 
-    if plot:
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(registration_constants.image_2d_full.cpu())
-        axes.axis('square')
-        axes.set_title("Ground truth")
-        axes.set_xlabel("x")
-        axes.set_ylabel("y")
-        plt.colorbar(mesh)
+    if save_figures or show_figures:
+        plt.imshow(registration_constants.image_2d_full.cpu().numpy(), cmap="Greys_r")
+        plt.axis("off")
+        plt.tight_layout(pad=0)
+        if save_figures:
+            plt.savefig("data/temp/img_drr_at_gt.png", bbox_inches='tight', pad_inches=0)
 
-        _, axes = plt.subplots()
-        mesh = axes.pcolormesh(task.generate_drr(starting_transformation).cpu())
-        axes.axis('square')
-        axes.set_title("Starting transformation")
-        axes.set_xlabel("x")
-        axes.set_ylabel("y")
-        plt.colorbar(mesh)
+        plt.imshow(task.registration_data.sinogram2d.cpu().numpy(), cmap='Greys_r')
+        plt.axis("off")
+        plt.tight_layout(pad=0)
+        if save_figures:
+            plt.savefig("data/temp/img_grangeat_fixed.png", bbox_inches='tight', pad_inches=0)
+
+        plt.imshow(task.resample_sinogram3d(registration_constants.transformation_ground_truth).cpu().numpy(),
+                   cmap='Greys_r')
+        plt.axis("off")
+        plt.tight_layout(pad=0)
+        if save_figures:
+            plt.savefig("data/temp/img_resampling_at_gt.png", bbox_inches='tight', pad_inches=0)
+
+        plt.imshow(task.generate_drr(starting_transformation).cpu().numpy(), cmap='Greys_r')
+        plt.axis("off")
+        plt.tight_layout(pad=0)
+        if save_figures:
+            plt.savefig("data/temp/img_drr_at_start.png", bbox_inches='tight', pad_inches=0)
+
+        plt.imshow(task.resample_sinogram3d(starting_transformation).cpu().numpy(), cmap='Greys_r')
+        plt.axis("off")
+        plt.tight_layout(pad=0)
+        if save_figures:
+            plt.savefig("data/temp/img_resampling_at_start.png", bbox_inches='tight', pad_inches=0)
+
+        if not show_figures:
+            plt.close()
 
     datasets = []
     for obj_func_name in obj_func_names:
@@ -211,15 +233,25 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
                                                                     res.param_history[-1].cpu(),
                                                                     registration_constants.transformation_ground_truth.vectorised().cpu()))
 
-        if plot:
-            _, axes = plt.subplots()
-            mesh = axes.pcolormesh(task.generate_drr(Transformation.from_vector(res.param_history[-1])).cpu())
-            axes.axis('square')
-            axes.set_title("Converged transformation")
-            axes.set_xlabel("x")
-            axes.set_ylabel("y")
-            plt.colorbar(mesh)
-            plt.show()
+        if save_figures or show_figures:
+            plt.imshow(task.generate_drr(Transformation.from_vector(res.param_history[-1])).cpu().numpy(),
+                       cmap='Greys_r')
+            plt.axis("off")
+            plt.tight_layout(pad=0)
+            if save_figures:
+                plt.savefig("data/temp/img_drr_at_converged_{}.png".format(obj_func_name), bbox_inches='tight',
+                            pad_inches=0)
+
+            plt.imshow(task.resample_sinogram3d(Transformation.from_vector(res.param_history[-1])).cpu().numpy(),
+                       cmap='Greys_r')
+            plt.axis("off")
+            plt.tight_layout(pad=0)
+            if save_figures:
+                plt.savefig("data/temp/img_resampling_at_converged_{}.png".format(obj_func_name), bbox_inches='tight',
+                            pad_inches=0)
+
+            if not show_figures:
+                plt.close()
 
         datasets.append(
             plot_data.RegisterPlotData.Dataset(fixed_image_numel=registration_constants.image_2d_full.numel(),
@@ -230,6 +262,10 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
                                                    device=torch.device("cpu")),
                                                converged_transformation=Transformation.from_vector(
                                                    res.param_history[-1].cpu())))
+
+    if show_figures:
+        plt.show()
+
     return datasets
 
 
@@ -251,7 +287,8 @@ XRAY_DICOM_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_co
                     "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray014.dcm"]
 
 
-def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool = True, plot_first: bool = False):
+def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool = True, save_first: bool = False,
+         show_first: bool = False):
     count: int = len(CT_PATHS)
     assert len(XRAY_DICOM_PATHS) == count
 
@@ -259,33 +296,43 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
         logger.error("CUDA not available; cannot run any useful benchmarks.")
         exit(1)
 
-    iteration_count: int = 5
-    particle_count: int = 500
+    iteration_count: int = 15
+    particle_count: int = 2500
 
-    downsample_factors = [8, 4, 2, 1]
-    sinogram_types = [sinogram.SinogramClassic, sinogram.SinogramHEALPix]
-    obj_func_names: list[str] = ["grangeat", "drr"]
-    repeats = 1
+    downsample_factors = [1, 2, 4, 8]
+    sinogram_types = [(sinogram.SinogramHEALPix, ["grangeat", "drr"]), (sinogram.SinogramClassic, ["grangeat"])]
 
     save_new(plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count, datasets=[]))
 
-    for sinogram_type in sinogram_types:
-        first: bool = True
+    first: bool = True
+    for sinogram_type, obj_func_names in sinogram_types:
         for i in range(count):
             for downsample_factor in downsample_factors:
-                for _ in range(repeats):
-                    res = run_benchmark(cache_directory, CT_PATHS[i], XRAY_DICOM_PATHS[i], obj_func_names, load_cached,
-                                        save_to_cache, downsample_factor, sinogram_type=sinogram_type,
-                                        plot=plot_first and first, iteration_count=iteration_count,
-                                        particle_count=particle_count)
-                    if res is not None:
-                        save_append(res)
-                        first = False
+                try:
+                    res = run_benchmark(cache_directory=cache_directory, ct_path=CT_PATHS[i],
+                                        xray_dicom_path=XRAY_DICOM_PATHS[i], obj_func_names=obj_func_names,
+                                        load_cached=load_cached, save_to_cache=save_to_cache,
+                                        downsample_factor=downsample_factor, sinogram_type=sinogram_type,
+                                        save_figures=save_first and first, show_figures=show_first and first,
+                                        iteration_count=iteration_count, particle_count=particle_count)
+                except MemoryError:
+                    logger.warn("Not enough memory for run; skipping.")
+                    continue
+                if res is not None:
+                    save_append(res)
+                    first = False
 
 
 if __name__ == "__main__":
     # set up logger
     logger = logs_setup.setup_logger()
+
+    # for outputting images
+    plt.rcParams["text.usetex"] = True
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["scatter.marker"] = 'x'
+    plt.rcParams["font.size"] = 15  # figures are includes in latex at half size, so 18 is desired size. matplotlib
+    # scales up by 1.2 (God only knows why), so setting to 15
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
@@ -303,8 +350,8 @@ if __name__ == "__main__":
     #     "-r", "--regenerate-drr", action='store_true',
     #     help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
     parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
-    parser.add_argument("-d", "--display", action='store_true',
-                        help="Display/plot the resulting data for the first dataset.")
+    parser.add_argument("-f", "--save-figures", action='store_true', help="Save images for the first dataset.")
+    parser.add_argument("-s", "--show-figures", action='store_true', help="Show images for the first dataset.")
     args = parser.parse_args()
 
     # create cache directory
@@ -312,4 +359,4 @@ if __name__ == "__main__":
         os.makedirs(args.cache_directory)
 
     main(cache_directory=args.cache_directory, load_cached=not args.no_load, save_to_cache=not args.no_save,
-         plot_first=args.display)
+         save_first=args.save_figures, show_first=args.show_figures)

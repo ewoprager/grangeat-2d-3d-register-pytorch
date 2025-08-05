@@ -11,5 +11,5 @@ Extension/src/extension.egg-info/
 figures/landscapes/
 figures/analysis/
 **/*.egg-info/
-Logs/
+Logs/*
 data/register_plot_data/

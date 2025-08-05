@@ -28,7 +28,7 @@ def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_dat
             math.ceil(pow(volume_data.size()[0] * volume_data.size()[1] * volume_data.size()[2], 1.0 / 3.0)))
         size = torch.Size([side_length, side_length])
 
-    detector_spacing = 250.0 / torch.tensor(size) # assume the detector is 250 x 250 mm in size
+    detector_spacing = 200.0 / torch.tensor(size) # assume the detector is 200 x 200 mm in size
     scene_geometry = SceneGeometry(source_distance=1000.)
 
 
