@@ -20,7 +20,7 @@ class DrrVsGrangeatPlotData(NamedTuple):
 
 class RegisterPlotData(NamedTuple):
     class Dataset(NamedTuple):
-        ct_volume_numel: int
+        fixed_image_numel: int
         obj_func_name: str
         sinogram_type: Type[sinogram.SinogramType]
         time_per_iteration: float

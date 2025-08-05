@@ -4,6 +4,7 @@ import pickle
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import pathlib
 
 import logs_setup
 from registration import plot_data
@@ -22,19 +23,28 @@ def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False
     return fr"{mantissa:.{precision}f} \times 10^{{{exponent}}}"
 
 
+SAVE_DIRECTORY = pathlib.Path("data/register_plot_data")
+
+
 def main():
-    pdata = torch.load("data/register_plot_data.pkl", weights_only=False)
+    files = list(SAVE_DIRECTORY.glob("*.pkl"))
+    latest_file = max(files, key=lambda f: f.stem)
+    pdata = torch.load(latest_file, weights_only=False)
     assert isinstance(pdata, plot_data.RegisterPlotData)
+
+    if len(pdata.datasets) == 0:
+        logger.warn("No datasets in save file '{}'.".format(latest_file))
+        exit(0)
 
     iteration_count = pdata.iteration_count
     particle_count = pdata.particle_count
 
-    volume_numels_drr = np.array(
-        [dataset.ct_volume_numel for dataset in pdata.datasets if dataset.obj_func_name == "drr"])
-    volume_numels_grangeat = np.array([dataset.ct_volume_numel for dataset in pdata.datasets if
-                                       dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramClassic])
-    volume_numels_healpix = np.array([dataset.ct_volume_numel for dataset in pdata.datasets if
-                                      dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramHEALPix])
+    fixed_numels_drr = np.array(
+        [dataset.fixed_image_numel for dataset in pdata.datasets if dataset.obj_func_name == "drr"])
+    fixed_numels_grangeat = np.array([dataset.fixed_image_numel for dataset in pdata.datasets if
+                                      dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramClassic])
+    fixed_numels_healpix = np.array([dataset.fixed_image_numel for dataset in pdata.datasets if
+                                     dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramHEALPix])
     times_per_iteration_drr = np.array(
         [dataset.time_per_iteration for dataset in pdata.datasets if dataset.obj_func_name == "drr"])
     times_per_iteration_grangeat = np.array([dataset.time_per_iteration for dataset in pdata.datasets if
@@ -66,9 +76,9 @@ def main():
     # lin_coeffs_xnumel_drr = np.polyfit(x_ray_numels, drr_times, 1)
     # lin_coeffs_xnumel_resample = np.polyfit(x_ray_numels, resample_times, 1)
     fig, axes = plt.subplots()
-    axes.scatter(volume_numels_drr, times_per_iteration_drr, label="DRR")
-    axes.scatter(volume_numels_grangeat, times_per_iteration_grangeat, label="Grangeat classic")
-    axes.scatter(volume_numels_healpix, times_per_iteration_healpix, label="Grangeat HEALPix")
+    axes.scatter(fixed_numels_drr, times_per_iteration_drr, label="DRR")
+    axes.scatter(fixed_numels_grangeat, times_per_iteration_grangeat, label="Grangeat classic")
+    axes.scatter(fixed_numels_healpix, times_per_iteration_healpix, label="Grangeat HEALPix")
     # xs = np.array(plt.xlim())
     # ys_xnumel_drr = lin_coeffs_xnumel_drr[0] * xs + lin_coeffs_xnumel_drr[1]
     # axes.plot(xs, ys_xnumel_drr, label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_drr[0]),
@@ -79,7 +89,7 @@ def main():
     #           label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_resample[0]),
     #                                                   to_latex_scientific(lin_coeffs_xnumel_resample[1],
     #                                                                       include_plus=True)))
-    axes.set_xlabel("CT volume element count")
+    axes.set_xlabel("Fixed image element count")
     axes.set_ylabel("PSO iteration time [s]")
     plt.tight_layout()
     plt.legend(loc="upper left")

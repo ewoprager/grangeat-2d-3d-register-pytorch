@@ -5,6 +5,7 @@ import os
 from typing import Type, Callable
 import time
 import math
+from datetime import datetime
 import copy
 
 import pathlib
@@ -129,11 +130,43 @@ class RegistrationTask:
                                   value_history=value_history.get()), per_iteration
 
 
+SAVE_DIRECTORY = pathlib.Path("data/register_plot_data")
+SAVE_FILE = SAVE_DIRECTORY / (datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".pkl")
+
+
+def save_new(new_data: plot_data.RegisterPlotData):
+    if SAVE_FILE.is_file():
+        logger.warn("File '{}' already exists; overwriting.".format(str(SAVE_FILE)))
+    torch.save(new_data, SAVE_FILE)
+
+
+def save_append(new_data: plot_data.RegisterPlotData.Dataset | list[plot_data.RegisterPlotData.Dataset]):
+    if SAVE_FILE.is_file():
+        current_data = torch.load(SAVE_FILE, weights_only=False)
+        if not isinstance(current_data, plot_data.RegisterPlotData):
+            logger.warn("Invalid data file '{}'. Renaming invalid file and saving new data to old filename.")
+            current_data = []
+            marked_invalid = SAVE_FILE.with_name(SAVE_FILE.stem + "_invalid.pkl")
+            while marked_invalid.is_file():
+                marked_invalid = marked_invalid.stem + "_1.pkl"
+            SAVE_FILE.rename(marked_invalid)
+    else:
+        logger.warn("No save file '{}' exists to append datasets to. Saving with placeholder values.")
+        current_data = plot_data.RegisterPlotData(iteration_count=-1, particle_count=-1, datasets=[])
+
+    if isinstance(new_data, list):
+        current_data.datasets.extend(new_data)
+    else:
+        current_data.datasets.append(new_data)
+
+    torch.save(current_data, SAVE_FILE)
+
+
 def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_path: str | pathlib.Path,
                   obj_func_names: list[str], load_cached: bool = False, save_to_cache: bool = True,
                   downsample_factor: int = 1, sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic,
-                  plot: bool = False, iteration_count: int = 10,
-                  particle_count: int = 2000) -> list[plot_data.RegisterPlotData.Dataset] | None:
+                  plot: bool = False, iteration_count: int = 10, particle_count: int = 2000) -> list[
+                                                                                                    plot_data.RegisterPlotData.Dataset] | None:
     device = torch.device("cuda")
     try:
         registration_constants = RegistrationConstants(path=ct_path, cache_directory=cache_directory,
@@ -188,14 +221,15 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
             plt.colorbar(mesh)
             plt.show()
 
-        datasets.append(plot_data.RegisterPlotData.Dataset(ct_volume_numel=registration_constants.ct_volume.numel(),
-                                                           obj_func_name=obj_func_name, sinogram_type=sinogram_type,
-                                                           time_per_iteration=time_per_iteration,
-                                                           ground_truth_transformation=registration_constants.transformation_ground_truth,
-                                                           starting_transformation=starting_transformation.to(
-                                                               device=torch.device("cpu")),
-                                                           converged_transformation=Transformation.from_vector(
-                                                               res.param_history[-1].cpu())))
+        datasets.append(
+            plot_data.RegisterPlotData.Dataset(fixed_image_numel=registration_constants.image_2d_full.numel(),
+                                               obj_func_name=obj_func_name, sinogram_type=sinogram_type,
+                                               time_per_iteration=time_per_iteration,
+                                               ground_truth_transformation=registration_constants.transformation_ground_truth,
+                                               starting_transformation=starting_transformation.to(
+                                                   device=torch.device("cpu")),
+                                               converged_transformation=Transformation.from_vector(
+                                                   res.param_history[-1].cpu())))
     return datasets
 
 
@@ -228,15 +262,16 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
     iteration_count: int = 5
     particle_count: int = 500
 
-    downsample_factors = [4]  # [1, 2, 4, 8] # !!!
+    downsample_factors = [8, 4, 2, 1]
     sinogram_types = [sinogram.SinogramClassic, sinogram.SinogramHEALPix]
     obj_func_names: list[str] = ["grangeat", "drr"]
     repeats = 1
 
-    datasets: list[plot_data.RegisterPlotData.Dataset] = []
+    save_new(plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count, datasets=[]))
+
     for sinogram_type in sinogram_types:
         first: bool = True
-        for i in range(1): # !!!
+        for i in range(count):
             for downsample_factor in downsample_factors:
                 for _ in range(repeats):
                     res = run_benchmark(cache_directory, CT_PATHS[i], XRAY_DICOM_PATHS[i], obj_func_names, load_cached,
@@ -244,12 +279,8 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
                                         plot=plot_first and first, iteration_count=iteration_count,
                                         particle_count=particle_count)
                     if res is not None:
-                        datasets.extend(res)
+                        save_append(res)
                         first = False
-    pdata = plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count,
-                                       datasets=datasets)
-
-    torch.save(pdata, "data/register_plot_data.pkl")
 
 
 if __name__ == "__main__":
