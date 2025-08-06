@@ -69,7 +69,8 @@ class Interface:
             initial_transformation = Transformation.random(device=self.registration_constants.device)
         self._transformation_widget = TransformationWidget(initial_transformation=initial_transformation,
                                                            refresh_render_function=self.render_drr,
-                                                           save_path=pathlib.Path("cache/saved_transformations.pkl"))
+                                                           save_path=pathlib.Path("cache/saved_transformations.pkl"),
+                                                           ground_truth=self.registration_constants.transformation_ground_truth)
         self._viewer.window.add_dock_widget(self._transformation_widget, name="Transformations", area="right",
                                             menu=self._viewer.window.window_menu)
 

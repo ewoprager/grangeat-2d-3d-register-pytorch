@@ -26,19 +26,20 @@ def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False
 SAVE_DIRECTORY = pathlib.Path("data/register_plot_data")
 
 
-def main():
-    files = list(SAVE_DIRECTORY.glob("*.pkl"))
-    latest_file = max(files, key=lambda f: f.stem)
-    pdata = torch.load(latest_file, weights_only=False)
+def main(file: str | None):
+    if file is None:
+        files = list(SAVE_DIRECTORY.glob("*.pkl"))
+        file = max(files, key=lambda f: f.stem)
+    logger.info("Loading save file '{}'".format(str(file)))
+    pdata = torch.load(file, weights_only=False)
     assert isinstance(pdata, plot_data.RegisterPlotData)
 
     if len(pdata.datasets) == 0:
-        logger.warn("No datasets in save file '{}'.".format(latest_file))
+        logger.warn("No datasets in save file '{}'.".format(file))
         exit(0)
 
-    iteration_count = pdata.iteration_count
-    particle_count = pdata.particle_count
-
+    # iteration_count = pdata.iteration_count
+    # particle_count = pdata.particle_count
     # pdata = plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count,
     #                                    datasets=[dataset for dataset in pdata.datasets if
     #                                              dataset.ground_truth_transformation.distance(
@@ -47,34 +48,34 @@ def main():
 
     fixed_numels_drr = np.array(
         [dataset.fixed_image_numel for dataset in pdata.datasets if dataset.obj_func_name == "drr"])
-    fixed_numels_grangeat = np.array([dataset.fixed_image_numel for dataset in pdata.datasets if
-                                      dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramClassic])
-    fixed_numels_healpix = np.array([dataset.fixed_image_numel for dataset in pdata.datasets if
-                                     dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramHEALPix])
+    fixed_numels_grangeat = np.array(
+        [dataset.fixed_image_numel for dataset in pdata.datasets if dataset.obj_func_name == "grangeat_classic"])
+    fixed_numels_healpix = np.array(
+        [dataset.fixed_image_numel for dataset in pdata.datasets if dataset.obj_func_name == "grangeat_healpix"])
     times_per_iteration_drr = np.array(
         [dataset.time_per_iteration for dataset in pdata.datasets if dataset.obj_func_name == "drr"])
-    times_per_iteration_grangeat = np.array([dataset.time_per_iteration for dataset in pdata.datasets if
-                                             dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramClassic])
-    times_per_iteration_healpix = np.array([dataset.time_per_iteration for dataset in pdata.datasets if
-                                            dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramHEALPix])
+    times_per_iteration_grangeat = np.array(
+        [dataset.time_per_iteration for dataset in pdata.datasets if dataset.obj_func_name == "grangeat_classic"])
+    times_per_iteration_healpix = np.array(
+        [dataset.time_per_iteration for dataset in pdata.datasets if dataset.obj_func_name == "grangeat_healpix"])
     truth_start_distances_drr = np.array([dataset.ground_truth_transformation.distance(
         dataset.starting_transformation.to(device=dataset.ground_truth_transformation.device)) for dataset in
         pdata.datasets if dataset.obj_func_name == "drr"])
     truth_start_distances_grangeat = np.array([dataset.ground_truth_transformation.distance(
         dataset.starting_transformation.to(device=dataset.ground_truth_transformation.device)) for dataset in
-        pdata.datasets if dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramClassic])
+        pdata.datasets if dataset.obj_func_name == "grangeat_classic"])
     truth_start_distances_healpix = np.array([dataset.ground_truth_transformation.distance(
         dataset.starting_transformation.to(device=dataset.ground_truth_transformation.device)) for dataset in
-        pdata.datasets if dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramHEALPix])
+        pdata.datasets if dataset.obj_func_name == "grangeat_healpix"])
     truth_converged_distances_drr = np.array([dataset.ground_truth_transformation.distance(
         dataset.converged_transformation.to(device=dataset.ground_truth_transformation.device)) for dataset in
         pdata.datasets if dataset.obj_func_name == "drr"])
     truth_converged_distances_grangeat = np.array([dataset.ground_truth_transformation.distance(
         dataset.converged_transformation.to(device=dataset.ground_truth_transformation.device)) for dataset in
-        pdata.datasets if dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramClassic])
+        pdata.datasets if dataset.obj_func_name == "grangeat_classic"])
     truth_converged_distances_healpix = np.array([dataset.ground_truth_transformation.distance(
         dataset.converged_transformation.to(device=dataset.ground_truth_transformation.device)) for dataset in
-        pdata.datasets if dataset.obj_func_name == "grangeat" and dataset.sinogram_type == sinogram.SinogramHEALPix])
+        pdata.datasets if dataset.obj_func_name == "grangeat_healpix"])
 
     #
     # PSO iteration time DRR vs. Grangeat resampling
@@ -149,7 +150,8 @@ def main():
         count += 1
 
     average_iteration_time_ratio_resample_to_drr = sum_ / float(count)
-    print("Average PSO iteration time ratio resample to DRR =", average_iteration_time_ratio_resample_to_drr)
+    logger.info("Average PSO iteration time ratio resample to DRR = {:.4f}".format(
+        average_iteration_time_ratio_resample_to_drr))
 
     sum_: float = 0.0
     count: int = 0
@@ -163,7 +165,8 @@ def main():
     average_iteration_time_ratio_healpix_to_classic = np.nan
     if count > 0:
         average_iteration_time_ratio_healpix_to_classic = sum_ / float(count)
-        print("Average PSO iteration time ratio HEALPix to classic =", average_iteration_time_ratio_healpix_to_classic)
+        logger.info("Average PSO iteration time ratio HEALPix to classic = {:.4f}".format(
+            average_iteration_time_ratio_healpix_to_classic))
 
     # gradient_ratio_classic_to_drr = gradient_classic / gradient_drr
     # print("Average converged to starting SE(3) dist classic to DRR =", gradient_ratio_classic_to_drr)
@@ -171,9 +174,13 @@ def main():
     # print("Average converged to starting SE(3) dist HEALPix to classic =", gradient_ratio_healpix_to_classic)
 
     with open("data/temp/pso_stats.txt", "w") as file:
-        file.write("Average PSO iteration time ratio Grangeat to DRR = {:.4f}\n"
-                   "Average PSO iteration time ratio HEALPix to classic = {:.4f}\n".format(
-            average_iteration_time_ratio_resample_to_drr, average_iteration_time_ratio_healpix_to_classic))
+        file.write("Particle count = {}\n"
+                   "Iteration count = {}\n"
+                   "Average PSO iteration time ratio Grangeat to DRR = {:.4f}\n"
+                   "Average PSO iteration time ratio HEALPix to classic = {:.4f}\n".format(pdata.particle_count,
+                                                                                           pdata.iteration_count,
+                                                                                           average_iteration_time_ratio_resample_to_drr,
+                                                                                           average_iteration_time_ratio_healpix_to_classic))
 
     plt.show()
 
@@ -191,8 +198,10 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
-    # parser.add_argument(
-    #     "-d", "--display", action='store_true', help="Display/plot the resulting data.")
+    parser.add_argument("-f", "--file", type=str, default=None, help="Provide a path to a specific saved "
+                                                                     "file to plot. If not provided, the latest save "
+                                                                     "file named according to the date/time convention "
+                                                                     "will be used.")
     args = parser.parse_args()
 
-    main()
+    main(args.file)

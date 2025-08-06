@@ -19,35 +19,43 @@ from registration.interface.lib.structs import *
 
 class TransformationWidget(widgets.Container):
     def __init__(self, *, initial_transformation: Transformation, refresh_render_function: Callable[[], None],
-                 save_path: pathlib.Path):
+                 save_path: pathlib.Path, ground_truth: Transformation | None):
         super().__init__(labels=False)
         self._current_transformation = initial_transformation
         self._refresh_render_function = refresh_render_function
         self._save_path = save_path
         self._suppress_callbacks: bool = False
+        self._ground_truth = ground_truth
 
         self._translation_widgets: list[widgets.FloatSpinBox] = []
         for i, dim in enumerate(['X', 'Y', 'Z']):
             self._translation_widgets.append(
-                widgets.FloatSpinBox(
-                    value=self._current_transformation.translation[i].item(), step=0.2,
-                    label="{} translation".format(dim), min=-1e8, max=1e8))
+                widgets.FloatSpinBox(value=self._current_transformation.translation[i].item(), step=0.2,
+                                     label="{} translation".format(dim), min=-1e8, max=1e8))
             self._translation_widgets[-1].changed.connect(self._update_transformations)
 
         self._rotation_widgets: list[widgets.FloatSpinBox] = []
         for i, dim in enumerate(['X', 'Y', 'Z']):
             self._rotation_widgets.append(
-                widgets.FloatSpinBox(
-                    value=self._current_transformation.rotation[i].item(), step=0.01, label="{} rotation".format(dim),
-                    min=-1e8, max=1e8))
+                widgets.FloatSpinBox(value=self._current_transformation.rotation[i].item(), step=0.01,
+                                     label="{} rotation".format(dim), min=-1e8, max=1e8))
             self._rotation_widgets[-1].changed.connect(self._update_transformations)
 
         self.append(widgets.Container(widgets=self._translation_widgets + self._rotation_widgets, layout="vertical"))
 
+        ##
+        ## Distance to ground truth (if known)
+        ##
+        if self._ground_truth is not None:
+            self._ground_truth_distance_widget = widgets.Label(label="Distance to G.T. in SE(3):", value="")
+            self.append(self._ground_truth_distance_widget)
+            self._refresh_ground_truth_distance()
+
         initial_choices = {"initial": self._current_transformation}
-        self._save_widget = WidgetManageSaved(
-            initial_choices=initial_choices, DataType=Transformation, load_from_file=self._save_path,
-            get_current_callback=self.get_current_transformation, set_callback=self.set_current_transformation)
+        self._save_widget = WidgetManageSaved(initial_choices=initial_choices, DataType=Transformation,
+                                              load_from_file=self._save_path,
+                                              get_current_callback=self.get_current_transformation,
+                                              set_callback=self.set_current_transformation)
         self.append(self._save_widget)
 
         QApplication.instance().aboutToQuit.connect(self._on_exit)
@@ -63,6 +71,8 @@ class TransformationWidget(widgets.Container):
         for i in range(3):
             self._rotation_widgets[i].set_value(self._current_transformation.rotation[i].item())
         self._suppress_callbacks = False
+        if self._ground_truth is not None:
+            self._refresh_ground_truth_distance()
         self._refresh_render_function()
 
     def save_transformation(self, transformation: Transformation, name: str) -> None:
@@ -72,9 +82,12 @@ class TransformationWidget(widgets.Container):
         if self._suppress_callbacks:
             return
         self.set_current_transformation(
-            Transformation(
-                translation=torch.tensor([slider.get_value() for slider in self._translation_widgets]),
-                rotation=torch.tensor([slider.get_value() for slider in self._rotation_widgets])))
+            Transformation(translation=torch.tensor([slider.get_value() for slider in self._translation_widgets]),
+                           rotation=torch.tensor([slider.get_value() for slider in self._rotation_widgets])))
 
     def _on_exit(self) -> None:
         self._save_widget.save_to_file(self._save_path)
+
+    def _refresh_ground_truth_distance(self) -> None:
+        self._ground_truth_distance_widget.set_value(
+            "{:.3f}".format(self._ground_truth.distance(self._current_transformation)))

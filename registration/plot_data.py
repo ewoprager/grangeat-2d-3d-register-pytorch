@@ -22,7 +22,6 @@ class RegisterPlotData(NamedTuple):
     class Dataset(NamedTuple):
         fixed_image_numel: int
         obj_func_name: str
-        sinogram_type: Type[sinogram.SinogramType]
         time_per_iteration: float
         ground_truth_transformation: Transformation
         starting_transformation: Transformation

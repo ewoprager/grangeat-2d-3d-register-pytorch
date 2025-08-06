@@ -8,11 +8,13 @@ from registration.lib.sinogram import *
 
 
 def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor,
-                           voxel_spacing: torch.Tensor, *, device, save_to_cache=True, size: torch.Size | None = None):
+                           voxel_spacing: torch.Tensor, *, save_to_cache=True, size: torch.Size | None = None,
+                           transformation: Transformation | None = None):
     # transformation = Transformation(torch.tensor([0., 0., 0.]),
     #                                 torch.tensor([0., 0., 200.])).to(device=device)
     # transformation = Transformation.zero(device=volume_data.device)
-    transformation = Transformation.random(device=volume_data.device)
+    if transformation is None:
+        transformation = Transformation.random(device=volume_data.device)
     logger.info("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                                   transformation.translation))
 
@@ -28,9 +30,8 @@ def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_dat
             math.ceil(pow(volume_data.size()[0] * volume_data.size()[1] * volume_data.size()[2], 1.0 / 3.0)))
         size = torch.Size([side_length, side_length])
 
-    detector_spacing = 200.0 / torch.tensor(size) # assume the detector is 200 x 200 mm in size
+    detector_spacing = 200.0 / torch.tensor(size)  # assume the detector is 200 x 200 mm in size
     scene_geometry = SceneGeometry(source_distance=1000.)
-
 
     drr_image = geometry.generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
                                       detector_spacing=detector_spacing, scene_geometry=scene_geometry,
