@@ -28,6 +28,24 @@ from registration import drr
 from registration.interface.register import OptimisationResult
 
 
+def format_time(seconds: int) -> str:
+    days, rem = divmod(seconds, 60 * 60 * 24)
+    hours, rem = divmod(rem, 60 * 60)
+    minutes, seconds = divmod(rem, 60)
+
+    parts = []
+    if days:
+        parts.append(f"{days} day{'s' if days != 1 else ''}")
+    if hours:
+        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if minutes:
+        parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+    if seconds or not parts:
+        parts.append(f"{seconds} minute{'s' if seconds != 1 else ''}")
+
+    return ", ".join(parts)
+
+
 class RegistrationInfo(NamedTuple):
     scene_geometry: SceneGeometry
     ct_volume: torch.Tensor
@@ -173,9 +191,9 @@ class RegistrationTask:
         toc = time.time()
         elapsed = toc - tic
         per_iteration = elapsed / float(iteration_count)
-        print("Optimisation finished; took {:.4f}s for {} iterations = {:.4f}s per iteration.".format(elapsed,
-                                                                                                      iteration_count,
-                                                                                                      per_iteration))
+        logger.info("Optimisation finished; took {:.4f}s for {} iterations = {:.4f}s per iteration.".format(elapsed,
+                                                                                                            iteration_count,
+                                                                                                            per_iteration))
 
         return OptimisationResult(params=torch.from_numpy(converged_params), param_history=param_history.get(),
                                   value_history=value_history.get()), per_iteration
@@ -220,7 +238,7 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
     transformation_ground_truth = Transformation.random()
 
     starting_params = transformation_ground_truth.vectorised()
-    starting_params += (torch.randn(6) * torch.tensor([0.15, 0.15, 0.15, 8.0, 8.0, 8.0])).to(
+    starting_params += (torch.randn(6) * torch.tensor([0.2, 0.2, 0.2, 12.0, 12.0, 12.0])).to(
         device=starting_params.device)
     starting_transformation = Transformation.from_vector(starting_params)
 
@@ -285,11 +303,10 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
     for obj_func_name in ["drr", "grangeat_classic", "grangeat_healpix"]:
         res, time_per_iteration = task.run(starting_transformation=starting_transformation,
                                            objective_function_name=obj_func_name, iteration_count=iteration_count)
-        print(res, time_per_iteration)
         converged_params = res.params.cpu().to(dtype=torch.float32)
-        print("Close = {}; converged params = {}; g.t. = {}".format(
-            torch.allclose(converged_params, transformation_ground_truth.vectorised().cpu()), converged_params,
-            transformation_ground_truth.vectorised().cpu()))
+        # print("Close = {}; converged params = {}; g.t. = {}".format(
+        #     torch.allclose(converged_params, transformation_ground_truth.vectorised().cpu()), converged_params,
+        #     transformation_ground_truth.vectorised().cpu()))
 
         if save_figures or show_figures:
             # Converged DRR
@@ -367,14 +384,18 @@ def main(*, cache_directory: str, save_first: bool = False, show_first: bool = F
     iteration_count: int = 15
     particle_count: int = 2000
 
-    downsample_factors = [2, 4]
+    downsample_factors = [8, 1] # [1, 2, 4, 8]
+    data_indices = range(count)
+    estimated_runtime = int(np.round(
+        float(len(data_indices) * iteration_count * particle_count) * float(len(downsample_factors)) * 13.0 / 2000.0))
+    logger.info("Estimated runtime = {}".format(format_time(estimated_runtime)))
 
     if not append_to_last:
         save_new(
             plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count, datasets=[]))
 
     first: bool = True
-    for i in range(count):
+    for i in data_indices:
         for downsample_factor in downsample_factors:
             try:
                 res = run_benchmark(cache_directory=cache_directory, ct_path=CT_PATHS[i],

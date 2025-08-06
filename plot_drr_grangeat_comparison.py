@@ -3,6 +3,7 @@ import pickle
 
 import torch
 import numpy as np
+import matplotlib.ticker as mplt
 import matplotlib.pyplot as plt
 
 import logs_setup
@@ -49,6 +50,7 @@ def main():
     lin_coeffs_xnumel_healpix = np.polyfit(x_ray_numels_healpix, resample_times_healpix, 1)
 
     fig, axes = plt.subplots()
+    axes.grid(True, which="both")
     axes.scatter(x_ray_numels, drr_times, label="DRR")
     axes.scatter(x_ray_numels_classic, resample_times_classic, label="Grangeat classic")
     axes.scatter(x_ray_numels_healpix, resample_times_healpix, label="Grangeat HEALPix")
@@ -84,6 +86,7 @@ def main():
 
     # normal plot
     fig, axes = plt.subplots()
+    axes.grid(True, which="both")
     axes.scatter(classic_sizes, classic_times, label="Classic")
     axes.scatter(healpix_sizes, healpix_times, label="HEALPix")
     axes.set_xlabel("Sinogram size $N$")
@@ -98,6 +101,9 @@ def main():
     fig, axes = plt.subplots()
     axes.set_xscale('log')
     axes.set_yscale('log')
+    axes.grid(True, which="both")
+    axes.set_xticks([50, 100, 200, 400])
+    axes.set_xticklabels(["$5 \\times 10^1$", "$10^2$", "$2 \\times 10^2$", "$4 \\times 10^2$"])
     axes.scatter(classic_sizes, classic_times, label="Classic")
     axes.scatter(healpix_sizes, healpix_times, label="HEALPix")
     xs = np.array(plt.xlim())
@@ -127,6 +133,7 @@ def main():
     axes.scatter(sinogram2d_sizes, sinogram2d_times)
     axes.set_xlabel("Sinogram size $M$")
     axes.set_ylabel("Evaluation time [s]")
+    axes.grid(True, which="both")
     plt.tight_layout()
     plt.legend(loc="upper left")
     plt.savefig("data/temp/sinogram2d_against_size.pgf")
@@ -134,6 +141,7 @@ def main():
     # log-log plot
     lin_coeffs = np.polyfit(np.log10(sinogram2d_sizes), np.log10(sinogram2d_times), 1)
     fig, axes = plt.subplots()
+    axes.grid(True, which="both")
     axes.set_xscale('log')
     axes.set_yscale('log')
     axes.scatter(sinogram2d_sizes, sinogram2d_times)

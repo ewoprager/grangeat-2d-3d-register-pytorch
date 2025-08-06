@@ -38,14 +38,6 @@ def main(file: str | None):
         logger.warn("No datasets in save file '{}'.".format(file))
         exit(0)
 
-    # iteration_count = pdata.iteration_count
-    # particle_count = pdata.particle_count
-    # pdata = plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count,
-    #                                    datasets=[dataset for dataset in pdata.datasets if
-    #                                              dataset.ground_truth_transformation.distance(
-    #                                                  dataset.starting_transformation.to(
-    #                                                      device=dataset.ground_truth_transformation.device)) < 0.7])
-
     fixed_numels_drr = np.array(
         [dataset.fixed_image_numel for dataset in pdata.datasets if dataset.obj_func_name == "drr"])
     fixed_numels_grangeat = np.array(
@@ -83,11 +75,14 @@ def main(file: str | None):
     # lin_coeffs_xnumel_drr = np.polyfit(x_ray_numels, drr_times, 1)
     # lin_coeffs_xnumel_resample = np.polyfit(x_ray_numels, resample_times, 1)
     fig, axes = plt.subplots()
+    axes.grid(True, which="both")
     axes.scatter(fixed_numels_drr, times_per_iteration_drr, label="DRR")
     axes.scatter(fixed_numels_grangeat, times_per_iteration_grangeat, label="Grangeat classic")
     axes.scatter(fixed_numels_healpix, times_per_iteration_healpix, label="Grangeat HEALPix")
     axes.set_xlabel("Fixed image element count")
     axes.set_ylabel("PSO iteration time [s]")
+    axes.set_xlim(0.0, None)
+    axes.set_ylim(0.0, None)
     plt.tight_layout()
     plt.legend(loc="upper left")
     plt.savefig("data/temp/pso_against_volume_size.pgf")
@@ -95,39 +90,16 @@ def main(file: str | None):
     #
     # Converged distance from truth against starting distance from truth DRR vs. Grangeat resampling
     #
-    # gradient_drr = np.dot(truth_start_distances_drr, truth_converged_distances_drr) / np.dot(truth_start_distances_drr,
-    #                                                                                          truth_start_distances_drr)
-    # gradient_classic = np.dot(truth_start_distances_grangeat, truth_converged_distances_grangeat) / np.dot(
-    #     truth_start_distances_grangeat, truth_start_distances_grangeat)
-    # gradient_healpix = np.dot(truth_start_distances_healpix, truth_converged_distances_healpix) / np.dot(
-    #     truth_start_distances_healpix, truth_start_distances_healpix)
-    # lin_coeffs_xnumel_drr = np.polyfit(x_ray_numels, drr_times, 1)
-    # lin_coeffs_xnumel_resample = np.polyfit(x_ray_numels, resample_times, 1)
     fig, axes = plt.subplots()
     axes.scatter(truth_start_distances_drr, truth_converged_distances_drr, label="DRR")
     axes.scatter(truth_start_distances_grangeat, truth_converged_distances_grangeat, label="Grangeat classic")
     axes.scatter(truth_start_distances_healpix, truth_converged_distances_healpix, label="Grangeat HEALPix")
-    plt.axis("square")
+    axes.grid(True, which="both")
     axes.set_aspect("equal")
     axes.set_xlim(0, None)
     axes.set_ylim(0, None)
-    # xs = np.array(plt.xlim())
-    # ys_drr = gradient_drr * xs
-    # axes.plot(xs, ys_drr, label="Linear fit: $y = {}x$".format(to_latex_scientific(gradient_drr)))
-    # ys_classic = gradient_classic * xs
-    # axes.plot(xs, ys_classic, label="Linear fit: $y = {}x$".format(to_latex_scientific(gradient_classic)))
-    # ys_healpix = gradient_healpix * xs
-    # axes.plot(xs, ys_healpix, label="Linear fit: $y = {}x$".format(to_latex_scientific(gradient_healpix)))
-    # xs = np.array(plt.xlim())
-    # ys_xnumel_drr = lin_coeffs_xnumel_drr[0] * xs + lin_coeffs_xnumel_drr[1]
-    # axes.plot(xs, ys_xnumel_drr, label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_drr[0]),
-    #                                                                      to_latex_scientific(lin_coeffs_xnumel_drr[1],
-    #                                                                                          include_plus=True)))
-    # ys_xnumel_resample = lin_coeffs_xnumel_resample[0] * xs + lin_coeffs_xnumel_resample[1]
-    # axes.plot(xs, ys_xnumel_resample,
-    #           label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_resample[0]),
-    #                                                   to_latex_scientific(lin_coeffs_xnumel_resample[1],
-    #                                                                       include_plus=True)))
+    axes.set_xticks(np.arange(0, axes.get_xlim()[1] + 0.1, 0.1))
+    axes.set_yticks(np.arange(0, axes.get_ylim()[1] + 0.1, 0.1))
     axes.set_xlabel("Starting to G.T. distance in SE(3)")
     axes.set_ylabel("Converged to G.T. distance in SE(3)")
     plt.tight_layout()
