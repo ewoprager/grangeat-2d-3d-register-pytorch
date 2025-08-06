@@ -93,22 +93,24 @@ def main():
     plt.savefig("data/temp/sinogram3d_against_size.pgf")
 
     # log-log plot
-    lin_coeffs_classic = np.polyfit(np.log(classic_sizes), np.log(classic_times), 1)
-    lin_coeffs_healpix = np.polyfit(np.log(healpix_sizes), np.log(healpix_times), 1)
+    lin_coeffs_classic = np.polyfit(np.log10(classic_sizes), np.log10(classic_times), 1)
+    lin_coeffs_healpix = np.polyfit(np.log10(healpix_sizes), np.log10(healpix_times), 1)
     fig, axes = plt.subplots()
-    axes.scatter(np.log(classic_sizes), np.log(classic_times), label="Classic")
-    axes.scatter(np.log(healpix_sizes), np.log(healpix_times), label="HEALPix")
+    axes.set_xscale('log')
+    axes.set_yscale('log')
+    axes.scatter(classic_sizes, classic_times, label="Classic")
+    axes.scatter(healpix_sizes, healpix_times, label="HEALPix")
     xs = np.array(plt.xlim())
-    ys_classic = lin_coeffs_classic[0] * xs + lin_coeffs_classic[1]
-    axes.plot(xs, ys_classic, label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_classic[0]),
-                                                                      to_latex_scientific(lin_coeffs_classic[1],
-                                                                                          include_plus=True)))
-    ys_healpix = lin_coeffs_healpix[0] * xs + lin_coeffs_healpix[1]
-    axes.plot(xs, ys_healpix, label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_healpix[0]),
-                                                                      to_latex_scientific(lin_coeffs_healpix[1],
-                                                                                          include_plus=True)))
-    axes.set_xlabel("ln(Sinogram size $N$)")
-    axes.set_ylabel("ln(Evaluation time / s)")
+    ys_classic = np.pow(10.0, lin_coeffs_classic[0] * np.log10(xs) + lin_coeffs_classic[1])
+    axes.plot(xs, ys_classic,
+              label="Power fit: $t = {}N^{{{}}}$".format(to_latex_scientific(np.pow(10.0, lin_coeffs_classic[1])),
+                                                         to_latex_scientific(lin_coeffs_classic[0])))
+    ys_healpix = np.pow(10.0, lin_coeffs_healpix[0] * np.log10(xs) + lin_coeffs_healpix[1])
+    axes.plot(xs, ys_healpix,
+              label="Power fit: $t = {}N^{{{}}}$".format(to_latex_scientific(np.pow(10.0, lin_coeffs_healpix[1])),
+                                                         to_latex_scientific(lin_coeffs_healpix[0])))
+    axes.set_xlabel("Sinogram size $N$")
+    axes.set_ylabel("Evaluation time $t$ [s]")
     plt.tight_layout()
     plt.legend(loc="upper left")
     plt.savefig("data/temp/ln_sinogram3d_against_ln_size.pgf")
@@ -130,15 +132,17 @@ def main():
     plt.savefig("data/temp/sinogram2d_against_size.pgf")
 
     # log-log plot
-    lin_coeffs = np.polyfit(np.log(sinogram2d_sizes), np.log(sinogram2d_times), 1)
+    lin_coeffs = np.polyfit(np.log10(sinogram2d_sizes), np.log10(sinogram2d_times), 1)
     fig, axes = plt.subplots()
-    axes.scatter(np.log(sinogram2d_sizes), np.log(sinogram2d_times))
+    axes.set_xscale('log')
+    axes.set_yscale('log')
+    axes.scatter(sinogram2d_sizes, sinogram2d_times)
     xs = np.array(plt.xlim())
-    ys = lin_coeffs[0] * xs + lin_coeffs[1]
-    axes.plot(xs, ys, label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs[0]),
-                                                              to_latex_scientific(lin_coeffs[1], include_plus=True)))
-    axes.set_xlabel("ln(Sinogram size $M$)")
-    axes.set_ylabel("ln(Evaluation time / s)")
+    ys = np.pow(10.0, lin_coeffs[0] * np.log10(xs) + lin_coeffs[1])
+    axes.plot(xs, ys, label="Power fit: $t = {}M^{{{}}}$".format(to_latex_scientific(np.pow(10.0, lin_coeffs[1])),
+                                                                 to_latex_scientific(lin_coeffs[0])))
+    axes.set_xlabel("Sinogram size $M$")
+    axes.set_ylabel("Evaluation time $t$ [s]")
     plt.tight_layout()
     plt.legend(loc="upper left")
     plt.savefig("data/temp/ln_sinogram2d_against_ln_size.pgf")
@@ -148,20 +152,21 @@ def main():
     #
     # Stats
     #
-    average_time_ratio_drr_to_grangeat = (drr_times / resample_times).mean()
-    print("Average time ratio DRR to Grangeat =", average_time_ratio_drr_to_grangeat)
+    average_time_ratio_grangeat_to_drr = (resample_times / drr_times).mean()
+    print("Average time ratio Grangeat to DRR =", average_time_ratio_grangeat_to_drr)
 
-    sum_: float = 0.0
-    count: int = 0
-    for i, healpix_size in enumerate(healpix_sizes):
-        try:
-            j = list(classic_sizes).index(healpix_size)
-        except ValueError:
-            continue
-        sum_ += classic_times[j] / healpix_times[i]
-        count += 1
-    average_sinogram3d_time_ratio_classic_to_healpix = sum_ / float(count)
-    print("Average sinogram3d eval. time ratio Classic to HEALPix =", average_sinogram3d_time_ratio_classic_to_healpix)
+    # sum_: float = 0.0
+    # count: int = 0
+    # for i, healpix_size in enumerate(healpix_sizes):
+    #     try:
+    #         j = list(classic_sizes).index(healpix_size)
+    #     except ValueError:
+    #         continue
+    #     sum_ += healpix_times[i] / classic_times[j]
+    #     count += 1
+    # average_sinogram3d_time_ratio_healpix_to_classic = sum_ / float(count)
+    average_sinogram3d_time_ratio_healpix_to_classic = np.pow(10.0, lin_coeffs_healpix[1] - lin_coeffs_classic[1])
+    print("Average sinogram3d eval. time ratio HEALPix to classic =", average_sinogram3d_time_ratio_healpix_to_classic)
 
     sum_: float = 0.0
     count: int = 0
@@ -170,17 +175,17 @@ def main():
             j = list(x_ray_numels_healpix).index(x_ray_numel_classic)
         except ValueError:
             continue
-        sum_ += resample_times_classic[i] / resample_times_healpix[j]
+        sum_ += resample_times_healpix[j] / resample_times_classic[i]
         count += 1
-    average_resample_time_ratio_classic_to_healpix = sum_ / float(count)
-    print("Average resampling eval. time ratio Classic to HEALPix =", average_resample_time_ratio_classic_to_healpix)
+    average_resample_time_ratio_healpix_to_classic = sum_ / float(count)
+    print("Average resampling eval. time ratio HEALPix to classic =", average_resample_time_ratio_healpix_to_classic)
 
     with open("data/temp/stats.txt", "w") as file:
-        file.write("Average time ratio DRR to Grangeat = {:.4f}\n"
-                   "Average 3D sinogram evaluation time ratio Classic to HEALPix = {:.4f}\n"
-                   "Average resampling eval. time ratio Classic to HEALPix = {:.4f}\n".format(
-            average_time_ratio_drr_to_grangeat, average_sinogram3d_time_ratio_classic_to_healpix,
-            average_resample_time_ratio_classic_to_healpix))
+        file.write("Average time ratio Grangeat to DRR = {:.4f}\n"
+                   "Average sinogram3d eval. time ratio HEALPix to classic = {:.4f}\n"
+                   "Average resampling eval. time ratio HEALPix to classic = {:.4f}\n".format(
+            average_time_ratio_grangeat_to_drr, average_sinogram3d_time_ratio_healpix_to_classic,
+            average_resample_time_ratio_healpix_to_classic))
 
 
 if __name__ == "__main__":

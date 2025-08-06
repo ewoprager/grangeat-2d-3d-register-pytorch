@@ -135,7 +135,6 @@ class RegistrationTask:
 
 
 SAVE_DIRECTORY = pathlib.Path("data/register_plot_data")
-SAVE_FILE = SAVE_DIRECTORY / (datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".pkl")
 
 
 def save_new(new_data: plot_data.RegisterPlotData):
@@ -166,9 +165,8 @@ def save_append(new_data: plot_data.RegisterPlotData.Dataset | list[plot_data.Re
     torch.save(current_data, SAVE_FILE)
 
 
-def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_path: str | pathlib.Path,
-                  obj_func_names: list[str], iteration_count, particle_count, load_cached: bool = False,
-                  save_to_cache: bool = True, downsample_factor: int = 1,
+def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, obj_func_names: list[str], iteration_count,
+                  particle_count, load_cached: bool = False, save_to_cache: bool = True, downsample_factor: int = 1,
                   sinogram_type: Type[sinogram.SinogramType] = sinogram.SinogramClassic, save_figures: bool = False,
                   show_figures: bool = False) -> list[plot_data.RegisterPlotData.Dataset] | None:
     device = torch.device("cuda")
@@ -181,7 +179,7 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, xray_dic
     except MemoryError:
         return None
     starting_params = registration_constants.transformation_ground_truth.vectorised()
-    starting_params += (torch.randn(6) * torch.tensor([0.2, 0.2, 0.2, 20.0, 20.0, 50.0])).to(
+    starting_params += (torch.randn(6) * torch.tensor([0.15, 0.15, 0.15, 20.0, 20.0, 30.0])).to(
         device=starting_params.device)
     starting_transformation = Transformation.from_vector(starting_params)
 
@@ -288,7 +286,7 @@ XRAY_DICOM_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_co
 
 
 def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool = True, save_first: bool = False,
-         show_first: bool = False):
+         show_first: bool = False, append_to_last: bool = False):
     count: int = len(CT_PATHS)
     assert len(XRAY_DICOM_PATHS) == count
 
@@ -299,10 +297,12 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
     iteration_count: int = 15
     particle_count: int = 2500
 
-    downsample_factors = [1, 2, 4, 8]
+    downsample_factors = [2, 4, 8]  # [1, 2, 4, 8]
     sinogram_types = [(sinogram.SinogramHEALPix, ["grangeat", "drr"]), (sinogram.SinogramClassic, ["grangeat"])]
 
-    save_new(plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count, datasets=[]))
+    if not append_to_last:
+        save_new(
+            plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count, datasets=[]))
 
     first: bool = True
     for sinogram_type, obj_func_names in sinogram_types:
@@ -310,11 +310,11 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
             for downsample_factor in downsample_factors:
                 try:
                     res = run_benchmark(cache_directory=cache_directory, ct_path=CT_PATHS[i],
-                                        xray_dicom_path=XRAY_DICOM_PATHS[i], obj_func_names=obj_func_names,
-                                        load_cached=load_cached, save_to_cache=save_to_cache,
-                                        downsample_factor=downsample_factor, sinogram_type=sinogram_type,
-                                        save_figures=save_first and first, show_figures=show_first and first,
-                                        iteration_count=iteration_count, particle_count=particle_count)
+                                        obj_func_names=obj_func_names, load_cached=load_cached,
+                                        save_to_cache=save_to_cache, downsample_factor=downsample_factor,
+                                        sinogram_type=sinogram_type, save_figures=save_first and first,
+                                        show_figures=show_first and first, iteration_count=iteration_count,
+                                        particle_count=particle_count)
                 except MemoryError:
                     logger.warn("Not enough memory for run; skipping.")
                     continue
@@ -352,11 +352,19 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
     parser.add_argument("-f", "--save-figures", action='store_true', help="Save images for the first dataset.")
     parser.add_argument("-s", "--show-figures", action='store_true', help="Show images for the first dataset.")
+    parser.add_argument("-a", "--append-to-last", action='store_true',
+                        help="Append the data to the last saved data file.")
     args = parser.parse_args()
 
     # create cache directory
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
+    if args.append_to_last:
+        files = list(SAVE_DIRECTORY.glob("*.pkl"))
+        SAVE_FILE = max(files, key=lambda f: f.stem)
+    else:
+        SAVE_FILE = SAVE_DIRECTORY / (datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".pkl")
+
     main(cache_directory=args.cache_directory, load_cached=not args.no_load, save_to_cache=not args.no_save,
-         save_first=args.save_figures, show_first=args.show_figures)
+         save_first=args.save_figures, show_first=args.show_figures, append_to_last=args.append_to_last)

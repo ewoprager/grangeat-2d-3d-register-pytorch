@@ -39,6 +39,12 @@ def main():
     iteration_count = pdata.iteration_count
     particle_count = pdata.particle_count
 
+    # pdata = plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count,
+    #                                    datasets=[dataset for dataset in pdata.datasets if
+    #                                              dataset.ground_truth_transformation.distance(
+    #                                                  dataset.starting_transformation.to(
+    #                                                      device=dataset.ground_truth_transformation.device)) < 0.7])
+
     fixed_numels_drr = np.array(
         [dataset.fixed_image_numel for dataset in pdata.datasets if dataset.obj_func_name == "drr"])
     fixed_numels_grangeat = np.array([dataset.fixed_image_numel for dataset in pdata.datasets if
@@ -79,16 +85,6 @@ def main():
     axes.scatter(fixed_numels_drr, times_per_iteration_drr, label="DRR")
     axes.scatter(fixed_numels_grangeat, times_per_iteration_grangeat, label="Grangeat classic")
     axes.scatter(fixed_numels_healpix, times_per_iteration_healpix, label="Grangeat HEALPix")
-    # xs = np.array(plt.xlim())
-    # ys_xnumel_drr = lin_coeffs_xnumel_drr[0] * xs + lin_coeffs_xnumel_drr[1]
-    # axes.plot(xs, ys_xnumel_drr, label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_drr[0]),
-    #                                                                      to_latex_scientific(lin_coeffs_xnumel_drr[1],
-    #                                                                                          include_plus=True)))
-    # ys_xnumel_resample = lin_coeffs_xnumel_resample[0] * xs + lin_coeffs_xnumel_resample[1]
-    # axes.plot(xs, ys_xnumel_resample,
-    #           label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_resample[0]),
-    #                                                   to_latex_scientific(lin_coeffs_xnumel_resample[1],
-    #                                                                       include_plus=True)))
     axes.set_xlabel("Fixed image element count")
     axes.set_ylabel("PSO iteration time [s]")
     plt.tight_layout()
@@ -98,12 +94,29 @@ def main():
     #
     # Converged distance from truth against starting distance from truth DRR vs. Grangeat resampling
     #
+    # gradient_drr = np.dot(truth_start_distances_drr, truth_converged_distances_drr) / np.dot(truth_start_distances_drr,
+    #                                                                                          truth_start_distances_drr)
+    # gradient_classic = np.dot(truth_start_distances_grangeat, truth_converged_distances_grangeat) / np.dot(
+    #     truth_start_distances_grangeat, truth_start_distances_grangeat)
+    # gradient_healpix = np.dot(truth_start_distances_healpix, truth_converged_distances_healpix) / np.dot(
+    #     truth_start_distances_healpix, truth_start_distances_healpix)
     # lin_coeffs_xnumel_drr = np.polyfit(x_ray_numels, drr_times, 1)
     # lin_coeffs_xnumel_resample = np.polyfit(x_ray_numels, resample_times, 1)
     fig, axes = plt.subplots()
     axes.scatter(truth_start_distances_drr, truth_converged_distances_drr, label="DRR")
     axes.scatter(truth_start_distances_grangeat, truth_converged_distances_grangeat, label="Grangeat classic")
     axes.scatter(truth_start_distances_healpix, truth_converged_distances_healpix, label="Grangeat HEALPix")
+    plt.axis("square")
+    axes.set_aspect("equal")
+    axes.set_xlim(0, None)
+    axes.set_ylim(0, None)
+    # xs = np.array(plt.xlim())
+    # ys_drr = gradient_drr * xs
+    # axes.plot(xs, ys_drr, label="Linear fit: $y = {}x$".format(to_latex_scientific(gradient_drr)))
+    # ys_classic = gradient_classic * xs
+    # axes.plot(xs, ys_classic, label="Linear fit: $y = {}x$".format(to_latex_scientific(gradient_classic)))
+    # ys_healpix = gradient_healpix * xs
+    # axes.plot(xs, ys_healpix, label="Linear fit: $y = {}x$".format(to_latex_scientific(gradient_healpix)))
     # xs = np.array(plt.xlim())
     # ys_xnumel_drr = lin_coeffs_xnumel_drr[0] * xs + lin_coeffs_xnumel_drr[1]
     # axes.plot(xs, ys_xnumel_drr, label="Linear fit: $y = {}x {}$".format(to_latex_scientific(lin_coeffs_xnumel_drr[0]),
@@ -120,9 +133,49 @@ def main():
     plt.legend(loc="upper left")
     plt.savefig("data/temp/conv_dist_vs_start_dist.pgf")
 
-    plt.show()
+    #
+    # Stats
+    #
+    sum_: float = 0.0
+    count: int = 0
+    fixed_numels_resample = np.concat((fixed_numels_grangeat, fixed_numels_healpix))
+    times_per_iteration_resample = np.concat((times_per_iteration_grangeat, times_per_iteration_healpix))
+    for i, fixed_numel_drr in enumerate(fixed_numels_drr):
+        try:
+            j = list(fixed_numels_resample).index(fixed_numel_drr)
+        except ValueError:
+            continue
+        sum_ += times_per_iteration_resample[j] / times_per_iteration_drr[i]
+        count += 1
 
-    # #  # # Stats  # #  # average_time_ratio_drr_to_grangeat = (drr_times / resample_times).mean()  # print("Average time ratio DRR to Grangeat =", average_time_ratio_drr_to_grangeat)  #  # sum_: float = 0.0  # count: int = 0  # for i, healpix_size in enumerate(healpix_sizes):  #     try:  #         j = list(classic_sizes).index(healpix_size)  #     except ValueError:  #         continue  #     sum_ += classic_times[j] / healpix_times[i]  #     count += 1  # average_sinogram3d_time_ratio_classic_to_healpix = sum_ / float(count)  # print("Average sinogram3d eval. time ratio Classic to HEALPix =", average_sinogram3d_time_ratio_classic_to_healpix)  #  # sum_: float = 0.0  # count: int = 0  # for i, x_ray_numel_classic in enumerate(x_ray_numels_classic):  #     try:  #         j = list(x_ray_numels_healpix).index(x_ray_numel_classic)  #     except ValueError:  #         continue  #     sum_ += resample_times_classic[i] / resample_times_healpix[j]  #     count += 1  # average_resample_time_ratio_classic_to_healpix = sum_ / float(count)  # print("Average resampling eval. time ratio Classic to HEALPix =", average_resample_time_ratio_classic_to_healpix)  #  # with open("data/temp/stats.txt", "w") as file:  #     file.write("Average time ratio DRR to Grangeat = {:.4f}\n"  #                "Average 3D sinogram evaluation time ratio Classic to HEALPix = {:.4f}\n"  #                "Average resampling eval. time ratio Classic to HEALPix = {:.4f}\n".format(  #         average_time_ratio_drr_to_grangeat, average_sinogram3d_time_ratio_classic_to_healpix,  #         average_resample_time_ratio_classic_to_healpix))
+    average_iteration_time_ratio_resample_to_drr = sum_ / float(count)
+    print("Average PSO iteration time ratio resample to DRR =", average_iteration_time_ratio_resample_to_drr)
+
+    sum_: float = 0.0
+    count: int = 0
+    for i, fixed_numel_grangeat in enumerate(fixed_numels_grangeat):
+        try:
+            j = list(fixed_numels_healpix).index(fixed_numel_grangeat)
+        except ValueError:
+            continue
+        sum_ += times_per_iteration_healpix[j] / times_per_iteration_grangeat[i]
+        count += 1
+    average_iteration_time_ratio_healpix_to_classic = np.nan
+    if count > 0:
+        average_iteration_time_ratio_healpix_to_classic = sum_ / float(count)
+        print("Average PSO iteration time ratio HEALPix to classic =", average_iteration_time_ratio_healpix_to_classic)
+
+    # gradient_ratio_classic_to_drr = gradient_classic / gradient_drr
+    # print("Average converged to starting SE(3) dist classic to DRR =", gradient_ratio_classic_to_drr)
+    # gradient_ratio_healpix_to_classic = gradient_healpix / gradient_classic
+    # print("Average converged to starting SE(3) dist HEALPix to classic =", gradient_ratio_healpix_to_classic)
+
+    with open("data/temp/pso_stats.txt", "w") as file:
+        file.write("Average PSO iteration time ratio Grangeat to DRR = {:.4f}\n"
+                   "Average PSO iteration time ratio HEALPix to classic = {:.4f}\n".format(
+            average_iteration_time_ratio_resample_to_drr, average_iteration_time_ratio_healpix_to_classic))
+
+    plt.show()
 
 
 if __name__ == "__main__":
