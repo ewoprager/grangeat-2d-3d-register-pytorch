@@ -24,6 +24,7 @@ from registration import plot_data
 from registration import objective_function
 from registration import pre_computed
 from registration import drr
+from notification import pushover
 
 from registration.interface.register import OptimisationResult
 
@@ -238,7 +239,7 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
     transformation_ground_truth = Transformation.random()
 
     starting_params = transformation_ground_truth.vectorised()
-    starting_params += (torch.randn(6) * torch.tensor([0.2, 0.2, 0.2, 12.0, 12.0, 12.0])).to(
+    starting_params += (torch.randn(6) * torch.tensor([0.23, 0.23, 0.23, 14.0, 14.0, 14.0])).to(
         device=starting_params.device)
     starting_transformation = Transformation.from_vector(starting_params)
 
@@ -249,6 +250,8 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
     except RuntimeError as e:
         if "CUDA out of memory" not in str(e):
             raise
+        return None
+    if registration_info is None:
         return None
 
     task = RegistrationTask(registration_info, particle_count=particle_count)
@@ -384,8 +387,8 @@ def main(*, cache_directory: str, save_first: bool = False, show_first: bool = F
     iteration_count: int = 15
     particle_count: int = 2000
 
-    downsample_factors = [8, 1] # [1, 2, 4, 8]
-    data_indices = range(count)
+    downsample_factors = [1, 2, 4, 8] # [1, 2, 4, 8]
+    data_indices = range(1, count) # range(count)
     estimated_runtime = int(np.round(
         float(len(data_indices) * iteration_count * particle_count) * float(len(downsample_factors)) * 13.0 / 2000.0))
     logger.info("Estimated runtime = {}".format(format_time(estimated_runtime)))
@@ -457,3 +460,7 @@ if __name__ == "__main__":
 
     main(cache_directory=args.cache_directory, save_first=args.save_figures, show_first=args.show_figures,
          append_to_last=args.append_to_last)
+
+    res = pushover.send_notification(__file__, "Script finished.")
+    if isinstance(res, str):
+        logger.warn("Notification sending: {}".format(res))
