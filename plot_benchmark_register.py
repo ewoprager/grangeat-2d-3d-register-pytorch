@@ -104,6 +104,62 @@ def main(file: str | None):
     axes.set_ylabel("Converged to G.T. distance in SE(3)")
     plt.tight_layout()
     plt.legend(loc="upper left")
+    # plt.savefig("data/temp/conv_dist_vs_start_dist.pgf")
+
+    #
+    # Error bars?
+    #
+    all_xs: np.ndarray = np.concat(
+        (truth_start_distances_drr, truth_start_distances_grangeat, truth_start_distances_healpix))
+    bin_width: float = 0.1
+    bin_centres: np.ndarray = bin_width * np.arange(int(np.floor(all_xs.min() / bin_width)),
+                                                    int(np.ceil(all_xs.max() / bin_width))).astype(np.float32)
+    bins: np.ndarray = bin_centres - 0.5 * bin_width
+    display_width_fraction: float = 0.7
+
+    fig, axes = plt.subplots()
+
+    def add_box_plot(xs: np.ndarray, ys: np.ndarray, offset: float, colour: str, label: str) -> int:
+        digitised: np.ndarray = np.digitize(xs, bins) - 1
+        ys_binned_every: list[np.ndarray] = [ys[digitised == i] for i in range(len(bins))]
+        ys_binned: list[np.ndarray] = [e for e in ys_binned_every if len(e) >= 3]
+        positions: np.ndarray = np.array([e for i, e in enumerate(bin_centres) if len(ys_binned_every[i]) >= 3])
+        axes.boxplot(ys_binned, positions=positions + offset, widths=display_width_fraction * bin_width / 3.0,
+                     label=label,  #
+                     patch_artist=True,  #
+                     boxprops=dict(facecolor=colour, linewidth=0, alpha=0.8),  #
+                     medianprops=dict(color="black", linewidth=1.),  #
+                     whiskerprops=dict(color=colour),  #
+                     capprops=dict(color=colour),  #
+                     flierprops=dict(markeredgecolor=colour, marker='x', markersize=4, alpha=0.5))
+        return max([i for i in range(len(bin_centres)) if len(ys_binned_every[i]) >= 3])
+
+    highest_drr_bin: int = add_box_plot(truth_start_distances_drr, truth_converged_distances_drr,
+                                        -display_width_fraction * bin_width / 3.0,
+                                        plt.rcParams['axes.prop_cycle'].by_key()['color'][0], "DRR")
+    highest_grangeat_bin: int = add_box_plot(truth_start_distances_grangeat, truth_converged_distances_grangeat, 0.0,
+                                             plt.rcParams['axes.prop_cycle'].by_key()['color'][1], "Grangeat classic")
+    highest_healpix_bin: int = add_box_plot(truth_start_distances_healpix, truth_converged_distances_healpix,
+                                            display_width_fraction * bin_width / 3.0,
+                                            plt.rcParams['axes.prop_cycle'].by_key()['color'][2], "Grangeat HEALPix")
+    highest_bin = max(highest_drr_bin, highest_grangeat_bin, highest_healpix_bin)
+    axes.set_aspect("equal")
+    axes.grid(True, which="minor", axis="x")
+    axes.grid(True, which="both", axis="y")
+    axes.set_xlim(0.0, bin_centres[highest_bin] + bin_width)
+    axes.set_ylim(0.0, bin_centres[highest_bin] + bin_width)
+    xticks = bin_centres[:(highest_bin + 1)]
+    axes.set_xticks(xticks)
+    axes.set_xticks(np.concat(
+        (bin_centres[:(highest_bin + 1)] - 0.5 * bin_width, np.array([bin_centres[highest_bin] + 0.5 * bin_width]))),
+        minor=True)
+    axes.tick_params(axis="x", which="major", length=3)
+    axes.tick_params(axis="x", which="minor", length=10)
+    axes.set_xticklabels(["{:.1f}".format(x) for x in xticks])
+    axes.set_xlabel("Starting to G.T. distance in SE(3), binned")
+    axes.set_ylabel("Converged to G.T. distance in SE(3)")
+    plt.tight_layout()
+    plt.legend(loc="upper left")
     plt.savefig("data/temp/conv_dist_vs_start_dist.pgf")
 
     #

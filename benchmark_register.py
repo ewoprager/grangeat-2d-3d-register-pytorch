@@ -239,7 +239,7 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
     transformation_ground_truth = Transformation.random()
 
     starting_params = transformation_ground_truth.vectorised()
-    starting_params += (torch.randn(6) * torch.tensor([0.23, 0.23, 0.23, 14.0, 14.0, 14.0])).to(
+    starting_params += ((2.0 * torch.rand(6) - 1.0) * torch.tensor([0.4, 0.4, 0.4, 30.0, 30.0, 30.0])).to(
         device=starting_params.device)
     starting_transformation = Transformation.from_vector(starting_params)
 
@@ -387,10 +387,11 @@ def main(*, cache_directory: str, save_first: bool = False, show_first: bool = F
     iteration_count: int = 15
     particle_count: int = 2000
 
-    downsample_factors = [1, 2, 4, 8] # [1, 2, 4, 8]
-    data_indices = range(1, count) # range(count)
-    estimated_runtime = int(np.round(
-        float(len(data_indices) * iteration_count * particle_count) * float(len(downsample_factors)) * 13.0 / 2000.0))
+    downsample_factors = [1, 2, 4, 8]  # [1, 2, 4, 8]
+    data_indices = range(count)  # range(count)
+    repeats = 6
+    estimated_runtime = int(np.round(float(repeats * len(data_indices) * iteration_count * particle_count) * float(
+        len(downsample_factors)) * 13.0 / 2000.0))
     logger.info("Estimated runtime = {}".format(format_time(estimated_runtime)))
 
     if not append_to_last:
@@ -398,21 +399,22 @@ def main(*, cache_directory: str, save_first: bool = False, show_first: bool = F
             plot_data.RegisterPlotData(iteration_count=iteration_count, particle_count=particle_count, datasets=[]))
 
     first: bool = True
-    for i in data_indices:
-        for downsample_factor in downsample_factors:
-            try:
-                res = run_benchmark(cache_directory=cache_directory, ct_path=CT_PATHS[i],
-                                    downsample_factor=downsample_factor, save_figures=save_first and first,
-                                    show_figures=show_first and first, iteration_count=iteration_count,
-                                    particle_count=particle_count)
-            except RuntimeError as e:
-                if "CUDA out of memory" not in str(e):
-                    raise
-                logger.warn("Not enough memory for run; skipping.")
-                continue
-            if res is not None:
-                save_append(res)
-                first = False
+    for _ in range(repeats):
+        for i in data_indices:
+            for downsample_factor in downsample_factors:
+                try:
+                    res = run_benchmark(cache_directory=cache_directory, ct_path=CT_PATHS[i],
+                                        downsample_factor=downsample_factor, save_figures=save_first and first,
+                                        show_figures=show_first and first, iteration_count=iteration_count,
+                                        particle_count=particle_count)
+                except RuntimeError as e:
+                    if "CUDA out of memory" not in str(e):
+                        raise
+                    logger.warn("Not enough memory for run; skipping.")
+                    continue
+                if res is not None:
+                    save_append(res)
+                    first = False
 
 
 if __name__ == "__main__":
