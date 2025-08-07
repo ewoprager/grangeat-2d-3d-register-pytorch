@@ -242,6 +242,13 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
     starting_params += ((2.0 * torch.rand(6) - 1.0) * torch.tensor([0.4, 0.4, 0.4, 30.0, 30.0, 30.0])).to(
         device=starting_params.device)
     starting_transformation = Transformation.from_vector(starting_params)
+    if save_figures or show_figures:
+        d = transformation_ground_truth.distance(starting_transformation)
+        while d < 0.4 or d > 0.7:
+            starting_params = transformation_ground_truth.vectorised()
+            starting_params += ((2.0 * torch.rand(6) - 1.0) * torch.tensor([0.4, 0.4, 0.4, 30.0, 30.0, 30.0])).to(
+                device=starting_params.device)
+            starting_transformation = Transformation.from_vector(starting_params)
 
     try:
         registration_info = get_registration_info(cache_directory=cache_directory, ct_path=ct_path,
@@ -262,86 +269,117 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
         plt.tight_layout(pad=0)
         if save_figures:
             plt.savefig("data/temp/img_drr_at_gt.png", bbox_inches='tight', pad_inches=0)
+        if show_figures:
+            plt.show()
 
         plt.imshow(task.registration_info.sinogram2d.cpu().numpy(), cmap='Greys_r')
         plt.axis("off")
         plt.tight_layout(pad=0)
         if save_figures:
             plt.savefig("data/temp/img_grangeat_fixed.png", bbox_inches='tight', pad_inches=0)
+        if show_figures:
+            plt.show()
 
         plt.imshow(task.resample_sinogram3d(transformation_ground_truth, 0).cpu().numpy(), cmap='Greys_r')
         plt.axis("off")
         plt.tight_layout(pad=0)
         if save_figures:
             plt.savefig("data/temp/img_resampling_classic_at_gt.png", bbox_inches='tight', pad_inches=0)
+        if show_figures:
+            plt.show()
 
         plt.imshow(task.resample_sinogram3d(transformation_ground_truth, 1).cpu().numpy(), cmap='Greys_r')
         plt.axis("off")
         plt.tight_layout(pad=0)
         if save_figures:
             plt.savefig("data/temp/img_resampling_healpix_at_gt.png", bbox_inches='tight', pad_inches=0)
+        if show_figures:
+            plt.show()
 
         plt.imshow(task.generate_drr(starting_transformation).cpu().numpy(), cmap='Greys_r')
         plt.axis("off")
         plt.tight_layout(pad=0)
         if save_figures:
             plt.savefig("data/temp/img_drr_at_start.png", bbox_inches='tight', pad_inches=0)
+        if show_figures:
+            plt.show()
 
         plt.imshow(task.resample_sinogram3d(starting_transformation, 0).cpu().numpy(), cmap='Greys_r')
         plt.axis("off")
         plt.tight_layout(pad=0)
         if save_figures:
             plt.savefig("data/temp/img_resampling_classic_at_start.png", bbox_inches='tight', pad_inches=0)
+        if show_figures:
+            plt.show()
 
         plt.imshow(task.resample_sinogram3d(starting_transformation, 1).cpu().numpy(), cmap='Greys_r')
         plt.axis("off")
         plt.tight_layout(pad=0)
         if save_figures:
             plt.savefig("data/temp/img_resampling_healpix_at_start.png", bbox_inches='tight', pad_inches=0)
-
-        if not show_figures:
+        if show_figures:
+            plt.show()
+        else:
             plt.close()
 
     datasets = []
+    distance_string = "Distance initialised to G.T. = {:.4f}".format(
+        transformation_ground_truth.distance(starting_transformation))
+    if show_figures:
+        logger.info(distance_string)
+    if save_figures:
+        with open("data/temp/img_stats.txt", "w") as file:
+            file.write(distance_string)
     for obj_func_name in ["drr", "grangeat_classic", "grangeat_healpix"]:
         res, time_per_iteration = task.run(starting_transformation=starting_transformation,
                                            objective_function_name=obj_func_name, iteration_count=iteration_count)
         converged_params = res.params.cpu().to(dtype=torch.float32)
-        # print("Close = {}; converged params = {}; g.t. = {}".format(
-        #     torch.allclose(converged_params, transformation_ground_truth.vectorised().cpu()), converged_params,
-        #     transformation_ground_truth.vectorised().cpu()))
-
         if save_figures or show_figures:
             # Converged DRR
-            plt.imshow(task.generate_drr(Transformation.from_vector(converged_params)).numpy(), cmap='Greys_r')
+            plt.imshow(task.generate_drr(Transformation.from_vector(converged_params)).cpu().numpy(), cmap='Greys_r')
             plt.axis("off")
             plt.tight_layout(pad=0)
             if save_figures:
                 plt.savefig("data/temp/img_drr_at_converged_{}.png".format(obj_func_name), bbox_inches='tight',
                             pad_inches=0)
+            if show_figures:
+                plt.show()
 
             if obj_func_name == "grangeat_classic":
                 # Converged resampling classic
-                plt.imshow(task.resample_sinogram3d(Transformation.from_vector(converged_params), 0).numpy(),
+                plt.imshow(task.resample_sinogram3d(Transformation.from_vector(converged_params), 0).cpu().numpy(),
                            cmap='Greys_r')
                 plt.axis("off")
                 plt.tight_layout(pad=0)
                 if save_figures:
                     plt.savefig("data/temp/img_resampling_at_converged_{}.png".format(obj_func_name),
                                 bbox_inches='tight', pad_inches=0)
+                if show_figures:
+                    plt.show()
 
             if obj_func_name == "grangeat_healpix":
                 # Converged resampling healpix
-                plt.imshow(task.resample_sinogram3d(Transformation.from_vector(converged_params), 1).numpy(),
+                plt.imshow(task.resample_sinogram3d(Transformation.from_vector(converged_params), 1).cpu().numpy(),
                            cmap='Greys_r')
                 plt.axis("off")
                 plt.tight_layout(pad=0)
                 if save_figures:
                     plt.savefig("data/temp/img_resampling_at_converged_{}.png".format(obj_func_name),
                                 bbox_inches='tight', pad_inches=0)
+                if show_figures:
+                    plt.show()
 
-            if not show_figures:
+            distance_converged_to_gt = transformation_ground_truth.distance(
+                Transformation.from_vector(converged_params))
+            distance_string = "Distance converged to GT for {} = {:.4f}".format(obj_func_name, distance_converged_to_gt)
+            if show_figures:
+                logger.info(distance_string)
+            else:
                 plt.close()
+
+            if save_figures:
+                with open("data/temp/img_stats.txt", "a") as file:
+                    file.write("\n{}".format(distance_string))
 
         datasets.append(plot_data.RegisterPlotData.Dataset(fixed_image_numel=registration_info.fixed_image.numel(),
                                                            obj_func_name=obj_func_name,
@@ -351,9 +389,6 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
                                                                device=torch.device("cpu")),
                                                            converged_transformation=Transformation.from_vector(
                                                                converged_params)))
-
-    if show_figures:
-        plt.show()
 
     return datasets
 

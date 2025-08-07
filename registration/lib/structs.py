@@ -77,8 +77,8 @@ class Transformation(NamedTuple):
         :return: [(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation.
         Stored column-major.
         """
-        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(
-            device=device, dtype=torch.float32)
+        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
+                                                                                                        dtype=torch.float32)
         rt = torch.hstack([r, self.translation.to(device=device).t().unsqueeze(-1)])
         return torch.vstack([rt, torch.tensor([0., 0., 0., 1.], device=device).unsqueeze(0)])
 
@@ -103,12 +103,12 @@ class Transformation(NamedTuple):
 
     def distance(self, other: 'Transformation') -> float:
         device = self.translation.device
-        r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(
-            device=device, dtype=torch.float32)
-        r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(other.rotation.unsqueeze(0))[0].to(
-            device=device, dtype=torch.float32)
+        r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
+                                                                                                         dtype=torch.float32)
+        r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(other.rotation.unsqueeze(0))[0].to(device=device,
+                                                                                                          dtype=torch.float32)
         return (((self.translation - other.translation) / 100.).square().sum() + torch.tensor(
-            [numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))],
+            numpy.array([numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))]),
             device=device).square().sum()).sqrt().item()
 
     def __str__(self) -> str:
@@ -120,10 +120,9 @@ class Transformation(NamedTuple):
 
     @classmethod
     def random(cls, *, device=torch.device('cpu')) -> 'Transformation':
-        return Transformation(
-            torch.pi * (-1. + 2. * torch.rand(3, device=device)),
-            25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
-                device=device).translation)
+        return Transformation(torch.pi * (-1. + 2. * torch.rand(3, device=device)),
+                              25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
+                                  device=device).translation)
 
 
 class SceneGeometry(NamedTuple):
@@ -153,9 +152,8 @@ class SceneGeometry(NamedTuple):
         assert source_position.size() == torch.Size([3])
         assert central_ray.size() == torch.Size([3])
 
-        m_matrix: torch.Tensor = torch.outer(
-            torch.hstack((source_position, torch.tensor([1.], device=device))), central_ray) + torch.dot(
-            central_ray, central_ray) * torch.vstack(
+        m_matrix: torch.Tensor = torch.outer(torch.hstack((source_position, torch.tensor([1.], device=device))),
+                                             central_ray) + torch.dot(central_ray, central_ray) * torch.vstack(
             (torch.eye(3, device=device), torch.zeros((1, 3), device=device)))
 
         return torch.hstack((m_matrix, -torch.matmul(m_matrix, source_position.t().unsqueeze(-1))))
@@ -239,17 +237,4 @@ class Sinogram3dGrid(NamedTuple):
 
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
-    # @classmethod
-    # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None = None,
-    #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':
-    #     if spiral_count is None:
-    #         spiral_count = r_count * r_count
-    #     rs = torch.linspace(r_range.low, r_range.high, r_count, device=device)
-    #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)
-    #     two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))
-    #     thetas = (1. - 2. * spiral_indices / float(spiral_count)).asin()
-    #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse + torch.pi, 2. * torch.pi) - torch.pi
-    #     rs = rs.repeat(spiral_count, 1)
-    #     thetas = thetas.unsqueeze(-1).repeat(1, r_count)
-    #     phis = phis.unsqueeze(-1).repeat(1, r_count)
-    #     return Sinogram3dGrid(phis, thetas, rs)
+    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high, r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #     two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. * spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse + torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(-1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis, thetas, rs)
