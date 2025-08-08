@@ -88,26 +88,7 @@ def main(file: str | None):
     plt.savefig("data/temp/pso_against_volume_size.pgf")
 
     #
-    # Converged distance from truth against starting distance from truth DRR vs. Grangeat resampling
-    #
-    fig, axes = plt.subplots()
-    axes.scatter(truth_start_distances_drr, truth_converged_distances_drr, label="DRR")
-    axes.scatter(truth_start_distances_grangeat, truth_converged_distances_grangeat, label="Grangeat classic")
-    axes.scatter(truth_start_distances_healpix, truth_converged_distances_healpix, label="Grangeat HEALPix")
-    axes.grid(True, which="both")
-    axes.set_aspect("equal")
-    axes.set_xlim(0, None)
-    axes.set_ylim(0, None)
-    axes.set_xticks(np.arange(0, axes.get_xlim()[1] + 0.1, 0.1))
-    axes.set_yticks(np.arange(0, axes.get_ylim()[1] + 0.1, 0.1))
-    axes.set_xlabel("Starting to G.T. distance in SE(3)")
-    axes.set_ylabel("Converged to G.T. distance in SE(3)")
-    plt.tight_layout()
-    plt.legend(loc="upper left")
-    # plt.savefig("data/temp/conv_dist_vs_start_dist.pgf")
-
-    #
-    # Error bars?
+    # Box and whisker plot
     #
     all_xs: np.ndarray = np.concat(
         (truth_start_distances_drr, truth_start_distances_grangeat, truth_start_distances_healpix))
@@ -142,7 +123,7 @@ def main(file: str | None):
     highest_healpix_bin: int = add_box_plot(truth_start_distances_healpix, truth_converged_distances_healpix,
                                             display_width_fraction * bin_width / 3.0,
                                             plt.rcParams['axes.prop_cycle'].by_key()['color'][2], "Grangeat HEALPix")
-    highest_bin = max(highest_drr_bin, highest_grangeat_bin, highest_healpix_bin)
+    highest_bin = min(max(highest_drr_bin, highest_grangeat_bin, highest_healpix_bin), int(np.ceil(1.0 / bin_width)) - 2)
     axes.set_aspect("equal")
     axes.grid(True, which="minor", axis="x")
     axes.grid(True, which="both", axis="y")
