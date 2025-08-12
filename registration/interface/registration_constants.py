@@ -37,8 +37,7 @@ class RegistrationConstants:
 
             if drr_spec is None:
                 drr_spec = drr.generate_drr_as_target(cache_directory, path, self.ct_volume, self.ct_spacing,
-                                                      device=self.device, save_to_cache=save_to_cache,
-                                                      size=new_drr_size)
+                                                      save_to_cache=save_to_cache, size=new_drr_size)
 
             (self._fixed_image_spacing, self._scene_geometry, self._image_2d_full,
              self._transformation_ground_truth) = drr_spec
