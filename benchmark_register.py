@@ -239,16 +239,16 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
     transformation_ground_truth = Transformation.random()
 
     starting_params = transformation_ground_truth.vectorised()
-    starting_params += ((2.0 * torch.rand(6) - 1.0) * torch.tensor([0.4, 0.4, 0.4, 30.0, 30.0, 30.0])).to(
+    starting_params += ((2.0 * torch.rand(6) - 1.0) * torch.tensor([0.38, 0.38, 0.38, 28.0, 28.0, 28.0])).to(
         device=starting_params.device)
     starting_transformation = Transformation.from_vector(starting_params)
-    if save_figures or show_figures:
-        d = transformation_ground_truth.distance(starting_transformation)
-        while d < 0.4 or d > 0.7:
-            starting_params = transformation_ground_truth.vectorised()
-            starting_params += ((2.0 * torch.rand(6) - 1.0) * torch.tensor([0.4, 0.4, 0.4, 30.0, 30.0, 30.0])).to(
-                device=starting_params.device)
-            starting_transformation = Transformation.from_vector(starting_params)
+    # if save_figures or show_figures:
+    #     d = transformation_ground_truth.distance(starting_transformation)
+    #     while d < 0.4 or d > 0.7:
+    #         starting_params = transformation_ground_truth.vectorised()
+    #         starting_params += ((2.0 * torch.rand(6) - 1.0) * torch.tensor([0.4, 0.4, 0.4, 30.0, 30.0, 30.0])).to(
+    #             device=starting_params.device)
+    #         starting_transformation = Transformation.from_vector(starting_params)
 
     try:
         registration_info = get_registration_info(cache_directory=cache_directory, ct_path=ct_path,
@@ -483,6 +483,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--show-figures", action='store_true', help="Show images for the first dataset.")
     parser.add_argument("-a", "--append-to-last", action='store_true',
                         help="Append the data to the last saved data file.")
+    parser.add_argument("-n", "--notify", action='store_true', help="Send notification on completion.")
     args = parser.parse_args()
 
     # create cache directory
@@ -495,9 +496,12 @@ if __name__ == "__main__":
     else:
         SAVE_FILE = SAVE_DIRECTORY / (datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".pkl")
 
-    main(cache_directory=args.cache_directory, save_first=args.save_figures, show_first=args.show_figures,
-         append_to_last=args.append_to_last)
-
-    res = pushover.send_notification(__file__, "Script finished.")
-    if isinstance(res, str):
-        logger.warn("Notification sending: {}".format(res))
+    try:
+        main(cache_directory=args.cache_directory, save_first=args.save_figures, show_first=args.show_figures,
+             append_to_last=args.append_to_last)
+        if args.notify:
+            pushover.send_notification(__file__, "Script finished.")
+    except Exception as e:
+        if args.notify:
+            pushover.send_notification(__file__, "Script raised exception: {}.".format(e))
+        raise e
