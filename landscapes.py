@@ -2,7 +2,7 @@ import argparse
 import gc
 import logging
 import os
-from typing import Type, Callable
+from typing import Type, Tuple
 import time
 import math
 from datetime import datetime
@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
 import pyswarms
+from torch.fx.passes.tools_common import Names
 from tqdm import tqdm
 
 import logs_setup
@@ -30,6 +31,7 @@ from notification import pushover
 
 
 class RegistrationInfo(NamedTuple):
+    name: str
     scene_geometry: SceneGeometry
     ct_volume: torch.Tensor
     fixed_image: torch.Tensor
@@ -40,8 +42,9 @@ class RegistrationInfo(NamedTuple):
     sinogram2d: torch.Tensor
 
 
-def get_registration_info(*, cache_directory: str, ct_path: str | pathlib.Path, downsample_factor: int,
-                          transformation_ground_truth: Transformation) -> RegistrationInfo | None:
+def get_registration_info(*, cache_directory: str, ct_path: str | pathlib.Path, x_ray_path: str | pathlib.Path | None,
+                          downsample_factor: int, transformation_ground_truth: Transformation,
+                          name: str) -> RegistrationInfo | None:
     device = torch.device("cuda")
     ct_volume, ct_spacing = data.load_volume(pathlib.Path(ct_path), downsample_factor=downsample_factor)
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
@@ -70,11 +73,20 @@ def get_registration_info(*, cache_directory: str, ct_path: str | pathlib.Path, 
         if s is None:
             return None
 
-    fixed_image_spacing, scene_geometry, fixed_image, _ = drr.generate_drr_as_target(cache_directory, ct_path,
-                                                                                     ct_volume, ct_spacing,
-                                                                                     save_to_cache=False, size=None,
-                                                                                     transformation=transformation_ground_truth.to(
-                                                                                         device=ct_volume.device))
+    if x_ray_path is None:
+        fixed_image_spacing, scene_geometry, fixed_image, _ = drr.generate_drr_as_target(cache_directory, ct_path,
+                                                                                         ct_volume, ct_spacing,
+                                                                                         save_to_cache=False, size=None,
+                                                                                         transformation=transformation_ground_truth.to(
+                                                                                             device=ct_volume.device))
+    else:
+        # Load the given X-ray
+        fixed_image, fixed_image_spacing, scene_geometry = data.read_dicom(str(x_ray_path))
+        fixed_image = fixed_image.to(device=device)
+
+        f_middle = 0.25
+        fixed_image = fixed_image[int(float(fixed_image.size()[0]) * .5 * (1. - f_middle)):int(
+            float(fixed_image.size()[0]) * .5 * (1. + f_middle)), :]
 
     sinogram2d_counts = max(fixed_image.size()[0], fixed_image.size()[1])
     image_diag: float = (fixed_image_spacing.flip(dims=(0,)) * torch.tensor(fixed_image.size(),
@@ -86,9 +98,12 @@ def get_registration_info(*, cache_directory: str, ct_path: str | pathlib.Path, 
     sinogram2d = grangeat.calculate_fixed_image(fixed_image, source_distance=scene_geometry.source_distance,
                                                 detector_spacing=fixed_image_spacing, output_grid=sinogram2d_grid)
 
-    return RegistrationInfo(scene_geometry=scene_geometry, ct_volume=ct_volume, fixed_image=fixed_image,
+    return RegistrationInfo(name=name, scene_geometry=scene_geometry, ct_volume=ct_volume, fixed_image=fixed_image,
                             ct_spacing=ct_spacing, sinogram3ds=sinogram3ds, fixed_image_spacing=fixed_image_spacing,
                             sinogram2d_grid=sinogram2d_grid, sinogram2d=sinogram2d)
+
+
+SAVE_DIRECTORY = "figures/landscapes"
 
 
 class LandscapeTask:
@@ -138,6 +153,15 @@ class LandscapeTask:
         return -objective_function.zncc(self.registration_info.sinogram2d, self.resample_sinogram3d(transformation, 1))
 
     def run(self, *, objective_function_name: str):
+        #
+        plt.figure()
+        plt.imshow(self.registration_info.fixed_image.cpu().numpy())
+        drr_gt = self.generate_drr(self._gt_transformation)
+        plt.figure()
+        plt.imshow(drr_gt.cpu().numpy())
+        logger.info("Sim @ G.T. = {}".format(-objective_function.zncc(self.registration_info.fixed_image, drr_gt)))
+        plt.show()
+        #
         obj_func = self._objective_functions[objective_function_name]
 
         gt_vectorised = self._gt_transformation.vectorised()
@@ -151,7 +175,7 @@ class LandscapeTask:
                                          self._landscape_size)
 
             def get_transformation(param1_index: int, param2_index: int) -> Transformation:
-                params = gt_vectorised
+                params = copy.deepcopy(gt_vectorised)
                 params[param1] = param1_grid[param1_index]
                 params[param2] = param2_grid[param2_index]
                 return Transformation.from_vector(params)
@@ -163,17 +187,29 @@ class LandscapeTask:
 
             param2_grid, param1_grid = torch.meshgrid(param2_grid, param1_grid)
             axes.plot_surface(param1_grid.clone().detach().cpu().numpy(), param2_grid.clone().detach().cpu().numpy(),
-                              landscape.clone().detach().cpu().numpy(), cmap=cm.get_cmap(
-                    "viridis"))  # fname = "of_over_{}_{}.png".format(str(landscape.x_range.parameter).replace(' ', '_'),  #     str(landscape.y_range.parameter).replace(' ', '_'))  # fig.savefig(pathlib.Path("figures") / "landscapes" / fname, dpi=300, bbox_inches='tight')
+                              landscape.clone().detach().cpu().numpy(), cmap=cm.get_cmap("viridis"))
 
-        for i, j in [(0, 1), (1, 2), (3, 4), (4, 5)]:
+        class LandscapePlot(NamedTuple):
+            i: int
+            j: int
+            fname: str
+            xlabel: str
+            ylabel: str
+
+        landscapes: list[LandscapePlot] = [LandscapePlot(0, 1, "rxry", "rx", "ry"),
+                                           LandscapePlot(1, 2, "ryrz", "ry", "rz"),
+                                           LandscapePlot(3, 4, "txty", "tx", "ty"),
+                                           LandscapePlot(4, 5, "tytz", "ty", "tz")]
+
+        for lp in landscapes:
             fig, axes = plt.subplots(subplot_kw={"projection": "3d"})
-            landscape2(axes, i, j)
+            landscape2(axes, lp.i, lp.j)
+            axes.set_xlabel(lp.xlabel)
+            axes.set_ylabel(lp.ylabel)
+            plt.savefig(SAVE_DIRECTORY + "/landscape_{}_{}.png".format(self.registration_info.name, lp.fname))
 
         plt.show()
 
-
-SAVE_DIRECTORY = "figures/landscapes"
 
 CT_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001",
             "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct002",
@@ -193,27 +229,36 @@ XRAY_DICOM_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_co
                     "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray014.dcm"]
 
 
-def evaluate_and_plot_landscape(*, cache_directory: str, ct_path: str, downsample_factor: int):
-    transformation_ground_truth = Transformation.random()
+def evaluate_and_plot_landscape(*, cache_directory: str, ct_path: str, x_ray_path: str | None, downsample_factor: int):
+    if x_ray_path is None:
+        transformation_ground_truth = Transformation.random()
+    else:
+        transformation_ground_truth = Transformation(rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0]), translation=torch.tensor([0.0, 0.0, 0.0]))
+
     try:
         registration_info = get_registration_info(cache_directory=cache_directory, ct_path=ct_path,
-                                                  downsample_factor=downsample_factor,
-                                                  transformation_ground_truth=transformation_ground_truth)
+                                                  x_ray_path=x_ray_path, downsample_factor=downsample_factor,
+                                                  transformation_ground_truth=transformation_ground_truth,
+                                                  name=str(pathlib.Path(ct_path).name))
     except RuntimeError as e:
         if "CUDA out of memory" not in str(e):
             raise e
         logger.warn("Not enough memory for run; skipping.")
         return  # None
 
-    task = LandscapeTask(registration_info, gt_transformation=transformation_ground_truth, landscape_size=20,
-                         landscape_range=torch.Tensor([0.3, 0.3, 0.3, 30.0, 30.0, 30.0]))
+    task = LandscapeTask(registration_info, gt_transformation=transformation_ground_truth, landscape_size=30,
+                         landscape_range=torch.Tensor([2.0, 2.0, 2.0, 100.0, 100.0, 100.0]))
 
     task.run(objective_function_name="drr")
 
 
-def main(cache_directory: str):
-    for ct_path in CT_PATHS:
-        evaluate_and_plot_landscape(cache_directory=cache_directory, ct_path=ct_path, downsample_factor=1)
+def main(cache_directory: str, drr_as_target: bool):
+    count: int = len(CT_PATHS)
+    if not drr_as_target:
+        assert len(XRAY_DICOM_PATHS) == count
+    for i in range(count):
+        evaluate_and_plot_landscape(cache_directory=cache_directory, ct_path=CT_PATHS[i],
+                                    x_ray_path=None if drr_as_target else XRAY_DICOM_PATHS[i], downsample_factor=1)
 
 
 if __name__ == "__main__":
@@ -243,7 +288,9 @@ if __name__ == "__main__":
     #     "-r", "--regenerate-drr", action='store_true',
     #     help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
     # parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
-    parser.add_argument("-n", "--notify", action='store_true', help="Send notification on completion.")
+    parser.add_argument("-d", "--drr-target", action="store_true",
+                        help="Generate a DRR at a random transformation to register to, instead of using an X-ray image.")
+    parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
     args = parser.parse_args()
 
     # create cache directory
@@ -251,7 +298,7 @@ if __name__ == "__main__":
         os.makedirs(args.cache_directory)
 
     try:
-        main(cache_directory=args.cache_directory)
+        main(cache_directory=args.cache_directory, drr_as_target=args.drr_target)
         if args.notify:
             pushover.send_notification(__file__, "Script finished.")
     except Exception as e:
