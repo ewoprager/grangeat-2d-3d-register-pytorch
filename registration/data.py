@@ -104,32 +104,43 @@ def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tenso
     return image, spacing
 
 
-def read_dicom(path: str, *, downsample_factor=1):
+def read_dicom(path: str, *, downsample_factor: int | None = 1, downsample_to_resolution: float | None = None):
+    if downsample_factor is not None and downsample_to_resolution is not None:
+        logger.error("Cannot pass both downsample_factor and downsample_to_resolution to `read_dicom()`.")
+        return None
     logger.info("Loading X-ray DICOM file {}...".format(path))
     dataset = pydicom.dcmread(path)
-    logger.info("DICOM file loaded.")
     logger.info("Processing DICOM data...")
     image = torch.tensor(pydicom.pixels.pixel_array(dataset), dtype=torch.float32)
     logger.info("X-ray image size = [{} x {}]".format(image.size()[0], image.size()[1]))
-    if downsample_factor > 1:
-        down_sampler = torch.nn.AvgPool2d(downsample_factor)
-        image = down_sampler(image.unsqueeze(0))[0]
-        logger.info("X-ray image size after down-sampling = [{} x {}]".format(image.size()[0], image.size()[1]))
+
     if "PixelSpacing" in dataset:
-        spacing = float(downsample_factor) * torch.tensor([dataset["PixelSpacing"][1],  # column spacing (x-direction)
-                                                           dataset["PixelSpacing"][0]  # row spacing (y-direction)
-                                                           ])
+        spacing = torch.tensor([dataset["PixelSpacing"][1],  # column spacing (x-direction)
+                                dataset["PixelSpacing"][0]  # row spacing (y-direction)
+                                ])
         logger.info("X-ray pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
-        scene_geometry = SceneGeometry(dataset["DistanceSourceToPatient"].value)
+        scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToPatient"].value)
         logger.info("X-ray distance source-to-patient = {} mm".format(scene_geometry.source_distance))
     else:
-        spacing = float(downsample_factor) * torch.tensor(
-            [dataset["ImagerPixelSpacing"][1],  # column spacing (x-direction)
-             dataset["ImagerPixelSpacing"][0]  # row spacing (y-direction)
-             ])
+        spacing = torch.tensor([dataset["ImagerPixelSpacing"][1],  # column spacing (x-direction)
+                                dataset["ImagerPixelSpacing"][0]  # row spacing (y-direction)
+                                ])
         logger.info("X-ray imager pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
-        scene_geometry = SceneGeometry(dataset["DistanceSourceToDetector"].value)
+        scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToDetector"].value)
         logger.info("X-ray distance source-to-detector = {} mm".format(scene_geometry.source_distance))
+
+    if downsample_to_resolution is None:
+        if downsample_factor is not None and downsample_factor > 1:
+            down_sampler = torch.nn.AvgPool2d(downsample_factor)
+            image = down_sampler(image.unsqueeze(0))[0]
+            spacing *= float(downsample_factor)
+            logger.info(
+                "X-ray image size and spacing after down-sampling = [{} x {}]; [{} x {}]".format(image.size()[0],
+                                                                                                 image.size()[1],
+                                                                                                 spacing[0],
+                                                                                                 spacing[1]))
+    else:
+        pass  # ToDo
 
     logger.info("X-ray DICOM file processed.")
     return image, spacing, scene_geometry
