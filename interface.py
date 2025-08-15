@@ -76,7 +76,7 @@ class Interface:
 
         initial_transformation = self.registration_data.transformation_gt
         if initial_transformation is None:
-            initial_transformation = Transformation.random(device=self.registration_data.device)
+            initial_transformation = Transformation.zero(device=self.registration_data.device)
         self._transformation_widget = TransformationWidget(initial_transformation=initial_transformation,
                                                            refresh_render_function=self.render_drr,
                                                            save_path=save_directory / "transformation_library.pkl",

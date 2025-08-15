@@ -26,7 +26,8 @@ from registration import pre_computed
 from registration import drr
 from notification import pushover
 
-from registration.interface.register import OptimisationResult
+from registration.interface.register import OptimisationResult, mapping_transformation_to_parameters, \
+    mapping_parameters_to_transformation
 
 
 def format_time(seconds: int) -> str:
@@ -156,9 +157,9 @@ class RegistrationTask:
         objective_function = self._objective_functions[objective_function_name]
 
         def obj_func(params: torch.Tensor) -> torch.Tensor:
-            return objective_function(Transformation.from_vector(params))
+            return objective_function(mapping_parameters_to_transformation(params))
 
-        starting_parameters = starting_transformation.vectorised()
+        starting_parameters = mapping_transformation_to_parameters(starting_transformation)
 
         n_dimensions = starting_parameters.numel()
         param_history = GrowingTensor([n_dimensions], self._particle_count * iteration_count)
@@ -238,10 +239,10 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
 
     transformation_ground_truth = Transformation.random()
 
-    starting_params = transformation_ground_truth.vectorised()
+    starting_params = mapping_transformation_to_parameters(transformation_ground_truth)
     starting_params += ((2.0 * torch.rand(6) - 1.0) * torch.tensor([0.38, 0.38, 0.38, 28.0, 28.0, 28.0])).to(
         device=starting_params.device)
-    starting_transformation = Transformation.from_vector(starting_params)
+    starting_transformation = mapping_parameters_to_transformation(starting_params)
     # if save_figures or show_figures:
     #     d = transformation_ground_truth.distance(starting_transformation)
     #     while d < 0.4 or d > 0.7:
@@ -336,7 +337,8 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
         converged_params = res.params.cpu().to(dtype=torch.float32)
         if save_figures or show_figures:
             # Converged DRR
-            plt.imshow(task.generate_drr(Transformation.from_vector(converged_params)).cpu().numpy(), cmap='Greys_r')
+            plt.imshow(task.generate_drr(mapping_parameters_to_transformation(converged_params)).cpu().numpy(),
+                       cmap='Greys_r')
             plt.axis("off")
             plt.tight_layout(pad=0)
             if save_figures:
@@ -347,8 +349,9 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
 
             if obj_func_name == "grangeat_classic":
                 # Converged resampling classic
-                plt.imshow(task.resample_sinogram3d(Transformation.from_vector(converged_params), 0).cpu().numpy(),
-                           cmap='Greys_r')
+                plt.imshow(
+                    task.resample_sinogram3d(mapping_parameters_to_transformation(converged_params), 0).cpu().numpy(),
+                    cmap='Greys_r')
                 plt.axis("off")
                 plt.tight_layout(pad=0)
                 if save_figures:
@@ -359,8 +362,9 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
 
             if obj_func_name == "grangeat_healpix":
                 # Converged resampling healpix
-                plt.imshow(task.resample_sinogram3d(Transformation.from_vector(converged_params), 1).cpu().numpy(),
-                           cmap='Greys_r')
+                plt.imshow(
+                    task.resample_sinogram3d(mapping_parameters_to_transformation(converged_params), 1).cpu().numpy(),
+                    cmap='Greys_r')
                 plt.axis("off")
                 plt.tight_layout(pad=0)
                 if save_figures:
@@ -370,7 +374,7 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
                     plt.show()
 
             distance_converged_to_gt = transformation_ground_truth.distance(
-                Transformation.from_vector(converged_params))
+                mapping_parameters_to_transformation(converged_params))
             distance_string = "Distance converged to GT for {} = {:.4f}".format(obj_func_name, distance_converged_to_gt)
             if show_figures:
                 logger.info(distance_string)
@@ -387,7 +391,7 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
                                                            ground_truth_transformation=transformation_ground_truth,
                                                            starting_transformation=starting_transformation.to(
                                                                device=torch.device("cpu")),
-                                                           converged_transformation=Transformation.from_vector(
+                                                           converged_transformation=mapping_parameters_to_transformation(
                                                                converged_params)))
 
     return datasets

@@ -22,6 +22,7 @@ import Extension
 # from diffdrr.pose import RigidTransform, make_matrix
 
 import logs_setup
+from registration.interface.register import mapping_transformation_to_parameters
 from registration.lib.structs import *
 from registration.lib.sinogram import *
 from registration import drr, data, script, objective_function
@@ -219,7 +220,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         value_history = []
         transformation_start = Transformation(-.75 * torch.pi * torch.tensor([1., -1., -1]),
                                               torch.tensor([0., 0., 80.]))
-        start_params: torch.Tensor = transformation_start.vectorised()
+        start_params: torch.Tensor = mapping_transformation_to_parameters(transformation_start)
 
         initial_image = geometry.generate_drr_python(vol_data, transformation=transformation_start.to(device=device),
                                                      voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,

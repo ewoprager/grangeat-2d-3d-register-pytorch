@@ -31,6 +31,7 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
             raise Exception("Error: file {} is of unrecognised type.".format(str(path)))
         directions = torch.tensor(header['space directions'])
         spacing = directions.norm(dim=1).flip(dims=(0,))
+        logger.warning("Don't know how to read ImageOrientationPatient from nrrd files.")
         return LoadedVolume(torch.tensor(data), spacing)
     if path.is_dir():
         logger.info("Loading CT DICOM data from directory '{}'...".format(str(path)))
@@ -44,6 +45,7 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
         except AttributeError:
             # Fallback: sort by instance number
             slices.sort(key=lambda ds: int(ds.InstanceNumber))
+            logger.warning("Sorting CT volume slices by InstanceNumber, as ImagePositionPatient not available")
         pixel_spacing = slices[0]["PixelSpacing"]
         slice_spacing = (torch.tensor([slices[0]["ImagePositionPatient"][i] for i in range(3)]) - torch.tensor(
             [slices[1]["ImagePositionPatient"][i] for i in range(3)])).norm()
@@ -52,6 +54,7 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
                                 slice_spacing  # slice spacing (z-direction)
                                 ])
         volume = torch.stack([torch.tensor(pydicom.pixels.pixel_array(s)) for s in slices])
+        logger.info("{}".format(slices[0]["ImageOrientationPatient"]))
         return LoadedVolume(volume, spacing)
     raise Exception("Given path '{}' is not a file or directory.".format(str(path)))
 

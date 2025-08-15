@@ -246,7 +246,8 @@ class RegistrationData:
             image_2d_full, fixed_image_spacing, scene_geometry = data.read_dicom(self._xray_path,
                                                                                  downsample_to_ct_spacing=self.ct_spacing.mean().item())
             # Flip horizontally
-            image_2d_full = image_2d_full.flip(dims=(1,)).to(device=self.device)
+            image_2d_full = (image_2d_full#.flip(dims=(1,))
+                             .to(device=self.device))
 
         self._target_dependent = RegistrationData.TargetDependent(from_xray_path=self._xray_path,
                                                                   scene_geometry=scene_geometry,

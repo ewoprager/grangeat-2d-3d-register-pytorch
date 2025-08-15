@@ -27,6 +27,20 @@ from registration.lib import optimisation
 from registration.interface.registration_data import RegistrationData
 
 
+def mapping_transformation_to_parameters(transformation: Transformation) -> torch.Tensor:
+    ret = transformation.vectorised()
+    ret[0:3] *= 100.0
+    ret[5] /= 10.0
+    return ret
+
+
+def mapping_parameters_to_transformation(params: torch.Tensor) -> Transformation:
+    params = params.clone()
+    params[0:3] /= 100.0
+    params[5] *= 10.0
+    return Transformation.from_vector(params)
+
+
 class OptimisationResult(NamedTuple):
     params: torch.Tensor
     param_history: torch.Tensor
@@ -91,7 +105,7 @@ class ParticleSwarm(OptimisationAlgorithm):
 
         options = {'c1': 2.525, 'c2': 1.225, 'w': 0.28}  # {'c1': 0.5, 'c2': 0.3, 'w': 0.9}
         initial_positions = np.random.normal(loc=starting_parameters.numpy(), size=(self.particle_count, n_dimensions),
-                                             scale=np.array([0.1, 0.1, 0.1, 2.0, 2.0, 2.0]))
+                                             scale=1.0)
         initial_positions[0] = starting_parameters.numpy()
         optimiser = pyswarms.single.GlobalBestPSO(n_particles=self.particle_count, dimensions=n_dimensions,
                                                   init_pos=initial_positions, options=options)
@@ -164,9 +178,9 @@ class Worker(QObject):
 
     def run(self):
         def obj_func(params: torch.Tensor) -> torch.Tensor:
-            return self._objective_function(Transformation.from_vector(params))
+            return self._objective_function(mapping_parameters_to_transformation(params))
 
-        starting_parameters: torch.Tensor = self._initial_transformation.vectorised().cpu()
+        starting_parameters: torch.Tensor = mapping_transformation_to_parameters(self._initial_transformation).cpu()
 
         logger.info("Optimising with '{}'...".format(str(self._optimisation_algorithm)))
         optimisation_result = self._optimisation_algorithm.run(starting_parameters=starting_parameters,
@@ -174,7 +188,7 @@ class Worker(QObject):
                                                                iteration_callback=self._iteration_callback)
         self.progress.emit(optimisation_result.param_history, optimisation_result.value_history, True)
         logger.info("Optimisation finished.")
-        res = Transformation.from_vector(optimisation_result.params)
+        res = mapping_parameters_to_transformation(optimisation_result.params)
         self.finished.emit(res)
 
     def _iteration_callback(self, param_history: torch.Tensor, value_history: torch.Tensor) -> None:
@@ -403,7 +417,7 @@ class RegisterWidget(widgets.Container):
         self._best, best_index = values.min(0)
         self._best = self._best.item()
         best_index = best_index.item()
-        best_transformation = Transformation(param_history[best_index][0:3], param_history[best_index][3:6])
+        best_transformation = mapping_parameters_to_transformation(param_history[best_index])
         self._transformation_widget.set_current_transformation(best_transformation)
 
         self._register_progress.value = "{} evaluations, best = {:.4f}".format(self._iteration_callback_count,

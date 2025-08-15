@@ -19,6 +19,7 @@ from tqdm import tqdm
 
 import logs_setup
 from registration import data
+from registration.interface.register import mapping_transformation_to_parameters
 from registration.lib import sinogram
 from registration.lib import geometry
 from registration.lib.structs import *
@@ -164,7 +165,7 @@ class LandscapeTask:
         #
         obj_func = self._objective_functions[objective_function_name]
 
-        gt_vectorised = self._gt_transformation.vectorised()
+        gt_vectorised = mapping_transformation_to_parameters(self._gt_transformation)
 
         def landscape2(axes, param1: int, param2: int):
             param1_grid = torch.linspace(gt_vectorised[param1] - 0.5 * self._landscape_range[param1],
@@ -178,7 +179,7 @@ class LandscapeTask:
                 params = copy.deepcopy(gt_vectorised)
                 params[param1] = param1_grid[param1_index]
                 params[param2] = param2_grid[param2_index]
-                return Transformation.from_vector(params)
+                return mapping_parameters_to_transformation(params)
 
             landscape = torch.zeros(self._landscape_size, self._landscape_size)
             for j in tqdm(range(self._landscape_size)):
