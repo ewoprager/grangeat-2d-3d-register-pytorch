@@ -1,20 +1,17 @@
 import pathlib
-from typing import NamedTuple, Callable
-from datetime import datetime
-import pickle
+from typing import Callable
 import logging
-
-from magicgui.types import Undefined
 
 logger = logging.getLogger(__name__)
 
 import torch
 import napari
 from magicgui import widgets
+from magicgui.types import Undefined
 from qtpy.QtWidgets import QApplication
 
 from registration.lib.structs import Transformation
-from registration.interface.lib.structs import *
+from registration.interface.lib.structs import WidgetManageSaved
 
 
 class TransformationWidget(widgets.Container):
