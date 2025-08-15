@@ -29,7 +29,6 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
             data, header = nrrd.read(str(path))
         else:
             raise Exception("Error: file {} is of unrecognised type.".format(str(path)))
-        logger.info("CT data file loaded.")
         directions = torch.tensor(header['space directions'])
         spacing = directions.norm(dim=1).flip(dims=(0,))
         return LoadedVolume(torch.tensor(data), spacing)
@@ -86,9 +85,10 @@ def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType], si
 
 def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
     loaded_volume = read_volume(path)
-    logger.info("Processing CT data...")
     sizes = loaded_volume.data.size()
-    logger.info("CT data volume size = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
+    spacing = loaded_volume.spacing
+    logger.info("CT data volume size and spacing = [{} x {} x {}]; [{} x {} x {}] mm"
+                "".format(sizes[0], sizes[1], sizes[2], spacing[0], spacing[1], spacing[2]))
     image = loaded_volume.data.to(dtype=torch.float32)
     image[image < -800.0] = -800.0
     image -= image.min()
@@ -97,22 +97,28 @@ def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tenso
         down_sampler = torch.nn.AvgPool3d(downsample_factor)
         image = down_sampler(image.unsqueeze(0))[0]
         sizes = image.size()
-        logger.info("CT volume size after down-sampling = [{} x {} x {}]".format(sizes[0], sizes[1], sizes[2]))
-    spacing = float(downsample_factor) * loaded_volume.spacing
-    logger.info("CT voxel spacing after down-sampling = [{} x {} x {}] mm".format(spacing[0], spacing[1], spacing[2]))
-    logger.info("CT data file processed.")
+        spacing *= float(downsample_factor)
+        logger.info("CT volume size and spacing after down-sampling = [{} x {} x {}]; [{} x {} x {}] mm"
+                    "".format(sizes[0], sizes[1], sizes[2], spacing[0], spacing[1], spacing[2]))
     return image, spacing
 
 
-def read_dicom(path: str, *, downsample_factor: int | None = 1, downsample_to_resolution: float | None = None):
-    if downsample_factor is not None and downsample_to_resolution is not None:
-        logger.error("Cannot pass both downsample_factor and downsample_to_resolution to `read_dicom()`.")
+def read_dicom(path: str, *, downsample_factor: int | None = None, downsample_to_ct_spacing: float | None = None):
+    if downsample_factor is not None and downsample_to_ct_spacing is not None:
+        logger.error("Cannot pass both downsample_factor and downsample_to_ct_spacing to `read_dicom()`.")
         return None
     logger.info("Loading X-ray DICOM file {}...".format(path))
     dataset = pydicom.dcmread(path)
-    logger.info("Processing DICOM data...")
     image = torch.tensor(pydicom.pixels.pixel_array(dataset), dtype=torch.float32)
     logger.info("X-ray image size = [{} x {}]".format(image.size()[0], image.size()[1]))
+
+    if "DistanceSourceToPatient" in dataset and "DistanceSourceToDetector" in dataset:
+        spacing_spread_ratio = float(
+            dataset["DistanceSourceToDetector"].value / dataset["DistanceSourceToPatient"].value)
+    else:
+        spacing_spread_ratio = 1.0
+        logger.warning("'DistanceSourceToPatient' and 'DistanceSourceToDetector' not both available, assuming spacing "
+                       "spread ratio of {} from CT volume to detector array.".format(spacing_spread_ratio))
 
     if "PixelSpacing" in dataset:
         spacing = torch.tensor([dataset["PixelSpacing"][1],  # column spacing (x-direction)
@@ -129,20 +135,18 @@ def read_dicom(path: str, *, downsample_factor: int | None = 1, downsample_to_re
         scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToDetector"].value)
         logger.info("X-ray distance source-to-detector = {} mm".format(scene_geometry.source_distance))
 
-    if downsample_to_resolution is None:
-        if downsample_factor is not None and downsample_factor > 1:
-            down_sampler = torch.nn.AvgPool2d(downsample_factor)
-            image = down_sampler(image.unsqueeze(0))[0]
-            spacing *= float(downsample_factor)
-            logger.info(
-                "X-ray image size and spacing after down-sampling = [{} x {}]; [{} x {}]".format(image.size()[0],
-                                                                                                 image.size()[1],
-                                                                                                 spacing[0],
-                                                                                                 spacing[1]))
-    else:
-        pass  # ToDo
+    if downsample_to_ct_spacing is not None:
+        target_detector_spacing = downsample_to_ct_spacing * spacing_spread_ratio
+        average_spacing = spacing.mean().item()
+        downsample_factor = int(round(target_detector_spacing / average_spacing))
 
-    logger.info("X-ray DICOM file processed.")
+    if downsample_factor is not None and downsample_factor > 1:
+        down_sampler = torch.nn.AvgPool2d(downsample_factor)
+        image = down_sampler(image.unsqueeze(0))[0]
+        spacing *= float(downsample_factor)
+        logger.info("X-ray image size and spacing after down-sampling = [{} x {}]; [{} x {}] mm"
+                    "".format(image.size()[0], image.size()[1], spacing[0], spacing[1]))
+
     return image, spacing, scene_geometry
 
 
@@ -155,10 +159,8 @@ def load_cached_volume(cache_directory: str, sinogram_hash: str) -> Tuple[int, s
         return None
     volume_downsample_factor = volume_spec.downsample_factor
     sinogram3d = volume_spec.sinogram
-    logger.info(
-        "Loaded cached volume spec from '{}'; sinogram size = [{} x {} x {}]".format(file, sinogram3d.data.size()[0],
-                                                                                     sinogram3d.data.size()[1],
-                                                                                     sinogram3d.data.size()[2]))
+    logger.info("Loaded cached volume spec from '{}'; sinogram size = [{} x {} x {}]"
+                "".format(file, sinogram3d.data.size()[0], sinogram3d.data.size()[1], sinogram3d.data.size()[2]))
     return volume_downsample_factor, sinogram3d
 
 

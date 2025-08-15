@@ -205,7 +205,7 @@ SAVE_DIRECTORY = pathlib.Path("data/register_plot_data")
 
 def save_new(new_data: plot_data.RegisterPlotData):
     if SAVE_FILE.is_file():
-        logger.warn("File '{}' already exists; overwriting.".format(str(SAVE_FILE)))
+        logger.warning("File '{}' already exists; overwriting.".format(str(SAVE_FILE)))
     torch.save(new_data, SAVE_FILE)
 
 
@@ -213,14 +213,14 @@ def save_append(new_data: plot_data.RegisterPlotData.Dataset | list[plot_data.Re
     if SAVE_FILE.is_file():
         current_data = torch.load(SAVE_FILE, weights_only=False)
         if not isinstance(current_data, plot_data.RegisterPlotData):
-            logger.warn("Invalid data file '{}'. Renaming invalid file and saving new data to old filename.")
+            logger.warning("Invalid data file '{}'. Renaming invalid file and saving new data to old filename.")
             current_data = []
             marked_invalid = SAVE_FILE.with_name(SAVE_FILE.stem + "_invalid.pkl")
             while marked_invalid.is_file():
                 marked_invalid = marked_invalid.stem + "_1.pkl"
             SAVE_FILE.rename(marked_invalid)
     else:
-        logger.warn("No save file '{}' exists to append datasets to. Saving with placeholder values.")
+        logger.warning("No save file '{}' exists to append datasets to. Saving with placeholder values.")
         current_data = plot_data.RegisterPlotData(iteration_count=-1, particle_count=-1, datasets=[])
 
     if isinstance(new_data, list):
@@ -445,7 +445,7 @@ def main(*, cache_directory: str, save_first: bool = False, show_first: bool = F
                 except RuntimeError as e:
                     if "CUDA out of memory" not in str(e):
                         raise
-                    logger.warn("Not enough memory for run; skipping.")
+                    logger.warning("Not enough memory for run; skipping.")
                     continue
                 if res is not None:
                     save_append(res)

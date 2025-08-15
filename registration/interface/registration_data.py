@@ -242,8 +242,9 @@ class RegistrationData:
             fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
             del drr_spec
         else:
-            # Load the given X-ray ToDo: proper X-ray downsampling
-            image_2d_full, fixed_image_spacing, scene_geometry = data.read_dicom(self._xray_path, downsample_factor=4)
+            # Load the given X-ray
+            image_2d_full, fixed_image_spacing, scene_geometry = data.read_dicom(self._xray_path,
+                                                                                 downsample_to_ct_spacing=self.ct_spacing.mean().item())
             # Flip horizontally
             image_2d_full = image_2d_full.flip(dims=(1,)).to(device=self.device)
 

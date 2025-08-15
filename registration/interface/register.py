@@ -21,8 +21,10 @@ import pathlib
 
 from registration.lib.structs import Transformation, GrowingTensor
 from registration.interface.transformations import TransformationWidget
-from registration.interface.lib.structs import HyperParameters, WidgetSelectData, WidgetManageSaved, Cropping
+from registration.interface.lib.structs import HyperParameters, WidgetSelectData, WidgetManageSaved, Cropping, \
+    SavedXRayParams
 from registration.lib import optimisation
+from registration.interface.registration_data import RegistrationData
 
 
 class OptimisationResult(NamedTuple):
@@ -232,14 +234,17 @@ class LocalSearchWidget(widgets.Container, OpAlgoWidget):
 
 
 class RegisterWidget(widgets.Container):
-    def __init__(self, *, transformation_widget: TransformationWidget,
+    def __init__(self, *, transformation_widget: TransformationWidget, registration_data: RegistrationData,
                  objective_functions: dict[str, Callable[[Transformation], torch.Tensor]],
-                 fixed_image_crop_callback: Callable[[Cropping], None], hyper_parameter_save_path: str | pathlib.Path,
+                 fixed_image_crop_callback: Callable[[Cropping], None], save_directory: str | pathlib.Path,
                  fixed_image_size: torch.Size):
         super().__init__(labels=False)
         self._transformation_widget = transformation_widget
+        self._registration_data = registration_data
         self._objective_functions = objective_functions
-        self._hyper_parameter_save_path = pathlib.Path(hyper_parameter_save_path)
+        save_directory = pathlib.Path(save_directory)
+        self._hyper_parameter_save_path = save_directory / "hyperparameter_library.pkl"
+        self._xray_params_save_path = save_directory / "xray_params_library.pkl"
 
         # Optimisation worker thread and plotting
         self._evals_per_render: int = 100
@@ -280,6 +285,14 @@ class RegisterWidget(widgets.Container):
                                                           get_current_callback=self._current_hyper_parameters,
                                                           set_callback=self._set_hyper_parameters)
         self.append(self._hyper_parameters_widget)
+
+        self._save_params_for_xray_button = widgets.PushButton(label="Save params for X-ray")
+        self._save_params_for_xray_button.changed.connect(self._on_save_params_for_xray_button)
+        self.append(self._save_params_for_xray_button)
+
+        self._load_params_for_xray_button = widgets.PushButton(label="Load params for X-ray")
+        self._load_params_for_xray_button.changed.connect(self._on_load_params_for_xray_button)
+        self.append(self._load_params_for_xray_button)
 
         ##
         ## Objective function
@@ -438,6 +451,48 @@ class RegisterWidget(widgets.Container):
         self._top_crop_slider.set_value(new_value.cropping.top)
         self._left_crop_slider.set_value(new_value.cropping.left)
         self._bottom_crop_slider.set_value(new_value.cropping.bottom)
+
+    def _on_save_params_for_xray_button(self) -> None:
+        if self._registration_data.xray_path is None:
+            logger.warning("No X-ray path defined, cannot save associated parameters.")
+            return
+        current_saved = dict({})
+        if self._xray_params_save_path.is_file():
+            current_saved = torch.load(self._xray_params_save_path, weights_only=False)
+            if not isinstance(current_saved, dict):
+                new_name = self._xray_params_save_path.with_stem(
+                    "invalid_type_{}".format(self._xray_params_save_path.stem))
+                logger.warning("Existing X-ray param library '{}' is of invalid type '{}'; renaming to '{}'"
+                               "".format(str(self._xray_params_save_path), type(current_saved).__name__, str(new_name)))
+                self._xray_params_save_path.rename(new_name)
+                current_saved = dict({})
+        to_save = SavedXRayParams(transformation=self._transformation_widget.get_current_transformation(),
+                                  hyperparameters=self._current_hyper_parameters())
+        current_saved[self._registration_data.xray_path] = to_save
+        torch.save(current_saved, self._xray_params_save_path)
+        logger.info("Saved parameters:\n{}\nfor X-ray '{}'."
+                    "".format(to_save, str(self._registration_data.xray_path)))
+
+    def _on_load_params_for_xray_button(self) -> None:
+        if self._registration_data.xray_path is None:
+            logger.warning("No X-ray path defined, cannot load associated parameters.")
+            return
+        if not self._xray_params_save_path.is_file():
+            logger.warning("No X-ray parameter save file '{}' found; cannot load parameters."
+                           "".format(str(self._xray_params_save_path)))
+            return
+        current_saved = torch.load(self._xray_params_save_path, weights_only=False)
+        if not isinstance(current_saved, dict):
+            logger.warning("X-ray parameter save file '{}' has invalid type '{}'; cannot load parameters."
+                           "".format(str(self._xray_params_save_path), type(current_saved).__name__))
+            return
+        if self._registration_data.xray_path not in current_saved:
+            logger.warning("No parameters saved for current X-ray in parameter save file '{}'; cannot load parameters."
+                           "".format(str(self._xray_params_save_path)))
+            return
+        loaded = current_saved[self._registration_data.xray_path]
+        self._set_hyper_parameters(loaded.hyperparameters)
+        self._transformation_widget.set_current_transformation(loaded.transformation)
 
     def _on_exit(self) -> None:
         self._hyper_parameters_widget.save_to_file(self._hyper_parameter_save_path)

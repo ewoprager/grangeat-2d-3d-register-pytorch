@@ -243,7 +243,7 @@ def evaluate_and_plot_landscape(*, cache_directory: str, ct_path: str, x_ray_pat
     except RuntimeError as e:
         if "CUDA out of memory" not in str(e):
             raise e
-        logger.warn("Not enough memory for run; skipping.")
+        logger.warning("Not enough memory for run; skipping.")
         return  # None
 
     task = LandscapeTask(registration_info, gt_transformation=transformation_ground_truth, landscape_size=30,

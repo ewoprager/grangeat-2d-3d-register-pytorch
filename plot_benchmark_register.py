@@ -35,7 +35,7 @@ def main(file: str | None):
     assert isinstance(pdata, plot_data.RegisterPlotData)
 
     if len(pdata.datasets) == 0:
-        logger.warn("No datasets in save file '{}'.".format(file))
+        logger.warning("No datasets in save file '{}'.".format(file))
         exit(0)
 
     fixed_numels_drr = np.array(

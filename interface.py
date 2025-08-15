@@ -30,9 +30,10 @@ from registration import objective_function
 
 
 class Interface:
-    def __init__(self, *, cache_directory: str, ct_path: str | None, xray_path: str | None, load_cached: bool,
-                 sinogram_types: list[Type[SinogramType]], sinogram_size: int | None, regenerate_drr: bool,
-                 save_to_cache: bool, new_drr_size: torch.Size | None, volume_downsample_factor: int, device):
+    def __init__(self, *, cache_directory: str, save_directory: str, ct_path: str | None, xray_path: str | None,
+                 load_cached: bool, sinogram_types: list[Type[SinogramType]], sinogram_size: int | None,
+                 regenerate_drr: bool, save_to_cache: bool, new_drr_size: torch.Size | None,
+                 volume_downsample_factor: int, device):
         self._registration_data = RegistrationData(cache_directory=cache_directory, ct_path=ct_path,
                                                    xray_path=xray_path, load_cached=load_cached,
                                                    sinogram_types=sinogram_types, sinogram_size=sinogram_size,
@@ -69,12 +70,16 @@ class Interface:
         self._viewer.window.add_dock_widget(self._view_widget, name="View options", area="left",
                                             menu=self._viewer.window.window_menu)
 
+        save_directory = pathlib.Path(save_directory)
+        if not save_directory.is_dir():
+            save_directory.mkdir(parents=True, exist_ok=True)
+
         initial_transformation = self.registration_data.transformation_gt
         if initial_transformation is None:
             initial_transformation = Transformation.random(device=self.registration_data.device)
         self._transformation_widget = TransformationWidget(initial_transformation=initial_transformation,
                                                            refresh_render_function=self.render_drr,
-                                                           save_path=pathlib.Path("cache/saved_transformations.pkl"),
+                                                           save_path=save_directory / "transformation_library.pkl",
                                                            ground_truth=self.registration_data.transformation_gt)
         self._viewer.window.add_dock_widget(self._transformation_widget, name="Transformations", area="right",
                                             menu=self._viewer.window.window_menu)
@@ -82,10 +87,10 @@ class Interface:
         objective_functions = {"drr": self.objective_function_drr, "grangeat": self.objective_function_grangeat}
 
         self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget,
+                                               registration_data=self.registration_data,
                                                objective_functions=objective_functions,
                                                fixed_image_crop_callback=self._re_crop_fixed_image,
-                                               hyper_parameter_save_path=pathlib.Path(
-                                                   "cache/saved_hyperparameters.pkl"),
+                                               save_directory=save_directory,
                                                fixed_image_size=self.registration_data.fixed_image.size())
         self._viewer.window.add_dock_widget(self._register_widget, name="Register", area="right",
                                             menu=self._viewer.window.window_menu, tabify=True)
@@ -255,9 +260,9 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
 
-    interface = Interface(cache_directory=cache_directory, ct_path=path, xray_path=xray_path, load_cached=load_cached,
-                          regenerate_drr=regenerate_drr, save_to_cache=save_to_cache, sinogram_size=sinogram_size,
-                          new_drr_size=new_drr_size, sinogram_types=[sinogram_type],
+    interface = Interface(cache_directory=cache_directory, save_directory="saved", ct_path=path, xray_path=xray_path,
+                          load_cached=load_cached, regenerate_drr=regenerate_drr, save_to_cache=save_to_cache,
+                          sinogram_size=sinogram_size, new_drr_size=new_drr_size, sinogram_types=[sinogram_type],
                           volume_downsample_factor=volume_downsample_factor, device=device)
 
     napari.run()
@@ -307,7 +312,7 @@ if __name__ == "__main__":
     if _args.sinogram_type == "healpix":
         _sinogram_type = SinogramHEALPix
     elif _args.sinogram_type != "classic":
-        logger.warn("Unrecognised sinogram type '{}'; defaulting to 'classic'.".format(_args.sinogram_type))
+        logger.warning("Unrecognised sinogram type '{}'; defaulting to 'classic'.".format(_args.sinogram_type))
 
     _ret = main(path=_args.ct_nrrd_path, cache_directory=_args.cache_directory, load_cached=not _args.no_load,
                 regenerate_drr=_args.regenerate_drr, save_to_cache=not _args.no_save, sinogram_size=_args.sinogram_size,
