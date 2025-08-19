@@ -35,12 +35,13 @@ class Interface:
                  regenerate_drr: bool, save_to_cache: bool, new_drr_size: torch.Size | None,
                  volume_downsample_factor: int, device):
         self._registration_data = RegistrationData(cache_directory=cache_directory, ct_path=ct_path,
-                                                   xray_path=xray_path, load_cached=load_cached,
-                                                   sinogram_types=sinogram_types, sinogram_size=sinogram_size,
-                                                   regenerate_drr=regenerate_drr, save_to_cache=save_to_cache,
-                                                   new_drr_size=new_drr_size,
+                                                   target=Target(xray_path=xray_path, flipped=False),
+                                                   load_cached=load_cached, sinogram_types=sinogram_types,
+                                                   sinogram_size=sinogram_size, regenerate_drr=regenerate_drr,
+                                                   save_to_cache=save_to_cache, new_drr_size=new_drr_size,
                                                    volume_downsample_factor=volume_downsample_factor,
-                                                   image_change_callback=self.render_moving_images, device=device)
+                                                   image_change_callback=self.render_moving_images,
+                                                   target_change_callback=self.render_fixed_images, device=device)
 
         self._viewer = napari.Viewer()
         self._viewer.bind_key("Alt", self._on_alt_down)
@@ -156,6 +157,10 @@ class Interface:
 
     def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
         return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
+
+    def render_fixed_images(self) -> None:
+        # ToDo
+        pass
 
     def render_drr(self) -> None:
         moved_drr = self.generate_drr(self._transformation_widget.get_current_transformation())

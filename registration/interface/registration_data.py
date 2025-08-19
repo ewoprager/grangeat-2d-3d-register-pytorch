@@ -8,7 +8,7 @@ import torch
 import pathlib
 
 from registration.lib.structs import Transformation, SceneGeometry, Sinogram2dGrid, Sinogram2dRange, LinearRange
-from registration.interface.lib.structs import HyperParameters
+from registration.interface.lib.structs import HyperParameters, Target
 from registration.lib.sinogram import Sinogram, SinogramType
 from registration import data, drr, pre_computed
 from registration.lib import grangeat
@@ -33,7 +33,7 @@ class RegistrationData:
         """
         @brief Struct of data that is dependent on the CT path and fixed image used
         """
-        from_xray_path: str | None  # The path of the X-ray file this data was generated from; None indicates a DRR instead
+        from_target: Target  # The target this data was generated from
         scene_geometry: SceneGeometry
         image_2d_full: torch.Tensor
         fixed_image_spacing: torch.Tensor
@@ -43,17 +43,18 @@ class RegistrationData:
         """
         @brief Struct of data that is dependent on the CT path, fixed image and hyperparameters used
         """
-        at_parameters: HyperParameters  # The hyperparameters at which this data was generated
+        from_parameters: HyperParameters  # The hyperparameters at which this data was generated
         fixed_image: torch.Tensor
         fixed_image_offset: torch.Tensor
         translation_offset: torch.Tensor
         sinogram2d: torch.Tensor
         sinogram2d_grid: Sinogram2dGrid
 
-    def __init__(self, *, cache_directory: str, ct_path: str | None, xray_path: str | None, load_cached: bool,
+    def __init__(self, *, cache_directory: str, ct_path: str | None, target: Target, load_cached: bool,
                  sinogram_types: list[Type[SinogramType]], sinogram_size: int | None, regenerate_drr: bool,
                  save_to_cache: bool, new_drr_size: torch.Size | None, volume_downsample_factor: int,
-                 image_change_callback: Callable[[], None] | None, device):
+                 image_change_callback: Callable[[], None] | None, target_change_callback: Callable[[], None] | None,
+                 device):
         self._cache_directory = cache_directory
         self._load_cached = load_cached
         self._sinogram_types = sinogram_types
@@ -65,9 +66,10 @@ class RegistrationData:
         self._device = device
 
         self._image_change_callback = image_change_callback
+        self._target_change_callback = target_change_callback
 
         self._ct_path = ct_path
-        self._xray_path = xray_path
+        self._target = target
 
         self.suppress_callbacks = True
         self._refresh_ct_path_dependent()
@@ -109,12 +111,12 @@ class RegistrationData:
         return self._ct_path_dependent.ct_sinograms
 
     @property
-    def xray_path(self) -> str:
-        return self._xray_path
+    def target(self) -> Target:
+        return self._target
 
-    @xray_path.setter
-    def xray_path(self, new_value: str) -> None:
-        self._xray_path = new_value
+    @target.setter
+    def target(self, new_value: Target) -> None:
+        self._target = new_value
 
     @property
     def scene_geometry(self) -> SceneGeometry:
@@ -221,14 +223,14 @@ class RegistrationData:
         :return: Whether a refresh was performed
         """
         if not self._check_ct_path_dependent():
-            if self._target_dependent.from_xray_path != self.xray_path:
+            if self._target_dependent.from_target != self.target:
                 self._refresh_target_dependent()
                 return True
         return False
 
     def _refresh_target_dependent(self) -> None:
         transformation_ground_truth = None
-        if self._xray_path is None:
+        if self.target.xray_path is None:
             # Load / generate a DRR through the volume
             drr_spec = None
             if not self._regenerate_drr and self.ct_path is not None:
@@ -243,18 +245,24 @@ class RegistrationData:
             del drr_spec
         else:
             # Load the given X-ray
-            image_2d_full, fixed_image_spacing, scene_geometry = data.read_dicom(self._xray_path,
+            image_2d_full, fixed_image_spacing, scene_geometry = data.read_dicom(self.target.xray_path,
                                                                                  downsample_to_ct_spacing=self.ct_spacing.mean().item())
-            # Flip horizontally
-            image_2d_full = (image_2d_full#.flip(dims=(1,))
-                             .to(device=self.device))
+            image_2d_full = image_2d_full.to(device=self.device)
 
-        self._target_dependent = RegistrationData.TargetDependent(from_xray_path=self._xray_path,
+        if self.target.flipped:
+            # Flip horizontally
+            image_2d_full = image_2d_full.flip(dims=(1,))
+
+        self._target_dependent = RegistrationData.TargetDependent(from_target=self.target,
                                                                   scene_geometry=scene_geometry,
                                                                   image_2d_full=image_2d_full,
                                                                   fixed_image_spacing=fixed_image_spacing,
                                                                   transformation_gt=transformation_ground_truth)
         self.hyperparameters = HyperParameters.zero(self.image_2d_full.size())
+
+        if not self.suppress_callbacks and self._target_change_callback is not None:
+            self._target_change_callback()
+
         self._refresh_hyperparameter_dependent()
 
     def _check_hyperparameter_dependent(self) -> bool:
@@ -262,7 +270,7 @@ class RegistrationData:
         :return: Whether a refresh was performed
         """
         if not self._check_target_dependent():
-            if not self._hyperparameter_dependent.at_parameters.is_close(self.hyperparameters):
+            if not self._hyperparameter_dependent.from_parameters.is_close(self.hyperparameters):
                 self._refresh_hyperparameter_dependent()
                 return True
         return False
@@ -292,7 +300,7 @@ class RegistrationData:
 
         sinogram2d_grid = sinogram2d_grid.shifted(-fixed_image_offset)
 
-        self._hyperparameter_dependent = RegistrationData.HyperparameterDependent(at_parameters=self.hyperparameters,
+        self._hyperparameter_dependent = RegistrationData.HyperparameterDependent(from_parameters=self.hyperparameters,
                                                                                   fixed_image=fixed_image,
                                                                                   fixed_image_offset=fixed_image_offset,
                                                                                   translation_offset=translation_offset,

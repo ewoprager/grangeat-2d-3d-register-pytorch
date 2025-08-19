@@ -1,5 +1,6 @@
 import copy
 import time
+import math
 import logging
 from datetime import datetime
 from typing import Callable, Any, NamedTuple
@@ -22,7 +23,7 @@ import pathlib
 from registration.lib.structs import Transformation, GrowingTensor
 from registration.interface.transformations import TransformationWidget
 from registration.interface.lib.structs import HyperParameters, WidgetSelectData, WidgetManageSaved, Cropping, \
-    SavedXRayParams
+    SavedXRayParams, Target
 from registration.lib import optimisation
 from registration.interface.registration_data import RegistrationData
 
@@ -300,13 +301,17 @@ class RegisterWidget(widgets.Container):
                                                           set_callback=self._set_hyper_parameters)
         self.append(self._hyper_parameters_widget)
 
+        self._flip_target_button = widgets.Button(label="Flip")
+        self._flip_target_button.changed.connect(self._on_flip_target_button)
+
         self._save_params_for_xray_button = widgets.PushButton(label="Save params for X-ray")
         self._save_params_for_xray_button.changed.connect(self._on_save_params_for_xray_button)
-        self.append(self._save_params_for_xray_button)
 
         self._load_params_for_xray_button = widgets.PushButton(label="Load params for X-ray")
         self._load_params_for_xray_button.changed.connect(self._on_load_params_for_xray_button)
-        self.append(self._load_params_for_xray_button)
+        self.append(widgets.Container(
+            widgets=[self._flip_target_button, self._save_params_for_xray_button, self._load_params_for_xray_button],
+            layout="horizontal"))
 
         ##
         ## Objective function
@@ -461,13 +466,32 @@ class RegisterWidget(widgets.Container):
             source_offset=torch.zeros(2))
 
     def _set_hyper_parameters(self, new_value: HyperParameters) -> None:
+        if new_value.cropping.right > self._right_crop_slider.max:
+            self._right_crop_slider.max = new_value.cropping.right
+        if new_value.cropping.right < self._right_crop_slider.min:
+            self._right_crop_slider.min = new_value.cropping.right
         self._right_crop_slider.set_value(new_value.cropping.right)
+
+        if new_value.cropping.top > self._top_crop_slider.max:
+            self._top_crop_slider.max = new_value.cropping.top
+        if new_value.cropping.top < self._top_crop_slider.min:
+            self._top_crop_slider.min = new_value.cropping.top
         self._top_crop_slider.set_value(new_value.cropping.top)
+
+        if new_value.cropping.left > self._left_crop_slider.max:
+            self._left_crop_slider.max = new_value.cropping.left
+        if new_value.cropping.left < self._left_crop_slider.min:
+            self._left_crop_slider.min = new_value.cropping.left
         self._left_crop_slider.set_value(new_value.cropping.left)
+
+        if new_value.cropping.bottom > self._bottom_crop_slider.max:
+            self._bottom_crop_slider.max = new_value.cropping.bottom
+        if new_value.cropping.bottom < self._bottom_crop_slider.min:
+            self._bottom_crop_slider.min = new_value.cropping.bottom
         self._bottom_crop_slider.set_value(new_value.cropping.bottom)
 
     def _on_save_params_for_xray_button(self) -> None:
-        if self._registration_data.xray_path is None:
+        if self._registration_data.target.xray_path is None:
             logger.warning("No X-ray path defined, cannot save associated parameters.")
             return
         current_saved = dict({})
@@ -481,14 +505,15 @@ class RegisterWidget(widgets.Container):
                 self._xray_params_save_path.rename(new_name)
                 current_saved = dict({})
         to_save = SavedXRayParams(transformation=self._transformation_widget.get_current_transformation(),
-                                  hyperparameters=self._current_hyper_parameters())
-        current_saved[self._registration_data.xray_path] = to_save
+                                  hyperparameters=self._current_hyper_parameters(),
+                                  flipped=self._registration_data.target.flipped)
+        current_saved[self._registration_data.target.xray_path] = to_save
         torch.save(current_saved, self._xray_params_save_path)
         logger.info("Saved parameters:\n{}\nfor X-ray '{}'."
-                    "".format(to_save, str(self._registration_data.xray_path)))
+                    "".format(to_save, str(self._registration_data.target.xray_path)))
 
     def _on_load_params_for_xray_button(self) -> None:
-        if self._registration_data.xray_path is None:
+        if self._registration_data.target.xray_path is None:
             logger.warning("No X-ray path defined, cannot load associated parameters.")
             return
         if not self._xray_params_save_path.is_file():
@@ -500,13 +525,19 @@ class RegisterWidget(widgets.Container):
             logger.warning("X-ray parameter save file '{}' has invalid type '{}'; cannot load parameters."
                            "".format(str(self._xray_params_save_path), type(current_saved).__name__))
             return
-        if self._registration_data.xray_path not in current_saved:
+        if self._registration_data.target.xray_path not in current_saved:
             logger.warning("No parameters saved for current X-ray in parameter save file '{}'; cannot load parameters."
                            "".format(str(self._xray_params_save_path)))
             return
-        loaded = current_saved[self._registration_data.xray_path]
+        loaded = current_saved[self._registration_data.target.xray_path]
         self._set_hyper_parameters(loaded.hyperparameters)
         self._transformation_widget.set_current_transformation(loaded.transformation)
+        self._registration_data.target = Target(xray_path=self._registration_data.target.xray_path,
+                                                flipped=loaded.flipped)
+
+    def _on_flip_target_button(self) -> None:
+        self._registration_data.target = Target(xray_path=self._registration_data.target.xray_path,
+                                                flipped=not self._registration_data.target.flipped)
 
     def _on_exit(self) -> None:
         self._hyper_parameters_widget.save_to_file(self._hyper_parameter_save_path)

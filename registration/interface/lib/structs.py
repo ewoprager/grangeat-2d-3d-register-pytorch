@@ -12,6 +12,11 @@ import pathlib
 from magicgui import magicgui, widgets
 
 
+class Target(NamedTuple):
+    xray_path: str | None  # None indicates DRR
+    flipped: bool = False  # horizontal flipping of the image
+
+
 class Cropping(NamedTuple):
     right: int
     top: int
@@ -98,7 +103,7 @@ class WidgetManageSaved(widgets.Container):
         self._del_button.changed.connect(self._on_del)
 
         self.append(widgets.Container(widgets=[self._save_button, self._set_to_saved_button, self._del_button],
-            layout="horizontal"))
+                                      layout="horizontal"))
 
         if load_from_file is not None:
             if pathlib.Path(load_from_file).is_file():
@@ -116,7 +121,7 @@ class WidgetManageSaved(widgets.Container):
             else:
                 logger.warning("Save file '{}' doesn't exist.".format(str(load_from_file)))
         self._select_saved_widget = WidgetSelectData(widget_type=widgets.Select, initial_choices=initial_choices,
-            label="Saved:")
+                                                     label="Saved:")
         self.append(self._select_saved_widget.widget)
 
         self._rename_input = widgets.LineEdit(value=datetime.now().strftime("%Y-%m-%d"))
@@ -124,7 +129,7 @@ class WidgetManageSaved(widgets.Container):
         self._rename_widget.changed.connect(self._on_rename)
         self.append(
             widgets.Container(widgets=[self._rename_input, self._rename_widget], labels=False, layout="horizontal",
-                label="Rename to"))
+                              label="Rename to"))
 
     def add_value(self, name: str, data: Any) -> None:
         while self._select_saved_widget.name_exists(name):
@@ -181,3 +186,4 @@ class ViewParams(NamedTuple):
 class SavedXRayParams(NamedTuple):
     transformation: Transformation
     hyperparameters: HyperParameters
+    flipped: bool
