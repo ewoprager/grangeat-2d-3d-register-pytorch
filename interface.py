@@ -159,8 +159,10 @@ class Interface:
         return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
 
     def render_fixed_images(self) -> None:
-        # ToDo
-        pass
+        self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
+        self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
+        self._sinogram2d_layer.translate = (self.registration_data.fixed_image.size()[0] + 24, 0)
+        self.render_moving_images()
 
     def render_drr(self) -> None:
         moved_drr = self.generate_drr(self._transformation_widget.get_current_transformation())
