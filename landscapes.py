@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 import logs_setup
 from registration.interface.registration_data import RegistrationData
-from registration.interface.lib.structs import Target, SavedXRayParams
+from registration.interface.lib.structs import Target, SavedXRayParams, HyperParameters, Cropping
 from registration.lib import sinogram
 from registration.lib import geometry
 from registration.lib.structs import Transformation, SceneGeometry
@@ -34,8 +34,8 @@ class LandscapeTask:
         self._landscape_range = landscape_range
 
         self._objective_functions = {"drr": self.objective_function_drr,
-                                     "grangeat_classic": self.objective_function_grangeat_classic,
-                                     # "grangeat_healpix": self.objective_function_grangeat_healpix
+                                     "gr_classic": self.objective_function_grangeat_classic,
+                                     # "gr_healpix": self.objective_function_grangeat_healpix
                                      }
 
     @property
@@ -83,6 +83,14 @@ class LandscapeTask:
     #     return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation, 1))
 
     def run(self, *, objective_function_name: str, show: bool = False) -> None:
+        if objective_function_name != "drr":
+            old_hyperparameters = self.registration_data.hyperparameters
+            zero_crop = Cropping.zero(self.registration_data.image_2d_full.size())
+            self.registration_data.hyperparameters = HyperParameters(
+                cropping=Cropping(right=zero_crop.right, top=self.registration_data.hyperparameters.cropping.top,
+                                  left=zero_crop.left, bottom=self.registration_data.hyperparameters.cropping.bottom),
+                source_offset=self.registration_data.hyperparameters.source_offset)
+
         if show:
             plt.figure()
             plt.imshow(self.registration_data.fixed_image.cpu().numpy())
@@ -133,9 +141,13 @@ class LandscapeTask:
             values1, values2, height = landscape2(lp.i, lp.j)
             torch.save(LandscapePlotData(xray_path=self.registration_data.target.xray_path, param1=lp.i, param2=lp.j,
                                          label1=lp.xlabel, label2=lp.ylabel, values1=values1, values2=values2,
-                                         height=height),
-                       SAVE_DIRECTORY / "{}_{}.pkl".format(pathlib.Path(self.registration_data.target.xray_path).stem,
-                                                           lp.fname))
+                                         height=height), SAVE_DIRECTORY / "{}_{}_{}.pkl".format(pathlib.Path(
+                self.registration_data.ct_path if self.registration_data.target.xray_path is None else self.registration_data.target.xray_path).stem,
+                                                                                                objective_function_name,
+                                                                                                lp.fname))
+
+        if objective_function_name != "drr":
+            self.registration_data.hyperparameters = old_hyperparameters
 
 
 CT_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001",
@@ -158,9 +170,7 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, xray_path
     flipped: bool = False
     hyperparameters = None
 
-    if xray_path is None:
-        transformation_ground_truth = Transformation.random()
-    else:
+    if xray_path is not None:
         if not XRAY_PARAMS_SAVE_PATH.is_file():
             logger.error("No X-ray parameter save file '{}' found; cannot load parameters."
                          "".format(str(XRAY_PARAMS_SAVE_PATH)))
@@ -194,6 +204,9 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, xray_path
         logger.warning("Not enough memory for run; skipping.")
         return  # None
 
+    if xray_path is None:
+        transformation_ground_truth = registration_data.transformation_gt
+
     if hyperparameters is not None:
         registration_data.hyperparameters = hyperparameters
 
@@ -201,6 +214,7 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, xray_path
                          landscape_range=torch.Tensor([1.0, 1.0, 1.0, 30.0, 30.0, 300.0]))
 
     task.run(objective_function_name="drr", show=show)
+    task.run(objective_function_name="gr_classic", show=show)
 
 
 def main(cache_directory: str, drr_as_target: bool, show: bool = False):

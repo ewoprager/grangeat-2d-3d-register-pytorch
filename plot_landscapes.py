@@ -9,7 +9,6 @@ from matplotlib.transforms import Bbox
 import pathlib
 
 import logs_setup
-from landscapes import SAVE_DIRECTORY
 from registration.plot_data import LandscapePlotData
 
 
@@ -51,8 +50,7 @@ def main():
         axes.set_zlabel("$-\mathrm{ZNCC}$")
         plt.tight_layout()
         plt.savefig(SAVE_DIRECTORY / "landscape_{}.png".format(file.stem))
-
-        plt.show()
+        plt.close()
 
 
 if __name__ == "__main__":
@@ -63,8 +61,8 @@ if __name__ == "__main__":
     plt.rcParams["text.usetex"] = True
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["scatter.marker"] = 'x'
-    plt.rcParams["font.size"] = 15  # figures are includes in latex at half size, so 18 is desired size. matplotlib
-    # scales up by 1.2 (God only knows why), so setting to 15
+    plt.rcParams["font.size"] = 22  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib
+    # scales up by 1.2 (God only knows why). 36 is tool big, however, so going a bit smaller than 30
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
