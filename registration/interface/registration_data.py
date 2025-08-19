@@ -1,6 +1,7 @@
 import logging
 from typing import Type, NamedTuple, Callable
 import math
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +54,8 @@ class RegistrationData:
     def __init__(self, *, cache_directory: str, ct_path: str | None, target: Target, load_cached: bool,
                  sinogram_types: list[Type[SinogramType]], sinogram_size: int | None, regenerate_drr: bool,
                  save_to_cache: bool, new_drr_size: torch.Size | None, volume_downsample_factor: int,
-                 image_change_callback: Callable[[], None] | None, target_change_callback: Callable[[], None] | None,
-                 device):
+                 hyperparameter_change_callback: Callable[[], None] | None,
+                 target_change_callback: Callable[[], None] | None, device):
         self._cache_directory = cache_directory
         self._load_cached = load_cached
         self._sinogram_types = sinogram_types
@@ -65,15 +66,15 @@ class RegistrationData:
         self._volume_downsample_factor = volume_downsample_factor
         self._device = device
 
-        self._image_change_callback = image_change_callback
+        self._hyperparameter_change_callback = hyperparameter_change_callback
         self._target_change_callback = target_change_callback
 
         self._ct_path = ct_path
         self._target = target
 
-        self.suppress_callbacks = True
-        self._refresh_ct_path_dependent()
-        self.suppress_callbacks = False
+        self._suppress_callbacks = True
+        self.refresh_ct_path_dependent()
+        self._suppress_callbacks = False
 
     @property
     def device(self):
@@ -171,16 +172,7 @@ class RegistrationData:
         self._check_hyperparameter_dependent()
         return self._hyperparameter_dependent.sinogram2d_grid
 
-    def _check_ct_path_dependent(self) -> bool:
-        """
-        :return: Whether a refresh was performed
-        """
-        if self._ct_path_dependent.from_ct_path != self.ct_path:
-            self._refresh_ct_path_dependent()
-            return True
-        return False
-
-    def _refresh_ct_path_dependent(self) -> None:
+    def refresh_ct_path_dependent(self) -> None:
         ct_volume, ct_spacing = data.load_volume(pathlib.Path(self.ct_path),
                                                  downsample_factor=self._volume_downsample_factor)
         ct_volume = ct_volume.to(device=self.device, dtype=torch.float32)
@@ -212,23 +204,13 @@ class RegistrationData:
             if s is None:
                 raise RuntimeError("Failed to create sinogram; not enough memory?")
 
-        self._ct_path_dependent = RegistrationData.CTPathDependent(from_ct_path=self.ct_path, ct_volume=ct_volume,
-                                                                   ct_spacing=ct_spacing,
+        self._ct_path_dependent = RegistrationData.CTPathDependent(from_ct_path=copy.deepcopy(self.ct_path),
+                                                                   ct_volume=ct_volume, ct_spacing=ct_spacing,
                                                                    sinogram_size=this_sinogram_size,
                                                                    ct_sinograms=sinogram3ds)
-        self._refresh_target_dependent()
+        self.refresh_target_dependent()
 
-    def _check_target_dependent(self) -> bool:
-        """
-        :return: Whether a refresh was performed
-        """
-        if not self._check_ct_path_dependent():
-            if self._target_dependent.from_target != self.target:
-                self._refresh_target_dependent()
-                return True
-        return False
-
-    def _refresh_target_dependent(self) -> None:
+    def refresh_target_dependent(self) -> None:
         transformation_ground_truth = None
         if self.target.xray_path is None:
             # Load / generate a DRR through the volume
@@ -250,10 +232,10 @@ class RegistrationData:
             image_2d_full = image_2d_full.to(device=self.device)
 
         if self.target.flipped:
-            # Flip horizontally
+            logger.info("Flipping target image horizontally.")
             image_2d_full = image_2d_full.flip(dims=(1,))
 
-        self._target_dependent = RegistrationData.TargetDependent(from_target=self.target,
+        self._target_dependent = RegistrationData.TargetDependent(from_target=copy.deepcopy(self.target),
                                                                   scene_geometry=scene_geometry,
                                                                   image_2d_full=image_2d_full,
                                                                   fixed_image_spacing=fixed_image_spacing,
@@ -263,19 +245,9 @@ class RegistrationData:
         if not self.suppress_callbacks and self._target_change_callback is not None:
             self._target_change_callback()
 
-        self._refresh_hyperparameter_dependent()
+        self.refresh_hyperparameter_dependent()
 
-    def _check_hyperparameter_dependent(self) -> bool:
-        """
-        :return: Whether a refresh was performed
-        """
-        if not self._check_target_dependent():
-            if not self._hyperparameter_dependent.from_parameters.is_close(self.hyperparameters):
-                self._refresh_hyperparameter_dependent()
-                return True
-        return False
-
-    def _refresh_hyperparameter_dependent(self) -> None:
+    def refresh_hyperparameter_dependent(self) -> None:
         # Cropping for the fixed image
         fixed_image = self.hyperparameters.cropping.apply(self.image_2d_full)
 
@@ -300,11 +272,45 @@ class RegistrationData:
 
         sinogram2d_grid = sinogram2d_grid.shifted(-fixed_image_offset)
 
-        self._hyperparameter_dependent = RegistrationData.HyperparameterDependent(from_parameters=self.hyperparameters,
-                                                                                  fixed_image=fixed_image,
-                                                                                  fixed_image_offset=fixed_image_offset,
-                                                                                  translation_offset=translation_offset,
-                                                                                  sinogram2d=sinogram2d,
-                                                                                  sinogram2d_grid=sinogram2d_grid)
-        if not self.suppress_callbacks and self._image_change_callback is not None:
-            self._image_change_callback()
+        self._hyperparameter_dependent = RegistrationData.HyperparameterDependent(
+            from_parameters=copy.deepcopy(self.hyperparameters), fixed_image=fixed_image,
+            fixed_image_offset=fixed_image_offset, translation_offset=translation_offset, sinogram2d=sinogram2d,
+            sinogram2d_grid=sinogram2d_grid)
+        if not self.suppress_callbacks and self._hyperparameter_change_callback is not None:
+            self._hyperparameter_change_callback()
+
+    def _check_ct_path_dependent(self) -> bool:
+        """
+        :return: Whether a refresh was performed
+        """
+        if self._ct_path_dependent.from_ct_path == self.ct_path:
+            return False
+        else:
+            self.refresh_ct_path_dependent()
+            return True
+
+    def _check_hyperparameter_dependent(self) -> bool:
+        """
+        :return: Whether a refresh was performed
+        """
+        if self._check_target_dependent():
+            return True
+        else:
+            if self._hyperparameter_dependent.from_parameters.is_close(self.hyperparameters):
+                return False
+            else:
+                self.refresh_hyperparameter_dependent()
+                return True
+
+    def _check_target_dependent(self) -> bool:
+        """
+        :return: Whether a refresh was performed
+        """
+        if self._check_ct_path_dependent():
+            return True
+        else:
+            if self._target_dependent.from_target == self.target:
+                return False
+            else:
+                self.refresh_target_dependent()
+                return True

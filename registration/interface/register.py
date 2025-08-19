@@ -251,8 +251,7 @@ class LocalSearchWidget(widgets.Container, OpAlgoWidget):
 class RegisterWidget(widgets.Container):
     def __init__(self, *, transformation_widget: TransformationWidget, registration_data: RegistrationData,
                  objective_functions: dict[str, Callable[[Transformation], torch.Tensor]],
-                 fixed_image_crop_callback: Callable[[Cropping], None], save_directory: str | pathlib.Path,
-                 fixed_image_size: torch.Size):
+                 save_directory: str | pathlib.Path, fixed_image_size: torch.Size):
         super().__init__(labels=False)
         self._transformation_widget = transformation_widget
         self._registration_data = registration_data
@@ -262,7 +261,7 @@ class RegisterWidget(widgets.Container):
         self._xray_params_save_path = save_directory / "xray_params_library.pkl"
 
         # Optimisation worker thread and plotting
-        self._evals_per_render: int = 100
+        self._evals_per_render: int = 2000
         self._iteration_callback_count: int = 0
         self._best: float | None = None
         self._last_rendered_iteration: int = 0
@@ -275,7 +274,6 @@ class RegisterWidget(widgets.Container):
         ##
         ## Cropping sliders
         ##
-        self._fixed_image_crop_callback = fixed_image_crop_callback
         self._ignore_crop_sliders: bool = False
         width = fixed_image_size[1]
         height = fixed_image_size[0]
@@ -331,7 +329,7 @@ class RegisterWidget(widgets.Container):
         ##
         ## Optimisation algorithm and parameters
         ##
-        self._op_algo_widgets = {ParticleSwarm.algorithm_name(): PSOWidget(particle_count=500, iteration_count=5),
+        self._op_algo_widgets = {ParticleSwarm.algorithm_name(): PSOWidget(particle_count=2000, iteration_count=10),
                                  LocalSearch.algorithm_name(): LocalSearchWidget(no_improvement_threshold=10,
                                                                                  max_reductions=4)}
         self._algorithm_widget = widgets.ComboBox(choices=[name for name in self._op_algo_widgets])
@@ -454,9 +452,11 @@ class RegisterWidget(widgets.Container):
         self._top_crop_slider.max = self._bottom_crop_slider.get_value() - 1
         self._right_crop_slider.min = self._left_crop_slider.get_value() + 1
         self._left_crop_slider.max = self._right_crop_slider.get_value() - 1
-        self._fixed_image_crop_callback(
-            Cropping(top=self._top_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value(),
-                     left=self._left_crop_slider.get_value(), right=self._right_crop_slider.get_value()))
+        self._registration_data.hyperparameters = self._current_hyper_parameters()
+        self._registration_data.refresh_hyperparameter_dependent()
+        # self._fixed_image_crop_callback(
+        #     Cropping(top=self._top_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value(),
+        #              left=self._left_crop_slider.get_value(), right=self._right_crop_slider.get_value()))
         self._ignore_crop_sliders = False
 
     def _current_hyper_parameters(self) -> HyperParameters:
@@ -536,8 +536,10 @@ class RegisterWidget(widgets.Container):
                                                 flipped=loaded.flipped)
 
     def _on_flip_target_button(self) -> None:
+        logger.info("Setting target flip to {}".format(str(not self._registration_data.target.flipped)))
         self._registration_data.target = Target(xray_path=self._registration_data.target.xray_path,
                                                 flipped=not self._registration_data.target.flipped)
+        self._registration_data.refresh_target_dependent()
 
     def _on_exit(self) -> None:
         self._hyper_parameters_widget.save_to_file(self._hyper_parameter_save_path)

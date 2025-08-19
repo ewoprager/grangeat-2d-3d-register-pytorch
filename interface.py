@@ -40,8 +40,8 @@ class Interface:
                                                    sinogram_size=sinogram_size, regenerate_drr=regenerate_drr,
                                                    save_to_cache=save_to_cache, new_drr_size=new_drr_size,
                                                    volume_downsample_factor=volume_downsample_factor,
-                                                   image_change_callback=self.render_moving_images,
-                                                   target_change_callback=self.render_fixed_images, device=device)
+                                                   hyperparameter_change_callback=self.render_hyperparameter_dependent,
+                                                   target_change_callback=self.render_target_dependent, device=device)
 
         self._viewer = napari.Viewer()
         self._viewer.bind_key("Alt", self._on_alt_down)
@@ -89,9 +89,7 @@ class Interface:
 
         self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget,
                                                registration_data=self.registration_data,
-                                               objective_functions=objective_functions,
-                                               fixed_image_crop_callback=self._re_crop_fixed_image,
-                                               save_directory=save_directory,
+                                               objective_functions=objective_functions, save_directory=save_directory,
                                                fixed_image_size=self.registration_data.fixed_image.size())
         self._viewer.window.add_dock_widget(self._register_widget, name="Register", area="right",
                                             menu=self._viewer.window.window_menu, tabify=True)
@@ -106,7 +104,7 @@ class Interface:
         self._viewer.window.add_dock_widget(self._plot_widget, name="Landscape plotting", area="right",
                                             menu=self._viewer.window.window_menu, tabify=True)
 
-        self.render_drr()
+        self.render_hyperparameter_dependent()
         self.render_moving_sinogram()
 
     @property
@@ -158,11 +156,20 @@ class Interface:
     def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
         return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
 
-    def render_fixed_images(self) -> None:
+    def render_target_dependent(self) -> None:
+        self._sinogram2d_layer.translate = (self.registration_data.image_2d_full.size()[0] + 24, 0)
+        self._moving_sinogram_layer.translate = (self.registration_data.image_2d_full.size()[0] + 24, 0)
+        self.render_hyperparameter_dependent()
+
+    def render_hyperparameter_dependent(self) -> None:
         self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
         self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
-        self._sinogram2d_layer.translate = (self.registration_data.fixed_image.size()[0] + 24, 0)
-        self.render_moving_images()
+        translate = (self._registration_data.hyperparameters.cropping.top,
+                     self._registration_data.hyperparameters.cropping.left)
+        self._fixed_image_layer.translate = translate
+        self._moving_image_layer.translate = translate
+        self.render_drr()
+        self.render_moving_sinogram()
 
     def render_drr(self) -> None:
         moved_drr = self.generate_drr(self._transformation_widget.get_current_transformation())
@@ -171,19 +178,6 @@ class Interface:
     def render_moving_sinogram(self) -> None:
         resampled_sinogram = self.resample_sinogram3d(self._transformation_widget.get_current_transformation())
         self._moving_sinogram_layer.data = resampled_sinogram.cpu().numpy()
-
-    def render_moving_images(self) -> None:
-        self.render_drr()
-
-    def _re_crop_fixed_image(self, cropping: Cropping) -> None:
-        self.registration_data.hyperparameters = HyperParameters(cropping=cropping,
-                                                                 source_offset=self.registration_data.hyperparameters.source_offset)
-        self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
-        self._fixed_image_layer.translate = (cropping.top, cropping.left)
-        self._moving_image_layer.translate = (cropping.top, cropping.left)
-        self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
-        self.render_drr()
-        self.render_moving_sinogram()
 
     # Event callbacks:
     def _on_alt_down(self, viewer):
