@@ -1,5 +1,7 @@
 from typing import NamedTuple, Type
 
+import torch
+
 from registration.lib import sinogram
 from registration.lib.structs import Transformation
 
@@ -30,3 +32,14 @@ class RegisterPlotData(NamedTuple):
     iteration_count: int
     particle_count: int
     datasets: list[Dataset]
+
+
+class LandscapePlotData(NamedTuple):
+    xray_path: str
+    param1: int
+    param2: int
+    label1: str
+    label2: str
+    values1: torch.Tensor
+    values2: torch.Tensor
+    height: torch.Tensor

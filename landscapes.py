@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import NamedTuple
+from typing import NamedTuple, Tuple
 import copy
 
 import pathlib
@@ -19,8 +19,9 @@ from registration.lib import geometry
 from registration.lib.structs import Transformation, SceneGeometry
 from registration import objective_function
 from notification import pushover
+from registration.plot_data import LandscapePlotData
 
-SAVE_DIRECTORY = "figures/landscapes"
+SAVE_DIRECTORY = pathlib.Path("data/temp/landscapes")
 
 
 class LandscapeTask:
@@ -81,7 +82,7 @@ class LandscapeTask:
     # def objective_function_grangeat_healpix(self, transformation: Transformation) -> torch.Tensor:
     #     return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation, 1))
 
-    def run(self, *, objective_function_name: str, show: bool = False):
+    def run(self, *, objective_function_name: str, show: bool = False) -> None:
         if show:
             plt.figure()
             plt.imshow(self.registration_data.fixed_image.cpu().numpy())
@@ -95,7 +96,7 @@ class LandscapeTask:
 
         gt_vectorised = self._gt_transformation.vectorised()
 
-        def landscape2(axes, param1: int, param2: int):
+        def landscape2(param1: int, param2: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
             param1_grid = torch.linspace(gt_vectorised[param1] - 0.5 * self._landscape_range[param1],
                                          gt_vectorised[param1] + 0.5 * self._landscape_range[param1],
                                          self._landscape_size)
@@ -114,9 +115,7 @@ class LandscapeTask:
                 for i in range(self._landscape_size):
                     landscape[j, i] = obj_func(get_transformation(i, j))
 
-            param2_grid, param1_grid = torch.meshgrid(param2_grid, param1_grid)
-            axes.plot_surface(param1_grid.clone().detach().cpu().numpy(), param2_grid.clone().detach().cpu().numpy(),
-                              landscape.clone().detach().cpu().numpy(), cmap=cm.get_cmap("viridis"))
+            return param1_grid, param2_grid, landscape
 
         class LandscapePlot(NamedTuple):
             i: int
@@ -125,21 +124,18 @@ class LandscapeTask:
             xlabel: str
             ylabel: str
 
-        landscapes: list[LandscapePlot] = [LandscapePlot(0, 1, "rxry", "rx", "ry"),
-                                           LandscapePlot(1, 2, "ryrz", "ry", "rz"),
-                                           LandscapePlot(3, 4, "txty", "tx", "ty"),
-                                           LandscapePlot(4, 5, "tytz", "ty", "tz")]
+        landscapes: list[LandscapePlot] = [LandscapePlot(0, 1, "rxry", "$r_x$", "$r_y$"),
+                                           LandscapePlot(1, 2, "ryrz", "$r_y$", "$r_z$"),
+                                           LandscapePlot(3, 4, "txty", "$t_x$", "$t_y$"),
+                                           LandscapePlot(4, 5, "tytz", "$t_y$", "$t_z$")]
 
         for lp in landscapes:
-            fig, axes = plt.subplots(subplot_kw={"projection": "3d"})
-            landscape2(axes, lp.i, lp.j)
-            axes.set_xlabel(lp.xlabel)
-            axes.set_ylabel(lp.ylabel)
-            plt.savefig(SAVE_DIRECTORY + "/landscape_{}_{}.png".format(
-                pathlib.Path(self.registration_data.target.xray_path).stem, lp.fname))
-
-        if show:
-            plt.show()
+            values1, values2, height = landscape2(lp.i, lp.j)
+            torch.save(LandscapePlotData(xray_path=self.registration_data.target.xray_path, param1=lp.i, param2=lp.j,
+                                         label1=lp.xlabel, label2=lp.ylabel, values1=values1, values2=values2,
+                                         height=height),
+                       SAVE_DIRECTORY / "{}_{}.pkl".format(pathlib.Path(self.registration_data.target.xray_path).stem,
+                                                           lp.fname))
 
 
 CT_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/cts_collected/ct001",
@@ -157,7 +153,7 @@ XRAY_DICOM_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_co
 XRAY_PARAMS_SAVE_PATH = pathlib.Path("saved") / "xray_params_library.pkl"
 
 
-def evaluate_and_plot_landscape(*, cache_directory: str, ct_path: str, xray_path: str | None, downsample_factor: int,
+def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, xray_path: str | None, downsample_factor: int,
                                 show: bool = False):
     flipped: bool = False
     hyperparameters = None
@@ -212,7 +208,7 @@ def main(cache_directory: str, drr_as_target: bool, show: bool = False):
     if not drr_as_target:
         assert len(XRAY_DICOM_PATHS) == count
     for i in range(count):
-        evaluate_and_plot_landscape(cache_directory=cache_directory, ct_path=CT_PATHS[i],
+        evaluate_and_save_landscape(cache_directory=cache_directory, ct_path=CT_PATHS[i],
                                     xray_path=None if drr_as_target else XRAY_DICOM_PATHS[i], downsample_factor=2,
                                     show=show)
 
@@ -220,13 +216,6 @@ def main(cache_directory: str, drr_as_target: bool, show: bool = False):
 if __name__ == "__main__":
     # set up logger
     logger = logs_setup.setup_logger()
-
-    # for outputting images
-    plt.rcParams["text.usetex"] = True
-    plt.rcParams["font.family"] = "serif"
-    plt.rcParams["scatter.marker"] = 'x'
-    plt.rcParams["font.size"] = 15  # figures are includes in latex at half size, so 18 is desired size. matplotlib
-    # scales up by 1.2 (God only knows why), so setting to 15
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
@@ -247,7 +236,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--drr-target", action="store_true",
                         help="Generate a DRR at a random transformation to register to, instead of using an X-ray image.")
     parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
-    parser.add_argument("-s", "--show", action="store_true", help="Show images and plots as they are generated.")
+    parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
     args = parser.parse_args()
 
     # create cache directory
