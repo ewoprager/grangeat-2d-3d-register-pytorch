@@ -105,8 +105,7 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
 
 
 def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
-                        detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size,
-                        samples_per_ray: int = 500) -> torch.Tensor:
+                        detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size) -> torch.Tensor:
     device = volume_data.device
     assert len(output_size) == 2
     assert voxel_spacing.size() == torch.Size([3])
@@ -128,6 +127,7 @@ def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transforma
         dims=(0,)) * voxel_spacing
     volume_diag_length: torch.Tensor = volume_diag.norm()
     lambda_start: torch.Tensor = (source_position - transformation.translation).norm() - .5 * volume_diag_length
+    samples_per_ray: int = torch.tensor(volume_data.size()).max().item()
     step_size: float = volume_diag_length.item() / float(samples_per_ray)
 
     h_matrix_inv = transformation.inverse().get_h(device=device).to(dtype=torch.float32)

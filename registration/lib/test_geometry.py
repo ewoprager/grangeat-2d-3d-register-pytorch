@@ -134,7 +134,7 @@ def test_generate_drr():
         density, transformation=transformation, voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
         scene_geometry=scene_geometry, output_size=output_size)
 
-    drr_diffdrr = generate_drr(
+    drr_extension = generate_drr(
         density, transformation=transformation, voxel_spacing=voxel_spacing, detector_spacing=detector_spacing,
         scene_geometry=scene_geometry, output_size=output_size)
 
@@ -149,7 +149,7 @@ def test_generate_drr():
     #
     # # Plotting DRR
     # _, axes = plt.subplots()
-    # mesh = axes.pcolormesh(drr_diffdrr.cpu())
+    # mesh = axes.pcolormesh(drr_extension.cpu())
     # axes.axis('square')
     # axes.set_title("g")
     # axes.set_xlabel("x")
@@ -158,7 +158,7 @@ def test_generate_drr():
     #
     # plt.show()
 
-    assert drr_python == pytest.approx(drr_diffdrr, abs=0.002)
+    assert drr_python == pytest.approx(drr_extension, abs=0.002)
 
 
 def test_plane_integrals():
