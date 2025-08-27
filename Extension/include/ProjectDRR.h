@@ -60,6 +60,7 @@ template <typename texture_t> struct ProjectDRR {
 		Vec<double, 2> detectorSpacing{};
 		double lambdaStart{};
 		FloatType stepSize{};
+		int64_t samplesPerRay{};
 		at::Tensor flatOutput{};
 	};
 
@@ -100,6 +101,7 @@ template <typename texture_t> struct ProjectDRR {
 		ret.lambdaStart = MatMul(ret.homographyMatrixInverse, VecCat(sourcePosition, 1.0)).XYZ().Length() - 0.5 *
 		                  volumeDiagLength;
 		ret.stepSize = volumeDiagLength / static_cast<FloatType>(samplesPerRayValue);
+		ret.samplesPerRay = samplesPerRayValue;
 		ret.outputOffset = Vec<double, 2>::FromTensor(outputOffset);
 		ret.detectorSpacing = Vec<double, 2>::FromTensor(detectorSpacing);
 		ret.flatOutput = torch::zeros(at::IntArrayRef({outputWidth * outputHeight}), volume.contiguous().options());

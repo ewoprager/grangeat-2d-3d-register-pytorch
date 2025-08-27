@@ -8,7 +8,7 @@ namespace reg23 {
 using CommonData = ProjectDRR<Texture3DCUDA>::CommonData;
 
 __global__ void Kernel_ProjectDRR_CUDA(Texture3DCUDA volume, double sourceDistance, double lambdaStart, double stepSize,
-                                       Vec<Vec<double, 4>, 4> homographyMatrixInverse,
+                                       int64_t samplesPerRay, Vec<Vec<double, 4>, 4> homographyMatrixInverse,
                                        Linear<Texture3DCUDA::VectorType> mappingWorldToTexCoord,
                                        Vec<double, 2> detectorSpacing, Vec<int64_t, 2> outputSize,
                                        Vec<double, 2> outputOffset, float *arrayOut) {
@@ -28,7 +28,7 @@ __global__ void Kernel_ProjectDRR_CUDA(Texture3DCUDA volume, double sourceDistan
 
 	Vec<double, 3> samplePoint = start;
 	float sum = 0.f;
-	for (int k = 0; k < 500; ++k) {
+	for (int k = 0; k < samplesPerRay; ++k) {
 		sum += volume.Sample(mappingWorldToTexCoord(samplePoint));
 		samplePoint += delta;
 	}
@@ -48,7 +48,8 @@ __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &
 	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_ProjectDRR_CUDA, 0, 0);
 	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
 	Kernel_ProjectDRR_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), sourceDistance, common.lambdaStart,
-	                                                common.stepSize, common.homographyMatrixInverse,
+	                                                common.stepSize, common.samplesPerRay,
+	                                                common.homographyMatrixInverse,
 	                                                common.inputTexture.MappingWorldToTexCoord(),
 	                                                common.detectorSpacing, Vec<int64_t, 2>{outputWidth, outputHeight},
 	                                                common.outputOffset, resultFlatPtr);

@@ -32,7 +32,7 @@ at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpaci
 
 			Vec<double, 3> samplePoint = start;
 			float sum = 0.f;
-			for (int k = 0; k < 500; ++k) {
+			for (int k = 0; k < common.samplesPerRay; ++k) {
 				sum += common.inputTexture.Sample(mappingWorldToTexCoord(samplePoint));
 				samplePoint += delta;
 			}
