@@ -192,29 +192,76 @@ def plane_integrals(volume_data: torch.Tensor, *, phi_values: torch.Tensor, thet
     return ret
 
 
-def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Tensor, ray_point: torch.Tensor,
-                        ray_unit_direction: torch.Tensor) -> float:
-    assert cuboid_centre.size() == torch.Size([3])
-    assert cuboid_half_sizes.size() == torch.Size([3])
-    assert ray_point.size() == torch.Size([3])
-    assert ray_unit_direction.size() == torch.Size([3])
+def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Tensor, ray_points: torch.Tensor,
+                        ray_unit_directions: torch.Tensor) -> torch.Tensor:
+    """
+    Determines the length of ray intersections between given rays and an axis-aligned cuboid.
+    :param cuboid_centre: A tensor of size (,3); the position of the centre of the cuboid
+    :param cuboid_half_sizes: A tensor of size (,3); the half sizes of the cuboid in the x-, y- and z-directions
+    :param ray_points: A tensor of size (..., 3); points through which the input rays each pass
+    :param ray_unit_directions: A tensor of size matching ray_points; unit vectors in the directions of each input ray
+    :return: A tensor of size ray_points.size()[:-1]; the lengths of the intersections of each ray with the cuboid
+    """
+    assert cuboid_centre.size() == torch.Size([3])  # size = (,3)
+    assert cuboid_half_sizes.size() == torch.Size([3])  # size = (,3)
+    assert ray_points.size()[-1] == 3  # size = (..., 3)
+    assert ray_unit_directions.size() == ray_points.size()  # size = (..., 3)
 
+    # for calculating intersection points and normals for each of the 6 planes of the cuboid
     deltas = torch.concat((  #
         cuboid_half_sizes.unsqueeze(0).expand(3, -1),  #
         (-cuboid_half_sizes).unsqueeze(0).expand(3, -1)  #
-    ))
-    plane_points = cuboid_centre + deltas
-    plane_normals = torch.nn.functional.normalize(torch.eye(3).repeat(2, 1) * deltas)
-    dots = torch.einsum("ji,i->j", plane_normals, ray_unit_direction)
+    ))  # size = (6, 3)
+    # a point for each of the 6 planes of the cuboid that each plane intersects
+    plane_points = cuboid_centre + deltas  # size = (6, 3)
+    # a unit normal vector for each of the 6 planes of the cuboid, pointing out of the cuboid
+    plane_normals = torch.nn.functional.normalize(torch.eye(3).repeat(2, 1) * deltas)  # size = (6, 3)
+
+    # -----
+    # Finding where the rays intersect, if they do
+    # -----
+    # dot products between each of the 6 planes and each of the input ray direction vectors
+    dots = torch.einsum("ji,...i->...j", plane_normals, ray_unit_directions)  # size = (..., 6)
+    # for dealing with rays near parallel to cuboid planes
     epsilon = 1.0e-8
-    lambdas = torch.einsum("ji,ji->j", plane_normals, plane_points - ray_point) / dots
-    lambdas_masked = torch.where(dots < -epsilon, lambdas, torch.tensor(float("-inf")))
-    entry_lambda, entry_index = lambdas_masked.max(dim=0)
-    entry_point = ray_point + entry_lambda * ray_unit_direction
-    check_indices = torch.remainder(entry_index + torch.tensor([1, 2, 4, 5]), 6)
-    if (torch.einsum("ji,ji->j", (entry_point - plane_points[check_indices]),
-                     plane_normals[check_indices]) > 0.0).any():
-        return 0.0
-    lambdas_masked = torch.where(dots > epsilon, lambdas, torch.tensor(float("inf")))
-    exit_lambda = lambdas_masked.min()
-    return (exit_lambda - entry_lambda).abs().item()
+    # the ray points expanded x6 along the penultimate dimension for manipulating with the cuboid planes
+    ray_points_expanded = ray_points.unsqueeze(-2).expand(*ray_points.size()[:-1], 6, 3)  # size = (..., 6, 3)
+    # the lambda value (position along each ray away from the ray point) of each plane for each ray
+    lambdas = (torch.einsum("ji,...ji->...j", plane_normals, plane_points - ray_points_expanded)  # size = (..., 6)
+               / dots)
+    # lambda values for planes parallel to rays (`dots` small) or ray is coming out of (dots positive) set to -inf
+    lambdas_masked = torch.where(dots < -epsilon, lambdas, torch.tensor(float("-inf")))  # size = (..., 6)
+    # finding entry lambda and associated plane index by finding max of above
+    entry_lambdas, entry_indices = lambdas_masked.max(dim=-1)  # size of both = (...)
+    # entry positions
+    entry_points = ray_points + entry_lambdas.unsqueeze(-1) * ray_unit_directions  # size = (..., 3)
+
+    # -----
+    # Checking whether rays intersect, by comparing plane intersection point with other two cuboid plane pairs
+    # -----
+    # extracting indices of other two cuboid plane pairs from intersection plane index
+    check_indices = torch.remainder(entry_indices.unsqueeze(-1) + torch.tensor([1, 2, 4, 5]), 6)  # size = (..., 4)
+    # expanding this for manipulation with plane points and normals
+    indices_expanded = check_indices.unsqueeze(-1).expand(*check_indices.size(), 3)  # size = (..., 4, 3)
+    # expanding plane points and normals for manipulation with indices
+    plane_points_expanded = plane_points.expand((*check_indices.size()[:-1], 6, 3))  # size = (..., 6, 3)
+    plane_normals_expanded = plane_normals.expand((*check_indices.size()[:-1], 6, 3))  # size = (..., 6, 3)
+    # filtering plane points and normals by indices
+    plane_points_filtered = plane_points_expanded.gather(-2, indices_expanded)  # size = (..., 4, 3)
+    plane_normals_filtered = plane_normals_expanded.gather(-2, indices_expanded)  # size = (..., 4, 3)
+    # checking entry points against filtered planes to determine if ray misses cuboid entirely
+    rays_miss = (torch.einsum("...ji,...ji->...j", entry_points.unsqueeze(-2) - plane_points_filtered,
+                              plane_normals_filtered) > 0.0).any(dim=-1)  # size = (...)
+
+    # -----
+    # Finding where rays exit cuboid and returning
+    # -----
+    # lambda values for planes parallel to rays (`dots` small) or ray is going into (dots negative) set to inf
+    lambdas_masked = torch.where(dots > epsilon, lambdas, torch.tensor(float("inf")))  # size = (.., 6)
+    # finding exit lambda by finding min of above
+    exit_lambdas, _ = lambdas_masked.min(dim=-1)  # size = (...)
+    # finding distance from lambda difference
+    ret = (exit_lambdas - entry_lambdas).abs()  # size = (...)
+    # setting distance for rays that miss to zero
+    ret[rays_miss] = 0.0
+    return ret

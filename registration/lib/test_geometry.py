@@ -31,7 +31,7 @@ def test_fixed_polar_to_moving_cartesian():
     assert ret[0, 2].item() == pytest.approx(b * sin_alpha.square().item(), abs=1e-4)
 
     transformation = Transformation(rotation=torch.zeros(3, device=device),
-        translation=torch.tensor([b * sin_alpha * cos_alpha, 0., b * sin_alpha.square()]))
+                                    translation=torch.tensor([b * sin_alpha * cos_alpha, 0., b * sin_alpha.square()]))
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
@@ -102,7 +102,7 @@ def test_generate_drr_python():
     scene_geometry = SceneGeometry(source_distance=3.)
     output_size = torch.Size([3, 3])
     ret = generate_drr_python(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
-        detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
+                              detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
     assert isinstance(ret, torch.Tensor)
     assert ret.size() == output_size
     assert ret.device == device
@@ -129,10 +129,12 @@ def test_generate_drr():
     output_size = torch.Size([5, 5])
 
     drr_python = generate_drr_python(density, transformation=transformation, voxel_spacing=voxel_spacing,
-        detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
+                                     detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                     output_size=output_size)
 
     drr_extension = generate_drr(density, transformation=transformation, voxel_spacing=voxel_spacing,
-        detector_spacing=detector_spacing, scene_geometry=scene_geometry, output_size=output_size)
+                                 detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                 output_size=output_size)
 
     # # Plotting DRR
     # _, axes = plt.subplots()
@@ -168,10 +170,10 @@ def test_plane_integrals():
     # theta_values = torch.tensor([torch.pi * .25])
     r_values = torch.tensor([0.])
     from_extension = reg23.radon3d(volume_data, voxel_spacing, phi_values, theta_values, r_values,
-        samples_per_direction=10)
+                                   samples_per_direction=10)
     phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
     from_python = plane_integrals(volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values,
-        theta_values=theta_values, r_values=r_values, samples_per_direction=10)
+                                  theta_values=theta_values, r_values=r_values, samples_per_direction=10)
     assert from_extension.item() == pytest.approx(from_python.item())
 
     volume_data = torch.zeros((10, 10, 10), device=device)
@@ -184,7 +186,7 @@ def test_plane_integrals():
     phi_values, theta_values, r_values = torch.meshgrid(phi_values, theta_values, r_values)
     radon = reg23.radon3d(volume_data, voxel_spacing, phi_values, theta_values, r_values, samples_per_direction=500)
     radon_python = plane_integrals(volume_data, voxel_spacing=voxel_spacing, phi_values=phi_values,
-        theta_values=theta_values, r_values=r_values, samples_per_direction=500)
+                                   theta_values=theta_values, r_values=r_values, samples_per_direction=500)
     assert (radon_python - radon).abs().mean() / (
             .5 * (radon_python.max() - radon_python.min() + radon.max() - radon.min())) == pytest.approx(0., abs=1e-4)
 
@@ -195,44 +197,48 @@ def test_ray_cuboid_distance():
     ray_point = torch.tensor([0., 0., 0.])
     ray_unit_direction = torch.tensor([1., 0., 0.])
     distance = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
-    assert distance == pytest.approx(1.)
+    assert distance.item() == pytest.approx(1.)
 
-    ray_point = torch.tensor([0.25, 0.25, 0.25])
-    distance = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
-    assert distance == pytest.approx(1.)
-
-    ray_point = torch.tensor([0.0, 0.0, 0.45])
-    distance = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
-    assert distance == pytest.approx(1.)
-
-    ray_point = torch.tensor([0.25, -0.25, 0.55])
-    distance = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
-    assert distance == pytest.approx(0.)
-
-    ray_point = torch.tensor([0.0, 0.0, 0.0])
-    ray_unit_direction = torch.nn.functional.normalize(torch.tensor([1.0, 1.0, 0.0]).unsqueeze(0))[0]
-    distance = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
-    assert distance == pytest.approx(torch.tensor(2.).sqrt().item())
-
-    ray_point = torch.tensor([0.0, 0.5, 0.0])
-    distance = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
-    assert distance == pytest.approx(0.5 * torch.tensor(2.).sqrt().item())
+    ray_points = torch.tensor([  #
+        [0.25, 0.25, 0.25], [0.0, 0.0, 0.45], [0.25, -0.25, 0.55], [0.0, 0.0, 0.0], [0.0, 0.5, 0.0]  #
+    ])
+    ray_unit_directions = torch.tensor([  #
+        [1., 0., 0.],  #
+        [1., 0., 0.],  #
+        [1., 0., 0.],  #
+        torch.nn.functional.normalize(torch.tensor([1.0, 1.0, 0.0]).unsqueeze(0))[0],  #
+        torch.nn.functional.normalize(torch.tensor([1.0, 1.0, 0.0]).unsqueeze(0))[0]  #
+    ])
+    distances = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_points, ray_unit_directions)
+    assert distances == pytest.approx(torch.tensor([  #
+        1., 1., 0., torch.tensor(2.).sqrt().item(), 0.5 * torch.tensor(2.).sqrt().item()  #
+    ]))
 
     ray_point = torch.tensor([0.0, 0.0, 0.0])
     cuboid_half_sizes = torch.tensor([1.0, 10.0, 10.0])
     ray_unit_direction = torch.nn.functional.normalize(torch.tensor([1.0, 1.0, 1.0]).unsqueeze(0))[0]
     distance = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
-    assert distance == pytest.approx(2. * torch.tensor(3.).sqrt().item())
+    assert distance.item() == pytest.approx(2. * torch.tensor(3.).sqrt().item())
 
     cuboid_half_sizes = torch.tensor([10.0, 1.0, 1.0])
     distance = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
-    assert distance == pytest.approx(2. * torch.tensor(3.).sqrt().item())
+    assert distance.item() == pytest.approx(2. * torch.tensor(3.).sqrt().item())
+
+    ray_points = torch.rand(4, 6, 3)
+    ray_unit_directions = torch.rand(*ray_points.size())
+    distances = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_points, ray_unit_directions)
+    assert distances.size() == ray_points.size()[:-1]
 
     cuboid_half_sizes = torch.tensor([10.0, 1.0, 1.0, 2.])
     with pytest.raises(AssertionError):
         ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
 
     cuboid_half_sizes = torch.tensor([10.0, 1.0, 1.0])
-    ray_point = torch.tensor([10.0, 1.0])
+    ray_points = torch.rand(3, 3)
     with pytest.raises(AssertionError):
-        ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_direction)
+        ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_points, ray_unit_direction)
+
+    ray_points = torch.rand(3, 2)
+    ray_unit_direction = torch.rand(3, 2)
+    with pytest.raises(AssertionError):
+        ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_points, ray_unit_direction)
