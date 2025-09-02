@@ -115,6 +115,41 @@ def read_dicom(path: str, *, downsample_factor: int | None = None, downsample_to
     image = torch.tensor(pydicom.pixels.pixel_array(dataset), dtype=torch.float32)
     logger.info("X-ray image size = [{} x {}]".format(image.size()[0], image.size()[1]))
 
+    # if "PixelIntensityRelationship" in dataset:
+    #     logger.info("X-ray pixel intensity relationship = '{}'.".format(dataset["PixelIntensityRelationship"]))
+    # else:
+    #     logger.info("No pixel intensity relationship available for X-ray.")
+    #
+    # if "AcquisitionDeviceProcessingDescription" in dataset:
+    #     logger.info("X-ray AcquisitionDeviceProcessingDescription = '{}'.".format(dataset["AcquisitionDeviceProcessingDescription"]))
+    # else:
+    #     logger.info("No AcquisitionDeviceProcessingDescription available for X-ray.")
+    #
+    # if "ModalityLUTSequence" in dataset:
+    #     logger.info("X-ray ModalityLUTSequence = '{}'.".format(dataset["ModalityLUTSequence"]))
+    # else:
+    #     logger.info("No ModalityLUTSequence available for X-ray.")
+    #
+    # if "ModalityLUTType" in dataset:
+    #     logger.info("X-ray ModalityLUTType = '{}'.".format(dataset["ModalityLUTType"]))
+    # else:
+    #     logger.info("No ModalityLUTType available for X-ray.")
+    #
+    # if "VOILUTSequence" in dataset:
+    #     logger.info("X-ray VOILUTSequence = '{}'.".format(dataset["VOILUTSequence"]))
+    # else:
+    #     logger.info("No VOILUTSequence available for X-ray.")
+    #
+    # if "VOILUTType" in dataset:
+    #     logger.info("X-ray VOILUTType = '{}'.".format(dataset["VOILUTType"]))
+    # else:
+    #     logger.info("No VOILUTType available for X-ray.")
+    #
+    # if "RescaleIntercept" in dataset:
+    #     logger.info("X-ray RescaleIntercept = '{}'.".format(dataset["RescaleIntercept"]))
+    # else:
+    #     logger.info("No RescaleIntercept available for X-ray.")
+
     if "DistanceSourceToPatient" in dataset and "DistanceSourceToDetector" in dataset:
         spacing_spread_ratio = float(
             dataset["DistanceSourceToDetector"].value / dataset["DistanceSourceToPatient"].value)

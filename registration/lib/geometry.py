@@ -99,13 +99,14 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     img_height: int = output_size[0]
     h_matrix_inv = transformation.inverse().get_h(device=device)
 
-    return Extension.project_drr(
-        volume_data, voxel_spacing, h_matrix_inv, scene_geometry.source_distance, img_width, img_height,
-        scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64), detector_spacing)
+    return Extension.project_drr(volume_data, voxel_spacing, h_matrix_inv, scene_geometry.source_distance, img_width,
+                                 img_height, scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64),
+                                 detector_spacing)
 
 
 def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
-                        detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size) -> torch.Tensor:
+                        detector_spacing: torch.Tensor, scene_geometry: SceneGeometry,
+                        output_size: torch.Size) -> torch.Tensor:
     device = volume_data.device
     assert len(output_size) == 2
     assert voxel_spacing.size() == torch.Size([3])
@@ -189,3 +190,31 @@ def plane_integrals(volume_data: torch.Tensor, *, phi_values: torch.Tensor, thet
         ret_flat[i] = integrate_plane(phi_flat[i], theta_flat[i], r_flat[i])
 
     return ret
+
+
+def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Tensor, ray_point: torch.Tensor,
+                        ray_unit_direction: torch.Tensor) -> float:
+    assert cuboid_centre.size() == torch.Size([3])
+    assert cuboid_half_sizes.size() == torch.Size([3])
+    assert ray_point.size() == torch.Size([3])
+    assert ray_unit_direction.size() == torch.Size([3])
+
+    deltas = torch.concat((  #
+        cuboid_half_sizes.unsqueeze(0).expand(3, -1),  #
+        (-cuboid_half_sizes).unsqueeze(0).expand(3, -1)  #
+    ))
+    plane_points = cuboid_centre + deltas
+    plane_normals = torch.nn.functional.normalize(torch.eye(3).repeat(2, 1) * deltas)
+    dots = torch.einsum("ji,i->j", plane_normals, ray_unit_direction)
+    epsilon = 1.0e-8
+    lambdas = torch.einsum("ji,ji->j", plane_normals, plane_points - ray_point) / dots
+    lambdas_masked = torch.where(dots < -epsilon, lambdas, torch.tensor(float("-inf")))
+    entry_lambda, entry_index = lambdas_masked.max(dim=0)
+    entry_point = ray_point + entry_lambda * ray_unit_direction
+    check_indices = torch.remainder(entry_index + torch.tensor([1, 2, 4, 5]), 6)
+    if (torch.einsum("ji,ji->j", (entry_point - plane_points[check_indices]),
+                     plane_normals[check_indices]) > 0.0).any():
+        return 0.0
+    lambdas_masked = torch.where(dots > epsilon, lambdas, torch.tensor(float("inf")))
+    exit_lambda = lambdas_masked.min()
+    return (exit_lambda - entry_lambda).abs().item()
