@@ -135,7 +135,6 @@ def test_generate_drr():
     drr_extension = generate_drr(density, transformation=transformation, voxel_spacing=voxel_spacing,
                                  detector_spacing=detector_spacing, scene_geometry=scene_geometry,
                                  output_size=output_size)
-
     # # Plotting DRR
     # _, axes = plt.subplots()
     # mesh = axes.pcolormesh(drr_python.cpu())
@@ -153,9 +152,8 @@ def test_generate_drr():
     # axes.set_xlabel("x")
     # axes.set_ylabel("y")
     # plt.colorbar(mesh)
-    #
-    # plt.show()
 
+    plt.show()
     assert drr_python == pytest.approx(drr_extension, abs=0.002)
 
 
