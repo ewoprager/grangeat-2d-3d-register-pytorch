@@ -198,15 +198,18 @@ def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Te
     Determines the length of ray intersections between given rays and an axis-aligned cuboid.
     :param cuboid_centre: A tensor of size (,3); the position of the centre of the cuboid
     :param cuboid_half_sizes: A tensor of size (,3); the half sizes of the cuboid in the x-, y- and z-directions
-    :param ray_points: A tensor of size (..., 3); points through which the input rays each pass
-    :param ray_unit_directions: A tensor of size matching ray_points; unit vectors in the directions of each input ray
+    :param ray_points: A tensor of size (..., 3); point(s) through which the input rays each pass, either one for all, or one per ray
+    :param ray_unit_directions: A tensor of size matching ray_points or (..., 3) if ray_points is of size (,3); unit vectors in the directions of each input ray
     :return: A tensor of size ray_points.size()[:-1]; the lengths of the intersections of each ray with the cuboid
     """
     assert cuboid_centre.size() == torch.Size([3])  # size = (,3)
     assert cuboid_half_sizes.size() == torch.Size([3])  # size = (,3)
-    assert ray_points.size()[-1] == 3  # size = (..., 3)
-    assert ray_unit_directions.size() == ray_points.size()  # size = (..., 3)
+    assert ray_unit_directions.size()[-1] == 3  # size = (..., 3)
+    assert ray_points.size() == ray_unit_directions.size() or ray_points.size() == torch.Size([3])  # size = ([...], 3)
 
+    # -----
+    # The 6 planes of the cuboid, each defined by intersection point and unit normal
+    # -----
     # for calculating intersection points and normals for each of the 6 planes of the cuboid
     deltas = torch.concat((  #
         cuboid_half_sizes.unsqueeze(0).expand(3, -1),  #
@@ -225,10 +228,10 @@ def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Te
     # for dealing with rays near parallel to cuboid planes
     epsilon = 1.0e-8
     # the ray points expanded x6 along the penultimate dimension for manipulating with the cuboid planes
-    ray_points_expanded = ray_points.unsqueeze(-2).expand(*ray_points.size()[:-1], 6, 3)  # size = (..., 6, 3)
+    ray_points_expanded = ray_points.unsqueeze(-2).expand(*ray_points.size()[:-1], 6, 3)  # size = ([...], 6, 3)
     # the lambda value (position along each ray away from the ray point) of each plane for each ray
-    lambdas = (torch.einsum("ji,...ji->...j", plane_normals, plane_points - ray_points_expanded)  # size = (..., 6)
-               / dots)
+    lambdas = (torch.einsum("ji,...ji->...j", plane_normals, plane_points - ray_points_expanded)  # size = ([...], 6)
+               / dots)  # size = (..., 6)
     # lambda values for planes parallel to rays (`dots` small) or ray is coming out of (dots positive) set to -inf
     lambdas_masked = torch.where(dots < -epsilon, lambdas, torch.tensor(float("-inf")))  # size = (..., 6)
     # finding entry lambda and associated plane index by finding max of above

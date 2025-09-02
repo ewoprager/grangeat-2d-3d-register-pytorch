@@ -214,6 +214,15 @@ def test_ray_cuboid_distance():
         1., 1., 0., torch.tensor(2.).sqrt().item(), 0.5 * torch.tensor(2.).sqrt().item()  #
     ]))
 
+    ray_point = torch.tensor([0.4, -0.2, 0.15])
+    ray_unit_directions = torch.tensor([  #
+        [1., 0., 0.],  #
+        [0., -1., -0.],  #
+        [0., 0., -1.]  #
+    ])
+    distances = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_directions)
+    assert distances == pytest.approx(torch.tensor([1., 1., 1.]))
+
     ray_point = torch.tensor([0.0, 0.0, 0.0])
     cuboid_half_sizes = torch.tensor([1.0, 10.0, 10.0])
     ray_unit_direction = torch.nn.functional.normalize(torch.tensor([1.0, 1.0, 1.0]).unsqueeze(0))[0]
@@ -227,7 +236,12 @@ def test_ray_cuboid_distance():
     ray_points = torch.rand(4, 6, 3)
     ray_unit_directions = torch.rand(*ray_points.size())
     distances = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_points, ray_unit_directions)
-    assert distances.size() == ray_points.size()[:-1]
+    assert distances.size() == ray_unit_directions.size()[:-1]
+
+    ray_point = torch.rand(3)
+    ray_unit_directions = torch.rand(*ray_points.size())
+    distances = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, ray_unit_directions)
+    assert distances.size() == ray_unit_directions.size()[:-1]
 
     cuboid_half_sizes = torch.tensor([10.0, 1.0, 1.0, 2.])
     with pytest.raises(AssertionError):
