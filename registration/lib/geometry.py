@@ -187,6 +187,26 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
                                  detector_spacing)
 
 
+def generate_drr_cuboid_mask(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
+                             detector_spacing: torch.Tensor, scene_geometry: SceneGeometry,
+                             output_size: torch.Size) -> (torch.Tensor):
+    device = volume_data.device
+    assert len(output_size) == 2
+    assert voxel_spacing.size() == torch.Size([3])
+    assert detector_spacing.size() == torch.Size([2])
+    assert transformation.device_consistent()
+    assert transformation.translation.device == device
+    assert voxel_spacing.device == device
+    img_width: int = output_size[1]
+    img_height: int = output_size[0]
+    h_matrix_inv = transformation.inverse().get_h(device=device)
+
+    return Extension.project_drr_cuboid_mask(
+        torch.tensor(volume_data.size(), device=volume_data.device).flip(dims=(0,)), voxel_spacing, h_matrix_inv,
+        scene_geometry.source_distance, img_width, img_height,
+        scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64), detector_spacing)
+
+
 def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
                         detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size,
                         get_ray_intersection_fractions: bool = False) -> torch.Tensor:

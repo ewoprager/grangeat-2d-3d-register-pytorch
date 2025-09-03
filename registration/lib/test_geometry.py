@@ -152,9 +152,37 @@ def test_generate_drr():
     # axes.set_xlabel("x")
     # axes.set_ylabel("y")
     # plt.colorbar(mesh)
+    # plt.show()
 
-    plt.show()
     assert drr_python == pytest.approx(drr_extension, abs=0.002)
+
+    mask_python = generate_drr_python(density, transformation=transformation, voxel_spacing=voxel_spacing,
+                                      detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                      output_size=output_size, get_ray_intersection_fractions=True)[1]
+
+    mask_extension = generate_drr_cuboid_mask(density, transformation=transformation, voxel_spacing=voxel_spacing,
+                                              detector_spacing=detector_spacing, scene_geometry=scene_geometry,
+                                              output_size=output_size)
+    # # Plotting DRR
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(mask_python.cpu())
+    # axes.axis('square')
+    # axes.set_title("Mask")
+    # axes.set_xlabel("x")
+    # axes.set_ylabel("y")
+    # plt.colorbar(mesh)
+    #
+    # # Plotting DRR
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(mask_extension.cpu())
+    # axes.axis('square')
+    # axes.set_title("Mask")
+    # axes.set_xlabel("x")
+    # axes.set_ylabel("y")
+    # plt.colorbar(mesh)
+    # plt.show()
+
+    assert mask_python == pytest.approx(mask_extension, abs=0.002)
 
 
 def test_plane_integrals():
