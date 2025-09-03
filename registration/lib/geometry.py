@@ -55,6 +55,9 @@ def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Te
     :param ray_unit_directions: A tensor of size matching ray_points or (..., 3) if ray_points is of size (,3); unit vectors in the directions of each input ray
     :return: A tensor of size ray_points.size()[:-1]; the lengths of the intersections of each ray with the cuboid
     """
+    assert cuboid_centre.device == cuboid_half_sizes.device
+    assert cuboid_half_sizes.device == ray_points.device
+    assert ray_points.device == ray_unit_directions.device
     assert cuboid_centre.size() == torch.Size([3])  # size = (,3)
     assert cuboid_half_sizes.size() == torch.Size([3])  # size = (,3)
     assert ray_unit_directions.size()[-1] == 3  # size = (..., 3)
@@ -71,7 +74,8 @@ def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Te
     # a point for each of the 6 planes of the cuboid that each plane intersects
     plane_points = cuboid_centre + deltas  # size = (6, 3)
     # a unit normal vector for each of the 6 planes of the cuboid, pointing out of the cuboid
-    plane_normals = torch.nn.functional.normalize(torch.eye(3).repeat(2, 1) * deltas)  # size = (6, 3)
+    plane_normals = torch.nn.functional.normalize(
+        torch.eye(3, device=deltas.device).repeat(2, 1) * deltas)  # size = (6, 3)
 
     # -----
     # Finding where the rays intersect, if they do
@@ -86,7 +90,8 @@ def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Te
     lambdas = (torch.einsum("ji,...ji->...j", plane_normals, plane_points - ray_points_expanded)  # size = ([...], 6)
                / dots)  # size = (..., 6)
     # lambda values for planes parallel to rays (`dots` small) or ray is coming out of (dots positive) set to -inf
-    lambdas_masked = torch.where(dots < -epsilon, lambdas, torch.tensor(float("-inf")))  # size = (..., 6)
+    lambdas_masked = torch.where(dots < -epsilon, lambdas,
+                                 torch.tensor(float("-inf"), device=lambdas.device))  # size = (..., 6)
     # finding entry lambda and associated plane index by finding max of above
     entry_lambdas, entry_indices = lambdas_masked.max(dim=-1)  # size of both = (...)
     # entry positions
@@ -96,7 +101,8 @@ def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Te
     # Checking whether rays intersect, by comparing plane intersection point with other two cuboid plane pairs
     # -----
     # extracting indices of other two cuboid plane pairs from intersection plane index
-    check_indices = torch.remainder(entry_indices.unsqueeze(-1) + torch.tensor([1, 2, 4, 5]), 6)  # size = (..., 4)
+    check_indices = torch.remainder(
+        entry_indices.unsqueeze(-1) + torch.tensor([1, 2, 4, 5], device=entry_indices.device), 6)  # size = (..., 4)
     # expanding this for manipulation with plane points and normals
     indices_expanded = check_indices.unsqueeze(-1).expand(*check_indices.size(), 3)  # size = (..., 4, 3)
     # expanding plane points and normals for manipulation with indices
@@ -106,21 +112,20 @@ def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Te
     plane_points_filtered = plane_points_expanded.gather(-2, indices_expanded)  # size = (..., 4, 3)
     plane_normals_filtered = plane_normals_expanded.gather(-2, indices_expanded)  # size = (..., 4, 3)
     # checking entry points against filtered planes to determine if ray misses cuboid entirely
-    rays_miss = (torch.einsum("...ji,...ji->...j", entry_points.unsqueeze(-2) - plane_points_filtered,
-                              plane_normals_filtered) > 0.0).any(dim=-1)  # size = (...)
+    rays_hit = (torch.einsum("...ji,...ji->...j", entry_points.unsqueeze(-2) - plane_points_filtered,
+                             plane_normals_filtered) < epsilon).all(dim=-1)  # size = (...)
 
     # -----
     # Finding where rays exit cuboid and returning
     # -----
     # lambda values for planes parallel to rays (`dots` small) or ray is going into (dots negative) set to inf
-    lambdas_masked = torch.where(dots > epsilon, lambdas, torch.tensor(float("inf")))  # size = (.., 6)
+    lambdas_masked = torch.where(dots > epsilon, lambdas,
+                                 torch.tensor(float("inf"), device=lambdas.device))  # size = (.., 6)
     # finding exit lambda by finding min of above
     exit_lambdas, _ = lambdas_masked.min(dim=-1)  # size = (...)
-    # finding distance from lambda difference
-    ret = (exit_lambdas - entry_lambdas).abs()  # size = (...)
-    # setting distance for rays that miss to zero
-    ret[rays_miss] = 0.0
-    return ret
+    # finding distance from lambda difference and setting distance for rays that miss to zero
+    return torch.where(rays_hit, (exit_lambdas - entry_lambdas).abs(),
+                       torch.tensor(0.0, device=exit_lambdas.device))  # size = (...)
 
 
 # This uses diffdrr
@@ -210,13 +215,15 @@ def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transforma
     step_size: float = volume_diag_length.item() / float(samples_per_ray)
 
     h_matrix_inv = transformation.inverse().get_h(device=device).to(dtype=torch.float32)
+
+    starts = source_position + lambda_start * directions
+    starts_homogeneous = torch.cat((starts, torch.ones_like(starts[..., 0], device=device).unsqueeze(-1)), dim=-1)
+    starts = torch.einsum('ji,...i->...j', h_matrix_inv, starts_homogeneous)[..., 0:3]
+
     directions_homogeneous = torch.cat((directions, torch.zeros_like(directions[..., 0], device=device).unsqueeze(-1)),
                                        dim=-1)
     directions = torch.einsum('ji,...i->...j', h_matrix_inv, directions_homogeneous)[..., 0:3]
     deltas = directions * step_size
-    starts = source_position + lambda_start * directions
-    starts_homogeneous = torch.cat((starts, torch.ones_like(starts[..., 0], device=device).unsqueeze(-1)), dim=-1)
-    starts = torch.einsum('ji,...i->...j', h_matrix_inv, starts_homogeneous)[..., 0:3]
 
     deltas_texture = 2. * deltas / volume_diag
     grid = (2. * starts / volume_diag).to(dtype=torch.float32)
@@ -228,11 +235,11 @@ def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transforma
 
     if get_ray_intersection_fractions:
         cuboid_half_sizes = 0.5 * volume_diag
-        cuboid_centre = torch.zeros(3)
+        cuboid_centre = torch.zeros(3, device=cuboid_half_sizes.device)
         ray_point = torch.einsum(  #
             'ji,i->j',  #
             h_matrix_inv,  #
-            torch.cat((source_position, torch.tensor([1.0])), dim=-1)  #
+            torch.cat((source_position, torch.tensor([1.0], device=source_position.device)), dim=-1)  #
         )[0:3]
         ray_distances = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, directions)
         ret = torch.stack((ret, ray_distances))

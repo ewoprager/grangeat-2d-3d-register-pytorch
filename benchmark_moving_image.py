@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import logs_setup
-from registration import script
+from registration.lib import geometry
 from registration import data
 from registration.lib import sinogram
 from registration import pre_computed
@@ -108,6 +108,7 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     h_matrix_invs = [transformation.inverse().get_h(device=device) for transformation in transformations]
     output_width = x_ray.size()[1]
     output_height = x_ray.size()[0]
+
     # DRR:
     logger.info("Projecting DRR...")
     torch.cuda.synchronize()
@@ -124,6 +125,26 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
         mesh = axes.pcolormesh(drr.cpu().numpy())
         axes.set_title("DRR")
         plt.colorbar(mesh)
+
+    logger.info("Projecting DRR in python...")
+    torch.cuda.synchronize()
+    tic = time.time()
+    for i in range(repeats):
+        drr = geometry.generate_drr_python(volume, voxel_spacing=volume_spacing.to(device=volume.device),
+                                           transformation=transformations[i].to(device=volume.device),
+                                           scene_geometry=scene_geometry,
+                                           output_size=torch.Size([output_height, output_width]),
+                                           detector_spacing=detector_spacing, get_ray_intersection_fractions=True)[1]
+    torch.cuda.synchronize()
+    toc = time.time()
+    drr_evaluation_time: float = (toc - tic) / float(repeats)
+    logger.info("DRR projected in python; took {:.4f}s".format(drr_evaluation_time))
+    if plot:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(drr.cpu().numpy())
+        axes.set_title("DRR")
+        plt.colorbar(mesh)
+
     # Grangeat:
     logger.info("Resampling sinogram...")
     torch.cuda.synchronize()
@@ -176,13 +197,13 @@ def main(*, cache_directory: str, load_cached: bool = False, save_to_cache: bool
         logger.error("CUDA not available; cannot run any useful benchmarks.")
         exit(1)
 
-    downsample_factors = [1, 2, 4, 8]
-    sinogram_types = [sinogram.SinogramClassic, sinogram.SinogramHEALPix]
+    downsample_factors = [2]  # [1, 2, 4, 8]
+    sinogram_types = [sinogram.SinogramClassic]  # , sinogram.SinogramHEALPix]
 
     datasets: list[plot_data.DrrVsGrangeatPlotData.Dataset] = []
     for sinogram_type in sinogram_types:
         first: bool = True
-        for i in range(count):
+        for i in range(1):  # count):
             for downsample_factor in downsample_factors:
                 res = run_benchmark(cache_directory, CT_PATHS[i], XRAY_DICOM_PATHS[i], load_cached, save_to_cache,
                                     downsample_factor, sinogram_type=sinogram_type, plot=plot_first and first,
