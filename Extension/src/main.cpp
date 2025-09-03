@@ -7,6 +7,7 @@
 
 #include "../include/GridSample3D.h"
 #include "../include/ProjectDRR.h"
+#include "../include/ProjectDRRCuboidMask.h"
 #include "../include/Radon2D.h"
 #include "../include/Radon3D.h"
 #include "../include/ResampleSinogram3D.h"
@@ -31,9 +32,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
 		.def(py::init<const at::Tensor &, const std::string &, const std::string &>()) //
 		.def("handle", &CUDATexture2D::Handle) //
 		.def("size", &CUDATexture2D::SizeTensor) //
-		.def("clean_up", &CUDATexture2D::CleanUp);
-
-	py::class_<CUDATexture3D>(m, "CUDATexture3DInternal") //
+		.def("clean_up", &CUDATexture2D::CleanUp); py::class_<CUDATexture3D>(m, "CUDATexture3DInternal") //
 		.def(py::init<const at::Tensor &, const std::string &, const std::string &, const std::string &>()) //
 		.def("handle", &CUDATexture3D::Handle) //
 		.def("size", &CUDATexture3D::SizeTensor) //
@@ -59,6 +58,8 @@ TORCH_LIBRARY(reg23, m) {
 	m.def("grid_sample3d(Tensor input, Tensor grid, str am_x, str am_y, str am_z, Tensor? out=None) -> Tensor");
 	m.def(
 		"project_drr(Tensor volume, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, Tensor outOff, Tensor outSpacing) -> Tensor");
+	m.def(
+		"project_drr_cuboid_mask(Tensor vSize, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, Tensor outOff, Tensor outSpacing) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(reg23, CPU, m) {
@@ -73,6 +74,7 @@ TORCH_LIBRARY_IMPL(reg23, CPU, m) {
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CPU);
 	m.impl("grid_sample3d", &GridSample3D_CPU);
 	m.impl("project_drr", &ProjectDRR_CPU);
+	m.impl("project_drr_cuboid_mask", &ProjectDRRCuboidMask_CPU);
 }
 
 #ifdef USE_CUDA

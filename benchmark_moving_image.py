@@ -109,7 +109,9 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     output_width = x_ray.size()[1]
     output_height = x_ray.size()[0]
 
-    # DRR:
+    # -----
+    # DRR
+    # -----
     logger.info("Projecting DRR...")
     torch.cuda.synchronize()
     tic = time.time()
@@ -134,7 +136,7 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
                                            transformation=transformations[i].to(device=volume.device),
                                            scene_geometry=scene_geometry,
                                            output_size=torch.Size([output_height, output_width]),
-                                           detector_spacing=detector_spacing, get_ray_intersection_fractions=True)[1]
+                                           detector_spacing=detector_spacing)
     torch.cuda.synchronize()
     toc = time.time()
     drr_evaluation_time: float = (toc - tic) / float(repeats)
@@ -142,10 +144,58 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     if plot:
         _, axes = plt.subplots()
         mesh = axes.pcolormesh(drr.cpu().numpy())
-        axes.set_title("DRR")
+        axes.set_title("DRR Python")
         plt.colorbar(mesh)
 
-    # Grangeat:
+    # -----
+    # DRR mask
+    # -----
+    old_device = device # !!!
+    device = torch.device("cpu") # !!!
+    logger.info("Projecting DRR mask...")
+    torch.cuda.synchronize()
+    tic = time.time()
+    for i in range(repeats):
+        mask = reg23.project_drr_cuboid_mask(torch.tensor(volume.size(), device=device).flip(dims=(0,)),
+                                             voxel_spacing=volume_spacing.to(device=device),
+                                             homography_matrix_inverse=h_matrix_invs[i].to(device=device),
+                                             source_distance=scene_geometry.source_distance, output_width=output_width,
+                                             output_height=output_height,
+                                             output_offset=torch.zeros(2, dtype=torch.float64, device=device),
+                                             detector_spacing=detector_spacing.to(device=device))
+    torch.cuda.synchronize()
+    toc = time.time()
+    mask_evaluation_time: float = (toc - tic) / float(repeats)
+    logger.info("DRR mask projected; took {:.4f}s".format(mask_evaluation_time))
+    if plot:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(mask.cpu().numpy())
+        axes.set_title("DRR Mask")
+        plt.colorbar(mesh)
+    device = old_device # !!!
+
+    logger.info("Projecting DRR mask in python...")
+    torch.cuda.synchronize()
+    tic = time.time()
+    for i in range(repeats):
+        mask = geometry.generate_drr_python(volume, voxel_spacing=volume_spacing.to(device=volume.device),
+                                            transformation=transformations[i].to(device=volume.device),
+                                            scene_geometry=scene_geometry,
+                                            output_size=torch.Size([output_height, output_width]),
+                                            detector_spacing=detector_spacing, get_ray_intersection_fractions=True)[1]
+    torch.cuda.synchronize()
+    toc = time.time()
+    mask_evaluation_time: float = (toc - tic) / float(repeats)
+    logger.info("DRR mask projected in python; took {:.4f}s".format(mask_evaluation_time))
+    if plot:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(mask.cpu().numpy())
+        axes.set_title("DRR Mask Python")
+        plt.colorbar(mesh)
+
+    # -----
+    # Grangeat
+    # -----
     logger.info("Resampling sinogram...")
     torch.cuda.synchronize()
     tic = time.time()
