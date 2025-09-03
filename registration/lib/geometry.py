@@ -1,7 +1,9 @@
+import copy
+
 import torch
 import pyvista as pv
 
-from registration.lib.structs import *
+from registration.lib.structs import Sinogram2dGrid, Sinogram3dGrid, Transformation, SceneGeometry
 
 import Extension
 
@@ -194,6 +196,7 @@ def generate_drr_cuboid_mask(volume_data: torch.Tensor, *, transformation: Trans
     assert len(output_size) == 2
     assert voxel_spacing.size() == torch.Size([3])
     assert detector_spacing.size() == torch.Size([2])
+    assert detector_spacing.device == device
     assert transformation.device_consistent()
     assert transformation.translation.device == device
     assert voxel_spacing.device == device
@@ -254,15 +257,25 @@ def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transforma
     ret = step_size * ret
 
     if get_ray_intersection_fractions:
-        cuboid_half_sizes = 0.5 * volume_diag
-        cuboid_centre = torch.zeros(3, device=cuboid_half_sizes.device)
+        cuboid_in_half_sizes = 0.5 * volume_diag
+        cuboid_in_centre = torch.zeros(3, device=cuboid_in_half_sizes.device)
+        cuboid_above_half_sizes = copy.deepcopy(cuboid_in_half_sizes)
+        cuboid_above_half_sizes[2] *= 4.0
+        cuboid_below_half_sizes = cuboid_above_half_sizes
+        z_sum = cuboid_in_half_sizes[2] + cuboid_above_half_sizes[2]
+        cuboid_above_centre = torch.tensor([0.0, 0.0, z_sum], device=cuboid_in_half_sizes.device)
+        cuboid_below_centre = torch.tensor([0.0, 0.0, -z_sum], device=cuboid_in_half_sizes.device)
         ray_point = torch.einsum(  #
             'ji,i->j',  #
             h_matrix_inv,  #
             torch.cat((source_position, torch.tensor([1.0], device=source_position.device)), dim=-1)  #
         )[0:3]
-        ray_distances = ray_cuboid_distance(cuboid_centre, cuboid_half_sizes, ray_point, directions)
-        ret = torch.stack((ret, ray_distances))
+        ray_distances_in = ray_cuboid_distance(cuboid_in_centre, cuboid_in_half_sizes, ray_point, directions)
+        denominator = ray_distances_in + (
+                ray_cuboid_distance(cuboid_above_centre, cuboid_above_half_sizes, ray_point, directions) +  #
+                ray_cuboid_distance(cuboid_below_centre, cuboid_below_half_sizes, ray_point, directions))
+        mask = torch.where(denominator > 1.0e-8, ray_distances_in / denominator, 1.0)
+        ret = torch.stack((ret, mask))
 
     return ret
 

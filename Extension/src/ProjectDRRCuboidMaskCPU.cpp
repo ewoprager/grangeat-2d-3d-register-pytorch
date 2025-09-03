@@ -26,8 +26,20 @@ at::Tensor ProjectDRRCuboidMask_CPU(const at::Tensor &volumeSize, const at::Tens
 			direction /= direction.Length();
 			direction = MatMul(common.homographyMatrixInverse, VecCat(direction, 0.f)).XYZ();
 
-			resultFlatPtr[i + j * outputWidth] = RayConvexPolyhedronDistance(
-				common.cuboidFacePoints, common.cuboidFaceUnitNormals, common.sourcePositionTransformed, direction);
+			const float distanceAboveBelow = RayConvexPolyhedronDistance(common.cuboidAbove.facePoints,
+			                                                             common.cuboidAbove.faceOutUnitNormals,
+			                                                             common.sourcePositionTransformed,
+			                                                             direction) + RayConvexPolyhedronDistance(
+				                                 common.cuboidBelow.facePoints, common.cuboidBelow.faceOutUnitNormals,
+				                                 common.sourcePositionTransformed, direction);
+			const float distanceIn = RayConvexPolyhedronDistance(common.cuboidIn.facePoints,
+			                                                     common.cuboidIn.faceOutUnitNormals,
+			                                                     common.sourcePositionTransformed, direction);
+			if (const float denominator = distanceIn + distanceAboveBelow; denominator > 1e-8f) {
+				resultFlatPtr[i + j * outputWidth] = distanceIn / denominator;
+			} else {
+				resultFlatPtr[i + j * outputWidth] = 1.f;
+			}
 		}
 	}
 

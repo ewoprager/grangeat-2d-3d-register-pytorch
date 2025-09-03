@@ -97,13 +97,19 @@ template <typename T, std::size_t faceCount> __host__ __device__ T RayConvexPoly
  */
 struct ProjectDRRCuboidMask {
 
+	struct Cuboid {
+		std::array<Vec<float, 3>, 6> facePoints{};
+		std::array<Vec<float, 3>, 6> faceOutUnitNormals{};
+	};
+
 	struct CommonData {
 		Vec<Vec<float, 4>, 4> homographyMatrixInverse{};
 		Vec<float, 2> outputOffset{};
 		Vec<float, 2> detectorSpacing{};
 		Vec<float, 3> sourcePositionTransformed{};
-		std::array<Vec<float, 3>, 6> cuboidFacePoints{};
-		std::array<Vec<float, 3>, 6> cuboidFaceUnitNormals{};
+		Cuboid cuboidIn{};
+		Cuboid cuboidAbove{};
+		Cuboid cuboidBelow{};
 		at::Tensor flatOutput{};
 	};
 
@@ -135,10 +141,20 @@ struct ProjectDRRCuboidMask {
 		CommonData ret{};
 		ret.homographyMatrixInverse = Vec<Vec<float, 4>, 4>::FromTensor2D(homographyMatrixInverse);
 		const Vec<float, 6> planeSigns = ((Vec<int, 6>::Range() < 3).StaticCast<int>() * 2 - 1).StaticCast<float>();
-		ret.cuboidFacePoints = VecOuter(
-			0.5f * Vec<float, 3>::FromTensor(voxelSpacing) * Vec<int64_t, 3>::FromTensor(volumeSize).StaticCast<
-				float>(), planeSigns);
-		ret.cuboidFaceUnitNormals = VecCat(Vec<Vec<float, 3>, 3>::Identity(), -1.f * Vec<Vec<float, 3>, 3>::Identity());
+		const Vec<float, 3> cuboidHalfSize = 0.5f * Vec<float, 3>::FromTensor(voxelSpacing) * Vec<
+			                                     int64_t, 3>::FromTensor(volumeSize).StaticCast<float>();
+		ret.cuboidIn.facePoints = VecOuter(cuboidHalfSize, planeSigns);
+		ret.cuboidIn.faceOutUnitNormals = VecCat(Vec<Vec<float, 3>, 3>::Identity(),
+		                                         -1.f * Vec<Vec<float, 3>, 3>::Identity());
+
+		const Vec<float, 3> aboveBelowHalfSize = Vec<float, 3>{1.f, 1.f, 4.f} * cuboidHalfSize;
+		ret.cuboidAbove.facePoints = VecOuter(aboveBelowHalfSize, planeSigns);
+		ret.cuboidBelow.facePoints = ret.cuboidAbove.facePoints;
+		const float zSum = aboveBelowHalfSize.Z() + cuboidHalfSize.Z();
+		for (Vec<float, 3> &v : ret.cuboidAbove.facePoints) v.Z() += zSum;
+		for (Vec<float, 3> &v : ret.cuboidBelow.facePoints) v.Z() -= zSum;
+		ret.cuboidAbove.faceOutUnitNormals = ret.cuboidIn.faceOutUnitNormals;
+		ret.cuboidBelow.faceOutUnitNormals = ret.cuboidIn.faceOutUnitNormals;
 
 		ret.sourcePositionTransformed = MatMul(ret.homographyMatrixInverse,
 		                                       Vec<float, 4>{0.0f, 0.0f, static_cast<float>(sourceDistance), 1.0f}).
