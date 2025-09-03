@@ -15,7 +15,7 @@ var searchData=
   ['radon3dcpu_2ecpp_12',['Radon3DCPU.cpp',['../Radon3DCPU_8cpp.html',1,'']]],
   ['radon3dcuda_2ecu_13',['Radon3DCUDA.cu',['../Radon3DCUDA_8cu.html',1,'']]],
   ['range_14',['Range',['../classreg23_1_1Vec.html#a7c00676155b688a6a95b16b6c8868ef2',1,'reg23::Vec']]],
-  ['rayconvexpolyhedrondistance_15',['RayConvexPolyhedronDistance',['../namespacereg23.html#a78feb4a4e08ae25e1e7576b7224ec27a',1,'reg23']]],
+  ['rayconvexpolyhedrondistance_15',['RayConvexPolyhedronDistance',['../group__general__tools.html#ga78feb4a4e08ae25e1e7576b7224ec27a',1,'reg23']]],
   ['reg23_16',['reg23',['../namespacereg23.html',1,'']]],
   ['registration_17',['Grangeat-based 2D/3D image registration',['../index.html',1,'']]],
   ['related_20types_18',['Texture-Related Types',['../group__textures.html',1,'']]],
