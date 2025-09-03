@@ -39,13 +39,17 @@ class Cropping(NamedTuple):
 class HyperParameters(NamedTuple):
     cropping: Cropping
     source_offset: torch.Tensor  # size = (2,), dtype = torch.float64
+    mask: torch.Tensor
 
     @staticmethod
     def zero(image_size: torch.Size) -> 'HyperParameters':
-        return HyperParameters(cropping=Cropping.zero(image_size), source_offset=torch.zeros(2))
+        return HyperParameters(cropping=Cropping.zero(image_size), source_offset=torch.zeros(2),
+                               mask=torch.ones(image_size))
 
     def is_close(self, other: 'HyperParameters') -> bool:
-        return self.cropping == other.cropping and torch.allclose(self.source_offset, other.source_offset)
+        return (self.cropping == other.cropping and  #
+                torch.allclose(self.source_offset, other.source_offset) and  #
+                torch.allclose(self.mask, other.mask))
 
 
 class WidgetSelectData:

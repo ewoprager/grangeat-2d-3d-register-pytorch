@@ -19,7 +19,7 @@ from scipy.signal import resample
 import logs_setup
 from registration.lib.sinogram import SinogramType, SinogramClassic, SinogramHEALPix
 from registration.lib import geometry
-from registration.interface.lib.structs import Target, ViewParams
+from registration.interface.lib.structs import Target, ViewParams, HyperParameters
 from registration.lib.structs import Transformation, SceneGeometry
 from registration.interface.registration_data import RegistrationData
 from registration.interface.transformations import TransformationWidget
@@ -136,35 +136,42 @@ class Interface:
         return next(iter(self.registration_data.ct_sinograms.values())).resample_cuda_texture(ph_matrix,
                                                                                               self.registration_data.sinogram2d_grid)
 
-    def generate_drr(self, transformation: Transformation, generate_cuboid_mask: bool = False) -> Union[
-        torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+    def generate_drr(self, transformation: Transformation) -> torch.Tensor:
         # Applying the translation offset
         translation = copy.deepcopy(transformation.translation)
         translation[0:2] += self.registration_data.translation_offset.to(device=transformation.device)
         transformation = Transformation(rotation=transformation.rotation, translation=translation).to(
             device=self.device)
 
-        scene_geometry = SceneGeometry(source_distance=self.registration_data.scene_geometry.source_distance,
-                                       fixed_image_offset=self.registration_data.fixed_image_offset)
-
-        ret = geometry.generate_drr(self.registration_data.ct_volume, transformation=transformation,
-                                    voxel_spacing=self.registration_data.ct_spacing,
-                                    detector_spacing=self.registration_data.fixed_image_spacing.to(device=self.device),
-                                    scene_geometry=scene_geometry,
-                                    output_size=self.registration_data.fixed_image.size())
-
-        if generate_cuboid_mask:
-            mask = geometry.generate_drr_cuboid_mask(self.registration_data.ct_volume, transformation=transformation,
-                                                     voxel_spacing=self.registration_data.ct_spacing,
-                                                     detector_spacing=self.registration_data.fixed_image_spacing.to(
-                                                         device=self.device), scene_geometry=scene_geometry,
-                                                     output_size=self.registration_data.fixed_image.size())
-            return ret, mask
-        return ret
+        return geometry.generate_drr(self.registration_data.ct_volume, transformation=transformation,
+                                     voxel_spacing=self.registration_data.ct_spacing,
+                                     detector_spacing=self.registration_data.fixed_image_spacing.to(device=self.device),
+                                     scene_geometry=SceneGeometry(
+                                         source_distance=self.registration_data.scene_geometry.source_distance,
+                                         fixed_image_offset=self.registration_data.fixed_image_offset),
+                                     output_size=self.registration_data.fixed_image.size())
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        drr, mask = self.generate_drr(transformation, True)
-        return -objective_function.zncc(mask * self.registration_data.fixed_image, drr)
+        return -objective_function.zncc(
+            self.registration_data.hyperparameters.mask * self.registration_data.fixed_image,
+            self.generate_drr(transformation))
+
+    def regenerate_mask(self, transformation: Transformation) -> None:
+        translation = copy.deepcopy(transformation.translation)
+        translation[0:2] += self.registration_data.translation_offset.to(device=transformation.device)
+        transformation = Transformation(rotation=transformation.rotation, translation=translation).to(
+            device=self.device)
+
+        mask = geometry.generate_drr_cuboid_mask(self.registration_data.ct_volume, transformation=transformation,
+                                                 voxel_spacing=self.registration_data.ct_spacing,
+                                                 detector_spacing=self.registration_data.fixed_image_spacing.to(
+                                                     device=self.device), scene_geometry=SceneGeometry(
+                source_distance=self.registration_data.scene_geometry.source_distance,
+                fixed_image_offset=self.registration_data.fixed_image_offset),
+                                                 output_size=self.registration_data.fixed_image.size())
+        self.registration_data.hyperparameters = HyperParameters(
+            cropping=self.registration_data.hyperparameters.cropping,
+            source_offset=self.registration_data.hyperparameters.source_offset, mask=mask)
 
     def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
         return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))

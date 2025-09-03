@@ -89,7 +89,9 @@ class LandscapeTask:
             self.registration_data.hyperparameters = HyperParameters(
                 cropping=Cropping(right=zero_crop.right, top=self.registration_data.hyperparameters.cropping.top,
                                   left=zero_crop.left, bottom=self.registration_data.hyperparameters.cropping.bottom),
-                source_offset=self.registration_data.hyperparameters.source_offset)
+                source_offset=self.registration_data.hyperparameters.source_offset, mask=torch.ones(
+                    self.registration_data.hyperparameters.cropping.bottom - self.registration_data.hyperparameters.cropping.top,
+                    zero_crop.right - zero_crop.left))
 
         if show:
             plt.figure()

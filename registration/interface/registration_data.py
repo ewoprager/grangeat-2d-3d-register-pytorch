@@ -266,9 +266,10 @@ class RegistrationData:
                                            LinearRange(-.5 * image_diag, .5 * image_diag))
         sinogram2d_grid = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=self.device)
 
-        sinogram2d = grangeat.calculate_fixed_image(fixed_image, source_distance=self.scene_geometry.source_distance,
-                                                    detector_spacing=self.fixed_image_spacing,
-                                                    output_grid=sinogram2d_grid)
+        sinogram2d = grangeat.calculate_fixed_image(
+            fixed_image * self.hyperparameters.mask.to(device=fixed_image.device),
+            source_distance=self.scene_geometry.source_distance, detector_spacing=self.fixed_image_spacing,
+            output_grid=sinogram2d_grid)
 
         sinogram2d_grid = sinogram2d_grid.shifted(-fixed_image_offset)
 

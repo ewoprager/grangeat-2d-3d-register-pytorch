@@ -463,7 +463,7 @@ class RegisterWidget(widgets.Container):
         return HyperParameters(
             cropping=Cropping(right=self._right_crop_slider.get_value(), top=self._top_crop_slider.get_value(),
                               left=self._left_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value()),
-            source_offset=torch.zeros(2))
+            source_offset=torch.zeros(2), mask=self._registration_data.hyperparameters.mask)
 
     def _set_hyper_parameters(self, new_value: HyperParameters) -> None:
         if new_value.cropping.right > self._right_crop_slider.max:
