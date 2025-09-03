@@ -7,7 +7,7 @@
 
 #include "../include/GridSample3D.h"
 #include "../include/ProjectDRR.h"
-#include "../include/ProjectDRRCuboidMask.h"
+#include "../include/ProjectDRRCuboidMaskCPU.h"
 #include "../include/Radon2D.h"
 #include "../include/Radon3D.h"
 #include "../include/ResampleSinogram3D.h"
@@ -91,6 +91,7 @@ TORCH_LIBRARY_IMPL(reg23, CUDA, m) {
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CUDA);
 	m.impl("grid_sample3d", &GridSample3D_CUDA);
 	m.impl("project_drr", &ProjectDRR_CUDA);
+	m.impl("project_drr_cuboid_mask", &ProjectDRRCuboidMask_CUDA);
 }
 #endif
 

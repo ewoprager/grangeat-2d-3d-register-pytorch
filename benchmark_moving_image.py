@@ -150,8 +150,6 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     # -----
     # DRR mask
     # -----
-    old_device = device # !!!
-    device = torch.device("cpu") # !!!
     logger.info("Projecting DRR mask...")
     torch.cuda.synchronize()
     tic = time.time()
@@ -172,7 +170,6 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
         mesh = axes.pcolormesh(mask.cpu().numpy())
         axes.set_title("DRR Mask")
         plt.colorbar(mesh)
-    device = old_device # !!!
 
     logger.info("Projecting DRR mask in python...")
     torch.cuda.synchronize()
