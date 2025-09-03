@@ -1,7 +1,4 @@
 var searchData=
 [
-  ['geometry_0',['geometry',['../structreg23_1_1ResampleSinogram3D_1_1CommonData.html#a854c2b46bf8eb7120058a51c64a7dd67',1,'reg23::ResampleSinogram3D::CommonData']]],
-  ['gradient_1',['gradient',['../structreg23_1_1Linear.html#a1bfcfa37eba9c03676b264526aacea58',1,'reg23::Linear']]],
-  ['gradient1_2',['gradient1',['../structreg23_1_1Linear2.html#af01b4f33b68d0ca31431f9c9dac74af3',1,'reg23::Linear2']]],
-  ['gradient2_3',['gradient2',['../structreg23_1_1Linear2.html#aedd7315e9f6d19eb475e17105b93400b',1,'reg23::Linear2']]]
+  ['flatoutput_0',['flatoutput',['../structreg23_1_1GridSample3D_1_1CommonData.html#a4386ad5d892045325a1f9c69bee7fe0c',1,'reg23::GridSample3D::CommonData::flatOutput'],['../structreg23_1_1ProjectDRR_1_1CommonData.html#a86153db98b7da6d8561656573bcd27c9',1,'reg23::ProjectDRR::CommonData::flatOutput'],['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a1368a55e94a344dd744a125a22cec652',1,'reg23::ProjectDRRCuboidMask::CommonData::flatOutput'],['../structreg23_1_1Radon2D_1_1CommonData.html#a817711c1742690f093acda26b5de83f7',1,'reg23::Radon2D::CommonData::flatOutput'],['../structreg23_1_1Radon3D_1_1CommonData.html#adf3523452f8d23b9dfd7e0ca4cea5753',1,'reg23::Radon3D::CommonData::flatOutput'],['../structreg23_1_1ResampleSinogram3D_1_1CommonData.html#aae447978331997b36a4bf0547cd6e57c',1,'reg23::ResampleSinogram3D::CommonData::flatOutput']]]
 ];

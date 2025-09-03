@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['phi_5frange_5fhigh_0',['PHI_RANGE_HIGH',['../classreg23_1_1SinogramClassic3D.html#a3f9d0b17279886b6d5e98cc48e0c8c42',1,'reg23::SinogramClassic3D']]],
-  ['phi_5frange_5flow_1',['PHI_RANGE_LOW',['../classreg23_1_1SinogramClassic3D.html#a6013d25cb8e7c12c2365857bc5e9cb35',1,'reg23::SinogramClassic3D']]],
-  ['projectionmatrixtranspose_2',['projectionMatrixTranspose',['../structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html#a829c7ffd4be39b8518f0da32501fb583',1,'reg23::ResampleSinogram3D::ConstantGeometry']]]
+  ['originprojection_0',['originProjection',['../structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html#ab6cef2eec6bd335fd6e42f6d1be56529',1,'reg23::ResampleSinogram3D::ConstantGeometry']]],
+  ['outputoffset_1',['outputoffset',['../structreg23_1_1ProjectDRR_1_1CommonData.html#a3502b7102e6e1f26bb8b76f6663dae1f',1,'reg23::ProjectDRR::CommonData::outputOffset'],['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#aa716048e78903dc202fef43e0ce6c1fa',1,'reg23::ProjectDRRCuboidMask::CommonData::outputOffset']]]
 ];

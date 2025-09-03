@@ -17,13 +17,14 @@ var searchData=
   ['sizetensor_14',['sizetensor',['../classreg23_1_1CUDATexture2D.html#a88895a17472217a7a3b553bd01b8cc98',1,'reg23::CUDATexture2D::SizeTensor()'],['../classreg23_1_1CUDATexture3D.html#ac82ee51aaf9c8f88cf3a566aaf2e3b8c',1,'reg23::CUDATexture3D::SizeTensor()']]],
   ['sizetype_15',['sizetype',['../classreg23_1_1SinogramHEALPix.html#a1a40400fcfef07722a3d664f044af401',1,'reg23::SinogramHEALPix::SizeType'],['../classreg23_1_1Texture.html#aada23143d4e8ed8004f6e317f026063a',1,'reg23::Texture::SizeType'],['../classreg23_1_1SinogramClassic3D.html#a8c01879d4ef16669a305fb15eaa3ead0',1,'reg23::SinogramClassic3D::SizeType'],['../structreg23_1_1Radon3D.html#aaf48b40505d84b76c939a2d5658e4e55',1,'reg23::Radon3D::SizeType'],['../structreg23_1_1Radon2D.html#a0ae12cdc2aa15a4ec8306ded7567f9b8',1,'reg23::Radon2D::SizeType'],['../structreg23_1_1ProjectDRR.html#a054283898efdf262be0411371f05b4ac',1,'reg23::ProjectDRR::SizeType'],['../structreg23_1_1GridSample3D.html#ae154546a3cf876f22a5ec039054b88f9',1,'reg23::GridSample3D::SizeType']]],
   ['sizeworld_16',['SizeWorld',['../classreg23_1_1Texture.html#abfc8536390678e625ba68524cabdd313',1,'reg23::Texture']]],
-  ['spacing_17',['Spacing',['../classreg23_1_1Texture.html#a2d32947dcb93ddd94f55fd2d37d02641',1,'reg23::Texture']]],
-  ['spherical_20coordinates_18',['Spherical coordinates',['../conventions.html#autotoc_md7',1,'']]],
-  ['square_19',['Square',['../group__general__tools.html#gac05f93968187265d84f03c8caf65736a',1,'reg23']]],
-  ['squareradius_20',['squareRadius',['../structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html#a34a537f0d1cca3564d0a5035d2b91add',1,'reg23::ResampleSinogram3D::ConstantGeometry']]],
-  ['staticcast_21',['StaticCast',['../classreg23_1_1Vec.html#a01d47c2f401d48d9d26ad37ec60776a3',1,'reg23::Vec']]],
-  ['stepsize_22',['stepSize',['../structreg23_1_1ProjectDRR_1_1CommonData.html#ab8a732bbe0643c6c39572c9ef6e21ed6',1,'reg23::ProjectDRR::CommonData']]],
-  ['stringstoaddressmodes_23',['StringsToAddressModes',['../group__textures.html#ga41e11281be1b986d4fb9beeea39504f2',1,'reg23']]],
-  ['structures_24',['Data Structures',['../group__data__structures.html',1,'']]],
-  ['sum_25',['Sum',['../classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93',1,'reg23::Vec']]]
+  ['sourcepositiontransformed_17',['sourcePositionTransformed',['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a96dd311b462975b4912a55f87e1811d8',1,'reg23::ProjectDRRCuboidMask::CommonData']]],
+  ['spacing_18',['Spacing',['../classreg23_1_1Texture.html#a2d32947dcb93ddd94f55fd2d37d02641',1,'reg23::Texture']]],
+  ['spherical_20coordinates_19',['Spherical coordinates',['../conventions.html#autotoc_md7',1,'']]],
+  ['square_20',['Square',['../group__general__tools.html#gac05f93968187265d84f03c8caf65736a',1,'reg23']]],
+  ['squareradius_21',['squareRadius',['../structreg23_1_1ResampleSinogram3D_1_1ConstantGeometry.html#a34a537f0d1cca3564d0a5035d2b91add',1,'reg23::ResampleSinogram3D::ConstantGeometry']]],
+  ['staticcast_22',['StaticCast',['../classreg23_1_1Vec.html#a01d47c2f401d48d9d26ad37ec60776a3',1,'reg23::Vec']]],
+  ['stepsize_23',['stepSize',['../structreg23_1_1ProjectDRR_1_1CommonData.html#ab8a732bbe0643c6c39572c9ef6e21ed6',1,'reg23::ProjectDRR::CommonData']]],
+  ['stringstoaddressmodes_24',['StringsToAddressModes',['../group__textures.html#ga41e11281be1b986d4fb9beeea39504f2',1,'reg23']]],
+  ['structures_25',['Data Structures',['../group__data__structures.html',1,'']]],
+  ['sum_26',['Sum',['../classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93',1,'reg23::Vec']]]
 ];

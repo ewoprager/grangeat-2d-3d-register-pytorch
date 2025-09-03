@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['inputtexture_0',['inputtexture',['../structreg23_1_1GridSample3D_1_1CommonData.html#af2f1e9d101c38f16933e173c5fcf8882',1,'reg23::GridSample3D::CommonData::inputTexture'],['../structreg23_1_1ProjectDRR_1_1CommonData.html#a4edaef2fd18f02372c54cb7118712ee9',1,'reg23::ProjectDRR::CommonData::inputTexture'],['../structreg23_1_1Radon2D_1_1CommonData.html#a9a64f5e7744eda2e166e7bc456320cd2',1,'reg23::Radon2D::CommonData::inputTexture'],['../structreg23_1_1Radon3D_1_1CommonData.html#a6a37b7a701de361ae70dde030244452f',1,'reg23::Radon3D::CommonData::inputTexture']]],
-  ['intercept_1',['intercept',['../structreg23_1_1Linear.html#ad91527d6d5a81941a81e7ef2cecb7954',1,'reg23::Linear::intercept'],['../structreg23_1_1Linear2.html#abb294b6b66396209e8f5e2ac194c1642',1,'reg23::Linear2::intercept']]]
+  ['homographymatrixinverse_0',['homographymatrixinverse',['../structreg23_1_1ProjectDRR_1_1CommonData.html#aaaa15cada8b188aa60e0392bc67f7366',1,'reg23::ProjectDRR::CommonData::homographyMatrixInverse'],['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a39596dd370d73448c56f38fa1dac631d',1,'reg23::ProjectDRRCuboidMask::CommonData::homographyMatrixInverse']]]
 ];
