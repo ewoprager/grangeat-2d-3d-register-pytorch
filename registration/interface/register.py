@@ -276,7 +276,13 @@ class RegisterWidget(widgets.Container):
         ##
         self._regenerate_mask_button = widgets.PushButton(label="Regenerate mask")
         self._regenerate_mask_button.changed.connect(self._on_regenerate_mask_button)
-        self.append(self._regenerate_mask_button)
+        self._evals_per_regen_mask: int | None = None
+        self._evals_per_regen_mask_widget = widgets.SpinBox(value=0, min=0, max=10000, step=1,
+                                                            label="Evals./regen. mask")
+        self._evals_per_regen_mask_widget.changed.connect(self._on_evals_per_regen_mask)
+        self._last_regen_mask_iteration: int = 0
+        self.append(widgets.Container(widgets=[self._regenerate_mask_button, self._evals_per_regen_mask_widget],
+                                      layout="horizontal"))
 
         ##
         ## Cropping sliders
@@ -378,6 +384,7 @@ class RegisterWidget(widgets.Container):
         self._iteration_callback_count = 0
         self._best = None
         self._last_rendered_iteration = 0
+        self._last_regen_mask_iteration = 0
         self._thread = QThread()
         self._worker = Worker(initial_transformation=self._transformation_widget.get_current_transformation(),
                               objective_function=self._current_obj_func(),
@@ -397,41 +404,44 @@ class RegisterWidget(widgets.Container):
     def _iteration_callback(self, param_history: torch.Tensor, value_history: torch.Tensor, force_render: bool) -> None:
         self._iteration_callback_count += 1
 
-        if not force_render and self._iteration_callback_count - self._last_rendered_iteration < self._evals_per_render:
-            return
+        if self._evals_per_regen_mask is not None and self._iteration_callback_count - self._last_regen_mask_iteration > self._evals_per_regen_mask:
+            self._last_regen_mask_iteration = self._iteration_callback_count
+            self._registration_data.mask_transformation = Transformation.from_vector(param_history[-1]).to(
+                dtype=torch.float32)
 
-        self._axes.cla()
+        if force_render or self._iteration_callback_count - self._last_rendered_iteration > self._evals_per_render:
+            self._axes.cla()
 
-        its = np.arange(param_history.size()[0])
-        its2 = np.array([its[0], its[-1]])
+            its = np.arange(param_history.size()[0])
+            its2 = np.array([its[0], its[-1]])
 
-        # rotations
-        # self.axes.plot(its2, np.full(2, 0.), ls='dashed')
-        # self.axes.plot(its, param_history[:, 0], label="r0")
-        # self.axes.plot(its, param_history[:, 1], label="r1")
-        # self.axes.plot(its, param_history[:, 2], label="r2")
-        # self.axes.legend()
-        # self.axes.set_xlabel("iteration")
-        # self.axes.set_ylabel("param value [rad]")
-        # self.axes.set_title("rotation parameter values over optimisation iterations")
-        # self.fig.canvas.draw()
+            # rotations
+            # self.axes.plot(its2, np.full(2, 0.), ls='dashed')
+            # self.axes.plot(its, param_history[:, 0], label="r0")
+            # self.axes.plot(its, param_history[:, 1], label="r1")
+            # self.axes.plot(its, param_history[:, 2], label="r2")
+            # self.axes.legend()
+            # self.axes.set_xlabel("iteration")
+            # self.axes.set_ylabel("param value [rad]")
+            # self.axes.set_title("rotation parameter values over optimisation iterations")
+            # self.fig.canvas.draw()
 
-        # value
-        self._axes.plot(its, value_history)
-        self._axes.set_xlabel("iteration")
-        self._axes.set_ylabel("objective function value")
-        self._fig.canvas.draw()
+            # value
+            self._axes.plot(its, value_history)
+            self._axes.set_xlabel("iteration")
+            self._axes.set_ylabel("objective function value")
+            self._fig.canvas.draw()
 
-        self._last_rendered_iteration = self._iteration_callback_count
-        values = value_history.cpu()
-        self._best, best_index = values.min(0)
-        self._best = self._best.item()
-        best_index = best_index.item()
-        best_transformation = mapping_parameters_to_transformation(param_history[best_index])
-        self._transformation_widget.set_current_transformation(best_transformation)
+            self._last_rendered_iteration = self._iteration_callback_count
+            values = value_history.cpu()
+            self._best, best_index = values.min(0)
+            self._best = self._best.item()
+            best_index = best_index.item()
+            best_transformation = mapping_parameters_to_transformation(param_history[best_index])
+            self._transformation_widget.set_current_transformation(best_transformation)
 
-        self._register_progress.value = "{} evaluations, best = {:.4f}".format(self._iteration_callback_count,
-                                                                               0.0 if self._best is None else self._best)
+            self._register_progress.value = "{} evaluations, best = {:.4f}".format(self._iteration_callback_count,
+                                                                                   0.0 if self._best is None else self._best)
 
     def _finish_callback(self, converged_transformation: Transformation):
         self._transformation_widget.set_current_transformation(converged_transformation)
@@ -551,6 +561,11 @@ class RegisterWidget(widgets.Container):
     def _on_regenerate_mask_button(self) -> None:
         self._registration_data.mask_transformation = self._transformation_widget.get_current_transformation()
         self._registration_data.refresh_mask_transformation_dependent()
+
+    def _on_evals_per_regen_mask(self, *args):
+        self._evals_per_regen_mask = self._evals_per_regen_mask_widget.get_value()
+        if self._evals_per_regen_mask == 0:
+            self._evals_per_regen_mask = None
 
     def _on_exit(self) -> None:
         self._hyper_parameters_widget.save_to_file(self._hyper_parameter_save_path)

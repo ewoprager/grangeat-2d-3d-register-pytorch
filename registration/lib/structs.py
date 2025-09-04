@@ -112,7 +112,8 @@ class Transformation(NamedTuple):
             device=device).square().sum()).sqrt().item()
 
     def is_close(self, other: 'Transformation') -> bool:
-        return torch.allclose(self.rotation, other.rotation) and torch.allclose(self.translation, other.translation)
+        return torch.allclose(self.rotation, other.rotation.to(device=self.rotation.device)) and torch.allclose(
+            self.translation, other.translation.to(device=self.translation.device))
 
     def __str__(self) -> str:
         return "Transformation(rot = {}, trans = {})".format(str(self.rotation), str(self.translation))

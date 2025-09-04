@@ -61,7 +61,7 @@ class TransformationWidget(widgets.Container):
         return self._current_transformation
 
     def set_current_transformation(self, new_value: Transformation) -> None:
-        self._current_transformation = new_value.to(device=self._current_transformation.device)
+        self._current_transformation = new_value.to(device=self._current_transformation.device, dtype=torch.float32)
         self._suppress_callbacks = True
         for i in range(3):
             self._translation_widgets[i].set_value(self._current_transformation.translation[i].item())
