@@ -27,12 +27,18 @@ public:
 
 	using Base = std::array<T, N>;
 
+	/**
+	 * @brief Default construct all elements.
+	 */
 	__host__ __device__ /**/Vec() : Base() {
 		for (T &e : *this) {
 			e = T{};
 		}
 	}
 
+	/**
+	 * @brief Construct from a std::array (this is the base class of Vec)
+	 */
 	__host__ __device__ /**/Vec(Base array)
 		: Base(
 #ifdef __CUDACC__
@@ -41,6 +47,9 @@ public:
 			std::move(array)) {
 	}
 
+	/**
+	 * @brief Construct from a series of values
+	 */
 	__host__ __device__ /**/Vec(std::initializer_list<T> l) : Base() {
 		int i = 0;
 		for (const T &e : l) {
@@ -49,6 +58,9 @@ public:
 		}
 	}
 
+	/**
+	 * @brief Construct a Vec, copying the given value into every element
+	 */
 	__host__ __device__ static Vec Full(const T &value) {
 		Vec ret{};
 		for (T &e : ret) {
@@ -57,12 +69,18 @@ public:
 		return ret;
 	}
 
+	/**
+	 * @brief Construct a Vec where the `i`th element is `start + i * step`
+	 */
 	__host__ __device__ static Vec Range(const T &start = T{0}, const T &step = T{1}) {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 			return {{start + static_cast<T>(indices) * step...}};
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @brief Construct a Vec from an at::IntArrayRef (this is the type of `at::Tensor::sizes()`)
+	 */
 	__host__ __device__ static constexpr Vec FromIntArrayRef(const at::IntArrayRef &v) {
 		assert(v.size() == N);
 		Vec ret{};
@@ -74,7 +92,7 @@ public:
 	}
 
 	/**
-	 * @brief Construct a vector from a 1D PyTorch tensor
+	 * @brief Construct a Vec from a 1D PyTorch tensor
 	 * @param t a tensor of size (N,); the contained type must be consistent with the vector's type, i.e. for a
 	 * `Vec<float32_t, N>`, `t` must contain values of type `torch.float32`.
 	 * @return A `Vec` filled with the values copied from the given tensor
@@ -121,17 +139,24 @@ public:
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @brief Convert to an at::IntArrayRef (this is the type of `at::Tensor::sizes()`)
+	 */
 	__host__ __device__ [[nodiscard]] constexpr at::IntArrayRef ToIntArrayRef() const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> at::IntArrayRef {
 			return at::IntArrayRef({(*this)[indices]...});
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @brief Convert to an `at::Tensor`
+	 */
 	__host__ [[nodiscard]] at::Tensor ToTensor(at::TensorOptions options = {}) const {
 		return torch::from_blob(this->data(), {this->size()}, options);
 	}
 
 	/**
+	 * @brief Construct a Vec with the same elements, but in the reverse order.
 	 * @return A copy of this vector, with the order of the elements reversed
 	 */
 	__host__ __device__ [[nodiscard]] constexpr Vec Flipped() const {
@@ -141,6 +166,7 @@ public:
 	}
 
 	/**
+	 * @brief Compute the sum of all elements
 	 * @return The sum of the elements of the vector
 	 */
 	__host__ __device__ [[nodiscard]] constexpr T Sum() const {
@@ -150,6 +176,7 @@ public:
 	}
 
 	/**
+	 * @brief Find the smallest element
 	 * @return The smallest element in the vector. No ordering is assumed; operation is O(N).
 	 */
 	__host__ __device__ [[nodiscard]] constexpr T Min() const {
@@ -163,6 +190,7 @@ public:
 	}
 
 	/**
+	 * @brief Find the largest element
 	 * @return The largest element in the vector. No ordering is assumed; operation is O(N).
 	 */
 	__host__ __device__ [[nodiscard]] constexpr T Max() const {
@@ -176,6 +204,7 @@ public:
 	}
 
 	/**
+	 * @brief Find the smallest and largest elements
 	 * @return A pair containing the smallest and largest elements in the vector. No ordering is assumed; operation is
 	 * O(N).
 	 */
@@ -191,6 +220,7 @@ public:
 	}
 
 	/**
+	 * @brief Compute the 3-vector for this homogeneous vector, = (x, y, z) / w
 	 * @return The 3-vector corresponding to this homogeneous 4-vector, i.e. (x, y, z) / w
 	 *
 	 * For floating-point 4-vectors only.
@@ -202,6 +232,7 @@ public:
 	}
 
 	/**
+	 * @brief Construct a Vec with the elements form this one cast to a new type.
 	 * @return A copy of this vector, with each element cast to the type `newT`
 	 */
 	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N> StaticCast() const {
@@ -210,11 +241,16 @@ public:
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @brief Compute the L^2 norm
+	 * @return The L^2 norm of this vector
+	 */
 	__host__ __device__ [[nodiscard]] constexpr T Length() const {
 		return sqrt(Apply(&Square<T>).Sum());
 	}
 
 	/**
+	 * @brief Compute the combination of all elements using the AND operator
 	 * @return Whether all elements of the vector are `true`
 	 *
 	 * For boolean vectors only
@@ -227,6 +263,7 @@ public:
 	}
 
 	/**
+	 * @brief Compute the combination of all elements using the OR operator
 	 * @return Whether any elements of the vector are `true`
 	 *
 	 * For boolean vectors only
@@ -240,6 +277,12 @@ public:
 
 	// Element-wise function:
 
+	/**
+	 * @brief Map all elements with a common `std::function` mapping function.
+	 * @tparam newT The element type of the returned vector
+	 * @param f A function with which to map each element of this vector
+	 * @return A Vec with the elements mapped from those of this vector using f
+	 */
 	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N> Apply(
 		const std::function<newT(T)> &f) const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<newT, N> {
@@ -247,6 +290,12 @@ public:
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @brief Map all elements with a common `std::function` mapping function.
+	 * @tparam newT The element type of the returned vector
+	 * @param f A function with which to map each element of this vector
+	 * @return A Vec with the elements mapped from those of this vector using f
+	 */
 	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N> Apply(
 		const std::function<newT(const T &)> &f) const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<newT, N> {
@@ -254,12 +303,24 @@ public:
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @brief Map all elements with a common C-style mapping function.
+	 * @tparam newT The element type of the returned vector
+	 * @param f A function with which to map each element of this vector
+	 * @return A Vec with the elements mapped from those of this vector using f
+	 */
 	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N> Apply(newT (*f)(T)) const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<newT, N> {
 			return {{f((*this)[indices])...}};
 		}(std::make_index_sequence<N>{});
 	}
 
+	/**
+	 * @brief Map all elements with a common C-style mapping function.
+	 * @tparam newT The element type of the returned vector
+	 * @param f A function with which to map each element of this vector
+	 * @return A Vec with the elements mapped from those of this vector using f
+	 */
 	template <typename newT> __host__ __device__ [[nodiscard]] constexpr Vec<newT, N>
 	Apply(newT (*f)(const T &)) const {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<newT, N> {
@@ -269,6 +330,9 @@ public:
 
 	// Modification in place
 
+	/**
+	 * @brief Element-wise addition of another Vec
+	 */
 	__host__ __device__ Vec &operator+=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] += other[indices]; }(), ...);
@@ -276,6 +340,9 @@ public:
 		return *this;
 	}
 
+	/**
+	 * @brief Element-wise addition of a scalar
+	 */
 	__host__ __device__ Vec &operator+=(const T &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] += scalar; }(), ...);
@@ -283,6 +350,9 @@ public:
 		return *this;
 	}
 
+	/**
+	 * @brief Element-wise subtraction of another Vec
+	 */
 	__host__ __device__ Vec &operator-=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] -= other[indices]; }(), ...);
@@ -290,6 +360,9 @@ public:
 		return *this;
 	}
 
+	/**
+	 * @brief Element-wise subtraction of a scalar
+	 */
 	__host__ __device__ Vec &operator-=(const T &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] -= scalar; }(), ...);
@@ -297,6 +370,9 @@ public:
 		return *this;
 	}
 
+	/**
+	 * @brief Element-wise multiplication by another Vec
+	 */
 	__host__ __device__ Vec &operator*=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] *= other[indices]; }(), ...);
@@ -304,6 +380,9 @@ public:
 		return *this;
 	}
 
+	/**
+	 * @brief Element-wise multiplication by a scalar
+	 */
 	__host__ __device__ Vec &operator*=(const T &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] *= scalar; }(), ...);
@@ -311,6 +390,9 @@ public:
 		return *this;
 	}
 
+	/**
+	 * @brief Element-wise division by another Vec
+	 */
 	__host__ __device__ Vec &operator/=(const Vec &other) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] /= other[indices]; }(), ...);
@@ -318,6 +400,9 @@ public:
 		return *this;
 	}
 
+	/**
+	 * @brief Element-wise division by a scalar
+	 */
 	__host__ __device__ Vec &operator/=(const T &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] /= scalar; }(), ...);
@@ -327,40 +412,72 @@ public:
 
 	// Named member accessors
 
+	/**
+	 * @brief Get a constant reference to the first element
+	 */
 	__host__ __device__ [[nodiscard]] constexpr const T &X() const { return (*this)[0]; }
+
+	/**
+	 * @brief Get the first element
+	 */
 	__host__ __device__ [[nodiscard]] constexpr T &X() { return (*this)[0]; }
 
+	/**
+	 * @brief Get a constant reference to the second element
+	 */
 	__host__ __device__ [[nodiscard]] constexpr const T &Y() const {
 		static_assert(N > 1, "Vec size must be greater than 1 to access element Y");
 		return (*this)[1];
 	}
 
+	/**
+	 * @brief Get the second element
+	 */
 	__host__ __device__ [[nodiscard]] constexpr T &Y() {
 		static_assert(N > 1, "Vec size must be greater than 1 to access element Y");
 		return (*this)[1];
 	}
 
+	/**
+	 * @brief Get a constant reference to the third element
+	 */
 	__host__ __device__ [[nodiscard]] constexpr const T &Z() const {
 		static_assert(N > 2, "Vec size must be greater than 2 to access element Z");
 		return (*this)[2];
 	}
 
+	/**
+	 * @brief Get the third element
+	 */
 	__host__ __device__ [[nodiscard]] constexpr T &Z() {
 		static_assert(N > 2, "Vec size must be greater than 2 to access element Z");
 		return (*this)[2];
 	}
 
+	/**
+	 * @brief Get a constant reference to the fourth element
+	 */
 	__host__ __device__ [[nodiscard]] constexpr const T &W() const {
 		static_assert(N > 3, "Vec size must be greater than 3 to access element W");
 		return (*this)[3];
 	}
 
+	/**
+	 * @brief Get the fourth element
+	 */
 	__host__ __device__ [[nodiscard]] constexpr T &W() {
 		static_assert(N > 3, "Vec size must be greater than 3 to access element W");
 		return (*this)[3];
 	}
 
+	/**
+	 * @brief Construct a Vec from the first two elements
+	 */
 	__host__ __device__ [[nodiscard]] constexpr Vec<T, 2> XY() const { return {X(), Y()}; }
+
+	/**
+	 * @brief Construct a Vec from the first three elements
+	 */
 	__host__ __device__ [[nodiscard]] constexpr Vec<T, 3> XYZ() const { return {X(), Y(), Z()}; }
 };
 
