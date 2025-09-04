@@ -69,7 +69,7 @@ class Interface:
         self._moving_sinogram_layer = self._viewer.add_image(np.zeros(self.registration_data.sinogram2d.size()),
                                                              colormap="blue", blending="additive",
                                                              interpolation2d="linear", translate=(
-                self.registration_data.fixed_image.size()[0] + 24, 0), name="Moving sinogram")
+                self.registration_data.cropped_target.size()[0] + 24, 0), name="Moving sinogram")
 
         self._view_params = ViewParams(translation_sensitivity=0.06, rotation_sensitivity=0.002,
                                        render_fixed_image_with_mask=False)
@@ -99,7 +99,7 @@ class Interface:
         self._register_widget = RegisterWidget(transformation_widget=self._transformation_widget,
                                                registration_data=self.registration_data,
                                                objective_functions=objective_functions, save_directory=save_directory,
-                                               fixed_image_size=self.registration_data.fixed_image.size())
+                                               fixed_image_size=self.registration_data.cropped_target.size())
         self._viewer.window.add_dock_widget(self._register_widget, name="Register", area="right",
                                             menu=self._viewer.window.window_menu, tabify=True)
 
@@ -158,7 +158,7 @@ class Interface:
                                      scene_geometry=SceneGeometry(
                                          source_distance=self.registration_data.source_distance,
                                          fixed_image_offset=self.registration_data.fixed_image_offset),
-                                     output_size=self.registration_data.fixed_image.size())
+                                     output_size=self.registration_data.cropped_target.size())
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
         return -objective_function.zncc(self.registration_data.fixed_image, self.generate_drr(transformation))
@@ -176,7 +176,6 @@ class Interface:
     def render_target_dependent(self) -> None:
         self._sinogram2d_layer.translate = (self.registration_data.image_2d_full.size()[0] + 24, 0)
         self._moving_sinogram_layer.translate = (self.registration_data.image_2d_full.size()[0] + 24, 0)
-        self.render_hyperparameter_dependent()
 
     def render_hyperparameter_dependent(self) -> None:
         translate = (self._registration_data.hyperparameters.cropping.top,
@@ -185,7 +184,6 @@ class Interface:
         self._moving_image_layer.translate = translate
         self.render_drr()
         self.render_moving_sinogram()
-        self.render_mask_transformation_dependent()
 
     def render_mask_transformation_dependent(self) -> None:
         if self._view_params.render_fixed_image_with_mask:
