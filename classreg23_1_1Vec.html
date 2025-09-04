@@ -114,95 +114,135 @@ Public Types</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a7781c2259735c8e0e3ccc054ebe777f4" id="r_a7781c2259735c8e0e3ccc054ebe777f4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a7781c2259735c8e0e3ccc054ebe777f4">Vec</a> ()</td></tr>
+<tr class="memdesc:a7781c2259735c8e0e3ccc054ebe777f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default construct all elements.  <br /></td></tr>
 <tr class="separator:a7781c2259735c8e0e3ccc054ebe777f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef860a8ae544053bce77811a53990259" id="r_aef860a8ae544053bce77811a53990259"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#aef860a8ae544053bce77811a53990259">Vec</a> (<a class="el" href="classreg23_1_1Vec.html#a883409dab129de6e7cd536bbd057c404">Base</a> array)</td></tr>
+<tr class="memdesc:aef860a8ae544053bce77811a53990259"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct from a std::array (this is the base class of <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>)  <br /></td></tr>
 <tr class="separator:aef860a8ae544053bce77811a53990259"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2e4aa4c6ad52667c42ebfa9c6f81574" id="r_ac2e4aa4c6ad52667c42ebfa9c6f81574"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#ac2e4aa4c6ad52667c42ebfa9c6f81574">Vec</a> (std::initializer_list&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &gt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">l</a>)</td></tr>
+<tr class="memdesc:ac2e4aa4c6ad52667c42ebfa9c6f81574"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct from a series of values.  <br /></td></tr>
 <tr class="separator:ac2e4aa4c6ad52667c42ebfa9c6f81574"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f5b89951dd4a1dae6b0e25a261a3668" id="r_a1f5b89951dd4a1dae6b0e25a261a3668"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> at::IntArrayRef&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a1f5b89951dd4a1dae6b0e25a261a3668">ToIntArrayRef</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a1f5b89951dd4a1dae6b0e25a261a3668"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert to an at::IntArrayRef (this is the type of <code>at::Tensor::sizes()</code>)  <br /></td></tr>
 <tr class="separator:a1f5b89951dd4a1dae6b0e25a261a3668"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5972b5e78920fdf94df28dce8cd30818" id="r_a5972b5e78920fdf94df28dce8cd30818"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a5972b5e78920fdf94df28dce8cd30818">ToTensor</a> (at::TensorOptions <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">options</a>={}) <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a5972b5e78920fdf94df28dce8cd30818"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert to an <code>at::Tensor</code>  <br /></td></tr>
 <tr class="separator:a5972b5e78920fdf94df28dce8cd30818"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a98e7b6b208c7068166b922ca8a706b76" id="r_a98e7b6b208c7068166b922ca8a706b76"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a98e7b6b208c7068166b922ca8a706b76">Flipped</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a98e7b6b208c7068166b922ca8a706b76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> with the same elements, but in the reverse order.  <br /></td></tr>
 <tr class="separator:a98e7b6b208c7068166b922ca8a706b76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a866dfdc29aeacf98abbd118d6a67fc93" id="r_a866dfdc29aeacf98abbd118d6a67fc93"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93">Sum</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a866dfdc29aeacf98abbd118d6a67fc93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the sum of all elements.  <br /></td></tr>
 <tr class="separator:a866dfdc29aeacf98abbd118d6a67fc93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd587a3a20d1171f827a459be650489e" id="r_abd587a3a20d1171f827a459be650489e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#abd587a3a20d1171f827a459be650489e">Min</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:abd587a3a20d1171f827a459be650489e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find the smallest element.  <br /></td></tr>
 <tr class="separator:abd587a3a20d1171f827a459be650489e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d73a5cc0dbdd9576b781f55562c5d52" id="r_a2d73a5cc0dbdd9576b781f55562c5d52"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a2d73a5cc0dbdd9576b781f55562c5d52">Max</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a2d73a5cc0dbdd9576b781f55562c5d52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find the largest element.  <br /></td></tr>
 <tr class="separator:a2d73a5cc0dbdd9576b781f55562c5d52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad1cfb9a0123e1d7d697173445b12345" id="r_aad1cfb9a0123e1d7d697173445b12345"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> std::pair&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#aad1cfb9a0123e1d7d697173445b12345">MinMax</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:aad1cfb9a0123e1d7d697173445b12345"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find the smallest and largest elements.  <br /></td></tr>
 <tr class="separator:aad1cfb9a0123e1d7d697173445b12345"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a593bdad9c83e9a10b2ce3652262a061b" id="r_a593bdad9c83e9a10b2ce3652262a061b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a593bdad9c83e9a10b2ce3652262a061b">DeHomogenise</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a593bdad9c83e9a10b2ce3652262a061b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the 3-vector for this homogeneous vector, = (x, y, z) / w.  <br /></td></tr>
 <tr class="separator:a593bdad9c83e9a10b2ce3652262a061b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01d47c2f401d48d9d26ad37ec60776a3" id="r_a01d47c2f401d48d9d26ad37ec60776a3"><td class="memTemplParams" colspan="2">template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">typename</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a> &gt; </td></tr>
 <tr class="memitem:a01d47c2f401d48d9d26ad37ec60776a3"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">N</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a01d47c2f401d48d9d26ad37ec60776a3">StaticCast</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a01d47c2f401d48d9d26ad37ec60776a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> with the elements form this one cast to a new type.  <br /></td></tr>
 <tr class="separator:a01d47c2f401d48d9d26ad37ec60776a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84a87411bcc96f2c6406e74381b30d6d" id="r_a84a87411bcc96f2c6406e74381b30d6d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a84a87411bcc96f2c6406e74381b30d6d">Length</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a84a87411bcc96f2c6406e74381b30d6d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the L^2 norm.  <br /></td></tr>
 <tr class="separator:a84a87411bcc96f2c6406e74381b30d6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc14e75780c54043fe433ca9e6f02c00" id="r_afc14e75780c54043fe433ca9e6f02c00"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#afc14e75780c54043fe433ca9e6f02c00">BooleanAll</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:afc14e75780c54043fe433ca9e6f02c00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the combination of all elements using the AND operator.  <br /></td></tr>
 <tr class="separator:afc14e75780c54043fe433ca9e6f02c00"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa00a2f198c597ba03b90ef6e778deb0f" id="r_aa00a2f198c597ba03b90ef6e778deb0f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#aa00a2f198c597ba03b90ef6e778deb0f">BooleanAny</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:aa00a2f198c597ba03b90ef6e778deb0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the combination of all elements using the OR operator.  <br /></td></tr>
 <tr class="separator:aa00a2f198c597ba03b90ef6e778deb0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06723e9c0a93638a8b8b1475c153ae73" id="r_a06723e9c0a93638a8b8b1475c153ae73"><td class="memTemplParams" colspan="2">template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">typename</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a> &gt; </td></tr>
 <tr class="memitem:a06723e9c0a93638a8b8b1475c153ae73"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">N</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a06723e9c0a93638a8b8b1475c153ae73">Apply</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> std::function&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a>(<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>)&gt; &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">f</a>) <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a06723e9c0a93638a8b8b1475c153ae73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Map all elements with a common <code>std::function</code> mapping function.  <br /></td></tr>
 <tr class="separator:a06723e9c0a93638a8b8b1475c153ae73"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afaea26ecca7aabacb5bc2bd86269ae1e" id="r_afaea26ecca7aabacb5bc2bd86269ae1e"><td class="memTemplParams" colspan="2">template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">typename</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a> &gt; </td></tr>
 <tr class="memitem:afaea26ecca7aabacb5bc2bd86269ae1e"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">N</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#afaea26ecca7aabacb5bc2bd86269ae1e">Apply</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> std::function&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a>(<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;)&gt; &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">f</a>) <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:afaea26ecca7aabacb5bc2bd86269ae1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Map all elements with a common <code>std::function</code> mapping function.  <br /></td></tr>
 <tr class="separator:afaea26ecca7aabacb5bc2bd86269ae1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e0daa6c58fdecd31b018be77f65948a" id="r_a7e0daa6c58fdecd31b018be77f65948a"><td class="memTemplParams" colspan="2">template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">typename</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a> &gt; </td></tr>
 <tr class="memitem:a7e0daa6c58fdecd31b018be77f65948a"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">N</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a7e0daa6c58fdecd31b018be77f65948a">Apply</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a>(*<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">f</a>)(<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>)) <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a7e0daa6c58fdecd31b018be77f65948a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Map all elements with a common C-style mapping function.  <br /></td></tr>
 <tr class="separator:a7e0daa6c58fdecd31b018be77f65948a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00bd6fc9a253f4ca3c8802c6cf10e852" id="r_a00bd6fc9a253f4ca3c8802c6cf10e852"><td class="memTemplParams" colspan="2">template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">typename</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a> &gt; </td></tr>
 <tr class="memitem:a00bd6fc9a253f4ca3c8802c6cf10e852"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">N</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a00bd6fc9a253f4ca3c8802c6cf10e852">Apply</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">newT</a>(*<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">f</a>)(<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;)) <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a00bd6fc9a253f4ca3c8802c6cf10e852"><td class="mdescLeft">&#160;</td><td class="mdescRight">Map all elements with a common C-style mapping function.  <br /></td></tr>
 <tr class="separator:a00bd6fc9a253f4ca3c8802c6cf10e852"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40db4db8c17b1fbc1be21a3308160847" id="r_a40db4db8c17b1fbc1be21a3308160847"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a40db4db8c17b1fbc1be21a3308160847">operator+=</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">other</a>)</td></tr>
+<tr class="memdesc:a40db4db8c17b1fbc1be21a3308160847"><td class="mdescLeft">&#160;</td><td class="mdescRight">Element-wise addition of another <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>.  <br /></td></tr>
 <tr class="separator:a40db4db8c17b1fbc1be21a3308160847"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:affa3a9fd50107765affe50992034c117" id="r_affa3a9fd50107765affe50992034c117"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#affa3a9fd50107765affe50992034c117">operator+=</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">scalar</a>)</td></tr>
+<tr class="memdesc:affa3a9fd50107765affe50992034c117"><td class="mdescLeft">&#160;</td><td class="mdescRight">Element-wise addition of a scalar.  <br /></td></tr>
 <tr class="separator:affa3a9fd50107765affe50992034c117"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dba95694af521ed254d3d66de567c0b" id="r_a2dba95694af521ed254d3d66de567c0b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a2dba95694af521ed254d3d66de567c0b">operator-=</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">other</a>)</td></tr>
+<tr class="memdesc:a2dba95694af521ed254d3d66de567c0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Element-wise subtraction of another <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>.  <br /></td></tr>
 <tr class="separator:a2dba95694af521ed254d3d66de567c0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5d648424aa2b30d176fc783cf8eb76e" id="r_ae5d648424aa2b30d176fc783cf8eb76e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#ae5d648424aa2b30d176fc783cf8eb76e">operator-=</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">scalar</a>)</td></tr>
+<tr class="memdesc:ae5d648424aa2b30d176fc783cf8eb76e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Element-wise subtraction of a scalar.  <br /></td></tr>
 <tr class="separator:ae5d648424aa2b30d176fc783cf8eb76e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c953bba1bf25590eb175db0e0b7fc5c" id="r_a0c953bba1bf25590eb175db0e0b7fc5c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a0c953bba1bf25590eb175db0e0b7fc5c">operator*=</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">other</a>)</td></tr>
+<tr class="memdesc:a0c953bba1bf25590eb175db0e0b7fc5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Element-wise multiplication by another <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>.  <br /></td></tr>
 <tr class="separator:a0c953bba1bf25590eb175db0e0b7fc5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a012d0cff924ff5cc1d2358e0804d926b" id="r_a012d0cff924ff5cc1d2358e0804d926b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a012d0cff924ff5cc1d2358e0804d926b">operator*=</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">scalar</a>)</td></tr>
+<tr class="memdesc:a012d0cff924ff5cc1d2358e0804d926b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Element-wise multiplication by a scalar.  <br /></td></tr>
 <tr class="separator:a012d0cff924ff5cc1d2358e0804d926b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1bd458c6fd7485bb909b101b1821ce9" id="r_aa1bd458c6fd7485bb909b101b1821ce9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#aa1bd458c6fd7485bb909b101b1821ce9">operator/=</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">other</a>)</td></tr>
+<tr class="memdesc:aa1bd458c6fd7485bb909b101b1821ce9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Element-wise division by another <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>.  <br /></td></tr>
 <tr class="separator:aa1bd458c6fd7485bb909b101b1821ce9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88ab380214115ea58da5e1f699306a8d" id="r_a88ab380214115ea58da5e1f699306a8d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a88ab380214115ea58da5e1f699306a8d">operator/=</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">scalar</a>)</td></tr>
+<tr class="memdesc:a88ab380214115ea58da5e1f699306a8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Element-wise division by a scalar.  <br /></td></tr>
 <tr class="separator:a88ab380214115ea58da5e1f699306a8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40659441591e9b6245772b29ae213238" id="r_a40659441591e9b6245772b29ae213238"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a40659441591e9b6245772b29ae213238">X</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a40659441591e9b6245772b29ae213238"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a constant reference to the first element.  <br /></td></tr>
 <tr class="separator:a40659441591e9b6245772b29ae213238"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69dec05ac89f6dff6d23cc70cb337535" id="r_a69dec05ac89f6dff6d23cc70cb337535"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a69dec05ac89f6dff6d23cc70cb337535">X</a> ()</td></tr>
+<tr class="memdesc:a69dec05ac89f6dff6d23cc70cb337535"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the first element.  <br /></td></tr>
 <tr class="separator:a69dec05ac89f6dff6d23cc70cb337535"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e139430a245701932c0e30908b731d0" id="r_a4e139430a245701932c0e30908b731d0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a4e139430a245701932c0e30908b731d0">Y</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a4e139430a245701932c0e30908b731d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a constant reference to the second element.  <br /></td></tr>
 <tr class="separator:a4e139430a245701932c0e30908b731d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65ece76306561d0f4aad08c8757e22bb" id="r_a65ece76306561d0f4aad08c8757e22bb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a65ece76306561d0f4aad08c8757e22bb">Y</a> ()</td></tr>
+<tr class="memdesc:a65ece76306561d0f4aad08c8757e22bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the second element.  <br /></td></tr>
 <tr class="separator:a65ece76306561d0f4aad08c8757e22bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44ae9d1f57a68e0f82c9c40060682864" id="r_a44ae9d1f57a68e0f82c9c40060682864"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a44ae9d1f57a68e0f82c9c40060682864">Z</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a44ae9d1f57a68e0f82c9c40060682864"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a constant reference to the third element.  <br /></td></tr>
 <tr class="separator:a44ae9d1f57a68e0f82c9c40060682864"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a9947de4e7a7a5a7066916b4d491b8b" id="r_a1a9947de4e7a7a5a7066916b4d491b8b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a1a9947de4e7a7a5a7066916b4d491b8b">Z</a> ()</td></tr>
+<tr class="memdesc:a1a9947de4e7a7a5a7066916b4d491b8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the third element.  <br /></td></tr>
 <tr class="separator:a1a9947de4e7a7a5a7066916b4d491b8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a654c0d8b3bbe609311a63047bb1b0fa9" id="r_a654c0d8b3bbe609311a63047bb1b0fa9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a654c0d8b3bbe609311a63047bb1b0fa9">W</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:a654c0d8b3bbe609311a63047bb1b0fa9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a constant reference to the fourth element.  <br /></td></tr>
 <tr class="separator:a654c0d8b3bbe609311a63047bb1b0fa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6e7b3cff1e22f005609b966154db1cd" id="r_af6e7b3cff1e22f005609b966154db1cd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#af6e7b3cff1e22f005609b966154db1cd">W</a> ()</td></tr>
+<tr class="memdesc:af6e7b3cff1e22f005609b966154db1cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the fourth element.  <br /></td></tr>
 <tr class="separator:af6e7b3cff1e22f005609b966154db1cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3ce75b21bdba649abe98858a9065955" id="r_ae3ce75b21bdba649abe98858a9065955"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#ae3ce75b21bdba649abe98858a9065955">XY</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:ae3ce75b21bdba649abe98858a9065955"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> from the first two elements.  <br /></td></tr>
 <tr class="separator:ae3ce75b21bdba649abe98858a9065955"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3049a12cbe2a42774aa3c4bbab105e4" id="r_ad3049a12cbe2a42774aa3c4bbab105e4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&lt; <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#ad3049a12cbe2a42774aa3c4bbab105e4">XYZ</a> () <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a></td></tr>
+<tr class="memdesc:ad3049a12cbe2a42774aa3c4bbab105e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> from the first three elements.  <br /></td></tr>
 <tr class="separator:ad3049a12cbe2a42774aa3c4bbab105e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a0893e0bcceee8d894b1580bf1b98b571" id="r_a0893e0bcceee8d894b1580bf1b98b571"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">static</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a0893e0bcceee8d894b1580bf1b98b571">Full</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">value</a>)</td></tr>
+<tr class="memdesc:a0893e0bcceee8d894b1580bf1b98b571"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>, copying the given value into every element.  <br /></td></tr>
 <tr class="separator:a0893e0bcceee8d894b1580bf1b98b571"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c00676155b688a6a95b16b6c8868ef2" id="r_a7c00676155b688a6a95b16b6c8868ef2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">static</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a7c00676155b688a6a95b16b6c8868ef2">Range</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">start</a>=<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>{0}, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a> &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">step</a>=<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">T</a>{1})</td></tr>
+<tr class="memdesc:a7c00676155b688a6a95b16b6c8868ef2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> where the <code>i</code>th element is <code>start + i * step</code>  <br /></td></tr>
 <tr class="separator:a7c00676155b688a6a95b16b6c8868ef2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ba68601065927ba89e2062d67f54850" id="r_a1ba68601065927ba89e2062d67f54850"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">static</a> <a class="el" href="Global_8h.html#ad54e07d96efd9a36dfca1a9f27776d62">__device__</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">constexpr</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a1ba68601065927ba89e2062d67f54850">FromIntArrayRef</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::IntArrayRef &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">v</a>)</td></tr>
+<tr class="memdesc:a1ba68601065927ba89e2062d67f54850"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> from an at::IntArrayRef (this is the type of <code>at::Tensor::sizes()</code>)  <br /></td></tr>
 <tr class="separator:a1ba68601065927ba89e2062d67f54850"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d1210a509d884d7b6019fb4e917ce70" id="r_a4d1210a509d884d7b6019fb4e917ce70"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">static</a> <a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#a4d1210a509d884d7b6019fb4e917ce70">FromTensor</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">t</a>)</td></tr>
-<tr class="memdesc:a4d1210a509d884d7b6019fb4e917ce70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a vector from a 1D PyTorch tensor.  <br /></td></tr>
+<tr class="memdesc:a4d1210a509d884d7b6019fb4e917ce70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> from a 1D PyTorch tensor.  <br /></td></tr>
 <tr class="separator:a4d1210a509d884d7b6019fb4e917ce70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6705e47a2ef633a15b4baf12bc4a811" id="r_ad6705e47a2ef633a15b4baf12bc4a811"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">static</a> <a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> <a class="el" href="classreg23_1_1Vec.html">Vec</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreg23_1_1Vec.html#ad6705e47a2ef633a15b4baf12bc4a811">Identity</a> ()</td></tr>
 <tr class="memdesc:ad6705e47a2ef633a15b4baf12bc4a811"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct an identity matrix.  <br /></td></tr>
@@ -291,6 +331,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Default construct all elements. </p>
+
 </div>
 </div>
 <a id="aef860a8ae544053bce77811a53990259" name="aef860a8ae544053bce77811a53990259"></a>
@@ -319,6 +361,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Construct from a std::array (this is the base class of <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>) </p>
+
 </div>
 </div>
 <a id="ac2e4aa4c6ad52667c42ebfa9c6f81574" name="ac2e4aa4c6ad52667c42ebfa9c6f81574"></a>
@@ -346,6 +390,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Construct from a series of values. </p>
 
 </div>
 </div>
@@ -378,6 +424,21 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Map all elements with a common <code>std::function</code> mapping function. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">newT</td><td>The element type of the returned vector </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>A function with which to map each element of this vector </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>A <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> with the elements mapped from those of this vector using f </dd></dl>
+
 </div>
 </div>
 <a id="a06723e9c0a93638a8b8b1475c153ae73" name="a06723e9c0a93638a8b8b1475c153ae73"></a>
@@ -407,6 +468,21 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Map all elements with a common <code>std::function</code> mapping function. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">newT</td><td>The element type of the returned vector </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>A function with which to map each element of this vector </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>A <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> with the elements mapped from those of this vector using f </dd></dl>
 
 </div>
 </div>
@@ -438,6 +514,21 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Map all elements with a common C-style mapping function. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">newT</td><td>The element type of the returned vector </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>A function with which to map each element of this vector </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>A <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> with the elements mapped from those of this vector using f </dd></dl>
+
 </div>
 </div>
 <a id="a7e0daa6c58fdecd31b018be77f65948a" name="a7e0daa6c58fdecd31b018be77f65948a"></a>
@@ -468,6 +559,21 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Map all elements with a common C-style mapping function. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">newT</td><td>The element type of the returned vector </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">f</td><td>A function with which to map each element of this vector </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>A <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> with the elements mapped from those of this vector using f </dd></dl>
+
 </div>
 </div>
 <a id="afc14e75780c54043fe433ca9e6f02c00" name="afc14e75780c54043fe433ca9e6f02c00"></a>
@@ -494,6 +600,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Compute the combination of all elements using the AND operator. </p>
 <dl class="section return"><dt>Returns</dt><dd>Whether all elements of the vector are <code>true</code></dd></dl>
 <p>For boolean vectors only </p>
 
@@ -523,6 +631,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Compute the combination of all elements using the OR operator. </p>
 <dl class="section return"><dt>Returns</dt><dd>Whether any elements of the vector are <code>true</code></dd></dl>
 <p>For boolean vectors only </p>
 
@@ -552,6 +662,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Compute the 3-vector for this homogeneous vector, = (x, y, z) / w. </p>
 <dl class="section return"><dt>Returns</dt><dd>The 3-vector corresponding to this homogeneous 4-vector, i.e. (x, y, z) / w</dd></dl>
 <p>For floating-point 4-vectors only. </p>
 
@@ -581,6 +693,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> with the same elements, but in the reverse order. </p>
 <dl class="section return"><dt>Returns</dt><dd>A copy of this vector, with the order of the elements reversed </dd></dl>
 
 </div>
@@ -611,6 +725,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> from an at::IntArrayRef (this is the type of <code>at::Tensor::sizes()</code>) </p>
+
 </div>
 </div>
 <a id="a4d1210a509d884d7b6019fb4e917ce70" name="a4d1210a509d884d7b6019fb4e917ce70"></a>
@@ -639,7 +755,7 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
-<p>Construct a vector from a 1D PyTorch tensor. </p>
+<p>Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> from a 1D PyTorch tensor. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">t</td><td>a tensor of size (N,); the contained type must be consistent with the vector's type, i.e. for a <code><a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>&lt;float32_t, N&gt;</code>, <code>t</code> must contain values of type <code>torch.float32</code>. </td></tr>
@@ -714,6 +830,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>, copying the given value into every element. </p>
+
 </div>
 </div>
 <a id="ad6705e47a2ef633a15b4baf12bc4a811" name="ad6705e47a2ef633a15b4baf12bc4a811"></a>
@@ -772,6 +890,9 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Compute the L^2 norm. </p>
+<dl class="section return"><dt>Returns</dt><dd>The L^2 norm of this vector </dd></dl>
+
 </div>
 </div>
 <a id="a2d73a5cc0dbdd9576b781f55562c5d52" name="a2d73a5cc0dbdd9576b781f55562c5d52"></a>
@@ -798,6 +919,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Find the largest element. </p>
 <dl class="section return"><dt>Returns</dt><dd>The largest element in the vector. No ordering is assumed; operation is O(N). </dd></dl>
 
 </div>
@@ -826,6 +949,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Find the smallest element. </p>
 <dl class="section return"><dt>Returns</dt><dd>The smallest element in the vector. No ordering is assumed; operation is O(N). </dd></dl>
 
 </div>
@@ -854,6 +979,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Find the smallest and largest elements. </p>
 <dl class="section return"><dt>Returns</dt><dd>A pair containing the smallest and largest elements in the vector. No ordering is assumed; operation is O(N). </dd></dl>
 
 </div>
@@ -884,6 +1011,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Element-wise multiplication by a scalar. </p>
+
 </div>
 </div>
 <a id="a0c953bba1bf25590eb175db0e0b7fc5c" name="a0c953bba1bf25590eb175db0e0b7fc5c"></a>
@@ -911,6 +1040,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Element-wise multiplication by another <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>. </p>
 
 </div>
 </div>
@@ -940,6 +1071,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Element-wise addition of a scalar. </p>
+
 </div>
 </div>
 <a id="a40db4db8c17b1fbc1be21a3308160847" name="a40db4db8c17b1fbc1be21a3308160847"></a>
@@ -967,6 +1100,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Element-wise addition of another <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>. </p>
 
 </div>
 </div>
@@ -996,6 +1131,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Element-wise subtraction of a scalar. </p>
+
 </div>
 </div>
 <a id="a2dba95694af521ed254d3d66de567c0b" name="a2dba95694af521ed254d3d66de567c0b"></a>
@@ -1023,6 +1160,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Element-wise subtraction of another <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>. </p>
 
 </div>
 </div>
@@ -1052,6 +1191,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Element-wise division by a scalar. </p>
+
 </div>
 </div>
 <a id="aa1bd458c6fd7485bb909b101b1821ce9" name="aa1bd458c6fd7485bb909b101b1821ce9"></a>
@@ -1079,6 +1220,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Element-wise division by another <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a>. </p>
 
 </div>
 </div>
@@ -1118,6 +1261,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> where the <code>i</code>th element is <code>start + i * step</code> </p>
+
 </div>
 </div>
 <a id="a01d47c2f401d48d9d26ad37ec60776a3" name="a01d47c2f401d48d9d26ad37ec60776a3"></a>
@@ -1146,6 +1291,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> with the elements form this one cast to a new type. </p>
 <dl class="section return"><dt>Returns</dt><dd>A copy of this vector, with each element cast to the type <code>newT</code> </dd></dl>
 
 </div>
@@ -1174,6 +1321,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Compute the sum of all elements. </p>
 <dl class="section return"><dt>Returns</dt><dd>The sum of the elements of the vector </dd></dl>
 
 </div>
@@ -1203,6 +1352,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Convert to an at::IntArrayRef (this is the type of <code>at::Tensor::sizes()</code>) </p>
+
 </div>
 </div>
 <a id="a5972b5e78920fdf94df28dce8cd30818" name="a5972b5e78920fdf94df28dce8cd30818"></a>
@@ -1231,6 +1382,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Convert to an <code>at::Tensor</code> </p>
+
 </div>
 </div>
 <a id="af6e7b3cff1e22f005609b966154db1cd" name="af6e7b3cff1e22f005609b966154db1cd"></a>
@@ -1257,6 +1410,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Get the fourth element. </p>
 
 </div>
 </div>
@@ -1285,6 +1440,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Get a constant reference to the fourth element. </p>
+
 </div>
 </div>
 <a id="a69dec05ac89f6dff6d23cc70cb337535" name="a69dec05ac89f6dff6d23cc70cb337535"></a>
@@ -1311,6 +1468,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Get the first element. </p>
 
 </div>
 </div>
@@ -1339,6 +1498,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Get a constant reference to the first element. </p>
+
 </div>
 </div>
 <a id="ae3ce75b21bdba649abe98858a9065955" name="ae3ce75b21bdba649abe98858a9065955"></a>
@@ -1365,6 +1526,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> from the first two elements. </p>
 
 </div>
 </div>
@@ -1393,6 +1556,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Construct a <a class="el" href="classreg23_1_1Vec.html" title="A simple vector class derived from std::array&lt;T, N&gt;, providing overrides for all useful operators.">Vec</a> from the first three elements. </p>
+
 </div>
 </div>
 <a id="a65ece76306561d0f4aad08c8757e22bb" name="a65ece76306561d0f4aad08c8757e22bb"></a>
@@ -1419,6 +1584,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Get the second element. </p>
 
 </div>
 </div>
@@ -1447,6 +1614,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Get a constant reference to the second element. </p>
+
 </div>
 </div>
 <a id="a1a9947de4e7a7a5a7066916b4d491b8b" name="a1a9947de4e7a7a5a7066916b4d491b8b"></a>
@@ -1474,6 +1643,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
 </table>
 </div><div class="memdoc">
 
+<p>Get the third element. </p>
+
 </div>
 </div>
 <a id="a44ae9d1f57a68e0f82c9c40060682864" name="a44ae9d1f57a68e0f82c9c40060682864"></a>
@@ -1500,6 +1671,8 @@ template&lt;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Get a constant reference to the third element. </p>
 
 </div>
 </div>
