@@ -7,7 +7,7 @@ import torch
 
 
 def local_search(*, starting_position: torch.Tensor, initial_step_size: torch.Tensor, objective_function: Callable[[
-    torch.Tensor], torch.Tensor], step_size_reduction_ratio: float = .5, no_improvement_threshold: int = 10,
+    torch.Tensor], torch.Tensor], step_size_reduction_ratio: float = .75, no_improvement_threshold: int = 10,
                  max_iterations: int = 5000, max_reductions: int = 4) -> torch.Tensor:
     assert (starting_position.size() == initial_step_size.size())
 

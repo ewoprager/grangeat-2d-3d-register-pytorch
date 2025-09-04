@@ -117,9 +117,10 @@ class ParticleSwarm(OptimisationAlgorithm):
 
 
 class LocalSearch(OptimisationAlgorithm):
-    def __init__(self, no_improvement_threshold: int, max_reductions: int):
+    def __init__(self, no_improvement_threshold: int, max_reductions: int, reduction_ratio: float):
         self._no_improvement_threshold = no_improvement_threshold
         self._max_reductions = max_reductions
+        self._reduction_ratio = reduction_ratio
 
     @property
     def no_improvement_threshold(self) -> int:
@@ -128,6 +129,10 @@ class LocalSearch(OptimisationAlgorithm):
     @property
     def max_reductions(self) -> int:
         return self._max_reductions
+
+    @property
+    def reduction_ratio(self) -> float:
+        return self._reduction_ratio
 
     def __str__(self) -> str:
         return "Local search"
@@ -146,17 +151,17 @@ class LocalSearch(OptimisationAlgorithm):
         value_history.push_back(objective_function(starting_parameters))
 
         def obj_func(params: torch.Tensor) -> torch.Tensor:
-            params = torch.tensor(copy.deepcopy(params))
-            param_history.push_back(params)
+            params = params.detach().clone()
+            param_history.push_back(params.detach().clone())
             value = objective_function(params)
-            value_history.push_back(value)
+            value_history.push_back(value.detach().clone())
             iteration_callback(param_history.get(), value_history.get())
             return value
 
         tic = time.time()
         res = optimisation.local_search(starting_position=starting_parameters,
                                         initial_step_size=torch.tensor([0.1, 0.1, 0.1, 2.0, 2.0, 2.0]),
-                                        objective_function=obj_func,
+                                        objective_function=obj_func, step_size_reduction_ratio=self.reduction_ratio,
                                         no_improvement_threshold=self.no_improvement_threshold,
                                         max_reductions=self.max_reductions)
         toc = time.time()
@@ -229,23 +234,29 @@ class PSOWidget(widgets.Container, OpAlgoWidget):
 
 class LocalSearchWidget(widgets.Container, OpAlgoWidget):
     def __init__(self, *, no_improvement_threshold: int, max_reductions: int):
-        super().__init__(layout="horizontal")
+        super().__init__(layout="vertical", labels=False)
 
         self._no_improvement_threshold_widget = widgets.SpinBox(value=no_improvement_threshold, min=2, max=1000, step=1,
                                                                 label="reduction thresh.")
-        self.append(self._no_improvement_threshold_widget)
 
         self._max_reductions_widget = widgets.SpinBox(value=max_reductions, min=0, max=500, step=1,
                                                       label="max reductions")
-        self.append(self._max_reductions_widget)
+        self.append(widgets.Container(widgets=[self._no_improvement_threshold_widget, self._max_reductions_widget],
+                                      layout="horizontal"))
+
+        self._reduction_ratio_widget = widgets.FloatSpinBox(value=.75, min=0.0, max=1.0, label="reduction ratio")
+
+        self.append(widgets.Container(widgets=[self._reduction_ratio_widget], layout="horizontal"))
 
     def get_op_algo(self) -> LocalSearch:
         return LocalSearch(no_improvement_threshold=self._no_improvement_threshold_widget.get_value(),
-                           max_reductions=self._max_reductions_widget.get_value())
+                           max_reductions=self._max_reductions_widget.get_value(),
+                           reduction_ratio=self._reduction_ratio_widget.get_value())
 
     def set_from_op_algo(self, local_search: LocalSearch) -> None:
         self._no_improvement_threshold_widget.set_value(local_search.no_improvement_threshold)
         self._max_reductions_widget.set_value(local_search.max_reductions)
+        self._reduction_ratio_widget.set_value(local_search.reduction_ratio)
 
 
 class RegisterWidget(widgets.Container):
@@ -406,7 +417,7 @@ class RegisterWidget(widgets.Container):
 
         if self._evals_per_regen_mask is not None and self._iteration_callback_count - self._last_regen_mask_iteration > self._evals_per_regen_mask:
             self._last_regen_mask_iteration = self._iteration_callback_count
-            self._registration_data.mask_transformation = Transformation.from_vector(param_history[-1]).to(
+            self._registration_data.mask_transformation = mapping_parameters_to_transformation(param_history[-1]).to(
                 dtype=torch.float32)
 
         if force_render or self._iteration_callback_count - self._last_rendered_iteration > self._evals_per_render:
