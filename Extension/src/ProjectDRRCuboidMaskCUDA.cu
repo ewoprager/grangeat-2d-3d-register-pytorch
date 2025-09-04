@@ -8,11 +8,8 @@ using CommonData = ProjectDRRCuboidMask::CommonData;
 using Cuboid = ProjectDRRCuboidMask::Cuboid;
 
 
-__global__ void Kernel_ProjectDRRCuboidMask_CUDA(float sourceDistance,
-                                                 // std::array<Vec<float, 3>, 6> cuboidFacePoints,
-                                                 // std::array<Vec<float, 3>, 6> cuboidFaceUnitNormals,
-                                                 Cuboid cuboidIn, Cuboid cuboidAbove, Cuboid cuboidBelow,
-                                                 Vec<Vec<float, 4>, 4> homographyMatrixInverse,
+__global__ void Kernel_ProjectDRRCuboidMask_CUDA(float sourceDistance, Cuboid cuboidIn, Cuboid cuboidAbove,
+                                                 Cuboid cuboidBelow, Vec<Vec<float, 4>, 4> homographyMatrixInverse,
                                                  Vec<float, 3> sourcePositionTransformed, Vec<float, 2> detectorSpacing,
                                                  Vec<int64_t, 2> outputSize, Vec<float, 2> outputOffset,
                                                  float *arrayOut) {
@@ -27,15 +24,14 @@ __global__ void Kernel_ProjectDRRCuboidMask_CUDA(float sourceDistance,
 	direction /= direction.Length();
 	direction = MatMul(homographyMatrixInverse, VecCat(direction, 0.f)).XYZ();
 
-	// arrayOut[threadIndex] = RayConvexPolyhedronDistance(cuboidFacePoints, cuboidFaceUnitNormals,
-	//                                                     sourcePositionTransformed, direction);
-	const float distanceAboveBelow = RayConvexPolyhedronDistance(cuboidAbove.facePoints, cuboidAbove.faceOutUnitNormals,
-	                                                             sourcePositionTransformed,
-	                                                             direction) + RayConvexPolyhedronDistance(
-		                                 cuboidBelow.facePoints, cuboidBelow.faceOutUnitNormals,
-		                                 sourcePositionTransformed, direction);
-	const float distanceIn = RayConvexPolyhedronDistance(cuboidIn.facePoints, cuboidIn.faceOutUnitNormals,
-	                                                     sourcePositionTransformed, direction);
+	const float distanceAboveBelow = //
+		RayConvexPolyhedronDistance(cuboidAbove.facePoints, cuboidAbove.faceOutUnitNormals, sourcePositionTransformed,
+		                            direction) + //
+		RayConvexPolyhedronDistance(cuboidBelow.facePoints, cuboidBelow.faceOutUnitNormals, sourcePositionTransformed,
+		                            direction);
+	const float distanceIn = //
+		RayConvexPolyhedronDistance(cuboidIn.facePoints, cuboidIn.faceOutUnitNormals, sourcePositionTransformed,
+		                            direction);
 
 	if (const float denominator = distanceIn + distanceAboveBelow; denominator > 1e-8f) {
 		arrayOut[threadIndex] = distanceIn / denominator;
@@ -56,13 +52,10 @@ __host__ at::Tensor ProjectDRRCuboidMask_CUDA(const at::Tensor &volumeSize, cons
 	int minGridSize, blockSize;
 	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_ProjectDRRCuboidMask_CUDA, 0, 0);
 	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
-	Kernel_ProjectDRRCuboidMask_CUDA<<<gridSize, blockSize>>>(static_cast<float>(sourceDistance),
-	                                                          // common.cuboidFacePoints, common.cuboidFaceUnitNormals,
-	                                                          common.cuboidIn, common.cuboidAbove, common.cuboidBelow,
-	                                                          common.homographyMatrixInverse,
-	                                                          common.sourcePositionTransformed, common.detectorSpacing,
-	                                                          Vec<int64_t, 2>{outputWidth, outputHeight},
-	                                                          common.outputOffset, resultFlatPtr);
+	Kernel_ProjectDRRCuboidMask_CUDA<<<gridSize, blockSize>>>( //
+		static_cast<float>(sourceDistance), common.cuboidIn, common.cuboidAbove, common.cuboidBelow,
+		common.homographyMatrixInverse, common.sourcePositionTransformed, common.detectorSpacing,
+		Vec<int64_t, 2>{outputWidth, outputHeight}, common.outputOffset, resultFlatPtr);
 
 	return common.flatOutput.view(at::IntArrayRef{outputHeight, outputWidth});
 }
