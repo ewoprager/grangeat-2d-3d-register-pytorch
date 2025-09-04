@@ -272,6 +272,13 @@ class RegisterWidget(widgets.Container):
         self.native.layout().addWidget(FigureCanvasQTAgg(self._fig))
 
         ##
+        ## Masking
+        ##
+        self._regenerate_mask_button = widgets.PushButton(label="Regenerate mask")
+        self._regenerate_mask_button.changed.connect(self._on_regenerate_mask_button)
+        self.append(self._regenerate_mask_button)
+
+        ##
         ## Cropping sliders
         ##
         self._ignore_crop_sliders: bool = False
@@ -463,7 +470,7 @@ class RegisterWidget(widgets.Container):
         return HyperParameters(
             cropping=Cropping(right=self._right_crop_slider.get_value(), top=self._top_crop_slider.get_value(),
                               left=self._left_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value()),
-            source_offset=torch.zeros(2), mask=self._registration_data.hyperparameters.mask)
+            source_offset=torch.zeros(2))
 
     def _set_hyper_parameters(self, new_value: HyperParameters) -> None:
         if new_value.cropping.right > self._right_crop_slider.max:
@@ -540,6 +547,10 @@ class RegisterWidget(widgets.Container):
         self._registration_data.target = Target(xray_path=self._registration_data.target.xray_path,
                                                 flipped=not self._registration_data.target.flipped)
         self._registration_data.refresh_target_dependent()
+
+    def _on_regenerate_mask_button(self) -> None:
+        self._registration_data.mask_transformation = self._transformation_widget.get_current_transformation()
+        self._registration_data.refresh_mask_transformation_dependent()
 
     def _on_exit(self) -> None:
         self._hyper_parameters_widget.save_to_file(self._hyper_parameter_save_path)

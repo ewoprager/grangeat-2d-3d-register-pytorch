@@ -111,6 +111,9 @@ class Transformation(NamedTuple):
             numpy.array([numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))]),
             device=device).square().sum()).sqrt().item()
 
+    def is_close(self, other: 'Transformation') -> bool:
+        return torch.allclose(self.rotation, other.rotation) and torch.allclose(self.translation, other.translation)
+
     def __str__(self) -> str:
         return "Transformation(rot = {}, trans = {})".format(str(self.rotation), str(self.translation))
 

@@ -39,17 +39,13 @@ class Cropping(NamedTuple):
 class HyperParameters(NamedTuple):
     cropping: Cropping
     source_offset: torch.Tensor  # size = (2,), dtype = torch.float64
-    mask: torch.Tensor
 
     @staticmethod
     def zero(image_size: torch.Size) -> 'HyperParameters':
-        return HyperParameters(cropping=Cropping.zero(image_size), source_offset=torch.zeros(2),
-                               mask=torch.ones(image_size))
+        return HyperParameters(cropping=Cropping.zero(image_size), source_offset=torch.zeros(2))
 
     def is_close(self, other: 'HyperParameters') -> bool:
-        return (self.cropping == other.cropping and  #
-                torch.allclose(self.source_offset, other.source_offset) and  #
-                torch.allclose(self.mask, other.mask))
+        return self.cropping == other.cropping and torch.allclose(self.source_offset, other.source_offset)
 
 
 class WidgetSelectData:
@@ -185,6 +181,7 @@ class WidgetManageSaved(widgets.Container):
 class ViewParams(NamedTuple):
     translation_sensitivity: float
     rotation_sensitivity: float
+    render_fixed_image_with_mask: bool
 
 
 class SavedXRayParams(NamedTuple):

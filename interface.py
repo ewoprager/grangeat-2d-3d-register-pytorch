@@ -35,14 +35,21 @@ class Interface:
                  load_cached: bool, sinogram_types: list[Type[SinogramType]], sinogram_size: int | None,
                  regenerate_drr: bool, save_to_cache: bool, new_drr_size: torch.Size | None,
                  volume_downsample_factor: int, device):
-        self._registration_data = RegistrationData(cache_directory=cache_directory, ct_path=ct_path,
-                                                   target=Target(xray_path=xray_path, flipped=False),
-                                                   load_cached=load_cached, sinogram_types=sinogram_types,
-                                                   sinogram_size=sinogram_size, regenerate_drr=regenerate_drr,
-                                                   save_to_cache=save_to_cache, new_drr_size=new_drr_size,
-                                                   volume_downsample_factor=volume_downsample_factor,
-                                                   hyperparameter_change_callback=self.render_hyperparameter_dependent,
-                                                   target_change_callback=self.render_target_dependent, device=device)
+        self._registration_data = RegistrationData(  #
+            cache_directory=cache_directory,  #
+            ct_path=ct_path,  #
+            target=Target(xray_path=xray_path, flipped=False),  #
+            load_cached=load_cached,  #
+            sinogram_types=sinogram_types,  #
+            sinogram_size=sinogram_size,  #
+            regenerate_drr=regenerate_drr,  #
+            save_to_cache=save_to_cache,  #
+            new_drr_size=new_drr_size,  #
+            volume_downsample_factor=volume_downsample_factor,  #
+            target_change_callback=self.render_target_dependent,  #
+            hyperparameter_change_callback=self.render_hyperparameter_dependent,  #
+            mask_transformation_change_callback=self.render_mask_transformation_dependent,  #
+            device=device)
 
         self._viewer = napari.Viewer()
         self._viewer.bind_key("Alt", self._on_alt_down)
@@ -64,7 +71,8 @@ class Interface:
                                                              interpolation2d="linear", translate=(
                 self.registration_data.fixed_image.size()[0] + 24, 0), name="Moving sinogram")
 
-        self._view_params = ViewParams(translation_sensitivity=0.06, rotation_sensitivity=0.002)
+        self._view_params = ViewParams(translation_sensitivity=0.06, rotation_sensitivity=0.002,
+                                       render_fixed_image_with_mask=False)
 
         self._key_states = {"Alt": False}
 
@@ -121,6 +129,7 @@ class Interface:
 
     def set_view_params(self, value: ViewParams) -> None:
         self._view_params = value
+        self.render_mask_transformation_dependent()
 
     view_params = property(get_view_params, set_view_params)
 
@@ -130,7 +139,7 @@ class Interface:
         translation[0:2] += self.registration_data.translation_offset.to(device=transformation.device)
         transformation = Transformation(rotation=transformation.rotation, translation=translation)
 
-        source_position = self.registration_data.scene_geometry.source_position(device=self.device)
+        source_position = torch.tensor([0., 0., self.registration_data.source_distance], device=self.device)
         p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
         ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=self.device).to(dtype=torch.float32))
         return next(iter(self.registration_data.ct_sinograms.values())).resample_cuda_texture(ph_matrix,
@@ -147,31 +156,19 @@ class Interface:
                                      voxel_spacing=self.registration_data.ct_spacing,
                                      detector_spacing=self.registration_data.fixed_image_spacing.to(device=self.device),
                                      scene_geometry=SceneGeometry(
-                                         source_distance=self.registration_data.scene_geometry.source_distance,
+                                         source_distance=self.registration_data.source_distance,
                                          fixed_image_offset=self.registration_data.fixed_image_offset),
                                      output_size=self.registration_data.fixed_image.size())
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(
-            self.registration_data.hyperparameters.mask * self.registration_data.fixed_image,
-            self.generate_drr(transformation))
+        return -objective_function.zncc(self.registration_data.fixed_image, self.generate_drr(transformation))
 
     def regenerate_mask(self, transformation: Transformation) -> None:
         translation = copy.deepcopy(transformation.translation)
         translation[0:2] += self.registration_data.translation_offset.to(device=transformation.device)
         transformation = Transformation(rotation=transformation.rotation, translation=translation).to(
             device=self.device)
-
-        mask = geometry.generate_drr_cuboid_mask(self.registration_data.ct_volume, transformation=transformation,
-                                                 voxel_spacing=self.registration_data.ct_spacing,
-                                                 detector_spacing=self.registration_data.fixed_image_spacing.to(
-                                                     device=self.device), scene_geometry=SceneGeometry(
-                source_distance=self.registration_data.scene_geometry.source_distance,
-                fixed_image_offset=self.registration_data.fixed_image_offset),
-                                                 output_size=self.registration_data.fixed_image.size())
-        self.registration_data.hyperparameters = HyperParameters(
-            cropping=self.registration_data.hyperparameters.cropping,
-            source_offset=self.registration_data.hyperparameters.source_offset, mask=mask)
+        self.registration_data.mask_transformation = transformation
 
     def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
         return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
@@ -182,14 +179,20 @@ class Interface:
         self.render_hyperparameter_dependent()
 
     def render_hyperparameter_dependent(self) -> None:
-        self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
-        self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
         translate = (self._registration_data.hyperparameters.cropping.top,
                      self._registration_data.hyperparameters.cropping.left)
         self._fixed_image_layer.translate = translate
         self._moving_image_layer.translate = translate
         self.render_drr()
         self.render_moving_sinogram()
+        self.render_mask_transformation_dependent()
+
+    def render_mask_transformation_dependent(self) -> None:
+        if self._view_params.render_fixed_image_with_mask:
+            self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
+        else:
+            self._fixed_image_layer.data = self.registration_data.cropped_target.cpu().numpy()
+        self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
 
     def render_drr(self) -> None:
         moved_drr = self.generate_drr(self._transformation_widget.get_current_transformation())
@@ -230,15 +233,16 @@ class Interface:
                 euler_angles = [delta[1], delta[0], 0.0]
                 rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
                 rot_combined = rot_euler * rotation_start
-                self._transformation_widget.set_current_transformation(Transformation(
-                    rotation=torch.tensor(rot_combined.as_rotvec(),
-                                          device=self._transformation_widget.get_current_transformation(
-
-                                          ).rotation.device,
-                                          dtype=self._transformation_widget.get_current_transformation(
-
-                                          ).rotation.dtype),
-                    translation=self._transformation_widget.get_current_transformation().translation))
+                self._transformation_widget.set_current_transformation(  #
+                    Transformation(  #
+                        rotation=torch.tensor(  #
+                            rot_combined.as_rotvec(),  #
+                            device=self._transformation_widget.get_current_transformation().rotation.device,  #
+                            dtype=self._transformation_widget.get_current_transformation().rotation.dtype  #
+                        ),  #
+                        translation=self._transformation_widget.get_current_transformation().translation  #
+                    )  #
+                )
                 yield
             # on release
             if dragged:
@@ -262,8 +266,12 @@ class Interface:
                     (0,))
                 tr = self._transformation_widget.get_current_transformation().translation
                 tr[0:2] = (translation_start + delta).to(device=tr.device)
-                self._transformation_widget.set_current_transformation(Transformation(translation=tr,
-                                                                                      rotation=self._transformation_widget.get_current_transformation().rotation))
+                self._transformation_widget.set_current_transformation(  #
+                    Transformation(  #
+                        translation=tr,  #
+                        rotation=self._transformation_widget.get_current_transformation().rotation  #
+                    )  #
+                )
                 self.render_drr()
                 yield
             # on release
