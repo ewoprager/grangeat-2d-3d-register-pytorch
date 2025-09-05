@@ -1,7 +1,7 @@
 import logging
 import pathlib
 import hashlib
-from typing import NamedTuple, Type, TypeVar
+from typing import NamedTuple, Type, TypeVar, Tuple, Literal, Union
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +9,7 @@ import torch
 import nrrd
 import pydicom
 
-from registration.lib.structs import *
+from registration.lib.structs import SceneGeometry, Transformation, LinearRange
 from registration.lib import sinogram
 
 torch.serialization.add_safe_globals(
@@ -86,7 +86,18 @@ def deterministic_hash_sinogram(path: str, sinogram_type: Type[SinogramType], si
                                     deterministic_hash_int(sinogram_size), deterministic_hash_int(downsample_factor))
 
 
-def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tensor, torch.Tensor]:
+def load_volume(path: pathlib.Path, *, downsample_factor: int | Literal["mipmap"] = 1) -> Tuple[
+    Union[torch.Tensor, list[torch.Tensor]], torch.Tensor]:
+    """
+    Load a CT volume from a file or directory, with desired downsampling.
+
+    :param path: Path to a .nrrd file (a CT volume) or a directory containing multiple .dcm files (one for each slice of a CT volume)
+    :type path: pathlib.Path
+    :param downsample_factor: The factor by which to downsample the volume. If "mipmap" is given, all power-of-two downsample factors are applied, and the resulting list of images is returned.
+    :type downsample_factor: int or the string literal "mipmap"
+    :return: If downsample_factor is "mipmap", the list of volumes at the mip levels, and the voxel spacing at the original resolution; otherwise the volume at the desired downsample factor, and the associated voxel spacing.
+    :rtype: If downsample_factor is "mipmap": Tuple[list[torch.Tensor], torch.Tensor]; otherwise Tuple[torch.Tensor, torch.Tensor]
+    """
     loaded_volume = read_volume(path)
     sizes = loaded_volume.data.size()
     spacing = loaded_volume.spacing
@@ -96,6 +107,17 @@ def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tenso
     image[image < -800.0] = -800.0
     image -= image.min()
     image /= image.max()
+
+    if downsample_factor is "mipmap":
+        logger.info("Downsampling volume into mipmap (all power-of-two downsample factors)...")
+        down_sampler = torch.nn.AvgPool3d(2)
+        images = [image]
+        while min(images[-1].size()) > 1:
+            images.append(down_sampler(images[-1].unsqueeze(0))[0])
+        logger.info("Volume downsampled to {} total mip levels.".format(len(images)))
+        return images, spacing
+
+    assert isinstance(downsample_factor, int)
     if downsample_factor > 1:
         down_sampler = torch.nn.AvgPool3d(downsample_factor)
         image = down_sampler(image.unsqueeze(0))[0]
@@ -106,10 +128,10 @@ def load_volume(path: pathlib.Path, *, downsample_factor=1) -> Tuple[torch.Tenso
     return image, spacing
 
 
-def read_dicom(path: str, *, downsample_factor: int | None = None, downsample_to_ct_spacing: float | None = None):
+def read_dicom(path: str, *, downsample_factor: int | None = None, downsample_to_ct_spacing: float | None = None) -> \
+        Tuple[torch.Tensor, torch.Tensor, SceneGeometry]:
     if downsample_factor is not None and downsample_to_ct_spacing is not None:
-        logger.error("Cannot pass both downsample_factor and downsample_to_ct_spacing to `read_dicom()`.")
-        return None
+        raise RuntimeError("Cannot pass both downsample_factor and downsample_to_ct_spacing to `read_dicom()`.")
     logger.info("Loading X-ray DICOM file {}...".format(path))
     dataset = pydicom.dcmread(path)
     image = torch.tensor(pydicom.pixels.pixel_array(dataset), dtype=torch.float32)

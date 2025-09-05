@@ -5,7 +5,6 @@ import logging
 from datetime import datetime
 from typing import Callable, Any, NamedTuple
 from abc import ABC, abstractmethod
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -231,6 +230,12 @@ class PSOWidget(widgets.Container, OpAlgoWidget):
         self._particle_count_widget.set_value(particle_swarm.particle_count)
         self._iteration_count_widget.set_value(particle_swarm.iteration_count)
 
+    def set_particle_count(self, new_value: int) -> None:
+        self._particle_count_widget.set_value(new_value)
+
+    def set_iteration_count(self, new_value: int) -> None:
+        self._iteration_count_widget.set_value(new_value)
+
 
 class LocalSearchWidget(widgets.Container, OpAlgoWidget):
     def __init__(self, *, no_improvement_threshold: int, max_reductions: int):
@@ -279,8 +284,27 @@ class RegisterWidget(widgets.Container):
         self._thread: QThread | None = None
         self._worker: Worker | None = None
 
+        # Pre-programmed task
+        self._on_registration_finish: Callable[[], None] | None = None
+        self._pre_programmed_initial_crop: Cropping = Cropping.zero(torch.Size([1, 1]))
+
         self._fig, self._axes = plt.subplots()
         self.native.layout().addWidget(FigureCanvasQTAgg(self._fig))
+
+        ##
+        ## Downsample level and pre-programmed multi-stage task
+        ##
+        self._downsample_level: int = 0
+        # ToDo: Add callback to change max downsample level of spin box when CT path is changed in registration data
+        self._downsample_level_widget = widgets.SpinBox(value=self._downsample_level, min=0,
+                                                        max=len(self._registration_data.ct_volumes) - 1,
+                                                        label="Downsample level")
+        self._downsample_level_widget.changed.connect(self._on_downsample_level)
+
+        self._pre_programmed_task_button = widgets.PushButton(label="Run pre-programmed task")
+        self._pre_programmed_task_button.changed.connect(self._on_pre_programmed_task_button)
+        self.append(widgets.Container(widgets=[self._downsample_level_widget, self._pre_programmed_task_button],
+                                      layout="horizontal"))
 
         ##
         ## Masking
@@ -406,6 +430,7 @@ class RegisterWidget(widgets.Container):
         self._worker.finished.connect(self._thread.quit)
         self._worker.finished.connect(self._worker.deleteLater)
         self._thread.finished.connect(self._thread.deleteLater)
+        self._thread.finished.connect(self._thread_finish_callback)
         self._worker.progress.connect(self._iteration_callback)
         self._thread.start()
 
@@ -459,6 +484,10 @@ class RegisterWidget(widgets.Container):
         self._transformation_widget.save_transformation(converged_transformation, "registration result {}".format(
             datetime.now().strftime("%Y-%m-%d, %H:%M:%S")))
 
+    def _thread_finish_callback(self):
+        if self._on_registration_finish is not None:
+            self._on_registration_finish()
+
     def _on_algorithm(self, *args) -> None:
         self._refresh_algorithm_container_widget()
 
@@ -491,7 +520,7 @@ class RegisterWidget(widgets.Container):
         return HyperParameters(
             cropping=Cropping(right=self._right_crop_slider.get_value(), top=self._top_crop_slider.get_value(),
                               left=self._left_crop_slider.get_value(), bottom=self._bottom_crop_slider.get_value()),
-            source_offset=torch.zeros(2))
+            source_offset=torch.zeros(2), downsample_level=self._downsample_level_widget.get_value())
 
     def _set_hyper_parameters(self, new_value: HyperParameters) -> None:
         if new_value.cropping.right > self._right_crop_slider.max:
@@ -573,10 +602,54 @@ class RegisterWidget(widgets.Container):
         self._registration_data.mask_transformation = self._transformation_widget.get_current_transformation()
         self._registration_data.refresh_mask_transformation_dependent()
 
-    def _on_evals_per_regen_mask(self, *args):
+    def _on_evals_per_regen_mask(self, *args) -> None:
         self._evals_per_regen_mask = self._evals_per_regen_mask_widget.get_value()
         if self._evals_per_regen_mask == 0:
             self._evals_per_regen_mask = None
+
+    def _on_downsample_level(self, *args) -> None:
+        self._registration_data.hyperparameters = self._current_hyper_parameters()
+        self._registration_data.refresh_hyperparameter_dependent()
+
+    def _on_pre_programmed_task_button(self) -> None:
+        self._pre_programmed_initial_crop = copy.deepcopy(self._registration_data.hyperparameters.cropping)
+        self._pre_programmed_stage_1()
+
+    def _pre_programmed_stage_1(self) -> None:
+        self._downsample_level_widget.set_value(2)
+        self._objective_function_widget.widget.set_value("grangeat")
+        self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
+        self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(1000)
+        self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(15)
+        # change crop
+        self._evals_per_regen_mask_widget.set_value(0)
+
+        self._on_registration_finish = self._pre_programmed_stage_2
+        self._on_register()
+
+    def _pre_programmed_stage_2(self) -> None:
+        self._downsample_level_widget.set_value(1)
+        self._objective_function_widget.widget.set_value("drr")
+        self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
+        self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(1000)
+        self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(15)
+        # change crop
+        self._evals_per_regen_mask_widget.set_value(1000)
+
+        self._on_registration_finish = self._pre_programmed_stage_3
+        self._on_register()
+
+    def _pre_programmed_stage_3(self) -> None:
+        self._downsample_level_widget.set_value(0)
+        self._objective_function_widget.widget.set_value("drr")
+        self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
+        self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(2000)
+        self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(10)
+        # change crop
+        self._evals_per_regen_mask_widget.set_value(500)
+
+        self._on_registration_finish = None
+        self._on_register()
 
     def _on_exit(self) -> None:
         self._hyper_parameters_widget.save_to_file(self._hyper_parameter_save_path)

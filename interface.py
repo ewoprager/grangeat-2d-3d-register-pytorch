@@ -33,8 +33,7 @@ from registration import objective_function
 class Interface:
     def __init__(self, *, cache_directory: str, save_directory: str, ct_path: str | None, xray_path: str | None,
                  load_cached: bool, sinogram_types: list[Type[SinogramType]], sinogram_size: int | None,
-                 regenerate_drr: bool, save_to_cache: bool, new_drr_size: torch.Size | None,
-                 volume_downsample_factor: int, device):
+                 regenerate_drr: bool, save_to_cache: bool, new_drr_size: torch.Size | None, device):
         self._registration_data = RegistrationData(  #
             cache_directory=cache_directory,  #
             ct_path=ct_path,  #
@@ -45,8 +44,7 @@ class Interface:
             regenerate_drr=regenerate_drr,  #
             save_to_cache=save_to_cache,  #
             new_drr_size=new_drr_size,  #
-            volume_downsample_factor=volume_downsample_factor,  #
-            target_change_callback=self.render_target_dependent,  #
+            target_change_callback=None,  #
             hyperparameter_change_callback=self.render_hyperparameter_dependent,  #
             mask_transformation_change_callback=self.render_mask_transformation_dependent,  #
             device=device)
@@ -142,8 +140,9 @@ class Interface:
         source_position = torch.tensor([0., 0., self.registration_data.source_distance], device=self.device)
         p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
         ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=self.device).to(dtype=torch.float32))
-        return next(iter(self.registration_data.ct_sinograms.values())).resample_cuda_texture(ph_matrix,
-                                                                                              self.registration_data.sinogram2d_grid)
+        return next(iter(self.registration_data.ct_sinograms.values()))[
+            self.registration_data.hyperparameters.downsample_level].resample_cuda_texture(  #
+            ph_matrix, self.registration_data.sinogram2d_grid)
 
     def generate_drr(self, transformation: Transformation) -> torch.Tensor:
         # Applying the translation offset
@@ -152,9 +151,10 @@ class Interface:
         transformation = Transformation(rotation=transformation.rotation, translation=translation).to(
             device=self.device)
 
-        return geometry.generate_drr(self.registration_data.ct_volume, transformation=transformation,
-                                     voxel_spacing=self.registration_data.ct_spacing,
-                                     detector_spacing=self.registration_data.fixed_image_spacing.to(device=self.device),
+        return geometry.generate_drr(self.registration_data.ct_volume_at_current_level, transformation=transformation,
+                                     voxel_spacing=self.registration_data.ct_spacing_at_current_level,
+                                     detector_spacing=self.registration_data.fixed_image_spacing_at_current_level.to(
+                                         device=self.device),  #
                                      scene_geometry=SceneGeometry(
                                          source_distance=self.registration_data.source_distance,
                                          fixed_image_offset=self.registration_data.fixed_image_offset),
@@ -173,15 +173,15 @@ class Interface:
     def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
         return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
 
-    def render_target_dependent(self) -> None:
-        self._sinogram2d_layer.translate = (self.registration_data.image_2d_full.size()[0] + 24, 0)
-        self._moving_sinogram_layer.translate = (self.registration_data.image_2d_full.size()[0] + 24, 0)
-
     def render_hyperparameter_dependent(self) -> None:
-        translate = (self._registration_data.hyperparameters.cropping.top,
-                     self._registration_data.hyperparameters.cropping.left)
-        self._fixed_image_layer.translate = translate
-        self._moving_image_layer.translate = translate
+        downsampled_image_size = self.registration_data.image_2d_full_at_current_level.size()
+        sinogram_translate = (downsampled_image_size[0] + 24, 0)
+        self._sinogram2d_layer.translate = sinogram_translate
+        self._moving_sinogram_layer.translate = sinogram_translate
+        downsampled_crop = self._registration_data.hyperparameters.downsampled_crop(downsampled_image_size)
+        cropped_translate = (downsampled_crop.top, downsampled_crop.left)
+        self._fixed_image_layer.translate = cropped_translate
+        self._moving_image_layer.translate = cropped_translate
         self.render_drr()
         self.render_moving_sinogram()
 
@@ -283,14 +283,14 @@ class Interface:
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
          sinogram_size: int | None, xray_path: str | None = None, new_drr_size: torch.Size = torch.Size([1000, 1000]),
-         sinogram_type: Type[SinogramType] = SinogramClassic, volume_downsample_factor: int = 2) -> int:
+         sinogram_type: Type[SinogramType] = SinogramClassic) -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
 
     interface = Interface(cache_directory=cache_directory, save_directory="saved", ct_path=path, xray_path=xray_path,
                           load_cached=load_cached, regenerate_drr=regenerate_drr, save_to_cache=save_to_cache,
                           sinogram_size=sinogram_size, new_drr_size=new_drr_size, sinogram_types=[sinogram_type],
-                          volume_downsample_factor=volume_downsample_factor, device=device)
+                          device=device)
 
     napari.run()
 
