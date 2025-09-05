@@ -10,6 +10,7 @@ cd Extension
 python setup.py develop
 ```
 
+- Verbose: `--verbose`
 - In debug: `--debug`
 - Without CUDA: `--no-cuda`
 

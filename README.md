@@ -62,11 +62,9 @@ but note that this will not check for correctly install packages, nor initialise
 source code has changed, as `uv` is not run here, so make sure to run `uv sync` beforehand if you have changed any
 dependencies or the extension.
 
-
 # The extension
 
 The extension is contained within the [Extension](Extension) directory, with its own [README.md](Extension/README.md).
-
 
 # Scripts you can run
 
@@ -79,25 +77,21 @@ uv run interface.py -h
 uv run interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --xray-path "/path/to/x_ray.dcm"
 ```
 
-Controls:
+![interface_2025-09-05.png](figures/interface_2025-09-05.png)
 
-- With the DRR selected in the 'layer list' window on the left, hold `alt` and drag with the left and right mouse  
+## Features
+
+### General controls
+
+- With the DRR selected in the 'layer list' window on the left, hold `alt` and drag with the left and right mouse
   buttons pressed to change the rotation and translation transformation parameters respectively. The sensitivity of this
   is controlled in the 'View Options' window on the bottom left.
 - The numerical values of the transformation parameters can be changed, saved and loaded in the 'Transformations'
   tab on the right.
 - A lot of useful information is printed to std out, including warnings and errors so keep an eye on this while
   using the interface.
-
-![interface_2025-09-05.png](figures/interface_2025-09-05.png)
-
-## Features
-
-### General
-
-If you suspect the CT and X-ray images are flipped with respect to one another, the button 'Flip' in the 'Register' tab
-will flip the X-ray horizontally.
-
+- If you suspect the CT and X-ray images are flipped with respect to one another, the button 'Flip' in the 'Register' tab
+  will flip the X-ray horizontally.
 
 ### Grangeat's relation-based registration
 
@@ -115,13 +109,11 @@ To use the Grangeat's relation-based objective function for registrations, choos
 'Obj. func.' combo box in the 'Register' tab. To evaluate the chosen objective function once and display the result,
 click the button 'Evaluate once'.
 
-
 ### Cropping
 
 The region of the X-ray with which the generated DRR will be compared (and corresponding images will be generated and
 compared using the Grangeat-method) can be adjusted using the sliders at the top of the 'Register' tab. The current
 cropping settings can be saved, renamed and loaded using the box below.
-
 
 ### Masking
 
@@ -130,7 +122,7 @@ mask is a function of the current transformation, but is not automatically updat
 at the current transformation, click 'Regenerate mask' in the 'Register' tab.
 
 To have the fixed image rendered with the
-mask applied, tick the box 'Render fixed image with mask'  in the 'View Options' window (by default located in the
+mask applied, tick the box 'Render fixed image with mask' in the 'View Options' window (by default located in the
 bottom left).
 
 The mask can be regenerated automatically every $N$ objective function evaluations. To set the value of $N$, use the
@@ -139,7 +131,7 @@ regenerated.
 
 ### Downsampling
 
-Upon loading of a CT volume and fixed image, they will be downsampled by every factor of 2 (generating mipmaps). The 
+Upon loading of a CT volume and fixed image, they will be downsampled by every factor of 2 (generating mipmaps). The
 corresponding Radon transforms for the Grangeat method will also be calculated.
 
 Change the level of downsampling currently being used with the spin box labelled 'Downsample level' in the 'Register'
@@ -148,10 +140,11 @@ tab.
 ### Optimisation algorithms
 
 Two algorithms are currently available:
+
 - Particle swarm optimisation
 - Local search
 
-To choose the algorithm you want to use, select it in the combo box in the 'Register' tab. The parameters specific to 
+To choose the algorithm you want to use, select it in the combo box in the 'Register' tab. The parameters specific to
 the selected optimisation algorithm will be customisable below.
 
 To run a registration, click the 'Register' button in the 'Register' tab. This will run the registration in a second
@@ -159,6 +152,7 @@ thread, which will allow the user to interact with the interface while the regis
 changing parameters that affect the optimisation, like the cropping, will crash the software. Unfortunately, it is not
 currently possible to terminate a registration prematurely without closing the whole application. Notable parameters
 that can safely be modified while a registration is running:
+
 - The view in the Napari image viewer, and any of the controls in the napari 'layer controls' and 'layer list' windows.
 - 'Render fixed image with mask'
 - 'Evals./regen. mask'
@@ -207,7 +201,6 @@ or
 ```bash
 PYTHONPATH=$PWD python registration/lib/dev_scripts/dev_sinogram.py --help 
 ```
-
 
 ## Experiments so far
 
