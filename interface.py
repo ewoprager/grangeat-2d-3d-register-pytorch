@@ -306,10 +306,10 @@ if __name__ == "__main__":
     _parser.add_argument("-c", "--cache-directory", type=str, default="cache",
                          help="Set the directory where data that is expensive to calculate will be saved. The default "
                               "is 'cache'.")
-    _parser.add_argument("-p", "--ct-nrrd-path", type=str,
-                         help="Give a path to a NRRD file containing CT data to process. If not provided, some simple "
-                              "synthetic data will be used instead - note that in this case, data will not be saved to "
-                              "the cache.")
+    _parser.add_argument("-p", "--ct-path", type=str,
+                         help="Give a path to a .nrrd file containing CT data, or a directory containing .dcm CT slices"
+                              " to process. If not provided, some simple synthetic data will be used instead - note "
+                              "that in this case, data will not be saved to the cache.")
     _parser.add_argument("-i", "--no-load", action='store_true',
                          help="Do not load any pre-calculated data from the cache.")
     _parser.add_argument("-r", "--regenerate-drr", action='store_true',
@@ -320,7 +320,7 @@ if __name__ == "__main__":
                               "and the width and height of the grid of samples taken to approximate each integral. The "
                               "computational expense of the 3D Radon transform is O(sinogram_size^5). If not given, the "
                               "default is determined by the size of the CT volume.")
-    _parser.add_argument("-x", "--x-ray", type=str,
+    _parser.add_argument("-x", "--xray-path", type=str,
                          help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
                               "this is provided, the X-ray will by used instead of any DRR.")
     _parser.add_argument("-d", "--drr-size", type=int, default=1000,
@@ -341,9 +341,9 @@ if __name__ == "__main__":
     elif _args.sinogram_type != "classic":
         logger.warning("Unrecognised sinogram type '{}'; defaulting to 'classic'.".format(_args.sinogram_type))
 
-    _ret = main(path=_args.ct_nrrd_path, cache_directory=_args.cache_directory, load_cached=not _args.no_load,
+    _ret = main(path=_args.ct_path, cache_directory=_args.cache_directory, load_cached=not _args.no_load,
                 regenerate_drr=_args.regenerate_drr, save_to_cache=not _args.no_save, sinogram_size=_args.sinogram_size,
-                xray_path=_args.x_ray if "x_ray" in vars(_args) else None,
+                xray_path=_args.xray_path if "xray_path" in vars(_args) else None,
                 new_drr_size=torch.Size([_args.drr_size, _args.drr_size]), sinogram_type=_sinogram_type)
 
     exit(_ret)

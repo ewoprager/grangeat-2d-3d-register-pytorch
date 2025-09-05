@@ -2,11 +2,14 @@
 
 ## Build
 
-Do this directly with setuptools:
+To do this directly with setuptools, starting in the root directory of the repository:
+
 ```bash
 source .venv/bin/activate
+cd Extension
 python setup.py develop
 ```
+
 - In debug: `--debug`
 - Without CUDA: `--no-cuda`
 
@@ -15,16 +18,33 @@ python setup.py develop
 The documentation for this extension is uploaded
 at https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/index.html.
 
-## Radon Transforms
+## Module contents
 
-The $n$-dimensional Radon Transform $\mathcal{R}_n$ maps from one scalar field to another:
-$$
-\mathcal{R}_n : f \to g, \quad f, g : \mathbb{R}^n \to \mathbb{R}
-$$
-It is equal to the set of all $(n-1)$-dimensional hyper-plane integrals:
-$$
-\mathcal{R}_n[f](\mathbf{\hat{n}, d}) = \int \dots \int_{\mathbb{R}^n} \! f(\mathbf{x}) \delta(\mathbf{x} \cdot
-\mathbf{\hat{n}} - d) \, \mathrm{d} x^n
-$$
+See [`__init__.py`](__init__.py) for all the names that can be imported.
 
-The implementations provided here are for 2- and 3-dimensional Radon transforms.
+### Functions
+
+The following functions are provided. These map directly to the C++ functions documented at the link above. The mappings
+are given in [ops.py](ops.py). Unless stated otherwise, all functions are implemented for both CPU and CUDA.
+
+- `radon2d`
+- `radon2d_v2`
+- `d_radon2d_dr`
+- `radon3d`
+- `radon3d_v2`
+- `d_radon3d_dr`
+- `d_radon3d_dr_v2`
+- `resample_sinogram3d`
+- `normalised_cross_correlation`
+- `grid_sample3d`
+- `project_drr`
+- `project_drr_cuboid_mask`
+- `resample_sinogram3d_cuda_texture` (only implemented for CUDA)
+
+### Structures
+
+The following structures are provided. These are defined in [structs.py](structs.py), and are almost direct mappings to
+C++ structures documented at the link above.
+
+- `CUDATexture2D`
+- `CUDATexture3D`
