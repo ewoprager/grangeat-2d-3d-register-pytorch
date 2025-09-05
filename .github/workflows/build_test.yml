@@ -47,10 +47,7 @@ jobs:
     - name: Build the extenion
       working-directory: Extension
       run: uv pip install -e .[cpu]
-      
-    - name: Test the extension
-      run: .venv/bin/python -m pytest Extension
     
-    - name: Test the code
+    - name: Run the tests
       run: .venv/bin/python -m pytest .
 

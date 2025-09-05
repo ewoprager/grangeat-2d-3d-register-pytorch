@@ -1,8 +1,6 @@
 import torch
 
-if torch.cuda.is_available():
-    from .structs import CUDATexture3D
-
+from .structs import CUDATexture3D
 
 def radon2d(image: torch.Tensor, image_spacing: torch.Tensor, phi_values: torch.Tensor, r_values: torch.Tensor,
             samples_per_line: int) -> torch.Tensor:
