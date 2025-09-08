@@ -46,7 +46,9 @@ class Interface:
             new_drr_size=new_drr_size,  #
             target_change_callback=None,  #
             hyperparameter_change_callback=self.render_hyperparameter_dependent,  #
+            hyperparameter_change_callback_grangeat=self.render_hyperparameter_dependent_grangeat,  #
             mask_transformation_change_callback=self.render_mask_transformation_dependent,  #
+            mask_transformation_change_callback_grangeat=self.render_mask_transformation_dependent_grangeat,  #
             device=device)
 
         self._viewer = napari.Viewer()
@@ -175,14 +177,17 @@ class Interface:
 
     def render_hyperparameter_dependent(self) -> None:
         downsampled_image_size = self.registration_data.image_2d_full_at_current_level.size()
-        sinogram_translate = (downsampled_image_size[0] + 24, 0)
-        self._sinogram2d_layer.translate = sinogram_translate
-        self._moving_sinogram_layer.translate = sinogram_translate
         downsampled_crop = self._registration_data.hyperparameters.downsampled_crop(downsampled_image_size)
         cropped_translate = (downsampled_crop.top, downsampled_crop.left)
         self._fixed_image_layer.translate = cropped_translate
         self._moving_image_layer.translate = cropped_translate
         self.render_drr()
+
+    def render_hyperparameter_dependent_grangeat(self) -> None:
+        downsampled_image_size = self.registration_data.image_2d_full_at_current_level.size()
+        sinogram_translate = (downsampled_image_size[0] + 24, 0)
+        self._sinogram2d_layer.translate = sinogram_translate
+        self._moving_sinogram_layer.translate = sinogram_translate
         self.render_moving_sinogram()
 
     def render_mask_transformation_dependent(self) -> None:
@@ -190,6 +195,8 @@ class Interface:
             self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
         else:
             self._fixed_image_layer.data = self.registration_data.cropped_target.cpu().numpy()
+        
+    def render_mask_transformation_dependent_grangeat(self) -> None:
         self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
 
     def render_drr(self) -> None:

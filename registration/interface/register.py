@@ -271,7 +271,6 @@ class RegisterWidget(widgets.Container):
         super().__init__(labels=False)
         self._transformation_widget = transformation_widget
         self._registration_data = registration_data
-        self._objective_functions = objective_functions
         save_directory = pathlib.Path(save_directory)
         self._hyper_parameter_save_path = save_directory / "hyperparameter_library.pkl"
         self._xray_params_save_path = save_directory / "xray_params_library.pkl"
@@ -309,15 +308,17 @@ class RegisterWidget(widgets.Container):
         ##
         ## Masking
         ##
-        self._regenerate_mask_button = widgets.PushButton(label="Regenerate mask")
+        self._regenerate_mask_button = widgets.PushButton(label="Regen.")
         self._regenerate_mask_button.changed.connect(self._on_regenerate_mask_button)
+        self._remove_mask_button = widgets.PushButton(label="Remove")
+        self._remove_mask_button.changed.connect(self._on_remove_mask_button)
         self._evals_per_regen_mask: int | None = None
-        self._evals_per_regen_mask_widget = widgets.SpinBox(value=0, min=0, max=10000, step=1,
-                                                            label="Evals./regen. mask")
+        self._evals_per_regen_mask_widget = widgets.SpinBox(value=0, min=0, max=10000, step=1, label="Evals./regen.")
         self._evals_per_regen_mask_widget.changed.connect(self._on_evals_per_regen_mask)
         self._last_regen_mask_iteration: int = 0
-        self.append(widgets.Container(widgets=[self._regenerate_mask_button, self._evals_per_regen_mask_widget],
-                                      layout="horizontal"))
+        self.append(widgets.Container(
+            widgets=[widgets.Label(label="Mask:"), self._regenerate_mask_button, self._remove_mask_button,
+                     self._evals_per_regen_mask_widget], layout="horizontal"))
 
         ##
         ## Cropping sliders
@@ -406,7 +407,10 @@ class RegisterWidget(widgets.Container):
 
     def _current_obj_func(self) -> Callable[[Transformation], torch.Tensor] | None:
         current = self._objective_function_widget.get_selected()  # from a ComboBox, a str is returned
-        return self._objective_function_widget.get_data(current)
+        ret = self._objective_function_widget.get_data(current)
+        if self._evals_per_regen_mask is not None and self._evals_per_regen_mask == 1:
+            ret = self._obj_func_with_mask_regen(ret)
+        return ret
 
     def _on_eval_once(self):
         res = self._current_obj_func()(self._transformation_widget.get_current_transformation())
@@ -416,6 +420,7 @@ class RegisterWidget(widgets.Container):
         if len(self._algorithm_container_widget) < 2:
             logger.warning("No optimisation algorithm selected.")
             return
+        self._registration_data.suppress_callbacks = True
         self._iteration_callback_count = 0
         self._best = None
         self._last_rendered_iteration = 0
@@ -440,10 +445,10 @@ class RegisterWidget(widgets.Container):
     def _iteration_callback(self, param_history: torch.Tensor, value_history: torch.Tensor, force_render: bool) -> None:
         self._iteration_callback_count += 1
 
-        if self._evals_per_regen_mask is not None and self._iteration_callback_count - self._last_regen_mask_iteration > self._evals_per_regen_mask:
+        if self._evals_per_regen_mask is not None and 1 < self._evals_per_regen_mask < self._iteration_callback_count - self._last_regen_mask_iteration:
             self._last_regen_mask_iteration = self._iteration_callback_count
-            self._registration_data.mask_transformation = mapping_parameters_to_transformation(param_history[-1]).to(
-                dtype=torch.float32)
+            self._registration_data.mask_transformation = mapping_parameters_to_transformation(
+                param_history[value_history.min(dim=0).indices]).to(dtype=torch.float32)
 
         if force_render or self._iteration_callback_count - self._last_rendered_iteration > self._evals_per_render:
             self._axes.cla()
@@ -483,6 +488,7 @@ class RegisterWidget(widgets.Container):
         self._transformation_widget.set_current_transformation(converged_transformation)
         self._transformation_widget.save_transformation(converged_transformation, "registration result {}".format(
             datetime.now().strftime("%Y-%m-%d, %H:%M:%S")))
+        self._registration_data.suppress_callbacks = False
 
     def _thread_finish_callback(self):
         if self._on_registration_finish is not None:
@@ -602,6 +608,18 @@ class RegisterWidget(widgets.Container):
         self._registration_data.mask_transformation = self._transformation_widget.get_current_transformation()
         self._registration_data.refresh_mask_transformation_dependent()
 
+    def _on_remove_mask_button(self) -> None:
+        self._registration_data.mask_transformation = None
+        self._registration_data.refresh_mask_transformation_dependent()
+
+    def _obj_func_with_mask_regen(self, obj_func: Callable[[Transformation], torch.Tensor]) -> Callable[
+        [Transformation], torch.Tensor]:
+        def ret(transformation: Transformation) -> torch.Tensor:
+            self._registration_data.mask_transformation = transformation.to(dtype=torch.float32)
+            return obj_func(transformation)
+
+        return ret
+
     def _on_evals_per_regen_mask(self, *args) -> None:
         self._evals_per_regen_mask = self._evals_per_regen_mask_widget.get_value()
         if self._evals_per_regen_mask == 0:
@@ -621,7 +639,7 @@ class RegisterWidget(widgets.Container):
         self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(1000)
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(15)
-        # change crop
+        # ToDo: change crop
         self._evals_per_regen_mask_widget.set_value(0)
 
         self._on_registration_finish = self._pre_programmed_stage_2
