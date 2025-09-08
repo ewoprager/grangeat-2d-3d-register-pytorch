@@ -333,11 +333,25 @@ class RegisterWidget(widgets.Container):
         self._top_crop_slider.changed.connect(self._on_crop_slider)
         self._right_crop_slider.changed.connect(self._on_crop_slider)
         self._left_crop_slider.changed.connect(self._on_crop_slider)
-        self._crop_to_drr_button = widgets.PushButton(label="To DRR")
-        self._crop_to_drr_button.changed.connect(self._on_crop_to_drr)
-        self.append(widgets.Container(widgets=[widgets.Label(label="Crop"), self._crop_to_drr_button, widgets.Container(
-            widgets=[self._left_crop_slider, self._right_crop_slider, self._top_crop_slider, self._bottom_crop_slider],
-            layout="vertical")], layout="horizontal"))
+        self._reset_crop_button = widgets.PushButton(label="Reset")
+        self._reset_crop_button.changed.connect(self._on_reset_crop)
+        self._crop_to_nonzero_drr_button = widgets.PushButton(label="To non-zero DRR")
+        self._crop_to_nonzero_drr_button.changed.connect(self._on_crop_to_nonzero_drr)
+        self._crop_to_full_depth_drr_button = widgets.PushButton(label="To full depth DRR")
+        self._crop_to_full_depth_drr_button.changed.connect(self._on_crop_to_full_depth_drr)
+        self.append(widgets.Container(  #
+            widgets=[  #
+                widgets.Label(label="Crop"),  #
+                widgets.Container(widgets=[  #
+                    self._reset_crop_button,  #
+                    self._crop_to_nonzero_drr_button,  #
+                    self._crop_to_full_depth_drr_button  #
+                ], layout="vertical"),  #
+                widgets.Container(widgets=[  #
+                    self._left_crop_slider, self._right_crop_slider,  #
+                    self._top_crop_slider, self._bottom_crop_slider  #
+                ], layout="vertical")  #
+            ], layout="horizontal"))
 
         ##
         ## Hyper-parameter saving and loading
@@ -630,7 +644,13 @@ class RegisterWidget(widgets.Container):
         self._registration_data.hyperparameters = self._current_hyper_parameters()
         self._registration_data.refresh_hyperparameter_dependent()
 
-    def _set_crop_to_drr(self) -> None:
+    def _on_reset_crop(self) -> None:
+        self._set_hyper_parameters(
+            HyperParameters(cropping=Cropping.zero(self._registration_data.images_2d_full[0].size()),
+                            source_offset=self._registration_data.hyperparameters.source_offset,
+                            downsample_level=self._registration_data.hyperparameters.downsample_level))
+
+    def _set_crop_to_nonzero_drr(self) -> None:
         image_size = self._registration_data.images_2d_full[0].size()
         image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
 
@@ -660,13 +680,87 @@ class RegisterWidget(widgets.Container):
         mins, maxs = torch.aminmax(projected_vertices, dim=0)
         left, top = (mins + 0.5 * image_size_vector).floor().to(dtype=torch.int32)
         right, bottom = (maxs + 0.5 * image_size_vector).ceil().to(dtype=torch.int32)
-        self._left_crop_slider.set_value(max(left, self._left_crop_slider.min))
-        self._top_crop_slider.set_value(max(top, self._top_crop_slider.min))
-        self._right_crop_slider.set_value(min(right, self._right_crop_slider.max))
-        self._bottom_crop_slider.set_value(min(bottom, self._bottom_crop_slider.max))
+        left = min(max(left.item(), 0), self._registration_data.images_2d_full[0].size()[1])
+        right = min(max(right.item(), left + 1), self._registration_data.images_2d_full[0].size()[1])
+        top = min(max(top.item(), 0), self._registration_data.images_2d_full[0].size()[0])
+        bottom = min(max(bottom.item(), top + 1), self._registration_data.images_2d_full[0].size()[0])
+        self._set_hyper_parameters(HyperParameters(cropping=Cropping(left=left, right=right, bottom=bottom, top=top),
+                                                   source_offset=self._registration_data.hyperparameters.source_offset,
+                                                   downsample_level=self._registration_data.hyperparameters.downsample_level))
 
-    def _on_crop_to_drr(self) -> None:
-        self._set_crop_to_drr()
+    def _on_crop_to_nonzero_drr(self) -> None:
+        self._set_crop_to_nonzero_drr()
+
+    def _set_crop_to_full_depth_drr(self) -> None:
+        image_size = self._registration_data.images_2d_full[0].size()
+        image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
+
+        def project(vector: torch.Tensor) -> torch.Tensor:
+            """
+            :param vector: (3,) tensor
+            :return: (2,) tensor
+            """
+            p_matrix = SceneGeometry.projection_matrix(
+                source_position=torch.tensor([0.0, 0.0, self._registration_data.source_distance]))
+            ph_matrix = torch.matmul(p_matrix, self._transformation_widget.get_current_transformation().get_h().to(
+                dtype=torch.float32))
+            ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1]))))
+            return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
+
+        volume_half_diag: torch.Tensor = 0.5 * torch.tensor(self._registration_data.ct_volumes[0].size(),
+                                                            dtype=torch.float32).flip(
+            dims=(0,)) * self._registration_data.ct_spacing_original.cpu()
+        volume_vertices = [  #
+            torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([1.0, -1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, -1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([1.0, 1.0, -1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
+            torch.tensor([1.0, -1.0, -1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
+        ]  # size = (8, 3)
+        projected_vertices = torch.stack([project(vertex) for vertex in
+                                          volume_vertices]) / self._registration_data.fixed_image_spacing_original  # size = (8, 2)
+
+        # vertical bounds
+        upper = projected_vertices[0:4]  # size = (4, 2)
+        lower = projected_vertices[4:8]  # size = (4, 2)
+        if upper[:, 1].sum() > lower[:, 1].sum():
+            lower, upper = upper, lower
+        # lower is now the 4 truncated vertices that have the higher average projected y-value (appear lower on the screen), upper is the other 4
+        top = upper[:, 1].max()  # size = (,)
+        bottom = lower[:, 1].min()  # size = (,)
+        height = torch.maximum(bottom - top,
+                               torch.tensor(2.0)) + 24.0  # size = (,) # ToDo: set this padding value properly
+        vertical_centre = 0.5 * (top + bottom)  # size = (,)
+        top = (vertical_centre - 0.5 * height + 0.5 * image_size_vector[1]).floor().to(dtype=torch.int32)
+        bottom = (vertical_centre + 0.5 * height + 0.5 * image_size_vector[1]).floor().to(dtype=torch.int32)
+
+        # horizontal bounds
+        horizontally_sorted_order = projected_vertices[:, 0].argsort(dim=0)
+        horizontally_sorted = projected_vertices[horizontally_sorted_order]
+        onleft = horizontally_sorted[0:4]  # size = (4, 2)
+        onright = horizontally_sorted[4:8]  # size = (4, 2)
+        left = onleft[:, 0].max()  # size = (,)
+        right = onright[:, 0].min()  # size = (,)
+        width = torch.maximum(right - left,
+                              torch.tensor(2.0)) + 24.0  # size = (,) # ToDo: set this padding value properly
+        horizontal_centre = 0.5 * (left + right)  # size = (,)
+        left = (horizontal_centre - 0.5 * width + 0.5 * image_size_vector[0]).floor().to(dtype=torch.int32)
+        right = (horizontal_centre + 0.5 * width + 0.5 * image_size_vector[0]).floor().to(dtype=torch.int32)
+
+        # bounding by image size
+        left = min(max(left.item(), 0), self._registration_data.images_2d_full[0].size()[1])
+        right = min(max(right.item(), left + 1), self._registration_data.images_2d_full[0].size()[1])
+        top = min(max(top.item(), 0), self._registration_data.images_2d_full[0].size()[0])
+        bottom = min(max(bottom.item(), top + 1), self._registration_data.images_2d_full[0].size()[0])
+        self._set_hyper_parameters(HyperParameters(cropping=Cropping(left=left, right=right, bottom=bottom, top=top),
+                                                   source_offset=self._registration_data.hyperparameters.source_offset,
+                                                   downsample_level=self._registration_data.hyperparameters.downsample_level))
+
+    def _on_crop_to_full_depth_drr(self) -> None:
+        self._set_crop_to_full_depth_drr()
 
     def _on_pre_programmed_task_button(self) -> None:
         self._pre_programmed_initial_crop = copy.deepcopy(self._registration_data.hyperparameters.cropping)
@@ -678,7 +772,7 @@ class RegisterWidget(widgets.Container):
         self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(1000)
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(15)
-        self._set_crop_to_drr()
+        self._set_crop_to_nonzero_drr()
         self._evals_per_regen_mask_widget.set_value(0)
 
         self._on_registration_finish = self._pre_programmed_stage_2
