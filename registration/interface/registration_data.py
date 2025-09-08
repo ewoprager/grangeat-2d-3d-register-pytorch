@@ -110,7 +110,7 @@ class RegistrationData:
         self._mask_transformation_dirty_grangeat: bool = True
 
         self._suppress_callbacks = True
-        self.refresh_ct_path_dependent_grangeat()  # this sets self._hyperparameters via self.refresh_target_dependent
+        self.refresh_ct_path_dependent_grangeat()# this initialises self._hyperparameters via self.refresh_target_dependent
         self._suppress_callbacks = False
 
     @property
@@ -138,6 +138,11 @@ class RegistrationData:
         if new_value != self._ct_path:
             self._ct_path_dirty = True
             self._ct_path_dirty_grangeat = True
+            self._target_dirty = True
+            self._hyperparameters_dirty = True
+            self._hyperparameters_dirty_grangeat = True
+            self._mask_transformation_dirty = True
+            self._mask_transformation_dirty_grangeat = True
         self._ct_path = new_value
 
     @property
@@ -170,6 +175,10 @@ class RegistrationData:
     def target(self, new_value: Target) -> None:
         if new_value != self._target:
             self._target_dirty = True
+            self._hyperparameters_dirty = True
+            self._hyperparameters_dirty_grangeat = True
+            self._mask_transformation_dirty = True
+            self._mask_transformation_dirty_grangeat = True
         self._target = new_value
 
     @property
@@ -200,24 +209,32 @@ class RegistrationData:
     def ct_volume_at_current_level(self) -> torch.Tensor:
         if self._target_dirty:
             self.refresh_target_dependent()
+        if self._hyperparameters_dirty:
+            self.refresh_hyperparameter_dependent()
         return self._ct_path_dependent.ct_volumes[self.hyperparameters.downsample_level]
 
     @property
     def ct_spacing_at_current_level(self) -> torch.Tensor:
         if self._target_dirty:
             self.refresh_target_dependent()
+        if self._hyperparameters_dirty:
+            self.refresh_hyperparameter_dependent()
         return self._ct_path_dependent.ct_spacing * 2.0 ** self.hyperparameters.downsample_level
 
     @property
     def image_2d_full_at_current_level(self) -> torch.Tensor:
         if self._target_dirty:
             self.refresh_target_dependent()
+        if self._hyperparameters_dirty:
+            self.refresh_hyperparameter_dependent()
         return self._target_dependent.images_2d_full[self.hyperparameters.downsample_level]
 
     @property
     def fixed_image_spacing_at_current_level(self) -> torch.Tensor:
         if self._target_dirty:
             self.refresh_target_dependent()
+        if self._hyperparameters_dirty:
+            self.refresh_hyperparameter_dependent()
         return self._target_dependent.fixed_image_spacing * 2.0 ** self.hyperparameters.downsample_level
 
     # -----
@@ -232,6 +249,8 @@ class RegistrationData:
     def hyperparameters(self, new_value: HyperParameters) -> None:
         self._hyperparameters_dirty = True
         self._hyperparameters_dirty_grangeat = True
+        self._mask_transformation_dirty = True
+        self._mask_transformation_dirty_grangeat = True
         self._hyperparameters = new_value
 
     @property
@@ -304,6 +323,7 @@ class RegistrationData:
 
         self._ct_path_dependent = RegistrationData.CTPathDependent(ct_volumes=ct_volumes, ct_spacing=ct_spacing)
         self._ct_path_dirty = False
+
         self.refresh_target_dependent()
 
     def refresh_ct_path_dependent_grangeat(self) -> None:
@@ -344,6 +364,7 @@ class RegistrationData:
         self._ct_path_dependent_grangeat = RegistrationData.CTPathDependentGrangeat(sinogram_size=this_sinogram_size,
                                                                                     ct_sinograms=sinogram3ds)
         self._ct_path_dirty_grangeat = False
+
         self.refresh_hyperparameter_dependent_grangeat()
 
     def refresh_target_dependent(self) -> None:
@@ -387,6 +408,7 @@ class RegistrationData:
 
         if not self.suppress_callbacks and self._target_change_callback is not None:
             self._target_change_callback()
+
         self.refresh_hyperparameter_dependent()
 
     def refresh_hyperparameter_dependent(self) -> None:

@@ -732,7 +732,7 @@ class RegisterWidget(widgets.Container):
         top = upper[:, 1].max()  # size = (,)
         bottom = lower[:, 1].min()  # size = (,)
         height = torch.maximum(bottom - top,
-                               torch.tensor(2.0)) + 24.0  # size = (,) # ToDo: set this padding value properly
+                               torch.tensor(2.0)) + 48.0  # size = (,) # ToDo: set this padding value properly
         vertical_centre = 0.5 * (top + bottom)  # size = (,)
         top = (vertical_centre - 0.5 * height + 0.5 * image_size_vector[1]).floor().to(dtype=torch.int32)
         bottom = (vertical_centre + 0.5 * height + 0.5 * image_size_vector[1]).floor().to(dtype=torch.int32)
@@ -745,7 +745,7 @@ class RegisterWidget(widgets.Container):
         left = onleft[:, 0].max()  # size = (,)
         right = onright[:, 0].min()  # size = (,)
         width = torch.maximum(right - left,
-                              torch.tensor(2.0)) + 24.0  # size = (,) # ToDo: set this padding value properly
+                              torch.tensor(2.0)) + 128.0  # size = (,) # ToDo: set this padding value properly
         horizontal_centre = 0.5 * (left + right)  # size = (,)
         left = (horizontal_centre - 0.5 * width + 0.5 * image_size_vector[0]).floor().to(dtype=torch.int32)
         right = (horizontal_centre + 0.5 * width + 0.5 * image_size_vector[0]).floor().to(dtype=torch.int32)
@@ -784,8 +784,8 @@ class RegisterWidget(widgets.Container):
         self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(1000)
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(15)
-        # ToDo: change crop
-        self._evals_per_regen_mask_widget.set_value(1000)
+        self._set_crop_to_full_depth_drr()
+        self._evals_per_regen_mask_widget.set_value(500)
 
         self._on_registration_finish = self._pre_programmed_stage_3
         self._on_register()
@@ -796,7 +796,8 @@ class RegisterWidget(widgets.Container):
         self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(2000)
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(10)
-        self._evals_per_regen_mask_widget.set_value(500)
+        self._evals_per_regen_mask_widget.set_value(1)
+        self._set_crop_to_full_depth_drr()
 
         self._on_registration_finish = None
         self._on_register()
