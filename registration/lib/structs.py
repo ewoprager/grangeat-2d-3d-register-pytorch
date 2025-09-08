@@ -140,12 +140,11 @@ class SceneGeometry(NamedTuple):
     @classmethod
     def projection_matrix(cls, source_position: torch.Tensor, central_ray: torch.Tensor | None = None) -> torch.Tensor:
         """
+        Generate the projection matrix for the given source position
 
         :param source_position: [(3,) tensor] the position of the X-ray source
-        :param central_ray: [(3,) tensor or None] the vector from the X-ray source to the closest point on the
-        detector array. If none, the detector array is assumed to be the x-y plane.
-        :return: [(4, 4) tensor] The projection matrix P that projects points in homogeneous coordinates away from
-        the given source position onto the plane of the detector array, as given by the central ray.
+        :param central_ray: [(3,) tensor or None] the vector from the X-ray source to the closest point on the detector array. If none, the detector array is assumed to be the x-y plane.
+        :return: [(4, 4) tensor] The projection matrix P that projects points in homogeneous coordinates away from the given source position onto the plane of the detector array, as given by the central ray.
         """
         device = source_position.device
 

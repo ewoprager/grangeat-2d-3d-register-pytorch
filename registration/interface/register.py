@@ -1,6 +1,5 @@
 import copy
 import time
-import math
 import logging
 from datetime import datetime
 from typing import Callable, Any, NamedTuple
@@ -19,7 +18,7 @@ import pyswarms
 from qtpy.QtWidgets import QApplication
 import pathlib
 
-from registration.lib.structs import Transformation, GrowingTensor
+from registration.lib.structs import Transformation, GrowingTensor, SceneGeometry
 from registration.interface.transformations import TransformationWidget
 from registration.interface.lib.structs import HyperParameters, WidgetSelectData, WidgetManageSaved, Cropping, \
     SavedXRayParams, Target
@@ -326,17 +325,19 @@ class RegisterWidget(widgets.Container):
         self._ignore_crop_sliders: bool = False
         width = fixed_image_size[1]
         height = fixed_image_size[0]
-        self._bottom_crop_slider = widgets.IntSlider(value=height, min=0, max=height, step=1, label="Crop bottom")
-        self._top_crop_slider = widgets.IntSlider(value=0, min=0, max=height, step=1, label="Crop top")
-        self._right_crop_slider = widgets.IntSlider(value=width, min=0, max=width, step=1, label="Crop right")
-        self._left_crop_slider = widgets.IntSlider(value=0, min=0, max=width, step=1, label="Crop left")
+        self._left_crop_slider = widgets.IntSlider(value=0, min=0, max=width, step=1, label="Left")
+        self._right_crop_slider = widgets.IntSlider(value=width, min=0, max=width, step=1, label="Right")
+        self._top_crop_slider = widgets.IntSlider(value=0, min=0, max=height, step=1, label="Top")
+        self._bottom_crop_slider = widgets.IntSlider(value=height, min=0, max=height, step=1, label="Bottom")
         self._bottom_crop_slider.changed.connect(self._on_crop_slider)
         self._top_crop_slider.changed.connect(self._on_crop_slider)
         self._right_crop_slider.changed.connect(self._on_crop_slider)
         self._left_crop_slider.changed.connect(self._on_crop_slider)
-        self.append(widgets.Container(
-            widgets=[self._bottom_crop_slider, self._top_crop_slider, self._right_crop_slider, self._left_crop_slider],
-            layout="vertical"))
+        self._crop_to_drr_button = widgets.PushButton(label="To DRR")
+        self._crop_to_drr_button.changed.connect(self._on_crop_to_drr)
+        self.append(widgets.Container(widgets=[widgets.Label(label="Crop"), self._crop_to_drr_button, widgets.Container(
+            widgets=[self._left_crop_slider, self._right_crop_slider, self._top_crop_slider, self._bottom_crop_slider],
+            layout="vertical")], layout="horizontal"))
 
         ##
         ## Hyper-parameter saving and loading
@@ -629,6 +630,44 @@ class RegisterWidget(widgets.Container):
         self._registration_data.hyperparameters = self._current_hyper_parameters()
         self._registration_data.refresh_hyperparameter_dependent()
 
+    def _set_crop_to_drr(self) -> None:
+        image_size = self._registration_data.images_2d_full[0].size()
+        image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
+
+        def project(vector: torch.Tensor) -> torch.Tensor:
+            p_matrix = SceneGeometry.projection_matrix(
+                source_position=torch.tensor([0.0, 0.0, self._registration_data.source_distance]))
+            ph_matrix = torch.matmul(p_matrix, self._transformation_widget.get_current_transformation().get_h().to(
+                dtype=torch.float32))
+            ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1]))))
+            return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
+
+        volume_half_diag: torch.Tensor = 0.5 * torch.tensor(self._registration_data.ct_volumes[0].size(),
+                                                            dtype=torch.float32).flip(
+            dims=(0,)) * self._registration_data.ct_spacing_original.cpu()
+        volume_vertices = [  #
+            torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([1.0, -1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([1.0, 1.0, -1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, -1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([1.0, -1.0, -1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
+        ]
+        projected_vertices = torch.stack(
+            [project(vertex) for vertex in volume_vertices]) / self._registration_data.fixed_image_spacing_original
+        mins, maxs = torch.aminmax(projected_vertices, dim=0)
+        left, top = (mins + 0.5 * image_size_vector).floor().to(dtype=torch.int32)
+        right, bottom = (maxs + 0.5 * image_size_vector).ceil().to(dtype=torch.int32)
+        self._left_crop_slider.set_value(max(left, self._left_crop_slider.min))
+        self._top_crop_slider.set_value(max(top, self._top_crop_slider.min))
+        self._right_crop_slider.set_value(min(right, self._right_crop_slider.max))
+        self._bottom_crop_slider.set_value(min(bottom, self._bottom_crop_slider.max))
+
+    def _on_crop_to_drr(self) -> None:
+        self._set_crop_to_drr()
+
     def _on_pre_programmed_task_button(self) -> None:
         self._pre_programmed_initial_crop = copy.deepcopy(self._registration_data.hyperparameters.cropping)
         self._pre_programmed_stage_1()
@@ -639,7 +678,7 @@ class RegisterWidget(widgets.Container):
         self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(1000)
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(15)
-        # ToDo: change crop
+        self._set_crop_to_drr()
         self._evals_per_regen_mask_widget.set_value(0)
 
         self._on_registration_finish = self._pre_programmed_stage_2
@@ -651,7 +690,7 @@ class RegisterWidget(widgets.Container):
         self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(1000)
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(15)
-        # change crop
+        # ToDo: change crop
         self._evals_per_regen_mask_widget.set_value(1000)
 
         self._on_registration_finish = self._pre_programmed_stage_3
@@ -663,7 +702,6 @@ class RegisterWidget(widgets.Container):
         self._algorithm_widget.set_value(ParticleSwarm.algorithm_name())
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_particle_count(2000)
         self._op_algo_widgets[ParticleSwarm.algorithm_name()].set_iteration_count(10)
-        # change crop
         self._evals_per_regen_mask_widget.set_value(500)
 
         self._on_registration_finish = None
