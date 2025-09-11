@@ -77,12 +77,12 @@ class RegistrationData:
 
     def __init__(self, *, cache_directory: str, ct_path: str | None, target: Target, load_cached: bool,
                  sinogram_types: list[Type[SinogramType]], sinogram_size: int | None, regenerate_drr: bool,
-                 save_to_cache: bool, new_drr_size: torch.Size | None,
-                 target_change_callback: Callable[[], None] | None,
-                 hyperparameter_change_callback: Callable[[], None] | None,
-                 hyperparameter_change_callback_grangeat: Callable[[], None] | None,
-                 mask_transformation_change_callback: Callable[[], None] | None,
-                 mask_transformation_change_callback_grangeat: Callable[[], None] | None, device):
+                 save_to_cache: bool, new_drr_size: torch.Size | None, device,
+                 target_change_callback: Callable[[], None] | None = None,
+                 hyperparameter_change_callback: Callable[[], None] | None = None,
+                 hyperparameter_change_callback_grangeat: Callable[[], None] | None = None,
+                 mask_transformation_change_callback: Callable[[], None] | None = None,
+                 mask_transformation_change_callback_grangeat: Callable[[], None] | None = None):
         self._cache_directory = cache_directory
         self._load_cached = load_cached
         self._sinogram_types = sinogram_types
@@ -110,7 +110,7 @@ class RegistrationData:
         self._mask_transformation_dirty_grangeat: bool = True
 
         self._suppress_callbacks = True
-        self.refresh_ct_path_dependent_grangeat()# this initialises self._hyperparameters via self.refresh_target_dependent
+        self.refresh_ct_path_dependent_grangeat()  # this initialises self._hyperparameters via self.refresh_target_dependent
         self._suppress_callbacks = False
 
     @property

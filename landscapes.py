@@ -52,11 +52,12 @@ class LandscapeTask:
         translation[0:2] += self.registration_data.translation_offset.to(device=transformation.device)
         transformation = Transformation(rotation=transformation.rotation, translation=translation)
 
-        source_position = self.registration_data.scene_geometry.source_position(device=self.device)
+        source_position = torch.tensor([0., 0., self.registration_data.source_distance], device=self.device)
         p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
         ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=self.device).to(dtype=torch.float32))
-        return next(iter(self.registration_data.ct_sinograms.values())).resample_cuda_texture(ph_matrix,
-                                                                                              self.registration_data.sinogram2d_grid)
+        return next(iter(self.registration_data.ct_sinograms.values()))[
+            self.registration_data.hyperparameters.downsample_level].resample_cuda_texture(ph_matrix,
+                                                                                           self.registration_data.sinogram2d_grid)
 
     def generate_drr(self, transformation: Transformation) -> torch.Tensor:
         # Applying the translation offset
@@ -64,20 +65,20 @@ class LandscapeTask:
         translation[0:2] += self.registration_data.translation_offset.to(device=transformation.device)
         transformation = Transformation(rotation=transformation.rotation, translation=translation)
 
-        return geometry.generate_drr(self.registration_data.ct_volume,
-                                     transformation=transformation.to(device=self.device),
-                                     voxel_spacing=self.registration_data.ct_spacing,
-                                     detector_spacing=self.registration_data.fixed_image_spacing,
+        return geometry.generate_drr(self.registration_data.ct_volume_at_current_level, transformation=transformation,
+                                     voxel_spacing=self.registration_data.ct_spacing_at_current_level,
+                                     detector_spacing=self.registration_data.fixed_image_spacing_at_current_level.to(
+                                         device=self.device),  #
                                      scene_geometry=SceneGeometry(
-                                         source_distance=self.registration_data.scene_geometry.source_distance,
+                                         source_distance=self.registration_data.source_distance,
                                          fixed_image_offset=self.registration_data.fixed_image_offset),
-                                     output_size=self.registration_data.fixed_image.size())
+                                     output_size=self.registration_data.cropped_target.size())
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(self.registration_data.fixed_image, self.generate_drr(transformation))
+        return -objective_function.ncc(self.registration_data.fixed_image, self.generate_drr(transformation))
 
     def objective_function_grangeat_classic(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
+        return -objective_function.ncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
 
     # def objective_function_grangeat_healpix(self, transformation: Transformation) -> torch.Tensor:
     #     return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation, 1))
@@ -85,7 +86,7 @@ class LandscapeTask:
     def run(self, *, objective_function_name: str, show: bool = False) -> None:
         if objective_function_name != "drr":
             old_hyperparameters = self.registration_data.hyperparameters
-            zero_crop = Cropping.zero(self.registration_data.image_2d_full.size())
+            zero_crop = Cropping.zero(self.registration_data.images_2d_full[0].size())
             self.registration_data.hyperparameters = HyperParameters(
                 cropping=Cropping(right=zero_crop.right, top=self.registration_data.hyperparameters.cropping.top,
                                   left=zero_crop.left, bottom=self.registration_data.hyperparameters.cropping.bottom),
@@ -97,7 +98,7 @@ class LandscapeTask:
             drr_gt = self.generate_drr(self._gt_transformation)
             plt.figure()
             plt.imshow(drr_gt.cpu().numpy())
-            logger.info("Sim @ G.T. = {}".format(-objective_function.zncc(self.registration_data.fixed_image, drr_gt)))
+            logger.info("Sim @ G.T. = {}".format(-objective_function.ncc(self.registration_data.fixed_image, drr_gt)))
             plt.show()
 
         obj_func = self._objective_functions[objective_function_name]
@@ -165,8 +166,7 @@ XRAY_DICOM_PATHS = ["/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_co
 XRAY_PARAMS_SAVE_PATH = pathlib.Path("saved") / "xray_params_library.pkl"
 
 
-def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, xray_path: str | None, downsample_factor: int,
-                                show: bool = False):
+def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, xray_path: str | None, show: bool = False):
     flipped: bool = False
     hyperparameters = None
 
@@ -195,8 +195,6 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, xray_path
                                              target=Target(xray_path=xray_path, flipped=flipped), load_cached=True,
                                              sinogram_types=[sinogram.SinogramClassic], sinogram_size=None,
                                              regenerate_drr=True, save_to_cache=True, new_drr_size=None,
-                                             volume_downsample_factor=downsample_factor,
-                                             hyperparameter_change_callback=None, target_change_callback=None,
                                              device=torch.device("cuda"))
     except RuntimeError as e:
         if "CUDA out of memory" not in str(e):
@@ -218,13 +216,12 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, xray_path
 
 
 def main(cache_directory: str, drr_as_target: bool, show: bool = False):
-    count: int = len(CT_PATHS)
     if not drr_as_target:
-        assert len(XRAY_DICOM_PATHS) == count
+        assert len(XRAY_DICOM_PATHS) == len(CT_PATHS)
+    count: int = 1#len(CT_PATHS)
     for i in range(count):
         evaluate_and_save_landscape(cache_directory=cache_directory, ct_path=CT_PATHS[i],
-                                    xray_path=None if drr_as_target else XRAY_DICOM_PATHS[i], downsample_factor=2,
-                                    show=show)
+                                    xray_path=None if drr_as_target else XRAY_DICOM_PATHS[i], show=show)
 
 
 if __name__ == "__main__":
