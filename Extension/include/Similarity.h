@@ -14,7 +14,7 @@ at::Tensor NormalisedCrossCorrelation_CPU(const at::Tensor &a, const at::Tensor 
 
 /**
  * @ingroup pytorch_functions
- * @brief An implementation of reg23::NormalisedCrossCorrelation_CPU that uses CUDA parallisation
+ * @brief An implementation of reg23::NormalisedCrossCorrelation_CPU that uses CUDA parallelisation
  */
 __host__ at::Tensor NormalisedCrossCorrelation_CUDA(const at::Tensor &a, const at::Tensor &b);
 
@@ -26,7 +26,7 @@ struct Similarity {
 		TORCH_CHECK(a.dtype() == b.dtype())
 		TORCH_CHECK(a.dtype() == at::kFloat)
 		TORCH_INTERNAL_ASSERT(a.device().type() == device)
-		TORCH_INTERNAL_ASSERT(b.device() == a.device())
+		TORCH_INTERNAL_ASSERT(b.device().type() == device)
 	}
 };
 

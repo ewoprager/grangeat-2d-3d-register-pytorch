@@ -52,8 +52,7 @@ def main():
     b = torch.rand(image_size)
 
     outputs: list[TaskSummarySimilarity] = [  #
-        run_task(task_similarity, plot_task_similarity, objective_function.zncc, "ZNCC", "cpu", a, b),
-        run_task(task_similarity, plot_task_similarity, objective_function.zncc2, "ZNCC2", "cpu", a, b),
+        run_task(task_similarity, plot_task_similarity, objective_function.ncc, "ZNCC", "cpu", a, b),
         run_task(task_similarity, plot_task_similarity, reg23.normalised_cross_correlation,
                  "NormalisedCrossCorrelation", "cpu", a, b),
         run_task(task_similarity, plot_task_similarity, zncc_torch, "ZNCC torch", "cpu", a, b)  #
@@ -61,8 +60,7 @@ def main():
 
     if torch.cuda.is_available():
         outputs += [  #
-            run_task(task_similarity, plot_task_similarity, objective_function.zncc, "ZNCC", "cuda", a, b),
-            run_task(task_similarity, plot_task_similarity, objective_function.zncc2, "ZNCC2", "cuda", a, b),
+            run_task(task_similarity, plot_task_similarity, objective_function.ncc, "ZNCC", "cuda", a, b),
             run_task(task_similarity, plot_task_similarity, reg23.normalised_cross_correlation,
                      "NormalisedCrossCorrelation", "cuda", a, b)  #
         ]
@@ -74,9 +72,8 @@ def main():
                 .5 * (outputs[i][1] + outputs[i + 1][1]).abs() + 1e-5)).mean()
         if discrepancy > 1e-2:
             found = True
-            logger.info(
-                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
-                                                                                     100. * discrepancy))
+            logger.info("\tAverage discrepancy between outputs {} and {} is {:.3f} %"
+                        "".format(outputs[i][0], outputs[i + 1][0], 100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")

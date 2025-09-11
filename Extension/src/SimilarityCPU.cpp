@@ -5,7 +5,7 @@
 
 namespace reg23 {
 
-at::Tensor NormalisedCrossCorrelation_CPU(const at::Tensor &a, const at::Tensor &b) {
+at::Tensor LocalNCC_CPU(const at::Tensor &a, const at::Tensor &b) {
 	Similarity::Common(a, b, at::DeviceType::CPU);
 
 	const at::Tensor aContiguous = a.contiguous();

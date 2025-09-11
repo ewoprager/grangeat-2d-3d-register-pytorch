@@ -144,13 +144,13 @@ class RegistrationTask:
                                      output_size=self.registration_info.fixed_image.size())
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(self.registration_info.fixed_image, self.generate_drr(transformation))
+        return -objective_function.ncc(self.registration_info.fixed_image, self.generate_drr(transformation))
 
     def objective_function_grangeat_classic(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(self.registration_info.sinogram2d, self.resample_sinogram3d(transformation, 0))
+        return -objective_function.ncc(self.registration_info.sinogram2d, self.resample_sinogram3d(transformation, 0))
 
     def objective_function_grangeat_healpix(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(self.registration_info.sinogram2d, self.resample_sinogram3d(transformation, 1))
+        return -objective_function.ncc(self.registration_info.sinogram2d, self.resample_sinogram3d(transformation, 1))
 
     def run(self, *, starting_transformation: Transformation, objective_function_name: str, iteration_count: int) -> \
             Tuple[OptimisationResult, float]:

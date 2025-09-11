@@ -163,7 +163,7 @@ class Interface:
                                      output_size=self.registration_data.cropped_target.size())
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(self.registration_data.fixed_image, self.generate_drr(transformation))
+        return -objective_function.ncc(self.registration_data.fixed_image, self.generate_drr(transformation))
 
     def regenerate_mask(self, transformation: Transformation) -> None:
         translation = copy.deepcopy(transformation.translation)
@@ -173,7 +173,7 @@ class Interface:
         self.registration_data.mask_transformation = transformation
 
     def objective_function_grangeat(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
+        return -objective_function.ncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
 
     def render_hyperparameter_dependent(self) -> None:
         downsampled_image_size = self.registration_data.image_2d_full_at_current_level.size()
