@@ -26,7 +26,7 @@ struct Similarity {
 		TORCH_CHECK(a.dtype() == b.dtype())
 		TORCH_CHECK(a.dtype() == at::kFloat)
 		TORCH_INTERNAL_ASSERT(a.device().type() == device)
-		TORCH_INTERNAL_ASSERT(b.device().type() == device)
+		TORCH_INTERNAL_ASSERT(b.device() == a.device())
 	}
 };
 

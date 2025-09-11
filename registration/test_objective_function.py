@@ -14,32 +14,29 @@ def test_zncc():
     b = torch.rand((100, 100), dtype=torch.float32)
     vanilla_cpu = objective_function.zncc(a, b)
     cpu = Extension.normalised_cross_correlation(a, b)
+    assert cpu.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
     if cuda_available:
         vanilla_cuda = objective_function.zncc(a.cuda(), b.cuda())
         cuda = Extension.normalised_cross_correlation(a.cuda(), b.cuda())
-    assert cpu.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
-    if cuda_available:
         assert vanilla_cuda.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
         assert cuda.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
 
     b *= -1.
     vanilla_cpu = objective_function.zncc(a, b)
     cpu = Extension.normalised_cross_correlation(a, b)
+    assert cpu.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
     if cuda_available:
         vanilla_cuda = objective_function.zncc(a.cuda(), b.cuda())
         cuda = Extension.normalised_cross_correlation(a.cuda(), b.cuda())
-    assert cpu.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
-    if cuda_available:
         assert vanilla_cuda.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
         assert cuda.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
 
     b = torch.ones_like(a)
     vanilla_cpu = objective_function.zncc(a, b)
     cpu = Extension.normalised_cross_correlation(a, b)
+    assert cpu.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
     if cuda_available:
         vanilla_cuda = objective_function.zncc(a.cuda(), b.cuda())
         cuda = Extension.normalised_cross_correlation(a.cuda(), b.cuda())
-    assert cpu.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
-    if cuda_available:
         assert vanilla_cuda.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
         assert cuda.item() == pytest.approx(vanilla_cpu.item(), abs=1e-4)
