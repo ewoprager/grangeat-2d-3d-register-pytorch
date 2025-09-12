@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 import torch
 import nrrd
 import pydicom
+import nibabel
 
 from registration.lib.structs import SceneGeometry, Transformation, LinearRange
 from registration.lib import sinogram
@@ -25,14 +26,30 @@ class LoadedVolume(NamedTuple):
 def read_volume(path: pathlib.Path) -> LoadedVolume:
     if path.is_file():
         logger.info("Loading CT data file '{}'...".format(str(path)))
+        # Obtain a data tensor and a tensor of voxel spacing
         if path.suffix == ".nrrd":
             data, header = nrrd.read(str(path))
+            data = torch.tensor(data)
+            directions = torch.tensor(header['space directions'], dtype=torch.float32)
+            spacing = directions.norm(dim=1).flip(dims=(0,))
+            logger.warning("Don't know how to read ImageOrientationPatient from .nrrd files.")
+        elif path.suffix == ".nii":
+            img = nibabel.load(str(path))
+            data = torch.tensor(img.get_fdata())
+            data = data.permute(*reversed(range(data.ndim)))
+            spacing = torch.tensor(img.header.get_zooms(), dtype=torch.float32)[0:3]
+            if path.stem == "PhantomCT":
+                data -= 1000.0 # super hacky adjustment for one particular file which appears to be HU + 1000
+            logger.warning("Don't know how to read ImageOrientationPatient from .nii files.")
         else:
             raise Exception("Error: file {} is of unrecognised type.".format(str(path)))
-        directions = torch.tensor(header['space directions'])
-        spacing = directions.norm(dim=1).flip(dims=(0,))
-        logger.warning("Don't know how to read ImageOrientationPatient from nrrd files.")
-        return LoadedVolume(torch.tensor(data), spacing)
+        # Make sure there aren't unnecessary dimensions
+        if len(data.size()) > 3:
+            data = data.squeeze()
+        if len(data.size()) != 3:
+            raise Exception("Error: CT volume file '{}' contains invalid size '{}'"
+                            "".format(str(path), str(data.size())))
+        return LoadedVolume(data, spacing)
     if path.is_dir():
         logger.info("Loading CT DICOM data from directory '{}'...".format(str(path)))
         files = [elem for elem in path.iterdir() if elem.is_file() and elem.suffix == ".dcm"]
@@ -108,7 +125,7 @@ def load_volume(path: pathlib.Path, *, downsample_factor: int | Literal["mipmap"
     image -= image.min()
     image /= image.max()
 
-    if downsample_factor is "mipmap":
+    if downsample_factor == "mipmap":
         logger.info("Downsampling volume into mipmap (all power-of-two downsample factors)...")
         down_sampler = torch.nn.AvgPool3d(2)
         images = [image]

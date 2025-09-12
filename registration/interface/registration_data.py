@@ -110,7 +110,7 @@ class RegistrationData:
         self._mask_transformation_dirty_grangeat: bool = True
 
         self._suppress_callbacks = True
-        self.refresh_ct_path_dependent_grangeat()  # this initialises self._hyperparameters via self.refresh_target_dependent
+        self.refresh_ct_path_dependent()  # this initialises self._hyperparameters via self.refresh_target_dependent
         self._suppress_callbacks = False
 
     @property

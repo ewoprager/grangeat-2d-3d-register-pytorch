@@ -62,12 +62,10 @@ class Interface:
         self._moving_image_layer.bind_key('r', self._reset)
         self._moving_image_layer.mouse_drag_callbacks.append(self._mouse_drag)
 
-        self._sinogram2d_layer = self._viewer.add_image(self.registration_data.sinogram2d.cpu().numpy(),
-                                                        colormap="yellow", interpolation2d="linear",
+        self._sinogram2d_layer = self._viewer.add_image(np.zeros((2, 2)), colormap="yellow", interpolation2d="linear",
                                                         translate=(self.registration_data.fixed_image.size()[0] + 24,
                                                                    0), name="Fixed sinogram")
-        self._moving_sinogram_layer = self._viewer.add_image(np.zeros(self.registration_data.sinogram2d.size()),
-                                                             colormap="blue", blending="additive",
+        self._moving_sinogram_layer = self._viewer.add_image(np.zeros((2, 2)), colormap="blue", blending="additive",
                                                              interpolation2d="linear", translate=(
                 self.registration_data.cropped_target.size()[0] + 24, 0), name="Moving sinogram")
 
@@ -114,7 +112,7 @@ class Interface:
                                             menu=self._viewer.window.window_menu, tabify=True)
 
         self.render_hyperparameter_dependent()
-        self.render_moving_sinogram()
+        # self.render_moving_sinogram()
 
     @property
     def device(self):
@@ -195,7 +193,7 @@ class Interface:
             self._fixed_image_layer.data = self.registration_data.fixed_image.cpu().numpy()
         else:
             self._fixed_image_layer.data = self.registration_data.cropped_target.cpu().numpy()
-        
+
     def render_mask_transformation_dependent_grangeat(self) -> None:
         self._sinogram2d_layer.data = self.registration_data.sinogram2d.cpu().numpy()
 
