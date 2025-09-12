@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Tuple, Callable
 import copy
 
 import pathlib
@@ -33,10 +33,9 @@ class LandscapeTask:
         assert landscape_range.size() == torch.Size([Transformation.zero().vectorised().numel()])
         self._landscape_range = landscape_range
 
-        self._objective_functions = {"drr": self.objective_function_drr,
-                                     "gr_classic": self.objective_function_grangeat_classic,
-                                     # "gr_healpix": self.objective_function_grangeat_healpix
-                                     }
+        self._images_functions = {"drr": self.images_drr, "gr_classic": self.images_grangeat_classic,
+                                  # "gr_healpix": self.objective_function_grangeat_healpix
+                                  }
 
     @property
     def device(self):
@@ -74,23 +73,28 @@ class LandscapeTask:
                                          fixed_image_offset=self.registration_data.fixed_image_offset),
                                      output_size=self.registration_data.cropped_target.size())
 
-    def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.ncc(self.registration_data.fixed_image, self.generate_drr(transformation))
+    def images_drr(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:
+        return self.registration_data.fixed_image, self.generate_drr(transformation)
 
-    def objective_function_grangeat_classic(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.ncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation))
+    def images_grangeat_classic(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:
+        return self.registration_data.sinogram2d, self.resample_sinogram3d(transformation)
 
     # def objective_function_grangeat_healpix(self, transformation: Transformation) -> torch.Tensor:
     #     return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation, 1))
 
-    def run(self, *, objective_function_name: str, show: bool = False) -> None:
-        if objective_function_name != "drr":
+    @staticmethod
+    def sim_metric_ncc(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
+        return -objective_function.ncc(xs, ys)
+
+    def run(self, *, images_function_name: str, downsample_level: int,
+            sim_metric: Callable[[torch.Tensor, torch.Tensor], torch.Tensor], show: bool = False) -> None:
+        if images_function_name != "drr":
             old_hyperparameters = self.registration_data.hyperparameters
             zero_crop = Cropping.zero(self.registration_data.images_2d_full[0].size())
             self.registration_data.hyperparameters = HyperParameters(
                 cropping=Cropping(right=zero_crop.right, top=self.registration_data.hyperparameters.cropping.top,
                                   left=zero_crop.left, bottom=self.registration_data.hyperparameters.cropping.bottom),
-                source_offset=self.registration_data.hyperparameters.source_offset)
+                source_offset=self.registration_data.hyperparameters.source_offset, downsample_level=downsample_level)
 
         if show:
             plt.figure()
@@ -98,10 +102,10 @@ class LandscapeTask:
             drr_gt = self.generate_drr(self._gt_transformation)
             plt.figure()
             plt.imshow(drr_gt.cpu().numpy())
-            logger.info("Sim @ G.T. = {}".format(-objective_function.ncc(self.registration_data.fixed_image, drr_gt)))
+            logger.info("Sim @ G.T. = {}".format(sim_metric(self.registration_data.fixed_image, drr_gt)))
             plt.show()
 
-        obj_func = self._objective_functions[objective_function_name]
+        images_func = self._images_functions[images_function_name]
 
         gt_vectorised = self._gt_transformation.vectorised()
 
@@ -122,7 +126,7 @@ class LandscapeTask:
             landscape = torch.zeros(self._landscape_size, self._landscape_size)
             for j in tqdm(range(self._landscape_size)):
                 for i in range(self._landscape_size):
-                    landscape[j, i] = obj_func(get_transformation(i, j))
+                    landscape[j, i] = sim_metric(*images_func(get_transformation(i, j)))
 
             return param1_grid, param2_grid, landscape
 
@@ -140,14 +144,16 @@ class LandscapeTask:
 
         for lp in landscapes:
             values1, values2, height = landscape2(lp.i, lp.j)
-            torch.save(LandscapePlotData(xray_path=self.registration_data.target.xray_path, param1=lp.i, param2=lp.j,
-                                         label1=lp.xlabel, label2=lp.ylabel, values1=values1, values2=values2,
-                                         height=height), SAVE_DIRECTORY / "{}_{}_{}.pkl".format(pathlib.Path(
-                self.registration_data.ct_path if self.registration_data.target.xray_path is None else self.registration_data.target.xray_path).stem,
-                                                                                                objective_function_name,
-                                                                                                lp.fname))
+            torch.save(  #
+                LandscapePlotData(  #
+                    xray_path=self.registration_data.target.xray_path, param1=lp.i, param2=lp.j, label1=lp.xlabel,
+                    label2=lp.ylabel, values1=values1, values2=values2, height=height),
+                SAVE_DIRECTORY / "{}_{}_{}.pkl".format(  #
+                    pathlib.Path(  #
+                        self.registration_data.ct_path if self.registration_data.target.xray_path is None else self.registration_data.target.xray_path).stem,
+                    images_function_name, lp.fname))
 
-        if objective_function_name != "drr":
+        if images_function_name != "drr":
             self.registration_data.hyperparameters = old_hyperparameters
 
 
@@ -211,14 +217,14 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, xray_path
     task = LandscapeTask(registration_data, gt_transformation=transformation_ground_truth, landscape_size=30,
                          landscape_range=torch.Tensor([1.0, 1.0, 1.0, 30.0, 30.0, 300.0]))
 
-    task.run(objective_function_name="drr", show=show)
-    task.run(objective_function_name="gr_classic", show=show)
+    task.run(images_function_name="drr", sim_metric=LandscapeTask.sim_metric_ncc, downsample_level=2, show=show)
+    task.run(images_function_name="gr_classic", sim_metric=LandscapeTask.sim_metric_ncc, downsample_level=2, show=show)
 
 
 def main(cache_directory: str, drr_as_target: bool, show: bool = False):
     if not drr_as_target:
         assert len(XRAY_DICOM_PATHS) == len(CT_PATHS)
-    count: int = 1#len(CT_PATHS)
+    count: int = 1  # len(CT_PATHS)
     for i in range(count):
         evaluate_and_save_landscape(cache_directory=cache_directory, ct_path=CT_PATHS[i],
                                     xray_path=None if drr_as_target else XRAY_DICOM_PATHS[i], show=show)
