@@ -75,7 +75,7 @@ class RegistrationData:
         """
         sinogram2d: torch.Tensor
 
-    def __init__(self, *, cache_directory: str, ct_path: str | None, target: Target, load_cached: bool,
+    def __init__(self, *, cache_directory: str, ct_path: str, target: Target, load_cached: bool,
                  sinogram_types: list[Type[SinogramType]], sinogram_size: int | None, regenerate_drr: bool,
                  save_to_cache: bool, new_drr_size: torch.Size | None, device,
                  target_change_callback: Callable[[], None] | None = None,
