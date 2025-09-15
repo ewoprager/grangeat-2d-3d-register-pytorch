@@ -81,7 +81,7 @@ PYTHON_PATH=$PWD uv run scripts/interface.py -h
 PYTHON_PATH=$PWD uv run scripts/interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --xray-path "/path/to/x_ray.dcm"
 ```
 
-![interface_2025-09-05.png](figures/interface_2025-09-05.png)
+![interface_2025-09-05.png](figures/readme/interface_2025-09-05.png)
 
 ## Features
 
@@ -204,46 +204,46 @@ PYTHONPATH=$PWD python registration/lib/dev_scripts/dev_sinogram.py --help
 
 DRR (= g) generated at random transformation:
 
-![ground_truth_drr.png](figures/ground_truth_drr.png)
+![ground_truth_drr.png](figures/readme/ground_truth_drr.png)
 
 The associated fixed image (= 1/cos^2 alpha * d/ds R2\[cos gamma * g\])
 
-![dds_R2_gtilde_ground_truth.png](figures/dds_R2_gtilde_ground_truth.png)
+![dds_R2_gtilde_ground_truth.png](figures/readme/dds_R2_gtilde_ground_truth.png)
 
 The 3D Radon transform of the volume data (= R3\[mu\]), resampled according to the ground truth transformation (this
 should roughly
 match the above image):
 
-![ddr_R3_mu_resampled_ground_truth.png](figures/ddr_R3_mu_resampled_ground_truth.png)
+![ddr_R3_mu_resampled_ground_truth.png](figures/readme/ddr_R3_mu_resampled_ground_truth.png)
 
 A plot of the -ZNCC landscape over 2 dimensions (two angular components of transformation) between the fixed image and
 the resampled Radon-transformed volume, with the ground truth transformation at the centre:
 
-![landscape.png](figures/landscape.png)
+![landscape.png](figures/readme/landscape.png)
 
 Starting from a different random transformation, optimising the ZNCC between these images over the transformation using
 the basin-hopping algorithm:
 
 (specifically `scipy.optimize.basinhopping` with `T=1.0`, `minimizer_kwargs={"method": 'Nelder-Mead'}`)
 
-![rotation_params_against_iteration.png](figures/rotation_params_against_iteration.png)
-![translation_params_against_iteration.png](figures/translation_params_against_iteration.png)
-![loss_against_iteration.png](figures/loss_against_iteration.png)
+![rotation_params_against_iteration.png](figures/readme/rotation_params_against_iteration.png)
+![translation_params_against_iteration.png](figures/readme/translation_params_against_iteration.png)
+![loss_against_iteration.png](figures/readme/loss_against_iteration.png)
 
 The fixed image (= 1/cos^2 alpha * d/ds R2\[cos gamma * g\]) at the converged transformation:
 
-![ddr_R3_mu_resampled_converged.png](figures/ddr_R3_mu_resampled_converged.png)
+![ddr_R3_mu_resampled_converged.png](figures/readme/ddr_R3_mu_resampled_converged.png)
 
 DRR generated at the converged transformation:
 
-![converged_drr.png](figures/converged_drr.png)
+![converged_drr.png](figures/readme/converged_drr.png)
 
 Optimisation completed in 125.508 seconds, performing a total of 45,472 function evaluations.
 
 Here is a plot of the -ZNCC similarity between the fixed image and the resampled moving image against the distance in
 SE3 between the transformation and the ground truth transformation for 1000 random transformations:
 
-![loss_vs_distance.png](figures/loss_vs_distance.png)
+![loss_vs_distance.png](figures/readme/loss_vs_distance.png)
 
 [//]: # (# Resampling)
 

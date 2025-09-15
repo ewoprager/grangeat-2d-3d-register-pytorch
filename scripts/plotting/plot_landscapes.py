@@ -24,14 +24,10 @@ def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False
     return fr"{mantissa:.{precision}f} \times 10^{{{exponent}}}"
 
 
-DATA_DIRECTORY = pathlib.Path("data/temp/landscapes")
-SAVE_DIRECTORY = pathlib.Path("figures/landscapes")
+def main(load_path: pathlib.Path, save_path: pathlib.Path):
+    assert load_path.is_dir()
 
-
-def main():
-    assert DATA_DIRECTORY.is_dir()
-
-    for file in DATA_DIRECTORY.iterdir():
+    for file in load_path.iterdir():
         if not file.is_file() or file.suffix != ".pkl":
             continue
 
@@ -49,7 +45,7 @@ def main():
         axes.set_ylabel(pdata.label2)
         axes.set_zlabel("$-\mathrm{ZNCC}$")
         plt.tight_layout()
-        plt.savefig(SAVE_DIRECTORY / "landscape_{}.png".format(file.stem))
+        plt.savefig(save_path / "landscape_{}.png".format(file.stem))
         plt.close()
 
 
@@ -66,8 +62,12 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
+    parser.add_argument("-l", "--load-path", type=str, default="data/temp/landscapes",
+                        help="Set a directory from which to load .pkl files to plot.")
+    parser.add_argument("-s", "--save-path", type=str, default="figures/landscapes",
+                        help="Set a directory in which to save the resulting figures..")
     # parser.add_argument(
     #     "-d", "--display", action='store_true', help="Display/plot the resulting data.")
     args = parser.parse_args()
 
-    main()
+    main(pathlib.Path(args.load_path), pathlib.Path(args.save_path))
