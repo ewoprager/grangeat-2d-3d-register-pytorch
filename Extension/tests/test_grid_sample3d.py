@@ -44,7 +44,7 @@ def test_grid_sample3d_against_torch():
         plot_xs = xs
         plot_xs = plot_xs.numpy()
     zs = torch.zeros(1, device=device)
-    zs, ys, xs = torch.meshgrid(zs, ys, xs)
+    zs, ys, xs = torch.meshgrid(zs, ys, xs, indexing='ij')
     grid = torch.stack((xs, ys, zs), dim=-1)
     res = grid_sample3d(texture, grid, "zero", "zero", "zero")
     res_torch = \

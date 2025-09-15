@@ -59,7 +59,7 @@ def gradient_correlation(xs: torch.Tensor, ys: torch.Tensor, *,
                          gradient_method: Literal["sobel"] | Literal["central_difference"] = "sobel") -> torch.Tensor:
     assert xs.size() == ys.size()
     assert len(xs.size()) == 2
-    if gradient_method is "sobel":
+    if gradient_method == "sobel":
         sobel_x = torch.tensor([[-1., 0., 1.], [-2., 0., 2.], [-1., 0., 1.]])
         sobel_y = torch.tensor([[-1., -2., -1.], [0., 0., 0.], [1., 2., 1.]])
         gx_xs = torch.nn.functional.conv2d(xs.unsqueeze(0).unsqueeze(0), sobel_x.unsqueeze(0).unsqueeze(0))[0, 0]
