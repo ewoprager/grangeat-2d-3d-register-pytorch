@@ -8,7 +8,7 @@ import matplotlib.cm as cm
 from matplotlib.transforms import Bbox
 import pathlib
 
-import logs_setup
+from notification import logs_setup
 from registration.plot_data import LandscapePlotData
 
 

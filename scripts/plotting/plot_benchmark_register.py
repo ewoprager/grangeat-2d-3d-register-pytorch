@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pathlib
 
-import logs_setup
+from notification import logs_setup
 from registration import plot_data
 from registration.lib import sinogram
 

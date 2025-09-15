@@ -68,13 +68,17 @@ The extension is contained within the [Extension](Extension) directory, with its
 
 # Scripts you can run
 
+Scripts which aren't contained in the root directory must be run from the root directory, with the
+`PYTHONPATH` variable set to the root directory. In Clion, this should be done automatically in a Python run
+configuration, so you shouldn't need to add the `PYTHONPATH=$PWD`.
+
 ## A Qt-based interface using `napari`
 
 This can be run for interactive manipulation and registration of a CT or synthetic volume with an X-ray image or DRR:
 
 ```bash
-uv run interface.py -h
-uv run interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --xray-path "/path/to/x_ray.dcm"
+PYTHON_PATH=$PWD uv run scripts/interface.py -h
+PYTHON_PATH=$PWD uv run scripts/interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --xray-path "/path/to/x_ray.dcm"
 ```
 
 ![interface_2025-09-05.png](figures/interface_2025-09-05.png)
@@ -90,7 +94,8 @@ uv run interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --x
   tab on the right.
 - A lot of useful information is printed to std out, including warnings and errors so keep an eye on this while
   using the interface.
-- If you suspect the CT and X-ray images are flipped with respect to one another, the button 'Flip' in the 'Register' tab
+- If you suspect the CT and X-ray images are flipped with respect to one another, the button 'Flip' in the 'Register'
+  tab
   will flip the X-ray horizontally.
 
 ### Grangeat's relation-based registration
@@ -163,34 +168,27 @@ that can safely be modified while a registration is running:
 ### Run Radon transform algorithms on CPU and GPU (CUDA) to compare performance:
 
 ```bash
-uv run benchmark_radon2d.py "/path/to/x_ray.dcm"
-uv run benchmark_radon3d.py "/path/to/ct.nrrd"
+PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_radon2d.py "/path/to/x_ray.dcm"
+PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_radon3d.py "/path/to/ct.nrrd"
 ```
 
 ### Run the Grangeat-based resampling algorithms on CPU and GPU (CUDA) to compare performance:
 
 ```bash
-uv run benchmark_resample_sinogram3d.py -h
-uv run benchmark_resample_sinogram3d.py --no-load --no-save --sinogram-size 64 # run on synthetic data
-uv run benchmark_resample_sinogram3d.py --ct-nrrd-path "/path/to/ct.nrrd"
+PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_resample_sinogram3d.py -h
+PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_resample_sinogram3d.py --no-load --no-save --sinogram-size 64 # run on synthetic data
+PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_resample_sinogram3d.py --ct-nrrd-path "/path/to/ct.nrrd"
 ```
 
 ### Run registration experiments:
 
 ```bash
-uv run register.py -h
-uv run register.py --no-load --no-save --sinogram-size 64 # run on synthetic data
-uv run register.py --ct-nrrd-path "/path/to/ct.nrrd"
+PYTHONPATH=$PWD uv run scripts/register.py -h
+PYTHONPATH=$PWD uv run scripts/register.py --no-load --no-save --sinogram-size 64 # run on synthetic data
+PYTHONPATH=$PWD uv run scripts/register.py --ct-nrrd-path "/path/to/ct.nrrd"
 ```
 
 ### Dev scripts
-
-- `registration/lib/dev_scripts/dev_sinogram.py`
-
-Scripts such as these which aren't contained in the root directory must be run from the root directory, with the
-`PYTHONPATH` variable set to the root directory.
-
-For example, to run the script `registration/lib/dev_scripts/dev_sinogram.py`:
 
 ```bash
 PYTHONPATH=$PWD uv run registration/lib/dev_scripts/dev_sinogram.py --help 

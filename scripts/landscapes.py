@@ -11,7 +11,7 @@ import numpy as np
 import pyswarms
 from tqdm import tqdm
 
-import logs_setup
+from notification import logs_setup
 from registration.interface.registration_data import RegistrationData
 from registration.interface.lib.structs import Target, SavedXRayParams, HyperParameters, Cropping
 from registration.lib import sinogram

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 import Extension as reg23
 
-import logs_setup
+from notification import logs_setup
 import registration.objective_function as objective_function
 
 TaskSummarySimilarity = Tuple[str, torch.Tensor]

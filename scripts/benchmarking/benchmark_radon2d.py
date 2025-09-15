@@ -9,7 +9,7 @@ import pydicom
 
 import Extension as reg23
 
-import logs_setup
+from notification import logs_setup
 
 TaskSummaryRadon2D = Tuple[str, torch.Tensor]
 

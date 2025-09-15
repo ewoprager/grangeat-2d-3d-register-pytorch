@@ -8,7 +8,7 @@ import nrrd
 
 import Extension
 
-import logs_setup
+from notification import logs_setup
 from registration.lib.structs import *
 from registration.lib.sinogram import *
 from registration import drr

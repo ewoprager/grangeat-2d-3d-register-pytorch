@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.ticker as mplt
 import matplotlib.pyplot as plt
 
-import logs_setup
+from notification import logs_setup
 from registration import plot_data
 from registration.lib import sinogram
 

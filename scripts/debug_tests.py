@@ -1,4 +1,4 @@
-import logs_setup
+from notification import logs_setup
 from registration.lib import test_geometry
 
 if __name__ == "__main__":

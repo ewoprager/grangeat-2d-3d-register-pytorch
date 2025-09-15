@@ -21,7 +21,7 @@ import Extension
 # from diffdrr.visualization import plot_drr
 # from diffdrr.pose import RigidTransform, make_matrix
 
-import logs_setup
+from notification import logs_setup
 from registration.interface.register import mapping_transformation_to_parameters
 from registration.lib.structs import *
 from registration.lib.sinogram import *

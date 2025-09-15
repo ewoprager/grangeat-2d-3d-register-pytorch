@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pyswarms
 
-import logs_setup
+from notification import logs_setup
 from registration import data
 from registration.lib import sinogram
 from registration.lib import geometry

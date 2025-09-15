@@ -16,7 +16,7 @@ from magicgui import magicgui, widgets
 from PyQt6.QtWidgets import QDockWidget
 from scipy.signal import resample
 
-import logs_setup
+from notification import logs_setup
 from registration.lib.sinogram import SinogramType, SinogramClassic, SinogramHEALPix
 from registration.lib import geometry
 from registration.interface.lib.structs import Target, ViewParams, HyperParameters

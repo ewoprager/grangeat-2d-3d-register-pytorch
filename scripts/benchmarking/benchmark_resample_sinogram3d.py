@@ -11,7 +11,7 @@ import pathlib
 import plotly.graph_objects as pgo
 import objgraph
 
-import logs_setup
+from notification import logs_setup
 from registration.lib.structs import *
 from registration.lib import sinogram
 import registration.data as data
