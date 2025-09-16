@@ -304,6 +304,40 @@ class RegistrationData:
     def sim_metric_ncc(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
         return -objective_function.ncc(xs, ys)
 
+    def set_crop_to_nonzero_drr(self, transformation: Transformation) -> None:
+        image_size = self.image_2d_full.size()
+        image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
+
+        def project(vector: torch.Tensor) -> torch.Tensor:
+            p_matrix = SceneGeometry.projection_matrix(source_position=torch.tensor([0.0, 0.0, self.source_distance]))
+            ph_matrix = torch.matmul(p_matrix, transformation.get_h().to(dtype=torch.float32))
+            ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1]))))
+            return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
+
+        volume_half_diag: torch.Tensor = 0.5 * torch.tensor(self.ct_volume_at_current_truncation.size(),
+                                                            dtype=torch.float32).flip(dims=(0,)) * self.ct_spacing.cpu()
+        volume_vertices = [  #
+            torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([1.0, -1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([1.0, 1.0, -1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, -1.0, 1.0]) * volume_half_diag,  #
+            torch.tensor([1.0, -1.0, -1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
+            torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
+        ]
+        projected_vertices = torch.stack([project(vertex) for vertex in volume_vertices]) / self.fixed_image_spacing
+        mins, maxs = torch.aminmax(projected_vertices, dim=0)
+        left, top = (mins + 0.5 * image_size_vector).floor().to(dtype=torch.int32)
+        right, bottom = (maxs + 0.5 * image_size_vector).ceil().to(dtype=torch.int32)
+        left = min(max(left.item(), 0), self.image_2d_full.size()[1])
+        right = min(max(right.item(), left + 1), self.image_2d_full.size()[1])
+        top = min(max(top.item(), 0), self.image_2d_full.size()[0])
+        bottom = min(max(bottom.item(), top + 1), self.image_2d_full.size()[0])
+        self.hyperparameters = HyperParameters(cropping=Cropping(left=left, right=right, bottom=bottom, top=top),
+                                               source_offset=self.hyperparameters.source_offset,
+                                               downsample_level=self.hyperparameters.downsample_level)
+
 
 class LandscapeTask:
     def __init__(self, registration_data: RegistrationData, *, landscape_size: int, landscape_range: torch.Tensor):
@@ -472,6 +506,10 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, s
                                    device=device)
 
         measure_task.run()
+
+        registration_data.mask_transformation = registration_data.transformation_gt
+
+        measure_task.run(run_name="masked_at_gt")
 
 
 def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
