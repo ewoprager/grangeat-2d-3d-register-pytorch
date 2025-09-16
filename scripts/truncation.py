@@ -446,9 +446,7 @@ class MeasureTask:
     def registration_data(self) -> RegistrationData:
         return self._registration_data
 
-    def run(self, run_name: str | None = None) -> None:
-        get_distances: bool = False
-
+    def run(self, run_name: str | None = None, get_distances: bool = True) -> None:
         def obj_func(tensor: torch.Tensor) -> torch.Tensor:
             return RegistrationData.sim_metric_ncc(
                 *self.registration_data.images_drr(mapping_parameters_to_transformation(tensor)))
@@ -484,11 +482,11 @@ class MeasureTask:
 
 
 def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, show: bool = False):
-    stop: float = 0.8
+    stop: float = 0.6
     step: float = 0.05
     truncation_fractions = [step * float(i) for i in range(1, int(round(stop / step)))]
 
-    for downsample_factor in [1, 2]:
+    for downsample_factor in [1, 2, 4]:
         registration_data = RegistrationData(cache_directory=cache_directory, ct_path=ct_path, device=device,
                                              downsample_factor=downsample_factor,
                                              truncation_fractions=truncation_fractions)
@@ -502,14 +500,14 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, s
         #     task.run(images_function_name="drr", sim_metric=RegistrationData.sim_metric_ncc, show=show,
         #              name="{:.3f}".format(truncation_fractions[i]).split(".")[1])
 
-        measure_task = MeasureTask(registration_data, repetition_count=30, name="{}".format(downsample_factor),
+        measure_task = MeasureTask(registration_data, repetition_count=100, name="{}".format(downsample_factor),
                                    device=device)
 
-        measure_task.run()
+        measure_task.run(get_distances=True)
 
         registration_data.mask_transformation = registration_data.transformation_gt
 
-        measure_task.run(run_name="masked_at_gt")
+        measure_task.run(run_name="masked_at_gt", get_distances=True)
 
 
 def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
