@@ -22,7 +22,7 @@ import Extension
 # from diffdrr.pose import RigidTransform, make_matrix
 
 from notification import logs_setup
-from registration.interface.register import mapping_transformation_to_parameters
+from registration.lib.optimisation import mapping_transformation_to_parameters
 from registration.lib.structs import *
 from registration.lib.sinogram import *
 from registration import drr, data, script, objective_function

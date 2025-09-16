@@ -2,7 +2,47 @@ import numpy as np
 import torch
 import pyvista as pv
 
-from registration.lib.structs import *
+from registration.lib.structs import Sinogram3dGrid
+
+
+def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False):
+    if x == 0:
+        return f"{0:.{precision}f}"
+    exponent: int = int(f"{x:e}".split("e")[1])
+    mantissa: float = x / (10.0 ** exponent)
+    if exponent == 0:
+        return f"{mantissa:.{precision}f}"
+    if include_plus:
+        return fr"{mantissa:+.{precision}f} \times 10^{{{exponent}}}"
+    return fr"{mantissa:.{precision}f} \times 10^{{{exponent}}}"
+
+
+def torch_polyfit(xs: torch.Tensor, ys: torch.Tensor, *, degree: int = 1) -> torch.Tensor:
+    assert xs.size() == ys.size()
+
+    A = torch.stack([xs.pow(i) for i in range(degree + 1)], dim=1)  # size = (n, degree + 1)
+    B = ys.unsqueeze(1)
+
+    ret = torch.linalg.lstsq(A, B)
+
+    return ret.solution
+
+
+def fit_power_relationship(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
+    """
+    y = a * x^b
+    :param xs:
+    :param ys:
+    :return: (2,) tensor containing [a, b]
+    """
+    assert xs.size() == ys.size()
+    assert (xs > 0.0).all()
+    assert (ys > 0.0).all()
+
+    ln_xs = xs.log()
+    ln_ys = ys.log()
+    coefficients = torch_polyfit(ln_xs, ln_ys, degree=1)
+    return torch.tensor([coefficients[0].exp(), coefficients[1]])
 
 
 def save_colourmap_for_latex(filename: str, colourmap: torch.Tensor):

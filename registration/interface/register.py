@@ -26,20 +26,6 @@ from registration.lib import optimisation
 from registration.interface.registration_data import RegistrationData
 
 
-def mapping_transformation_to_parameters(transformation: Transformation) -> torch.Tensor:
-    ret = transformation.vectorised()
-    ret[0:3] *= 100.0
-    ret[5] /= 10.0
-    return ret
-
-
-def mapping_parameters_to_transformation(params: torch.Tensor) -> Transformation:
-    params = params.clone()
-    params[0:3] /= 100.0
-    params[5] *= 10.0
-    return Transformation.from_vector(params)
-
-
 class OptimisationResult(NamedTuple):
     params: torch.Tensor
     param_history: torch.Tensor

@@ -12,18 +12,6 @@ from notification import logs_setup
 from registration.plot_data import LandscapePlotData
 
 
-def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False):
-    if x == 0:
-        return f"{0:.{precision}f}"
-    exponent: int = int(f"{x:e}".split("e")[1])
-    mantissa: float = x / (10.0 ** exponent)
-    if exponent == 0:
-        return f"{mantissa:.{precision}f}"
-    if include_plus:
-        return fr"{mantissa:+.{precision}f} \times 10^{{{exponent}}}"
-    return fr"{mantissa:.{precision}f} \times 10^{{{exponent}}}"
-
-
 def main(load_path: pathlib.Path, save_path: pathlib.Path):
     assert load_path.is_dir()
 

@@ -8,20 +8,6 @@ import pathlib
 
 from notification import logs_setup
 from registration import plot_data
-from registration.lib import sinogram
-
-
-def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False):
-    if x == 0:
-        return f"{0:.{precision}f}"
-    exponent: int = int(f"{x:e}".split("e")[1])
-    mantissa: float = x / (10.0 ** exponent)
-    if exponent == 0:
-        return f"{mantissa:.{precision}f}"
-    if include_plus:
-        return fr"{mantissa:+.{precision}f} \times 10^{{{exponent}}}"
-    return fr"{mantissa:.{precision}f} \times 10^{{{exponent}}}"
-
 
 SAVE_DIRECTORY = pathlib.Path("data/register_plot_data")
 
@@ -123,7 +109,8 @@ def main(file: str | None):
     highest_healpix_bin: int = add_box_plot(truth_start_distances_healpix, truth_converged_distances_healpix,
                                             display_width_fraction * bin_width / 3.0,
                                             plt.rcParams['axes.prop_cycle'].by_key()['color'][2], "Grangeat HEALPix")
-    highest_bin = min(max(highest_drr_bin, highest_grangeat_bin, highest_healpix_bin), int(np.ceil(1.0 / bin_width)) - 2)
+    highest_bin = min(max(highest_drr_bin, highest_grangeat_bin, highest_healpix_bin),
+                      int(np.ceil(1.0 / bin_width)) - 2)
     axes.set_aspect("equal")
     axes.grid(True, which="minor", axis="x")
     axes.grid(True, which="both", axis="y")

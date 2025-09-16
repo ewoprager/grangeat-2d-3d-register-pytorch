@@ -19,13 +19,22 @@ from registration import objective_function
 from registration.plot_data import LandscapePlotData
 from registration import data
 from registration import drr
+from registration.lib.optimisation import local_search, mapping_parameters_to_transformation, \
+    mapping_transformation_to_parameters
 
 import Extension as reg23
 
-SAVE_DIRECTORY = pathlib.Path("data/temp/truncation")
-
 
 class RegistrationData:
+    class TargetDependent(NamedTuple):
+        """
+        @brief Struct of data that is dependent on the CT path and fixed image used
+        """
+        fixed_image_spacing: torch.Tensor
+        source_distance: float
+        image_2d_full: torch.Tensor
+        transformation_gt: Transformation
+
     class HyperparameterDependent(NamedTuple):
         """
         @brief Struct of data that is dependent on the CT path, fixed image and hyperparameters used
@@ -44,6 +53,8 @@ class RegistrationData:
     def __init__(self, cache_directory: str, ct_path: str, device, downsample_factor: int,
                  truncation_fractions: list[float], hyperparameter_change_callback: Callable[[], None] | None = None,
                  mask_transformation_change_callback: Callable[[], None] | None = None):
+        self._cache_directory = cache_directory
+        self._ct_path = ct_path
         self._truncation_fractions = truncation_fractions
 
         def truncate(volume: torch.Tensor, fraction: float) -> torch.Tensor:
@@ -55,34 +66,19 @@ class RegistrationData:
         self._ct_volumes = [ct_volume] + [truncate(ct_volume, fraction) for fraction in truncation_fractions]
         self._ct_spacing = self._ct_spacing.to(device=device)
 
-        regenerate_drr = True
-
-        # Load / generate a DRR through the volume
-        drr_spec = None
-        if not regenerate_drr:
-            drr_spec = data.load_cached_drr(cache_directory, ct_path)
-
-        if drr_spec is None:
-            drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, self._ct_volumes[0], self._ct_spacing,
-                                                  save_to_cache=False, size=None)
-
-        self._fixed_image_spacing, self._scene_geometry, self._image_2d_full, self._transformation_gt = drr_spec
-        del drr_spec
-
-        self._hyperparameters = HyperParameters.zero(self.image_2d_full.size())
-        self._truncation_level = 0  # this is treated the same as mask transformation
-        self._mask_transformation: Transformation | None = None
-
         self._device = device
-        self._source_distance: float = 1000.0
         self._hyperparameter_change_callback = hyperparameter_change_callback
         self._mask_transformation_change_callback = mask_transformation_change_callback
 
+        self._target_dirty: bool = True
         self._hyperparameters_dirty: bool = True
         self._mask_transformation_dirty: bool = True
 
+        self._truncation_level = 0  # this is treated the same as mask transformation
+        self._mask_transformation: Transformation | None = None  #
+
         self._suppress_callbacks = True
-        self.refresh_hyperparameter_dependent()
+        self.refresh_target_dependent()
         self._suppress_callbacks = False
 
     @property
@@ -96,6 +92,10 @@ class RegistrationData:
     @suppress_callbacks.setter
     def suppress_callbacks(self, new_value: bool) -> None:
         self._suppress_callbacks = new_value
+
+    @property
+    def truncation_fractions(self) -> list[float]:
+        return self._truncation_fractions
 
     # -----
     # CT path and properties that depend on it
@@ -119,19 +119,27 @@ class RegistrationData:
     # -----
     @property
     def source_distance(self) -> float:
-        return self._source_distance
+        if self._target_dirty:
+            self.refresh_target_dependent()
+        return self._target_dependent.source_distance
 
     @property
     def image_2d_full(self) -> torch.Tensor:
-        return self._image_2d_full
+        if self._target_dirty:
+            self.refresh_target_dependent()
+        return self._target_dependent.image_2d_full
 
     @property
     def fixed_image_spacing(self) -> torch.Tensor:
-        return self._fixed_image_spacing
+        if self._target_dirty:
+            self.refresh_target_dependent()
+        return self._target_dependent.fixed_image_spacing
 
     @property
     def transformation_gt(self) -> Transformation | None:
-        return self._transformation_gt
+        if self._target_dirty:
+            self.refresh_target_dependent()
+        return self._target_dependent.transformation_gt
 
     # -----
     # Hyperparameters and properties that depend on it, and all those above
@@ -197,6 +205,21 @@ class RegistrationData:
             self.refresh_mask_transformation_dependent()
         return self._mask_transformation_dependent.fixed_image
 
+    def refresh_target_dependent(self) -> None:
+        fixed_image_spacing, scene_geometry, image_2d_full, transformation_gt = drr.generate_drr_as_target(
+            self._cache_directory, self._ct_path, self.ct_volumes[0], self.ct_spacing, save_to_cache=False, size=None)
+
+        self._target_dependent = RegistrationData.TargetDependent(fixed_image_spacing=fixed_image_spacing,
+                                                                  source_distance=scene_geometry.source_distance,
+                                                                  image_2d_full=image_2d_full,
+                                                                  transformation_gt=transformation_gt)
+
+        self._target_dirty = False
+
+        self._hyperparameters = HyperParameters.zero(self.image_2d_full.size())
+
+        self.refresh_hyperparameter_dependent()
+
     def refresh_hyperparameter_dependent(self) -> None:
         # Cropping for the fixed image
         cropped_target = self.hyperparameters.downsampled_crop(self.image_2d_full.size()).apply(self.image_2d_full)
@@ -244,26 +267,6 @@ class RegistrationData:
         if not self.suppress_callbacks and self._mask_transformation_change_callback is not None:
             self._mask_transformation_change_callback()
 
-
-class LandscapeTask:
-    def __init__(self, registration_data: RegistrationData, *, landscape_size: int, landscape_range: torch.Tensor):
-        self._registration_data = registration_data
-        self._landscape_size = landscape_size
-        assert landscape_range.size() == torch.Size([Transformation.zero().vectorised().numel()])
-        self._landscape_range = landscape_range
-
-        self._images_functions = {"drr": self.images_drr,  # "gr_classic": self.images_grangeat_classic,
-                                  # "gr_healpix": self.objective_function_grangeat_healpix
-                                  }
-
-    @property
-    def device(self):
-        return torch.device("cuda")
-
-    @property
-    def registration_data(self) -> RegistrationData:
-        return self._registration_data
-
     # def resample_sinogram3d(self, transformation: Transformation) -> torch.Tensor:
     #     # Applying the translation offset
     #     translation = transformation.translation.clone()
@@ -280,30 +283,47 @@ class LandscapeTask:
     def generate_drr(self, transformation: Transformation) -> torch.Tensor:
         # Applying the translation offset
         translation = transformation.translation.clone()
-        translation[0:2] += self.registration_data.translation_offset.to(device=transformation.device)
+        translation[0:2] += self.translation_offset.to(device=transformation.device)
         transformation = Transformation(rotation=transformation.rotation, translation=translation)
 
-        return geometry.generate_drr(self.registration_data.ct_volume_at_current_truncation,
-                                     transformation=transformation, voxel_spacing=self.registration_data.ct_spacing,
-                                     detector_spacing=self.registration_data.fixed_image_spacing.to(device=self.device),
-                                     #
-                                     scene_geometry=SceneGeometry(
-                                         source_distance=self.registration_data.source_distance,
-                                         fixed_image_offset=self.registration_data.fixed_image_offset),
-                                     output_size=self.registration_data.cropped_target.size())
+        return geometry.generate_drr(self.ct_volume_at_current_truncation, transformation=transformation,
+                                     voxel_spacing=self.ct_spacing,
+                                     detector_spacing=self.fixed_image_spacing.to(device=self.device),  #
+                                     scene_geometry=SceneGeometry(source_distance=self.source_distance,
+                                                                  fixed_image_offset=self.fixed_image_offset),
+                                     output_size=self.cropped_target.size())
 
     def images_drr(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:
-        return self.registration_data.fixed_image, self.generate_drr(transformation)
+        return self.fixed_image, self.generate_drr(transformation)
 
-    # def images_grangeat_classic(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:
-    #     return self.registration_data.sinogram2d, self.resample_sinogram3d(transformation)
+    # def images_grangeat_classic(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:  #     return self.registration_data.sinogram2d, self.resample_sinogram3d(transformation)
 
-    # def objective_function_grangeat_healpix(self, transformation: Transformation) -> torch.Tensor:
-    #     return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation, 1))
+    # def objective_function_grangeat_healpix(self, transformation: Transformation) -> torch.Tensor:  #     return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation, 1))
 
     @staticmethod
     def sim_metric_ncc(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
         return -objective_function.ncc(xs, ys)
+
+
+class LandscapeTask:
+    def __init__(self, registration_data: RegistrationData, *, landscape_size: int, landscape_range: torch.Tensor):
+        self._registration_data = registration_data
+        self._landscape_size = landscape_size
+        assert landscape_range.size() == torch.Size([Transformation.zero().vectorised().numel()])
+        self._landscape_range = landscape_range
+
+        self._images_functions = {"drr": self.registration_data.images_drr,
+                                  # "gr_classic": self.images_grangeat_classic,
+                                  # "gr_healpix": self.objective_function_grangeat_healpix
+                                  }
+
+    @property
+    def device(self):
+        return torch.device("cuda")
+
+    @property
+    def registration_data(self) -> RegistrationData:
+        return self._registration_data
 
     def run(self, *, images_function_name: str, sim_metric: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
             name: str | None = None, show: bool = False) -> None:
@@ -318,7 +338,7 @@ class LandscapeTask:
         if show:
             plt.figure()
             plt.imshow(self.registration_data.fixed_image.cpu().numpy())
-            drr_gt = self.generate_drr(self.registration_data.transformation_gt)
+            drr_gt = self.registration_data.generate_drr(self.registration_data.transformation_gt)
             plt.figure()
             plt.imshow(drr_gt.cpu().numpy())
             logger.info("Sim @ G.T. = {}".format(sim_metric(self.registration_data.fixed_image, drr_gt)))
@@ -375,20 +395,83 @@ class LandscapeTask:
             self.registration_data.hyperparameters = old_hyperparameters
 
 
+class MeasureTask:
+    SAVE_DIRECTORY = pathlib.Path("data/temp/truncation/measurement")
+
+    def __init__(self, registration_data: RegistrationData, *, name: str, repetition_count: int, device) -> None:
+        self._registration_data = registration_data
+        self._name = name
+        self._repetition_count = repetition_count
+        self._device = device
+
+    @property
+    def device(self):
+        return self._device
+
+    @property
+    def registration_data(self) -> RegistrationData:
+        return self._registration_data
+
+    def run(self, run_name: str | None = None) -> None:
+        get_distances: bool = False
+
+        def obj_func(tensor: torch.Tensor) -> torch.Tensor:
+            return RegistrationData.sim_metric_ncc(
+                *self.registration_data.images_drr(mapping_parameters_to_transformation(tensor)))
+
+        truncation_fractions = torch.tensor([0.0] + self.registration_data.truncation_fractions)
+        fraction_count = len(truncation_fractions)
+        vals_at_gt = torch.zeros((fraction_count, self._repetition_count))
+        if get_distances:
+            opt_distances = torch.zeros((fraction_count, self._repetition_count))
+
+        for j in range(self._repetition_count):
+            self.registration_data.refresh_target_dependent()
+            for i in range(len(truncation_fractions)):
+                self.registration_data.truncation_level = i
+                vals_at_gt[i, j] = RegistrationData.sim_metric_ncc(
+                    *self.registration_data.images_drr(self.registration_data.transformation_gt.to(device=self.device)))
+                if get_distances:
+                    local_found = mapping_parameters_to_transformation(local_search(
+                        starting_position=mapping_transformation_to_parameters(
+                            self.registration_data.transformation_gt.to(device=self.device)),
+                        initial_step_size=torch.tensor([0.1, 0.1, 0.1, 2.0, 2.0, 2.0], device=self.device),
+                        objective_function=obj_func, step_size_reduction_ratio=0.5, no_improvement_threshold=10,
+                        max_reductions=10))
+                    opt_distances[i, j] = local_found.distance(
+                        self.registration_data.transformation_gt.to(device=self.device))
+
+        to_save = {"truncation_fractions": truncation_fractions, "vals_at_gt": vals_at_gt}
+        if get_distances:
+            to_save["opt_distances"] = opt_distances
+
+        file_name = "{}.pkl".format(self._name) if run_name is None else "{}_{}.pkl".format(self._name, run_name)
+        torch.save(to_save, MeasureTask.SAVE_DIRECTORY / file_name)
+
+
 def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, show: bool = False):
-    truncation_fractions = [0.1, 0.2, 0.4]
+    stop: float = 0.8
+    step: float = 0.05
+    truncation_fractions = [step * float(i) for i in range(1, int(round(stop / step)))]
 
-    registration_data = RegistrationData(cache_directory=cache_directory, ct_path=ct_path, device=device,
-                                         downsample_factor=1, truncation_fractions=truncation_fractions)
+    for downsample_factor in [1, 2]:
+        registration_data = RegistrationData(cache_directory=cache_directory, ct_path=ct_path, device=device,
+                                             downsample_factor=downsample_factor,
+                                             truncation_fractions=truncation_fractions)
 
-    task = LandscapeTask(registration_data, landscape_size=30,
-                         landscape_range=torch.Tensor([1.0, 1.0, 1.0, 30.0, 30.0, 300.0]))
+        # task = LandscapeTask(registration_data, landscape_size=30,
+        #                      landscape_range=torch.Tensor([1.0, 1.0, 1.0, 30.0, 30.0, 300.0]))
+        #
+        # truncation_fractions = [0.0] + truncation_fractions
+        # for i in range(len(truncation_fractions)):
+        #     registration_data.truncation_level = i
+        #     task.run(images_function_name="drr", sim_metric=RegistrationData.sim_metric_ncc, show=show,
+        #              name="{:.3f}".format(truncation_fractions[i]).split(".")[1])
 
-    truncation_fractions = [0.0] + truncation_fractions
-    for i in range(len(truncation_fractions)):
-        registration_data.truncation_level = i
-        task.run(images_function_name="drr", sim_metric=LandscapeTask.sim_metric_ncc, show=show,
-                 name="{:.3f}".format(truncation_fractions[i]).split(".")[1])
+        measure_task = MeasureTask(registration_data, repetition_count=30, name="{}".format(downsample_factor),
+                                   device=device)
+
+        measure_task.run()
 
 
 def main(*, cache_directory: str, ct_path: str | None, show: bool = False):

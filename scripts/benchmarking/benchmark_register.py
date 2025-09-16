@@ -26,8 +26,8 @@ from registration import pre_computed
 from registration import drr
 from notification import pushover
 
-from registration.interface.register import OptimisationResult, mapping_transformation_to_parameters, \
-    mapping_parameters_to_transformation
+from registration.interface.register import OptimisationResult
+from registration.lib.optimisation import mapping_transformation_to_parameters, mapping_parameters_to_transformation
 
 
 def format_time(seconds: int) -> str:
