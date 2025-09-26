@@ -33,7 +33,6 @@ class RegistrationData:
         fixed_image_spacing: torch.Tensor
         source_distance: float
         image_2d_full: torch.Tensor
-        transformation_gt: Transformation
 
     class HyperparameterDependent(NamedTuple):
         """
@@ -74,6 +73,7 @@ class RegistrationData:
         self._hyperparameters_dirty: bool = True
         self._mask_transformation_dirty: bool = True
 
+        self._transformation_gt = Transformation.random(device=self.device)  # this is the target
         self._truncation_level = 0  # this is treated the same as mask transformation
         self._mask_transformation: Transformation | None = None  #
 
@@ -106,8 +106,6 @@ class RegistrationData:
 
     @property
     def ct_volume_at_current_truncation(self) -> torch.Tensor:
-        if self._mask_transformation_dirty:
-            self.refresh_mask_transformation_dependent()
         return self._ct_volumes[self.truncation_level]
 
     @property
@@ -117,6 +115,17 @@ class RegistrationData:
     # -----
     # Target and properties that depend on it, and all those above
     # -----
+    @property
+    def transformation_gt(self) -> Transformation:
+        return self._transformation_gt
+
+    @transformation_gt.setter
+    def transformation_gt(self, new_value: Transformation) -> None:
+        self._target_dirty = True
+        self._hyperparameters_dirty = True
+        self._mask_transformation_dirty = True
+        self._transformation_gt = new_value
+
     @property
     def source_distance(self) -> float:
         if self._target_dirty:
@@ -134,12 +143,6 @@ class RegistrationData:
         if self._target_dirty:
             self.refresh_target_dependent()
         return self._target_dependent.fixed_image_spacing
-
-    @property
-    def transformation_gt(self) -> Transformation | None:
-        if self._target_dirty:
-            self.refresh_target_dependent()
-        return self._target_dependent.transformation_gt
 
     # -----
     # Hyperparameters and properties that depend on it, and all those above
@@ -207,12 +210,12 @@ class RegistrationData:
 
     def refresh_target_dependent(self) -> None:
         fixed_image_spacing, scene_geometry, image_2d_full, transformation_gt = drr.generate_drr_as_target(
-            self._cache_directory, self._ct_path, self.ct_volumes[0], self.ct_spacing, save_to_cache=False, size=None)
+            self._cache_directory, self._ct_path, self.ct_volumes[0], self.ct_spacing, save_to_cache=False, size=None,
+            transformation=self.transformation_gt)
 
         self._target_dependent = RegistrationData.TargetDependent(fixed_image_spacing=fixed_image_spacing,
                                                                   source_distance=scene_geometry.source_distance,
-                                                                  image_2d_full=image_2d_full,
-                                                                  transformation_gt=transformation_gt)
+                                                                  image_2d_full=image_2d_full)
 
         self._target_dirty = False
 
@@ -244,8 +247,6 @@ class RegistrationData:
         self.refresh_mask_transformation_dependent()
 
     def refresh_mask_transformation_dependent(self) -> None:
-        self._mask_transformation_dirty = False
-
         if self.mask_transformation is None:
             fixed_image = self.cropped_target
         else:
@@ -263,6 +264,8 @@ class RegistrationData:
             del mask
 
         self._mask_transformation_dependent = RegistrationData.MaskTransformationDependent(fixed_image=fixed_image)
+
+        self._mask_transformation_dirty = False
 
         if not self.suppress_callbacks and self._mask_transformation_change_callback is not None:
             self._mask_transformation_change_callback()
@@ -432,11 +435,13 @@ class LandscapeTask:
 class MeasureTask:
     SAVE_DIRECTORY = pathlib.Path("data/temp/truncation/measurement")
 
-    def __init__(self, registration_data: RegistrationData, *, name: str, repetition_count: int, device) -> None:
+    def __init__(self, registration_data: RegistrationData, *, name: str, repetition_count: int, device,
+                 draw: bool = False) -> None:
         self._registration_data = registration_data
         self._name = name
         self._repetition_count = repetition_count
         self._device = device
+        self._draw = draw
 
     @property
     def device(self):
@@ -457,12 +462,23 @@ class MeasureTask:
         if get_distances:
             opt_distances = torch.zeros((fraction_count, self._repetition_count))
 
+        first: bool = True
+
         for j in range(self._repetition_count):
-            self.registration_data.refresh_target_dependent()
+            self.registration_data.transformation_gt = Transformation.random(device=self.device)
+            if self.registration_data.mask_transformation is not None:
+                self.registration_data.mask_transformation = self.registration_data.transformation_gt
             for i in range(len(truncation_fractions)):
                 self.registration_data.truncation_level = i
-                vals_at_gt[i, j] = RegistrationData.sim_metric_ncc(
-                    *self.registration_data.images_drr(self.registration_data.transformation_gt.to(device=self.device)))
+                fixed_image, moving_image = self.registration_data.images_drr(
+                    self.registration_data.transformation_gt.to(device=self.device))
+                if self._draw and first:
+                    fig, axes = plt.subplots(2)
+                    axes[0].imshow(fixed_image.cpu().numpy())
+                    axes[0].set_title("Fixed image")
+                    axes[1].imshow(moving_image.cpu().numpy())
+                    axes[1].set_title("DRR")
+                vals_at_gt[i, j] = RegistrationData.sim_metric_ncc(fixed_image, moving_image)
                 if get_distances:
                     local_found = mapping_parameters_to_transformation(local_search(
                         starting_position=mapping_transformation_to_parameters(
@@ -472,6 +488,7 @@ class MeasureTask:
                         max_reductions=10))
                     opt_distances[i, j] = local_found.distance(
                         self.registration_data.transformation_gt.to(device=self.device))
+                first = False
 
         to_save = {"truncation_fractions": truncation_fractions, "vals_at_gt": vals_at_gt}
         if get_distances:
@@ -482,11 +499,11 @@ class MeasureTask:
 
 
 def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, show: bool = False):
-    stop: float = 0.6
+    stop: float = 0.8
     step: float = 0.05
     truncation_fractions = [step * float(i) for i in range(1, int(round(stop / step)))]
 
-    for downsample_factor in [1, 2, 4]:
+    for downsample_factor in [1, 2]:  # [1, 2, 4]
         registration_data = RegistrationData(cache_directory=cache_directory, ct_path=ct_path, device=device,
                                              downsample_factor=downsample_factor,
                                              truncation_fractions=truncation_fractions)
@@ -500,14 +517,16 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, s
         #     task.run(images_function_name="drr", sim_metric=RegistrationData.sim_metric_ncc, show=show,
         #              name="{:.3f}".format(truncation_fractions[i]).split(".")[1])
 
-        measure_task = MeasureTask(registration_data, repetition_count=100, name="{}".format(downsample_factor),
-                                   device=device)
+        measure_task = MeasureTask(registration_data, repetition_count=30, name="{}".format(downsample_factor),
+                                   device=device, draw=False)
 
-        measure_task.run(get_distances=True)
+        measure_task.run(get_distances=False)
 
         registration_data.mask_transformation = registration_data.transformation_gt
 
-        measure_task.run(run_name="masked_at_gt", get_distances=True)
+        measure_task.run(run_name="masked_at_gt", get_distances=False)
+
+        plt.show()
 
 
 def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
