@@ -69,6 +69,43 @@ class LinearFit(DataFit):
         return torch.corrcoef(torch.stack((self.xs.flatten(), self.series.ys.flatten()), dim=0))[0, 1]
 
 
+class QuadraticFit(DataFit):
+    def __init__(self, *, xs: torch.Tensor, series: Series):
+        self._xs = xs
+        self._series = series
+        ys_fit = series.ys - self._series.origin_y_offset
+        self._coefficients = torch_polyfit(xs, ys_fit, degree=2)
+
+    @property
+    def xs(self) -> torch.Tensor:
+        return self._xs
+
+    @property
+    def series(self) -> Series:
+        return self._series
+
+    @property
+    def coefficients(self) -> torch.Tensor:
+        return self._coefficients
+
+    def text_equation(self) -> str:
+        return "$y = {}x^2 {}x {}$".format(to_latex_scientific(self.coefficients[2].item()),
+                                           to_latex_scientific(self.coefficients[1].item(), include_plus=True),
+                                           to_latex_scientific(self.coefficients[0].item(), include_plus=True))
+
+    def generate_ys(self, xs: torch.Tensor) -> torch.Tensor:
+        return self.coefficients[0] + self.coefficients[1] * xs + self.coefficients[
+            2] * xs * xs + self._series.origin_y_offset
+
+    def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str) -> None:
+        ys_fit = self.coefficients[0] + self.coefficients[1] * xs + self.coefficients[
+            2] * xs * xs + self._series.origin_y_offset
+        axes.plot(xs.cpu().numpy(), ys_fit.cpu().numpy(), label="{}: {}".format(label_prefix, self.text_equation()))
+
+    def scatter(self, axes, **kwargs) -> None:
+        axes.scatter(self.xs, self.series.ys, **kwargs)
+
+
 class PowerFit(DataFit):
     def __init__(self, *, xs: torch.Tensor, series: Series, linear_fit_log_log: LinearFit):
         self._xs = xs
@@ -142,6 +179,8 @@ class Analysis:
             key: LinearFit(xs=self._xs, series=series) for key, series in self._transformed_series.items()}
         self._power_fits: dict[str, PowerFit | None] = {  #
             key: PowerFit.build(xs=self._xs, series=series) for key, series in self._transformed_series.items()}
+        self._quadratic_fits: dict[str, QuadraticFit] = {  #
+            key: QuadraticFit(xs=self._xs, series=series) for key, series in self._transformed_series.items()}
 
     def box_whisker(self, *, axes) -> None:
         spacing = (self._xs[1] - self._xs[0]).item()
@@ -178,6 +217,11 @@ class Analysis:
         self._power_fits[series_name].generate_and_plot_ys(axes=axes, xs=self._xs,
                                                            label_prefix="{} power fit".format(series_name))
 
+    def plot_quadratic_fit(self, *, axes, series_name: str) -> None:
+        assert series_name in self._quadratic_fits
+        self._quadratic_fits[series_name].generate_and_plot_ys(axes=axes, xs=self._xs,
+                                                               label_prefix="{} linear fit".format(series_name))
+
 
 def main(load_path: pathlib.Path, save_path: pathlib.Path):
     assert load_path.is_dir()
@@ -201,7 +245,7 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
             analysis = Analysis(xs=truncation_fractions, ys=vals_at_gt, dependent_common_dim=1, intersects_origin=True,
                                 origin_y_offset=-1.0)
 
-            if False:
+            if True:
                 # log log plots of quantiles
                 fig, axes = plt.subplots()
                 analysis.plot_log_log_fit(axes=axes, series_name="q1")
@@ -210,6 +254,19 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
                 axes.set_xlabel("ln(truncation fraction)")
                 axes.set_ylabel("ln(obj. func. value at ground truth)")
                 axes.set_title("{}: G.T. value average log logs".format(name))
+                plt.legend()
+
+                # quadratic plots of quantiles
+                fig, axes = plt.subplots()
+                analysis.scatter_series(axes=axes, series_name="q1")
+                analysis.plot_quadratic_fit(axes=axes, series_name="q1")
+                analysis.scatter_series(axes=axes, series_name="median")
+                analysis.plot_quadratic_fit(axes=axes, series_name="median")
+                analysis.scatter_series(axes=axes, series_name="q3")
+                analysis.plot_quadratic_fit(axes=axes, series_name="q3")
+                axes.set_xlabel("truncation fraction")
+                axes.set_ylabel("obj. func. value at ground truth")
+                axes.set_title("{}: G.T. value average quadratic fits".format(name))
                 plt.legend()
 
                 # scatter of standard deviation
@@ -222,7 +279,16 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
                 axes.set_title("{}: G.T. value standard deviations".format(name))
                 plt.legend()
 
-            if True:
+                # quadratic plots of standard deviation
+                fig, axes = plt.subplots()
+                analysis.scatter_series(axes=axes, series_name="std")
+                analysis.plot_quadratic_fit(axes=axes, series_name="std")
+                axes.set_xlabel("truncation fraction")
+                axes.set_ylabel("obj. func. value at ground truth")
+                axes.set_title("{}: G.T. value std. dev. quadratic fit".format(name))
+                plt.legend()
+
+            if False:
                 # box whisker plot of data
                 fig, axes = plt.subplots()
                 analysis.box_whisker(axes=axes)
