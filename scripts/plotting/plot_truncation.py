@@ -245,7 +245,7 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
             analysis = Analysis(xs=truncation_fractions, ys=vals_at_gt, dependent_common_dim=1, intersects_origin=True,
                                 origin_y_offset=-1.0)
 
-            if True:
+            if False:
                 # log log plots of quantiles
                 fig, axes = plt.subplots()
                 analysis.plot_log_log_fit(axes=axes, series_name="q1")
@@ -288,7 +288,7 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
                 axes.set_title("{}: G.T. value std. dev. quadratic fit".format(name))
                 plt.legend()
 
-            if False:
+            if True:
                 # box whisker plot of data
                 fig, axes = plt.subplots()
                 analysis.box_whisker(axes=axes)
