@@ -106,33 +106,86 @@ def main1():
     plt.show()
 
 
-def sample_cosine_in_cuboid(*, full_vector: np.ndarray, gen: np.random.Generator = np.random.default_rng()) -> Tuple[
-    float, float]:
-    point: np.ndarray = gen.uniform(low=0.0, high=full_vector)
-    old_fraction: float = point.sum() / full_vector.sum()
-    k = 90.0
-    fraction = 1.0 / (1.0 + np.exp(-k * (old_fraction - 0.5)))
-    point *= fraction / old_fraction
+def sample_cosine_in_cuboid_at_fraction(*, full_vector: np.ndarray, fraction: float,
+                                        gen: np.random.Generator = np.random.default_rng()) -> Tuple[float, float]:
+    point: np.ndarray = full_vector * gen.beta(a=2.0 * fraction, b=2.0 * (1.0 - fraction), size=full_vector.shape)
+
+    # scale the point in the `1` direction to adjust the distribution of fractions
+    # - This results in an approximately uniform distribution of fractions, independently of the dimensionality)
+    # - This does not affect the relationship between fraction and cosine, only the distribution of samples taken over the fraction value
+    # !!! this is currently wrong !!!
+    # old_fraction: float = point.sum() / full_vector.sum()
+    # k = 4.9 * np.sqrt(float(full_vector.size))
+    # fraction = 1.0 / (1.0 + np.exp(-k * (old_fraction - 0.5)))
+    # point *= fraction / old_fraction
+
+    # ?
+    # scale the point towards the `full_vector`, keeping it in the plane of constant `fraction` (perpendicular to the `1` direction)
+    # - This **does** affect the relationship between fraction and cosine.
+    #
+
     cosine: float = np.corrcoef(point, full_vector)[0, 1].item()
-    return cosine, fraction
+    return cosine, point.sum() / full_vector.sum()
 
 
 def main2():
-    dimensionality: int = 300
+    dimensionality: int = 1000
     gen = np.random.default_rng()
     full_vector: np.ndarray = gen.uniform(low=0.0, high=1.0, size=dimensionality)
-    sample_count: int = 100_000
+    sample_count: int = 10_000
     cosines = np.zeros(sample_count)
     fractions = np.zeros(sample_count)
     for i in tqdm(range(sample_count)):
-        cosines[i], fractions[i] = sample_cosine_in_cuboid(full_vector=full_vector, gen=gen)
+        cosines[i], fractions[i] = sample_cosine_in_cuboid_at_fraction(full_vector=full_vector,
+                                                                       fraction=float(i + 1) / float(sample_count + 1),
+                                                                       gen=gen)
 
     fig, axes = plt.subplots(1, 2)
     axes[0].hist(1.0 - fractions)
     axes[0].set_xlabel("truncation fraction")
-    axes[1].scatter(1.0 - fractions, -cosines)
+
+    xs = 1.0 - fractions
+    ys = -cosines
+    bins = np.linspace(min(xs), max(xs), 14)
+    bin_indices = np.digitize(xs, bins)
+    width = 0.5 * (bins[1] - bins[0])
+    axes[1].boxplot([ys[bin_indices == i] for i in range(1, len(bins) + 1)], positions=bins, widths=width)
+    plt.gca().xaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
     axes[1].set_xlabel("truncation fraction")
     axes[1].set_ylabel("-$\\cos \\theta$")
+
+    medians = np.array([np.median(ys[bin_indices == i]) for i in range(1, len(bins) + 1)])
+    to_fit_xs = torch.tensor(bins[:-3])
+    to_fit_ys = torch.tensor(medians[:-3])
+    power_fit = PowerFit.build(xs=to_fit_xs, series=Series(ys=to_fit_ys, intersects_origin=True, origin_y_offset=-1.0))
+    power_fit.generate_and_plot_ys(axes=axes[1], xs=to_fit_xs, label_prefix="Power fit")
+    plt.show()
+
+
+def sample_at_fraction(*, full_vector: np.ndarray, fraction: float, dimensionality: int,
+                       gen: np.random.Generator = np.random.default_rng()) -> float:
+    point: np.ndarray = full_vector * gen.beta(a=2.0 * fraction, b=2.0 * (1.0 - fraction), size=dimensionality)
+    return point.sum() / full_vector.sum()
+
+
+def beta_for_truncation_fraction():
+    gen = np.random.default_rng()
+    sample_count_per_point: int = 30
+    fractions = np.linspace(1e-6, 1.0 - 1e-6, 12)
+    dims = np.array([3, 30, 300, 3000], dtype=np.int64)
+    samples = np.zeros((len(dims), len(fractions)))
+    for j in tqdm(range(len(dims))):
+        full_vector: np.ndarray = gen.uniform(low=0.0, high=1.0, size=dims[j].item())
+        for i in range(len(fractions)):
+            s: float = 0.0
+            for _ in range(sample_count_per_point):
+                s += sample_at_fraction(full_vector=full_vector, fraction=fractions[i].item(),
+                                        dimensionality=dims[j].item(), gen=gen)
+            samples[j, i] = s / float(sample_count_per_point)
+
+    fig, axes = plt.subplots()
+    for i in range(len(dims)):
+        axes.plot(fractions, samples[i, :])
     plt.show()
 
 
