@@ -109,21 +109,30 @@ def main1():
 def sample_cosine_in_cuboid(*, full_vector: np.ndarray, gen: np.random.Generator = np.random.default_rng()) -> Tuple[
     float, float]:
     point: np.ndarray = gen.uniform(low=0.0, high=full_vector)
+    old_fraction: float = point.sum() / full_vector.sum()
+    k = 90.0
+    fraction = 1.0 / (1.0 + np.exp(-k * (old_fraction - 0.5)))
+    point *= fraction / old_fraction
     cosine: float = np.corrcoef(point, full_vector)[0, 1].item()
-    truncation_fraction: float = point.sum() / full_vector.sum()
-    return cosine, truncation_fraction
+    return cosine, fraction
 
 
 def main2():
     dimensionality: int = 300
     gen = np.random.default_rng()
     full_vector: np.ndarray = gen.uniform(low=0.0, high=1.0, size=dimensionality)
-    sample_count: int = 1_000
+    sample_count: int = 100_000
     cosines = np.zeros(sample_count)
-    truncation_fractions = np.zeros(sample_count)
+    fractions = np.zeros(sample_count)
     for i in tqdm(range(sample_count)):
-        cosines[i], truncation_fractions[i] = sample_cosine_in_cuboid(full_vector=full_vector, gen=gen)
-    plt.scatter(cosines, truncation_fractions)
+        cosines[i], fractions[i] = sample_cosine_in_cuboid(full_vector=full_vector, gen=gen)
+
+    fig, axes = plt.subplots(1, 2)
+    axes[0].hist(1.0 - fractions)
+    axes[0].set_xlabel("truncation fraction")
+    axes[1].scatter(1.0 - fractions, -cosines)
+    axes[1].set_xlabel("truncation fraction")
+    axes[1].set_ylabel("-$\\cos \\theta$")
     plt.show()
 
 
