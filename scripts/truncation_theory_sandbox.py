@@ -8,7 +8,7 @@ from tqdm import tqdm
 from registration.lib.plot import Series, LinearFit, PowerFit, QuadraticFit
 
 
-def tests():
+def initial():
     N = 100_000
     sigma = 0.001
     dimensionality = 100
@@ -95,7 +95,7 @@ def main1():
         # if power_fit is not None:
         #     power_fit.generate_and_plot_ys(axes=axes[1], xs=fit_xs, label_prefix="Power fit", color=colors[j],
         #                                    linestyle="--")
-        quadratic_fit = QuadraticFit(xs = fit_xs, series=Series(ys=fit_ys, intersects_origin=False, origin_y_offset=-1.0))
+        quadratic_fit = QuadraticFit(xs=fit_xs, series=Series(ys=fit_ys, intersects_origin=False, origin_y_offset=-1.0))
         quadratic_fit.generate_and_plot_ys(axes=axes[1], xs=fit_xs, label_prefix="Power fit", color=colors[j],
                                            linestyle=":")
 
@@ -106,5 +106,27 @@ def main1():
     plt.show()
 
 
+def sample_cosine_in_cuboid(*, full_vector: np.ndarray, gen: np.random.Generator = np.random.default_rng()) -> Tuple[
+    float, float]:
+    point: np.ndarray = gen.uniform(low=0.0, high=full_vector)
+    cosine: float = np.corrcoef(point, full_vector)[0, 1].item()
+    truncation_fraction: float = point.sum() / full_vector.sum()
+    return cosine, truncation_fraction
+
+
+def main2():
+    dimensionality: int = 300
+    gen = np.random.default_rng()
+    full_vector: np.ndarray = gen.uniform(low=0.0, high=1.0, size=dimensionality)
+    sample_count: int = 1_000
+    cosines = np.zeros(sample_count)
+    truncation_fractions = np.zeros(sample_count)
+    for i in tqdm(range(sample_count)):
+        cosines[i], truncation_fractions[i] = sample_cosine_in_cuboid(full_vector=full_vector, gen=gen)
+    plt.scatter(cosines, truncation_fractions)
+    plt.show()
+
+
 if __name__ == "__main__":
-    main1()
+    print("Hello, world!")
+    main2()
