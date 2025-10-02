@@ -3,6 +3,8 @@ from typing import Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+from scipy.odr import quadratic
+from torchvision.transforms.v2.functional import horizontal_flip
 
 from tqdm import tqdm
 from registration.lib.plot import Series, LinearFit, PowerFit, QuadraticFit
@@ -170,25 +172,85 @@ def sample_at_fraction(*, full_vector: np.ndarray, fraction: float, dimensionali
 
 def beta_for_truncation_fraction():
     gen = np.random.default_rng()
-    sample_count_per_point: int = 30
-    fractions = np.linspace(1e-6, 1.0 - 1e-6, 12)
-    dims = np.array([3, 30, 300, 3000], dtype=np.int64)
-    samples = np.zeros((len(dims), len(fractions)))
-    for j in tqdm(range(len(dims))):
+    sample_count_per_point: int = 100_000
+    fraction_count = 23
+    fractions = np.linspace(1e-6, 1.0 - 1e-6, fraction_count)
+    dims = np.array([1, 10, 100, 1000, 10_000], dtype=np.int64)
+    medians = np.zeros((len(dims), len(fractions)))
+    q1s = np.zeros((len(dims), len(fractions)))
+    q3s = np.zeros((len(dims), len(fractions)))
+    stds = np.zeros((len(dims), len(fractions)))
+    for j in range(len(dims)):
+        sample_count: int = int(round(float(sample_count_per_point / np.sqrt(float(dims[j])))))
         full_vector: np.ndarray = gen.uniform(low=0.0, high=1.0, size=dims[j].item())
-        for i in range(len(fractions)):
-            s: float = 0.0
-            for _ in range(sample_count_per_point):
-                s += sample_at_fraction(full_vector=full_vector, fraction=fractions[i].item(),
-                                        dimensionality=dims[j].item(), gen=gen)
-            samples[j, i] = s / float(sample_count_per_point)
+        for i in tqdm(range(len(fractions))):
+            v = np.zeros(sample_count)
+            for k in range(sample_count):
+                v[k] = sample_at_fraction(full_vector=full_vector, fraction=fractions[i].item(),
+                                          dimensionality=dims[j].item(), gen=gen)
+            medians[j, i] = np.quantile(v, 0.5)
+            q1s[j, i] = np.quantile(v, 0.25)
+            q3s[j, i] = np.quantile(v, 0.75)
+            stds[j, i] = v.std()
 
-    fig, axes = plt.subplots()
+    colors = np.stack([np.linspace(0.0, 1.0, len(dims)), np.linspace(1.0, 0.0, len(dims)), np.zeros(len(dims))])
+    colors = [(r.item(), g.item(), b.item()) for r, g, b in zip(colors[0, :], colors[1, :], colors[2, :])]
+
+    fig, axes = plt.subplots(2, 2)
+    axes = axes.flatten()
+
     for i in range(len(dims)):
-        axes.plot(fractions, samples[i, :])
+        axes[0].plot(fractions, medians[i, :], color=colors[i], label="D = {}".format(dims[i]))
+        axes[0].plot(fractions, q1s[i, :], color=colors[i], linestyle='--', label="Quartiles")
+        axes[0].plot(fractions, q3s[i, :], color=colors[i], linestyle='--')
+    axes[0].set_xlabel("$f^*$")
+    axes[0].set_ylabel("$f$")
+    axes[0].legend()
+
+    # xs_fit = torch.tensor(fractions)
+    # ys_fit = torch.tensor(stds[0, :])
+    # quadratic_fit = QuadraticFit(xs=xs_fit, series=Series(ys=ys_fit, intersects_origin=True, origin_y_offset=0.0))
+    # quadratic_fit.generate_and_plot_ys(axes=axes[1], xs=xs_fit, label_prefix="Power fit", color=colors[0])
+
+    half_fraction_count = fraction_count // 2
+    xs_fit = torch.tensor(fractions[half_fraction_count:])
+    horizontal_offset = -xs_fit[0].item()
+    xs_fit += horizontal_offset
+    ys_fit = torch.tensor(stds[0, :][half_fraction_count:])
+    maximum = ys_fit[0]
+    ys_fit = maximum - ys_fit
+    power_fit = PowerFit.build(xs=xs_fit, series=Series(ys=ys_fit, intersects_origin=True, origin_y_offset=0.0))
+    if power_fit is not None:
+        ys = power_fit.generate_ys(xs=xs_fit)
+        axes[1].plot(xs_fit[1:] - horizontal_offset, maximum - ys,
+                     label="Power fit: {}".format(power_fit.text_equation()))
+    else:
+        print("Power fit failed to build.")
+
+    axes[1].scatter(fractions, stds[0, :], marker='x', color=colors[0])
+    axes[1].set_xlabel("$f^*$")
+    axes[1].set_xlabel("$f$")
+    axes[1].set_title("$\\sigma$ for $D = {}$".format(dims[0]))
+    axes[1].legend()
+
+    axes[2].scatter(fractions, stds[-1, :], marker='x', color=colors[-1])
+    axes[2].set_xlabel("$f^*$")
+    axes[2].set_xlabel("$f$")
+    axes[2].set_title("$\\sigma$ for $D = {}$".format(dims[-1]))
+    axes[2].legend()
+
+    xs_fit = torch.tensor(dims.astype(np.float64))
+    ys_fit = torch.tensor(stds.max(axis=1))
+    power_fit = PowerFit.build(xs=xs_fit, series=Series(ys=ys_fit, intersects_origin=False, origin_y_offset=0.0))
+    power_fit.generate_and_plot_ys(axes=axes[3], xs=xs_fit, label_prefix="Power fit")
+    axes[3].scatter(xs_fit.numpy(), ys_fit.numpy(), marker='x')
+    axes[3].set_xlabel("dimensionality")
+    axes[3].set_ylabel("$\\sigma_{max}$")
+    axes[3].legend()
+
     plt.show()
 
 
 if __name__ == "__main__":
     print("Hello, world!")
-    main2()
+    beta_for_truncation_fraction()
