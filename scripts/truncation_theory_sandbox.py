@@ -132,14 +132,14 @@ def sample_cosine_in_cuboid_at_fraction(*, full_vector: np.ndarray, fraction: fl
 
 
 def main2():
-    dimensionality: int = 100
+    dimensionality: int = 1_000
     gen = np.random.default_rng()
     full_vector: np.ndarray = gen.uniform(low=0.0, high=1.0, size=dimensionality)
-    sample_count: int = 10_000
-    params_sums = np.array([0.0001, 0.001, 0.01, 0.1, 1.0, 2.0])
+    sample_count: int = 1_000
+    params_sums = np.array([4.0, 16.0, 64.0])
     # output values:
-    cosines = np.zeros((params_sums, sample_count))
-    fractions = np.zeros((params_sums, sample_count))
+    cosines = np.zeros((len(params_sums), sample_count))
+    fractions = np.zeros((len(params_sums), sample_count))
     for j in range(len(params_sums)):
         for i in tqdm(range(sample_count)):
             cosines[j, i], fractions[j, i] = sample_cosine_in_cuboid_at_fraction(full_vector=full_vector,
@@ -148,18 +148,72 @@ def main2():
                                                                                  param_sum=params_sums[j].item(),
                                                                                  gen=gen)
 
-    #
+    xs = 1.0 - fractions
+    ys = -cosines
+    bins = np.linspace(xs.min(), xs.max(), 14)
+    bin_indices = np.digitize(xs, bins)
+    binned = [[ys[j, bin_indices[j] == i] for i in range(1, len(bins) + 1)] for j in range(xs.shape[
+                                                                                               0])]  # list of lists of np.ndarrays; the outer list contains a list for each param_sum. each inner list contains a np.ndarray for each fraction
+    means = np.stack([np.array([arr.mean() for arr in arr_list]) for arr_list in binned])
+    stds = np.stack([np.array([arr.std() for arr in arr_list]) for arr_list in binned])
+    try:
+        medians = np.stack([np.array([np.quantile(arr, 0.5) for arr in arr_list]) for arr_list in binned])
+    except IndexError:
+        medians = None
+    try:
+        q1s = np.stack([np.array([np.quantile(arr, 0.25) for arr in arr_list]) for arr_list in binned])
+    except IndexError:
+        q1s = None
+    try:
+        q3s = np.stack([np.array([np.quantile(arr, 0.75) for arr in arr_list]) for arr_list in binned])
+    except IndexError:
+        q3s = None
+
+    colors = np.stack(
+        [np.linspace(0.0, 1.0, len(params_sums)), np.linspace(1.0, 0.0, len(params_sums)), np.zeros(len(params_sums))])
+    colors = [(r.item(), g.item(), b.item()) for r, g, b in zip(colors[0, :], colors[1, :], colors[2, :])]
+
+    fig, axes = plt.subplots(1, 2)
+    axes = axes.flatten()
+
+    if medians is not None:
+        for i in range(len(params_sums)):
+            axes[0].plot(bins, medians[i, :], color=colors[i], label="s = {}".format(params_sums[i]))
+            if q1s is not None:
+                axes[0].plot(bins, q1s[i, :], color=colors[i], linestyle='--', label="Quartiles")
+            if q3s is not None:
+                axes[0].plot(bins, q3s[i, :], color=colors[i], linestyle='--')
+        axes[0].set_xlabel("truncation fraction")
+        axes[0].set_ylabel("$-\\cos \\theta$")
+        axes[0].set_title("median")
+        axes[0].legend()
+
+    for i in range(len(params_sums)):
+        axes[1].scatter(bins, means[i, :], marker='x', color=colors[i], label="s = {}".format(params_sums[i]))
+        axes[1].plot(bins, means[i, :] + stds[i, :], color=colors[i], linestyle='--', label="$\\pm \\sigma$")
+        axes[1].plot(bins, means[i, :] - stds[i, :], color=colors[i], linestyle='--')
+
+        fit_index_last = (2 * len(bins)) // 3
+        fit_xs = torch.tensor(bins[:fit_index_last])
+        fit_ys = torch.tensor(means[i, :fit_index_last])
+        power_fit = PowerFit.build(xs=fit_xs, series=Series(ys=fit_ys, intersects_origin=True, origin_y_offset=-1.0))
+        if power_fit is not None:
+            power_fit.generate_and_plot_ys(axes=axes[1], xs=fit_xs,
+                                           label_prefix="Power fit to $s = {}$".format(params_sums[i]), color=colors[i])
+    axes[1].set_xlabel("truncation fraction")
+    axes[1].set_ylabel("$-\\cos \\theta$")
+    axes[1].set_title("mean")
+    axes[1].legend()
+
+    plt.show()
+
+    return
 
     fig, axes = plt.subplots(1, 2)
     axes[0].hist(1.0 - fractions)
     axes[0].set_xlabel("truncation fraction")
 
-    xs = 1.0 - fractions
-    ys = -cosines
-    bins = np.linspace(min(xs), max(xs), 14)
-    bin_indices = np.digitize(xs, bins)
-    width = 0.5 * (bins[1] - bins[0])
-    axes[1].boxplot([ys[bin_indices == i] for i in range(1, len(bins) + 1)], positions=bins, widths=width)
+    # axes[1].boxplot([ys[bin_indices == i] for i in range(1, len(bins) + 1)], positions=bins, widths=width)
     plt.gca().xaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
     axes[1].set_xlabel("truncation fraction")
     axes[1].set_ylabel("-$\\cos \\theta$")
@@ -347,4 +401,4 @@ def dist_against_beta_parameter_sum():
 
 if __name__ == "__main__":
     print("Hello, world!")
-    dist_against_beta_parameter_sum()
+    main2()
