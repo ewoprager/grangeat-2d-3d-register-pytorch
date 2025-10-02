@@ -108,9 +108,10 @@ def main1():
     plt.show()
 
 
-def sample_cosine_in_cuboid_at_fraction(*, full_vector: np.ndarray, fraction: float,
+def sample_cosine_in_cuboid_at_fraction(*, full_vector: np.ndarray, fraction: float, param_sum: float,
                                         gen: np.random.Generator = np.random.default_rng()) -> Tuple[float, float]:
-    point: np.ndarray = full_vector * gen.beta(a=2.0 * fraction, b=2.0 * (1.0 - fraction), size=full_vector.shape)
+    point: np.ndarray = full_vector * gen.beta(a=param_sum * fraction, b=param_sum * (1.0 - fraction),
+                                               size=full_vector.shape)
 
     # scale the point in the `1` direction to adjust the distribution of fractions
     # - This results in an approximately uniform distribution of fractions, independently of the dimensionality)
@@ -131,16 +132,23 @@ def sample_cosine_in_cuboid_at_fraction(*, full_vector: np.ndarray, fraction: fl
 
 
 def main2():
-    dimensionality: int = 1000
+    dimensionality: int = 100
     gen = np.random.default_rng()
     full_vector: np.ndarray = gen.uniform(low=0.0, high=1.0, size=dimensionality)
     sample_count: int = 10_000
-    cosines = np.zeros(sample_count)
-    fractions = np.zeros(sample_count)
-    for i in tqdm(range(sample_count)):
-        cosines[i], fractions[i] = sample_cosine_in_cuboid_at_fraction(full_vector=full_vector,
-                                                                       fraction=float(i + 1) / float(sample_count + 1),
-                                                                       gen=gen)
+    params_sums = np.array([0.0001, 0.001, 0.01, 0.1, 1.0, 2.0])
+    # output values:
+    cosines = np.zeros((params_sums, sample_count))
+    fractions = np.zeros((params_sums, sample_count))
+    for j in range(len(params_sums)):
+        for i in tqdm(range(sample_count)):
+            cosines[j, i], fractions[j, i] = sample_cosine_in_cuboid_at_fraction(full_vector=full_vector,
+                                                                                 fraction=float(i + 1) / float(
+                                                                                     sample_count + 1),
+                                                                                 param_sum=params_sums[j].item(),
+                                                                                 gen=gen)
+
+    #
 
     fig, axes = plt.subplots(1, 2)
     axes[0].hist(1.0 - fractions)
@@ -171,11 +179,15 @@ def sample_at_fraction(*, full_vector: np.ndarray, fraction: float, dimensionali
 
 
 def beta_for_truncation_fraction():
+    """
+    Illustrates the relationship between truncation fraction distribution and desired truncation fraction for a beta
+    distribution parameter sum of a + b = 2.
+    """
     gen = np.random.default_rng()
-    sample_count_per_point: int = 100_000
+    sample_count_per_point: int = 10_000
     fraction_count = 23
     fractions = np.linspace(1e-6, 1.0 - 1e-6, fraction_count)
-    dims = np.array([1, 10, 100, 1000, 10_000], dtype=np.int64)
+    dims = np.array([1, 10, 100, 1000], dtype=np.int64)
     medians = np.zeros((len(dims), len(fractions)))
     q1s = np.zeros((len(dims), len(fractions)))
     q3s = np.zeros((len(dims), len(fractions)))
@@ -251,6 +263,88 @@ def beta_for_truncation_fraction():
     plt.show()
 
 
+def sample_at_fraction_param_sum(*, full_vector: np.ndarray, fraction: float, dimensionality: int, param_sum: float,
+                                 gen: np.random.Generator = np.random.default_rng()) -> float:
+    point: np.ndarray = full_vector * gen.beta(a=param_sum * fraction, b=param_sum * (1.0 - fraction),
+                                               size=dimensionality)
+    return point.sum() / full_vector.sum()
+
+
+def dist_against_beta_parameter_sum():
+    gen = np.random.default_rng()
+    dimensionality: int = 1
+    sample_count: int = int(round(10000.0 / np.sqrt(float(dimensionality))))
+    fraction_count = 23
+    fractions = np.linspace(1e-6, 1.0 - 1e-6, fraction_count)
+    params_sums = np.array([0.0001, 0.001, 0.01, 0.1, 1.0, 2.0])
+    medians = np.zeros((len(params_sums), len(fractions)))
+    q1s = np.zeros((len(params_sums), len(fractions)))
+    q3s = np.zeros((len(params_sums), len(fractions)))
+    means = np.zeros((len(params_sums), len(fractions)))
+    stds = np.zeros((len(params_sums), len(fractions)))
+    full_vector: np.ndarray = gen.uniform(low=0.0, high=1.0, size=dimensionality)
+    for j in range(len(params_sums)):
+        for i in tqdm(range(len(fractions))):
+            v = np.zeros(sample_count)
+            for k in range(sample_count):
+                v[k] = sample_at_fraction_param_sum(full_vector=full_vector, fraction=fractions[i].item(),
+                                                    dimensionality=dimensionality, param_sum=params_sums[j].item(),
+                                                    gen=gen)
+            medians[j, i] = np.quantile(v, 0.5)
+            q1s[j, i] = np.quantile(v, 0.25)
+            q3s[j, i] = np.quantile(v, 0.75)
+            means[j, i] = v.mean()
+            stds[j, i] = v.std()
+
+    colors = np.stack(
+        [np.linspace(0.0, 1.0, len(params_sums)), np.linspace(1.0, 0.0, len(params_sums)), np.zeros(len(params_sums))])
+    colors = [(r.item(), g.item(), b.item()) for r, g, b in zip(colors[0, :], colors[1, :], colors[2, :])]
+
+    fig, axes = plt.subplots(2, 3)
+    axes = axes.flatten()
+
+    for i in range(len(params_sums)):
+        axes[0].plot(fractions, medians[i, :], color=colors[i], label="s = {}".format(params_sums[i]))
+        axes[0].plot(fractions, q1s[i, :], color=colors[i], linestyle='--', label="Quartiles")
+        axes[0].plot(fractions, q3s[i, :], color=colors[i], linestyle='--')
+    axes[0].set_xlabel("$f^*$")
+    axes[0].set_ylabel("$f$")
+    axes[0].set_title("median")
+    axes[0].legend()
+
+    for i in range(len(params_sums)):
+        axes[1].plot(fractions, means[i, :], color=colors[i], label="s = {}".format(params_sums[i]))
+        axes[1].plot(fractions, means[i, :] + stds[i, :], color=colors[i], linestyle='--', label="$\\pm \\sigma$")
+        axes[1].plot(fractions, means[i, :] - stds[i, :], color=colors[i], linestyle='--')
+    axes[1].set_xlabel("$f^*$")
+    axes[1].set_ylabel("$f$")
+    axes[1].set_title("mean")
+    axes[1].legend()
+
+    axes[2].scatter(fractions, stds[0, :], marker='x', color=colors[0])
+    axes[2].set_xlabel("$f^*$")
+    axes[2].set_xlabel("$f$")
+    axes[2].set_title("$\\sigma$ for $s = {}$".format(params_sums[0]))
+    axes[2].legend()
+
+    axes[3].scatter(fractions, stds[-1, :], marker='x', color=colors[-1])
+    axes[3].set_xlabel("$f^*$")
+    axes[3].set_xlabel("$f$")
+    axes[3].set_title("$\\sigma$ for $s = {}$".format(params_sums[-1]))
+    axes[3].legend()
+
+    # xs_fit = torch.tensor(params_sums)
+    # ys_fit = torch.tensor(stds.max(axis=1))
+    # power_fit = PowerFit.build(xs=xs_fit, series=Series(ys=ys_fit, intersects_origin=False, origin_y_offset=0.0))
+    # power_fit.generate_and_plot_ys(axes=axes[4], xs=xs_fit, label_prefix="Power fit")
+    axes[4].scatter(params_sums, stds.max(axis=1), marker='x')
+    axes[4].set_xlabel("param sum $s$")
+    axes[4].set_ylabel("$\\sigma_{max}$")
+    axes[4].legend()
+
+    plt.show()
+
+
 if __name__ == "__main__":
     print("Hello, world!")
-    beta_for_truncation_fraction()
+    dist_against_beta_parameter_sum()
