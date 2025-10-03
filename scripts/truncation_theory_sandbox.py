@@ -7,7 +7,7 @@ from scipy.odr import quadratic
 from torchvision.transforms.v2.functional import horizontal_flip
 
 from tqdm import tqdm
-from registration.lib.plot import Series, LinearFit, PowerFit, QuadraticFit
+from registration.lib.plot import Series, LinearFit, PowerFit, QuadraticFit, CustomFitPowerRatio
 
 
 def initial():
@@ -132,11 +132,11 @@ def sample_cosine_in_cuboid_at_fraction(*, full_vector: np.ndarray, fraction: fl
 
 
 def main2():
-    dimensionality: int = 1_000
+    dimensionality: int = 100
     gen = np.random.default_rng()
     full_vector: np.ndarray = gen.uniform(low=0.0, high=1.0, size=dimensionality)
-    sample_count: int = 1_000
-    params_sums = np.array([4.0, 16.0, 64.0])
+    sample_count: int = 100_000
+    params_sums = np.array([0.25, 1.0, 4.0, 16.0, 64.0])
     # output values:
     cosines = np.zeros((len(params_sums), sample_count))
     fractions = np.zeros((len(params_sums), sample_count))
@@ -154,20 +154,18 @@ def main2():
     bin_indices = np.digitize(xs, bins)
     binned = [[ys[j, bin_indices[j] == i] for i in range(1, len(bins) + 1)] for j in range(xs.shape[
                                                                                                0])]  # list of lists of np.ndarrays; the outer list contains a list for each param_sum. each inner list contains a np.ndarray for each fraction
+    for arr_list in binned:
+        for i in range(len(arr_list)):
+            arr_list[i] = arr_list[i][np.logical_not(np.isnan(arr_list[i]))]
+
     means = np.stack([np.array([arr.mean() for arr in arr_list]) for arr_list in binned])
     stds = np.stack([np.array([arr.std() for arr in arr_list]) for arr_list in binned])
-    try:
-        medians = np.stack([np.array([np.quantile(arr, 0.5) for arr in arr_list]) for arr_list in binned])
-    except IndexError:
-        medians = None
-    try:
-        q1s = np.stack([np.array([np.quantile(arr, 0.25) for arr in arr_list]) for arr_list in binned])
-    except IndexError:
-        q1s = None
-    try:
-        q3s = np.stack([np.array([np.quantile(arr, 0.75) for arr in arr_list]) for arr_list in binned])
-    except IndexError:
-        q3s = None
+    medians = np.stack(
+        [np.array([np.quantile(arr, 0.5) if arr.size > 0 else 0.0 for arr in arr_list]) for arr_list in binned])
+    q1s = np.stack(
+        [np.array([np.quantile(arr, 0.25) if arr.size > 0 else 0.0 for arr in arr_list]) for arr_list in binned])
+    q3s = np.stack(
+        [np.array([np.quantile(arr, 0.75) if arr.size > 0 else 0.0 for arr in arr_list]) for arr_list in binned])
 
     colors = np.stack(
         [np.linspace(0.0, 1.0, len(params_sums)), np.linspace(1.0, 0.0, len(params_sums)), np.zeros(len(params_sums))])
@@ -176,30 +174,42 @@ def main2():
     fig, axes = plt.subplots(1, 2)
     axes = axes.flatten()
 
-    if medians is not None:
-        for i in range(len(params_sums)):
-            axes[0].plot(bins, medians[i, :], color=colors[i], label="s = {}".format(params_sums[i]))
-            if q1s is not None:
-                axes[0].plot(bins, q1s[i, :], color=colors[i], linestyle='--', label="Quartiles")
-            if q3s is not None:
-                axes[0].plot(bins, q3s[i, :], color=colors[i], linestyle='--')
-        axes[0].set_xlabel("truncation fraction")
-        axes[0].set_ylabel("$-\\cos \\theta$")
-        axes[0].set_title("median")
-        axes[0].legend()
+    for i in range(len(params_sums)):
+        axes[0].scatter(bins, medians[i, :], color=colors[i], label="s = {}".format(params_sums[i]), marker='x')
+        axes[0].plot(bins, q1s[i, :], color=colors[i], linestyle='--', label="Quartiles")
+        axes[0].plot(bins, q3s[i, :], color=colors[i], linestyle='--')
+
+        if False:
+            fit_index_last = (2 * len(bins)) // 3
+            fit_xs = torch.tensor(bins[:fit_index_last])
+            fit_ys = torch.tensor(medians[i, :fit_index_last])
+            power_fit = PowerFit.build(xs=fit_xs,
+                                       series=Series(ys=fit_ys, intersects_origin=True, origin_y_offset=-1.0))
+            if power_fit is not None:
+                power_fit.generate_and_plot_ys(axes=axes[0], xs=fit_xs,
+                                               label_prefix="Power fit to $s = {}$".format(params_sums[i]),
+                                               color=colors[i])
+
+        custom_fit = CustomFitPowerRatio(xs=torch.tensor(bins),
+                                         series=Series(ys=torch.tensor(medians[i, :]), intersects_origin=True,
+                                                       origin_y_offset=-1.0))
+        custom_fit.generate_and_plot_ys(axes=axes[0], xs=torch.tensor(bins), label_prefix="Custom fit", color=colors[i])
+
+    axes[0].set_xlabel("truncation fraction")
+    axes[0].set_ylabel("$-\\cos \\theta$")
+    axes[0].set_title("median")
+    axes[0].legend()
 
     for i in range(len(params_sums)):
         axes[1].scatter(bins, means[i, :], marker='x', color=colors[i], label="s = {}".format(params_sums[i]))
         axes[1].plot(bins, means[i, :] + stds[i, :], color=colors[i], linestyle='--', label="$\\pm \\sigma$")
         axes[1].plot(bins, means[i, :] - stds[i, :], color=colors[i], linestyle='--')
 
-        fit_index_last = (2 * len(bins)) // 3
-        fit_xs = torch.tensor(bins[:fit_index_last])
-        fit_ys = torch.tensor(means[i, :fit_index_last])
-        power_fit = PowerFit.build(xs=fit_xs, series=Series(ys=fit_ys, intersects_origin=True, origin_y_offset=-1.0))
-        if power_fit is not None:
-            power_fit.generate_and_plot_ys(axes=axes[1], xs=fit_xs,
-                                           label_prefix="Power fit to $s = {}$".format(params_sums[i]), color=colors[i])
+        custom_fit = CustomFitPowerRatio(xs=torch.tensor(bins),
+                                         series=Series(ys=torch.tensor(means[i, :]), intersects_origin=True,
+                                                       origin_y_offset=-1.0))
+        custom_fit.generate_and_plot_ys(axes=axes[1], xs=torch.tensor(bins), label_prefix="Custom fit", color=colors[i])
+
     axes[1].set_xlabel("truncation fraction")
     axes[1].set_ylabel("$-\\cos \\theta$")
     axes[1].set_title("mean")

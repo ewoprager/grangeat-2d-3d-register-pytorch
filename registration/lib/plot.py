@@ -4,6 +4,9 @@ from typing import NamedTuple, Optional
 import numpy as np
 import torch
 import pyvista as pv
+import scipy
+from matplotlib import pyplot as plt
+from torch.distributions.constraints import independent
 
 from registration.lib.structs import Sinogram3dGrid
 
@@ -217,3 +220,58 @@ class PowerFit(DataFit):
 
     def log_log_correlation_coefficient(self) -> torch.Tensor:
         return self._linear_fit_log_log.correlation_coefficient()
+
+
+class CustomFitPowerRatio(DataFit):
+    def __init__(self, *, xs: torch.Tensor, series: Series):
+        self._xs = xs
+        self._series = series
+
+        independent_variable = (xs[1:-1] if series.intersects_origin else xs[:-1]).cpu().numpy()
+        dependent_variable = ((series.ys[1:-1] if series.intersects_origin else series.ys[
+            :-1]) - series.origin_y_offset).cpu().numpy()
+        initial_parameters = np.array([3.0, 0.2])
+        result = scipy.optimize.least_squares(  #
+            fun=CustomFitPowerRatio._function,  #
+            x0=initial_parameters,  #
+            jac=CustomFitPowerRatio._jacobian,  #
+            bounds=scipy.optimize.Bounds(lb=np.zeros(2), keep_feasible=True),  #
+            args=(independent_variable, dependent_variable),  #
+            verbose=1)
+        print(result)
+        self._parameters = result.x
+
+    def text_equation(self) -> str:
+        return "({}, {})".format(self._parameters[0], self._parameters[1])
+
+    def generate_ys(self, xs: torch.Tensor) -> torch.Tensor:
+        return torch.tensor(CustomFitPowerRatio._model(self._parameters, (
+            xs[1:] if self._series.intersects_origin else xs).cpu().numpy()))
+
+    def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -> None:
+        xs_fit = (xs[1:] if self._series.intersects_origin else xs).cpu().numpy()
+        ys_fit = CustomFitPowerRatio._model(self._parameters, xs_fit) + self._series.origin_y_offset
+        axes.plot(xs_fit, ys_fit, label="{}: {}".format(label_prefix, self.text_equation()), **kwargs)
+
+    @staticmethod
+    def _model(parameters: np.ndarray, independent_variable: np.ndarray) -> np.ndarray:
+        x_a = np.pow(independent_variable, parameters[0])
+        bx = parameters[1] * independent_variable
+        return (x_a + bx) / (2.0 - x_a + bx)
+
+    @staticmethod
+    def _function(parameters: np.ndarray, independent_variable: np.ndarray,
+                  dependent_variable: np.ndarray) -> np.ndarray:
+        return CustomFitPowerRatio._model(parameters, independent_variable) - dependent_variable
+
+    @staticmethod
+    def _jacobian(parameters: np.ndarray, independent_variable: np.ndarray,
+                  dependent_variable: np.ndarray) -> np.ndarray:
+        ret = np.empty((independent_variable.size, parameters.size))
+        x_a = np.pow(independent_variable, parameters[0])  # size matches that of independent_variable
+        bx = parameters[1] * independent_variable  # size matches that of independent_variable
+        den = 2.0 - x_a + bx  # size matches that of independent_variable
+        den = den * den  # size matches that of independent_variable
+        ret[:, 0] = 2.0 * (1.0 + bx) * x_a * np.log(independent_variable) / den
+        ret[:, 1] = 2.0 * (1.0 - x_a) * independent_variable / den
+        return ret
