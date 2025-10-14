@@ -73,7 +73,7 @@ class RegistrationData:
         self._hyperparameters_dirty: bool = True
         self._mask_transformation_dirty: bool = True
 
-        self._transformation_gt = Transformation.random(device=self.device)  # this is the target
+        self._transformation_gt = Transformation.random_uniform(device=self.device)  # this is the target
         self._truncation_level = 0  # this is treated the same as mask transformation
         self._mask_transformation: Transformation | None = None  #
 
@@ -462,24 +462,30 @@ class MeasureTask:
         if get_distances:
             opt_distances = torch.zeros((fraction_count, self._repetition_count))
 
-        first: bool = True
-
-        for j in range(self._repetition_count):
-            self.registration_data.transformation_gt = Transformation.random(device=self.device)
-            if self.registration_data.mask_transformation is not None:
-                self.registration_data.mask_transformation = self.registration_data.transformation_gt
-            for i in range(len(truncation_fractions)):
-                self.registration_data.truncation_level = i
+        for i in range(len(truncation_fractions)):
+            first: bool = True
+            self.registration_data.truncation_level = i
+            for j in range(self._repetition_count):
+                # new transformation GT
+                self.registration_data.transformation_gt = Transformation.random_gaussian(
+                    rotation_mean=torch.pi * torch.tensor([0.5, 0.0, 0.0], device=self.device), rotation_std=0.1,
+                    translation_mean=torch.zeros(3, device=self.device), translation_std=0.0)
+                if self.registration_data.mask_transformation is not None:
+                    self.registration_data.mask_transformation = self.registration_data.transformation_gt
+                # calculate the images
                 fixed_image, moving_image = self.registration_data.images_drr(
                     self.registration_data.transformation_gt.to(device=self.device))
                 if self._draw and first:
+                    # plot
                     fig, axes = plt.subplots(2)
                     axes[0].imshow(fixed_image.cpu().numpy())
                     axes[0].set_title("Fixed image")
                     axes[1].imshow(moving_image.cpu().numpy())
                     axes[1].set_title("DRR")
+                # get the similarity
                 vals_at_gt[i, j] = RegistrationData.sim_metric_ncc(fixed_image, moving_image)
                 if get_distances:
+                    # get the distance
                     local_found = mapping_parameters_to_transformation(local_search(
                         starting_position=mapping_transformation_to_parameters(
                             self.registration_data.transformation_gt.to(device=self.device)),
@@ -502,6 +508,7 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, s
     stop: float = 0.8
     step: float = 0.05
     truncation_fractions = [step * float(i) for i in range(1, int(round(stop / step)))]
+    logger.info("Truncation fractions: {}".format(truncation_fractions))
 
     for downsample_factor in [1, 2]:  # [1, 2, 4]
         registration_data = RegistrationData(cache_directory=cache_directory, ct_path=ct_path, device=device,
@@ -517,7 +524,7 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, s
         #     task.run(images_function_name="drr", sim_metric=RegistrationData.sim_metric_ncc, show=show,
         #              name="{:.3f}".format(truncation_fractions[i]).split(".")[1])
 
-        measure_task = MeasureTask(registration_data, repetition_count=30, name="{}".format(downsample_factor),
+        measure_task = MeasureTask(registration_data, repetition_count=30, name="face_on_{}".format(downsample_factor),
                                    device=device, draw=False)
 
         measure_task.run(get_distances=False)

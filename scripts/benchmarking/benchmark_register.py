@@ -237,7 +237,7 @@ def run_benchmark(*, cache_directory: str, ct_path: str | pathlib.Path, iteratio
                                                                                                              plot_data.RegisterPlotData.Dataset] | None:
     device = torch.device("cuda")
 
-    transformation_ground_truth = Transformation.random()
+    transformation_ground_truth = Transformation.random_uniform()
 
     starting_params = mapping_transformation_to_parameters(transformation_ground_truth)
     starting_params += ((2.0 * torch.rand(6) - 1.0) * torch.tensor([0.38, 0.38, 0.38, 28.0, 28.0, 28.0])).to(

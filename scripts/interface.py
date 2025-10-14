@@ -214,7 +214,7 @@ class Interface:
     def _reset(self, layer):
         reset_transformation = self.registration_data.transformation_gt
         if reset_transformation is None:
-            reset_transformation = Transformation.random(device=self.registration_data.device)
+            reset_transformation = Transformation.random_uniform(device=self.registration_data.device)
         self._transformation_widget.set_current_transformation(reset_transformation)
         self.render_drr()
         logger.info("Reset")

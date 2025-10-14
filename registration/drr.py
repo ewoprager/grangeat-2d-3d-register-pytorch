@@ -14,7 +14,7 @@ def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_dat
     #                                 torch.tensor([0., 0., 200.])).to(device=device)
     # transformation = Transformation.zero(device=volume_data.device)
     if transformation is None:
-        transformation = Transformation.random(device=volume_data.device)
+        transformation = Transformation.random_uniform(device=volume_data.device)
     logger.info("Generating DRR at transformation:\n\tr = {}\n\tt = {}...".format(transformation.rotation,
                                                                                   transformation.translation))
 

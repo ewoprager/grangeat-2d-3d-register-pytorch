@@ -127,7 +127,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
     colour_limits: Tuple[float, float] = mesh.get_clim()
     logger.info("DRR/X-ray and fixed image plotted.")
 
-    tr = transformation_ground_truth if x_ray is None else Transformation.random()
+    tr = transformation_ground_truth if x_ray is None else Transformation.random_uniform()
     logger.info("Evaluating at ground truth..." if x_ray is None else "Evaluating at random transformation")
     zncc, resampled = objective_function.evaluate(fixed_image, sinogram3d, transformation=tr.to(device=device),
                                                   scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid,
@@ -196,7 +196,7 @@ def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerat
         nznccs = torch.zeros(n)
         distances = torch.zeros(n)
         for i in tqdm(range(n)):
-            transformation = Transformation.random(device=device)
+            transformation = Transformation.random_uniform(device=device)
             distances[i] = transformation_ground_truth.distance(transformation)
             nznccs[i] = -objective_function.evaluate(fixed_image, sinogram3d, transformation=transformation,
                                                      scene_geometry=scene_geometry, fixed_image_grid=sinogram2d_grid)[0]

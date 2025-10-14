@@ -51,7 +51,7 @@ def plot_task_resample_sinogram3d(summary: TaskSummary):
 
 def random_ph_matrix() -> torch.Tensor:
     scene_geometry = SceneGeometry(source_distance=1000.)
-    transformation = Transformation.random()
+    transformation = Transformation.random_uniform()
     source_position = scene_geometry.source_position()
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
     return torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32)

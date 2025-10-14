@@ -101,7 +101,7 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     # Measure evaluation time of DRR vs grangeat resampling
     repeats: int = 30
     assert repeats >= 1
-    transformations = [Transformation.random(device=device) for _ in range(repeats)]
+    transformations = [Transformation.random_uniform(device=device) for _ in range(repeats)]
     p_matrix = SceneGeometry.projection_matrix(source_position=scene_geometry.source_position())
     ph_matrices = [torch.matmul(p_matrix, transformation.get_h()).to(dtype=torch.float32, device=device) for
                    transformation in transformations]

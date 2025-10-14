@@ -1,4 +1,4 @@
-from typing import NamedTuple, Tuple, Sequence, Any
+from typing import NamedTuple, Tuple, Sequence, Any, Union
 
 import torch
 import kornia
@@ -123,10 +123,24 @@ class Transformation(NamedTuple):
         return Transformation(torch.zeros(3, device=device), torch.zeros(3, device=device))
 
     @classmethod
-    def random(cls, *, device=torch.device('cpu')) -> 'Transformation':
-        return Transformation(torch.pi * (-1. + 2. * torch.rand(3, device=device)),
-                              25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
+    def random_uniform(cls, *, device=torch.device('cpu')) -> 'Transformation':
+        return Transformation(rotation=torch.pi * (-1. + 2. * torch.rand(3, device=device)),
+                              translation=25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
                                   device=device).translation)
+
+    @classmethod
+    def random_gaussian(cls, *, rotation_mean: torch.Tensor, rotation_std: Union[torch.Tensor, float],
+                        translation_mean: torch.Tensor, translation_std: Union[torch.Tensor, float],
+                        generator=None) -> 'Transformation':
+        assert rotation_mean.size() == torch.Size([3])
+        assert translation_mean.size() == torch.Size([3])
+        assert translation_mean.device == rotation_mean.device
+        assert isinstance(rotation_std, float) or (
+                    (rotation_std.size() == torch.Size([3])) and (rotation_std.device == rotation_mean.device))
+        assert isinstance(translation_std, float) or (
+                    (translation_std.size() == torch.Size([3])) and (translation_std.device == rotation_mean.device))
+        return Transformation(rotation=torch.normal(mean=rotation_mean, std=rotation_std, generator=generator),
+                              translation=torch.normal(mean=translation_mean, std=translation_std, generator=generator))
 
 
 class SceneGeometry(NamedTuple):
