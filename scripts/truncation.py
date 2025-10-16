@@ -62,6 +62,7 @@ class RegistrationData:
 
         ct_volume, self._ct_spacing = data.load_volume(pathlib.Path(ct_path), downsample_factor=downsample_factor)
         ct_volume = ct_volume.to(device=device, dtype=torch.float32)
+        ct_volume = ct_volume - ct_volume.mean() # !!! shifting the volume to zero-mean, so now considering real, not non-negative
         self._ct_volumes = [ct_volume] + [truncate(ct_volume, fraction) for fraction in truncation_fractions]
         self._ct_spacing = self._ct_spacing.to(device=device)
 
@@ -451,7 +452,7 @@ class MeasureTask:
     def registration_data(self) -> RegistrationData:
         return self._registration_data
 
-    def run(self, run_name: str | None = None, get_distances: bool = True) -> None:
+    def run(self, run_name: str | None = None, get_distances: bool = False, get_pdf_params: bool = False) -> None:
         def obj_func(tensor: torch.Tensor) -> torch.Tensor:
             return RegistrationData.sim_metric_ncc(
                 *self.registration_data.images_drr(mapping_parameters_to_transformation(tensor)))
@@ -461,6 +462,9 @@ class MeasureTask:
         vals_at_gt = torch.zeros((fraction_count, self._repetition_count))
         if get_distances:
             opt_distances = torch.zeros((fraction_count, self._repetition_count))
+        if get_pdf_params:
+            pdf_means = torch.zeros((fraction_count, self._repetition_count))
+            pdf_stds = torch.zeros((fraction_count, self._repetition_count))
 
         for i in range(len(truncation_fractions)):
             first: bool = True
@@ -468,7 +472,7 @@ class MeasureTask:
             for j in range(self._repetition_count):
                 # new transformation GT
                 self.registration_data.transformation_gt = Transformation.random_gaussian(
-                    rotation_mean=torch.pi * torch.tensor([0.5, 0.0, 0.0], device=self.device), rotation_std=0.1,
+                    rotation_mean=torch.pi * torch.tensor([0.0, 0.0, 0.0], device=self.device), rotation_std=0.1,
                     translation_mean=torch.zeros(3, device=self.device), translation_std=0.0)
                 if self.registration_data.mask_transformation is not None:
                     self.registration_data.mask_transformation = self.registration_data.transformation_gt
@@ -494,18 +498,27 @@ class MeasureTask:
                         max_reductions=10))
                     opt_distances[i, j] = local_found.distance(
                         self.registration_data.transformation_gt.to(device=self.device))
+                if get_pdf_params:
+                    non_zero = torch.logical_and(moving_image > 1e-3, fixed_image > 1e-3)
+                    ratio_image = moving_image[non_zero].flatten() / fixed_image[non_zero].flatten()
+                    pdf_means[i, j] = ratio_image.mean()
+                    pdf_stds[i, j] = ratio_image.std()
+
                 first = False
 
         to_save = {"truncation_fractions": truncation_fractions, "vals_at_gt": vals_at_gt}
         if get_distances:
             to_save["opt_distances"] = opt_distances
+        if get_pdf_params:
+            to_save["pdf_means"] = pdf_means
+            to_save["pdf_stds"] = pdf_stds
 
         file_name = "{}.pkl".format(self._name) if run_name is None else "{}_{}.pkl".format(self._name, run_name)
         torch.save(to_save, MeasureTask.SAVE_DIRECTORY / file_name)
 
 
 def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, show: bool = False):
-    stop: float = 0.8
+    stop: float = 1.0
     step: float = 0.05
     truncation_fractions = [step * float(i) for i in range(1, int(round(stop / step)))]
     logger.info("Truncation fractions: {}".format(truncation_fractions))
@@ -524,14 +537,15 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, s
         #     task.run(images_function_name="drr", sim_metric=RegistrationData.sim_metric_ncc, show=show,
         #              name="{:.3f}".format(truncation_fractions[i]).split(".")[1])
 
-        measure_task = MeasureTask(registration_data, repetition_count=30, name="face_on_{}".format(downsample_factor),
+        measure_task = MeasureTask(registration_data, repetition_count=30, name="top_down_{}".format(downsample_factor),
                                    device=device, draw=False)
 
-        measure_task.run(get_distances=False)
+        measure_task.run(get_distances=False, get_pdf_params=True)
 
-        registration_data.mask_transformation = registration_data.transformation_gt
+        if False:
+            registration_data.mask_transformation = registration_data.transformation_gt
 
-        measure_task.run(run_name="masked_at_gt", get_distances=False)
+            measure_task.run(run_name="masked_at_gt", get_distances=False, get_histogram=True)
 
         plt.show()
 

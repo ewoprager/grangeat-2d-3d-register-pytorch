@@ -96,7 +96,7 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
 
         name = file.stem
 
-        if "vals_at_gt" in pdata:
+        if False and "vals_at_gt" in pdata:
             vals_at_gt = pdata["vals_at_gt"]
             analysis = Analysis(xs=truncation_fractions, ys=vals_at_gt, dependent_common_dim=1, intersects_origin=True,
                                 origin_y_offset=-1.0)
@@ -190,6 +190,46 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
             axes.set_ylabel("obj. func. value at ground truth")
             axes.set_title("{}: distance in SE(3) between G.T. and optimum std. dev.".format(name))
             plt.legend()
+
+        if True and "pdf_means" in pdata:
+            fig, axes = plt.subplots()
+            pdf_means = pdata["pdf_means"].mean(axis=1)
+
+            xs = (1.0 - truncation_fractions).cpu().numpy()
+            ys = pdf_means.cpu().numpy()
+            axes.scatter(xs, ys)
+
+            linear_fit_ys = np.exp(ys) - 1.0
+            sum_xy = np.sum(xs * linear_fit_ys)
+            sum_x2 = np.sum(xs * xs)
+            m = sum_xy / sum_x2
+            fitted_ys = np.log(1.0 + m * xs)
+            axes.plot(xs, fitted_ys, label="fit: $y = \\log (1 + {}x)$".format(to_latex_scientific(m)))
+
+            axes.set_xlabel("1 - truncation fraction")
+            axes.set_ylabel("intensity ratio")
+            axes.set_title("{}: mean intensity ratio".format(name))
+            axes.legend()
+
+        if True and "pdf_stds" in pdata:
+            fig, axes = plt.subplots()
+            pdf_stds = pdata["pdf_stds"].mean(axis=1)
+
+            xs = (1.0 - truncation_fractions).cpu().numpy()
+            ys = pdf_stds.cpu().numpy()
+            axes.scatter(xs, ys)
+
+            linear_fit_ys = np.exp(ys) - 1.0
+            sum_xy = np.sum(xs * linear_fit_ys)
+            sum_x2 = np.sum(xs * xs)
+            m = sum_xy / sum_x2
+            fitted_ys = np.log(1.0 + m * xs)
+            axes.plot(xs, fitted_ys, label="fit: $y = \\log (1 + {}x)$".format(to_latex_scientific(m)))
+
+            axes.set_xlabel("1 - truncation fraction")
+            axes.set_ylabel("intensity ratio")
+            axes.set_title("{}: std. dev. intensity ratio".format(name))
+            axes.legend()
 
         if False:
             plt.show()
