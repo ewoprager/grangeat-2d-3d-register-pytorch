@@ -96,7 +96,7 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
 
         name = file.stem
 
-        if False and "vals_at_gt" in pdata:
+        if True and "vals_at_gt" in pdata:
             vals_at_gt = pdata["vals_at_gt"]
             analysis = Analysis(xs=truncation_fractions, ys=vals_at_gt, dependent_common_dim=1, intersects_origin=True,
                                 origin_y_offset=-1.0)
@@ -148,13 +148,28 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
                 # box whisker plot of data
                 fig, axes = plt.subplots()
                 analysis.box_whisker(axes=axes)
-                analysis.plot_power_fit(axes=axes, series_name="q1")
-                analysis.plot_power_fit(axes=axes, series_name="median")
-                analysis.plot_power_fit(axes=axes, series_name="q3")
+                # analysis.plot_power_fit(axes=axes, series_name="q1")
+                # analysis.plot_power_fit(axes=axes, series_name="median")
+                # analysis.plot_power_fit(axes=axes, series_name="q3")
+
+                xs = truncation_fractions.cpu().numpy()
+                ys = vals_at_gt.mean(dim=1).cpu().numpy()
+                xs_fit = xs * ys * ys
+                ys_fit = 1.0 - xs - ys * ys
+                sum_x2 = (xs_fit * xs_fit).sum()
+                sum_xy = (xs_fit * ys_fit).sum()
+                m = sum_xy / sum_x2
+
+                ys_fitted = m * xs_fit
+                ys_fitted_plot = -np.sqrt(np.abs(1.0 - xs - ys_fitted))
+                axes.plot(xs, ys_fitted_plot,
+                          label="theoretical fit: $y = -\\sqrt{{ \\frac{{ 1 - x }}{{ 1 {} x }} }}$".format(
+                              to_latex_scientific(m, include_plus=True)))
+
                 axes.set_xlabel("truncation fraction")
                 axes.set_ylabel("obj. func. value at ground truth")
                 axes.set_title("{}: G.T. value box whisker".format(name))
-                plt.legend()
+                axes.legend()
 
         if False and "opt_distances" in pdata:
             opt_distances = pdata["opt_distances"]
@@ -191,7 +206,7 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
             axes.set_title("{}: distance in SE(3) between G.T. and optimum std. dev.".format(name))
             plt.legend()
 
-        if True and "pdf_means" in pdata:
+        if False and "pdf_means" in pdata:
             fig, axes = plt.subplots()
             pdf_means = pdata["pdf_means"].mean(axis=1)
 
@@ -211,7 +226,7 @@ def main(load_path: pathlib.Path, save_path: pathlib.Path):
             axes.set_title("{}: mean intensity ratio".format(name))
             axes.legend()
 
-        if True and "pdf_stds" in pdata:
+        if False and "pdf_stds" in pdata:
             fig, axes = plt.subplots()
             pdf_stds = pdata["pdf_stds"].mean(axis=1)
 
