@@ -4,7 +4,7 @@ import glob
 from typing import Tuple
 
 import torch
-from setuptools import setup, Extension
+from setuptools import setup
 from torch.utils.cpp_extension import CppExtension, CUDAExtension, BuildExtension, CUDA_HOME
 
 extension_name: str = "reg23"

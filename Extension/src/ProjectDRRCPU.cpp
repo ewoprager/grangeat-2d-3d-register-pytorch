@@ -43,4 +43,48 @@ at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpaci
 	return common.flatOutput.view(at::IntArrayRef{outputHeight, outputWidth});
 }
 
+at::Tensor DProjectDRRDHMI_CPU(const at::Tensor &volume, const at::Tensor &voxelSpacing,
+                                   const at::Tensor &homographyMatrixInverse, double sourceDistance,
+                                   int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
+                                   const at::Tensor &detectorSpacing) {
+	CommonData common = ProjectDRR<Texture3DCPU>::Common(volume, voxelSpacing, homographyMatrixInverse, sourceDistance,
+	                                                     outputWidth, outputHeight, outputOffset, detectorSpacing,
+	                                                     at::DeviceType::CPU);
+	const Linear<Texture3DCPU::VectorType> mappingWorldToTexCoord = common.inputTexture.MappingWorldToTexCoord();
+
+	// ToDo: make a new 'Common' function for the backward pass; here I just rewrite the `flatOutput` field
+	common.flatOutput = torch::zeros(at::IntArrayRef({outputWidth * outputHeight * 16}), volume.contiguous().options());
+	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
+
+	for (int j = 0; j < outputHeight; ++j) {
+		for (int i = 0; i < outputWidth; ++i) {
+			const Vec<double, 2> detectorPosition = common.detectorSpacing * Vec<double, 2>{
+				                                        static_cast<double>(i) - 0.5 * static_cast<double>(
+					                                        outputWidth - 1),
+				                                        static_cast<double>(j) - 0.5 * static_cast<double>(
+					                                        outputHeight - 1)} + common.outputOffset;
+			Vec<double, 3> direction = VecCat(detectorPosition, -sourceDistance);
+			direction /= direction.Length();
+			const Vec<double, 4> delta = VecCat(direction * common.stepSize, 0.0);
+			const Vec<double, 4> start = VecCat(
+				Vec<double, 3>{0.0, 0.0, sourceDistance} + common.lambdaStart * direction, 1.0);
+
+			Vec<Vec<float, 4>, 4> sum = Vec<Vec<float, 4>, 4>::Full(Vec<float, 4>::Full(0.f));
+			for (int k = 0; k < common.samplesPerRay; ++k) {
+				const Vec<double, 4> samplePointUntransformed = start + static_cast<double>(k) * delta;
+				const Vec<double, 3> samplePoint = MatMul(common.homographyMatrixInverse, samplePointUntransformed).
+					XYZ();
+				sum += VecOuter(Vec<float, 4>{common.inputTexture.DSampleDX(mappingWorldToTexCoord(samplePoint)),
+				                              common.inputTexture.DSampleDY(mappingWorldToTexCoord(samplePoint)),
+				                              common.inputTexture.DSampleDZ(mappingWorldToTexCoord(samplePoint)), 0.f},
+				                samplePointUntransformed.StaticCast<float>());
+			}
+			sum *= common.stepSize;
+			memcpy(&resultFlatPtr[j * outputWidth * 16 + i * 16], &sum, sizeof(Vec<Vec<float, 4>, 4>));
+		}
+	}
+
+	return common.flatOutput.view(at::IntArrayRef{outputHeight, outputWidth, 4, 4});
+}
+
 } // namespace reg23

@@ -343,7 +343,8 @@ public:
 	/**
 	 * @brief Element-wise addition of a scalar
 	 */
-	__host__ __device__ Vec &operator+=(const T &scalar) {
+	template <typename scalar_t>
+	__host__ __device__ Vec &operator+=(const scalar_t &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] += scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
@@ -363,7 +364,8 @@ public:
 	/**
 	 * @brief Element-wise subtraction of a scalar
 	 */
-	__host__ __device__ Vec &operator-=(const T &scalar) {
+	template <typename scalar_t>
+	__host__ __device__ Vec &operator-=(const scalar_t &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] -= scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
@@ -383,7 +385,8 @@ public:
 	/**
 	 * @brief Element-wise multiplication by a scalar
 	 */
-	__host__ __device__ Vec &operator*=(const T &scalar) {
+	template <typename scalar_t>
+	__host__ __device__ Vec &operator*=(const scalar_t &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] *= scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
@@ -403,7 +406,8 @@ public:
 	/**
 	 * @brief Element-wise division by a scalar
 	 */
-	__host__ __device__ Vec &operator/=(const T &scalar) {
+	template <typename scalar_t>
+	__host__ __device__ Vec &operator/=(const scalar_t &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] /= scalar; }(), ...);
 		}(std::make_index_sequence<N>{});

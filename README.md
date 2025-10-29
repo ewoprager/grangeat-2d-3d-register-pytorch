@@ -38,8 +38,16 @@ uv venv
 source .venv/bin/activate
 ```
 
-Any script can now be run using
+Install necessary dependencies with
+```bash
+uv pip install -e .[cpu]
+```
+or
+```bash
+uv pip install -e .[cuda]
+```
 
+Any script can now be run using
 ```bash
 uv run <script name> <args...>
 ```

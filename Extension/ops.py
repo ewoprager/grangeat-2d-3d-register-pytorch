@@ -2,6 +2,7 @@ import torch
 
 from .structs import CUDATexture3D
 
+
 def radon2d(image: torch.Tensor, image_spacing: torch.Tensor, phi_values: torch.Tensor, r_values: torch.Tensor,
             samples_per_line: int) -> torch.Tensor:
     return torch.ops.reg23.radon2d.default(image, image_spacing.to(dtype=torch.float64), phi_values, r_values,
@@ -84,6 +85,15 @@ def project_drr(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_ma
                                                homography_matrix_inverse.to(dtype=torch.float64), source_distance,
                                                output_width, output_height, output_offset,
                                                detector_spacing.to(dtype=torch.float64))
+
+
+def d_project_drr_d_hmi(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,
+                        source_distance: float, output_width: int, output_height: int, output_offset: torch.Tensor,
+                        detector_spacing: torch.Tensor) -> torch.Tensor:
+    return torch.ops.reg23.d_project_drr_d_hmi.default(volume, voxel_spacing.to(dtype=torch.float64),
+                                                       homography_matrix_inverse.to(dtype=torch.float64),
+                                                       source_distance, output_width, output_height, output_offset,
+                                                       detector_spacing.to(dtype=torch.float64))
 
 
 def project_drr_cuboid_mask(volume_size: torch.Tensor, voxel_spacing: torch.Tensor,

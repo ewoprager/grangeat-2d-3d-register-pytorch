@@ -192,3 +192,6 @@ members = ["Extension"]
 [tool.uv.sources]
 # reg23 is installed from the current workspace
 reg23 = { workspace = true }
+
+[tool.setuptools.packages.find]
+where = ["Extension"]
