@@ -87,13 +87,14 @@ def project_drr(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_ma
                                                detector_spacing.to(dtype=torch.float64))
 
 
-def d_project_drr_d_hmi(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,
-                        source_distance: float, output_width: int, output_height: int, output_offset: torch.Tensor,
-                        detector_spacing: torch.Tensor) -> torch.Tensor:
-    return torch.ops.reg23.d_project_drr_d_hmi.default(volume, voxel_spacing.to(dtype=torch.float64),
-                                                       homography_matrix_inverse.to(dtype=torch.float64),
-                                                       source_distance, output_width, output_height, output_offset,
-                                                       detector_spacing.to(dtype=torch.float64))
+def project_drr_backward(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,
+                         source_distance: float, output_width: int, output_height: int, output_offset: torch.Tensor,
+                         detector_spacing: torch.Tensor, d_loss_d_drr: torch.Tensor) -> torch.Tensor:
+    return torch.ops.reg23.project_drr_backward.default(volume, voxel_spacing.to(dtype=torch.float64),
+                                                        homography_matrix_inverse.to(dtype=torch.float64),
+                                                        source_distance, output_width, output_height, output_offset,
+                                                        detector_spacing.to(dtype=torch.float64),
+                                                        d_loss_d_drr.to(dtype=torch.float32))
 
 
 def project_drr_cuboid_mask(volume_size: torch.Tensor, voxel_spacing: torch.Tensor,

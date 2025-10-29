@@ -119,12 +119,14 @@ template <typename texture_t> struct ProjectDRR {
  * @param outputHeight
  * @param outputOffset
  * @param detectorSpacing
- * @return tensor of size (outputHeight, outputWidth, 4, 4): For every pixel in the DRR, a 4x4 **column-major** matrix equal to the derivative of its intensity value w.r.t. the inverse homography matrix
+ * @param dLossDDRR a tensor of size (outputHeight, outputWidth): The derivative of the loss w.r.t. the projected DRR image
+ * @return tensor of size (4, 4): The derivative of the loss w.r.t. the inverse homography matrix
  *
  * Note: This function does not take the original value of the inverse homography matrix as a parameter, as the
  */
-at::Tensor DProjectDRRDHMI_CPU(const at::Tensor &volume, const at::Tensor &voxelSpacing,
-                               const at::Tensor &homographyMatrixInverse, double sourceDistance, int64_t outputWidth,
-                               int64_t outputHeight, const at::Tensor &outputOffset, const at::Tensor &detectorSpacing);
+at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &voxelSpacing,
+                                   const at::Tensor &homographyMatrixInverse, double sourceDistance,
+                                   int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
+                                   const at::Tensor &detectorSpacing, const at::Tensor &dLossDDRR);
 
 } // namespace reg23

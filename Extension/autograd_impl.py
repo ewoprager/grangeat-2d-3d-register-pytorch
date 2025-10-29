@@ -23,16 +23,13 @@ class ProjectDRR(torch.autograd.Function):
         :param d_loss_d_drr: tensor of size (drr_height, drr_width); the derivative of the loss w.r.t. the DRR
         :return: tensor of size (
         """
-        (homography_matrix_inverse, volume, voxel_spacing, output_offset,
-         detector_spacing) = ctx.saved_tensors
+        (homography_matrix_inverse, volume, voxel_spacing, output_offset, detector_spacing) = ctx.saved_tensors
         source_distance = ctx.source_distance
         output_width = ctx.output_width
         output_height = ctx.output_height
 
-
-        d_drr_d_hmi = ops.d_project_drr_d_hmi(volume, voxel_spacing, homography_matrix_inverse, source_distance,
-                                              output_width, output_height, output_offset, detector_spacing)
-
-        d_loss_d_hmi = torch.einsum("ji,jikl->kl", d_loss_d_drr, d_drr_d_hmi)
+        d_loss_d_hmi = ops.project_drr_backward(volume, voxel_spacing, homography_matrix_inverse, source_distance,
+                                                output_width, output_height, output_offset, detector_spacing,
+                                                d_loss_d_drr)
 
         return d_loss_d_hmi, None, None, None, None, None, None, None

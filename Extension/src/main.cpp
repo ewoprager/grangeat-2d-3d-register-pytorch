@@ -59,7 +59,7 @@ TORCH_LIBRARY(reg23, m) {
 	m.def(
 		"project_drr(Tensor volume, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, Tensor outOff, Tensor outSpacing) -> Tensor");
 	m.def(
-		"d_project_drr_d_hmi(Tensor volume, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, Tensor outOff, Tensor outSpacing) -> Tensor");
+		"project_drr_backward(Tensor volume, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, Tensor outOff, Tensor outSpacing, Tensor dLossDDRR) -> Tensor");
 	m.def(
 		"project_drr_cuboid_mask(Tensor vSize, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, Tensor outOff, Tensor outSpacing) -> Tensor");
 }
@@ -76,7 +76,7 @@ TORCH_LIBRARY_IMPL(reg23, CPU, m) {
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CPU);
 	m.impl("grid_sample3d", &GridSample3D_CPU);
 	m.impl("project_drr", &ProjectDRR_CPU);
-	m.impl("d_project_drr_d_hmi", &DProjectDRRDHMI_CPU);
+	m.impl("project_drr_backward", &ProjectDRR_backward_CPU);
 	m.impl("project_drr_cuboid_mask", &ProjectDRRCuboidMask_CPU);
 }
 
