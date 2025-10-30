@@ -5,7 +5,7 @@ var searchData=
   ['polar_20coordinates_2',['Polar coordinates',['../conventions.html#autotoc_md6',1,'']]],
   ['projectdrr_3',['ProjectDRR',['../structreg23_1_1ProjectDRR.html',1,'reg23']]],
   ['projectdrr_2eh_4',['ProjectDRR.h',['../ProjectDRR_8h.html',1,'']]],
-  ['projectdrr_5fbackward_5fcpu_5',['ProjectDRR_backward_CPU',['../namespacereg23.html#abb37d1247aefa70e9ede160d10b5fdc6',1,'reg23']]],
+  ['projectdrr_5fbackward_5fcpu_5',['ProjectDRR_backward_CPU',['../group__pytorch__functions.html#gabb37d1247aefa70e9ede160d10b5fdc6',1,'reg23']]],
   ['projectdrr_5fcpu_6',['ProjectDRR_CPU',['../group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9',1,'reg23']]],
   ['projectdrr_5fcuda_7',['ProjectDRR_CUDA',['../group__pytorch__functions.html#gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e',1,'reg23']]],
   ['projectdrrcpu_2ecpp_8',['ProjectDRRCPU.cpp',['../ProjectDRRCPU_8cpp.html',1,'']]],
