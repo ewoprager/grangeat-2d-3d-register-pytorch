@@ -110,6 +110,8 @@ import matplotlib.pyplot as plt
 
 
 def test_project_drr_autograd():
+    display = False
+
     devices = ["cpu"]
     if torch.cuda.is_available():
         devices.append("cuda")
@@ -119,8 +121,8 @@ def test_project_drr_autograd():
     source_distance = 1000.0
     output_size = torch.Size([10, 15])
     detector_spacing = torch.tensor([0.2, 0.25])
-
-    # fig, axes = plt.subplots(len(devices), 1)
+    if display:
+        fig, axes = plt.subplots(len(devices), 1)
 
     for device_index, device_name in enumerate(devices):
         print(device_name)
@@ -135,11 +137,12 @@ def test_project_drr_autograd():
         # loss_grad = torch.zeros_like(res)
         # loss_grad[5, 7] = 1.0
         res.backward(torch.ones_like(res))
-        print(h_matrix_inv.grad)
-        # axes[device_index].imshow(res.detach().cpu().numpy())
-        # axes[device_index].set_title(device_name)
         epsilon = 1.0e-4
-        print("epsilon =", epsilon)
+        if display:
+            print(h_matrix_inv.grad)
+            axes[device_index].imshow(res.detach().cpu().numpy())
+            axes[device_index].set_title(device_name)
+            print("epsilon =", epsilon)
         out = torch.empty_like(h_matrix_inv)
         out.requires_grad = False
         for j in range(4):
@@ -150,6 +153,7 @@ def test_project_drr_autograd():
                 res2 = autograd.project_drr(h_matrix_inv2, volume, voxel_spacing, source_distance, output_size[1],
                                             output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing)
                 out[i, j] = (res2.sum() - res.sum()) / epsilon
-        print(out)
-        # assert h_matrix_inv.grad == pytest.approx(out.detach().cpu(), abs=0.001, rel=0.01)
-    # plt.show()
+        if display:
+            print(out)  # assert h_matrix_inv.grad == pytest.approx(out.detach().cpu(), abs=0.001, rel=0.01)
+    if display:
+        plt.show()
