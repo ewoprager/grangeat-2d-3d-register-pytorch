@@ -8,5 +8,5 @@ var searchData=
   ['tointarrayref_5',['ToIntArrayRef',['../classreg23_1_1Vec.html#a1f5b89951dd4a1dae6b0e25a261a3668',1,'reg23::Vec']]],
   ['torch_5flibrary_6',['TORCH_LIBRARY',['../namespacereg23.html#abe8eb834b4b282865414924186f13035',1,'reg23']]],
   ['torch_5flibrary_5fimpl_7',['TORCH_LIBRARY_IMPL',['../namespacereg23.html#ad3ef09e8acc66661516d454ab4c8266c',1,'reg23']]],
-  ['totensor_8',['ToTensor',['../classreg23_1_1Vec.html#a5972b5e78920fdf94df28dce8cd30818',1,'reg23::Vec']]]
+  ['totensor_8',['ToTensor',['../classreg23_1_1Vec.html#ac7321309edcb14fb5b1db21962ff0510',1,'reg23::Vec']]]
 ];

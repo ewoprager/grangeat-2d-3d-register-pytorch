@@ -20,6 +20,6 @@ var searchData=
   ['tools_17',['General Tools',['../group__general__tools.html',1,'']]],
   ['torch_5flibrary_18',['TORCH_LIBRARY',['../namespacereg23.html#abe8eb834b4b282865414924186f13035',1,'reg23']]],
   ['torch_5flibrary_5fimpl_19',['TORCH_LIBRARY_IMPL',['../namespacereg23.html#ad3ef09e8acc66661516d454ab4c8266c',1,'reg23']]],
-  ['totensor_20',['ToTensor',['../classreg23_1_1Vec.html#a5972b5e78920fdf94df28dce8cd30818',1,'reg23::Vec']]],
+  ['totensor_20',['ToTensor',['../classreg23_1_1Vec.html#ac7321309edcb14fb5b1db21962ff0510',1,'reg23::Vec']]],
   ['types_21',['Texture-Related Types',['../group__textures.html',1,'']]]
 ];
