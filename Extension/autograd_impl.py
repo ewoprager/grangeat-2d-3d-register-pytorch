@@ -21,7 +21,7 @@ class ProjectDRR(torch.autograd.Function):
         """
         :param ctx:
         :param d_loss_d_drr: tensor of size (drr_height, drr_width); the derivative of the loss w.r.t. the DRR
-        :return: tensor of size (
+        :return: tensor of size (4, 4): the derivative of the loss w.r.t. the inverse homography matrix
         """
         (homography_matrix_inverse, volume, voxel_spacing, output_offset, detector_spacing) = ctx.saved_tensors
         source_distance = ctx.source_distance

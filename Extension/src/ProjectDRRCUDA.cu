@@ -71,24 +71,11 @@ __global__ void Kernel_ProjectDRR_backward_CUDA(Texture3DCUDA volume, double sou
 	extern __shared__ float buffer[];
 
 	const int64_t threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
-	const long index = threadIdx.x * 16;
+	const long bufferStart = threadIdx.x * 16;
 	if (threadIndex >= outputSize.X() * outputSize.Y()) {
-		buffer[index] = 0.f;
-		buffer[index + 1] = 0.f;
-		buffer[index + 2] = 0.f;
-		buffer[index + 3] = 0.f;
-		buffer[index + 4] = 0.f;
-		buffer[index + 5] = 0.f;
-		buffer[index + 6] = 0.f;
-		buffer[index + 7] = 0.f;
-		buffer[index + 8] = 0.f;
-		buffer[index + 9] = 0.f;
-		buffer[index + 10] = 0.f;
-		buffer[index + 11] = 0.f;
-		buffer[index + 12] = 0.f;
-		buffer[index + 13] = 0.f;
-		buffer[index + 14] = 0.f;
-		buffer[index + 15] = 0.f;
+		for (int k = 0; k < 16; ++k) {
+			buffer[bufferStart + k] = 0.f;
+		}
 		return;
 	}
 
@@ -115,64 +102,25 @@ __global__ void Kernel_ProjectDRR_backward_CUDA(Texture3DCUDA volume, double sou
 	const Vec<Vec<double, 4>, 4> dLossDHomographyMatrixInverseThisKernelInstance =
 		static_cast<double>(dLossDDRRFlatPtr[threadIndex]) * dIntensityDHomographyMatrixInverse * stepSize;
 
-	buffer[index] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[0][0]);
-	buffer[index + 1] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[0][1]);
-	buffer[index + 2] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[0][2]);
-	buffer[index + 3] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[0][3]);
-	buffer[index + 4] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[1][0]);
-	buffer[index + 5] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[1][1]);
-	buffer[index + 6] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[1][2]);
-	buffer[index + 7] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[1][3]);
-	buffer[index + 8] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[2][0]);
-	buffer[index + 9] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[2][1]);
-	buffer[index + 10] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[2][2]);
-	buffer[index + 11] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[2][3]);
-	buffer[index + 12] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[3][0]);
-	buffer[index + 13] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[3][1]);
-	buffer[index + 14] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[3][2]);
-	buffer[index + 15] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[3][3]);
+	for (int k = 0; k < 16; ++k) {
+		buffer[bufferStart + k] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[k / 4][k % 4]);
+	}
 
 	for (long cutoff = blockDim.x / 2; cutoff > 0; cutoff /= 2) {
 		if (threadIdx.x < cutoff) {
-			const long sumWith = index + cutoff * 16;
-			buffer[index] += buffer[sumWith];
-			buffer[index + 1] += buffer[sumWith + 1];
-			buffer[index + 2] += buffer[sumWith + 2];
-			buffer[index + 3] += buffer[sumWith + 3];
-			buffer[index + 4] += buffer[sumWith + 4];
-			buffer[index + 5] += buffer[sumWith + 5];
-			buffer[index + 6] += buffer[sumWith + 6];
-			buffer[index + 7] += buffer[sumWith + 7];
-			buffer[index + 8] += buffer[sumWith + 8];
-			buffer[index + 9] += buffer[sumWith + 9];
-			buffer[index + 10] += buffer[sumWith + 10];
-			buffer[index + 11] += buffer[sumWith + 11];
-			buffer[index + 12] += buffer[sumWith + 12];
-			buffer[index + 13] += buffer[sumWith + 13];
-			buffer[index + 14] += buffer[sumWith + 14];
-			buffer[index + 15] += buffer[sumWith + 15];
+			const long sumWith = bufferStart + cutoff * 16;
+			for (int k = 0; k < 16; ++k) {
+				buffer[bufferStart + k] += buffer[sumWith + k];
+			}
 		}
 
 		__syncthreads();
 	}
 
 	if (threadIdx.x == 0) {
-		blockSumsArray[16 * blockIdx.x] = buffer[0];
-		blockSumsArray[16 * blockIdx.x + 1] = buffer[1];
-		blockSumsArray[16 * blockIdx.x + 2] = buffer[2];
-		blockSumsArray[16 * blockIdx.x + 3] = buffer[3];
-		blockSumsArray[16 * blockIdx.x + 4] = buffer[4];
-		blockSumsArray[16 * blockIdx.x + 5] = buffer[5];
-		blockSumsArray[16 * blockIdx.x + 6] = buffer[6];
-		blockSumsArray[16 * blockIdx.x + 7] = buffer[7];
-		blockSumsArray[16 * blockIdx.x + 8] = buffer[8];
-		blockSumsArray[16 * blockIdx.x + 9] = buffer[9];
-		blockSumsArray[16 * blockIdx.x + 10] = buffer[10];
-		blockSumsArray[16 * blockIdx.x + 11] = buffer[11];
-		blockSumsArray[16 * blockIdx.x + 12] = buffer[12];
-		blockSumsArray[16 * blockIdx.x + 13] = buffer[13];
-		blockSumsArray[16 * blockIdx.x + 14] = buffer[14];
-		blockSumsArray[16 * blockIdx.x + 15] = buffer[15];
+		for (int k = 0; k < 16; ++k) {
+			blockSumsArray[16 * blockIdx.x + k] = buffer[k];
+		}
 	}
 }
 

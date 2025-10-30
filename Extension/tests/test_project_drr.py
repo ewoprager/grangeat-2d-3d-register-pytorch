@@ -132,9 +132,9 @@ def test_project_drr_autograd():
                                    torch.zeros(2, dtype=torch.float64), detector_spacing)
         assert res.size() == output_size
 
-        loss_grad = torch.zeros_like(res)
-        loss_grad[5, 7] = 1.0
-        res.backward(loss_grad)
+        # loss_grad = torch.zeros_like(res)
+        # loss_grad[5, 7] = 1.0
+        res.backward(torch.ones_like(res))
         print(h_matrix_inv.grad)
         axes[device_index].imshow(res.detach().cpu().numpy())
         axes[device_index].set_title(device_name)
@@ -149,7 +149,7 @@ def test_project_drr_autograd():
                 h_matrix_inv2 = torch.eye(4, device=device) + delta
                 res2 = autograd.project_drr(h_matrix_inv2, volume, voxel_spacing, source_distance, output_size[1],
                                             output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing)
-                out[i, j] = (res2[5, 7] - res[5, 7]) / epsilon
+                out[i, j] = (res2.sum() - res.sum()) / epsilon
         print(out)
         # assert h_matrix_inv.grad == pytest.approx(out.detach().cpu(), abs=0.001, rel=0.01)
     plt.show()
