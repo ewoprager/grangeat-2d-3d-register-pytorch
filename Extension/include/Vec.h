@@ -151,8 +151,9 @@ public:
 	/**
 	 * @brief Convert to an `at::Tensor`
 	 */
-	__host__ [[nodiscard]] at::Tensor ToTensor(at::TensorOptions options = {}) const {
-		return torch::from_blob(this->data(), {this->size()}, options);
+	__host__ [[nodiscard]] at::Tensor ToTensor(at::TensorOptions options = {}, bool nonOwning = false) const {
+		const at::Tensor retNonOwning = torch::from_blob(this->data(), {this->size()}, options);
+		return nonOwning ? retNonOwning : retNonOwning.clone();
 	}
 
 	/**
@@ -343,8 +344,7 @@ public:
 	/**
 	 * @brief Element-wise addition of a scalar
 	 */
-	template <typename scalar_t>
-	__host__ __device__ Vec &operator+=(const scalar_t &scalar) {
+	template <typename scalar_t> __host__ __device__ Vec &operator+=(const scalar_t &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] += scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
@@ -364,8 +364,7 @@ public:
 	/**
 	 * @brief Element-wise subtraction of a scalar
 	 */
-	template <typename scalar_t>
-	__host__ __device__ Vec &operator-=(const scalar_t &scalar) {
+	template <typename scalar_t> __host__ __device__ Vec &operator-=(const scalar_t &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] -= scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
@@ -385,8 +384,7 @@ public:
 	/**
 	 * @brief Element-wise multiplication by a scalar
 	 */
-	template <typename scalar_t>
-	__host__ __device__ Vec &operator*=(const scalar_t &scalar) {
+	template <typename scalar_t> __host__ __device__ Vec &operator*=(const scalar_t &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] *= scalar; }(), ...);
 		}(std::make_index_sequence<N>{});
@@ -406,8 +404,7 @@ public:
 	/**
 	 * @brief Element-wise division by a scalar
 	 */
-	template <typename scalar_t>
-	__host__ __device__ Vec &operator/=(const scalar_t &scalar) {
+	template <typename scalar_t> __host__ __device__ Vec &operator/=(const scalar_t &scalar) {
 		[&]<std::size_t... indices>(std::index_sequence<indices...>) {
 			([&] { (*this)[indices] /= scalar; }(), ...);
 		}(std::make_index_sequence<N>{});

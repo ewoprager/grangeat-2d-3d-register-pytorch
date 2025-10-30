@@ -47,8 +47,8 @@ __global__ void Kernel_NormalisedCrossCorrelation_CUDA(long numel, const float *
 	}
 }
 
-int blockSizeToDynamicSMemSize(int blockSize) {
-	return 5 * blockSize * sizeof(float);
+int blockSizeToDynamicSMemSize_NormalisedCrossCorrelation_CUDA(int blockSize) {
+	return 5 * blockSize * static_cast<int>(sizeof(float));
 }
 
 __host__ at::Tensor NormalisedCrossCorrelation_CUDA(const at::Tensor &a, const at::Tensor &b) {
@@ -61,9 +61,9 @@ __host__ at::Tensor NormalisedCrossCorrelation_CUDA(const at::Tensor &a, const a
 
 	int minGridSize, blockSize;
 	cudaOccupancyMaxPotentialBlockSizeVariableSMem(&minGridSize, &blockSize, &Kernel_NormalisedCrossCorrelation_CUDA,
-	                                               &blockSizeToDynamicSMemSize, 0);
+	                                               &blockSizeToDynamicSMemSize_NormalisedCrossCorrelation_CUDA, 0);
 
-	const size_t bufferSize = blockSizeToDynamicSMemSize(blockSize);
+	const size_t bufferSize = blockSizeToDynamicSMemSize_NormalisedCrossCorrelation_CUDA(blockSize);
 	const int gridSize = (static_cast<int>(a.numel()) + blockSize - 1) / blockSize;
 
 	// stores the sums for each kernel block of a, b, a^2, b^2 and a*b (which is why the last dimension is 5)

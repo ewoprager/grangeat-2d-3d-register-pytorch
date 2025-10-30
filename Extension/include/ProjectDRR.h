@@ -57,6 +57,15 @@ at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &v
                                    const at::Tensor &detectorSpacing, const at::Tensor &dLossDDRR);
 
 /**
+ * @ingroup pytorch_functions
+ * @brief An implementation of reg23::ProjectDRR_backward_CPU that uses CUDA parallelisation.
+ */
+__host__ at::Tensor ProjectDRR_backward_CUDA(const at::Tensor &volume, const at::Tensor &voxelSpacing,
+                                             const at::Tensor &homographyMatrixInverse, double sourceDistance,
+                                             int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
+                                             const at::Tensor &detectorSpacing, const at::Tensor &dLossDDRR);
+
+/**
  * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
  *
  * This struct is used as a namespace for code that is shared between different implementations of `ProjectDRR_...`

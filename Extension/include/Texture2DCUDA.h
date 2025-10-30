@@ -75,6 +75,10 @@ public:
 			                  float>(textureHandle, texCoord.X(), y0));
 	}
 
+	[[nodiscard]] __device__ VectorType DSampleDTexCoord(const VectorType &texCoord) const {
+		return {DSampleDX(texCoord), DSampleDY(texCoord)};
+	}
+
 private:
 	cudaTextureObject_t textureHandle = 0;
 	std::shared_ptr<CUDATexture2D> ownedTexture = nullptr;

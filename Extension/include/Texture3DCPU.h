@@ -149,6 +149,50 @@ public:
 		return sizeF.Z() * ((1.f - fVertical) * r0 + fVertical * r1);
 	}
 
+	/**
+	 * @param texCoord The texture coordinates at which to sample the texture
+	 * @return The derivative of the sample from this texture at the given texture coordinates using trilinear
+	 * interpolation, with respect to the texture coordinate.
+	 */
+	[[nodiscard]] __host__ __device__ VectorType DSampleDTexCoord(VectorType texCoord) const {
+		const VectorType sizeF = Size().StaticCast<double>();
+		texCoord = texCoord * sizeF - .5;
+		const VectorType floored = texCoord.Apply<double>(&floor);
+		const SizeType index = floored.StaticCast<int64_t>();
+		const float fHorizontal = texCoord.X() - floored.X();
+		const float fVertical = texCoord.Y() - floored.Y();
+		const float fInward = texCoord.Z() - floored.Z();
+
+		// x-direction
+		const float x0 = (1.f - fVertical) * (At({index.X() + 1, index.Y(), index.Z()}) - At(index)) + fVertical * (
+			                 At({index.X() + 1, index.Y() + 1, index.Z()}) - At({index.X(), index.Y() + 1, index.Z()}));
+		const float x1 = (1.f - fVertical) * (At({index.X() + 1, index.Y(), index.Z() + 1}) -
+		                                      At({index.X(), index.Y(), index.Z() + 1})) + fVertical * (
+			                 At({index.X() + 1, index.Y() + 1, index.Z() + 1}) - At(
+				                 {index.X(), index.Y() + 1, index.Z() + 1}));
+
+		// y-direction
+		const float y0 = (1.f - fHorizontal) * (At({index.X(), index.Y() + 1, index.Z()}) - At(index)) + fHorizontal * (
+			                 At({index.X() + 1, index.Y() + 1, index.Z()}) - At({index.X() + 1, index.Y(), index.Z()}));
+		const float y1 = (1.f - fHorizontal) * (At({index.X(), index.Y() + 1, index.Z() + 1}) -
+		                                        At({index.X(), index.Y(), index.Z() + 1})) + fHorizontal * (
+			                 At({index.X() + 1, index.Y() + 1, index.Z() + 1}) - At(
+				                 {index.X() + 1, index.Y(), index.Z() + 1}));
+
+		// z-direction
+
+		const float z0 = (1.f - fHorizontal) * (At({index.X(), index.Y(), index.Z() + 1}) - At(index)) + fHorizontal * (
+			                 At({index.X() + 1, index.Y(), index.Z() + 1}) - At({index.X() + 1, index.Y(), index.Z()}));
+		const float z1 = (1.f - fHorizontal) * (At({index.X(), index.Y() + 1, index.Z() + 1}) -
+		                                        At({index.X(), index.Y() + 1, index.Z()})) + fHorizontal * (
+			                 At({index.X() + 1, index.Y() + 1, index.Z() + 1}) - At(
+				                 {index.X() + 1, index.Y() + 1, index.Z()}));
+
+		return {sizeF.X() * ((1.f - fInward) * x0 + fInward * x1), //
+		        sizeF.Y() * ((1.f - fInward) * y0 + fInward * y1), //
+		        sizeF.Z() * ((1.f - fVertical) * z0 + fVertical * z1)};
+	}
+
 private:
 	const float *ptr{}; ///< The pointer to the data this texture provides access to
 	AddressModeType addressModes{}; ///< The address mode of the texture for each dimension

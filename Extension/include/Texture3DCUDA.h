@@ -89,6 +89,14 @@ public:
 			                 textureHandle, texCoord.X(), texCoord.Y(), z0));
 	}
 
+	[[nodiscard]] __device__ static VectorType DSampleDTexCoord(const SizeType &volumeSize,
+	                                                            cudaTextureObject_t textureHandle,
+	                                                            const VectorType &texCoord) {
+		return {DSampleDX(volumeSize.X(), textureHandle, texCoord), //
+		        DSampleDY(volumeSize.Y(), textureHandle, texCoord), //
+		        DSampleDZ(volumeSize.Z(), textureHandle, texCoord)};
+	}
+
 	[[nodiscard]] __device__ float DSampleDX(const VectorType &texCoord) const {
 		return DSampleDX(Size().X(), textureHandle, texCoord);
 	}
@@ -99,6 +107,10 @@ public:
 
 	[[nodiscard]] __device__ float DSampleDZ(const VectorType &texCoord) const {
 		return DSampleDZ(Size().Z(), textureHandle, texCoord);
+	}
+
+	[[nodiscard]] __device__ VectorType DSampleDTexCoord(const VectorType &texCoord) const {
+		return DSampleDTexCoord(Size(), textureHandle, texCoord);
 	}
 
 private:

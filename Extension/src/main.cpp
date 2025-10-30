@@ -94,6 +94,7 @@ TORCH_LIBRARY_IMPL(reg23, CUDA, m) {
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CUDA);
 	m.impl("grid_sample3d", &GridSample3D_CUDA);
 	m.impl("project_drr", &ProjectDRR_CUDA);
+	m.impl("project_drr_backward", &ProjectDRR_backward_CUDA);
 	m.impl("project_drr_cuboid_mask", &ProjectDRRCuboidMask_CUDA);
 }
 #endif

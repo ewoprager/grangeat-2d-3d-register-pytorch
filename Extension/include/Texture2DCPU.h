@@ -107,6 +107,25 @@ public:
 			                    At({index.X() + 1, index.Y() + 1}) - At({index.X() + 1, index.Y()})));
 	}
 
+	/**
+	 * @param texCoord The texture coordinates at which to sample the texture
+	 * @return The derivative of the sample from this texture at the given texture coordinates using bilinear
+	 * interpolation, with respect to the texture coordinate.
+	 */
+	[[nodiscard]] __host__ __device__ VectorType DSampleDTexCoord(VectorType texCoord) const {
+		const VectorType sizeF = Size().StaticCast<double>();
+		texCoord = texCoord * sizeF - .5;
+		const VectorType floored = texCoord.Apply<double>(&floor);
+		const SizeType index = floored.StaticCast<int64_t>();
+		const float fHorizontal = texCoord.X() - floored.X();
+		const float fVertical = texCoord.Y() - floored.Y();
+		return {
+			sizeF.X() * ((1.f - fVertical) * (At({index.X() + 1, index.Y()}) - At(index)) + fVertical * (
+				             At({index.X() + 1, index.Y() + 1}) - At({index.X(), index.Y() + 1}))), //
+			sizeF.Y() * ((1.f - fHorizontal) * (At({index.X(), index.Y() + 1}) - At(index)) + fHorizontal * (
+				             At({index.X() + 1, index.Y() + 1}) - At({index.X() + 1, index.Y()})))};
+	}
+
 private:
 	const float *ptr{}; ///< The pointer to the data this texture provides access to
 	AddressModeType addressModes{}; ///< The address mode of the texture for each dimension

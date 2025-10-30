@@ -104,32 +104,41 @@ import matplotlib.pyplot as plt
 
 
 def test_project_drr_autograd():
-    input_ = torch.rand((11, 12, 8))
-    voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
-    h_matrix_inv = torch.eye(4)
-    h_matrix_inv.requires_grad = True
-    source_distance = 1000.0
-    output_size = torch.Size([10, 15])
-    detector_spacing = torch.tensor([0.2, 0.25])
-    res = autograd.project_drr(h_matrix_inv, input_, voxel_spacing, source_distance, output_size[1], output_size[0],
-                               torch.zeros(2, dtype=torch.float64), detector_spacing)
-    assert res.size() == output_size
+    devices = ["cpu"]
+    if torch.cuda.is_available():
+        devices.append("cuda")
 
-    # loss_grad = torch.zeros_like(res)
-    # loss_grad[5, 7] = 1.0
-    res.backward(torch.ones_like(res))
-    print(h_matrix_inv.grad)
-    plt.imshow(res.detach().cpu().numpy())
-    plt.show()
-    epsilon = 1.0e-4
-    print("epsilon =", epsilon)
-    out = torch.empty_like(h_matrix_inv.detach())
-    for j in range(4):
-        for i in range(4):
-            delta = torch.zeros((4, 4))
-            delta[j, i] = epsilon
-            h_matrix_inv2 = torch.eye(4) + delta
-            res2 = autograd.project_drr(h_matrix_inv2, input_, voxel_spacing, source_distance, output_size[1],
-                                        output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing)
-            out[j, i] = (res2.sum() - res.sum()) / epsilon
-    print(out)
+    for device_name in devices:
+        print(device_name)
+        device = torch.device(device_name)
+        input_ = torch.rand((11, 12, 8), device=device)
+        voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
+        h_matrix_inv = torch.eye(4, device=device)
+        h_matrix_inv.requires_grad = True
+        source_distance = 1000.0
+        output_size = torch.Size([10, 15])
+        detector_spacing = torch.tensor([0.2, 0.25])
+        res = autograd.project_drr(h_matrix_inv, input_, voxel_spacing, source_distance, output_size[1], output_size[0],
+                                   torch.zeros(2, dtype=torch.float64), detector_spacing)
+        assert res.size() == output_size
+
+        loss_grad = torch.zeros_like(res)
+        loss_grad[5, 7] = 1.0
+        res.backward(loss_grad)
+        print(h_matrix_inv.grad)
+        plt.imshow(res.detach().cpu().numpy())
+        plt.show()
+        epsilon = 1.0e-4
+        print("epsilon =", epsilon)
+        out = torch.empty_like(h_matrix_inv)
+        out.requires_grad = False
+        for j in range(4):
+            for i in range(4):
+                delta = torch.zeros((4, 4), device=device)
+                delta[j, i] = epsilon
+                h_matrix_inv2 = torch.eye(4, device=device) + delta
+                res2 = autograd.project_drr(h_matrix_inv2, input_, voxel_spacing, source_distance, output_size[1],
+                                            output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing)
+                out[i, j] = (res2[5, 7] - res[5, 7]) / epsilon
+        print(out)
+        # assert h_matrix_inv.grad == pytest.approx(out.detach().cpu(), abs=0.001, rel=0.01)

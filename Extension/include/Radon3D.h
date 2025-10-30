@@ -250,8 +250,7 @@ template <typename texture_t> struct Radon3D {
 				const FloatType iF = static_cast<FloatType>(i);
 				const FloatType jF = static_cast<FloatType>(j);
 				const VectorType texCoord = mappingIndexToTexCoord(VectorType::Full(iF), VectorType::Full(jF));
-				ret += texture.DSampleDX(texCoord) * dTexCoordDMappingParameter.X() + texture.DSampleDY(texCoord) *
-					dTexCoordDMappingParameter.Y() + texture.DSampleDZ(texCoord) * dTexCoordDMappingParameter.Z();
+				ret += VecDot(texture.DSampleDTexCoord(texCoord), dTexCoordDMappingParameter);
 			}
 		}
 		return ret;

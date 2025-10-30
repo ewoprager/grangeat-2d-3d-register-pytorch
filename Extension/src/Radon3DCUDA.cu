@@ -223,12 +223,10 @@ __global__ void Kernel_DRadon3DDR_CUDA_V2(Linear2<Vec<double, 3> > mappingIndexT
 
 	const Vec<double, 3> texCoord = mappingIndexToTexCoord(Vec<double, 3>::Full(static_cast<double>(i)),
 	                                                       Vec<double, 3>::Full(static_cast<double>(j)));
-	buffer[threadIdx.y * blockDim.x + threadIdx.x] =
-		Texture3DCUDA::DSampleDX(dRadon3DDRV2Consts.volumeWidth, dRadon3DDRV2Consts.textureHandle, texCoord) *
-		dTexCoordDR.X() +
-		Texture3DCUDA::DSampleDY(dRadon3DDRV2Consts.volumeHeight, dRadon3DDRV2Consts.textureHandle, texCoord) *
-		dTexCoordDR.Y() + Texture3DCUDA::DSampleDZ(dRadon3DDRV2Consts.volumeDepth, dRadon3DDRV2Consts.textureHandle,
-		                                           texCoord) * dTexCoordDR.Z();
+	buffer[threadIdx.y * blockDim.x + threadIdx.x] = VecDot(
+		Texture3DCUDA::DSampleDTexCoord(
+			{dRadon3DDRV2Consts.volumeWidth, dRadon3DDRV2Consts.volumeHeight, dRadon3DDRV2Consts.volumeDepth},
+			dRadon3DDRV2Consts.textureHandle, texCoord), dTexCoordDR);
 
 	__syncthreads();
 

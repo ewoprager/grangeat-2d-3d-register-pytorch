@@ -52,7 +52,7 @@ at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &v
 	                                                     outputOffset, detectorSpacing, at::DeviceType::CPU);
 	const Linear<Texture3DCPU::VectorType> mappingWorldToTexCoord = common.inputTexture.MappingWorldToTexCoord();
 
-	Vec<Vec<float, 4>, 4> dLossDHomographyMatrixInverse = Vec<Vec<float, 4>, 4>::Full(Vec<float, 4>::Full(0.f));
+	Vec<Vec<double, 4>, 4> dLossDHomographyMatrixInverse = Vec<Vec<double, 4>, 4>::Full(Vec<double, 4>::Full(0.f));
 	for (int j = 0; j < outputHeight; ++j) {
 		for (int i = 0; i < outputWidth; ++i) {
 			const Vec<double, 2> detectorPosition = common.detectorSpacing * Vec<double, 2>{
@@ -66,26 +66,31 @@ at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &v
 			const Vec<double, 4> start = VecCat(
 				Vec<double, 3>{0.0, 0.0, sourceDistance} + common.lambdaStart * direction, 1.0);
 
-			Vec<Vec<float, 4>, 4> dIntensityDHomographyMatrixInverse = Vec<Vec<float, 4>, 4>::Full(
-				Vec<float, 4>::Full(0.f));
+			Vec<Vec<double, 4>, 4> dIntensityDHomographyMatrixInverse = Vec<Vec<double, 4>, 4>::Full(
+				Vec<double, 4>::Full(0.f));
 			for (int k = 0; k < common.samplesPerRay; ++k) {
 				const Vec<double, 4> samplePointUntransformed = start + static_cast<double>(k) * delta;
 				const Vec<double, 3> samplePoint = MatMul(common.homographyMatrixInverse, samplePointUntransformed).
 					XYZ();
 				const Vec<double, 3> samplePointMapped = mappingWorldToTexCoord(samplePoint);
-				const Vec<float, 3> dSampleDSamplePointMapped = {common.inputTexture.DSampleDX(samplePointMapped),
-				                                                 common.inputTexture.DSampleDY(samplePointMapped),
-				                                                 common.inputTexture.DSampleDZ(samplePointMapped)};
 				dIntensityDHomographyMatrixInverse += VecOuter(
-					VecCat(mappingWorldToTexCoord.gradient.StaticCast<float>() * dSampleDSamplePointMapped, 0.f),
-					samplePointUntransformed.StaticCast<float>());
+					VecCat(
+						mappingWorldToTexCoord.gradient * common.inputTexture.DSampleDTexCoord(samplePointMapped).
+						StaticCast<double>(), 0.0), samplePointUntransformed);
 			}
 			dIntensityDHomographyMatrixInverse *= common.stepSize;
-			dLossDHomographyMatrixInverse += dLossDDRR[j][i].item<float>() * dIntensityDHomographyMatrixInverse;
+			dLossDHomographyMatrixInverse += static_cast<double>(dLossDDRR[j][i].item<float>()) *
+				dIntensityDHomographyMatrixInverse;
 		}
 	}
-	return torch::from_blob(dLossDHomographyMatrixInverse.data(), {4, 4},
-	                        torch::TensorOptions{}.dtype(torch::kFloat32).device(homographyMatrixInverse.device()));
+	Vec<float, 16> floatOutput = VecCat( //
+		VecCat(dLossDHomographyMatrixInverse[0].StaticCast<float>(),
+		       dLossDHomographyMatrixInverse[1].StaticCast<float>()), //
+		VecCat(dLossDHomographyMatrixInverse[2].StaticCast<float>(),
+		       dLossDHomographyMatrixInverse[3].StaticCast<float>()));
+	return torch::from_blob(floatOutput.data(), {4, 4},
+	                        torch::TensorOptions{}.dtype(torch::kFloat).device(homographyMatrixInverse.device())).
+		clone(); // need to clone as `from_blob` returns a non-owning tensor
 }
 
 } // namespace reg23
