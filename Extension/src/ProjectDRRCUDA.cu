@@ -40,13 +40,13 @@ __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &
                                     int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
                                     const at::Tensor &detectorSpacing) {
 	CommonData common = ProjectDRR<Texture3DCUDA>::Common(volume, voxelSpacing, homographyMatrixInverse, sourceDistance,
-	                                                      outputWidth, outputHeight, outputOffset, detectorSpacing,
-	                                                      at::DeviceType::CUDA);
-	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
+	                                                      outputOffset, detectorSpacing, at::DeviceType::CUDA);
+	at::Tensor flatOutput = torch::zeros(at::IntArrayRef({outputWidth * outputHeight}), volume.contiguous().options());
+	float *resultFlatPtr = flatOutput.data_ptr<float>();
 
 	int minGridSize, blockSize;
 	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_ProjectDRR_CUDA, 0, 0);
-	const int gridSize = (static_cast<int>(common.flatOutput.numel()) + blockSize - 1) / blockSize;
+	const int gridSize = (static_cast<int>(flatOutput.numel()) + blockSize - 1) / blockSize;
 	Kernel_ProjectDRR_CUDA<<<gridSize, blockSize>>>(std::move(common.inputTexture), sourceDistance, common.lambdaStart,
 	                                                common.stepSize, common.samplesPerRay,
 	                                                common.homographyMatrixInverse,
@@ -54,7 +54,7 @@ __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &
 	                                                common.detectorSpacing, Vec<int64_t, 2>{outputWidth, outputHeight},
 	                                                common.outputOffset, resultFlatPtr);
 
-	return common.flatOutput.view(at::IntArrayRef{outputHeight, outputWidth});
+	return flatOutput.view(at::IntArrayRef{outputHeight, outputWidth});
 }
 
 } // namespace reg23

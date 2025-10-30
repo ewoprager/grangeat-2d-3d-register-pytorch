@@ -38,6 +38,25 @@ __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &
                                     const at::Tensor &detectorSpacing);
 
 /**
+ * @ingroup pytorch_functions
+ * @brief Evaluate the derivative of some scalar loss that is a function of a DRR projected from the given volume at the given transformation, with respect to the inverse homography matrix.
+ * @param volume a tensor of size (P,Q,R): The CT volume through which to project the DRR
+ * @param voxelSpacing a tensor of size (3,): The spacing in [mm] between the volume layers in each cartesian direction
+ * @param homographyMatrixInverse a tensor of size (4, 4): The **column-major** matrix representing the homography transformation of the volume.
+ * @param sourceDistance The distance in [mm] of the source from the detector array
+ * @param outputWidth The width in pixels of the DRR to generate.
+ * @param outputHeight The height in pixels of the DRR to generate.
+ * @param outputOffset a tensor of size (2,) containing `torch.float64`s: The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array.
+ * @param detectorSpacing a tensor of size (2,): The spacing in [mm] between the columns and rows of the DRR image.
+ * @param dLossDDRR a tensor of size (outputHeight, outputWidth): The derivative of the loss w.r.t. the projected DRR image
+ * @return tensor of size (4, 4): The derivative of the loss w.r.t. the inverse homography matrix
+ */
+at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &voxelSpacing,
+                                   const at::Tensor &homographyMatrixInverse, double sourceDistance,
+                                   int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
+                                   const at::Tensor &detectorSpacing, const at::Tensor &dLossDDRR);
+
+/**
  * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
  *
  * This struct is used as a namespace for code that is shared between different implementations of `ProjectDRR_...`
@@ -61,14 +80,12 @@ template <typename texture_t> struct ProjectDRR {
 		double lambdaStart{};
 		FloatType stepSize{};
 		int64_t samplesPerRay{};
-		at::Tensor flatOutput{};
 	};
 
 	__host__ static CommonData Common(const at::Tensor &volume, const at::Tensor &voxelSpacing,
 	                                  const at::Tensor &homographyMatrixInverse, double sourceDistance,
-	                                  int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
-	                                  const at::Tensor &detectorSpacing, at::DeviceType device,
-	                                  std::optional<int64_t> samplesPerRay = std::nullopt) {
+	                                  const at::Tensor &outputOffset, const at::Tensor &detectorSpacing,
+	                                  at::DeviceType device, std::optional<int64_t> samplesPerRay = std::nullopt) {
 		// volume should be a 3D tensor of floats on the chosen device
 		TORCH_CHECK(volume.sizes().size() == 3);
 		TORCH_CHECK(volume.dtype() == at::kFloat);
@@ -104,29 +121,8 @@ template <typename texture_t> struct ProjectDRR {
 		ret.samplesPerRay = samplesPerRayValue;
 		ret.outputOffset = Vec<double, 2>::FromTensor(outputOffset);
 		ret.detectorSpacing = Vec<double, 2>::FromTensor(detectorSpacing);
-		ret.flatOutput = torch::zeros(at::IntArrayRef({outputWidth * outputHeight}), volume.contiguous().options());
 		return ret;
 	}
 };
-
-/**
- *
- * @param volume
- * @param voxelSpacing
- * @param homographyMatrixInverse a tensor of size (4, 4): The **column-major** matrix representing the homography transformation of the volume.
- * @param sourceDistance
- * @param outputWidth
- * @param outputHeight
- * @param outputOffset
- * @param detectorSpacing
- * @param dLossDDRR a tensor of size (outputHeight, outputWidth): The derivative of the loss w.r.t. the projected DRR image
- * @return tensor of size (4, 4): The derivative of the loss w.r.t. the inverse homography matrix
- *
- * Note: This function does not take the original value of the inverse homography matrix as a parameter, as the
- */
-at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &voxelSpacing,
-                                   const at::Tensor &homographyMatrixInverse, double sourceDistance,
-                                   int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
-                                   const at::Tensor &detectorSpacing, const at::Tensor &dLossDDRR);
 
 } // namespace reg23

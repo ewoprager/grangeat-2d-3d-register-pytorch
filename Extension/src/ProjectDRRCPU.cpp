@@ -11,10 +11,11 @@ at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpaci
                           const at::Tensor &homographyMatrixInverse, double sourceDistance, int64_t outputWidth,
                           int64_t outputHeight, const at::Tensor &outputOffset, const at::Tensor &detectorSpacing) {
 	const CommonData common = ProjectDRR<Texture3DCPU>::Common(volume, voxelSpacing, homographyMatrixInverse,
-	                                                           sourceDistance, outputWidth, outputHeight, outputOffset,
-	                                                           detectorSpacing, at::DeviceType::CPU);
+	                                                           sourceDistance, outputOffset, detectorSpacing,
+	                                                           at::DeviceType::CPU);
 	const Linear<Texture3DCPU::VectorType> mappingWorldToTexCoord = common.inputTexture.MappingWorldToTexCoord();
-	float *resultFlatPtr = common.flatOutput.data_ptr<float>();
+	at::Tensor flatOutput = torch::zeros(at::IntArrayRef({outputWidth * outputHeight}), volume.contiguous().options());
+	float *resultFlatPtr = flatOutput.data_ptr<float>();
 
 	for (int j = 0; j < outputHeight; ++j) {
 		for (int i = 0; i < outputWidth; ++i) {
@@ -40,7 +41,7 @@ at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpaci
 		}
 	}
 
-	return common.flatOutput.view(at::IntArrayRef{outputHeight, outputWidth});
+	return flatOutput.view(at::IntArrayRef{outputHeight, outputWidth});
 }
 
 at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &voxelSpacing,
@@ -48,11 +49,8 @@ at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &v
                                    int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
                                    const at::Tensor &detectorSpacing, const at::Tensor &dLossDDRR) {
 	CommonData common = ProjectDRR<Texture3DCPU>::Common(volume, voxelSpacing, homographyMatrixInverse, sourceDistance,
-	                                                     outputWidth, outputHeight, outputOffset, detectorSpacing,
-	                                                     at::DeviceType::CPU);
+	                                                     outputOffset, detectorSpacing, at::DeviceType::CPU);
 	const Linear<Texture3DCPU::VectorType> mappingWorldToTexCoord = common.inputTexture.MappingWorldToTexCoord();
-
-	// ToDo: make a new 'Common' function for the backward pass; I don't use the `flatOutput` field
 
 	Vec<Vec<float, 4>, 4> dLossDHomographyMatrixInverse = Vec<Vec<float, 4>, 4>::Full(Vec<float, 4>::Full(0.f));
 	for (int j = 0; j < outputHeight; ++j) {
@@ -74,18 +72,20 @@ at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &v
 				const Vec<double, 4> samplePointUntransformed = start + static_cast<double>(k) * delta;
 				const Vec<double, 3> samplePoint = MatMul(common.homographyMatrixInverse, samplePointUntransformed).
 					XYZ();
+				const Vec<double, 3> samplePointMapped = mappingWorldToTexCoord(samplePoint);
+				const Vec<float, 3> dSampleDSamplePointMapped = {common.inputTexture.DSampleDX(samplePointMapped),
+				                                                 common.inputTexture.DSampleDY(samplePointMapped),
+				                                                 common.inputTexture.DSampleDZ(samplePointMapped)};
 				dIntensityDHomographyMatrixInverse += VecOuter(
-					Vec<float, 4>{common.inputTexture.DSampleDX(mappingWorldToTexCoord(samplePoint)),
-					              common.inputTexture.DSampleDY(mappingWorldToTexCoord(samplePoint)),
-					              common.inputTexture.DSampleDZ(mappingWorldToTexCoord(samplePoint)), 0.f},
+					VecCat(mappingWorldToTexCoord.gradient.StaticCast<float>() * dSampleDSamplePointMapped, 0.f),
 					samplePointUntransformed.StaticCast<float>());
 			}
 			dIntensityDHomographyMatrixInverse *= common.stepSize;
-			dLossDHomographyMatrixInverse += dLossDDRR[j][i].item<float>() * dLossDHomographyMatrixInverse;
+			dLossDHomographyMatrixInverse += dLossDDRR[j][i].item<float>() * dIntensityDHomographyMatrixInverse;
 		}
 	}
-
-	return torch::from_blob(dLossDHomographyMatrixInverse.data(), {4, 4});
+	return torch::from_blob(dLossDHomographyMatrixInverse.data(), {4, 4},
+	                        torch::TensorOptions{}.dtype(torch::kFloat32).device(homographyMatrixInverse.device()));
 }
 
 } // namespace reg23
