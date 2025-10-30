@@ -13,12 +13,18 @@ def test_project_drr():
     detector_spacing = torch.tensor([0.2, 0.25])
     res = project_drr(input_, voxel_spacing, h_matrix_inv, source_distance, output_size[1], output_size[0],
                       torch.zeros(2, dtype=torch.float64), detector_spacing)
+    # fig, axes = plt.subplots(1, 2)
+    # axes[0].imshow(res.cpu().numpy())
+    # axes[0].set_title("cpu")
     assert res.size() == output_size
     if torch.cuda.is_available():
         res_cuda = project_drr(input_.cuda(), voxel_spacing.cuda(), h_matrix_inv.cuda(), source_distance,
                                output_size[1], output_size[0], torch.zeros(2, dtype=torch.float64),
                                detector_spacing.cuda())
+        # axes[1].imshow(res_cuda.cpu().numpy())
+        # axes[1].set_title("cuda")
         assert res == pytest.approx(res_cuda.cpu(), abs=0.01)
+    plt.show()
 
     # input must be 3D, so these should raise a runtime error
     input_ = torch.rand((11, 12, 8, 5))
@@ -108,17 +114,21 @@ def test_project_drr_autograd():
     if torch.cuda.is_available():
         devices.append("cuda")
 
-    for device_name in devices:
+    input_ = torch.rand((11, 12, 8))
+    voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
+    source_distance = 1000.0
+    output_size = torch.Size([10, 15])
+    detector_spacing = torch.tensor([0.2, 0.25])
+
+    fig, axes = plt.subplots(len(devices), 1)
+
+    for device_index, device_name in enumerate(devices):
         print(device_name)
         device = torch.device(device_name)
-        input_ = torch.rand((11, 12, 8), device=device)
-        voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
+        volume = input_.to(device=device)
         h_matrix_inv = torch.eye(4, device=device)
         h_matrix_inv.requires_grad = True
-        source_distance = 1000.0
-        output_size = torch.Size([10, 15])
-        detector_spacing = torch.tensor([0.2, 0.25])
-        res = autograd.project_drr(h_matrix_inv, input_, voxel_spacing, source_distance, output_size[1], output_size[0],
+        res = autograd.project_drr(h_matrix_inv, volume, voxel_spacing, source_distance, output_size[1], output_size[0],
                                    torch.zeros(2, dtype=torch.float64), detector_spacing)
         assert res.size() == output_size
 
@@ -126,8 +136,8 @@ def test_project_drr_autograd():
         loss_grad[5, 7] = 1.0
         res.backward(loss_grad)
         print(h_matrix_inv.grad)
-        plt.imshow(res.detach().cpu().numpy())
-        plt.show()
+        axes[device_index].imshow(res.detach().cpu().numpy())
+        axes[device_index].set_title(device_name)
         epsilon = 1.0e-4
         print("epsilon =", epsilon)
         out = torch.empty_like(h_matrix_inv)
@@ -137,8 +147,9 @@ def test_project_drr_autograd():
                 delta = torch.zeros((4, 4), device=device)
                 delta[j, i] = epsilon
                 h_matrix_inv2 = torch.eye(4, device=device) + delta
-                res2 = autograd.project_drr(h_matrix_inv2, input_, voxel_spacing, source_distance, output_size[1],
+                res2 = autograd.project_drr(h_matrix_inv2, volume, voxel_spacing, source_distance, output_size[1],
                                             output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing)
                 out[i, j] = (res2[5, 7] - res[5, 7]) / epsilon
         print(out)
         # assert h_matrix_inv.grad == pytest.approx(out.detach().cpu(), abs=0.001, rel=0.01)
+    plt.show()
