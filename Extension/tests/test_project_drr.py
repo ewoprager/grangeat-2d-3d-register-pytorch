@@ -120,7 +120,7 @@ def test_project_drr_autograd():
     output_size = torch.Size([10, 15])
     detector_spacing = torch.tensor([0.2, 0.25])
 
-    fig, axes = plt.subplots(len(devices), 1)
+    # fig, axes = plt.subplots(len(devices), 1)
 
     for device_index, device_name in enumerate(devices):
         print(device_name)
@@ -136,8 +136,8 @@ def test_project_drr_autograd():
         # loss_grad[5, 7] = 1.0
         res.backward(torch.ones_like(res))
         print(h_matrix_inv.grad)
-        axes[device_index].imshow(res.detach().cpu().numpy())
-        axes[device_index].set_title(device_name)
+        # axes[device_index].imshow(res.detach().cpu().numpy())
+        # axes[device_index].set_title(device_name)
         epsilon = 1.0e-4
         print("epsilon =", epsilon)
         out = torch.empty_like(h_matrix_inv)
@@ -152,4 +152,4 @@ def test_project_drr_autograd():
                 out[i, j] = (res2.sum() - res.sum()) / epsilon
         print(out)
         # assert h_matrix_inv.grad == pytest.approx(out.detach().cpu(), abs=0.001, rel=0.01)
-    plt.show()
+    # plt.show()
