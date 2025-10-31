@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import torch
 
 from .structs import CUDATexture3D
@@ -70,6 +72,11 @@ if torch.cuda.is_available():
 
 def normalised_cross_correlation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return torch.ops.reg23.normalised_cross_correlation.default(a, b)
+
+
+def normalised_cross_correlation_forward(a: torch.Tensor, b: torch.Tensor) -> Tuple[
+    torch.Tensor, float, float, float, float, float]:
+    return torch.ops.reg23.normalised_cross_correlation_forward.default(a, b)
 
 
 def grid_sample3d(input_: torch.Tensor, grid: torch.Tensor, address_mode_x: str = "zero", address_mode_y: str = "zero",
