@@ -1,7 +1,4 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: Build and test PyTorch extension
+name: Build PyTorch extension and run all tests
 
 on:
   push:
@@ -14,7 +11,6 @@ permissions:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -47,6 +43,9 @@ jobs:
     - name: Build the extension
       working-directory: Extension
       run: uv pip install -e .[cpu]
+
+    - name: Install dependencies
+      run: uv sync
     
     - name: Run the tests
       run: .venv/bin/python -m pytest .
