@@ -58,7 +58,7 @@ __host__ at::Tensor ProjectDRR_CUDA(const at::Tensor &volume, const at::Tensor &
 }
 
 int blockSizeToDynamicSMemSize_ProjectDRR_backward_CUDA(int blockSize) {
-	return 16 * blockSize * static_cast<int>(sizeof(float));
+	return 16 * blockSize * static_cast<int>(sizeof(double));
 }
 
 __global__ void Kernel_ProjectDRR_backward_CUDA(Texture3DCUDA volume, double sourceDistance, double lambdaStart,
@@ -67,14 +67,14 @@ __global__ void Kernel_ProjectDRR_backward_CUDA(Texture3DCUDA volume, double sou
                                                 Linear<Texture3DCUDA::VectorType> mappingWorldToTexCoord,
                                                 Vec<double, 2> detectorSpacing, Vec<int64_t, 2> outputSize,
                                                 Vec<double, 2> outputOffset, const float *dLossDDRRFlatPtr,
-                                                float *blockSumsArray) {
-	extern __shared__ float buffer[];
+                                                double *blockSumsArray) {
+	extern __shared__ double buffer[];
 
 	const int64_t threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	const long bufferStart = threadIdx.x * 16;
 	if (threadIndex >= outputSize.X() * outputSize.Y()) {
 		for (int k = 0; k < 16; ++k) {
-			buffer[bufferStart + k] = 0.f;
+			buffer[bufferStart + k] = 0.0;
 		}
 		return;
 	}
@@ -103,7 +103,7 @@ __global__ void Kernel_ProjectDRR_backward_CUDA(Texture3DCUDA volume, double sou
 		static_cast<double>(dLossDDRRFlatPtr[threadIndex]) * dIntensityDHomographyMatrixInverse * stepSize;
 
 	for (int k = 0; k < 16; ++k) {
-		buffer[bufferStart + k] = static_cast<float>(dLossDHomographyMatrixInverseThisKernelInstance[k / 4][k % 4]);
+		buffer[bufferStart + k] = dLossDHomographyMatrixInverseThisKernelInstance[k / 4][k % 4];
 	}
 
 	for (long cutoff = blockDim.x / 2; cutoff > 0; cutoff /= 2) {
@@ -128,6 +128,11 @@ __host__ at::Tensor ProjectDRR_backward_CUDA(const at::Tensor &volume, const at:
                                              const at::Tensor &homographyMatrixInverse, double sourceDistance,
                                              int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
                                              const at::Tensor &detectorSpacing, const at::Tensor &dLossDDRR) {
+	// dLossDDRR should be of size (outputHeight, outputWidth), contain floats and be on the chosen device
+	TORCH_CHECK(dLossDDRR.sizes() == at::IntArrayRef({outputHeight, outputWidth}));
+	TORCH_CHECK(dLossDDRR.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(dLossDDRR.device().type() == at::DeviceType::CPU);
+
 	CommonData common = ProjectDRR<Texture3DCUDA>::Common(volume, voxelSpacing, homographyMatrixInverse, sourceDistance,
 	                                                      outputOffset, detectorSpacing, at::DeviceType::CUDA);
 
@@ -140,8 +145,8 @@ __host__ at::Tensor ProjectDRR_backward_CUDA(const at::Tensor &volume, const at:
 	const int gridSize = (static_cast<int>(outputHeight * outputWidth) + blockSize - 1) / blockSize;
 
 	const at::Tensor blockSums = torch::zeros(at::IntArrayRef{gridSize, 16},
-	                                          torch::TensorOptions{}.dtype(torch::kFloat).device(volume.device()));
-	float *blockSumsPtr = blockSums.data_ptr<float>();
+	                                          torch::TensorOptions{}.dtype(torch::kDouble).device(volume.device()));
+	double *blockSumsPtr = blockSums.data_ptr<double>();
 
 	Kernel_ProjectDRR_backward_CUDA<<<gridSize, blockSize, bufferSize>>>(std::move(common.inputTexture), sourceDistance,
 	                                                                     common.lambdaStart, common.stepSize,

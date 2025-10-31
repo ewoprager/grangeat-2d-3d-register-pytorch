@@ -110,7 +110,7 @@ import matplotlib.pyplot as plt
 
 
 def test_project_drr_autograd():
-    display = False
+    display = True
 
     devices = ["cpu"]
     if torch.cuda.is_available():
@@ -125,7 +125,6 @@ def test_project_drr_autograd():
         fig, axes = plt.subplots(len(devices), 1)
 
     for device_index, device_name in enumerate(devices):
-        print(device_name)
         device = torch.device(device_name)
         volume = input_.to(device=device)
         h_matrix_inv = torch.eye(4, device=device)
@@ -139,6 +138,7 @@ def test_project_drr_autograd():
         res.backward(torch.ones_like(res))
         epsilon = 1.0e-4
         if display:
+            print(device_name)
             print(h_matrix_inv.grad)
             axes[device_index].imshow(res.detach().cpu().numpy())
             axes[device_index].set_title(device_name)

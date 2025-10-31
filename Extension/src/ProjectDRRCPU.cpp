@@ -48,6 +48,11 @@ at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &v
                                    const at::Tensor &homographyMatrixInverse, double sourceDistance,
                                    int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
                                    const at::Tensor &detectorSpacing, const at::Tensor &dLossDDRR) {
+	// dLossDDRR should be of size (outputHeight, outputWidth), contain floats and be on the chosen device
+	TORCH_CHECK(dLossDDRR.sizes() == at::IntArrayRef({outputHeight, outputWidth}));
+	TORCH_CHECK(dLossDDRR.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(dLossDDRR.device().type() == at::DeviceType::CPU);
+
 	CommonData common = ProjectDRR<Texture3DCPU>::Common(volume, voxelSpacing, homographyMatrixInverse, sourceDistance,
 	                                                     outputOffset, detectorSpacing, at::DeviceType::CPU);
 	const Linear<Texture3DCPU::VectorType> mappingWorldToTexCoord = common.inputTexture.MappingWorldToTexCoord();
@@ -83,13 +88,12 @@ at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &v
 				dIntensityDHomographyMatrixInverse;
 		}
 	}
-	Vec<float, 16> floatOutput = VecCat( //
-		VecCat(dLossDHomographyMatrixInverse[0].StaticCast<float>(),
-		       dLossDHomographyMatrixInverse[1].StaticCast<float>()), //
-		VecCat(dLossDHomographyMatrixInverse[2].StaticCast<float>(),
-		       dLossDHomographyMatrixInverse[3].StaticCast<float>()));
-	return torch::from_blob(floatOutput.data(), {4, 4},
-	                        torch::TensorOptions{}.dtype(torch::kFloat).device(homographyMatrixInverse.device())).
+	Vec<double, 16> output = VecCat(dLossDHomographyMatrixInverse[0], //
+	                                dLossDHomographyMatrixInverse[1], //
+	                                dLossDHomographyMatrixInverse[2], //
+	                                dLossDHomographyMatrixInverse[3]);
+	return torch::from_blob(output.data(), {4, 4},
+	                        torch::TensorOptions{}.dtype(torch::kDouble).device(homographyMatrixInverse.device())).
 		clone(); // need to clone as `from_blob` returns a non-owning tensor
 }
 

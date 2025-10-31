@@ -838,17 +838,19 @@ template <typename T, std::size_t N, typename scalar_t> __host__ __device__ cons
 
 /**
  * @ingroup data_structures
- * @brief reg23::Vec concatenation of two vectors
+ * @brief reg23::Vec concatenation of any number of vectors
  */
-template <typename T, std::size_t N1, std::size_t N2> __host__ __device__ constexpr Vec<T, N1 + N2> VecCat(
-	const Vec<T, N1> &lhs, const Vec<T, N2> &rhs) {
-	Vec<T, N1 + N2> ret;
-	[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-		([&] { ret[indices] = lhs[indices]; }(), ...);
-	}(std::make_index_sequence<N1>{});
-	[&]<std::size_t... indices>(std::index_sequence<indices...>) {
-		([&] { ret[N1 + indices] = rhs[indices]; }(), ...);
-	}(std::make_index_sequence<N2>{});
+template <typename T, std::size_t... Ns> __host__ __device__ constexpr Vec<T, (Ns + ...)> VecCat(
+	const Vec<T, Ns> &... vecs) {
+	Vec<T, (Ns + ...)> ret;
+	std::size_t startIndex = 0;
+	([&] {
+		[&ret, startIndex]<std::size_t N, std::size_t... indices >(std::index_sequence<indices...>,
+		                                                           const Vec<T, N> &vec) {
+			([&] { ret[startIndex + indices] = vec[indices]; }(), ...);
+		}(std::make_index_sequence<Ns>{}, vecs);
+		startIndex += Ns;
+	}(), ...);
 	return ret;
 }
 
@@ -868,7 +870,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1>
 
 /**
  * @ingroup data_structures
- * @brief reg23::Vec concatenation of a vector and a scalar
+ * @brief reg23::Vec concatenation of a scalar and a vector
  */
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1> VecCat(
 	const T &lhs, const Vec<T, N> &rhs) {
