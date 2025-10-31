@@ -70,7 +70,8 @@ __host__ at::Tensor NormalisedCrossCorrelation_CUDA(const at::Tensor &a, const a
 	const int gridSize = (static_cast<int>(a.numel()) + blockSize - 1) / blockSize;
 
 	// stores the sums for each kernel block of a, b, a^2, b^2 and a*b (which is why the last dimension is 5)
-	const at::Tensor blockSums = torch::zeros(at::IntArrayRef({gridSize, 5}), aContiguous.options());
+	const at::Tensor blockSums = torch::zeros(at::IntArrayRef({gridSize, 5}),
+	                                          torch::TensorOptions{}.dtype(torch::kDouble).device(a.device()));
 	double *blockSumsPtr = blockSums.data_ptr<double>();
 
 	Kernel_NormalisedCrossCorrelation_CUDA<<<gridSize, blockSize, bufferSize>>>(a.numel(), aPtr, bPtr, blockSumsPtr);
@@ -100,7 +101,8 @@ __host__ std::tuple<at::Tensor, double, double, double, double, double> Normalis
 	const int gridSize = (static_cast<int>(a.numel()) + blockSize - 1) / blockSize;
 
 	// stores the sums for each kernel block of a, b, a^2, b^2 and a*b (which is why the last dimension is 5)
-	const at::Tensor blockSums = torch::zeros(at::IntArrayRef({gridSize, 5}), aContiguous.options());
+	const at::Tensor blockSums = torch::zeros(at::IntArrayRef({gridSize, 5}),
+											  torch::TensorOptions{}.dtype(torch::kDouble).device(a.device()));
 	double *blockSumsPtr = blockSums.data_ptr<double>();
 
 	Kernel_NormalisedCrossCorrelation_CUDA<<<gridSize, blockSize, bufferSize>>>(a.numel(), aPtr, bPtr, blockSumsPtr);

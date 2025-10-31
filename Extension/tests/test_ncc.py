@@ -1,5 +1,3 @@
-from zipimport import alt_path_sep
-
 import pytest
 import torch
 
@@ -16,13 +14,12 @@ def test_ncc():
 
     for device_name in devices:
         device = torch.device(device_name)
-        a = a.to(device=device)
+        a = a.detach().to(device=device)
         b = b.to(device=device)
         zncc_basic = normalised_cross_correlation(a, b)
         a.requires_grad = True
         zncc = autograd.normalised_cross_correlation(a, b)
         assert zncc.clone().detach().cpu() == pytest.approx(zncc_basic.cpu(), rel=1.0e-4, abs=1.0e-5)
-        print(zncc)
         zncc.backward()
         out = torch.empty_like(a)
         epsilon = 1.0e-4

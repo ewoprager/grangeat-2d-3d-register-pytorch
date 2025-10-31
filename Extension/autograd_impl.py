@@ -59,7 +59,7 @@ class NormalisedCrossCorrelation(torch.autograd.Function):
 
         n_f = float(a.numel())
         denominator_left_squared = ctx.denominator_left * ctx.denominator_left
-        d_loss_d_a = ((denominator_left_squared * (n_f * b - ctx.sum_b) - ctx.numerator * (n_f * a - ctx.sum_a)) /  #
+        d_zncc_d_a = ((denominator_left_squared * (n_f * b - ctx.sum_b) - ctx.numerator * (n_f * a - ctx.sum_a)) /  #
                       (denominator_left_squared * ctx.denominator_left * ctx.denominator_right))
 
-        return d_loss_d_a, None
+        return d_loss_d_zncc * d_zncc_d_a, None
