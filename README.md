@@ -29,6 +29,10 @@ On Ubuntu this would be:
 sudo apt install ninja-build
 ```
 
+Note: instructions here may be slightly outdated and not work on all platforms.
+The [build_test.yml](.github/workflows/build_test.yml) github workflow can generally be relied upon to be up-to-date,
+and to work.
+
 ### [`uv`](https://docs.astral.sh/uv/) is required
 
 Initialise the virtual environment:
@@ -39,15 +43,19 @@ source .venv/bin/activate
 ```
 
 Install necessary dependencies with
+
 ```bash
 uv pip install -e .[cpu]
 ```
+
 or
+
 ```bash
 uv pip install -e .[cuda]
 ```
 
 Any script can now be run using
+
 ```bash
 uv run <script name> <args...>
 ```

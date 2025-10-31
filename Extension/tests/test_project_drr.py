@@ -110,7 +110,7 @@ import matplotlib.pyplot as plt
 
 
 def test_project_drr_autograd():
-    display = True
+    display = False
 
     devices = ["cpu"]
     if torch.cuda.is_available():
@@ -147,10 +147,9 @@ def test_project_drr_autograd():
         out.requires_grad = False
         for j in range(4):
             for i in range(4):
-                delta = torch.zeros((4, 4), device=device)
-                delta[j, i] = epsilon
-                h_matrix_inv2 = torch.eye(4, device=device) + delta
-                res2 = autograd.project_drr(h_matrix_inv2, volume, voxel_spacing, source_distance, output_size[1],
+                h_matrix_inv_delta = h_matrix_inv.clone().detach()
+                h_matrix_inv_delta[j, i] += epsilon
+                res2 = autograd.project_drr(h_matrix_inv_delta, volume, voxel_spacing, source_distance, output_size[1],
                                             output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing)
                 out[i, j] = (res2.sum() - res.sum()) / epsilon
         if display:

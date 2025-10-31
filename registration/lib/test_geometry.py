@@ -4,7 +4,10 @@ import torch
 import matplotlib.pyplot as plt
 
 import Extension as reg23
-from registration.lib.geometry import *
+from registration.lib.structs import Sinogram2dGrid, Sinogram3dGrid, SceneGeometry
+from registration.lib.geometry import Transformation, moving_cartesian_to_moving_spherical, \
+    fixed_polar_to_moving_cartesian, generate_drr_python, ray_cuboid_distance, plane_integrals, generate_drr, \
+    generate_drr_cuboid_mask
 
 
 def test_fixed_polar_to_moving_cartesian():

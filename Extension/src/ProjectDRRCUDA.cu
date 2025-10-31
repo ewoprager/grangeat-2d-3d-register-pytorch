@@ -131,7 +131,7 @@ __host__ at::Tensor ProjectDRR_backward_CUDA(const at::Tensor &volume, const at:
 	// dLossDDRR should be of size (outputHeight, outputWidth), contain floats and be on the chosen device
 	TORCH_CHECK(dLossDDRR.sizes() == at::IntArrayRef({outputHeight, outputWidth}));
 	TORCH_CHECK(dLossDDRR.dtype() == at::kFloat);
-	TORCH_INTERNAL_ASSERT(dLossDDRR.device().type() == at::DeviceType::CPU);
+	TORCH_INTERNAL_ASSERT(dLossDDRR.device().type() == at::DeviceType::CUDA);
 
 	CommonData common = ProjectDRR<Texture3DCUDA>::Common(volume, voxelSpacing, homographyMatrixInverse, sourceDistance,
 	                                                      outputOffset, detectorSpacing, at::DeviceType::CUDA);
