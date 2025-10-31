@@ -4,9 +4,11 @@ from typing import Callable, Tuple, NamedTuple
 
 import pathlib
 import torch
+import torchviz
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
+from sympy.abc import epsilon
 from tqdm import tqdm
 
 from notification import logs_setup
@@ -62,7 +64,7 @@ class RegistrationData:
 
         ct_volume, self._ct_spacing = data.load_volume(pathlib.Path(ct_path), downsample_factor=downsample_factor)
         ct_volume = ct_volume.to(device=device, dtype=torch.float32)
-        ct_volume = ct_volume - ct_volume.mean() # !!! shifting the volume to zero-mean, so now considering real, not non-negative
+        ct_volume = ct_volume - ct_volume.mean()  # !!! shifting the volume to zero-mean, so now considering real, not non-negative
         self._ct_volumes = [ct_volume] + [truncate(ct_volume, fraction) for fraction in truncation_fractions]
         self._ct_spacing = self._ct_spacing.to(device=device)
 
@@ -298,7 +300,7 @@ class RegistrationData:
                                      output_size=self.cropped_target.size())
 
     def images_drr(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:
-        return self.fixed_image, self.generate_drr(transformation)
+        return self.generate_drr(transformation), self.fixed_image
 
     # def images_grangeat_classic(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:  #     return self.registration_data.sinogram2d, self.resample_sinogram3d(transformation)
 
@@ -477,7 +479,7 @@ class MeasureTask:
                 if self.registration_data.mask_transformation is not None:
                     self.registration_data.mask_transformation = self.registration_data.transformation_gt
                 # calculate the images
-                fixed_image, moving_image = self.registration_data.images_drr(
+                moving_image, fixed_image = self.registration_data.images_drr(
                     self.registration_data.transformation_gt.to(device=self.device))
                 if self._draw and first:
                     # plot
@@ -517,6 +519,63 @@ class MeasureTask:
         torch.save(to_save, MeasureTask.SAVE_DIRECTORY / file_name)
 
 
+class GradTask:
+    def __init__(self, registration_data: RegistrationData, *, name: str, device, draw: bool = False) -> None:
+        self._registration_data = registration_data
+        self._name = name
+        self._device = device
+        self._draw = draw
+
+    @property
+    def device(self):
+        return self._device
+
+    @property
+    def registration_data(self) -> RegistrationData:
+        return self._registration_data
+
+    def run(self):
+        def obj_func(tensor: torch.Tensor) -> torch.Tensor:
+            return reg23.autograd.normalised_cross_correlation(
+                *self.registration_data.images_drr(mapping_parameters_to_transformation(tensor)))
+
+        self.registration_data.transformation_gt = Transformation.random_gaussian(
+            rotation_mean=torch.pi * torch.tensor([0.0, 0.0, 0.0], device=self.device), rotation_std=0.1,
+            translation_mean=torch.zeros(3, device=self.device), translation_std=0.0)
+
+        start = Transformation.random_gaussian(rotation_mean=self.registration_data.transformation_gt.rotation,
+                                               rotation_std=0.1,
+                                               translation_mean=self.registration_data.transformation_gt.translation,
+                                               translation_std=0.0)
+        start.rotation.requires_grad = True
+        start.translation.requires_grad = True
+
+        loss = obj_func(mapping_transformation_to_parameters(start))
+
+        print("Loss:", loss)
+
+        # torchviz.make_dot(loss).render("graph", format="png")
+
+        loss.backward()
+
+        print("Rotation grad:", start.rotation.grad)
+        print("Translation grad:", start.translation.grad)
+
+        epsilon = 1.0e-5
+        for i in range(3):
+            start2 = Transformation(rotation=start.rotation.clone().detach(),
+                                    translation=start.translation.clone().detach())
+            start2.rotation[i] += epsilon
+            loss2 = obj_func(mapping_transformation_to_parameters(start2))
+            print(i, (loss2 - loss) / epsilon)
+        for i in range(3):
+            start2 = Transformation(rotation=start.rotation.clone().detach(),
+                                    translation=start.translation.clone().detach())
+            start2.translation[i] += epsilon
+            loss2 = obj_func(mapping_transformation_to_parameters(start2))
+            print(i, (loss2 - loss) / epsilon)
+
+
 def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, show: bool = False):
     stop: float = 1.0
     step: float = 0.05
@@ -552,7 +611,12 @@ def evaluate_and_save_landscape(*, cache_directory: str, ct_path: str, device, s
 
 def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    evaluate_and_save_landscape(cache_directory=cache_directory, ct_path=ct_path, show=show, device=device)
+    # evaluate_and_save_landscape(cache_directory=cache_directory, ct_path=ct_path, show=show, device=device)
+
+    registration_data = RegistrationData(cache_directory=cache_directory, ct_path=ct_path, device=device,
+                                         downsample_factor=4, truncation_fractions=[0.0])
+    grad_task = GradTask(registration_data, name="grad task", device=device)
+    grad_task.run()
 
 
 if __name__ == "__main__":

@@ -161,6 +161,7 @@ dependencies = [
     "objgraph>=3.6.2",
     "pylibjpeg>=2.0.1",
     "pylibjpeg-libjpeg>=2.3.0",
+    "torchviz>=0.0.3",
 ]
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined

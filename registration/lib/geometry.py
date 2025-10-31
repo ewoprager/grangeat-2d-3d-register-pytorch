@@ -184,9 +184,10 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     img_height: int = output_size[0]
     h_matrix_inv = transformation.inverse().get_h(device=device)
 
-    return Extension.project_drr(volume_data, voxel_spacing, h_matrix_inv, scene_geometry.source_distance, img_width,
-                                 img_height, scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64),
-                                 detector_spacing)
+    return Extension.autograd.project_drr(h_matrix_inv, volume_data, voxel_spacing, scene_geometry.source_distance,
+                                          img_width, img_height,
+                                          scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64),
+                                          detector_spacing)
 
 
 def generate_drr_cuboid_mask(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,

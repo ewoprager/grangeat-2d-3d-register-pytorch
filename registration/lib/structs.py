@@ -136,9 +136,9 @@ class Transformation(NamedTuple):
         assert translation_mean.size() == torch.Size([3])
         assert translation_mean.device == rotation_mean.device
         assert isinstance(rotation_std, float) or (
-                    (rotation_std.size() == torch.Size([3])) and (rotation_std.device == rotation_mean.device))
+                (rotation_std.size() == torch.Size([3])) and (rotation_std.device == rotation_mean.device))
         assert isinstance(translation_std, float) or (
-                    (translation_std.size() == torch.Size([3])) and (translation_std.device == rotation_mean.device))
+                (translation_std.size() == torch.Size([3])) and (translation_std.device == rotation_mean.device))
         return Transformation(rotation=torch.normal(mean=rotation_mean, std=rotation_std, generator=generator),
                               translation=torch.normal(mean=translation_mean, std=translation_std, generator=generator))
 

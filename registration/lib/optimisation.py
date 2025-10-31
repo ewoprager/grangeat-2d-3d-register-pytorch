@@ -10,16 +10,12 @@ from registration.lib.structs import Transformation
 
 def mapping_transformation_to_parameters(transformation: Transformation) -> torch.Tensor:
     ret = transformation.vectorised()
-    ret[0:3] *= 100.0
-    ret[5] /= 10.0
-    return ret
+    return ret * torch.tensor([100.0, 100.0, 100.0, 1.0, 1.0, 0.1], device=ret.device, dtype=ret.dtype)
 
 
 def mapping_parameters_to_transformation(params: torch.Tensor) -> Transformation:
-    params = params.clone()
-    params[0:3] /= 100.0
-    params[5] *= 10.0
-    return Transformation.from_vector(params)
+    return Transformation.from_vector(
+        params * torch.tensor([1.0e-2, 1.0e-2, 1.0e-2, 1.0, 1.0, 10.0], device=params.device, dtype=params.dtype))
 
 
 def local_search(*, starting_position: torch.Tensor, initial_step_size: torch.Tensor,
