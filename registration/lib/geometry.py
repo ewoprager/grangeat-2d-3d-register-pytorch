@@ -5,7 +5,7 @@ import pyvista as pv
 
 from registration.lib.structs import Sinogram2dGrid, Sinogram3dGrid, Transformation, SceneGeometry
 
-import Extension
+import Extension as reg23
 
 
 def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, ph_matrix: torch.Tensor) -> torch.Tensor:
@@ -184,10 +184,9 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     img_height: int = output_size[0]
     h_matrix_inv = transformation.inverse().get_h(device=device)
 
-    return Extension.autograd.project_drr(h_matrix_inv, volume_data, voxel_spacing, scene_geometry.source_distance,
-                                          img_width, img_height,
-                                          scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64),
-                                          detector_spacing)
+    return reg23.project_drr(volume_data, voxel_spacing, h_matrix_inv, scene_geometry.source_distance, img_width,
+                             img_height, scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64),
+                             detector_spacing)
 
 
 def generate_drr_cuboid_mask(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
@@ -205,10 +204,11 @@ def generate_drr_cuboid_mask(volume_data: torch.Tensor, *, transformation: Trans
     img_height: int = output_size[0]
     h_matrix_inv = transformation.inverse().get_h(device=device)
 
-    return Extension.project_drr_cuboid_mask(
-        torch.tensor(volume_data.size(), device=volume_data.device).flip(dims=(0,)), voxel_spacing, h_matrix_inv,
-        scene_geometry.source_distance, img_width, img_height,
-        scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64), detector_spacing)
+    return reg23.project_drr_cuboid_mask(torch.tensor(volume_data.size(), device=volume_data.device).flip(dims=(0,)),
+                                         voxel_spacing, h_matrix_inv, scene_geometry.source_distance, img_width,
+                                         img_height,
+                                         scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64),
+                                         detector_spacing)
 
 
 def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,

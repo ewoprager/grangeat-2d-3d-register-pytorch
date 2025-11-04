@@ -536,7 +536,7 @@ class GradTask:
 
     def run(self):
         def obj_func(tensor: torch.Tensor) -> torch.Tensor:
-            return reg23.autograd.normalised_cross_correlation(
+            return reg23.normalised_cross_correlation(
                 *self.registration_data.images_drr(mapping_parameters_to_transformation(tensor)))
 
         self.registration_data.transformation_gt = Transformation.random_gaussian(
@@ -554,7 +554,7 @@ class GradTask:
 
         print("Loss:", loss)
 
-        # torchviz.make_dot(loss).render("graph", format="png")
+        torchviz.make_dot(loss).render("graph", format="png")
 
         loss.backward()
 

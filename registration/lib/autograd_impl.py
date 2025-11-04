@@ -39,13 +39,13 @@ class TransformationToMatrix(torch.autograd.Function):
         d_theta_d_axis_angle = u  # size (3,): (components of axis angle)
 
         d_uut_d_ux = torch.cat((u.unsqueeze(0), torch.zeros(2, 3)), dim=0)
-        d_uut_d_ux += d_uut_d_ux.t().clone()
+        d_uut_d_ux += d_uut_d_ux.clone().t()
 
         d_uut_d_uy = torch.cat((torch.zeros(1, 3), u.unsqueeze(0), torch.zeros(1, 3)), dim=0)
-        d_uut_d_uy += d_uut_d_uy.t().clone()
+        d_uut_d_uy += d_uut_d_uy.clone().t()
 
         d_uut_d_uz = torch.cat((torch.zeros(2, 3), u.unsqueeze(0)), dim=0)
-        d_uut_d_uz += d_uut_d_uz.t().clone()
+        d_uut_d_uz += d_uut_d_uz.clone().t()
 
         d_r_d_ux = (1.0 - cos_theta) * d_uut_d_ux + torch.tensor(
             [[0.0, 0.0, 0.0], [0.0, 0.0, -sin_theta], [0.0, sin_theta, 0.0]])  # size = (3, 3)
@@ -58,20 +58,24 @@ class TransformationToMatrix(torch.autograd.Function):
         d_u_d_axis_angle = (theta - u.outer(
             transformation[0:3])) / theta.square()  # size = (3, 3): (components of axis angle, components of u)
 
-        d_r_d_axis_angle = torch.einsum("ji,k->kji", d_r_d_theta, d_theta_d_axis_angle) + torch.einsum("lji,kl->kji",
-                                                                                                       d_r_d_u,
-                                                                                                       d_u_d_axis_angle)  # size = (3, 3, 3): (components of axis angle, 3x3 matrix)
+        d_r_d_axis_angle = torch.einsum(  #
+            "ji,k->kji", d_r_d_theta, d_theta_d_axis_angle) + torch.einsum(  #
+            "lji,kl->kji", d_r_d_u, d_u_d_axis_angle)  # size = (3, 3, 3): (components of axis angle, 3x3 matrix)
 
-        d_matrix_d_axis_angle = torch.cat(
-            (torch.cat((d_r_d_axis_angle, torch.zeros((3, 3, 1))), dim=2), torch.zeros((3, 1, 4))), dim=1)
+        d_matrix_d_axis_angle = torch.cat((  #
+            torch.cat((d_r_d_axis_angle, torch.zeros((3, 3, 1))), dim=2),  #
+            torch.zeros((3, 1, 4))  #
+        ), dim=1)
 
         d_matrix_d_translation = torch.zeros((3, 4, 4))
         d_matrix_d_translation[0, 3, 0] = 1.0
         d_matrix_d_translation[1, 3, 1] = 1.0
         d_matrix_d_translation[2, 3, 2] = 1.0
 
-        d_matrix_d_transformation = torch.cat((d_matrix_d_axis_angle, d_matrix_d_translation),
-                                              dim=0)  # size = (6, 4, 4)
+        d_matrix_d_transformation = torch.cat((  #
+            d_matrix_d_axis_angle,  #
+            d_matrix_d_translation  #
+        ), dim=0)  # size = (6, 4, 4)
 
         d_loss_d_transformation = torch.einsum("ji,kji->k", d_loss_d_matrix, d_matrix_d_transformation)  # size = (6,)
 

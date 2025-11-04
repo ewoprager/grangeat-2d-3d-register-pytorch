@@ -34,9 +34,17 @@ def test_transformation_matrix_custom():
 
     print("Kornia delta:")
     epsilon = 1.0e-4
-    t.rotation[0] += epsilon
-    h_kornia_delta = t.get_h()
+    t_delta = t.clone()
+    t_delta.rotation[0] += epsilon
+    h_kornia_delta = t_delta.get_h()
     print((h_kornia_delta.sum() - h_kornia.sum()) / epsilon)
+
+    print("Custom delta:")
+    epsilon = 1.0e-4
+    t2_delta = t.vectorised().clone()
+    t2_delta[0] += epsilon
+    h_custom_delta = TransformationToMatrix.apply(t2_delta)
+    print((h_custom_delta.sum() - h_custom.sum()) / epsilon)
 
     print("Kornia:")
 

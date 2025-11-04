@@ -98,6 +98,9 @@ class Transformation(NamedTuple):
     def to(self, **kwargs) -> 'Transformation':
         return Transformation(self.rotation.to(**kwargs), self.translation.to(**kwargs))
 
+    def clone(self) -> 'Tranformation':
+        return Transformation(self.rotation.clone(), self.translation.clone())
+
     def device_consistent(self) -> bool:
         return self.rotation.device == self.translation.device
 
