@@ -54,37 +54,7 @@ int blockSizeToDynamicSMemSize_NormalisedCrossCorrelation_CUDA(int blockSize) {
 	return 5 * blockSize * static_cast<int>(sizeof(double));
 }
 
-__host__ at::Tensor NormalisedCrossCorrelation_CUDA(const at::Tensor &a, const at::Tensor &b) {
-	Similarity::Common(a, b, at::DeviceType::CUDA);
-
-	const at::Tensor aContiguous = a.contiguous();
-	const float *aPtr = aContiguous.data_ptr<float>();
-	const at::Tensor bContiguous = b.contiguous();
-	const float *bPtr = bContiguous.data_ptr<float>();
-
-	int minGridSize, blockSize;
-	cudaOccupancyMaxPotentialBlockSizeVariableSMem(&minGridSize, &blockSize, &Kernel_NormalisedCrossCorrelation_CUDA,
-	                                               &blockSizeToDynamicSMemSize_NormalisedCrossCorrelation_CUDA, 0);
-
-	const size_t bufferSize = blockSizeToDynamicSMemSize_NormalisedCrossCorrelation_CUDA(blockSize);
-	const int gridSize = (static_cast<int>(a.numel()) + blockSize - 1) / blockSize;
-
-	// stores the sums for each kernel block of a, b, a^2, b^2 and a*b (which is why the last dimension is 5)
-	const at::Tensor blockSums = torch::zeros(at::IntArrayRef({gridSize, 5}),
-	                                          torch::TensorOptions{}.dtype(torch::kDouble).device(a.device()));
-	double *blockSumsPtr = blockSums.data_ptr<double>();
-
-	Kernel_NormalisedCrossCorrelation_CUDA<<<gridSize, blockSize, bufferSize>>>(a.numel(), aPtr, bPtr, blockSumsPtr);
-
-	const double nF = static_cast<double>(a.numel());
-
-	const at::Tensor sums = blockSums.sum({0});
-
-	return (nF * sums[4] - sums[0] * sums[1]) / ((nF * sums[2] - sums[0].square()).sqrt() * (
-		                                             nF * sums[3] - sums[1].square()).sqrt() + 1e-10);
-}
-
-__host__ std::tuple<at::Tensor, double, double, double, double, double> NormalisedCrossCorrelation_forward_CUDA(
+__host__ std::tuple<at::Tensor, double, double, double, double, double> NormalisedCrossCorrelation_CUDA(
 	const at::Tensor &a, const at::Tensor &b) {
 	Similarity::Common(a, b, at::DeviceType::CUDA);
 

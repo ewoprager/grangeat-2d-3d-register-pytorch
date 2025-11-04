@@ -1,8 +1,13 @@
-from typing import Tuple
-
 import torch
 
-from .structs import CUDATexture3D
+__all__ = ["radon2d", "radon2d_v2", "d_radon2d_dr", "radon3d", "radon3d_v2", "d_radon3d_dr", "d_radon3d_dr_v2",
+           "resample_sinogram3d", "normalised_cross_correlation", "grid_sample3d", "project_drr",
+           "project_drr_cuboid_mask"]
+
+if torch.cuda.is_available():
+    from . import structs
+
+    __all__ += ["resample_sinogram3d_cuda_texture"]
 
 
 def radon2d(image: torch.Tensor, image_spacing: torch.Tensor, phi_values: torch.Tensor, r_values: torch.Tensor,
@@ -61,7 +66,7 @@ def resample_sinogram3d(sinogram3d: torch.Tensor, sinogram_type: str, r_spacing:
 
 
 if torch.cuda.is_available():
-    def resample_sinogram3d_cuda_texture(texture: CUDATexture3D, sinogram_type: str, r_spacing: float,
+    def resample_sinogram3d_cuda_texture(texture: structs.CUDATexture3D, sinogram_type: str, r_spacing: float,
                                          projection_matrix: torch.Tensor, phi_values: torch.Tensor,
                                          r_values: torch.Tensor, out: torch.Tensor | None = None) -> torch.Tensor:
         size = texture.size
@@ -71,12 +76,8 @@ if torch.cuda.is_available():
 
 
 def normalised_cross_correlation(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    return torch.ops.reg23.normalised_cross_correlation.default(a, b)
-
-
-def normalised_cross_correlation_forward(a: torch.Tensor, b: torch.Tensor) -> Tuple[
-    torch.Tensor, float, float, float, float, float]:
-    return torch.ops.reg23.normalised_cross_correlation_forward.default(a, b)
+    ret, *_ = torch.ops.reg23.normalised_cross_correlation.default(a, b)
+    return ret
 
 
 def grid_sample3d(input_: torch.Tensor, grid: torch.Tensor, address_mode_x: str = "zero", address_mode_y: str = "zero",

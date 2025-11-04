@@ -54,8 +54,7 @@ TORCH_LIBRARY(reg23, m) {
 		"rs, Tensor? out=None) -> Tensor");
 	m.def("resample_sinogram3d_cuda_texture(int handle, int w, int h, int d, str type, float rSpacing, Tensor projMat, "
 		"Tensor phis, Tensor rs, Tensor? out=None) -> Tensor");
-	m.def("normalised_cross_correlation(Tensor a, Tensor b) -> Tensor");
-	m.def("normalised_cross_correlation_forward(Tensor a, Tensor b) -> (Tensor, float, float, float, float, float)");
+	m.def("normalised_cross_correlation(Tensor a, Tensor b) -> (Tensor, float, float, float, float, float)");
 	m.def("grid_sample3d(Tensor input, Tensor grid, str am_x, str am_y, str am_z, Tensor? out=None) -> Tensor");
 	m.def(
 		"project_drr(Tensor volume, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, Tensor outOff, Tensor outSpacing) -> Tensor");
@@ -75,7 +74,6 @@ TORCH_LIBRARY_IMPL(reg23, CPU, m) {
 	m.impl("d_radon3d_dr_v2", &DRadon3DDR_CPU); // doesn't have its own cpu version
 	m.impl("resample_sinogram3d", &ResampleSinogram3D_CPU);
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CPU);
-	m.impl("normalised_cross_correlation_forward", &NormalisedCrossCorrelation_forward_CPU);
 	m.impl("grid_sample3d", &GridSample3D_CPU);
 	m.impl("project_drr", &ProjectDRR_CPU);
 	m.impl("project_drr_backward", &ProjectDRR_backward_CPU);
@@ -94,7 +92,6 @@ TORCH_LIBRARY_IMPL(reg23, CUDA, m) {
 	m.impl("resample_sinogram3d", &ResampleSinogram3D_CUDA);
 	m.impl("resample_sinogram3d_cuda_texture", &ResampleSinogram3DCUDATexture);
 	m.impl("normalised_cross_correlation", &NormalisedCrossCorrelation_CUDA);
-	m.impl("normalised_cross_correlation_forward", &NormalisedCrossCorrelation_forward_CUDA);
 	m.impl("grid_sample3d", &GridSample3D_CUDA);
 	m.impl("project_drr", &ProjectDRR_CUDA);
 	m.impl("project_drr_backward", &ProjectDRR_backward_CUDA);

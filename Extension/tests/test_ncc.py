@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from Extension import normalised_cross_correlation, autograd
+from Extension import *
 
 
 def test_ncc():
@@ -18,7 +18,7 @@ def test_ncc():
         b = b.to(device=device)
         zncc_basic = normalised_cross_correlation(a, b)
         a.requires_grad = True
-        zncc = autograd.normalised_cross_correlation(a, b)
+        zncc = normalised_cross_correlation(a, b)
         assert zncc.clone().detach().cpu() == pytest.approx(zncc_basic.cpu(), rel=1.0e-4, abs=1.0e-5)
         zncc.backward()
         out = torch.empty_like(a)
@@ -27,5 +27,5 @@ def test_ncc():
             for i in range(out.size(1)):
                 a_delta = a.clone().detach()
                 a_delta[j, i] += epsilon
-                out[j, i] = (autograd.normalised_cross_correlation(a_delta, b) - zncc) / epsilon
+                out[j, i] = (normalised_cross_correlation(a_delta, b) - zncc) / epsilon
         assert out.detach().cpu() == pytest.approx(a.grad.detach().cpu(), abs=1.0e-3, rel=1.0e-2)

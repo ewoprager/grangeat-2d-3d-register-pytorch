@@ -26,6 +26,12 @@ def test_transformation_matrix_custom():
     h_custom = TransformationToMatrix.apply(t.vectorised())
     print(h_custom)
 
+    # t2 = t.vectorised().detach().clone()
+    # t2.requires_grad = True
+    # torch.autograd.gradcheck(TransformationToMatrix.apply, t2)
+    #
+    # return
+
     print("Kornia delta:")
     epsilon = 1.0e-4
     t.rotation[0] += epsilon
