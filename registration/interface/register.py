@@ -23,6 +23,7 @@ from registration.interface.transformations import TransformationWidget
 from registration.interface.lib.structs import HyperParameters, WidgetSelectData, WidgetManageSaved, Cropping, \
     SavedXRayParams, Target
 from registration.lib import optimisation
+from registration.lib.optimisation import mapping_transformation_to_parameters, mapping_parameters_to_transformation
 from registration.interface.registration_data import RegistrationData
 
 

@@ -8,6 +8,7 @@ from Extension import grid_sample3d
 def test_grid_sample3d():
     input_ = torch.rand((11, 12, 8))
     grid = torch.rand((10, 7, 3))
+    # torch.library.opcheck(torch.ops.reg23.grid_sample3d, args=(input_, grid, "zero", "zero", "zero"))
     res = grid_sample3d(input_, grid)
     assert res.size() == grid.size()[0:-1]
     if torch.cuda.is_available():
@@ -48,7 +49,8 @@ def test_grid_sample3d_against_torch():
     grid = torch.stack((xs, ys, zs), dim=-1)
     res = grid_sample3d(texture, grid, "zero", "zero", "zero")
     res_torch = \
-    torch.nn.functional.grid_sample(texture.unsqueeze(0).unsqueeze(0), grid.unsqueeze(0), padding_mode="zeros")[0, 0]
+        torch.nn.functional.grid_sample(texture.unsqueeze(0).unsqueeze(0), grid.unsqueeze(0), padding_mode="zeros")[
+            0, 0]
     if plot:
         plt.plot(plot_xs, res[0, 5].numpy(), label="res_cpu")
         plt.plot(plot_xs, res_torch[0, 5].numpy(), label="res_torch_cpu")
@@ -61,8 +63,8 @@ def test_grid_sample3d_against_torch():
         grid = grid.to(device=device)
         res = grid_sample3d(texture, grid, "zero", "zero", "zero")
         res_torch = \
-        torch.nn.functional.grid_sample(texture.unsqueeze(0).unsqueeze(0), grid.unsqueeze(0), padding_mode="zeros")[
-            0, 0]
+            torch.nn.functional.grid_sample(texture.unsqueeze(0).unsqueeze(0), grid.unsqueeze(0), padding_mode="zeros")[
+                0, 0]
         if plot:
             plt.plot(plot_xs, res[0, 5].cpu().numpy(), label="res_cuda")
             plt.plot(plot_xs, res_torch[0, 5].cpu().numpy(), label="res_torch_cuda")
