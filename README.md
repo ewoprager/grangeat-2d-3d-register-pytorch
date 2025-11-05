@@ -14,10 +14,6 @@ developed as part of a PhD.
 data/
   > Data saved from experiments
 
-reg23/
-  > A Python package with custom C++/CUDA operators for PyTorch
-  > See the README.md in this directory for more information
-
 figures/
   > Plots and images from experiments
 
@@ -26,6 +22,10 @@ Logs/
 
 notification/
   > A python package for logging and sending notification to Pushover
+
+reg23/
+  > A Python package with custom C++/CUDA operators for PyTorch
+  > See the README.md in this directory for more information
 
 registration/
   > A python package for experimentation with 2D/3D radiographic image registration, and using the custom reg23 package.
@@ -118,8 +118,14 @@ dependencies or the extension.
 # Scripts you can run
 
 Scripts which aren't contained in the root directory must be run from the root directory, with the
-`PYTHONPATH` variable set to the root directory. In Clion, this should be done automatically in a Python run
-configuration, so you shouldn't need to add the `PYTHONPATH=$PWD`.
+`PYTHONPATH` variable set to the root directory, e.g.:
+
+```
+PYTHON_PATH=$PWD uv run ...
+```
+
+In Clion, this should be done automatically in Python run configurations, so you shouldn't need to add the
+`PYTHONPATH=$PWD`.
 
 ## A Qt-based interface using `napari`
 
@@ -252,7 +258,6 @@ PYTHONPATH=$PWD python registration/lib/dev_scripts/dev_sinogram.py --help
 # The `reg23` extension
 
 The extension is contained within the [reg23](reg23) directory, with its own [README.md](reg23/README.md).
-
 
 ## Experiments so far
 
