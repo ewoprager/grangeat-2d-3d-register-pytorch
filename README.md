@@ -14,7 +14,7 @@ developed as part of a PhD.
 data/
   > Data saved from experiments
 
-Extension/
+reg23/
   > A Python package with custom C++/CUDA operators for PyTorch
   > See the README.md in this directory for more information
 
@@ -28,14 +28,14 @@ notification/
   > A python package for logging and sending notification to Pushover
 
 registration/
-  > A python package for experimentation with 2D/3D radiographic image registration, and using the custom Extension package.
+  > A python package for experimentation with 2D/3D radiographic image registration, and using the custom reg23 package.
   interface/
     > A python package specifically for use by the script `scripts/interface.py`
 
 scripts/
   > Some python scripts that use the `registration` module to perform experiments.
   benchmarking/
-    > Scripts sepcifically for measuring the speeds of different implementations of algorithms in the `Extension` package
+    > Scripts sepcifically for measuring the speeds of different implementations of algorithms in the `reg23` package
   plotting/
     > Scripts used for plotting data that is generated and saved by other scripts.
 
@@ -251,7 +251,7 @@ PYTHONPATH=$PWD python registration/lib/dev_scripts/dev_sinogram.py --help
 
 # The `reg23` extension
 
-The extension is contained within the [Extension](Extension) directory, with its own [README.md](Extension/README.md).
+The extension is contained within the [reg23](reg23) directory, with its own [README.md](reg23/README.md).
 
 
 ## Experiments so far
@@ -337,5 +337,5 @@ SE3 between the transformation and the ground truth transformation for 1000 rand
 
 All the following IDE integration advice is based on CLion 2024.3.1.1.
 
-'Extension/CMakeLists.txt' exists exclusively to aid your IDE with syntax highlighting and error detection in the
+'reg23/CMakeLists.txt' exists exclusively to aid your IDE with syntax highlighting and error detection in the
 extension .cpp and .cu source files. Configure a CMake project in your IDE to make use of this.

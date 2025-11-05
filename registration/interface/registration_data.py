@@ -14,7 +14,7 @@ from registration.lib.sinogram import Sinogram, SinogramType
 from registration import data, drr, pre_computed
 from registration.lib import grangeat
 
-import Extension as reg23
+import reg23
 
 
 class RegistrationData:

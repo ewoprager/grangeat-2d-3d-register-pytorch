@@ -8,7 +8,7 @@ saved/
 **/__pycache__/
 **/*.so
 data/temp/
-Extension/src/extension.egg-info/
+reg23/src/extension.egg-info/
 figures/landscapes/
 figures/truncation/
 **/*.egg-info/

@@ -5,7 +5,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-import Extension as reg23
+import reg23
 
 from notification import logs_setup
 import registration.objective_function as objective_function

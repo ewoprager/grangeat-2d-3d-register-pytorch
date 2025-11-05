@@ -9,7 +9,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-import Extension
+import reg23
 
 from registration.lib.structs import SceneGeometry, Transformation, Sinogram2dGrid
 from registration.lib.sinogram import Sinogram, SinogramClassic
@@ -104,7 +104,7 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
                 "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else "data/temp/d_dr_R3_mu_resampled.pgf")
 
     return ncc(fixed_image,
-               resampled), resampled  # return Extension.normalised_cross_correlation(fixed_image, resampled),  # resampled
+               resampled), resampled  # return reg23.normalised_cross_correlation(fixed_image, resampled),  # resampled
 
 
 def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, transformation: Transformation,

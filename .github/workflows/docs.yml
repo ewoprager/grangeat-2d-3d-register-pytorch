@@ -24,7 +24,7 @@ jobs:
 #          pip install sphinx breathe sphinx_rtd_theme
 
       - name: Build Doxygen HTML
-        working-directory: Extension/Docs
+        working-directory: reg23/Docs
         run: doxygen Doxyfile
 
 #      - name: Build Sphinx HTML
@@ -35,4 +35,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: Extension/Docs/build/html
+          publish_dir: reg23/Docs/build/html

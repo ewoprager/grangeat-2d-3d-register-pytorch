@@ -42,7 +42,7 @@ if (CUDAToolkit_FOUND)
 endif ()
 
 if (CUDAToolkit_FOUND)
-    project(Extension
+    project(reg23
             LANGUAGES CXX CUDA)
 
     # Get the PyTorch include directories
@@ -54,7 +54,7 @@ if (CUDAToolkit_FOUND)
 
     set(CMAKE_CUDA_STANDARD 17)
 else ()
-    project(Extension LANGUAGES CXX)
+    project(reg23 LANGUAGES CXX)
 
     # Get the PyTorch include directories
     execute_process(COMMAND ${Python3_EXECUTABLE} -c "import torch; from torch.utils import cpp_extension; print(cpp_extension.include_paths())"

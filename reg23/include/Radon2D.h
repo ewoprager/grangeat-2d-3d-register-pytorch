@@ -22,7 +22,7 @@ namespace reg23 {
  * @return a tensor matching `phiValues` in size containing `torch.float32`s: Approximations of the line integrals
  * through the given image at the given polar coordinate locations
  *
- * The polar coordinates should be defined according to the convention stated in Extension/Conventions.md
+ * The polar coordinates should be defined according to the convention stated in reg23/Conventions.md
  */
 at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                        const at::Tensor &rValues, int64_t samplesPerLine);
@@ -42,7 +42,7 @@ at::Tensor Radon2D_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, 
  * plane-origin distance of the approximations (according to the `Radon2D_...` functions) of the line integrals through
  * the given image at the given polar coordinate locations
  *
- * The polar coordinates should be defined according to the convention stated in Extension/Conventions.md
+ * The polar coordinates should be defined according to the convention stated in reg23/Conventions.md
  */
 at::Tensor DRadon2DDR_CPU(const at::Tensor &image, const at::Tensor &imageSpacing, const at::Tensor &phiValues,
                           const at::Tensor &rValues, int64_t samplesPerLine);
@@ -149,7 +149,7 @@ template <typename texture_t> struct Radon2D {
 	 * @return The `Linear` mapping from integration iteration index to 2D cartesian texture coordinate sampling
 	 * location, according to the given texture object and integration line (parameterised in polar coordinates)
 	 *
-	 * The polar coordinates should be defined according to the convention stated in Extension/Conventions.md
+	 * The polar coordinates should be defined according to the convention stated in reg23/Conventions.md
 	 */
 	__host__ __device__ [[nodiscard]] static Linear<VectorType>
 	GetMappingIndexToTexCoord(const texture_t &textureIn, FloatType phi, FloatType r,
@@ -167,7 +167,7 @@ template <typename texture_t> struct Radon2D {
 	 * @return The derivative of the 2D cartesian texture coordinate in the given texture at the given world position
 	 * defined in polar coordinates, with respect to the **unsigned** r polar coordinate
 	 *
-	 * The polar coordinates should be defined according to the convention stated in Extension/Conventions.md, however
+	 * The polar coordinates should be defined according to the convention stated in reg23/Conventions.md, however
 	 * the parameter with respect to which this is evaluating the derivative is the **unsigned** version of `r`, i.e.
 	 * the **unsigned** distance between the orign and the line.
 	 */

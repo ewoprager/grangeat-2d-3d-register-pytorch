@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 import torch
 import matplotlib.pyplot as plt
 
-import Extension
+import reg23
 
 from registration.lib.structs import *
 from registration.lib import geometry
@@ -92,7 +92,7 @@ class SinogramClassic(Sinogram):
                 self._data.size()[0], self._data.size()[1], self._data.size()[2]))
 
         if self.device.type == "cuda":
-            self._texture = Extension.CUDATexture3D(self.data, "zero", "zero", "zero")
+            self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
 
     def __getstate__(self):
         return {"_data": self._data, "_r_range": self._r_range}
@@ -101,7 +101,7 @@ class SinogramClassic(Sinogram):
         self._data = state["_data"]
         self._r_range = state["_r_range"]
         if self.device.type == "cuda":
-            self._texture = Extension.CUDATexture3D(self.data, "zero", "zero", "zero")
+            self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
 
     @property
     def device(self):
@@ -126,13 +126,13 @@ class SinogramClassic(Sinogram):
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                  out: torch.Tensor | None = None) -> torch.Tensor:
-        return Extension.resample_sinogram3d(self.data, "classic", self.r_range.get_spacing(self.data.size()[2]),
+        return reg23.resample_sinogram3d(self.data, "classic", self.r_range.get_spacing(self.data.size()[2]),
                                              ph_matrix, fixed_image_grid.phi, fixed_image_grid.r, out=out)
 
     def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                               out: torch.Tensor | None = None) -> torch.Tensor:
         assert self.device.type == "cuda"
-        return Extension.resample_sinogram3d_cuda_texture(self._texture, "classic",
+        return reg23.resample_sinogram3d_cuda_texture(self._texture, "classic",
                                                           self.r_range.get_spacing(self.data.size()[2]), ph_matrix,
                                                           fixed_image_grid.phi, fixed_image_grid.r, out=out)
 
@@ -190,7 +190,7 @@ class SinogramClassic(Sinogram):
             out = torch.zeros_like(fixed_image_grid_sph.phi)
         grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
                             k_mapping(fixed_image_grid_sph.phi)), dim=-1)
-        ret = Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero", out=out)
+        ret = reg23.grid_sample3d(self.data, grid, "zero", "zero", "zero", out=out)
 
         del fixed_image_grid_sph
 
@@ -293,7 +293,7 @@ class SinogramClassic(Sinogram):
 
         # Sampling at all the perturbed orientations:
         grid = torch.stack((i_mapping(new_grid.r), j_mapping(new_grid.theta), k_mapping(new_grid.phi)), dim=-1)
-        samples = Extension.grid_sample3d(self.data, grid, address_mode="wrap")
+        samples = reg23.grid_sample3d(self.data, grid, address_mode="wrap")
 
         del grid
 
@@ -623,7 +623,7 @@ class SinogramHEALPix(Sinogram):
         self._r_range = r_range
 
         if self.device.type == "cuda":
-            self._texture = Extension.CUDATexture3D(self.data, "zero", "zero", "zero")
+            self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
 
     def __getstate__(self):
         return {"_data": self._data, "_r_range": self._r_range}
@@ -632,7 +632,7 @@ class SinogramHEALPix(Sinogram):
         self._data = state["_data"]
         self._r_range = state["_r_range"]
         if self.device.type == "cuda":
-            self._texture = Extension.CUDATexture3D(self.data, "zero", "zero", "zero")
+            self._texture = reg23.CUDATexture3D(self.data, "zero", "zero", "zero")
 
     def to(self, **kwargs) -> 'SinogramHEALPix':
         return SinogramHEALPix(self.data.to(**kwargs), self.r_range, pad=False)
@@ -668,17 +668,17 @@ class SinogramHEALPix(Sinogram):
         if out is None:
             out = torch.zeros_like(grid.phi)
         grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(r)), dim=-1)
-        return Extension.grid_sample3d(self.data, grid, "zero", "zero", "zero", out=out)
+        return reg23.grid_sample3d(self.data, grid, "zero", "zero", "zero", out=out)
 
     def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                  out: torch.Tensor | None = None) -> torch.Tensor:
-        return Extension.resample_sinogram3d(self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]),
+        return reg23.resample_sinogram3d(self.data, "healpix", self.r_range.get_spacing(self.data.size()[0]),
                                              ph_matrix, fixed_image_grid.phi, fixed_image_grid.r, out=out)
 
     def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
                               out: torch.Tensor | None = None) -> torch.Tensor:
         assert self.device.type == "cuda"
-        return Extension.resample_sinogram3d_cuda_texture(self._texture, "healpix",
+        return reg23.resample_sinogram3d_cuda_texture(self._texture, "healpix",
                                                           self.r_range.get_spacing(self.data.size()[0]), ph_matrix,
                                                           fixed_image_grid.phi, fixed_image_grid.r, out=out)
 

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import torch
 import pydicom
 
-import Extension as reg23
+import reg23
 
 from notification import logs_setup
 

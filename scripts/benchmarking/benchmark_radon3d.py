@@ -7,7 +7,7 @@ import plotly.graph_objects as pgo
 import torch
 import nrrd
 
-import Extension as reg23
+import reg23
 
 from notification import logs_setup
 
