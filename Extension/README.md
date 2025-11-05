@@ -1,18 +1,81 @@
 # Grangeat-based 2D/3D image registration
 
-## Build
+# Package contents
 
-To do this directly with setuptools, starting in the root directory of the repository:
+```
+Docs/
+  > Doxygen stuff for generation of the documentation linked below.
 
-```bash
-source .venv/bin/activate
-cd Extension
-python setup.py develop
+include/
+  > Header C++ files
+
+src/
+  > C++ and CUDA source files
+  main.cpp
+    > This is where all the Python bindings are declared.
+
+tests/
+  > Pytest test functions
+
+autograd.py
+  > Implementations of backward passes using `torch.library.register_autograd`.
+
+CMakeLists.txt
+  > Cmake is not used for building, but this file allows IDEs to find headers and process files properly for useful autocompletion and syntax checking.
+
+Conventions.md
+  > Contains details of Python and C++ coding conventions, regarding style and structure.
+
+mainpage.md
+  > The main page used for the documentation webpage.
+
+ops.py
+  > Thin wrappers for all PyTorch extension functions
+
+pyproject.toml
+  > The project configuration file used by `uv` to setup the building of the package with `setuptools`.
+
+setup.py
+  > A script used by `setuptools` to build the package.
+
+structs.py
+  > Wrapper classes for C++ structures that were given python bindings.
 ```
 
-- Verbose: `--verbose`
-- In debug: `--debug`
-- Without CUDA: `--no-cuda`
+## Build
+
+First, make sure you have activated the virtual environment in the outer directory:
+
+```
+uv venv .venv
+source .venv/bin/activate
+cd Extension
+```
+
+Building of this package will automatically by done by `uv` when running any script with `uv run` in the outer
+directory, but can be done manually with `uv` like so, in the `Extension/` directory:
+
+```bash
+uv pip install .[cpu]
+```
+
+or
+
+```bash
+uv pip install .[cuda]
+```
+
+or in ZSH add quotes, e.g.:
+
+```zsh
+uv pip install '.[cpu]'
+```
+
+To do this directly with setuptools in the `Extension/` directory:
+
+```bash
+python setup.py develop [--verbose] [--debug] [--no-cuda]
+```
 
 ## Documentation
 
@@ -21,12 +84,13 @@ at https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/index.html.
 
 ## Module contents
 
-See [`__init__.py`](__init__.py) for all the names that can be imported.
+See the names listed in the `__all__` variables in `ops.py` and `structs.py` for all names that can be imported.
 
 ### Functions
 
-The following functions are provided. These map directly to the C++ functions documented at the link above. The mappings
-are given in [ops.py](ops.py). Unless stated otherwise, all functions are implemented for both CPU and CUDA.
+The following functions are provided. These map (almost) directly to the C++ functions documented at the link above. The
+mappings are given in [ops.py](ops.py). Unless stated otherwise, all functions are implemented for both CPU and CUDA.
+Unless stated otherwise, backward passes for functions have not yet been implemented.
 
 - `radon2d`
 - `radon2d_v2`
@@ -36,9 +100,9 @@ are given in [ops.py](ops.py). Unless stated otherwise, all functions are implem
 - `d_radon3d_dr`
 - `d_radon3d_dr_v2`
 - `resample_sinogram3d`
-- `normalised_cross_correlation`
+- `normalised_cross_correlation` (backward pass also implemented)
 - `grid_sample3d`
-- `project_drr`
+- `project_drr` (backward pass also implemented)
 - `project_drr_cuboid_mask`
 - `resample_sinogram3d_cuda_texture` (only implemented for CUDA)
 

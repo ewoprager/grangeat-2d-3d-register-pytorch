@@ -8,6 +8,50 @@ Image Anal. 2021 Jan;67:101815. doi: 10.1016/j.media.2020.101815. Epub 2020 Sep 
 This project is very much in the experimental stages, so none of the code is very usable yet. It is being actively
 developed as part of a PhD.
 
+# Repo contents
+
+```
+data/
+  > Data saved from experiments
+
+Extension/
+  > A Python package with custom C++/CUDA operators for PyTorch
+  > See the README.md in this directory for more information
+
+figures/
+  > Plots and images from experiments
+
+Logs/
+  > Any script that runs `logger = logs_setup.setup_logger()` will automatically save its output to a log file in this directory.
+
+notification/
+  > A python package for logging and sending notification to Pushover
+
+registration/
+  > A python package for experimentation with 2D/3D radiographic image registration, and using the custom Extension package.
+  interface/
+    > A python package specifically for use by the script `scripts/interface.py`
+
+scripts/
+  > Some python scripts that use the `registration` module to perform experiments.
+  benchmarking/
+    > Scripts sepcifically for measuring the speeds of different implementations of algorithms in the `Extension` package
+  plotting/
+    > Scripts used for plotting data that is generated and saved by other scripts.
+
+Conventions.md
+  > Contains details of Python and C++ coding conventions, regarding style and structure.
+
+logging.conf
+  > A config file used for logging with the `logging` standard Python package.
+
+pyproject.toml
+  > The project configuration file used by `uv` to setup the environment and dependencies used by all Python scripts.
+
+uv.lock
+  > A file managed by `uv` which saves the exact installed dependency versions to install.
+```
+
 ## Setup
 
 The (much slower) CPU implementations should work on all platforms.
@@ -54,17 +98,10 @@ or
 uv pip install -e .[cuda]
 ```
 
-Any script can now be run using
+*Note: if using ZSH, the square brackets can confuse it. In this case, wrap with quotes, e.g.:*
 
-```bash
-uv run <script name> <args...>
-```
-
-To build the extension directly:
-
-```bash
-cd Extension
-python setup.py develop [--verbose] [--debug] [--no-cuda]
+```zsh
+uv pip install -e '.[cpu]'
 ```
 
 To run any script directly:
@@ -77,10 +114,6 @@ This is useful if you want to run with a debugger attached (e.g. if you have thi
 but note that this will not check for correctly install packages, nor initialise the build of the extension if the
 source code has changed, as `uv` is not run here, so make sure to run `uv sync` beforehand if you have changed any
 dependencies or the extension.
-
-# The extension
-
-The extension is contained within the [Extension](Extension) directory, with its own [README.md](Extension/README.md).
 
 # Scripts you can run
 
@@ -215,6 +248,11 @@ or
 ```bash
 PYTHONPATH=$PWD python registration/lib/dev_scripts/dev_sinogram.py --help 
 ```
+
+# The `reg23` extension
+
+The extension is contained within the [Extension](Extension) directory, with its own [README.md](Extension/README.md).
+
 
 ## Experiments so far
 

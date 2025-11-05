@@ -10,9 +10,11 @@ def setup_logger():
     hostname = socket.gethostname()
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     script_full_path = pathlib.Path(sys.argv[0])
-    logs_path = pathlib.Path("Logs/{}_{}_{}.log".format(hostname, timestamp, script_full_path.stem))
+    logs_directory = pathlib.Path("Logs")
+    logs_directory.mkdir(parents=True, exist_ok=True)
+    logs_path = logs_directory / "{}_{}_{}.log".format(hostname, timestamp, script_full_path.stem)
 
-    if logs_path.is_file():
+    while logs_path.is_file():
         logs_path = "{}_1".format(logs_path)
 
     header_string = "Hostname: {}\nTimestamp: {}\nCommand: ".format(hostname, timestamp)

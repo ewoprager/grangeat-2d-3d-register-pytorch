@@ -110,7 +110,7 @@ import matplotlib.pyplot as plt
 
 
 def test_project_drr_autograd():
-    display = True
+    display = False
 
     devices = ["cpu"]
     if torch.cuda.is_available():
