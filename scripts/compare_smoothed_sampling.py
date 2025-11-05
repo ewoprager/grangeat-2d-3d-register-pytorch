@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import nrrd
 
-import Extension
+import reg23
 
 from notification import logs_setup
 from registration.lib.structs import *

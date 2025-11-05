@@ -20,7 +20,7 @@ from registration.lib.structs import *
 from registration.lib import grangeat
 from registration import plot_data
 
-import Extension as reg23
+import reg23
 
 
 def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_path: str | pathlib.Path,

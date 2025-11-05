@@ -24,7 +24,7 @@ from registration import drr
 from registration.lib.optimisation import local_search, mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
 
-import Extension as reg23
+import reg23
 
 
 class RegistrationData:

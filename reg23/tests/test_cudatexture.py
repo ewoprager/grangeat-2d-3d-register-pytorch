@@ -5,8 +5,8 @@ import gc
 import torch
 
 if torch.cuda.is_available():
-    from Extension import CUDATexture2D, CUDATexture3D
-    from Extension import resample_sinogram3d_cuda_texture
+    from reg23 import CUDATexture2D, CUDATexture3D
+    from reg23 import resample_sinogram3d_cuda_texture
 
 
     def test_cuda_texture():

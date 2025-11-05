@@ -2703,7 +2703,7 @@ wheels = [
 [[package]]
 name = "reg23"
 version = "0.1.0"
-source = { editable = "Extension" }
+source = { editable = "reg23" }
 dependencies = [
     { name = "matplotlib" },
     { name = "pytest" },
@@ -3017,8 +3017,8 @@ requires-dist = [
     { name = "pyyaml", specifier = "==6.0.2" },
     { name = "pyzmq", specifier = "==26.2.0" },
     { name = "referencing", specifier = "==0.36.1" },
-    { name = "reg23", extras = ["cpu"], marker = "extra == 'cpu'", editable = "Extension" },
-    { name = "reg23", extras = ["cuda"], marker = "extra == 'cuda'", editable = "Extension" },
+    { name = "reg23", extras = ["cpu"], marker = "extra == 'cpu'", editable = "reg23" },
+    { name = "reg23", extras = ["cuda"], marker = "extra == 'cuda'", editable = "reg23" },
     { name = "requests", specifier = "==2.32.3" },
     { name = "rfc3339-validator", specifier = "==0.1.4" },
     { name = "rfc3986-validator", specifier = "==0.1.1" },

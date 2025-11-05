@@ -12,7 +12,7 @@ import nrrd
 import scipy
 from tqdm import tqdm
 
-import Extension
+import reg23
 
 # from diffdrr.drr import DRR
 # from diffdrr.data import read

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from registration.lib.structs import *
 from registration.lib import geometry
 
-import Extension as reg23
+import reg23
 
 
 def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, samples_per_direction: int = 128,

@@ -187,7 +187,7 @@ conflicts = [
 ]
 
 [tool.uv.workspace]
-members = ["Extension"]
+members = ["reg23"]
 
 # these define which sources to install some particular packages from
 [tool.uv.sources]
@@ -195,4 +195,4 @@ members = ["Extension"]
 reg23 = { workspace = true }
 
 [tool.setuptools.packages.find]
-where = ["Extension"]
+where = ["reg23"]

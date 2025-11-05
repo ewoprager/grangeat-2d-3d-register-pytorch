@@ -20,7 +20,7 @@ namespace reg23 {
  * @return a tensor of the same size as `phiValues` containing `torch.float32`s: Approximations of the plane integrals
  * through the given volume at the given spherical coordinate locations
  *
- * The spherical coordinates should be defined according to the convention stated in Extension/Conventions.md
+ * The spherical coordinates should be defined according to the convention stated in reg23/Conventions.md
  */
 at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                        const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
@@ -43,7 +43,7 @@ at::Tensor Radon3D_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing
  * plane-origin distance of the approximations (according to the `Radon3D_...` functions) of the plane integrals through
  * the given volume at the given spherical coordinate locations
  *
- * The spherical coordinates should be defined according to the convention stated in Extension/Conventions.md
+ * The spherical coordinates should be defined according to the convention stated in reg23/Conventions.md
  */
 at::Tensor DRadon3DDR_CPU(const at::Tensor &volume, const at::Tensor &volumeSpacing, const at::Tensor &phiValues,
                           const at::Tensor &thetaValues, const at::Tensor &rValues, int64_t samplesPerDirection);
@@ -168,7 +168,7 @@ template <typename texture_t> struct Radon3D {
 	 * @return The `Linear` mapping from integration iteration index to 3D cartesian texture coordinate sampling
 	 * location, according to the given texture object and integration plane (parameterised in spherical coordinates)
 	 *
-	 * The spherical coordinates should be defined according to the convention stated in Extension/Conventions.md
+	 * The spherical coordinates should be defined according to the convention stated in reg23/Conventions.md
 	 */
 	__host__ __device__ [[nodiscard]] static Linear2<VectorType>
 	GetMappingIndexToTexCoord(const texture_t &textureIn, FloatType phi, FloatType theta, FloatType r,
@@ -190,7 +190,7 @@ template <typename texture_t> struct Radon3D {
 	 * @return The derivative of the 3D cartesian texture coordinate in the given texture at the given world position
 	 * defined in spherical coordinates, with respect to the **unsigned** r spherical coordinate
 	 *
-	 * The spherical coordinates should be defined according to the convention stated in Extension/Conventions.md,
+	 * The spherical coordinates should be defined according to the convention stated in reg23/Conventions.md,
 	 * however the parameter with respect to which this is evaluating the derivative is the **unsigned** version of `r`,
 	 * i.e. the **unsigned** distance between the orign and the plane.
 	 */

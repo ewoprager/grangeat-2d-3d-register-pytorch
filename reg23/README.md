@@ -49,11 +49,11 @@ First, make sure you have activated the virtual environment in the outer directo
 ```
 uv venv .venv
 source .venv/bin/activate
-cd Extension
+cd reg23
 ```
 
 Building of this package will automatically by done by `uv` when running any script with `uv run` in the outer
-directory, but can be done manually with `uv` like so, in the `Extension/` directory:
+directory, but can be done manually with `uv` like so, in the `reg23/` directory:
 
 ```bash
 uv pip install .[cpu]
@@ -71,7 +71,7 @@ or in ZSH add quotes, e.g.:
 uv pip install '.[cpu]'
 ```
 
-To do this directly with setuptools in the `Extension/` directory:
+To do this directly with setuptools in the `reg23/` directory:
 
 ```bash
 python setup.py develop [--verbose] [--debug] [--no-cuda]

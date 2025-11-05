@@ -41,7 +41,7 @@ jobs:
     #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Build the extension
-      working-directory: Extension
+      working-directory: reg23
       run: uv pip install -e .[cpu]
 
     - name: Install dependencies

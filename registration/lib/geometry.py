@@ -5,7 +5,7 @@ import pyvista as pv
 
 from registration.lib.structs import Sinogram2dGrid, Sinogram3dGrid, Transformation, SceneGeometry
 
-import Extension as reg23
+import reg23
 
 
 def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, ph_matrix: torch.Tensor) -> torch.Tensor:
