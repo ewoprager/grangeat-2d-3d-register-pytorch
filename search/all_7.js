@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['elementtype_0',['ElementType',['../classreg23_1_1Vec.html#a84d96d300cc952ca4069da2b4dbdb3ac',1,'reg23::Vec']]]
+  ['image_20registration_0',['Grangeat-based 2D/3D image registration',['../index.html',1,'']]],
+  ['implementation_20conventions_1',['Implementation conventions',['../conventions.html#autotoc_md1',1,'']]]
 ];
