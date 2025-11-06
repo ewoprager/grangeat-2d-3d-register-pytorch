@@ -86,25 +86,31 @@ uv venv
 source .venv/bin/activate
 ```
 
-Install necessary dependencies with
+Install all dependencies with:
 
 ```bash
-uv pip install -e .[cpu]
+uv sync --extra cpu
 ```
 
 or
 
 ```bash
-uv pip install -e .[cuda]
+uv sync --extra cuda
 ```
 
-*Note: if using ZSH, the square brackets can confuse it. In this case, wrap with quotes, e.g.:*
+# Scripts you can run
 
-```zsh
-uv pip install -e '.[cpu]'
+Scripts which aren't contained in the root directory must be run from the root directory, with the
+`PYTHONPATH` variable set to the root directory, e.g.:
+
+```
+PYTHONPATH=$PWD uv run ...
 ```
 
-To run any script directly:
+In Clion, this should be done automatically in Python run configurations, so you shouldn't need to add the
+`PYTHONPATH=$PWD`.
+
+To run any script directly with the python binary:
 
 ```bash
 python <script name> <args...>
@@ -115,25 +121,13 @@ but note that this will not check for correctly install packages, nor initialise
 source code has changed, as `uv` is not run here, so make sure to run `uv sync` beforehand if you have changed any
 dependencies or the extension.
 
-# Scripts you can run
-
-Scripts which aren't contained in the root directory must be run from the root directory, with the
-`PYTHONPATH` variable set to the root directory, e.g.:
-
-```
-PYTHON_PATH=$PWD uv run ...
-```
-
-In Clion, this should be done automatically in Python run configurations, so you shouldn't need to add the
-`PYTHONPATH=$PWD`.
-
 ## A Qt-based interface using `napari`
 
 This can be run for interactive manipulation and registration of a CT or synthetic volume with an X-ray image or DRR:
 
 ```bash
-PYTHON_PATH=$PWD uv run scripts/interface.py -h
-PYTHON_PATH=$PWD uv run scripts/interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --xray-path "/path/to/x_ray.dcm"
+PYTHONPATH=$PWD uv run scripts/interface.py -h
+PYTHONPATH=$PWD uv run scripts/interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --xray-path "/path/to/x_ray.dcm"
 ```
 
 ![interface_2025-09-05.png](figures/readme/interface_2025-09-05.png)

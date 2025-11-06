@@ -164,6 +164,8 @@ dependencies = [
     "napari[pyqt6, optional]>=0.6.6; sys_platform == 'darwin'",
     "napari[all]>=0.6.6; sys_platform != 'darwin'",
 ]
+# Might want to switch PySide2 GUI backend for Napari on Darwin (instead of PyQt6):
+# https://napari.org/stable/tutorials/fundamentals/installation.html#choosing-a-different-qt-backend
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
 [project.optional-dependencies]

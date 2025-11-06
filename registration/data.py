@@ -9,6 +9,7 @@ import torch
 import nrrd
 import pydicom
 import nibabel
+from tqdm import tqdm
 
 from registration.lib.structs import SceneGeometry, Transformation, LinearRange
 from registration.lib import sinogram
@@ -39,7 +40,7 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
             data = data.permute(*reversed(range(data.ndim)))
             spacing = torch.tensor(img.header.get_zooms(), dtype=torch.float32)[0:3]
             if path.stem == "PhantomCT":
-                data -= 1000.0 # super hacky adjustment for one particular file which appears to be HU + 1000
+                data -= 1000.0  # super hacky adjustment for one particular file which appears to be HU + 1000
             logger.warning("Don't know how to read ImageOrientationPatient from .nii files.")
         else:
             raise Exception("Error: file {} is of unrecognised type.".format(str(path)))
@@ -55,7 +56,9 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
         files = [elem for elem in path.iterdir() if elem.is_file() and elem.suffix == ".dcm"]
         if len(files) == 0:
             raise Exception("Error: no DICOM (.dcm) files found in given directory '{}'.".format(str(path)))
-        slices = [pydicom.dcmread(f) for f in files]
+        logger.info("Reading {} DICOM files...".format(len(files)))
+        slices = [pydicom.dcmread(f) for f in tqdm(files)]
+        logger.info("Done.")
         try:
             # Sort by z-position
             slices.sort(key=lambda ds: float(ds.ImagePositionPatient[2]))
