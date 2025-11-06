@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['functions_0',['PyTorch Functions',['../group__pytorch__functions.html',1,'']]]
+  ['data_20structures_0',['Data Structures',['../group__data__structures.html',1,'']]]
 ];
