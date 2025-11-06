@@ -23,8 +23,7 @@ namespace reg23 {
  *
  * # Address modes
  * - "zero": sampling locations outside (-1, -1, -1) and (1, 1, 1) will be read as 0
- * - "wrap": sampling locations (x, y, z) outside (-1, -1, -1) and (1, 1, 1) will be read wrapped back according to ((x
- * + 1) mod 2 - 1, (y + 1) mod 2 - 1, (z + 1) mod 2 - 1)
+ * - "wrap": sampling locations (x, y, z) outside (-1, -1, -1) and (1, 1, 1) will be read wrapped back according to ((x + 1) mod 2 - 1, (y + 1) mod 2 - 1, (z + 1) mod 2 - 1)
  */
 at::Tensor GridSample3D_CPU(const at::Tensor &input, const at::Tensor &grid, const std::string &addressModeX,
                             const std::string &addressModeY, const std::string &addressModeZ,
