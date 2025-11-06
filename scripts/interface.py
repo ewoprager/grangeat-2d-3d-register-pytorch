@@ -52,7 +52,7 @@ class Interface:
             device=device)
 
         self._viewer = napari.Viewer()
-        self._viewer.bind_key("Alt", self._on_alt_down)
+        self._viewer.bind_key("Control", self._on_ctrl_down)
         self._fixed_image_layer = self._viewer.add_image(self.registration_data.fixed_image.cpu().numpy(),
                                                          colormap="yellow", interpolation2d="linear",
                                                          name="Fixed image")
@@ -72,7 +72,7 @@ class Interface:
         self._view_params = ViewParams(translation_sensitivity=0.06, rotation_sensitivity=0.002,
                                        render_fixed_image_with_mask=False)
 
-        self._key_states = {"Alt": False}
+        self._key_states = {"Ctrl": False}
 
         self._view_widget = ViewWidget(self.set_view_params)
         self._viewer.window.add_dock_widget(self._view_widget, name="View options", area="left",
@@ -206,10 +206,10 @@ class Interface:
         self._moving_sinogram_layer.data = resampled_sinogram.cpu().numpy()
 
     # Event callbacks:
-    def _on_alt_down(self, viewer):
-        self._key_states["Alt"] = True
+    def _on_ctrl_down(self, viewer):
+        self._key_states["Ctrl"] = True
         yield
-        self._key_states["Alt"] = False
+        self._key_states["Ctrl"] = False
 
     def _reset(self, layer):
         reset_transformation = self.registration_data.transformation_gt
@@ -220,7 +220,7 @@ class Interface:
         logger.info("Reset")
 
     def _mouse_drag(self, layer, event):
-        if event.button == 1 and self._key_states["Alt"]:  # Alt-left click drag
+        if event.button == 1 and self._key_states["Ctrl"]:  # Ctrl-left click drag
             # mouse down
             dragged = False
             drag_start = np.array([event.position[1], -event.position[0]])
@@ -254,7 +254,7 @@ class Interface:
             else:
                 # just clicked
                 pass
-        elif event.button == 2 and self._key_states["Alt"]:  # Alt-right click drag
+        elif event.button == 2 and self._key_states["Ctrl"]:  # Ctrl-right click drag
             # mouse down
             dragged = False
             drag_start = torch.tensor(event.position)

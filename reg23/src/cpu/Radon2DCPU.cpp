@@ -5,10 +5,10 @@
 
 #include <torch/extension.h>
 
-#include "../include/Radon2D.h"
-#include "../include/Texture2DCPU.h"
+#include <reg23/Radon2D.h>
+#include <reg23/Texture2DCPU.h>
 
-#include "../include/Vec.h"
+#include <reg23/Vec.h>
 
 namespace reg23 {
 

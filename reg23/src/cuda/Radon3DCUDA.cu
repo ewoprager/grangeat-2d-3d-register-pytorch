@@ -1,7 +1,7 @@
 #include <torch/extension.h>
 
-#include "../include/Texture3DCUDA.h"
-#include "../include/Radon3D.h"
+#include <reg23/Texture3DCUDA.h>
+#include <reg23/Radon3D.h>
 
 namespace reg23 {
 

@@ -1,9 +1,9 @@
 #include <torch/extension.h>
 
-#include "../include/ResampleSinogram3D.h"
-#include "../include/SinogramClassic3D.h"
-#include "../include/SinogramHEALPix.h"
-#include "../include/Texture3DCPU.h"
+#include <reg23/ResampleSinogram3D.h>
+#include <reg23/SinogramClassic3D.h>
+#include <reg23/SinogramHEALPix.h>
+#include <reg23/Texture3DCPU.h>
 
 namespace reg23 {
 

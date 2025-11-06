@@ -1,6 +1,6 @@
 #include <torch/extension.h>
 
-#include "../include/Similarity.h"
+#include <reg23/Similarity.h>
 
 namespace reg23 {
 

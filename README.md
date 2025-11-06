@@ -142,7 +142,7 @@ PYTHON_PATH=$PWD uv run scripts/interface.py --ct-path "/path/to/ct.nrrd or /pat
 
 ### General controls
 
-- With the DRR selected in the 'layer list' window on the left, hold `alt` and drag with the left and right mouse
+- With the DRR selected in the 'layer list' window on the left, hold `control` and drag with the left and right mouse
   buttons pressed to change the rotation and translation transformation parameters respectively. The sensitivity of this
   is controlled in the 'View Options' window on the bottom left.
 - The numerical values of the transformation parameters can be changed, saved and loaded in the 'Transformations'

@@ -110,7 +110,7 @@ import matplotlib.pyplot as plt
 
 
 def test_project_drr_autograd():
-    display = False
+    display = True
 
     devices = ["cpu"]
     if torch.cuda.is_available():
@@ -123,6 +123,8 @@ def test_project_drr_autograd():
     detector_spacing = torch.tensor([0.2, 0.25])
     if display:
         fig, axes = plt.subplots(len(devices), 1)
+        if len(devices) < 2:
+            axes = [axes]
 
     for device_index, device_name in enumerate(devices):
         device = torch.device(device_name)

@@ -1,7 +1,7 @@
 #include <torch/extension.h>
 
-#include "../include/Texture3DCUDA.h"
-#include "../include/GridSample3D.h"
+#include <reg23/Texture3DCUDA.h>
+#include <reg23/GridSample3D.h>
 
 namespace reg23 {
 

@@ -13,9 +13,10 @@ file(GLOB HEADERS
      "include/*.h"
 )
 
-file(GLOB SOURCES
+file(GLOB_RECURSE SOURCES
      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
      CONFIGURE_DEPENDS
+     "src/cpu/*.cpp"
      "src/*.cpp"
 )
 
@@ -23,7 +24,7 @@ if (CUDAToolkit_FOUND)
     file(GLOB CUDA_SOURCES
          RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
          CONFIGURE_DEPENDS
-         "src/*.cu"
+         "src/cuda/*.cu"
     )
 
     # Get the location of CUDA
@@ -75,7 +76,8 @@ string(REPLACE "," ";" TORCH_INCLUDE_DIRS ${TORCH_INCLUDE_DIRS})
 
 
 if (CUDAToolkit_FOUND)
-    include_directories(${TORCH_INCLUDE_DIRS}
+    include_directories("${CMAKE_SOURCE_DIR}/include"
+                        ${TORCH_INCLUDE_DIRS}
                         "${CUDA_HOME}/include")
 
     add_library(${PROJECT_NAME} SHARED

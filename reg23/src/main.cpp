@@ -5,16 +5,16 @@
 
 #include <torch/extension.h>
 
-#include "../include/GridSample3D.h"
-#include "../include/ProjectDRR.h"
-#include "../include/ProjectDRRCuboidMaskCPU.h"
-#include "../include/Radon2D.h"
-#include "../include/Radon3D.h"
-#include "../include/ResampleSinogram3D.h"
-#include "../include/Similarity.h"
+#include <reg23/GridSample3D.h>
+#include <reg23/ProjectDRR.h>
+#include <reg23/ProjectDRRCuboidMaskCPU.h>
+#include <reg23/Radon2D.h>
+#include <reg23/Radon3D.h>
+#include <reg23/ResampleSinogram3D.h>
+#include <reg23/Similarity.h>
 
 #ifdef USE_CUDA
-#include "../include/CUDATexture.h"
+#include <reg23/CUDATexture.h>
 #endif
 
 namespace reg23 {

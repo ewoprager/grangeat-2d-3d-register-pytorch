@@ -1,7 +1,7 @@
 #include <torch/extension.h>
 
-#include "../include/Texture3DCUDA.h"
-#include "../include/ProjectDRR.h"
+#include <reg23/Texture3DCUDA.h>
+#include <reg23/ProjectDRR.h>
 
 namespace reg23 {
 

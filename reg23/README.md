@@ -71,11 +71,24 @@ or in ZSH add quotes, e.g.:
 uv pip install '.[cpu]'
 ```
 
-To do this directly with setuptools in the `reg23/` directory:
+This will use a `uv` temporary build environment, and only output the resulting `.so` into `reg23/src/`.
+
+To perform the build directly in the `reg23/` directory with setuptools:
 
 ```bash
 python setup.py develop [--verbose] [--debug] [--no-cuda]
 ```
+
+Install all dependencies with:
+```bash
+uv sync --extra cpu
+```
+or
+```bash
+uv sync --extra cuda
+```
+
+This will create and fill the directory `reg23/build/`.
 
 ## Documentation
 

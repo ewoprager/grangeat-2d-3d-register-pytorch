@@ -1,7 +1,7 @@
 #include <torch/extension.h>
 
-#include "../include/Texture3DCPU.h"
-#include "../include/ProjectDRR.h"
+#include <reg23/Texture3DCPU.h>
+#include <reg23/ProjectDRR.h>
 
 namespace reg23 {
 
@@ -88,11 +88,7 @@ at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &v
 				dIntensityDHomographyMatrixInverse;
 		}
 	}
-	Vec<double, 16> output = VecCat(dLossDHomographyMatrixInverse[0], //
-	                                dLossDHomographyMatrixInverse[1], //
-	                                dLossDHomographyMatrixInverse[2], //
-	                                dLossDHomographyMatrixInverse[3]);
-	return torch::from_blob(output.data(), {4, 4},
+	return torch::from_blob(dLossDHomographyMatrixInverse.data(), {4, 4},
 	                        torch::TensorOptions{}.dtype(torch::kDouble).device(homographyMatrixInverse.device())).
 		clone(); // need to clone as `from_blob` returns a non-owning tensor
 }

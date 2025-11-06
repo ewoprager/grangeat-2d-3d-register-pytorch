@@ -1,6 +1,6 @@
 #include <torch/extension.h>
 
-#include "../include/ProjectDRRCuboidMaskCPU.h"
+#include <reg23/ProjectDRRCuboidMaskCPU.h>
 
 namespace reg23 {
 

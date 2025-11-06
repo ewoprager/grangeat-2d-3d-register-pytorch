@@ -1,7 +1,7 @@
 #include <torch/extension.h>
 
-#include "../include/Similarity.h"
-#include "../include/Vec.h"
+#include <reg23/Similarity.h>
+#include <reg23/Vec.h>
 
 namespace reg23 {
 

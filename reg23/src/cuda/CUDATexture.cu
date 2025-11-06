@@ -1,7 +1,7 @@
 #include <torch/extension.h>
 
-#include "../include/Texture.h"
-#include "../include/CUDATexture.h"
+#include <reg23/Texture.h>
+#include <reg23/CUDATexture.h>
 
 namespace reg23 {
 

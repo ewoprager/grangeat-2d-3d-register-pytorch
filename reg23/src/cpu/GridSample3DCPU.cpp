@@ -1,9 +1,9 @@
 #include <torch/extension.h>
 
-#include "../include/Texture3DCPU.h"
-#include "../include/GridSample3D.h"
+#include <reg23/Texture3DCPU.h>
+#include <reg23/GridSample3D.h>
 
-#include "../include/Vec.h"
+#include <reg23/Vec.h>
 
 namespace reg23 {
 
