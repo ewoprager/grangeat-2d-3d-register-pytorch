@@ -11,7 +11,7 @@ endif ()
 file(GLOB HEADERS
      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
      CONFIGURE_DEPENDS
-     "include/*.h"
+     "include/**/*.h"
 )
 
 file(GLOB_RECURSE SOURCES
@@ -78,6 +78,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
              RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
              CONFIGURE_DEPENDS
              "src/mps/*.mm"
+             "src/mps/shaders/*.metal"
         )
     endif ()
 endif ()
@@ -120,6 +121,7 @@ if (CUDAToolkit_FOUND)
     # out to have it check your code as though it will compile with GCC / CLA.
     target_compile_definitions(${PROJECT_NAME} PRIVATE
                                __CUDACC__
+                               USE_CUDA
     )
 else ()
     include_directories("${CMAKE_SOURCE_DIR}/include"
@@ -147,6 +149,10 @@ if (METAL_LIB AND FOUNDATION_LIB)
                            -ObjC++       # ensure Objective-C++ mode
                            -fobjc-arc    # use ARC for Objective-C memory management
     )
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+                               USE_MPS
+    )
+
 endif ()
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)

@@ -9,6 +9,11 @@
 
 namespace reg23 {
 
+
+torch::Tensor sample_test(const torch::Tensor &a);
+torch::Tensor add_tensors_metal(const torch::Tensor &a, const torch::Tensor &b);
+
+
 /**
  * @ingroup pytorch_functions
  * @brief Generate a DRR from the given volume at the given transformation.

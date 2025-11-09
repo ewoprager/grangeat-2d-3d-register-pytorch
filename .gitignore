@@ -14,3 +14,4 @@ figures/truncation/
 **/*.egg-info/
 Logs/*
 data/register_plot_data/
+**/build-xcode/

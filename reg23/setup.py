@@ -45,7 +45,7 @@ def compile_metal_shaders(shader_dir: pathlib.Path, output_dir: pathlib.Path) ->
         pathlib.Path(air_file).unlink()
 
     # convert the library into a C-array
-    header = output_dir / "default_metallib.h"
+    header = output_dir / "default_metallib.mm"
     header.write_text(subprocess.run(["xxd", "-i", str(metallib)], capture_output=True, text=True, check=True).stdout)
 
     # cleaning up library
@@ -57,7 +57,7 @@ def compile_metal_shaders(shader_dir: pathlib.Path, output_dir: pathlib.Path) ->
 class BuildExtensionWithMetal(BuildExtension):
     def run(self):
         shader_dir = pathlib.Path("src") / "mps" / "shaders"
-        output_dir = pathlib.Path("include") / "reg23_mps"
+        output_dir = pathlib.Path("src") / "mps"
         if shader_dir.is_dir():
             compile_metal_shaders(shader_dir, output_dir)
         else:
@@ -101,6 +101,8 @@ include_dirs: list[str] = [str(this_directory / "include")]
 macros: list[Tuple] = []
 if use_cuda:
     macros.append(("USE_CUDA", None))
+if use_mps:
+    macros.append(("USE_MPS", None))
 
 extra_compile_args = {  #
     "cxx": [  #

@@ -158,3 +158,22 @@ def test_project_drr_autograd():
             print(out)  # assert h_matrix_inv.grad == pytest.approx(out.detach().cpu(), abs=0.001, rel=0.01)
     if display:
         plt.show()
+
+
+def test_add_tensors_metal():
+    a = torch.tensor([1.0, 2.0, 3.0]).to('mps')
+    b = torch.tensor([4.0, 5.0, 6.0]).to('mps')
+    print(f"Input tensor a: {a}")
+    print(f"Input tensor b: {b}")
+    print(f"Input device: {a.device}")
+
+    result = torch.ops.reg23.add_tensors_metal.default(a, b)
+    print(f"Addition result: {result}")
+    print(f"Output device {result.device}")
+    assert result.device == torch.device('mps:0'), "Output tensor is (maybe?) not on the MPS device"
+
+def test_sample_test():
+    texture = torch.tensor([[[0.0, 1.0], [2.0, 3.0]], [[4.0, 5.0], [6.0, 7.0]]], device=torch.device('mps'),
+                           dtype=torch.float32)
+    res = torch.ops.reg23.sample_test.default(texture)
+    print(res)

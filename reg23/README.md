@@ -117,3 +117,24 @@ C++ structures documented at the link above.
 
 - `CUDATexture2D`
 - `CUDATexture3D`
+
+## MPS Development
+
+For developing MPS implementations in Objective-C++ (.mm sources) and Metal (.metal sources), it is recommended to use
+Xcode.
+
+To do this, create a sub directory of `reg23/` called something like `reg23/build-xcode`, navigate inside and generate
+a `.xcodeproj` according to `reg23/CMakeLists.txt` like so:
+```bash
+source .venv/bin/activate
+cd reg23
+mkdir build-xcode
+cd build-xcode
+cmake -G Xcode -DPython3_EXECUTABLE=$(which python) ..
+```
+
+The resulting `.xcodeproj` directory can be opened in Xcode.
+
+The Xcode project will only include files that are included as sources in the CMake project. If by mistake some are
+missed, modify the calls to `add_library` in `reg23/CMakeLists.txt` such that all source files that you wish to be
+included in the Xcode project are globbed.
