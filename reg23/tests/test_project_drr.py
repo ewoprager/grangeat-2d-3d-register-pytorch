@@ -172,8 +172,13 @@ def test_add_tensors_metal():
     print(f"Output device {result.device}")
     assert result.device == torch.device('mps:0'), "Output tensor is (maybe?) not on the MPS device"
 
+
 def test_sample_test():
-    texture = torch.tensor([[[0.0, 1.0], [2.0, 3.0]], [[4.0, 5.0], [6.0, 7.0]]], device=torch.device('mps'),
-                           dtype=torch.float32)
+    # texture = torch.tensor([[[0.0, 1.0], [2.0, 3.0]], [[4.0, 5.0], [6.0, 7.0]]], device=torch.device('mps'),
+    #                        dtype=torch.float32)
+    texture = 2.0 * torch.ones((4, 4, 4), device=torch.device('mps'), dtype=torch.float32)
+    print()
+    print("size =", texture.size())
+    print("a =", texture)
     res = torch.ops.reg23.sample_test.default(texture)
-    print(res)
+    print("result =", res)

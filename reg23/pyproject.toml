@@ -35,9 +35,12 @@ build-backend = "setuptools.build_meta"
 cache-keys = [
     { file = "pyproject.toml" },
     { file = "setup.py" },
-    { file = "include/*.h" },
+    { file = "include/reg23/*.h" },
     { file = "src/*.cpp" },
-    { file = "src/*.cu" },
+    { file = "src/cpu/*.cpp" },
+    { file = "src/cuda/*.cu" },
+    { file = "src/mps/*.mm" },
+    { file = "src/mps/shaders/*.metal" },
 ]
 # conflicts between optional dependencies are stated so that uv doesn't try to install them by default and complain
 conflicts = [
