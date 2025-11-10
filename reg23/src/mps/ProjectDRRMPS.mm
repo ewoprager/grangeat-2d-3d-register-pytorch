@@ -12,11 +12,11 @@ static inline id<MTLBuffer> getMTLBufferStorage(const torch::Tensor &tensor) {
 	return __builtin_bit_cast(id<MTLBuffer>, tensor.storage().data());
 }
 
-id<MTLTexture> createTextureFromTensor(id<MTLDevice> device, const at::Tensor &tensor) {
-	TORCH_CHECK(tensor.dim() == 3, "Expected 3D tensor (or 1xD,H,W)")
+id<MTLTexture> createTextureFromTensor(id<MTLDevice> device, const at::Tensor &contigTensor) {
+	TORCH_CHECK(contigTensor.dim() == 3, "Expected 3D tensor (or 1xD,H,W)")
 
-	auto tensor_contig = tensor.contiguous();
-	auto sizes = tensor_contig.sizes();
+	const at::IntArrayRef sizes = contigTensor.sizes();
+//	id<MTLBuffer> buffer = getMTLBufferStorage(contigTensor);
 
 	std::cout << "ctft A" << std::endl;
 
@@ -32,15 +32,16 @@ id<MTLTexture> createTextureFromTensor(id<MTLDevice> device, const at::Tensor &t
 
 	std::cout << "ctft B" << std::endl;
 
+	const NSUInteger bytesPerRow = sizes[2] * sizeof(float);
+
 	id<MTLTexture> tex = [device newTextureWithDescriptor:desc];
 
 	std::cout << "ctft C" << std::endl;
 
-	NSUInteger bytesPerRow = sizes[2] * sizeof(float); // ((sizes[2] * sizeof(float) + 255) / 256) * 256;
 	[tex replaceRegion:MTLRegionMake3D(0, 0, 0, sizes[2], sizes[1], sizes[0])
 		   mipmapLevel:0
 				 slice:0
-			 withBytes:tensor_contig.data_ptr<float>()
+			 withBytes:contigTensor.storage().data()
 		   bytesPerRow:bytesPerRow
 		 bytesPerImage:bytesPerRow * sizes[1]];
 
@@ -83,8 +84,10 @@ torch::Tensor sample_test(const torch::Tensor &a) {
 
 		std::cout << "C" << std::endl;
 
+		at::Tensor aContiguous = a.contiguous();
+
 		// copy the tensor into a texture
-		id<MTLTexture> texture = createTextureFromTensor(device, a);
+		id<MTLTexture> texture = createTextureFromTensor(device, aContiguous);
 		if (!texture) {
 			throw std::runtime_error("Error creating texture.");
 		}
