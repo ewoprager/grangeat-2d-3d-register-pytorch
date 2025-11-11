@@ -10,7 +10,12 @@ include/
   > Header C++ files
 
 src/
-  > C++ and CUDA source files
+  cpu/
+    > C++ source files for CPU implementations of PyTorch functions
+  cuda/
+    > .cu source files for CUDA implementations of PyTorch functions
+  mps/
+    > .mm source files for MPS implementations of PyTorch functions
   main.cpp
     > This is where all the Python bindings are declared.
 
@@ -120,11 +125,12 @@ C++ structures documented at the link above.
 
 ## MPS Development
 
-For developing MPS implementations in Objective-C++ (.mm sources) and Metal (.metal sources), it is recommended to use
-Xcode.
+For developing MPS implementations in Objective-C++ (.mm sources) and Metal (.metal sources), one can perfectly well use
+Clion. As of writing this, Xcode surprisingly does not provide any more functionality than Clion for Objective-C++ or 
+Metal shader development.
 
-To do this, create a sub directory of `reg23/` called something like `reg23/build-xcode`, navigate inside and generate
-a `.xcodeproj` according to `reg23/CMakeLists.txt` like so:
+If you nevertheless want to use Xcode, create a subdirectory of `reg23/` called something like `reg23/build-xcode`,
+navigate inside and generate a `.xcodeproj` according to `reg23/CMakeLists.txt` like so:
 ```bash
 source .venv/bin/activate
 cd reg23
