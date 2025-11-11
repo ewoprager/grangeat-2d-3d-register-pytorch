@@ -12,13 +12,15 @@ static inline id<MTLBuffer> getMTLBufferStorage(const torch::Tensor &tensor) {
 	return __builtin_bit_cast(id<MTLBuffer>, tensor.storage().data());
 }
 
-id<MTLTexture> createTextureFromTensor(id<MTLDevice> device, const at::Tensor &contigTensor) {
+id<MTLTexture> createTextureFromTensor(id<MTLDevice> device, id<MTLCommandBuffer> commandBuffer,
+									   const at::Tensor &contigTensor) {
 	TORCH_CHECK(contigTensor.dim() == 3, "Expected 3D tensor (or 1xD,H,W)")
 
 	const at::IntArrayRef sizes = contigTensor.sizes();
-//	id<MTLBuffer> buffer = getMTLBufferStorage(contigTensor);
+	id<MTLBuffer> buffer = getMTLBufferStorage(contigTensor);
 
-	std::cout << "ctft A" << std::endl;
+	const NSUInteger bytesPerRow = sizes[2] * sizeof(float);
+	const NSUInteger bytesPerImage = sizes[1] * bytesPerRow;
 
 	MTLTextureDescriptor *desc = [MTLTextureDescriptor new];
 	desc.textureType = MTLTextureType3D;
@@ -28,39 +30,37 @@ id<MTLTexture> createTextureFromTensor(id<MTLDevice> device, const at::Tensor &c
 	desc.depth = sizes[0];
 	desc.mipmapLevelCount = 1;
 	desc.usage = MTLTextureUsageShaderRead;
-	desc.storageMode = MTLStorageModeManaged;
+	desc.storageMode = MTLStorageModePrivate;
 
-	std::cout << "ctft B" << std::endl;
+	id<MTLTexture> ret = [device newTextureWithDescriptor:desc];
 
-	const NSUInteger bytesPerRow = sizes[2] * sizeof(float);
+	id<MTLBlitCommandEncoder> blitEncoder = [commandBuffer blitCommandEncoder];
 
-	id<MTLTexture> tex = [device newTextureWithDescriptor:desc];
+	MTLOrigin origin = {0, 0, 0};
+	MTLSize size = {static_cast<NSUInteger>(sizes[2]), static_cast<NSUInteger>(sizes[1]),
+					static_cast<NSUInteger>(sizes[0])};
+	[blitEncoder copyFromBuffer:buffer
+				   sourceOffset:0
+			  sourceBytesPerRow:bytesPerRow
+			sourceBytesPerImage:bytesPerImage
+					 sourceSize:size
+					  toTexture:ret
+			   destinationSlice:0
+			   destinationLevel:0
+			  destinationOrigin:origin];
 
-	std::cout << "ctft C" << std::endl;
+	[blitEncoder endEncoding];
 
-	[tex replaceRegion:MTLRegionMake3D(0, 0, 0, sizes[2], sizes[1], sizes[0])
-		   mipmapLevel:0
-				 slice:0
-			 withBytes:contigTensor.storage().data()
-		   bytesPerRow:bytesPerRow
-		 bytesPerImage:bytesPerRow * sizes[1]];
-
-	std::cout << "ctft D" << std::endl;
-
-	return tex;
+	return ret;
 }
 
 torch::Tensor sample_test(const torch::Tensor &a) {
-
-	std::cout << "A" << std::endl;
 
 	TORCH_INTERNAL_ASSERT(a.device().type() == torch::kMPS)
 
 	const uint32_t width = 100;
 
 	torch::Tensor resultFlat = torch::empty({width}, torch::TensorOptions().dtype(torch::kFloat).device(torch::kMPS));
-
-	std::cout << "B" << std::endl;
 
 	@autoreleasepool {
 		// Get the default Metal device
@@ -82,17 +82,7 @@ torch::Tensor sample_test(const torch::Tensor &a) {
 			throw std::runtime_error("Error: Metal function sample_test not found.");
 		}
 
-		std::cout << "C" << std::endl;
-
 		at::Tensor aContiguous = a.contiguous();
-
-		// copy the tensor into a texture
-		id<MTLTexture> texture = createTextureFromTensor(device, aContiguous);
-		if (!texture) {
-			throw std::runtime_error("Error creating texture.");
-		}
-
-		std::cout << "D" << std::endl;
 
 		// create a sampler
 		MTLSamplerDescriptor *samplerDesc = [MTLSamplerDescriptor new];
@@ -105,8 +95,6 @@ torch::Tensor sample_test(const torch::Tensor &a) {
 		if (!sampler) {
 			throw std::runtime_error("Error creating sampler.");
 		}
-
-		std::cout << "E" << std::endl;
 
 		// Create a Metal compute pipeline state
 		id<MTLComputePipelineState> pipelineState = [device newComputePipelineStateWithFunction:function error:&error];
@@ -121,9 +109,13 @@ torch::Tensor sample_test(const torch::Tensor &a) {
 		// Get PyTorch's Metal command buffer
 		id<MTLCommandBuffer> commandBuffer = torch::mps::get_command_buffer();
 
-		std::cout << "F" << std::endl;
-
 		dispatch_sync(serialQueue, ^() {
+		  // Blit the tensor data into a texture
+		  id<MTLTexture> texture = createTextureFromTensor(device, commandBuffer, aContiguous);
+		  if (!texture) {
+			  throw std::runtime_error("Error creating texture.");
+		  }
+
 		  // Create a compute command encoder
 		  id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
 

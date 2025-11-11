@@ -9,6 +9,6 @@ kernel void sample_test(texture3d<float, access::sample> volumeTex [[texture(0)]
 {
 	if (gid.x >= outWidth) return;
 
-	float4 value = volumeTex.sample(volumeSampler, float3(0.5, 0.5, 0.5));
+	float4 value = volumeTex.sample(volumeSampler, float3(float(gid.x) / float(outWidth - 1), float(gid.x) / float(outWidth - 1), float(gid.x) / float(outWidth - 1)));
 	out[gid.x] = value.x;
 }
