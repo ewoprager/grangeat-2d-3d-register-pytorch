@@ -89,10 +89,9 @@ def grid_sample3d(input_: torch.Tensor, grid: torch.Tensor, address_mode_x: str 
 def project_drr(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,
                 source_distance: float, output_width: int, output_height: int, output_offset: torch.Tensor,
                 detector_spacing: torch.Tensor) -> torch.Tensor:
-    return torch.ops.reg23.project_drr.default(volume, voxel_spacing.to(dtype=torch.float64),
-                                               homography_matrix_inverse.to(dtype=torch.float64), source_distance,
-                                               output_width, output_height, output_offset,
-                                               detector_spacing.to(dtype=torch.float64))
+    # ToDo: Add tensor type conversions to the c++, remove from this file
+    return torch.ops.reg23.project_drr.default(volume, voxel_spacing, homography_matrix_inverse, source_distance,
+                                               output_width, output_height, output_offset, detector_spacing)
 
 
 def project_drr_backward(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,

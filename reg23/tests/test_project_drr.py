@@ -183,3 +183,15 @@ def test_sample_test():
     torch.mps.synchronize()
     res = torch.ops.reg23.sample_test.default(texture)
     print("result =", res)
+
+
+def test_project_drr_mps():
+    volume = torch.rand((11, 12, 8), device=torch.device('mps'))
+    voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
+    h_matrix_inv = torch.eye(4)
+    source_distance = 1000.0
+    output_size = torch.Size([10, 15])
+    detector_spacing = torch.tensor([0.2, 0.25])
+    res = project_drr(volume, voxel_spacing, h_matrix_inv, source_distance, output_size[1], output_size[0],
+                      torch.zeros(2, dtype=torch.float64), detector_spacing)
+    print(res)

@@ -43,7 +43,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
 TORCH_LIBRARY(reg23, m) {
 	// Note that "float" in the schema corresponds to the C++ `double` type and the Python `float` type.
 	// Note that "int" in the schema corresponds to the C++ `int64_t` type and the Python `int` type.
-	m.def("sample_test(Tensor a) -> Tensor");
+//	m.def("sample_test(Tensor a) -> Tensor");
 	m.def("add_tensors_metal(Tensor a, Tensor b) -> Tensor");
 	m.def("radon2d(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
 	m.def("radon2d_v2(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
@@ -104,7 +104,8 @@ TORCH_LIBRARY_IMPL(reg23, CUDA, m) {
 #ifdef USE_MPS
 TORCH_LIBRARY_IMPL(reg23, MPS, m) {
 	m.impl("add_tensors_metal", &add_tensors_metal);
-	m.impl("sample_test", &sample_test);
+//	m.impl("sample_test", &sample_test);
+	m.impl("project_drr", &ProjectDRR_MPS);
 }
 #endif
 

@@ -8,10 +8,7 @@ kernel void project_drr(texture3d<float, access::sample> volumeTex [[texture(0)]
 						constant float3 &mappingGradient [[buffer(6)]], constant float2 &detectorSpacing [[buffer(7)]],
 						constant uint2 &outputSize [[buffer(8)]], constant float2 &outputOffset [[buffer(9)]],
 						device float *out [[buffer(10)]], uint3 id [[thread_position_in_grid]]) {
-	if (gid.x >= outWidth) return;
+	if (id.x >= outputSize.x * outputSize.y) return;
 
-	float4 value =
-		volumeTex.sample(volumeSampler, float3(float(gid.x) / float(outWidth - 1), float(gid.x) / float(outWidth - 1),
-											   float(gid.x) / float(outWidth - 1)));
-	out[gid.x] = value.x;
+	out[id.x] = sourceDistance;
 }
