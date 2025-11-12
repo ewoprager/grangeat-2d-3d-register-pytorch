@@ -172,23 +172,26 @@ at::Tensor ProjectDRR_MPS(const at::Tensor &volume, const at::Tensor &voxelSpaci
 	//	TORCH_CHECK(detectorSpacing.dtype() == at::kDouble);
 
 	at::Tensor volumeContiguous = volume.contiguous();
-	Vec<Vec<float, 4>, 4> homographyMatInverse =
+	const Vec<Vec<float, 4>, 4> homographyMatInverse =
 		Vec<Vec<float, 4>, 4>::FromTensor2D(homographyMatrixInverse.to(at::dtype<float>()));
 	const float sourceDistanceF = static_cast<float>(sourceDistance);
 	const Vec<int64_t, 3> inputSize = Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Flipped();
-	const Vec<float, 3> volumeDiagonal =
-		inputSize.StaticCast<float>() * Vec<float, 3>::FromTensor(voxelSpacing.to(at::dtype<float>()));
+	const Vec<float, 3> volumeSpacing = Vec<float, 3>::FromTensor(voxelSpacing.to(at::dtype<float>()));
+	const Vec<float, 3> volumeDiagonal = volumeSpacing * inputSize.StaticCast<float>();
 	const float volumeDiagLength = volumeDiagonal.Length();
 	const Vec<float, 3> sourcePosition = {0.f, 0.f, sourceDistanceF};
-	float lambdaStart =
+	const float lambdaStart =
 		MatMul(homographyMatInverse, VecCat(sourcePosition, 1.f)).XYZ().Length() - 0.5f * volumeDiagLength;
-	float samplesPerRay = static_cast<float>(Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Max());
-	float stepSize = volumeDiagLength / samplesPerRay;
+	const uint32_t samplesPerRay = static_cast<uint32_t>(Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Max());
+	const float stepSize = volumeDiagLength / static_cast<float>(samplesPerRay);
 	Vec<float, 2> outputOffsetVec = Vec<float, 2>::FromTensor(outputOffset.to(at::dtype<float>()));
 	Vec<float, 2> detectorSpacingVec = Vec<float, 2>::FromTensor(detectorSpacing.to(at::dtype<float>()));
 	const long long outputNumel = outputWidth * outputHeight;
 	at::Tensor flatOutput = torch::empty(at::IntArrayRef({outputNumel}), volumeContiguous.options());
 	Vec<uint32_t, 2> outputSizeVec = {static_cast<uint32_t>(outputWidth), static_cast<uint32_t>(outputHeight)};
+
+	const Vec<float, 3> sizeWorldInverse = 1.f / (inputSize.StaticCast<float>() * volumeSpacing);
+	const Linear<Vec<float, 3>> mapping = {Vec<float, 3>::Full(.5f), sizeWorldInverse};
 
 	@autoreleasepool {
 		// Get the default Metal device
@@ -256,8 +259,8 @@ at::Tensor ProjectDRR_MPS(const at::Tensor &volume, const at::Tensor &voxelSpaci
 		  [encoder setBytes:&stepSize length:sizeof(stepSize) atIndex:2];
 		  [encoder setBytes:&samplesPerRay length:sizeof(samplesPerRay) atIndex:3];
 		  [encoder setBytes:&homographyMatInverse length:sizeof(homographyMatInverse) atIndex:4];
-		  //		  [encoder setBytes:& length:sizeof() atIndex:5];
-		  //		  [encoder setBytes:& length:sizeof() atIndex:6];
+		  [encoder setBytes:&mapping.intercept length:sizeof(mapping.intercept) atIndex:5];
+		  [encoder setBytes:&mapping.gradient length:sizeof(mapping.gradient) atIndex:6];
 		  [encoder setBytes:&detectorSpacingVec length:sizeof(detectorSpacingVec) atIndex:7];
 		  [encoder setBytes:&outputSizeVec length:sizeof(outputSizeVec) atIndex:8];
 		  [encoder setBytes:&outputOffsetVec length:sizeof(outputOffsetVec) atIndex:9];
