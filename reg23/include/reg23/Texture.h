@@ -35,6 +35,19 @@ inline cudaTextureAddressMode TextureAddressModeToCuda(TextureAddressMode tam) {
 }
 #endif
 
+#ifdef USE_MPS
+inline MTLSamplerAddressMode TextureAddressModeToMPS(TextureAddressMode tam) {
+	switch (tam) {
+	case TextureAddressMode::ZERO:
+		return MTLSamplerAddressModeClampToZero;
+	case TextureAddressMode::WRAP:
+		return MTLSamplerAddressModeRepeat;
+	default:
+		return MTLSamplerAddressModeClampToZero;
+	}
+}
+#endif
+
 /**
  *
  * @tparam DIMENSIONALITY

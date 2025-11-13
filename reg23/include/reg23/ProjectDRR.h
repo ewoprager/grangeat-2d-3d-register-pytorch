@@ -7,9 +7,8 @@
 
 #include "Common.h"
 
- namespace reg23 {
+namespace reg23 {
 
-torch::Tensor sample_test(const torch::Tensor &a);
 torch::Tensor add_tensors_metal(const torch::Tensor &a, const torch::Tensor &b);
 
 /**
@@ -97,13 +96,13 @@ template <typename texture_t> struct ProjectDRR {
 	using AddressModeType = typename texture_t::AddressModeType;
 
 	struct CommonData {
-		texture_t inputTexture{};
-		Vec<Vec<double, 4>, 4> homographyMatrixInverse{};
-		Vec<double, 2> outputOffset{};
-		Vec<double, 2> detectorSpacing{};
-		double lambdaStart{};
+		VectorType spacing{};
+		Vec<Vec<FloatType, 4>, 4> homographyMatrixInverse{};
+		Vec<FloatType, 2> outputOffset{};
+		Vec<FloatType, 2> detectorSpacing{};
+		FloatType lambdaStart{};
 		FloatType stepSize{};
-		int64_t samplesPerRay{};
+		IntType samplesPerRay{};
 	};
 
 	__host__ static CommonData Common(const at::Tensor &volume, const at::Tensor &voxelSpacing,
@@ -114,39 +113,32 @@ template <typename texture_t> struct ProjectDRR {
 		TORCH_CHECK(volume.sizes().size() == 3);
 		TORCH_CHECK(volume.dtype() == at::kFloat);
 		TORCH_INTERNAL_ASSERT(volume.device().type() == device);
-		// voxelSpacing should be a 1D tensor of 3 doubles
+		// voxelSpacing should be a 1D tensor of length 3
 		TORCH_CHECK(voxelSpacing.sizes() == at::IntArrayRef{3});
-		//		TORCH_CHECK(voxelSpacing.dtype() == at::kDouble);
-		// homographyMatrixInverse should be of size (4, 4), contain doubles and be on the chosen device
+		// homographyMatrixInverse should be of size (4, 4)
 		TORCH_CHECK(homographyMatrixInverse.sizes() == at::IntArrayRef({4, 4}));
-		//		TORCH_CHECK(homographyMatrixInverse.dtype() == at::kDouble);
-		TORCH_INTERNAL_ASSERT(homographyMatrixInverse.device().type() == device);
-		// outputOffset should be a 1D tensor of 2 doubles
+		// outputOffset should be a 1D tensor of length 2
 		TORCH_CHECK(outputOffset.sizes() == at::IntArrayRef{2});
-		//		TORCH_CHECK(outputOffset.dtype() == at::kDouble);
-		// detectorSpacing should be a 1D tensor of 2 doubles
+		// detectorSpacing should be a 1D tensor of length 2
 		TORCH_CHECK(detectorSpacing.sizes() == at::IntArrayRef{2});
-		//		TORCH_CHECK(detectorSpacing.dtype() == at::kDouble);
 
-		const int64_t samplesPerRayValue =
-			samplesPerRay.value_or(Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Max());
+		const IntType samplesPerRayValue = samplesPerRay.value_or(SizeType::FromIntArrayRef(volume.sizes()).Max());
 
 		CommonData ret{};
-		ret.inputTexture =
-			texture_t::FromTensor(volume, VectorType::FromTensor(voxelSpacing.to(at::dtype<FloatType>())));
+		ret.spacing = VectorType::FromTensor(voxelSpacing.to(at::dtype<FloatType>()));
 		ret.homographyMatrixInverse =
-			Vec<Vec<double, 4>, 4>::FromTensor2D(homographyMatrixInverse.to(at::dtype<double>()));
+			Vec<Vec<FloatType, 4>, 4>::FromTensor2D(homographyMatrixInverse.to(at::dtype<FloatType>()));
 
-		const Vec<int64_t, 3> inputSize = Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Flipped();
-		const VectorType volumeDiagonal = inputSize.StaticCast<FloatType>() * ret.inputTexture.Spacing();
+		const SizeType inputSize = SizeType::FromIntArrayRef(volume.sizes()).Flipped();
+		const VectorType volumeDiagonal = inputSize.template StaticCast<FloatType>() * ret.spacing;
 		const FloatType volumeDiagLength = volumeDiagonal.Length();
-		const VectorType sourcePosition = {0.0, 0.0, sourceDistance};
-		ret.lambdaStart =
-			MatMul(ret.homographyMatrixInverse, VecCat(sourcePosition, 1.0)).XYZ().Length() - 0.5 * volumeDiagLength;
+		const VectorType sourcePosition = {0.0, 0.0, static_cast<FloatType>(sourceDistance)};
+		ret.lambdaStart = MatMul(ret.homographyMatrixInverse, VecCat(sourcePosition, FloatType{1.0})).XYZ().Length() -
+						  FloatType{0.5} * volumeDiagLength;
 		ret.stepSize = volumeDiagLength / static_cast<FloatType>(samplesPerRayValue);
 		ret.samplesPerRay = samplesPerRayValue;
-		ret.outputOffset = Vec<double, 2>::FromTensor(outputOffset.to(at::dtype<double>()));
-		ret.detectorSpacing = Vec<double, 2>::FromTensor(detectorSpacing.to(at::dtype<double>()));
+		ret.outputOffset = Vec<FloatType, 2>::FromTensor(outputOffset.to(at::dtype<FloatType>()));
+		ret.detectorSpacing = Vec<FloatType, 2>::FromTensor(detectorSpacing.to(at::dtype<FloatType>()));
 		return ret;
 	}
 };
