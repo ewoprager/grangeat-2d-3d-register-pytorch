@@ -7,7 +7,7 @@
 
 #include "Common.h"
 
-namespace reg23 {
+ namespace reg23 {
 
 torch::Tensor sample_test(const torch::Tensor &a);
 torch::Tensor add_tensors_metal(const torch::Tensor &a, const torch::Tensor &b);

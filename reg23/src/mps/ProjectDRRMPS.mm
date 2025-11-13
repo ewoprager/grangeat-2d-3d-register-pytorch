@@ -182,7 +182,7 @@ at::Tensor ProjectDRR_MPS(const at::Tensor &volume, const at::Tensor &voxelSpaci
 	const Vec<float, 3> sourcePosition = {0.f, 0.f, sourceDistanceF};
 	const float lambdaStart =
 		MatMul(homographyMatInverse, VecCat(sourcePosition, 1.f)).XYZ().Length() - 0.5f * volumeDiagLength;
-	const uint32_t samplesPerRay = static_cast<uint32_t>(Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Max());
+	const int32_t samplesPerRay = static_cast<int32_t>(Vec<int64_t, 3>::FromIntArrayRef(volume.sizes()).Max());
 	const float stepSize = volumeDiagLength / static_cast<float>(samplesPerRay);
 	Vec<float, 2> outputOffsetVec = Vec<float, 2>::FromTensor(outputOffset.to(at::dtype<float>()));
 	Vec<float, 2> detectorSpacingVec = Vec<float, 2>::FromTensor(detectorSpacing.to(at::dtype<float>()));
@@ -217,9 +217,9 @@ at::Tensor ProjectDRR_MPS(const at::Tensor &volume, const at::Tensor &voxelSpaci
 		MTLSamplerDescriptor *samplerDesc = [MTLSamplerDescriptor new];
 		samplerDesc.minFilter = MTLSamplerMinMagFilterLinear;
 		samplerDesc.magFilter = MTLSamplerMinMagFilterLinear;
-		samplerDesc.sAddressMode = MTLSamplerAddressModeClampToEdge;
-		samplerDesc.tAddressMode = MTLSamplerAddressModeClampToEdge;
-		samplerDesc.rAddressMode = MTLSamplerAddressModeClampToEdge;
+		samplerDesc.sAddressMode = MTLSamplerAddressModeClampToZero;
+		samplerDesc.tAddressMode = MTLSamplerAddressModeClampToZero;
+		samplerDesc.rAddressMode = MTLSamplerAddressModeClampToZero;
 		id<MTLSamplerState> sampler = [device newSamplerStateWithDescriptor:samplerDesc];
 		if (!sampler) {
 			throw std::runtime_error("Error creating sampler.");

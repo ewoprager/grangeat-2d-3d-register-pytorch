@@ -196,8 +196,15 @@ def test_project_drr_mps():
                       torch.zeros(2, dtype=torch.float64), detector_spacing)
     print()
     print("cpu:", res_cpu)
+    fig, axes = plt.subplots(1, 2)
+    axes[0].imshow(res_cpu.cpu().numpy())
+    axes[0].set_title("cpu")
 
     volume = volume.to(device=torch.device('mps'))
     res = project_drr(volume, voxel_spacing, h_matrix_inv, source_distance, output_size[1], output_size[0],
                       torch.zeros(2, dtype=torch.float64), detector_spacing)
     print("mps:", res)
+    axes[1].imshow(res.cpu().numpy())
+    axes[1].set_title("mps")
+
+    plt.show()
