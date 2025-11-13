@@ -42,7 +42,7 @@ MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuf
 	desc.mipmapLevelCount = 1;
 	desc.usage = MTLTextureUsageShaderRead;
 	desc.storageMode = MTLStorageModePrivate;
-9
+
 	textureHandle = [device newTextureWithDescriptor:desc];
 
 	id<MTLBlitCommandEncoder> blitEncoder = [commandBuffer blitCommandEncoder];
@@ -74,7 +74,7 @@ MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuf
 	}
 
 	// Ensure the tensor is no longer being used by the device before anything else can happen to it
-//	torch::mps::synchronize();
+	//	torch::mps::synchronize();
 }
 
 void MPSTexture3D::CleanUp() noexcept {

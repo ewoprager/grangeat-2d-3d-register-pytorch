@@ -1,7 +1,6 @@
 #include <reg23/CommonMPS.h>
 #include <reg23/ProjectDRR.h>
 #include <reg23/Texture3DMPS.h>
-#include <reg23/default_metallib.h>
 
 namespace reg23 {
 
@@ -18,53 +17,24 @@ at::Tensor ProjectDRR_MPS(const at::Tensor &volume, const at::Tensor &voxelSpaci
 	at::Tensor flatOutput = torch::zeros(at::IntArrayRef({outputNumel}), volume.contiguous().options());
 
 	@autoreleasepool {
-		// Get the default Metal device
-		id<MTLDevice> device = MTLCreateSystemDefaultDevice();
-
-		NSError *error = nil;
-
-		// Load the shader binary
-		dispatch_data_t shaderBinary = dispatch_data_create(src_mps_default_metallib, src_mps_default_metallib_len,
-															NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-		id<MTLLibrary> library = [device newLibraryWithData:shaderBinary error:&error];
-		if (!library) {
-			throw std::runtime_error("Error loading shader library: " +
-									 std::string(error.localizedDescription.UTF8String));
-		}
-
-		id<MTLFunction> function = [library newFunctionWithName:@"project_drr"];
-		if (!function) {
-			throw std::runtime_error("Error: Metal function sample_test not found.");
-		}
-
-		// Create a Metal compute pipeline state
-		id<MTLComputePipelineState> pipelineState = [device newComputePipelineStateWithFunction:function error:&error];
-		if (!pipelineState) {
-			NSLog(@"Pipeline error: %@", error);
-			throw std::runtime_error([error.localizedDescription UTF8String]);
-		}
-
-		// Get PyTorch's command queue
-		dispatch_queue_t serialQueue = torch::mps::get_dispatch_queue();
-
-		// Get PyTorch's Metal command buffer
-		id<MTLCommandBuffer> commandBuffer = torch::mps::get_command_buffer();
+		MPSComputeEnvironment computeEnv = MPSComputeEnvironment::Create(@"project_drr");
 
 		CommonData common =
 			ProjectDRR<Texture3DMPS>::Common(volume, voxelSpacing, homographyMatrixInverse, sourceDistance,
 											 outputOffset, detectorSpacing, at::DeviceType::MPS);
 
-		dispatch_sync(serialQueue, ^() {
+		dispatch_sync(computeEnv.serialQueue, ^() {
 		  // Blit the tensor data into a texture
-		  Texture3DMPS inputTexture = Texture3DMPS::FromTensor(device, commandBuffer, volume, common.spacing);
+		  Texture3DMPS inputTexture =
+			  Texture3DMPS::FromTensor(computeEnv.device, computeEnv.commandBuffer, volume, common.spacing);
 
 		  const Linear<Texture3DMPS::VectorType> texCoordMapping = inputTexture.MappingWorldToTexCoord();
 
 		  // Create a compute command encoder
-		  id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
+		  id<MTLComputeCommandEncoder> encoder = [computeEnv.commandBuffer computeCommandEncoder];
 
 		  // Set the compute pipeline state
-		  [encoder setComputePipelineState:pipelineState];
+		  [encoder setComputePipelineState:computeEnv.pipelineState];
 
 		  // Set the buffers
 		  [encoder setTexture:inputTexture.GetHandle() atIndex:0];
@@ -86,7 +56,7 @@ at::Tensor ProjectDRR_MPS(const at::Tensor &volume, const at::Tensor &voxelSpaci
 
 		  // Dispatch the compute kernel
 		  MTLSize gridSize = MTLSizeMake(outputNumel, 1, 1);
-		  NSUInteger threadGroupSize = pipelineState.maxTotalThreadsPerThreadgroup;
+		  NSUInteger threadGroupSize = computeEnv.pipelineState.maxTotalThreadsPerThreadgroup;
 		  if (threadGroupSize > outputNumel) {
 			  threadGroupSize = outputNumel;
 		  }
