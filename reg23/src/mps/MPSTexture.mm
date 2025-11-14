@@ -7,14 +7,15 @@
 namespace reg23 {
 
 id<MTLTexture> MPSTexture3D::Handle() const { return textureHandle; }
+uintptr_t MPSTexture3D::HandleAsInt() const { return reinterpret_cast<uintptr_t>(textureHandle); }
 id<MTLSamplerState> MPSTexture3D::SamplerHandle() const { return samplerHandle; }
+uintptr_t MPSTexture3D::SamplerHandleAsInt() const { return reinterpret_cast<uintptr_t>(samplerHandle); }
 
 at::Tensor MPSTexture3D::SizeTensor() const { return at::tensor(backingTensor.sizes(), at::dtype(at::kInt)).flip({0}); }
 
-MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuffer, const at::Tensor &tensor,
-						   const std::string &addressModeX, const std::string &addressModeY,
+MPSTexture3D::MPSTexture3D(const at::Tensor &tensor, const std::string &addressModeX, const std::string &addressModeY,
 						   const std::string &addressModeZ)
-	: MPSTexture3D(device, commandBuffer, tensor,
+	: MPSTexture3D(MTLCreateSystemDefaultDevice(), torch::mps::get_command_buffer(), tensor,
 				   StringsToAddressModes<3>({{addressModeX, addressModeY, addressModeZ}})) {}
 
 MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuffer, const at::Tensor &tensor,
