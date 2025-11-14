@@ -64,6 +64,10 @@ at::Tensor ProjectDRR_MPS(const at::Tensor &volume, const at::Tensor &voxelSpaci
 		  [encoder dispatchThreads:gridSize threadsPerThreadgroup:threadgroupSize];
 		  [encoder endEncoding];
 
+		  //		  [computeEnv.commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> cb) {
+		  //			delete inputTexture; // destructor releases texture & sampler
+		  //		  }];
+
 		  // Tell torch to commit the command buffer
 		  torch::mps::commit();
 		});

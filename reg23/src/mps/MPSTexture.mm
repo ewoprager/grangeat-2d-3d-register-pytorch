@@ -28,6 +28,8 @@ MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuf
 	backingTensor = tensor.contiguous();
 
 	id<MTLBuffer> buffer = getMTLBufferStorage(backingTensor);
+//	CFTypeRef bufRef = (__bridge CFTypeRef)buffer;
+//	if (bufRef) CFRetain(bufRef);
 
 	const Vec<int64_t, 3> size = Vec<int64_t, 3>::FromIntArrayRef(backingTensor.sizes()).Flipped();
 
@@ -74,8 +76,9 @@ MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuf
 		throw std::runtime_error("Error creating sampler.");
 	}
 
-	// Ensure the tensor is no longer being used by the device before anything else can happen to it
-	//	torch::mps::synchronize();
+//	[commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> cb) {
+//	  if (bufRef) CFRelease(bufRef);
+//	}];
 }
 
 void MPSTexture3D::CleanUp() noexcept {

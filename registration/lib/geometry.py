@@ -173,19 +173,16 @@ def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Te
 def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
                  detector_spacing: torch.Tensor, scene_geometry: SceneGeometry, output_size: torch.Size) -> (
         torch.Tensor):
-    device = volume_data.device
     assert len(output_size) == 2
     assert voxel_spacing.size() == torch.Size([3])
     assert detector_spacing.size() == torch.Size([2])
     assert transformation.device_consistent()
-    assert transformation.translation.device == device
-    assert voxel_spacing.device == device
     img_width: int = output_size[1]
     img_height: int = output_size[0]
-    h_matrix_inv = transformation.inverse().get_h(device=device)
+    h_matrix_inv = transformation.inverse().get_h()
 
     return reg23.project_drr(volume_data, voxel_spacing, h_matrix_inv, scene_geometry.source_distance, img_width,
-                             img_height, scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64),
+                             img_height, scene_geometry.fixed_image_offset.to(dtype=torch.float64),
                              detector_spacing)
 
 

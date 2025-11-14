@@ -289,7 +289,7 @@ class Interface:
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,
          sinogram_size: int | None, xray_path: str | None = None, new_drr_size: torch.Size = torch.Size([1000, 1000]),
          sinogram_type: Type[SinogramType] = SinogramClassic) -> int:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.mps.is_available() else "cpu")
     logger.info("Using device: {}".format(device))
 
     interface = Interface(cache_directory=cache_directory, save_directory="saved", ct_path=path, xray_path=xray_path,
