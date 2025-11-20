@@ -81,6 +81,7 @@ def main(file: str | None):
     bin_width: float = 0.1
     bin_centres: np.ndarray = bin_width * np.arange(int(np.floor(all_xs.min() / bin_width)),
                                                     int(np.ceil(all_xs.max() / bin_width))).astype(np.float32)
+    bin_centres = bin_centres[:-10]
     bins: np.ndarray = bin_centres - 0.5 * bin_width
     display_width_fraction: float = 0.7
 
@@ -116,7 +117,7 @@ def main(file: str | None):
     axes.grid(True, which="both", axis="y")
     axes.set_xlim(0.0, bin_centres[highest_bin] + bin_width)
     axes.set_ylim(0.0, bin_centres[highest_bin] + bin_width)
-    xticks = bin_centres[:(highest_bin + 1)]
+    xticks = bin_centres[:(highest_bin + 2)]
     axes.set_xticks(xticks)
     axes.set_xticks(np.concat(
         (bin_centres[:(highest_bin + 1)] - 0.5 * bin_width, np.array([bin_centres[highest_bin] + 0.5 * bin_width]))),
