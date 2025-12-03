@@ -53,39 +53,48 @@ template <typename T, std::size_t faceCount> __host__ __device__ T RayConvexPoly
 	const std::array<Vec<T, 3>, faceCount> &facePoints, const std::array<Vec<T, 3>, faceCount> &faceOutUnitNormals,
 	const Vec<T, 3> &rayPoint, const Vec<T, 3> &rayUnitDirection) {
 
-	constexpr T epsilon = 1e-8;
+	constexpr T epsilon = 1e-12;
 
 	T entryLambda = -std::numeric_limits<T>::infinity();
 	T exitLambda = std::numeric_limits<T>::infinity();
-	std::size_t entryIndex = 0;
+	// std::size_t entryIndex = 0;
 	for (std::size_t i = 0; i < faceCount; ++i) {
 		const T dot = VecDot(faceOutUnitNormals[i], rayUnitDirection);
-		const T lambda = VecDot(faceOutUnitNormals[i], facePoints[i] - rayPoint) / dot;
+		const T numer = VecDot(faceOutUnitNormals[i], facePoints[i] - rayPoint);
 		// If dot is 0, the ray is parallel to the face; if dot is negative, increasing lambda moves you along the ray
 		// in the 'inward' direction relative to this face, and vice versa if dot is positive.
-		if (dot < -epsilon && lambda > entryLambda) {
-			// Moving in 'inward' direction, so could be entering the polyhedron through this face
-			entryLambda = lambda;
-			entryIndex = i;
-		} else if (dot > epsilon && lambda < exitLambda) {
-			// Moving in 'outward' direction, so could be exiting the polyhedron through this face
-			exitLambda = lambda;
+		if (std::abs(dot) < epsilon) {
+			if (numer < -epsilon) return 0.0f;
+			continue;
 		}
+		T lambda = numer / dot;
+		if (dot > epsilon) {
+			// Moving in 'outward' direction, so could be exiting the polyhedron through this face
+			if (lambda < exitLambda) exitLambda = lambda;
+		} else {
+			// Moving in 'inward' direction, so could be entering the polyhedron through this face
+			if (lambda > entryLambda) entryLambda = lambda;
+		}
+		// early rejection
+		if (entryLambda > exitLambda) return 0.0f;
 	}
 	// `entryLambda` is now the largest value for which ray is moving 'into' face, and `entryIndex` is index of
 	// corresponding face. `exitLambda` is the smallest value for which ray is moving 'out of' face. This means that,
 	// **if the ray intersects with the polyhedron**, it will enter at `entryLambda` and leave at `exitLambda`.
 
-	const Vec<T, 3> entryPoint = rayPoint + entryLambda * rayUnitDirection;
-	// Checking that the entry point lies 'within' all the other faces of the polyhedron. If it lies 'outside' of any,
-	// it doesn't intersect the polyhedron. Technically, only the faces adjacent to the intersected face need to be
-	// checked, but that would require expensive analysis of the face intersections.
-	for (std::size_t i = 0; i < faceCount; ++i) {
-		if (i == entryIndex) continue;
-		if (VecDot(entryPoint - facePoints[i], faceOutUnitNormals[i]) > epsilon) return 0.f;
-	}
+	return exitLambda > entryLambda ? exitLambda - entryLambda : 0.0f;
 
-	return std::abs(exitLambda - entryLambda);
+	// const Vec<T, 3> centrePoint = rayPoint + 0.5 * (entryLambda + exitLambda) * rayUnitDirection;
+	// // Checking that the centre point between the entry and exit points lies 'within' all the other faces of the
+	// // polyhedron. If it lies 'outside' of any,	it doesn't intersect the polyhedron. Technically, could just check the
+	// // entry point against only the faces adjacent to the intersected face, but that would require expensive analysis of
+	// // the face intersections.
+	// for (std::size_t i = 0; i < faceCount; ++i) {
+	// 	// if (i == entryIndex) continue;
+	// 	if (VecDot(centrePoint - facePoints[i], faceOutUnitNormals[i]) > epsilon) return 0.f;
+	// }
+	//
+	// return std::abs(exitLambda - entryLambda);
 }
 
 
@@ -98,8 +107,8 @@ template <typename T, std::size_t faceCount> __host__ __device__ T RayConvexPoly
 struct ProjectDRRCuboidMask {
 
 	struct Cuboid {
-		std::array<Vec<float, 3>, 6> facePoints{};
-		std::array<Vec<float, 3>, 6> faceOutUnitNormals{};
+		Vec<Vec<float, 3>, 6> facePoints{};
+		Vec<Vec<float, 3>, 6> faceOutUnitNormals{};
 	};
 
 	struct CommonData {
@@ -140,9 +149,9 @@ struct ProjectDRRCuboidMask {
 
 		CommonData ret{};
 		ret.homographyMatrixInverse = Vec<Vec<float, 4>, 4>::FromTensor2D(homographyMatrixInverse);
-		const Vec<float, 6> planeSigns = ((Vec<int, 6>::Range() < 3).StaticCast<int>() * 2 - 1).StaticCast<float>();
+		const Vec<float, 6> planeSigns = Vec<int, 6>{1, 1, 1, -1, -1, -1}.StaticCast<float>();
 		const Vec<float, 3> cuboidHalfSize = 0.5f * Vec<float, 3>::FromTensor(voxelSpacing) * Vec<
-			                                     int64_t, 3>::FromTensor(volumeSize).StaticCast<float>();
+			int64_t, 3>::FromTensor(volumeSize).StaticCast<float>();
 		ret.cuboidIn.facePoints = VecOuter(cuboidHalfSize, planeSigns);
 		ret.cuboidIn.faceOutUnitNormals = VecCat(Vec<Vec<float, 3>, 3>::Identity(),
 		                                         -1.f * Vec<Vec<float, 3>, 3>::Identity());
