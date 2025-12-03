@@ -17,15 +17,15 @@ import registration.lib.grangeat as grangeat
 import registration.lib.plot as myplt
 
 
-def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dims: Tuple | torch.Size | None = None) -> torch.Tensor:
+def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dim: int | Tuple | torch.Size | None = None) -> torch.Tensor:
     assert xs.size() == ys.size()
-    if dims is None:
-        dims = torch.Size(range(len(xs.size())))
-    sum_x = xs.sum(dim=dims)
-    sum_y = ys.sum(dim=dims)
-    sum_x2 = xs.square().sum(dim=dims)
-    sum_y2 = ys.square().sum(dim=dims)
-    sum_prod = (xs * ys).sum(dim=dims)
+    if dim is None:
+        dim = torch.Size(range(len(xs.size())))
+    sum_x = xs.sum(dim=dim)
+    sum_y = ys.sum(dim=dim)
+    sum_x2 = xs.square().sum(dim=dim)
+    sum_y2 = ys.square().sum(dim=dim)
+    sum_prod = (xs * ys).sum(dim=dim)
     n = float(xs.numel() // sum_x.numel())
     num = n * sum_prod - sum_x * sum_y
     den = (n * sum_x2 - sum_x.square()).sqrt() * (n * sum_y2 - sum_y.square()).sqrt()
@@ -48,11 +48,28 @@ def local_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int) -> torch.
                                             stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
     ys_patches = torch.nn.functional.unfold(ys.unsqueeze(0), kernel_size=kernel_size,
                                             stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
-    return ncc(xs_patches, ys_patches, dims=(0,)).mean()
+    return ncc(xs_patches, ys_patches, dim=0).mean()
 
 
 def multiscale_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int, llambda: float) -> torch.Tensor:
     return ncc(xs, ys) + llambda * local_ncc(xs, ys, kernel_size=kernel_size)
+
+
+def weighted_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *,
+                 dim: int | torch.Size | Tuple | None = None) -> torch.Tensor:
+    assert ys.size() == xs.size()
+    assert weights.size() == xs.size()
+    if dim is None:
+        dim = torch.Size(range(len(xs.size())))
+    sum_w = weights.sum(dim=dim)
+    sum_wx = (weights * xs).sum(dim=dim)
+    sum_wy = (weights * ys).sum(dim=dim)
+    sum_wx2 = (weights * xs.square()).sum(dim=dim)
+    sum_wy2 = (weights * ys.square()).sum(dim=dim)
+    sum_prod = (weights * xs * ys).sum(dim=dim)
+    num = sum_w * sum_prod - sum_wx * sum_wy
+    den = (sum_w * sum_wx2 - sum_wx.square()).sqrt() * (sum_w * sum_wy2 - sum_wy.square()).sqrt()
+    return num / (den + 1e-10)
 
 
 def gradient_correlation(xs: torch.Tensor, ys: torch.Tensor, *,
