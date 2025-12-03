@@ -161,8 +161,9 @@ class Interface:
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
         # return -objective_function.ncc(self.registration_data.fixed_image, self.generate_drr(transformation))
-        return -objective_function.weighted_ncc(self.registration_data.fixed_image, self.generate_drr(transformation),
-                                                self.registration_data.mask)
+        return -objective_function.weighted_local_ncc(self.registration_data.fixed_image,
+                                                      self.generate_drr(transformation),
+                                                      weights=self.registration_data.mask, kernel_size=32)
 
     def regenerate_mask(self, transformation: Transformation) -> None:
         translation = copy.deepcopy(transformation.translation)
