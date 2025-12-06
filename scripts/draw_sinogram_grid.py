@@ -23,13 +23,13 @@ def spherical_to_cartesian(grid: Sinogram3dGrid) -> Tuple[torch.Tensor, torch.Te
 
 def main():
     print("Hello, World")
-    sinogram_size: int = 10
+    sinogram_size: int = 14
     grid: Sinogram3dGrid = SinogramClassic.build_grid(
-        counts=(int(torch.ceil(float(sinogram_size) * torch.tensor(0.5 * torch.pi).sqrt())),
-                int(torch.ceil(float(sinogram_size) * torch.tensor(0.5 * torch.pi).sqrt())), 2),
+        counts=(int(torch.ceil(float(sinogram_size) * torch.tensor(0.25 * torch.pi).sqrt())),
+                int(torch.ceil(float(sinogram_size) * torch.tensor(0.25 * torch.pi).sqrt())), 2),
         r_range=LinearRange(-100.0, 100.0))
     grid_healpix: Sinogram3dGrid = SinogramHEALPix.build_grid(
-        n_side=int(torch.ceil(torch.tensor(float(sinogram_size)) / torch.tensor(6.).sqrt()).item()),
+        n_side=int(torch.ceil(torch.tensor(float(sinogram_size)) / torch.tensor(12.).sqrt()).item()),
         r_range=LinearRange(-100.0, 100.0), r_count=2)
 
     fig = plt.figure()

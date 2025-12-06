@@ -1,10 +1,16 @@
-from typing import NamedTuple, Any, Callable, Generic, TypeVar
+from typing import NamedTuple, Any, Callable, Generic, TypeVar, TypedDict
 import inspect
 
 
 class Error:
     def __init__(self, description: str):
         self.description = description
+
+    def __str__(self) -> str:
+        return f"{self.description}"
+
+    def __repr__(self) -> str:
+        return f"Error(description='{self.description}')"
 
 
 class Dependency(NamedTuple):
@@ -32,10 +38,11 @@ def call_function_with_arg_getter(function: Callable, arg_getter: Callable[[str]
 T = TypeVar("T")
 
 
-class NodeValue(Generic[T], NamedTuple):
-    data: T | None
-    depends_on: list[str]
-    depended_on_by: list[str]
+class NodeValue(Generic[T]):
+    def __init__(self, data: T | None, depends_on: list[str], depended_on_by: list[str]):
+        self.data = data
+        self.depends_on = depends_on
+        self.depended_on_by = depended_on_by
 
     @staticmethod
     def default() -> 'NodeValue':
@@ -92,43 +99,38 @@ class TwoWayDependencyGraph(Generic[T]):
             self.add_dependency(dependency)
 
 
-class DataUpdater:
-    def __init__(self, function: Callable, variables_updated: list[str]):
-        self._function = function
-        signature = inspect.signature(function)
-        self._variables_required: list[str] = [name for name, param in signature.parameters.items() if
-                                               param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD,
-                                                              param.KEYWORD_ONLY)]
-        self._variables_updated = variables_updated
+class FunctionArgument(NamedTuple):
+    name: str
+    required: bool
 
-    def get_variables_updated(self) -> list[str]:
-        return self._variables_updated
+
+def get_function_arguments(function: Callable) -> list[FunctionArgument]:
+    signature = inspect.signature(function)
+    ret = []
+    for name, param in signature.parameters.items():
+        if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD, param.KEYWORD_ONLY):
+            ret.append(FunctionArgument(name=name, required=param.default is inspect._empty))
+    return ret
+
+
+class DataUpdater(NamedTuple):
+    function: Callable
+    arguments: list[FunctionArgument]
+    returned: list[str]
 
     def get_dependencies(self) -> list[Dependency]:
         ret: list[Dependency] = []
-        for depended in self._variables_required:
-            for depender in self._variables_updated:
-                ret.append(Dependency(depender=depender, depended=depended))
+        for depended in self.arguments:
+            for depender in self.returned:
+                ret.append(Dependency(depender=depender, depended=depended.name))
         return ret
 
-    def run(self, arg_getter: Callable[[str], Any], return_setter: Callable[[str, Any], None]) -> None | Error:
-        returned = call_function_with_arg_getter(self._function, arg_getter)
-        if not isinstance(returned, dict):
-            return Error("Expected data updater function to return a dictionary.")
-        for variable_updated in self._variables_updated:
-            if variable_updated not in returned:
-                return Error(f"Variable '{variable_updated}' not returned by updater function which promised it would.")
-            return_setter(variable_updated, returned.pop(variable_updated))
-        if len(returned) > 0:
-            variable_names = "', '".join(list(returned.keys()))
-            return Error(f"Updater function returned unexpected variables: '{variable_names}'")
-        return None
 
-
-class NodeData(NamedTuple):
-    dirty: bool
-    data: Any
-    updated_by: str | None
+class NodeData:
+    def __init__(self, dirty: bool, data: Any, updated_by: str | None):
+        self.dirty = dirty
+        self.data = data
+        self.updated_by = updated_by
 
     @staticmethod
     def default() -> 'NodeData':
@@ -140,17 +142,58 @@ class DataManager:
         self._data_graph = TwoWayDependencyGraph[NodeData]()
         self._updaters: dict[str, DataUpdater] = dict()
 
-    def add_updater(self, name: str, updater: DataUpdater) -> None | Error:
-        self._updaters[name] = updater
-        self._data_graph.add_dependencies(updater.get_dependencies())
-        for variable_updated in updater.get_variables_updated():
-            data = self._data_graph.get_node(variable_updated).data
-            if data is not None:
-                if data.updated_by is None:
-                    data.updated_by = name
-                else:
-                    return Error(
-                        f"Variable {variable_updated} is already updated by {data.updated_by}; tried to add updater {name} which wants to update the same variable.")
+    def _get_args(self, args: list[FunctionArgument]) -> dict[str, Any] | Error:
+        ret = {}
+        for arg in args:
+            value = self.get_data(arg.name)
+            if isinstance(value, Error):
+                if arg.required:
+                    return Error(f"Error getting argument {arg.name}: '{value.description}'")
+                continue
+            if value is None:
+                if arg.required:
+                    return Error(f"No data stored for argument '{arg.name}'.")
+                continue
+            ret[arg.name] = value
+        return ret
+
+    def _run_updater(self, name: str) -> None | Error:
+        if name not in self._updaters:
+            return Error(f"Updater {name} doesn't exist.")
+        updater = self._updaters[name]
+        args = self._get_args(updater.arguments)
+        if isinstance(args, Error):
+            return Error(f"Failed to run updater '{name}': {args.description}")
+        res = updater.function(**args)
+        if isinstance(res, Error):
+            return Error(f"Error running updater function '{name}': {res.description}")
+        if not isinstance(res, dict):
+            return Error(f"Expected data updater function '{name}' to return a dictionary.")
+        for variable_updated in updater.returned:
+            if variable_updated not in res:
+                return Error(
+                    f"Variable '{variable_updated}' not returned by updater function '{name}' which promised it.")
+            err = self.set_data(variable_updated, res.pop(variable_updated))
+            if isinstance(err, Error):
+                return Error(f"Error while running updater '{name}': {err.description}")
+        if len(res) > 0:
+            variable_names = "', '".join(list(res.keys()))
+            return Error(f"Updater function '{name}' returned unexpected variables: '{variable_names}'")
+        return None
+
+    def add_updater(self, name: str, function: Callable, variables_updated: list[str]) -> None | Error:
+        self._updaters[name] = DataUpdater(function=function, arguments=get_function_arguments(function),
+                                           returned=variables_updated)
+        self._data_graph.add_dependencies(self._updaters[name].get_dependencies())
+        for variable_updated in variables_updated:
+            node = self._data_graph.get_node(variable_updated)
+            if node.data is None:
+                node.data = NodeData.default()
+            if node.data.updated_by is None:
+                node.data.updated_by = name
+            else:
+                return Error(
+                    f"Variable {variable_updated} is already updated by {node.data.updated_by}; tried to add updater {name} which wants to update the same variable.")
         return None
 
     def get_data(self, name: str) -> Any | Error:
@@ -162,7 +205,9 @@ class DataManager:
         if node.data.dirty:
             if node.data.updated_by is None:
                 return Error(f"Could not update dirty variable {name} as no updater exists.")
-            self._updaters[node.data.updated_by].run(self.get_data, self.set_data)
+            err = self._run_updater(node.data.updated_by)
+            if isinstance(err, Error):
+                return Error(f"Error while getting data '{name}': {err.description}")
         return node.data.data
 
     def set_data(self, name: str, value: Any) -> None | Error:
@@ -174,3 +219,25 @@ class DataManager:
         node.data.data = value
         node.data.dirty = False
         return None
+
+
+def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
+    return {"similarity": fixed_image * moving_image}
+
+
+def main():
+    data_manager = DataManager()
+
+    err = data_manager.add_updater("similarity_metric", try_updater, ["similarity"])
+    if isinstance(err, Error):
+        print(err)
+        return
+
+    data_manager.set_data("fixed_image", 2.0)
+    data_manager.set_data("moving_image", 3.0)
+
+    print(data_manager.get_data("similarity"))
+
+
+if __name__ == "__main__":
+    main()
