@@ -175,7 +175,7 @@ class DataManager:
         self._updaters[name] = DataUpdater(function=function, arguments=get_function_arguments(function),
                                            returned=function.returned)
         self._data_graph.add_dependencies(self._updaters[name].get_dependencies())
-        for variable_updated in variables_updated:
+        for variable_updated in function.returned:
             node = self._data_graph.get_node(variable_updated)
             if node.data is None:
                 node.data = NodeData.default()
