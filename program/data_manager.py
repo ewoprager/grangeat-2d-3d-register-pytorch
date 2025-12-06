@@ -1,17 +1,7 @@
-from typing import NamedTuple, Any, Callable, Generic, TypeVar, TypedDict
+from typing import NamedTuple, Any, Callable, Generic, TypeVar
 import inspect
 
-
-class Error:
-    def __init__(self, description: str):
-        self.description = description
-
-    def __str__(self) -> str:
-        return f"{self.description}"
-
-    def __repr__(self) -> str:
-        return f"Error(description='{self.description}')"
-
+from program.lib.structs import Error
 
 class Dependency(NamedTuple):
     depender: str
@@ -181,9 +171,9 @@ class DataManager:
             return Error(f"Updater function '{name}' returned unexpected variables: '{variable_names}'")
         return None
 
-    def add_updater(self, name: str, function: Callable, variables_updated: list[str]) -> None | Error:
+    def add_updater(self, name: str, function: Callable) -> None | Error:
         self._updaters[name] = DataUpdater(function=function, arguments=get_function_arguments(function),
-                                           returned=variables_updated)
+                                           returned=function.returned)
         self._data_graph.add_dependencies(self._updaters[name].get_dependencies())
         for variable_updated in variables_updated:
             node = self._data_graph.get_node(variable_updated)
