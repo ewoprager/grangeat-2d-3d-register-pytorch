@@ -1,0 +1,6 @@
+[
+    {
+        "label": "rn",
+        "command": "PYTHONPATH=$PWD uv run scripts/interface.py -ct-path=/Users/eprager/Library/CloudStorage/OneDrive-UniversityofCambridge/CUED/4th Year Project/Data/First/ct"
+    }
+]

@@ -1,0 +1,18 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+    {
+        "label": "rn",
+        "adapter": "Debugpy",
+        "program": "scripts/interface.py",
+        "request": "launch",
+        "env": {
+            "PYTHONPATH": "."
+        },
+        "args": [
+            "--ct-path=/Users/eprager/Library/CloudStorage/OneDrive-UniversityofCambridge/CUED/4th Year Project/Data/First/ct"
+        ]
+    }
+]
