@@ -1,7 +1,8 @@
-from typing import NamedTuple, Any, Callable, Generic, TypeVar
 import inspect
+from typing import Any, Callable, Generic, NamedTuple, TypeVar
 
 from program.lib.structs import Error
+
 
 class Dependency(NamedTuple):
     depender: str
@@ -54,7 +55,7 @@ class TwoWayDependencyGraph(Generic[T]):
             self._nodes[node_name] = NodeValue[T].default()
         self._nodes[node_name].data = data
 
-    def add_node(self, name: str, *, depends_on: list[str] = None, depended_on_by: list[str] = None,
+    def add_node(self, name: str, *, depends_on: list[str] = [], depended_on_by: list[str] = [],
                  data: Any = None) -> None:
         if name not in self._nodes:
             self._nodes[name] = NodeValue[T].default()
@@ -177,6 +178,8 @@ class DataManager:
         self._data_graph.add_dependencies(self._updaters[name].get_dependencies())
         for variable_updated in function.returned:
             node = self._data_graph.get_node(variable_updated)
+            if node is None:
+                return Error(f"No node for {variable_updated}.")
             if node.data is None:
                 node.data = NodeData.default()
             if node.data.updated_by is None:
@@ -215,11 +218,13 @@ class DataManager:
 def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
     return {"similarity": fixed_image * moving_image}
 
+try_updater.returned = ["similarity"]
+
 
 def main():
     data_manager = DataManager()
 
-    err = data_manager.add_updater("similarity_metric", try_updater, ["similarity"])
+    err = data_manager.add_updater("similarity_metric", try_updater)
     if isinstance(err, Error):
         print(err)
         return

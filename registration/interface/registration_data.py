@@ -1,20 +1,25 @@
-import logging
-from typing import Type, NamedTuple, Callable
-import math
 import copy
-
-logger = logging.getLogger(__name__)
+import logging
+import math
+import pathlib
+from typing import Callable, NamedTuple, Type
 
 import torch
-import pathlib
-
-from registration.lib.structs import Transformation, SceneGeometry, Sinogram2dGrid, Sinogram2dRange, LinearRange
-from registration.interface.lib.structs import HyperParameters, Target
-from registration.lib.sinogram import Sinogram, SinogramType
-from registration import data, drr, pre_computed
-from registration.lib import grangeat
 
 import reg23
+from registration import data, drr, pre_computed
+from registration.interface.lib.structs import HyperParameters, Target
+from registration.lib import grangeat
+from registration.lib.sinogram import Sinogram, SinogramType
+from registration.lib.structs import (
+    LinearRange,
+    SceneGeometry,
+    Sinogram2dGrid,
+    Sinogram2dRange,
+    Transformation,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class RegistrationData:

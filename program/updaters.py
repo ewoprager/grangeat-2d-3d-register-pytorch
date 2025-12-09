@@ -1,20 +1,24 @@
 import logging
-from typing import Any, Type
 import math
-
-logger = logging.getLogger(__name__)
+import pathlib
+from typing import Any, Type
 
 import torch
-import pathlib
-
-from registration.lib.structs import Transformation, Sinogram2dGrid, Sinogram2dRange, LinearRange
-from registration import data, drr, pre_computed
-from registration.interface.lib.structs import HyperParameters, Target
-from registration.lib.sinogram import Sinogram, SinogramType
-from program.lib.structs import Error
-from registration.lib import grangeat
 
 import reg23
+from program.lib.structs import Error
+from registration import data, drr, pre_computed
+from registration.interface.lib.structs import HyperParameters, Target
+from registration.lib import grangeat
+from registration.lib.sinogram import Sinogram, SinogramType
+from registration.lib.structs import (
+    LinearRange,
+    Sinogram2dGrid,
+    Sinogram2dRange,
+    Transformation,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def load_ct(ct_path: str, device) -> dict[str, Any]:
