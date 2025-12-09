@@ -208,6 +208,7 @@ class DataManager:
             node.data = NodeData.default()
         node.data.data = value
         node.data.dirty = False
+
         return None
 
 
