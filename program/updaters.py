@@ -12,12 +12,12 @@ from registration.interface.lib.structs import HyperParameters, Target
 from registration.lib import grangeat
 from registration.lib.sinogram import Sinogram, SinogramType
 from registration.lib.structs import (LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation, )
-from program import data_manager
+from program import dag_updater
 
 logger = logging.getLogger(__name__)
 
 
-@data_manager.dag_updater(names_returned=["ct_volumes", "ct_spacing"])
+@dag_updater(names_returned=["ct_volumes", "ct_spacing"])
 def load_ct(ct_path: str, device) -> dict[str, Any]:
     ct_volumes, ct_spacing = data.load_volume(pathlib.Path(ct_path), downsample_factor="mipmap")
     ct_volumes = [ct_volume.to(device=device, dtype=torch.float32) for ct_volume in ct_volumes]
@@ -26,7 +26,7 @@ def load_ct(ct_path: str, device) -> dict[str, Any]:
     return {"ct_volumes": ct_volumes, "ct_spacing": ct_spacing}
 
 
-@data_manager.dag_updater(names_returned=["sinogram_size", "ct_sinograms"])
+@dag_updater(names_returned=["sinogram_size", "ct_sinograms"])
 def refresh_vif(self) -> dict[str, Any] | Error:
     this_sinogram_size = int(
         math.ceil(pow(self.ct_volumes[0].numel(), 1.0 / 3.0))) if self._sinogram_size is None else self._sinogram_size
@@ -64,7 +64,7 @@ def refresh_vif(self) -> dict[str, Any] | Error:
     return {"sinogram_size": this_sinogram_size, "ct_sinograms": sinogram3ds}
 
 
-@data_manager.dag_updater(
+@dag_updater(
     names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
 def load_target_image(ct_spacing: torch.Tensor, target: Target, device) -> dict[str, Any]:
     transformation_ground_truth = None
@@ -94,7 +94,7 @@ def load_target_image(ct_spacing: torch.Tensor, target: Target, device) -> dict[
         self._target_change_callback()
 
 
-@data_manager.dag_updater(
+@dag_updater(
     names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
 def set_synthetic_target_image(ct_path: str, ct_spacing: torch.Tensor, ct_volumes: list[torch.Tensor],
                                new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool,
@@ -121,7 +121,7 @@ def set_synthetic_target_image(ct_path: str, ct_spacing: torch.Tensor, ct_volume
             "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
 
 
-@data_manager.dag_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset"])
+@dag_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset"])
 def refresh_hyperparameter_dependent(images_2d_full: list[torch.Tensor], fixed_image_spacing: torch.Tensor,
                                      hyperparameters: HyperParameters) -> dict[str, Any]:
     # Cropping for the fixed image
@@ -141,7 +141,7 @@ def refresh_hyperparameter_dependent(images_2d_full: list[torch.Tensor], fixed_i
             "translation_offset": translation_offset}
 
 
-@data_manager.dag_updater(names_returned=["sinogram2d_grid_unshifted", "sinogram2d_grid"])
+@dag_updater(names_returned=["sinogram2d_grid_unshifted", "sinogram2d_grid"])
 def refresh_hyperparameter_dependent_grangeat(cropped_target: torch.Tensor, fixed_image_offset: torch.Tensor,
                                               fixed_image_spacing: torch.Tensor, hyperparameters: HyperParameters,
                                               device) -> dict[str, Any]:
@@ -159,7 +159,7 @@ def refresh_hyperparameter_dependent_grangeat(cropped_target: torch.Tensor, fixe
     return {"sinogram2d_grid_unshifted": sinogram2d_grid_unshifted, "sinogram2d_grid": sinogram2d_grid}
 
 
-@data_manager.dag_updater(names_returned=["mask", "fixed_image"])
+@dag_updater(names_returned=["mask", "fixed_image"])
 def refresh_mask_transformation_dependent(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
                                           cropped_target: torch.Tensor, mask_transformation: Transformation | None,
                                           fixed_image_spacing: torch.Tensor, fixed_image_offset: torch.Tensor,
@@ -184,7 +184,7 @@ def refresh_mask_transformation_dependent(ct_volumes: list[torch.Tensor], ct_spa
     return {"mask": mask, "fixed_image": fixed_image}
 
 
-@data_manager.dag_updater(names_returned=["sinogram2d"])
+@dag_updater(names_returned=["sinogram2d"])
 def refresh_mask_transformation_dependent_grangeat(self) -> dict[str, Any]:
     sinogram2d = grangeat.calculate_fixed_image(  #
         self.fixed_image,  #

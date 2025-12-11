@@ -3,8 +3,11 @@ import traitlets
 from traitlets.config import SingletonConfigurable
 import functools
 from typing import Any, Callable, NamedTuple
+import logging
 
 from program.lib.structs import Error
+
+logger = logging.getLogger(__name__)
 
 
 class Dependency(NamedTuple):
@@ -211,6 +214,18 @@ class DAG:
         self._add_dependencies(updater.dependencies)
         return None
 
+    @_data_mutating
+    def get_args(self, args: list[FunctionArgument]) -> dict[str, Any] | Error:
+        ret = {}
+        for arg in args:
+            value = self.get(arg.name)
+            if isinstance(value, Error):
+                if arg.required:
+                    return Error(f"Error getting argument {arg.name}: '{value.description}'")
+                continue
+            ret[arg.name] = value
+        return ret
+
     def _set_dirty(self, name: str) -> None:
         # make sure node exists
         self.add_node(name)
@@ -233,24 +248,13 @@ class DAG:
         for dependency in dependencies:
             self._add_dependency(dependency)
 
-    def _get_args(self, args: list[FunctionArgument]) -> dict[str, Any] | Error:
-        ret = {}
-        for arg in args:
-            value = self.get(arg.name)
-            if isinstance(value, Error):
-                if arg.required:
-                    return Error(f"Error getting argument {arg.name}: '{value.description}'")
-                continue
-            ret[arg.name] = value
-        return ret
-
     def _run_updater(self, name: str, *, soft: bool = False) -> None | Error:
         # get the updater object
         if name not in self._updaters:
             return Error(f"No updater named '{name}' in graph.")
         updater = self._updaters[name]
         # get the arguments for the function
-        args = self._get_args(updater.arguments)
+        args = self.get_args(updater.arguments)
         if isinstance(args, Error):
             if soft:
                 return None
@@ -317,6 +321,25 @@ def dag_updater(*, names_returned: list[str]):
     return decorator
 
 
+def from_dag(function):
+    """
+    A decorator for indicating that a function's arguments should all be read from the `DAG`. The named arguments of the
+    function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be modified/
+    intercepted, but an `Error` may be returned instead in the case of a failure to get any argument from the `DAG`.
+    """
+
+    @functools.wraps(function)
+    def wrapper():
+        arguments = get_function_arguments(function)
+        args = data_manager().get_args(arguments)
+        if isinstance(args, Error):
+            return Error(f"Failed to get arguments to run function from dag: {args.description}")
+        # execute the function
+        return function(**args)
+
+    return wrapper
+
+
 @dag_updater(names_returned=["similarity"])
 def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
     return {"similarity": fixed_image * moving_image}
@@ -328,7 +351,7 @@ class DataManagerSingleton(SingletonConfigurable):
     def get(self, **init_kwargs) -> DAG:
         if self._data_manager is None:
             self._data_manager = DAG(**init_kwargs)
-            print(f"Data manager initialised with the following parameters: {init_kwargs}")
+            logger.info(f"Data manager initialised with the following parameters: {init_kwargs}")
         return self._data_manager
 
 
