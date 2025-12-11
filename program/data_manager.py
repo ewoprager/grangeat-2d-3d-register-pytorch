@@ -85,7 +85,7 @@ class DAG:
         self._lazy = new_value
 
     @staticmethod
-    def data_mutating(function):
+    def _data_mutating(function):
         @functools.wraps(function)
         def wrapper(self, *args, **kwargs):
             this_is_top_level_call = self._in_top_level_call
@@ -111,7 +111,7 @@ class DAG:
         ret += ")\n"
         return ret
 
-    @data_mutating
+    @_data_mutating
     def get(self, name: str) -> Any | Error:
         """
         Get the data associated with the named node. Will lazily re-calculate the value if previously made dirty by
@@ -137,16 +137,20 @@ class DAG:
         if data is not NoNodeData:
             self.set_data(name, data)
 
-    @data_mutating
-    def set_data(self, node_name: str, data: Any) -> None | Error:
+    @_data_mutating
+    def set_data(self, node_name: str, data: Any, *, check_equality: bool = False) -> None | Error:
         """
         Set the data associated with a named node. Will create the node if it doesn't exist.
         :param node_name: Name of the node.
         :param data: New data to assign.
+        :param check_equality: [Optional; default=False] Whether to check the new value against the old value, and leave
+        the node clean if the new value is the same.
         """
         # make sure node exists
         self.add_node(node_name)
         # set the data and make not dirty
+        if check_equality and self._nodes[node_name].data == data:
+            return None
         self._nodes[node_name].data = data
         self._nodes[node_name].dirty = False
         # call the node's set callbacks
@@ -157,6 +161,7 @@ class DAG:
         # make all dependents dirty
         for dependent in self._nodes[node_name].dependents:
             self._set_dirty(dependent)
+        return None
 
     def add_callback(self, node_name: str, callback_name: str, callback: Callable[[Any], None]) -> None:
         """
@@ -177,7 +182,7 @@ class DAG:
         self._nodes[node_name].set_callbacks.pop(callback_name)
         return None
 
-    @data_mutating
+    @_data_mutating
     def add_updater(self, name: str, updater: Updater) -> None | Error:
         """
         Add a new updater object to the DAG. Each node may only be updated by a single updater, or no updater.
