@@ -1,5 +1,6 @@
 import inspect
-from typing import Any, Callable, Generic, NamedTuple, TypeVar
+import traitlets
+from typing import Any, Callable, NamedTuple
 
 from program.lib.structs import Error
 
@@ -20,74 +21,35 @@ def call_function_with_arg_getter(function: Callable, arg_getter: Callable[[str]
                 return Error(f"Error getting argument {name}: '{arg.description}'")
             if arg is not None:
                 bound[name] = arg
-            elif param.default is inspect._empty:
+            elif param is inspect._empty:
                 return Error(f"Missing required argument: '{name}'")
 
     return function(**bound)
 
 
-T = TypeVar("T")
+class NoNodeDataType: pass
 
 
-class NodeValue(Generic[T]):
-    def __init__(self, data: T | None, depends_on: list[str], depended_on_by: list[str]):
-        self.data = data
-        self.depends_on = depends_on
-        self.depended_on_by = depended_on_by
-
-    @staticmethod
-    def default() -> 'NodeValue':
-        return NodeValue(None, [], [])
+NoNodeData = NoNodeDataType()
 
 
-class TwoWayDependencyGraph(Generic[T]):
-    def __init__(self):
-        self._nodes: dict[str, NodeValue[T]] = dict()
+class Node(traitlets.HasTraits):
+    dependents = traitlets.List(trait=traitlets.Unicode(), default_value=[])
+    dirty = traitlets.Bool(default_value=False)
+    updater = traitlets.Unicode(allow_none=True, default_value=None)
+    data = traitlets.Any(allow_none=True, default_value=NoNodeData)
 
-    def get_node(self, node_name: str) -> NodeValue[T] | None:
-        if node_name in self._nodes:
-            return self._nodes[node_name]
-        else:
-            return None
+    def __str__(self) -> str:
+        ret = "Node(\n"
+        ret += "\n\t".join(f"{name}={getattr(self, name)!r}" for name in self.trait_names() if not name.startswith('_'))
+        ret += "\n)\n"
+        return ret
 
-    def set_data(self, node_name: str, data: Any) -> None:
-        if node_name in self._nodes:
-            self._nodes[node_name] = NodeValue[T].default()
-        self._nodes[node_name].data = data
-
-    def add_node(self, name: str, *, depends_on: list[str] = [], depended_on_by: list[str] = [],
-                 data: Any = None) -> None:
-        if name not in self._nodes:
-            self._nodes[name] = NodeValue[T].default()
-        self._nodes[name].data = data
-        for node in depends_on:
-            if node not in self._nodes[name].depends_on:
-                self._nodes[name].depends_on.append(node)
-            if node not in self._nodes:
-                self._nodes[node] = NodeValue[T].default()
-            if name not in self._nodes[node].depended_on_by:
-                self._nodes[node].depended_on_by.append(name)
-        for node in depended_on_by:
-            if node not in self._nodes[name].depended_on_by:
-                self._nodes[name].depended_on_by.append(node)
-            if node not in self._nodes:
-                self._nodes[node] = NodeValue[T].default()
-            if name not in self._nodes[node].depends_on:
-                self._nodes[node].depends_on.append(name)
-
-    def add_dependency(self, dependency: Dependency) -> None:
-        if dependency.depender not in self._nodes:
-            self._nodes[dependency.depender] = NodeValue[T].default()
-        if dependency.depended not in self._nodes[dependency.depender].depends_on:
-            self._nodes[dependency.depender].depends_on.append(dependency.depended)
-        if dependency.depended not in self._nodes:
-            self._nodes[dependency.depended] = NodeValue[T].default()
-        if dependency.depender not in self._nodes[dependency.depended].depended_on_by:
-            self._nodes[dependency.depended].depended_on_by.append(dependency.depender)
-
-    def add_dependencies(self, dependencies: list[Dependency]) -> None:
-        for dependency in dependencies:
-            self.add_dependency(dependency)
+    @traitlets.validate("dirty")
+    def _valid_dirty(self, proposal):
+        if self.updater is None and proposal["value"] == True:
+            raise traitlets.TraitError("A node with no updater cannot be dirty.")
+        return proposal["value"]
 
 
 class FunctionArgument(NamedTuple):
@@ -100,129 +62,163 @@ def get_function_arguments(function: Callable) -> list[FunctionArgument]:
     ret = []
     for name, param in signature.parameters.items():
         if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD, param.KEYWORD_ONLY):
-            ret.append(FunctionArgument(name=name, required=param.default is inspect._empty))
+            ret.append(FunctionArgument(name=name, required=param is inspect._empty))
     return ret
 
 
-class DataUpdater(NamedTuple):
+class Updater(NamedTuple):
     function: Callable
-    arguments: list[FunctionArgument]
     returned: list[str]
-
-    def get_dependencies(self) -> list[Dependency]:
-        ret: list[Dependency] = []
-        for depended in self.arguments:
-            for depender in self.returned:
-                ret.append(Dependency(depender=depender, depended=depended.name))
-        return ret
-
-
-class NodeData:
-    def __init__(self, dirty: bool, data: Any, updated_by: str | None):
-        self.dirty = dirty
-        self.data = data
-        self.updated_by = updated_by
+    arguments: list[FunctionArgument]
+    dependencies: list[Dependency]
 
     @staticmethod
-    def default() -> 'NodeData':
-        return NodeData(True, None, None)
+    def build(*, function: Callable, returned: list[str]) -> 'Updater':
+        arguments = get_function_arguments(function)
+        dependencies: list[Dependency] = []
+        for depended in arguments:
+            for depender in returned:
+                dependencies.append(Dependency(depender=depender, depended=depended.name))
+        return Updater(function=function, returned=returned, arguments=arguments, dependencies=dependencies)
 
 
-class DataManager:
+class DataDAG:
     def __init__(self):
-        self._data_graph = TwoWayDependencyGraph[NodeData]()
-        self._updaters: dict[str, DataUpdater] = dict()
+        self._nodes: dict[str, Node] = dict()
+        self._updaters: dict[str, Updater] = dict()
+
+    def __str__(self) -> str:
+        ret = "DataDAG(\n"
+        ret += "\tNodes:\n"
+        for name, value in self._nodes.items():
+            ret += f"\t\t{name}: {value},\n"
+        ret += "\tUpdaters:\n"
+        for name, value in self._updaters.items():
+            ret += f"\t\t{name}: {value},\n"
+        ret += ")\n"
+        return ret
+
+    def get(self, name: str) -> Any | Error:
+        if name not in self._nodes:
+            return Error(f"No node named '{name}' in graph.")
+        if self._nodes[name].dirty:
+            err = self._run_updater(self._nodes[name].updater)
+            if isinstance(err, Error):
+                return Error(f"Node '{name}' is dirty on get, error running updater '{self._nodes[name].updater}': "
+                             f"{err.description}.")
+        if self._nodes[name].data is NoNodeData:
+            return Error(f"No data stored for node '{name}' in graph.")
+        return self._nodes[name].data
+
+    def add_node(self, name: str, *, data: Any = NoNodeData) -> None:
+        if name not in self._nodes:
+            self._nodes[name] = Node()
+        if data is not NoNodeData:
+            self.set_data(name, data)
+
+    def set_data(self, node_name: str, data: Any) -> None:
+        # make sure node exists
+        self.add_node(node_name)
+        # set the data and make not dirty
+        self._nodes[node_name].data = data
+        self._nodes[node_name].dirty = False
+        # make all dependents dirty
+        for dependent in self._nodes[node_name].dependents:
+            self._set_dirty(dependent)
+
+    def add_updater(self, name: str, updater: Updater) -> None | Error:
+        # insert the new updater, checking that there isn't already one of the same name
+        if name in self._updaters:
+            return Error(f"Updater named '{name}' already exists in graph.")
+        self._updaters[name] = updater
+        # set the updater names for updated nodes
+        for updated in updater.returned:
+            self.add_node(updated)
+            if self._nodes[updated].updater is None:
+                self._nodes[updated].updater = name
+            else:
+                return Error(
+                    f"Node {updated} is already updated by {self._nodes[updated].updater}; tried to add updater {name} "
+                    f"which wants to update the same node.")
+        # add dependencies now that updated nodes have assigned updaters
+        self._add_dependencies(updater.dependencies)
+        return None
+
+    def _set_dirty(self, name: str) -> None:
+        # make sure node exists
+        self.add_node(name)
+        # make node and all dependents dirty
+        self._nodes[name].dirty = True
+        for dependent in self._nodes[name].dependents:
+            self._set_dirty(dependent)
+
+    def _add_dependency(self, dependency: Dependency) -> None:
+        # make sure both nodes exist
+        self.add_node(dependency.depender)
+        self.add_node(dependency.depended)
+        # make sure depender is in depended's list of dependents
+        if dependency.depender not in self._nodes[dependency.depended].dependents:
+            self._nodes[dependency.depended].dependents.append(dependency.depender)
+        # make depender dirty
+        self._nodes[dependency.depender].dirty = True
+
+    def _add_dependencies(self, dependencies: list[Dependency]) -> None:
+        for dependency in dependencies:
+            self._add_dependency(dependency)
 
     def _get_args(self, args: list[FunctionArgument]) -> dict[str, Any] | Error:
         ret = {}
         for arg in args:
-            value = self.get_data(arg.name)
+            value = self.get(arg.name)
             if isinstance(value, Error):
                 if arg.required:
                     return Error(f"Error getting argument {arg.name}: '{value.description}'")
-                continue
-            if value is None:
-                if arg.required:
-                    return Error(f"No data stored for argument '{arg.name}'.")
                 continue
             ret[arg.name] = value
         return ret
 
     def _run_updater(self, name: str) -> None | Error:
+        # get the updater object
         if name not in self._updaters:
-            return Error(f"Updater {name} doesn't exist.")
+            return Error(f"No updater named '{name}' in graph.")
         updater = self._updaters[name]
+        # get the arguments for the function
         args = self._get_args(updater.arguments)
         if isinstance(args, Error):
-            return Error(f"Failed to run updater '{name}': {args.description}")
+            return Error(f"Failed to get arguments to run updater '{name}': {args.description}")
+        # execute the function
         res = updater.function(**args)
         if isinstance(res, Error):
             return Error(f"Error running updater function '{name}': {res.description}")
+        # for each promised value, check it exists, and set the data
         if not isinstance(res, dict):
             return Error(f"Expected data updater function '{name}' to return a dictionary.")
         for variable_updated in updater.returned:
             if variable_updated not in res:
                 return Error(
                     f"Variable '{variable_updated}' not returned by updater function '{name}' which promised it.")
-            err = self.set_data(variable_updated, res.pop(variable_updated))
-            if isinstance(err, Error):
-                return Error(f"Error while running updater '{name}': {err.description}")
+            self.set_data(variable_updated, res.pop(variable_updated))
+        # check for values returned that weren't promised
         if len(res) > 0:
             variable_names = "', '".join(list(res.keys()))
             return Error(f"Updater function '{name}' returned unexpected variables: '{variable_names}'")
         return None
 
-    def add_updater(self, name: str, function: Callable) -> None | Error:
-        self._updaters[name] = DataUpdater(function=function, arguments=get_function_arguments(function),
-                                           returned=function.returned)
-        self._data_graph.add_dependencies(self._updaters[name].get_dependencies())
-        for variable_updated in function.returned:
-            node = self._data_graph.get_node(variable_updated)
-            if node is None:
-                return Error(f"No node for {variable_updated}.")
-            if node.data is None:
-                node.data = NodeData.default()
-            if node.data.updated_by is None:
-                node.data.updated_by = name
-            else:
-                return Error(
-                    f"Variable {variable_updated} is already updated by {node.data.updated_by}; tried to add updater {name} which wants to update the same variable.")
-        return None
 
-    def get_data(self, name: str) -> Any | Error:
-        node = self._data_graph.get_node(name)
-        if node is None:
-            return Error(f"Variable {node} doesn't exist.")
-        if node.data is None:
-            return Error(f"Node {node} has no data.")
-        if node.data.dirty:
-            if node.data.updated_by is None:
-                return Error(f"Could not update dirty variable {name} as no updater exists.")
-            err = self._run_updater(node.data.updated_by)
-            if isinstance(err, Error):
-                return Error(f"Error while getting data '{name}': {err.description}")
-        return node.data.data
+def data_dag_updater(*, names_returned: list[str]):
+    def decorator(function):
+        return Updater.build(function=function, returned=names_returned)
 
-    def set_data(self, name: str, value: Any) -> None | Error:
-        node = self._data_graph.get_node(name)
-        if node is None:
-            return Error(f"Variable {node} doesn't exist.")
-        if node.data is None:
-            node.data = NodeData.default()
-        node.data.data = value
-        node.data.dirty = False
-
-        return None
+    return decorator
 
 
+@data_dag_updater(names_returned=["similarity"])
 def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
     return {"similarity": fixed_image * moving_image}
 
-try_updater.returned = ["similarity"]
-
 
 def main():
-    data_manager = DataManager()
+    data_manager = DataDAG()
 
     err = data_manager.add_updater("similarity_metric", try_updater)
     if isinstance(err, Error):
@@ -232,7 +228,9 @@ def main():
     data_manager.set_data("fixed_image", 2.0)
     data_manager.set_data("moving_image", 3.0)
 
-    print(data_manager.get_data("similarity"))
+    print(f"Data manager:\n{data_manager}")
+
+    print(data_manager.get("similarity"))
 
 
 if __name__ == "__main__":
