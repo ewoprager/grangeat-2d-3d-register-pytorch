@@ -1,5 +1,6 @@
 import inspect
 import traitlets
+import functools
 from typing import Any, Callable, NamedTuple
 
 from program.lib.structs import Error
@@ -21,6 +22,7 @@ class Node(traitlets.HasTraits):
     dirty = traitlets.Bool(default_value=False)
     updater = traitlets.Unicode(allow_none=True, default_value=None)
     data = traitlets.Any(allow_none=True, default_value=NoNodeData)
+    set_callbacks = traitlets.Dict(key_trait=traitlets.Unicode(), value_trait=traitlets.Callable())
 
     def __str__(self) -> str:
         ret = "Node(\n"
@@ -44,8 +46,10 @@ def get_function_arguments(function: Callable) -> list[FunctionArgument]:
     signature = inspect.signature(function)
     ret = []
     for name, param in signature.parameters.items():
+        required = (param.default is inspect.Parameter.empty  # no default value
+                    and param.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD))
         if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD, param.KEYWORD_ONLY):
-            ret.append(FunctionArgument(name=name, required=param is inspect._empty))
+            ret.append(FunctionArgument(name=name, required=required))
     return ret
 
 
@@ -66,9 +70,35 @@ class Updater(NamedTuple):
 
 
 class DAG:
-    def __init__(self):
+    def __init__(self, lazy: bool = True):
         self._nodes: dict[str, Node] = dict()
         self._updaters: dict[str, Updater] = dict()
+        self._lazy = lazy
+        self._in_top_level_call: bool = True
+
+    @property
+    def lazy(self) -> bool:
+        return self._lazy
+
+    @lazy.setter
+    def lazy(self, new_value: bool) -> None:
+        self._lazy = new_value
+
+    @staticmethod
+    def data_mutating(function):
+        @functools.wraps(function)
+        def wrapper(self, *args, **kwargs):
+            this_is_top_level_call = self._in_top_level_call
+            self._in_top_level_call = False
+            ret = function(self, *args, **kwargs)
+            if this_is_top_level_call and not self.lazy:
+                err = self._clean_graph()
+                if isinstance(err, Error):
+                    return Error(f"Error cleaning graph after call to data mutating function: {err.description}.")
+            self._in_top_level_call = this_is_top_level_call
+            return ret
+
+        return wrapper
 
     def __str__(self) -> str:
         ret = "DataDAG(\n"
@@ -81,6 +111,7 @@ class DAG:
         ret += ")\n"
         return ret
 
+    @data_mutating
     def get(self, name: str) -> Any | Error:
         """
         Get the data associated with the named node. Will lazily re-calculate the value if previously made dirty by
@@ -88,15 +119,9 @@ class DAG:
         :param name: The name of the node.
         :return: The data associated with the name node, or an instance of `Error` on failure.
         """
-        if name not in self._nodes:
-            return Error(f"No node named '{name}' in graph.")
-        if self._nodes[name].dirty:
-            err = self._run_updater(self._nodes[name].updater)
-            if isinstance(err, Error):
-                return Error(f"Node '{name}' is dirty on get, error running updater '{self._nodes[name].updater}': "
-                             f"{err.description}.")
-        if self._nodes[name].dirty:
-            return Error(f"Node '{name}' still dirty after running updater '{self._nodes[name].updater}'.")
+        err = self._clean_node(name)
+        if isinstance(err, Error):
+            return Error(f"Error cleaning node '{name}' before 'get': {err.description}.")
         if self._nodes[name].data is NoNodeData:
             return Error(f"No data stored for node '{name}' in graph.")
         return self._nodes[name].data
@@ -112,7 +137,8 @@ class DAG:
         if data is not NoNodeData:
             self.set_data(name, data)
 
-    def set_data(self, node_name: str, data: Any) -> None:
+    @data_mutating
+    def set_data(self, node_name: str, data: Any) -> None | Error:
         """
         Set the data associated with a named node. Will create the node if it doesn't exist.
         :param node_name: Name of the node.
@@ -123,10 +149,35 @@ class DAG:
         # set the data and make not dirty
         self._nodes[node_name].data = data
         self._nodes[node_name].dirty = False
+        # call the node's set callbacks
+        for _, callback in self._nodes[node_name].set_callbacks.items():
+            err = callback(data)
+            if isinstance(err, Error):
+                return Error(f"Set callback returned error: {err.description}.")
         # make all dependents dirty
         for dependent in self._nodes[node_name].dependents:
             self._set_dirty(dependent)
 
+    def add_callback(self, node_name: str, callback_name: str, callback: Callable[[Any], None]) -> None:
+        """
+        Add a callback function to a node that will be called whenever the node's data changes.
+        :param node_name:
+        :param callback_name:
+        :param callback:
+        :return:
+        """
+        self.add_node(node_name)
+        self._nodes[node_name].set_callbacks[callback_name] = callback
+
+    def remove_callback(self, node_name: str, callback_name: str) -> None | Error:
+        if node_name not in self._nodes:
+            return Error(f"No node named '{node_name}' from which to remove callback.")
+        if callback_name not in self._nodes[node_name].set_callbacks:
+            return Error(f"No callback named '{callback_name}' in node '{node_name}'.")
+        self._nodes[node_name].set_callbacks.pop(callback_name)
+        return None
+
+    @data_mutating
     def add_updater(self, name: str, updater: Updater) -> None | Error:
         """
         Add a new updater object to the DAG. Each node may only be updated by a single updater, or no updater.
@@ -184,7 +235,7 @@ class DAG:
             ret[arg.name] = value
         return ret
 
-    def _run_updater(self, name: str) -> None | Error:
+    def _run_updater(self, name: str, *, soft: bool = False) -> None | Error:
         # get the updater object
         if name not in self._updaters:
             return Error(f"No updater named '{name}' in graph.")
@@ -192,6 +243,8 @@ class DAG:
         # get the arguments for the function
         args = self._get_args(updater.arguments)
         if isinstance(args, Error):
+            if soft:
+                return None
             return Error(f"Failed to get arguments to run updater '{name}': {args.description}")
         # execute the function
         res = updater.function(**args)
@@ -204,11 +257,38 @@ class DAG:
             if variable_updated not in res:
                 return Error(
                     f"Variable '{variable_updated}' not returned by updater function '{name}' which promised it.")
-            self.set_data(variable_updated, res.pop(variable_updated))
+            err = self.set_data(variable_updated, res.pop(variable_updated))
+            if isinstance(err, Error):
+                return Error(
+                    f"Error setting value for '{variable_updated}' after running updater '{name}': {err.description}.")
         # check for values returned that weren't promised
         if len(res) > 0:
             variable_names = "', '".join(list(res.keys()))
             return Error(f"Updater function '{name}' returned unexpected variables: '{variable_names}'")
+        return None
+
+    def _clean_node(self, name: str, *, soft: bool = False) -> None | Error:
+        if name not in self._nodes:
+            return Error(f"No node named '{name}' in graph.")
+        if not self._nodes[name].dirty:
+            return None
+        if self._nodes[name].updater is None:
+            if soft:
+                return None
+            return Error(f"Dirty node '{name}' cannot be cleaned as it has no updater.")
+        err = self._run_updater(self._nodes[name].updater, soft=soft)
+        if isinstance(err, Error):
+            return Error(f"Failed to clean dirty node '{name}'; error running updater '{self._nodes[name].updater}': "
+                         f"{err.description}.")
+        if self._nodes[name].dirty and not soft:
+            return Error(f"Node '{name}' still dirty after running updater '{self._nodes[name].updater}'.")
+        return None
+
+    def _clean_graph(self) -> None | Error:
+        for name in self._nodes:
+            err = self._clean_node(name, soft=True)
+            if isinstance(err, Error):
+                return Error(f"Graph clean failed on node '{name}': {err.description}.")
         return None
 
 
@@ -221,6 +301,7 @@ def dag_updater(*, names_returned: list[str]):
     :param names_returned: A list of the names of the values returned by the function.
     :return: An instance of `Updater`, built using the decorated function.
     """
+
     def decorator(function):
         return Updater.build(function=function, returned=names_returned)
 
@@ -233,7 +314,7 @@ def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
 
 
 def main():
-    data_manager = DAG()
+    data_manager = DAG(lazy=False)
 
     err = data_manager.add_updater("similarity_metric", try_updater)
     if isinstance(err, Error):
@@ -243,7 +324,7 @@ def main():
     data_manager.set_data("fixed_image", 2.0)
     data_manager.set_data("moving_image", 3.0)
 
-    print(f"Data manager:\n{data_manager}")
+    # print(f"Data manager:\n{data_manager}")
 
     print(data_manager.get("similarity"))
 
