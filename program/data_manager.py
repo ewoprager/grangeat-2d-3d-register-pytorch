@@ -10,23 +10,6 @@ class Dependency(NamedTuple):
     depended: str
 
 
-def call_function_with_arg_getter(function: Callable, arg_getter: Callable[[str], Any | Error]) -> Any | Error:
-    signature = inspect.signature(function)
-    bound = {}
-
-    for name, param in signature.parameters.items():
-        if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD, param.KEYWORD_ONLY):
-            arg = arg_getter(name)
-            if isinstance(arg, Error):
-                return Error(f"Error getting argument {name}: '{arg.description}'")
-            if arg is not None:
-                bound[name] = arg
-            elif param is inspect._empty:
-                return Error(f"Missing required argument: '{name}'")
-
-    return function(**bound)
-
-
 class NoNodeDataType: pass
 
 
@@ -82,7 +65,7 @@ class Updater(NamedTuple):
         return Updater(function=function, returned=returned, arguments=arguments, dependencies=dependencies)
 
 
-class DataDAG:
+class DAG:
     def __init__(self):
         self._nodes: dict[str, Node] = dict()
         self._updaters: dict[str, Updater] = dict()
@@ -205,20 +188,20 @@ class DataDAG:
         return None
 
 
-def data_dag_updater(*, names_returned: list[str]):
+def dag_updater(*, names_returned: list[str]):
     def decorator(function):
         return Updater.build(function=function, returned=names_returned)
 
     return decorator
 
 
-@data_dag_updater(names_returned=["similarity"])
+@dag_updater(names_returned=["similarity"])
 def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
     return {"similarity": fixed_image * moving_image}
 
 
 def main():
-    data_manager = DataDAG()
+    data_manager = DAG()
 
     err = data_manager.add_updater("similarity_metric", try_updater)
     if isinstance(err, Error):
