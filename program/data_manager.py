@@ -82,6 +82,12 @@ class DAG:
         return ret
 
     def get(self, name: str) -> Any | Error:
+        """
+        Get the data associated with the named node. Will lazily re-calculate the value if previously made dirty by
+        changes to other values.
+        :param name: The name of the node.
+        :return: The data associated with the name node, or an instance of `Error` on failure.
+        """
         if name not in self._nodes:
             return Error(f"No node named '{name}' in graph.")
         if self._nodes[name].dirty:
@@ -89,17 +95,29 @@ class DAG:
             if isinstance(err, Error):
                 return Error(f"Node '{name}' is dirty on get, error running updater '{self._nodes[name].updater}': "
                              f"{err.description}.")
+        if self._nodes[name].dirty:
+            return Error(f"Node '{name}' still dirty after running updater '{self._nodes[name].updater}'.")
         if self._nodes[name].data is NoNodeData:
             return Error(f"No data stored for node '{name}' in graph.")
         return self._nodes[name].data
 
     def add_node(self, name: str, *, data: Any = NoNodeData) -> None:
+        """
+        Create the named node if it doesn't already exist, and optionally assign data to it.
+        :param name: Name of the node.
+        :param data: [Optional] Data to assign. No assignment will be made if 'NoNodeData' is passed.
+        """
         if name not in self._nodes:
             self._nodes[name] = Node()
         if data is not NoNodeData:
             self.set_data(name, data)
 
     def set_data(self, node_name: str, data: Any) -> None:
+        """
+        Set the data associated with a named node. Will create the node if it doesn't exist.
+        :param node_name: Name of the node.
+        :param data: New data to assign.
+        """
         # make sure node exists
         self.add_node(node_name)
         # set the data and make not dirty
@@ -110,6 +128,12 @@ class DAG:
             self._set_dirty(dependent)
 
     def add_updater(self, name: str, updater: Updater) -> None | Error:
+        """
+        Add a new updater object to the DAG. Each node may only be updated by a single updater, or no updater.
+        :param name: A human-readable name to assign to the added updater.
+        :param updater: The updater object. Can be created from a function using the `dag_updater` decorator.
+        :return: None, or an `Error` object on failure.
+        """
         # insert the new updater, checking that there isn't already one of the same name
         if name in self._updaters:
             return Error(f"Updater named '{name}' already exists in graph.")
@@ -189,6 +213,14 @@ class DAG:
 
 
 def dag_updater(*, names_returned: list[str]):
+    """
+    A decorator for turning a function into an `Updater` for use in a `DAG`. The named arguments of the function will be
+    interpreted as nodes from which to read data from the `DAG`. The return value of the function must be a dictionary
+    mapping string 'names' to values, where the strings must match the contents of the list `names_returned`. The
+    returned names will be used as node names for updating values in the `DAG` with the returned values.
+    :param names_returned: A list of the names of the values returned by the function.
+    :return: An instance of `Updater`, built using the decorated function.
+    """
     def decorator(function):
         return Updater.build(function=function, returned=names_returned)
 
