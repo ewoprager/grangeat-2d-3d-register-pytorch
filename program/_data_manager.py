@@ -125,6 +125,8 @@ class DAG:
         if isinstance(err, Error):
             return Error(f"Error cleaning node '{name}' before 'get': {err.description}.")
         if self._nodes[name].data is NoNodeData:
+            if soft:
+                return NoNodeData
             return Error(f"No data stored for node '{name}' in graph.")
         return self._nodes[name].data
 
