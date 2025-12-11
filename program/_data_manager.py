@@ -1,5 +1,6 @@
 import inspect
 import traitlets
+from traitlets.config import SingletonConfigurable
 import functools
 from typing import Any, Callable, NamedTuple
 
@@ -112,14 +113,15 @@ class DAG:
         return ret
 
     @_data_mutating
-    def get(self, name: str) -> Any | Error:
+    def get(self, name: str, *, soft: bool = False) -> Any | Error:
         """
         Get the data associated with the named node. Will lazily re-calculate the value if previously made dirty by
         changes to other values.
         :param name: The name of the node.
+        :param soft: [Optional; default=False] Whether to return an Error if there is not enough data to clean the node.
         :return: The data associated with the name node, or an instance of `Error` on failure.
         """
-        err = self._clean_node(name)
+        err = self._clean_node(name, soft=soft)
         if isinstance(err, Error):
             return Error(f"Error cleaning node '{name}' before 'get': {err.description}.")
         if self._nodes[name].data is NoNodeData:
@@ -316,6 +318,24 @@ def dag_updater(*, names_returned: list[str]):
 @dag_updater(names_returned=["similarity"])
 def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
     return {"similarity": fixed_image * moving_image}
+
+
+class DataManagerSingleton(SingletonConfigurable):
+    _data_manager = traitlets.Instance(DAG, allow_none=True, default_value=None)
+
+    def get(self, **init_kwargs) -> DAG:
+        if self._data_manager is None:
+            self._data_manager = DAG(**init_kwargs)
+            print(f"Data manager initialised with the following parameters: {init_kwargs}")
+        return self._data_manager
+
+
+def init_data_manager(**kwargs) -> DAG:
+    return DataManagerSingleton.instance().get(**kwargs)
+
+
+def data_manager() -> DAG:
+    return DataManagerSingleton.instance().get()
 
 
 def main():
