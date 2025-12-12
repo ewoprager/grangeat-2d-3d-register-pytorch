@@ -38,7 +38,7 @@ jobs:
 
       - name: Build package
         run: |
-          uv pip install -e .[cpu]
+          UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --extra cpu --group docs --link-mode=copy
       #          pip install --upgrade pip setuptools wheel
 
       - name: Build Doxygen HTML
