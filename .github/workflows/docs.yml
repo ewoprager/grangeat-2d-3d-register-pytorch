@@ -21,13 +21,20 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install doxygen
+          pip install --upgrade pip
           pip install -r docs/requirements.txt
       #          pip install sphinx sphinx_rtd_theme breathe
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.5.26"
+          enable-cache: true
+
       - name: Build package
         run: |
-          pip install --upgrade pip setuptools wheel
-          pip install -e . --no-build-isolation --no-deps
+#          pip install --upgrade pip setuptools wheel
+          uv pip install -e .[cpu]
 
       - name: Build Doxygen HTML
         working-directory: reg23/Docs
