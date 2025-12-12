@@ -35,7 +35,7 @@ jobs:
       - name: Stage combined docs for deployment
         run: |
           mkdir -p site
-          cp -r docs/_build/html site/python
+          cp -r docs/build/html site/python
           cp -r reg23/Docs/html site/cpp
 
       - name: Deploy to GitHub Pages
