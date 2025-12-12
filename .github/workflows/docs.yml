@@ -25,16 +25,16 @@ jobs:
           pip install -r docs/requirements.txt
       #          pip install sphinx sphinx_rtd_theme breathe
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: "0.5.26"
-          enable-cache: true
+#      - name: Install uv
+#        uses: astral-sh/setup-uv@v5
+#        with:
+#          version: "0.5.26"
+#          enable-cache: true
 
-      - name: Set up virtual environment
-        run: |
-          uv venv
-          uv sync --extra cpu
+#      - name: Set up virtual environment
+#        run: |
+#          uv venv
+#          uv sync --extra cpu
 
       - name: Build Doxygen HTML
         working-directory: reg23/Docs
