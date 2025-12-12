@@ -26,7 +26,6 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
                                          scene_geometry=SceneGeometry(source_distance=source_distance),
                                          output_size=fixed_image_size)}
 
-
 def main():
     init_data_manager(lazy=False)
     init_viewer(title="Program Test")
@@ -45,6 +44,8 @@ def main():
                             "/Users/eprager/Library/CloudStorage/OneDrive-UniversityofCambridge/CUED/4th Year Project/Data/First/ct")
     data_manager().set_data("device", torch.device("cpu"))
     data_manager().set_data("current_transformation", Transformation.zero())
+    if isinstance(err, Error):
+        logger.error(f"Error adding updater: {err.description}.")
     value = data_manager().get("moving_image")
     if isinstance(value, Error):
         logger.error(f"Couldn't get moving image: {value.description}.")

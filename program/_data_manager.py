@@ -2,6 +2,7 @@ import inspect
 import traitlets
 from traitlets.config import SingletonConfigurable
 import functools
+import collections
 from typing import Any, Callable, NamedTuple
 import logging
 
@@ -211,11 +212,39 @@ class DAG:
                     f"Node {updated} is already updated by {self._nodes[updated].updater}; tried to add updater {name} "
                     f"which wants to update the same node.")
         # add dependencies now that updated nodes have assigned updaters
-        self._add_dependencies(updater.dependencies)
+        for dependency in updater.dependencies:
+            self._add_dependency(dependency)
+        # check that the graph is not acyclic
+        if not self._check_acyclic():
+            self.remove_updater(name)
+            return Error(f"Failed to add updater '{name}', as this added cycles to the graph.")
+        return None
+
+    @_data_mutating
+    def remove_updater(self, name: str) -> None | Error:
+        # check updater exists with given name
+        if name not in self._updaters:
+            return Error(f"Failed to remove updater '{name}'; it doesn't exist.")
+        # remove the dependencies
+        for dependency in self._updaters[name].dependencies:
+            self._remove_dependency(dependency)
+        # remove the updater names for the updated nodes
+        for updated in self._updaters[name].returned:
+            if updated not in self._nodes:
+                continue
+            self._nodes[updated].updater = None
+        # remove the updater
+        self._updaters.pop(name)
         return None
 
     @_data_mutating
     def get_args(self, args: list[FunctionArgument]) -> dict[str, Any] | Error:
+        """
+        Get the given list of named arguments from the `DAG`, returning an Error if any required argument is not
+        available.
+        :param args: list of function arguments, marked with whether they are required
+        :return: A dictionary mapping argument name to retrieved value.
+        """
         ret = {}
         for arg in args:
             value = self.get(arg.name)
@@ -244,9 +273,16 @@ class DAG:
         # make depender dirty
         self._nodes[dependency.depender].dirty = True
 
-    def _add_dependencies(self, dependencies: list[Dependency]) -> None:
-        for dependency in dependencies:
-            self._add_dependency(dependency)
+    def _remove_dependency(self, dependency: Dependency) -> None | Error:
+        # check both nodes exist
+        if dependency.depender not in self._nodes:
+            return Error(f"Error removing dependency: depender {dependency.depender} doesn't exist.")
+        if dependency.depended not in self._nodes:
+            return Error(f"Error removing dependency: depender {dependency.depended} doesn't exist.")
+        # make sure depender is not in depended's list of dependents
+        if dependency.depender in self._nodes[dependency.depended].dependents:
+            self._nodes[dependency.depended].dependents.remove(dependency.depender)
+        return None
 
     def _run_updater(self, name: str, *, soft: bool = False) -> None | Error:
         # get the updater object
@@ -303,6 +339,26 @@ class DAG:
             if isinstance(err, Error):
                 return Error(f"Graph clean failed on node '{name}': {err.description}.")
         return None
+
+    def _eval_in_degrees(self) -> dict[str, int]:
+        ret = {node_name: 0 for node_name in self._nodes}
+        for name, node in self._nodes.items():
+            for dependent in node.dependents:
+                ret[dependent] += 1
+        return ret
+
+    def _check_acyclic(self) -> bool:
+        in_degrees: dict[str, int] = self._eval_in_degrees()
+        q = collections.deque([node_name for node_name in self._nodes if in_degrees[node_name] == 0])
+        count: int = 0
+        while q:
+            first = q.popleft()
+            count += 1
+            for dependent in self._nodes[first].dependents:
+                in_degrees[dependent] -= 1
+                if in_degrees[dependent] == 0:
+                    q.append(dependent)
+        return count == len(self._nodes)
 
 
 def dag_updater(*, names_returned: list[str]):
