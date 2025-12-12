@@ -1,4 +1,3 @@
-#include <torch/extension.h>
 #include <Metal/Metal.h>
 #include <Foundation/Foundation.h>
 

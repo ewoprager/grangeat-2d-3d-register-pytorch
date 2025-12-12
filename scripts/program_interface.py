@@ -49,7 +49,8 @@ def main():
         "new_drr_size": torch.Size([500, 500]),  #
         "ct_path": "/Users/eprager/Library/CloudStorage/OneDrive-UniversityofCambridge/CUED/4th Year Project/Data/First/ct",
         #
-        "device": torch.device("cpu"),  #
+        "device": torch.device("cuda") if torch.cuda.is_available() else torch.device(
+            "mps") if torch.mps.is_available() else torch.device("cpu"),  #
         "current_transformation": Transformation.zero()  #
     })
     value = data_manager().get("moving_image")

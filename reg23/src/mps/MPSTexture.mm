@@ -1,5 +1,3 @@
-#include <torch/extension.h>
-
 #include <reg23/CommonMPS.h>
 #include <reg23/MPSTexture.h>
 #include <reg23/Texture.h>

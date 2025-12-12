@@ -16,4 +16,3 @@ Logs/*
 data/register_plot_data/
 **/build-xcode/
 reg23/src/mps/default_metallib.mm
-reg23/include/reg23/default_metallib.h
