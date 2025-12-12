@@ -1,10 +1,7 @@
-grangeat-2d-3d-register-pytorch
-===============================
+program
+=======
 
 .. toctree::
    :maxdepth: 4
 
-   notification
    program
-   reg23
-   registration

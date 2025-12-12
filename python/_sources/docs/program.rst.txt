@@ -13,6 +13,14 @@ Subpackages
 Submodules
 ----------
 
+program.src\_data\_manager module
+---------------------------------
+
+.. automodule:: program.src_data_manager
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 program.updaters module
 -----------------------
 
