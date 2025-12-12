@@ -1,6 +1,14 @@
 reg23.src package
 =================
 
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   reg23.src.reg23
+
 Module contents
 ---------------
 
