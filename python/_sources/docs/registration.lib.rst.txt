@@ -1,0 +1,69 @@
+registration.lib package
+========================
+
+Submodules
+----------
+
+registration.lib.autograd\_impl module
+--------------------------------------
+
+.. automodule:: registration.lib.autograd_impl
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+registration.lib.geometry module
+--------------------------------
+
+.. automodule:: registration.lib.geometry
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+registration.lib.grangeat module
+--------------------------------
+
+.. automodule:: registration.lib.grangeat
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+registration.lib.optimisation module
+------------------------------------
+
+.. automodule:: registration.lib.optimisation
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+registration.lib.plot module
+----------------------------
+
+.. automodule:: registration.lib.plot
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+registration.lib.sinogram module
+--------------------------------
+
+.. automodule:: registration.lib.sinogram
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+registration.lib.structs module
+-------------------------------
+
+.. automodule:: registration.lib.structs
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: registration.lib
+   :members:
+   :show-inheritance:
+   :undoc-members:

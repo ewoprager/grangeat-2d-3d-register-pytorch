@@ -1,0 +1,29 @@
+program.lib package
+===================
+
+Submodules
+----------
+
+program.lib.optimisation module
+-------------------------------
+
+.. automodule:: program.lib.optimisation
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+program.lib.structs module
+--------------------------
+
+.. automodule:: program.lib.structs
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: program.lib
+   :members:
+   :show-inheritance:
+   :undoc-members:

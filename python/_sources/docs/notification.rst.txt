@@ -1,0 +1,29 @@
+notification package
+====================
+
+Submodules
+----------
+
+notification.logs\_setup module
+-------------------------------
+
+.. automodule:: notification.logs_setup
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+notification.pushover module
+----------------------------
+
+.. automodule:: notification.pushover
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+Module contents
+---------------
+
+.. automodule:: notification
+   :members:
+   :show-inheritance:
+   :undoc-members:
