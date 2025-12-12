@@ -31,6 +31,9 @@ jobs:
           version: "0.5.26"
           enable-cache: true
 
+      - name: Set up virtual environment
+        run: uv venv .venv
+
       - name: Build package
         run: |
           uv pip install -e .[cpu]
