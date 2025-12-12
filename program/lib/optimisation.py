@@ -1,11 +1,12 @@
 from typing import NamedTuple, Callable
 import copy
+from abc import ABC, abstractmethod
 
 import numpy as np
 import pyswarms
 import torch
 
-from program import data_manager, from_dag
+from program import data_manager, args_from_dag
 from registration.lib.structs import Transformation, GrowingTensor
 from registration.lib.optimisation import mapping_transformation_to_parameters, mapping_parameters_to_transformation
 
@@ -16,7 +17,7 @@ class OptimisationResult(NamedTuple):
     value_history: torch.Tensor
 
 
-@from_dag
+@args_from_dag
 def pso(*, current_transformation: Transformation, objective_function: Callable[[torch.Tensor], torch.Tensor],
         iteration_callback: Callable[[torch.Tensor, torch.Tensor], None], pso_particle_count: int,
         pso_iteration_count: int) -> OptimisationResult:

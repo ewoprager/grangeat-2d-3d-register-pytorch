@@ -6,7 +6,7 @@ from program import data_manager
 from program.modules.interface import viewer
 
 
-class FixedImage:
+class FixedImageGUI:
     def __init__(self):
         data_manager().add_callback("fixed_image", "interface", self._set_callback)
         data_manager().set_evaluation_laziness("fixed_image", lazily_evaluated=False)

@@ -44,7 +44,7 @@ class ViewParamWidget(widgets.Container):
                                             rotation_sensitivity=self._rotation_sensitivity_slider.get_value()))
 
 
-class MovingImage:
+class MovingImageGUI:
     def __init__(self):
         data_manager().add_callback("moving_image", "interface", self._set_callback)
         data_manager().set_evaluation_laziness("moving_image", lazily_evaluated=False)

@@ -6,7 +6,7 @@ import napari
 from notification import logs_setup
 from program.lib.structs import Error
 from program import init_data_manager, data_manager, dag_updater
-from program.modules.interface import init_viewer, viewer, FixedImage, MovingImage
+from program.modules.interface import init_viewer, viewer, FixedImageGUI, MovingImageGUI, RegisterGUI
 from registration.lib.structs import Transformation, SceneGeometry
 from registration.lib.geometry import generate_drr
 from program import updaters
@@ -27,11 +27,16 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
                                          output_size=fixed_image_size)}
 
 
+def of(x: Transformation) -> torch.Tensor:
+    return x.vectorised().sum()
+
+
 def main():
     init_data_manager()
     init_viewer(title="Program Test")
-    fixed_image = FixedImage()
-    moving_image = MovingImage()
+    fixed_image_gui = FixedImageGUI()
+    moving_image_gui = MovingImageGUI()
+    register_gui = RegisterGUI({"the_only_one": of})
     data_manager().add_updater("fixed_image_updater", fixed_image_updater)
     data_manager().add_updater("project_drr", project_drr)
     data_manager().add_updater("load_ct", updaters.load_ct)

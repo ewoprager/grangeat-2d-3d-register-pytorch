@@ -394,7 +394,7 @@ def dag_updater(*, names_returned: list[str]):
     return decorator
 
 
-def from_dag(function):
+def args_from_dag(function):
     """
     A decorator for indicating that a function's arguments should all be read from the `DAG`. The named arguments of the
     function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be modified/
