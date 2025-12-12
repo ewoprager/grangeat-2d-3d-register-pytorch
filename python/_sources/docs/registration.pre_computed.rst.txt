@@ -1,0 +1,7 @@
+registration.pre\_computed module
+=================================
+
+.. automodule:: registration.pre_computed
+   :members:
+   :show-inheritance:
+   :undoc-members:

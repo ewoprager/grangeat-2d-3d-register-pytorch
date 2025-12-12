@@ -13,21 +13,11 @@ Subpackages
 Submodules
 ----------
 
-program.src\_data\_manager module
----------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: program.src_data_manager
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-program.updaters module
------------------------
-
-.. automodule:: program.updaters
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   program.src_data_manager
+   program.updaters
 
 Module contents
 ---------------

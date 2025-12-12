@@ -4,37 +4,13 @@ program.modules.interface package
 Submodules
 ----------
 
-program.modules.interface.src\_fixed\_image module
---------------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: program.modules.interface.src_fixed_image
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-program.modules.interface.src\_moving\_image module
----------------------------------------------------
-
-.. automodule:: program.modules.interface.src_moving_image
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-program.modules.interface.src\_register module
-----------------------------------------------
-
-.. automodule:: program.modules.interface.src_register
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-program.modules.interface.src\_viewer module
---------------------------------------------
-
-.. automodule:: program.modules.interface.src_viewer
-   :members:
-   :show-inheritance:
-   :undoc-members:
+   program.modules.interface.src_fixed_image
+   program.modules.interface.src_moving_image
+   program.modules.interface.src_register
+   program.modules.interface.src_viewer
 
 Module contents
 ---------------

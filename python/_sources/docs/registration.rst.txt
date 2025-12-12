@@ -1,0 +1,33 @@
+registration package
+====================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   registration.interface
+   registration.lib
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   registration.data
+   registration.drr
+   registration.objective_function
+   registration.plot_data
+   registration.pre_computed
+   registration.script
+   registration.test_objective_function
+
+Module contents
+---------------
+
+.. automodule:: registration
+   :members:
+   :show-inheritance:
+   :undoc-members:

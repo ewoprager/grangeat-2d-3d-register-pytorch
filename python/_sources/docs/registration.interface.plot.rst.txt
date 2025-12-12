@@ -1,0 +1,7 @@
+registration.interface.plot module
+==================================
+
+.. automodule:: registration.interface.plot
+   :members:
+   :show-inheritance:
+   :undoc-members:

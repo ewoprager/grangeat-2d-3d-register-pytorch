@@ -1,0 +1,19 @@
+notification package
+====================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   notification.logs_setup
+   notification.pushover
+
+Module contents
+---------------
+
+.. automodule:: notification
+   :members:
+   :show-inheritance:
+   :undoc-members:
