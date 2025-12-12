@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>registration.lib.structs &#8212; reg23-experiments  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for registration.lib.structs</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">kornia</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span>
+
+
+<div class="viewcode-block" id="GrowingTensor">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.GrowingTensor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GrowingTensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element_shape</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">initial_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">element_size</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">(</span><span class="n">element_shape</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">initial_length</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">element_shape</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="GrowingTensor.push_back">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.GrowingTensor.push_back">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">push_back</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">element</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_size</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">]</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="GrowingTensor.get">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.GrowingTensor.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LinearMapping">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.LinearMapping">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LinearMapping</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">intercept</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">gradient</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intercept</span> <span class="o">=</span> <span class="n">intercept</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradient</span> <span class="o">=</span> <span class="n">gradient</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">intercept</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradient</span> <span class="o">*</span> <span class="n">x</span></div>
+
+
+
+<div class="viewcode-block" id="LinearRange">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.LinearRange">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LinearRange</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">low</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">high</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">low</span> <span class="o">=</span> <span class="n">low</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">=</span> <span class="n">high</span>
+
+<div class="viewcode-block" id="LinearRange.generate_grid">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.LinearRange.generate_grid">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cpu&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LinearRange.generate_tex_coord_grid">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.LinearRange.generate_tex_coord_grid">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_tex_coord_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cpu&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="n">half_cell_size</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">low</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low</span> <span class="o">+</span> <span class="n">half_cell_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">-</span> <span class="n">half_cell_size</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LinearRange.get_mapping_from">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.LinearRange.get_mapping_from">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_mapping_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;LinearRange&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LinearMapping</span><span class="p">:</span>
+        <span class="n">frac</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">low</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">high</span> <span class="o">-</span> <span class="n">other</span><span class="o">.</span><span class="n">low</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">LinearMapping</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low</span> <span class="o">-</span> <span class="n">frac</span> <span class="o">*</span> <span class="n">other</span><span class="o">.</span><span class="n">low</span><span class="p">,</span> <span class="n">frac</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LinearRange.get_spacing">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.LinearRange.get_spacing">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_spacing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">low</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LinearRange.get_tex_coord_spacing">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.LinearRange.get_tex_coord_spacing">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_tex_coord_spacing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">low</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">count</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LinearRange.get_centre">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.LinearRange.get_centre">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_centre</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">.5</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">high</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LinearRange.grid_sample_range">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.LinearRange.grid_sample_range">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">grid_sample_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">LinearRange</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Transformation">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Transformation</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">rotation</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="n">translation</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+
+<div class="viewcode-block" id="Transformation.inverse">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.inverse">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Transformation&#39;</span><span class="p">:</span>
+        <span class="n">r_inverse</span> <span class="o">=</span> <span class="n">kornia</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">axis_angle_to_rotation_matrix</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">r_inverse_t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s1">&#39;kl,...l-&gt;...k&#39;</span><span class="p">,</span> <span class="n">r_inverse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Transformation</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="p">,</span> <span class="o">-</span><span class="n">r_inverse_t</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Transformation.get_h">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.get_h">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cpu&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param device:</span>
+<span class="sd">        :return: [(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation.</span>
+<span class="sd">        Stored column-major.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">kornia</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">axis_angle_to_rotation_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+                                                                                                        <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">rt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">r</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">t</span><span class="p">()</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">rt</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)])</span></div>
+
+
+<div class="viewcode-block" id="Transformation.vectorised">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.vectorised">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">vectorised</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Transformation.from_vector">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.from_vector">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_vector</span><span class="p">(</span><span class="n">vector</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Transformation&#39;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">vector</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">6</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">Transformation</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="n">vector</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">],</span> <span class="n">translation</span><span class="o">=</span><span class="n">vector</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">])</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_consistent</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">device</span>
+
+<div class="viewcode-block" id="Transformation.to">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Transformation&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Transformation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Transformation.clone">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.clone">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clone</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Tranformation&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Transformation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">clone</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">clone</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="Transformation.device_consistent">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.device_consistent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device_consistent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">device</span></div>
+
+
+<div class="viewcode-block" id="Transformation.distance">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.distance">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;Transformation&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">device</span>
+        <span class="n">r1</span> <span class="o">=</span> <span class="n">kornia</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">axis_angle_to_rotation_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+                                                                                                         <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="n">kornia</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">axis_angle_to_rotation_matrix</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
+                                                                                                          <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(((</span><span class="bp">self</span><span class="o">.</span><span class="n">translation</span> <span class="o">-</span> <span class="n">other</span><span class="o">.</span><span class="n">translation</span><span class="p">)</span> <span class="o">/</span> <span class="mf">100.</span><span class="p">)</span><span class="o">.</span><span class="n">square</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+            <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">logm</span><span class="p">((</span><span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">r1</span><span class="o">.</span><span class="n">t</span><span class="p">(),</span> <span class="n">r2</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">())))]),</span>
+            <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">square</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span><span class="o">.</span><span class="n">sqrt</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Transformation.is_close">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.is_close">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;Transformation&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">device</span><span class="p">))</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="o">.</span><span class="n">device</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;Transformation(rot = </span><span class="si">{}</span><span class="s2">, trans = </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rotation</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">translation</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Transformation.zero">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.zero">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">zero</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cpu&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="s1">&#39;Transformation&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Transformation</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Transformation.random_uniform">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.random_uniform">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">random_uniform</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cpu&#39;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="s1">&#39;Transformation&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Transformation</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mf">1.</span> <span class="o">+</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)),</span>
+                              <span class="n">translation</span><span class="o">=</span><span class="mf">25.</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mf">1.</span> <span class="o">+</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span> <span class="o">+</span> <span class="n">Transformation</span><span class="o">.</span><span class="n">zero</span><span class="p">(</span>
+                                  <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">translation</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Transformation.random_gaussian">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Transformation.random_gaussian">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">random_gaussian</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">rotation_mean</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">rotation_std</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+                        <span class="n">translation_mean</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">translation_std</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+                        <span class="n">generator</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Transformation&#39;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">rotation_mean</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">3</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="n">translation_mean</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">3</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="n">translation_mean</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">rotation_mean</span><span class="o">.</span><span class="n">device</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rotation_std</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">rotation_std</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">3</span><span class="p">]))</span> <span class="ow">and</span> <span class="p">(</span><span class="n">rotation_std</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">rotation_mean</span><span class="o">.</span><span class="n">device</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">translation_std</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">translation_std</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">3</span><span class="p">]))</span> <span class="ow">and</span> <span class="p">(</span><span class="n">translation_std</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">rotation_mean</span><span class="o">.</span><span class="n">device</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Transformation</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">rotation_mean</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="n">rotation_std</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="n">generator</span><span class="p">),</span>
+                              <span class="n">translation</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">mean</span><span class="o">=</span><span class="n">translation_mean</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="n">translation_std</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="n">generator</span><span class="p">))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SceneGeometry">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.SceneGeometry">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SceneGeometry</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">source_distance</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># [mm]; distance in the positive z-direction from the centre of the detector array</span>
+    <span class="n">fixed_image_offset</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+        <span class="mi">2</span><span class="p">)</span>  <span class="c1"># size (2,): (x, y) [mm]; offset of the fixed image relative to the source</span>
+
+<div class="viewcode-block" id="SceneGeometry.source_position">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.SceneGeometry.source_position">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s1">&#39;cpu&#39;</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_distance</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SceneGeometry.projection_matrix">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.SceneGeometry.projection_matrix">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">projection_matrix</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">source_position</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">central_ray</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate the projection matrix for the given source position</span>
+
+<span class="sd">        :param source_position: [(3,) tensor] the position of the X-ray source</span>
+<span class="sd">        :param central_ray: [(3,) tensor or None] the vector from the X-ray source to the closest point on the detector array. If none, the detector array is assumed to be the x-y plane.</span>
+<span class="sd">        :return: [(4, 4) tensor] The projection matrix P that projects points in homogeneous coordinates away from the given source position onto the plane of the detector array, as given by the central ray.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="n">source_position</span><span class="o">.</span><span class="n">device</span>
+
+        <span class="k">if</span> <span class="n">central_ray</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">central_ray</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="o">-</span> <span class="n">source_position</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">central_ray</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="n">device</span>
+        <span class="k">assert</span> <span class="n">source_position</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">3</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="n">central_ray</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">3</span><span class="p">])</span>
+
+        <span class="n">m_matrix</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">source_position</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">1.</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))),</span>
+                                             <span class="n">central_ray</span><span class="p">)</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">central_ray</span><span class="p">,</span> <span class="n">central_ray</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">m_matrix</span><span class="p">,</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">m_matrix</span><span class="p">,</span> <span class="n">source_position</span><span class="o">.</span><span class="n">t</span><span class="p">()</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Sinogram2dRange">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram2dRange">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Sinogram2dRange</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">phi</span><span class="p">:</span> <span class="n">LinearRange</span>
+    <span class="n">r</span><span class="p">:</span> <span class="n">LinearRange</span></div>
+
+
+
+<div class="viewcode-block" id="Sinogram2dGrid">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram2dGrid">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Sinogram2dGrid</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">phi</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="n">r</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+
+<div class="viewcode-block" id="Sinogram2dGrid.to">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram2dGrid.to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Sinogram2dGrid&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Sinogram2dGrid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Sinogram2dGrid.device_consistent">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram2dGrid.device_consistent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device_consistent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">device</span></div>
+
+
+<div class="viewcode-block" id="Sinogram2dGrid.size_consistent">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram2dGrid.size_consistent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">size_consistent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">size</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Sinogram2dGrid.shifted">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram2dGrid.shifted">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">shifted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Sinogram2dGrid&#39;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">offset</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">cos</span><span class="p">()</span>
+        <span class="n">sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">cp</span><span class="p">,</span> <span class="n">sp</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">cp</span><span class="p">,</span> <span class="n">sp</span>
+        <span class="n">delta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;...i, i -&gt; ...&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="p">,</span> <span class="n">offset</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="n">unit</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">unit</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
+        <span class="k">del</span> <span class="n">unit</span>
+        <span class="k">return</span> <span class="n">Sinogram2dGrid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span> <span class="o">-</span> <span class="n">delta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Sinogram2dGrid.linear_from_range">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram2dGrid.linear_from_range">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">linear_from_range</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">sinogram_range</span><span class="p">:</span> <span class="n">Sinogram2dRange</span><span class="p">,</span> <span class="n">counts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+                          <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="s1">&#39;Sinogram2dGrid&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">counts</span> <span class="o">=</span> <span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">counts</span><span class="p">)</span>
+        <span class="n">phis</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">sinogram_range</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">low</span><span class="p">,</span> <span class="n">sinogram_range</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">high</span><span class="p">,</span> <span class="n">counts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">rs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">sinogram_range</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">low</span><span class="p">,</span> <span class="n">sinogram_range</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">high</span><span class="p">,</span> <span class="n">counts</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">phis</span><span class="p">,</span> <span class="n">rs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">phis</span><span class="p">,</span> <span class="n">rs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Sinogram2dGrid</span><span class="p">(</span><span class="n">phis</span><span class="p">,</span> <span class="n">rs</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Sinogram3dGrid">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram3dGrid">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Sinogram3dGrid</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">phi</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="n">theta</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="n">r</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+
+<div class="viewcode-block" id="Sinogram3dGrid.to">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram3dGrid.to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Sinogram3dGrid&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Sinogram3dGrid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Sinogram3dGrid.device_consistent">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram3dGrid.device_consistent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">device_consistent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="o">.</span><span class="n">device</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="o">.</span><span class="n">device</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">device</span></div>
+
+
+<div class="viewcode-block" id="Sinogram3dGrid.size_consistent">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram3dGrid.size_consistent">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">size_consistent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">size</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Sinogram3dGrid.unflip">
+<a class="viewcode-back" href="../../../docs/registration.lib.structs.html#registration.lib.structs.Sinogram3dGrid.unflip">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unflip</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Sinogram3dGrid&#39;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_consistent</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_consistent</span><span class="p">()</span>
+
+        <span class="n">theta_div</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">+</span> <span class="mf">.5</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">rounding_mode</span><span class="o">=</span><span class="s2">&quot;floor&quot;</span><span class="p">)</span>
+        <span class="n">theta_flip</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">fmod</span><span class="p">(</span><span class="n">theta_div</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">(),</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+        <span class="n">phi_div</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span> <span class="o">+</span> <span class="mf">.5</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">rounding_mode</span><span class="o">=</span><span class="s2">&quot;floor&quot;</span><span class="p">)</span>
+        <span class="n">phi_flip</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">fmod</span><span class="p">(</span><span class="n">phi_div</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">(),</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+
+        <span class="n">ret_theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">theta_div</span>
+
+        <span class="k">del</span> <span class="n">theta_div</span>
+
+        <span class="n">ret_phi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phi</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">phi_div</span>
+
+        <span class="k">del</span> <span class="n">phi_div</span>
+
+        <span class="n">ret_theta</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">phi_flip</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">theta_flip</span><span class="p">))]</span> <span class="o">*=</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="n">ret_r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="n">ret_r</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">logical_xor</span><span class="p">(</span><span class="n">theta_flip</span><span class="p">,</span> <span class="n">phi_flip</span><span class="p">)]</span> <span class="o">*=</span> <span class="o">-</span><span class="mf">1.</span>
+
+        <span class="k">del</span> <span class="n">theta_flip</span><span class="p">,</span> <span class="n">phi_flip</span>
+
+        <span class="k">return</span> <span class="n">Sinogram3dGrid</span><span class="p">(</span><span class="n">ret_phi</span><span class="p">,</span> <span class="n">ret_theta</span><span class="p">,</span> <span class="n">ret_r</span><span class="p">)</span></div>
+</div>
+
+
+    <span class="c1"># @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None = None,  #                            device=torch.device(&quot;cpu&quot;)) -&gt; &#39;Sinogram3dGrid&#39;:  #     if spiral_count is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high, r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #     two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. * spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse + torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(-1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis, thetas, rs)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">reg23-experiments</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

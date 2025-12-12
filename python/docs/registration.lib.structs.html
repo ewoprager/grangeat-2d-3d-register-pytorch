@@ -31,8 +31,308 @@
 
           <div class="body" role="main">
             
-  <section id="registration-lib-structs-module">
-<h1>registration.lib.structs module<a class="headerlink" href="#registration-lib-structs-module" title="Link to this heading">¶</a></h1>
+  <section id="module-registration.lib.structs">
+<span id="registration-lib-structs-module"></span><h1>registration.lib.structs module<a class="headerlink" href="#module-registration.lib.structs" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="registration.lib.structs.GrowingTensor">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">registration.lib.structs.</span></span><span class="sig-name descname"><span class="pre">GrowingTensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#GrowingTensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.GrowingTensor" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.GrowingTensor.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#GrowingTensor.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.GrowingTensor.get" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.GrowingTensor.push_back">
+<span class="sig-name descname"><span class="pre">push_back</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#GrowingTensor.push_back"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.GrowingTensor.push_back" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="registration.lib.structs.LinearMapping">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">registration.lib.structs.</span></span><span class="sig-name descname"><span class="pre">LinearMapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">intercept</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#LinearMapping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.LinearMapping" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="registration.lib.structs.LinearRange">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">registration.lib.structs.</span></span><span class="sig-name descname"><span class="pre">LinearRange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">low</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#LinearRange"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.LinearRange" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.LinearRange.generate_grid">
+<span class="sig-name descname"><span class="pre">generate_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">device(type='cpu')</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#LinearRange.generate_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.LinearRange.generate_grid" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.LinearRange.generate_tex_coord_grid">
+<span class="sig-name descname"><span class="pre">generate_tex_coord_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">device(type='cpu')</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#LinearRange.generate_tex_coord_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.LinearRange.generate_tex_coord_grid" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.LinearRange.get_centre">
+<span class="sig-name descname"><span class="pre">get_centre</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#LinearRange.get_centre"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.LinearRange.get_centre" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.LinearRange.get_mapping_from">
+<span class="sig-name descname"><span class="pre">get_mapping_from</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#registration.lib.structs.LinearRange" title="registration.lib.structs.LinearRange"><span class="pre">LinearRange</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.LinearMapping" title="registration.lib.structs.LinearMapping"><span class="pre">LinearMapping</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#LinearRange.get_mapping_from"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.LinearRange.get_mapping_from" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.LinearRange.get_spacing">
+<span class="sig-name descname"><span class="pre">get_spacing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#LinearRange.get_spacing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.LinearRange.get_spacing" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.LinearRange.get_tex_coord_spacing">
+<span class="sig-name descname"><span class="pre">get_tex_coord_spacing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#LinearRange.get_tex_coord_spacing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.LinearRange.get_tex_coord_spacing" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.LinearRange.grid_sample_range">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">grid_sample_range</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#LinearRange.grid_sample_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.LinearRange.grid_sample_range" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="registration.lib.structs.SceneGeometry">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">registration.lib.structs.</span></span><span class="sig-name descname"><span class="pre">SceneGeometry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_distance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed_image_offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#SceneGeometry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.SceneGeometry" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.SceneGeometry.fixed_image_offset">
+<span class="sig-name descname"><span class="pre">fixed_image_offset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#registration.lib.structs.SceneGeometry.fixed_image_offset" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.SceneGeometry.projection_matrix">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">projection_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_ray</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#SceneGeometry.projection_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.SceneGeometry.projection_matrix" title="Link to this definition">¶</a></dt>
+<dd><p>Generate the projection matrix for the given source position</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source_position</strong> – [(3,) tensor] the position of the X-ray source</p></li>
+<li><p><strong>central_ray</strong> – [(3,) tensor or None] the vector from the X-ray source to the closest point on the detector array. If none, the detector array is assumed to be the x-y plane.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>[(4, 4) tensor] The projection matrix P that projects points in homogeneous coordinates away from the given source position onto the plane of the detector array, as given by the central ray.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.SceneGeometry.source_distance">
+<span class="sig-name descname"><span class="pre">source_distance</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#registration.lib.structs.SceneGeometry.source_distance" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.SceneGeometry.source_position">
+<span class="sig-name descname"><span class="pre">source_position</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">device(type='cpu')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#SceneGeometry.source_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.SceneGeometry.source_position" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dGrid">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">registration.lib.structs.</span></span><span class="sig-name descname"><span class="pre">Sinogram2dGrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram2dGrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram2dGrid" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dGrid.device_consistent">
+<span class="sig-name descname"><span class="pre">device_consistent</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram2dGrid.device_consistent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram2dGrid.device_consistent" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dGrid.linear_from_range">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">linear_from_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sinogram_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#registration.lib.structs.Sinogram2dRange" title="registration.lib.structs.Sinogram2dRange"><span class="pre">Sinogram2dRange</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">counts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Size</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">device(type='cpu')</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Sinogram2dGrid" title="registration.lib.structs.Sinogram2dGrid"><span class="pre">Sinogram2dGrid</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram2dGrid.linear_from_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram2dGrid.linear_from_range" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dGrid.phi">
+<span class="sig-name descname"><span class="pre">phi</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#registration.lib.structs.Sinogram2dGrid.phi" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dGrid.r">
+<span class="sig-name descname"><span class="pre">r</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#registration.lib.structs.Sinogram2dGrid.r" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dGrid.shifted">
+<span class="sig-name descname"><span class="pre">shifted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Sinogram2dGrid" title="registration.lib.structs.Sinogram2dGrid"><span class="pre">Sinogram2dGrid</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram2dGrid.shifted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram2dGrid.shifted" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dGrid.size_consistent">
+<span class="sig-name descname"><span class="pre">size_consistent</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram2dGrid.size_consistent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram2dGrid.size_consistent" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dGrid.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Sinogram2dGrid" title="registration.lib.structs.Sinogram2dGrid"><span class="pre">Sinogram2dGrid</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram2dGrid.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram2dGrid.to" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dRange">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">registration.lib.structs.</span></span><span class="sig-name descname"><span class="pre">Sinogram2dRange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram2dRange"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram2dRange" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dRange.phi">
+<span class="sig-name descname"><span class="pre">phi</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#registration.lib.structs.LinearRange" title="registration.lib.structs.LinearRange"><span class="pre">LinearRange</span></a></em><a class="headerlink" href="#registration.lib.structs.Sinogram2dRange.phi" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram2dRange.r">
+<span class="sig-name descname"><span class="pre">r</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#registration.lib.structs.LinearRange" title="registration.lib.structs.LinearRange"><span class="pre">LinearRange</span></a></em><a class="headerlink" href="#registration.lib.structs.Sinogram2dRange.r" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram3dGrid">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">registration.lib.structs.</span></span><span class="sig-name descname"><span class="pre">Sinogram3dGrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram3dGrid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram3dGrid" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram3dGrid.device_consistent">
+<span class="sig-name descname"><span class="pre">device_consistent</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram3dGrid.device_consistent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram3dGrid.device_consistent" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram3dGrid.phi">
+<span class="sig-name descname"><span class="pre">phi</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#registration.lib.structs.Sinogram3dGrid.phi" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram3dGrid.r">
+<span class="sig-name descname"><span class="pre">r</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#registration.lib.structs.Sinogram3dGrid.r" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram3dGrid.size_consistent">
+<span class="sig-name descname"><span class="pre">size_consistent</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram3dGrid.size_consistent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram3dGrid.size_consistent" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram3dGrid.theta">
+<span class="sig-name descname"><span class="pre">theta</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#registration.lib.structs.Sinogram3dGrid.theta" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram3dGrid.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Sinogram3dGrid" title="registration.lib.structs.Sinogram3dGrid"><span class="pre">Sinogram3dGrid</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram3dGrid.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram3dGrid.to" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Sinogram3dGrid.unflip">
+<span class="sig-name descname"><span class="pre">unflip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Sinogram3dGrid" title="registration.lib.structs.Sinogram3dGrid"><span class="pre">Sinogram3dGrid</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Sinogram3dGrid.unflip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Sinogram3dGrid.unflip" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">registration.lib.structs.</span></span><span class="sig-name descname"><span class="pre">Transformation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rotation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">translation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.clone">
+<span class="sig-name descname"><span class="pre">clone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tranformation</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.clone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.clone" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.device">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><a class="headerlink" href="#registration.lib.structs.Transformation.device" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.device_consistent">
+<span class="sig-name descname"><span class="pre">device_consistent</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.device_consistent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.device_consistent" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.distance">
+<span class="sig-name descname"><span class="pre">distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#registration.lib.structs.Transformation" title="registration.lib.structs.Transformation"><span class="pre">Transformation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.distance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.distance" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.from_vector">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_vector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Transformation" title="registration.lib.structs.Transformation"><span class="pre">Transformation</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.from_vector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.from_vector" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.get_h">
+<span class="sig-name descname"><span class="pre">get_h</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">device(type='cpu')</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.get_h"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.get_h" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>device</strong></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>[(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation.</p>
+</dd>
+</dl>
+<p>Stored column-major.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.inverse">
+<span class="sig-name descname"><span class="pre">inverse</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Transformation" title="registration.lib.structs.Transformation"><span class="pre">Transformation</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.inverse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.inverse" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.is_close">
+<span class="sig-name descname"><span class="pre">is_close</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#registration.lib.structs.Transformation" title="registration.lib.structs.Transformation"><span class="pre">Transformation</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.is_close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.is_close" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.random_gaussian">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">random_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_mean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">translation_mean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">translation_std</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Transformation" title="registration.lib.structs.Transformation"><span class="pre">Transformation</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.random_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.random_gaussian" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.random_uniform">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">random_uniform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">device(type='cpu')</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Transformation" title="registration.lib.structs.Transformation"><span class="pre">Transformation</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.random_uniform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.random_uniform" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.rotation">
+<span class="sig-name descname"><span class="pre">rotation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#registration.lib.structs.Transformation.rotation" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.to">
+<span class="sig-name descname"><span class="pre">to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Transformation" title="registration.lib.structs.Transformation"><span class="pre">Transformation</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.to" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.translation">
+<span class="sig-name descname"><span class="pre">translation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#registration.lib.structs.Transformation.translation" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.vectorised">
+<span class="sig-name descname"><span class="pre">vectorised</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.vectorised"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.vectorised" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="registration.lib.structs.Transformation.zero">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">zero</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">device(type='cpu')</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#registration.lib.structs.Transformation" title="registration.lib.structs.Transformation"><span class="pre">Transformation</span></a></span></span><a class="reference internal" href="../_modules/registration/lib/structs.html#Transformation.zero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#registration.lib.structs.Transformation.zero" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 
 

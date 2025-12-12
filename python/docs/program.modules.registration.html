@@ -31,8 +31,64 @@
 
           <div class="body" role="main">
             
-  <section id="program-modules-registration-module">
-<h1>program.modules.registration module<a class="headerlink" href="#program-modules-registration-module" title="Link to this heading">¶</a></h1>
+  <section id="module-program.modules.registration">
+<span id="program-modules-registration-module"></span><h1>program.modules.registration module<a class="headerlink" href="#module-program.modules.registration" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="program.modules.registration.OptimisationStage">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">program.modules.registration.</span></span><span class="sig-name descname"><span class="pre">OptimisationStage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/program/modules/registration.html#OptimisationStage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#program.modules.registration.OptimisationStage" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">HasTraits</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.modules.registration.OptimisationStage.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#program.modules.registration.OptimisationStage.name" title="Link to this definition">¶</a></dt>
+<dd><p>A trait for unicode strings.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.modules.registration.OptimisationStage.params_set">
+<span class="sig-name descname"><span class="pre">params_set</span></span><a class="headerlink" href="#program.modules.registration.OptimisationStage.params_set" title="Link to this definition">¶</a></dt>
+<dd><p>An instance of a Python dict.</p>
+<p>One or more traits can be passed to the constructor
+to validate the keys and/or values of the dict.
+If you need more detailed validation,
+you may use a custom validator method.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 5.0: </span>Added key_trait for validating dict keys.</p>
+</div>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 5.0: </span>Deprecated ambiguous <code class="docutils literal notranslate"><span class="pre">trait</span></code>, <code class="docutils literal notranslate"><span class="pre">traits</span></code> args in favor of <code class="docutils literal notranslate"><span class="pre">value_trait</span></code>, <code class="docutils literal notranslate"><span class="pre">per_key_traits</span></code>.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="program.modules.registration.Registration">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">program.modules.registration.</span></span><span class="sig-name descname"><span class="pre">Registration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/program/modules/registration.html#Registration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#program.modules.registration.Registration" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">HasTraits</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.modules.registration.Registration.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#program.modules.registration.Registration.name" title="Link to this definition">¶</a></dt>
+<dd><p>A trait for unicode strings.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.modules.registration.Registration.stages">
+<span class="sig-name descname"><span class="pre">stages</span></span><a class="headerlink" href="#program.modules.registration.Registration.stages" title="Link to this definition">¶</a></dt>
+<dd><p>An instance of a Python list.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="program.modules.registration.run_optimisation">
+<span class="sig-prename descclassname"><span class="pre">program.modules.registration.</span></span><span class="sig-name descname"><span class="pre">run_optimisation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimisation_stage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#program.modules.registration.OptimisationStage" title="program.modules.registration.OptimisationStage"><span class="pre">OptimisationStage</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="program.lib.optimisation.html#program.lib.optimisation.OptimisationResult" title="program.lib.optimisation.OptimisationResult"><span class="pre">OptimisationResult</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="program.lib.structs.html#program.lib.structs.Error" title="program.lib.structs.Error"><span class="pre">Error</span></a></span></span><a class="reference internal" href="../_modules/program/modules/registration.html#run_optimisation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#program.modules.registration.run_optimisation" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="program.modules.registration.run_registration">
+<span class="sig-prename descclassname"><span class="pre">program.modules.registration.</span></span><span class="sig-name descname"><span class="pre">run_registration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">registration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#program.modules.registration.Registration" title="program.modules.registration.Registration"><span class="pre">Registration</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="program.lib.structs.html#program.lib.structs.Error" title="program.lib.structs.Error"><span class="pre">Error</span></a></span></span><a class="reference internal" href="../_modules/program/modules/registration.html#run_registration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#program.modules.registration.run_registration" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </section>
 
 

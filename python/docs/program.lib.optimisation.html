@@ -31,8 +31,37 @@
 
           <div class="body" role="main">
             
-  <section id="program-lib-optimisation-module">
-<h1>program.lib.optimisation module<a class="headerlink" href="#program-lib-optimisation-module" title="Link to this heading">¶</a></h1>
+  <section id="module-program.lib.optimisation">
+<span id="program-lib-optimisation-module"></span><h1>program.lib.optimisation module<a class="headerlink" href="#module-program.lib.optimisation" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="program.lib.optimisation.OptimisationResult">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">program.lib.optimisation.</span></span><span class="sig-name descname"><span class="pre">OptimisationResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_history</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_history</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/program/lib/optimisation.html#OptimisationResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#program.lib.optimisation.OptimisationResult" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.lib.optimisation.OptimisationResult.param_history">
+<span class="sig-name descname"><span class="pre">param_history</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#program.lib.optimisation.OptimisationResult.param_history" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.lib.optimisation.OptimisationResult.params">
+<span class="sig-name descname"><span class="pre">params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#program.lib.optimisation.OptimisationResult.params" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.lib.optimisation.OptimisationResult.value_history">
+<span class="sig-name descname"><span class="pre">value_history</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tensor</span></em><a class="headerlink" href="#program.lib.optimisation.OptimisationResult.value_history" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="program.lib.optimisation.pso">
+<span class="sig-prename descclassname"><span class="pre">program.lib.optimisation.</span></span><span class="sig-name descname"><span class="pre">pso</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="registration.lib.structs.html#registration.lib.structs.Transformation" title="registration.lib.structs.Transformation"><span class="pre">Transformation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pso_particle_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pso_iteration_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iteration_callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#program.lib.optimisation.OptimisationResult" title="program.lib.optimisation.OptimisationResult"><span class="pre">OptimisationResult</span></a></span></span><a class="reference internal" href="../_modules/program/lib/optimisation.html#pso"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#program.lib.optimisation.pso" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </section>
 
 
