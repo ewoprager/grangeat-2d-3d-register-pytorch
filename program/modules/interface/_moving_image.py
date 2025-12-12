@@ -115,7 +115,7 @@ class MovingImageGUI:
             dragged = False
             drag_start = torch.tensor(event.position)
             # rotation_start = scipy.spatial.transform.Rotation.from_rotvec(transformation.rotation.cpu().numpy())
-            translation_start = data_manager().get("current_transformation").translation.cpu().numpy()
+            translation_start = data_manager().get("current_transformation").translation[0:2].cpu()
             yield
             # on move
             while event.type == "mouse_move":

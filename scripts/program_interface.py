@@ -1,9 +1,11 @@
-import torch
+import argparse
+import os
 from typing import Any
 
+import torch
 import napari
 
-from notification import logs_setup
+from notification import logs_setup, pushover
 from program.lib.structs import Error
 from program import init_data_manager, data_manager, dag_updater
 from program.modules.interface import init_viewer, viewer, FixedImageGUI, MovingImageGUI, RegisterGUI
@@ -31,7 +33,10 @@ def of(x: Transformation) -> torch.Tensor:
     return x.vectorised().sum()
 
 
-def main():
+def main(*, ct_path: str, cache_directory: str):
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
+        "mps") if torch.mps.is_available() else torch.device("cpu")
+
     init_data_manager()
     init_viewer(title="Program Test")
     fixed_image_gui = FixedImageGUI()
@@ -44,13 +49,12 @@ def main():
     data_manager().set_data_multiple({  #
         "fixed_image_size": torch.Size([500, 500]),  #
         "regenerate_drr": True,  #
-        "cache_directory": "cache",  #
+        "cache_directory": cache_directory,  #
         "save_to_cache": True,  #
         "new_drr_size": torch.Size([500, 500]),  #
-        "ct_path": "/Users/eprager/Library/CloudStorage/OneDrive-UniversityofCambridge/CUED/4th Year Project/Data/First/ct",
-        #
-        "device": torch.device("cpu"),  #
-        "current_transformation": Transformation.zero()  #
+        "ct_path": ct_path,  #
+        "device": device,  #
+        "current_transformation": Transformation.zero(device=device)  #
     })
     value = data_manager().get("moving_image")
     if isinstance(value, Error):
@@ -64,4 +68,34 @@ if __name__ == "__main__":
     # set up logger
     logger = logs_setup.setup_logger()
 
-    main()
+    # parse arguments
+    parser = argparse.ArgumentParser(description="", epilog="")
+    parser.add_argument("-c", "--cache-directory", type=str, default="cache",
+                        help="Set the directory where data that is expensive to calculate will be saved. The default "
+                             "is 'cache'.")
+    parser.add_argument("-p", "--ct-path", type=str,
+                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to process. If not "
+                             "provided, some simple synthetic data will be used instead - note that in this case, data will not be "
+                             "saved to the cache.")
+    # parser.add_argument("-i", "--no-load", action='store_true',
+    #                     help="Do not load any pre-calculated data from the cache.")
+    # parser.add_argument(
+    #     "-r", "--regenerate-drr", action='store_true',
+    #     help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
+    # parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
+    parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
+    # parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
+    args = parser.parse_args()
+
+    # create cache directory
+    if not os.path.exists(args.cache_directory):
+        os.makedirs(args.cache_directory)
+
+    try:
+        main(ct_path=args.ct_path, cache_directory=args.cache_directory)
+        if args.notify:
+            pushover.send_notification(__file__, "Script finished.")
+    except Exception as e:
+        if args.notify:
+            pushover.send_notification(__file__, "Script raised exception: {}.".format(e))
+        raise e
