@@ -14,8 +14,10 @@ extensions = [  #
 ]
 autosummary_generate = True
 
+autodoc_mock_imports = ["torch", "reg23"]
+
 templates_path = ["_templates"]
 exclude_patterns = []
 
-html_theme = "alabaster"  # or "sphinx_rtd_theme" etc.
+html_theme = "sphinx_rtd_theme"  # or "alabaster" etc.
 html_static_path = ["_static"]
