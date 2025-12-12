@@ -1,3 +1,3 @@
 html:
-	sphinx-apidoc -o docs/ ..
+	sphinx-apidoc -o docs/ ../program
 	sphinx-build -b html . build/html

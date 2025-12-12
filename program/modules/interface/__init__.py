@@ -1,4 +1,4 @@
-from ._viewer import init_viewer, viewer
-from ._fixed_image import FixedImageGUI
-from ._moving_image import MovingImageGUI
-from ._register import RegisterGUI
+from .src_viewer import init_viewer, viewer
+from .src_fixed_image import FixedImageGUI
+from .src_moving_image import MovingImageGUI
+from .src_register import RegisterGUI
