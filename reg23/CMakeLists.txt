@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Try to find CUDA
 find_package(CUDAToolkit)
 
@@ -7,14 +9,13 @@ if (CUDAToolkit_FOUND)
     message(STATUS "CUDA found! Building with CUDA support.")
 endif ()
 
-
 file(GLOB HEADERS
      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
      CONFIGURE_DEPENDS
      "include/**/*.h"
 )
 
-file(GLOB_RECURSE SOURCES
+file(GLOB SOURCES
      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
      CONFIGURE_DEPENDS
      "src/cpu/*.cpp"
@@ -93,9 +94,12 @@ string(REPLACE "'" "" TORCH_INCLUDE_DIRS ${TORCH_INCLUDE_DIRS})
 string(REPLACE "," ";" TORCH_INCLUDE_DIRS ${TORCH_INCLUDE_DIRS})
 
 
+find_package(Python COMPONENTS Development REQUIRED)
+
 if (CUDAToolkit_FOUND)
     include_directories("${CMAKE_SOURCE_DIR}/include"
                         ${TORCH_INCLUDE_DIRS}
+                        ${Python_INCLUDE_DIRS}
                         "${CUDA_HOME}/include")
 
 
@@ -125,7 +129,8 @@ if (CUDAToolkit_FOUND)
     )
 else ()
     include_directories("${CMAKE_SOURCE_DIR}/include"
-                        ${TORCH_INCLUDE_DIRS})
+                        ${TORCH_INCLUDE_DIRS}
+                        ${Python_INCLUDE_DIRS})
 
     if (METAL_LIB AND FOUNDATION_LIB)
         add_library(${PROJECT_NAME} SHARED

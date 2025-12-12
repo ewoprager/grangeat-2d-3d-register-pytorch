@@ -111,8 +111,7 @@ class Interface:
         self._viewer.window.add_dock_widget(self._plot_widget, name="Landscape plotting", area="right",
                                             menu=self._viewer.window.window_menu, tabify=True)
 
-        self.render_hyperparameter_dependent()
-        # self.render_moving_sinogram()
+        self.render_hyperparameter_dependent()  # self.render_moving_sinogram()
 
     @property
     def device(self):
@@ -161,7 +160,10 @@ class Interface:
                                      output_size=self.registration_data.cropped_target.size())
 
     def objective_function_drr(self, transformation: Transformation) -> torch.Tensor:
-        return -objective_function.ncc(self.registration_data.fixed_image, self.generate_drr(transformation))
+        # return -objective_function.ncc(self.registration_data.fixed_image, self.generate_drr(transformation))
+        return -objective_function.weighted_local_ncc(self.registration_data.fixed_image,
+                                                      self.generate_drr(transformation),
+                                                      weights=self.registration_data.mask, kernel_size=32)
 
     def regenerate_mask(self, transformation: Transformation) -> None:
         translation = copy.deepcopy(transformation.translation)

@@ -1,20 +1,25 @@
-import logging
-from typing import Type, NamedTuple, Callable
-import math
 import copy
-
-logger = logging.getLogger(__name__)
+import logging
+import math
+import pathlib
+from typing import Callable, NamedTuple, Type
 
 import torch
-import pathlib
-
-from registration.lib.structs import Transformation, SceneGeometry, Sinogram2dGrid, Sinogram2dRange, LinearRange
-from registration.interface.lib.structs import HyperParameters, Target
-from registration.lib.sinogram import Sinogram, SinogramType
-from registration import data, drr, pre_computed
-from registration.lib import grangeat
 
 import reg23
+from registration import data, drr, pre_computed
+from registration.interface.lib.structs import HyperParameters, Target
+from registration.lib import grangeat
+from registration.lib.sinogram import Sinogram, SinogramType
+from registration.lib.structs import (
+    LinearRange,
+    SceneGeometry,
+    Sinogram2dGrid,
+    Sinogram2dRange,
+    Transformation,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class RegistrationData:
@@ -66,6 +71,7 @@ class RegistrationData:
         @brief Struct of data that is dependent on the CT path, fixed image, hyperparameters used and the transformation
         at which the mask was generated
         """
+        mask: torch.Tensor
         fixed_image: torch.Tensor  # The target image with the cropping and masking applied
 
     class MaskTransformationDependentGrangeat(NamedTuple):
@@ -301,6 +307,12 @@ class RegistrationData:
         self._mask_transformation = new_value
 
     @property
+    def mask(self) -> torch.Tensor:
+        if self._mask_transformation_dirty:
+            self.refresh_mask_transformation_dependent()
+        return self._mask_transformation_dependent.mask
+
+    @property
     def fixed_image(self) -> torch.Tensor:
         if self._mask_transformation_dirty:
             self.refresh_mask_transformation_dependent()
@@ -459,6 +471,7 @@ class RegistrationData:
 
     def refresh_mask_transformation_dependent(self) -> None:
         if self.mask_transformation is None:
+            mask = torch.ones_like(self.cropped_target)
             fixed_image = self.cropped_target
         else:
             mask = reg23.project_drr_cuboid_mask(  #
@@ -471,9 +484,9 @@ class RegistrationData:
                 detector_spacing=self.fixed_image_spacing_at_current_level.to(device=self.device)  #
             )
             fixed_image = mask * self.cropped_target
-            del mask
 
-        self._mask_transformation_dependent = RegistrationData.MaskTransformationDependent(fixed_image=fixed_image)
+        self._mask_transformation_dependent = RegistrationData.MaskTransformationDependent(mask=mask,
+                                                                                           fixed_image=fixed_image)
         self._mask_transformation_dirty = False
 
         if not self.suppress_callbacks and self._mask_transformation_change_callback is not None:

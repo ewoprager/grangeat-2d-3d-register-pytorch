@@ -58,8 +58,8 @@ class SinogramClassic(Sinogram):
     def build_grid(*, counts: int | Tuple[int, int, int] | torch.Size, r_range: LinearRange,
                    device=torch.device("cpu")) -> Sinogram3dGrid:
         if isinstance(counts, int):
-            counts = (int(torch.ceil(2.0 * float(counts) * torch.tensor(0.25 * torch.pi).sqrt())),
-                      int(torch.ceil(float(counts) * torch.tensor(0.25 * torch.pi).sqrt())), counts)
+            counts = (int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())),
+                      int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())), counts)
         elif isinstance(counts, torch.Size):
             assert len(counts) == 3
         phis = SinogramClassic.phi_range.generate_tex_coord_grid(counts[0], device=device)

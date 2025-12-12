@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <torch/extension.h>
+
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>

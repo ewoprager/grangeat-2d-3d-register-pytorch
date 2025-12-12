@@ -61,18 +61,16 @@ public:
 	/**
 	 * @brief Construct a Vec, copying the given value into every element
 	 */
-	__host__ __device__ static Vec Full(const T &value) {
-		Vec ret{};
-		for (T &e : ret) {
-			e = value;
-		}
-		return ret;
+	__host__ __device__ static constexpr Vec Full(const T &value) {
+		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
+			return {{(indices, value)...}};
+		}(std::make_index_sequence<N>{});
 	}
 
 	/**
 	 * @brief Construct a Vec where the `i`th element is `start + i * step`
 	 */
-	__host__ __device__ static Vec Range(const T &start = T{0}, const T &step = T{1}) {
+	__host__ __device__ static constexpr Vec Range(const T &start = T{0}, const T &step = T{1}) {
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 			return {{start + static_cast<T>(indices) * step...}};
 		}(std::make_index_sequence<N>{});
@@ -111,7 +109,7 @@ public:
 	 * Only valid for `Vec` of contained type `T` that is a specialisation of `Vec` with the same size,
 	 * e.g. `Vec<Vec<float, N>, N>`
 	 */
-	__host__ static Vec Identity() {
+	__host__ static constexpr Vec Identity() {
 		static_assert(std::is_same_v<std::remove_const_t<decltype(T::dimensionality)>, std::size_t>);
 		static_assert(T::dimensionality == N);
 		return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {

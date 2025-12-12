@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef __CUDACC__
+
 #include "Texture.h"
 #include "CUDATexture.h"
 
@@ -85,3 +87,5 @@ private:
 };
 
 } // namespace reg23
+
+#endif

@@ -1,8 +1,6 @@
 from typing import Tuple, Literal
 import logging
 
-from sympy.physics.quantum.gate import zx_basis_transform
-
 logger = logging.getLogger(__name__)
 
 import torch
@@ -17,15 +15,15 @@ import registration.lib.grangeat as grangeat
 import registration.lib.plot as myplt
 
 
-def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dims: Tuple | torch.Size | None = None) -> torch.Tensor:
+def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dim: int | Tuple | torch.Size | None = None) -> torch.Tensor:
     assert xs.size() == ys.size()
-    if dims is None:
-        dims = torch.Size(range(len(xs.size())))
-    sum_x = xs.sum(dim=dims)
-    sum_y = ys.sum(dim=dims)
-    sum_x2 = xs.square().sum(dim=dims)
-    sum_y2 = ys.square().sum(dim=dims)
-    sum_prod = (xs * ys).sum(dim=dims)
+    if dim is None:
+        dim = torch.Size(range(len(xs.size())))
+    sum_x = xs.sum(dim=dim)
+    sum_y = ys.sum(dim=dim)
+    sum_x2 = xs.square().sum(dim=dim)
+    sum_y2 = ys.square().sum(dim=dim)
+    sum_prod = (xs * ys).sum(dim=dim)
     n = float(xs.numel() // sum_x.numel())
     num = n * sum_prod - sum_x * sum_y
     den = (n * sum_x2 - sum_x.square()).sqrt() * (n * sum_y2 - sum_y.square()).sqrt()
@@ -34,13 +32,13 @@ def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dims: Tuple | torch.Size | None =
 
 def local_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int) -> torch.Tensor:
     """
-    Divides the two input images into patches of size `kernel_size`, evaluates the NCC between each corresponding pair
+    Divides the two input images into patches of size `kernel_size`, evaluates the ZNCC between each corresponding pair
     of patches and returns the mean of the resulting NCC values over all the patches.
 
     :param xs: [tensor of size (n, m)] one input image
     :param ys: [tensor of size (n, m)] another input image
     :param kernel_size:
-    :return: The mean of the NCCs of the image patches.
+    :return: The mean of the ZNCCs of the pairs of corresponding image patches.
     """
     assert xs.size() == ys.size()
     assert len(xs.size()) == 2
@@ -48,11 +46,52 @@ def local_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int) -> torch.
                                             stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
     ys_patches = torch.nn.functional.unfold(ys.unsqueeze(0), kernel_size=kernel_size,
                                             stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
-    return ncc(xs_patches, ys_patches, dims=(0,)).mean()
+    return ncc(xs_patches, ys_patches, dim=0).mean()
 
 
 def multiscale_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int, llambda: float) -> torch.Tensor:
     return ncc(xs, ys) + llambda * local_ncc(xs, ys, kernel_size=kernel_size)
+
+
+def weighted_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *,
+                 dim: int | torch.Size | Tuple | None = None) -> torch.Tensor:
+    assert ys.size() == xs.size()
+    assert weights.size() == xs.size()
+    if dim is None:
+        dim = torch.Size(range(len(xs.size())))
+    sum_w = weights.sum(dim=dim)
+    sum_wx = (weights * xs).sum(dim=dim)
+    sum_wy = (weights * ys).sum(dim=dim)
+    sum_wx2 = (weights * xs.square()).sum(dim=dim)
+    sum_wy2 = (weights * ys.square()).sum(dim=dim)
+    sum_prod = (weights * xs * ys).sum(dim=dim)
+    num = sum_w * sum_prod - sum_wx * sum_wy
+    den = (sum_w * sum_wx2 - sum_wx.square()).sqrt() * (sum_w * sum_wy2 - sum_wy.square()).sqrt()
+    return num / (den + 1e-10)
+
+
+def weighted_local_ncc(xs: torch.Tensor, ys: torch.Tensor, *, weights: torch.Tensor, kernel_size: int) -> torch.Tensor:
+    """
+    Divides the two input images into patches of size `kernel_size`, evaluates the WZNCC between each corresponding pair
+    of patches and returns the mean of the resulting NCC values over all the patches.
+
+    :param xs: [tensor of size (n, m)] one input image
+    :param ys: [tensor of size (n, m)] another input image
+    :param weights: [tensor of size (n, m)] the image of weights
+    :param kernel_size:
+    :return: The mean of the WZNCCs of the pairs of corresponding image patches.
+    """
+    assert xs.size() == ys.size()
+    assert len(xs.size()) == 2
+    xs_patches = torch.nn.functional.unfold(xs.unsqueeze(0), kernel_size=kernel_size,
+                                            stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
+    ys_patches = torch.nn.functional.unfold(ys.unsqueeze(0), kernel_size=kernel_size,
+                                            stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
+    ws_patches = torch.nn.functional.unfold(weights.unsqueeze(0), kernel_size=kernel_size,
+                                            stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
+    patch_wznccs = weighted_ncc(xs_patches, ys_patches, ws_patches, dim=0) # size = (patch number)
+    patch_weights = ws_patches.mean(dim=0) # size = (patch number)
+    return (patch_weights * patch_wznccs).sum() / patch_weights.sum()
 
 
 def gradient_correlation(xs: torch.Tensor, ys: torch.Tensor, *,

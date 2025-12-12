@@ -3,7 +3,7 @@
  * @brief PyTorch binding generation
  */
 
-#include <torch/extension.h>
+
 
 #include <reg23/GridSample3D.h>
 #include <reg23/ProjectDRR.h>

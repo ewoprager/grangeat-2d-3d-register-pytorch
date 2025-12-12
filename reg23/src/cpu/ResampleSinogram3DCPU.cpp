@@ -1,4 +1,4 @@
-#include <torch/extension.h>
+
 
 #include <reg23/ResampleSinogram3D.h>
 #include <reg23/SinogramClassic3D.h>
