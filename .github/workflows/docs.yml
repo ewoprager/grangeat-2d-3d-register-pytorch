@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir -p site
           cp -r docs/build/html site/python
-          cp -r reg23/Docs/html site/cpp
+          cp -r reg23/Docs/build/html site/cpp
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
