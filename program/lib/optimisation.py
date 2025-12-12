@@ -17,11 +17,11 @@ class OptimisationResult(NamedTuple):
     value_history: torch.Tensor
 
 
-@args_from_dag
-def pso(*, current_transformation: Transformation, objective_function: Callable[[torch.Tensor], torch.Tensor],
-        iteration_callback: Callable[[torch.Tensor, torch.Tensor], None], pso_particle_count: int,
-        pso_iteration_count: int) -> OptimisationResult:
-    starting_parameters = mapping_transformation_to_parameters(current_transformation)
+@args_from_dag(names_left=["transformation"])
+def pso(*, transformation: Transformation, objective_function: Callable[[torch.Tensor], torch.Tensor],
+        pso_particle_count: int, pso_iteration_count: int,
+        iteration_callback: Callable[[torch.Tensor, torch.Tensor], None] | None = None) -> OptimisationResult:
+    starting_parameters = mapping_transformation_to_parameters(transformation)
     n_dimensions = starting_parameters.numel()
     param_history = GrowingTensor([n_dimensions], pso_particle_count * pso_iteration_count)
     value_history = GrowingTensor([], pso_particle_count * pso_iteration_count)

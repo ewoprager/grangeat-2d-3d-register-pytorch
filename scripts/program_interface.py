@@ -11,7 +11,9 @@ from program import init_data_manager, data_manager, dag_updater
 from program.modules.interface import init_viewer, viewer, FixedImageGUI, MovingImageGUI, RegisterGUI
 from registration.lib.structs import Transformation, SceneGeometry
 from registration.lib.geometry import generate_drr
-from program import updaters
+from program import updaters, args_from_dag
+
+from registration.objective_function import ncc
 
 
 @dag_updater(names_returned=["fixed_image"])
@@ -29,8 +31,15 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
                                          output_size=fixed_image_size)}
 
 
-def of(x: Transformation) -> torch.Tensor:
-    return x.vectorised().sum()
+@args_from_dag(names_left=["transformation"])
+def of(transformation: Transformation, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
+       fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
+       fixed_image: torch.Tensor) -> torch.Tensor:
+    moving_image = generate_drr(ct_volumes[0], transformation=transformation, voxel_spacing=ct_spacing,
+                                detector_spacing=fixed_image_spacing,
+                                scene_geometry=SceneGeometry(source_distance=source_distance),
+                                output_size=fixed_image_size)
+    return ncc(moving_image, fixed_image)
 
 
 def main(*, ct_path: str, cache_directory: str):
@@ -46,16 +55,16 @@ def main(*, ct_path: str, cache_directory: str):
     data_manager().add_updater("project_drr", project_drr)
     data_manager().add_updater("load_ct", updaters.load_ct)
     data_manager().add_updater("set_synthetic_target_image", updaters.set_synthetic_target_image)
-    data_manager().set_data_multiple({  #
-        "fixed_image_size": torch.Size([500, 500]),  #
-        "regenerate_drr": True,  #
-        "cache_directory": cache_directory,  #
-        "save_to_cache": True,  #
-        "new_drr_size": torch.Size([500, 500]),  #
-        "ct_path": ct_path,  #
-        "device": device,  #
-        "current_transformation": Transformation.zero(device=device)  #
-    })
+    data_manager().set_data_multiple(  #
+        fixed_image_size=torch.Size([500, 500]),  #
+        regenerate_drr=True,  #
+        cache_directory=cache_directory,  #
+        save_to_cache=True,  #
+        new_drr_size=torch.Size([500, 500]),  #
+        ct_path=ct_path,  #
+        device=device,  #
+        current_transformation=Transformation.zero(device=device)  #
+    )
     value = data_manager().get("moving_image")
     if isinstance(value, Error):
         logger.error(f"Couldn't get moving image: {value.description}.")

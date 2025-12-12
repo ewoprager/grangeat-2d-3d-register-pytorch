@@ -88,13 +88,15 @@ class RegisterGUI(widgets.Container):
     def __init__(self, objective_functions: dict[str, Callable[[Transformation], torch.Tensor]]):
         super().__init__(labels=False)
 
-        data_manager().set_data_multiple({"pso_particle_count": 2000, "pso_iteration_count": 10})
+        data_manager().set_data_multiple(pso_particle_count=2000, pso_iteration_count=10,
+                                         objective_function=next(iter(objective_functions.items()))[1])
 
         ##
         ## Objective function
         ##
         self._objective_function_widget = WidgetSelectData(widget_type=widgets.ComboBox,
                                                            initial_choices=objective_functions, label="Obj. func.")
+        self._objective_function_widget.widget.changed.connect(self._on_objective_function)
 
         self._eval_once_button = widgets.PushButton(label="Evaluate once")
         self._eval_once_button.changed.connect(self._on_eval_once)
@@ -122,10 +124,22 @@ class RegisterGUI(widgets.Container):
                                         tabify=True)
 
     def _on_eval_once(self, *args) -> None:
-        logger.info("<Eval once pressed>")
+        of = data_manager().get("objective_function")
+        if isinstance(of, Error):
+            logger.error(f"Error getting 'objective_function' for eval. once: {of.description}")
+            return
+        tr = data_manager().get("current_transformation")
+        if isinstance(tr, Error):
+            logger.error(f"Error getting 'current_transformation' for eval. once: {of.description}")
+            return
+        self._eval_result_label.value = of(transformation=tr).item()
 
     def _on_algorithm(self, *args) -> None:
         self._refresh_algorithm_container_widget()
+
+    def _on_objective_function(self, **args) -> None:
+        current = self._objective_function_widget.get_selected()  # from a ComboBox, a str is returned
+        data_manager().set_data("objective_function", self._objective_function_widget.get_data(current))
 
     def _refresh_algorithm_container_widget(self) -> None:
         if len(self._algorithm_container_widget) > 1:
@@ -134,5 +148,6 @@ class RegisterGUI(widgets.Container):
         value = self._algorithm_widget.get_value()
         if value in self._op_algo_widgets:
             self._algorithm_container_widget.append(self._op_algo_widgets[value])
+            data_manager().set_data("optimisation_algorithm", self._op_algo_widgets[value].get_op_algo())
         else:
             logger.error("Unrecognised optimisation algorithm option: '{}'.".format(value))

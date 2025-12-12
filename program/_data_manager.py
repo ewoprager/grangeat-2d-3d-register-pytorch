@@ -1,4 +1,3 @@
-import inspect
 import traitlets
 from traitlets.config import SingletonConfigurable
 import functools
@@ -6,7 +5,7 @@ import collections
 from typing import Any, Callable, NamedTuple
 import logging
 
-from program.lib.structs import Error
+from program.lib.structs import Error, FunctionArgument
 
 logger = logging.getLogger(__name__)
 
@@ -43,22 +42,6 @@ class Node(traitlets.HasTraits):
         return proposal["value"]
 
 
-class FunctionArgument(NamedTuple):
-    name: str
-    required: bool
-
-
-def get_function_arguments(function: Callable) -> list[FunctionArgument]:
-    signature = inspect.signature(function)
-    ret = []
-    for name, param in signature.parameters.items():
-        required = (param.default is inspect.Parameter.empty  # no default value
-                    and param.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD))
-        if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD, param.KEYWORD_ONLY):
-            ret.append(FunctionArgument(name=name, required=required))
-    return ret
-
-
 class Updater(NamedTuple):
     function: Callable
     returned: list[str]
@@ -67,7 +50,7 @@ class Updater(NamedTuple):
 
     @staticmethod
     def build(*, function: Callable, returned: list[str]) -> 'Updater':
-        arguments = get_function_arguments(function)
+        arguments = FunctionArgument.get_for_function(function)
         dependencies: list[Dependency] = []
         for depended in arguments:
             for depender in returned:
@@ -175,13 +158,13 @@ class DAG:
         return None
 
     @_data_mutating
-    def set_data_multiple(self, name_to_data_map: dict[str, Any]) -> None | Error:
+    def set_data_multiple(self, **kwargs) -> None | Error:
         """
-        Set the data associated with a named node. Will create the node if it doesn't exist.
-        :param name_to_data_map: Dictionary mapping names to data values.
+        Set the data associated with multiple named nodes. Will create the node if it doesn't exist.
+        Each keyword argument `name=value` will set the data `value` for the node `name`.
         :return: Nothing on success; an `Error` on failure.
         """
-        for name, data in name_to_data_map.items():
+        for name, data in kwargs.items():
             err = self.set_data(name, data)
             if isinstance(err, Error):
                 return Error(f"Error setting multiple data; specifically for '{name}': {err.description}.")
@@ -394,23 +377,41 @@ def dag_updater(*, names_returned: list[str]):
     return decorator
 
 
-def args_from_dag(function):
-    """
-    A decorator for indicating that a function's arguments should all be read from the `DAG`. The named arguments of the
-    function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be modified/
-    intercepted, but an `Error` may be returned instead in the case of a failure to get any argument from the `DAG`.
-    """
+def args_from_dag(*, names_left: list[str] = None):
+    if names_left is None:
+        names_left = []
 
-    @functools.wraps(function)
-    def wrapper():
-        arguments = get_function_arguments(function)
-        args = data_manager().get_args(arguments)
-        if isinstance(args, Error):
-            return Error(f"Failed to get arguments to run function from dag: {args.description}")
-        # execute the function
-        return function(**args)
+    def decorator(function):
+        """
+        A decorator for indicating that a function's arguments should be read from the `DAG`. The named arguments of the
+        function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be
+        modified/intercepted, but an `Error` may be returned instead in the case of a failure to get any argument from
+        the `DAG`. Arguments that should be left alone can be listed in the decorator argument `names_left`.
+        """
+        # all names specified in `named_left` must names of function arguments
+        arguments = FunctionArgument.get_for_function(function)
+        for name in names_left:
+            if not (name in [argument.name for argument in arguments]):
+                raise KeyError(f"Every value in `names_left` must the name of one of the function's arguments. "
+                               f"Unrecognised name '{name}'.")
 
-    return wrapper
+        @functools.wraps(function)
+        def wrapper(**kwargs):
+            # check all left names are in **kwargs
+            for name in names_left:
+                if name not in kwargs:
+                    return Error(f"Argument '{name}' specified in `names_left` not provided to function.")
+            # get appropriate args from the DAG
+            arguments_to_get = [argument for argument in arguments if argument.name not in names_left]
+            from_dag = data_manager().get_args(arguments_to_get)
+            if isinstance(from_dag, Error):
+                return Error(f"Failed to get arguments to run function from dag: {from_dag.description}")
+            # execute the function
+            return function(**from_dag, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 @dag_updater(names_returned=["similarity"])
@@ -437,19 +438,19 @@ def data_manager() -> DAG:
 
 
 def main():
-    data_manager = DAG()
+    init_data_manager()
 
-    err = data_manager.add_updater("similarity_metric", try_updater)
+    err = data_manager().add_updater("similarity_metric", try_updater)
     if isinstance(err, Error):
         print(err)
         return
 
-    data_manager.set_data("fixed_image", 2.0)
-    data_manager.set_data("moving_image", 3.0)
+    data_manager().set_data("fixed_image", 2.0)
+    data_manager().set_data("moving_image", 3.0)
 
-    # print(f"Data manager:\n{data_manager}")
+    # print(f"Data manager:\n{data_manager()}")
 
-    print(data_manager.get("similarity"))
+    print(data_manager().get("similarity"))
 
 
 if __name__ == "__main__":
