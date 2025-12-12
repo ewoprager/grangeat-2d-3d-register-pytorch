@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(".."))  # make project importable
+sys.path.insert(0, os.path.abspath("../"))  # make project importable
 
 project = "reg23-experiments"
 author = "Edmund Prager"
@@ -14,7 +14,7 @@ extensions = [  #
 ]
 autosummary_generate = True
 
-autodoc_mock_imports = ["torch", "reg23"]
+autodoc_mock_imports = ["torch", "reg23", "PyQt6", "numpy", "torch", "matplotlib", ]
 
 templates_path = ["_templates"]
 exclude_patterns = []

@@ -32,7 +32,9 @@ jobs:
           enable-cache: true
 
       - name: Set up virtual environment
-        run: uv venv .venv
+        run: |
+          uv venv .venv
+          source .venv/bin/activate
 
       - name: Build package
         run: |
