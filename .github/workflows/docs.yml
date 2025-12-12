@@ -22,7 +22,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install doxygen
           pip install -r docs/requirements.txt
-#          pip install sphinx sphinx_rtd_theme breathe
+      #          pip install sphinx sphinx_rtd_theme breathe
 
       - name: Build Doxygen HTML
         working-directory: reg23/Docs
@@ -37,6 +37,22 @@ jobs:
           mkdir -p site
           cp -r docs/build/html site/python
           cp -r reg23/Docs/build/html site/cpp
+
+      - name: Create landing page
+        run: |
+          cat > site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head><title>Documentation</title></head>
+          <body>
+            <h1>Documentation</h1>
+            <ul>
+              <li><a href="python/">reg23-experiments Python API Docs</a></li>
+              <li><a href="cpp/">reg23 C++ API Docs</a></li>
+            </ul>
+          </body>
+          </html>
+          EOF
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
