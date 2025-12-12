@@ -378,16 +378,17 @@ def dag_updater(*, names_returned: list[str]):
 
 
 def args_from_dag(*, names_left: list[str] = None):
+    """
+    A decorator for indicating that a function's arguments should be read from the `DAG`. The named arguments of the
+    function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be
+    modified/intercepted, but an `Error` may be returned instead in the case of a failure to get any argument from
+    the `DAG`. Arguments that should be left alone can be listed in the decorator argument `names_left`.
+    :param names_left: A list of the arguments to leave in the function's signature (i.e. to not get from the DAG)
+    """
     if names_left is None:
         names_left = []
 
     def decorator(function):
-        """
-        A decorator for indicating that a function's arguments should be read from the `DAG`. The named arguments of the
-        function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be
-        modified/intercepted, but an `Error` may be returned instead in the case of a failure to get any argument from
-        the `DAG`. Arguments that should be left alone can be listed in the decorator argument `names_left`.
-        """
         # all names specified in `named_left` must names of function arguments
         arguments = FunctionArgument.get_for_function(function)
         for name in names_left:
@@ -396,7 +397,7 @@ def args_from_dag(*, names_left: list[str] = None):
                                f"Unrecognised name '{name}'.")
 
         @functools.wraps(function)
-        def wrapper(**kwargs):
+        def wrapper(**kwargs) -> Any | Error:
             # check all left names are in **kwargs
             for name in names_left:
                 if name not in kwargs:

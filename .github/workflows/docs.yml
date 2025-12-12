@@ -2,7 +2,7 @@ name: Build and Deploy Docs
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build:
@@ -12,27 +12,34 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-#      - name: Set up Python
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install doxygen
-#          pip install sphinx breathe sphinx_rtd_theme
+          pip install -r docs/requirements.txt
+#          pip install sphinx sphinx_rtd_theme breathe
 
       - name: Build Doxygen HTML
         working-directory: reg23/Docs
         run: doxygen Doxyfile
 
-#      - name: Build Sphinx HTML
-#        working-directory: docs
-#        run: sphinx-build -b html . _build
+      - name: Build Sphinx HTML
+        working-directory: docs
+        run: make html
+
+      - name: Stage combined docs for deployment
+        run: |
+          mkdir -p site
+          cp -r docs/_build/html site/python
+          cp -r reg23/Docs/html site/cpp
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: reg23/Docs/build/html
+          publish_dir: site
