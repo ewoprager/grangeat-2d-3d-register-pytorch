@@ -33,13 +33,8 @@ jobs:
 
       - name: Set up virtual environment
         run: |
-          uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
-          source "${READTHEDOCS_VIRTUALENV_PATH}/bin/activate"
-
-      - name: Build package
-        run: |
-          UV_PROJECT_ENVIRONMENT=$READTHEDOCS_VIRTUALENV_PATH uv sync --extra cpu --link-mode=copy
-      #          pip install --upgrade pip setuptools wheel
+          uv venv
+          uv sync --extra cpu
 
       - name: Build Doxygen HTML
         working-directory: reg23/Docs
