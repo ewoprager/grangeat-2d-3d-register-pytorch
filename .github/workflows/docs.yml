@@ -27,7 +27,7 @@ jobs:
       - name: Build package
         run: |
           pip install --upgrade pip setuptools wheel
-          pip install -e . --no-build-isolation
+          pip install -e . --no-build-isolation --no-deps
 
       - name: Build Doxygen HTML
         working-directory: reg23/Docs

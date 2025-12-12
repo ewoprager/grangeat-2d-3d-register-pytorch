@@ -384,6 +384,35 @@ def args_from_dag(*, names_left: list[str] = None):
     modified/intercepted, but an `Error` may be returned instead in the case of a failure to get any argument from
     the `DAG`. Arguments that should be left alone can be listed in the decorator argument `names_left`.
     :param names_left: A list of the arguments to leave in the function's signature (i.e. to not get from the DAG)
+
+    Example use with no `names_left`:
+    ```
+    @args_from_dag()
+    def subtract_moving_from_fixed(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
+        return fixed_image - moving_image
+    ```
+    will be effectively be turned into:
+    ```
+    from program import data_manager
+    def subtract_moving_from_fixed() -> torch.Tensor:
+        moving_image = data_manager().get("moving_image")
+        fixed_image = data_manager().get("fixed_image")
+        return fixed_image - moving_image
+    ```
+
+    Example use with some `names_left`:
+    ```
+    @args_from_dag(names_left = ["moving_image"])
+    def subtract_moving_from_fixed(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
+        return fixed_image - moving_image
+    ```
+    will be effectively be turned into:
+    ```
+    from program import data_manager
+    def subtract_moving_from_fixed(moving_image: torch.Tensor) -> torch.Tensor:
+        fixed_image = data_manager().get("fixed_image")
+        return fixed_image - moving_image
+    ```
     """
     if names_left is None:
         names_left = []
