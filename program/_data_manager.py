@@ -26,6 +26,7 @@ class Node(traitlets.HasTraits):
     dependents = traitlets.List(trait=traitlets.Unicode(), default_value=[])
     dirty = traitlets.Bool(default_value=False)
     updater = traitlets.Unicode(allow_none=True, default_value=None)
+    lazily_evaluated = traitlets.Bool(default_value=True)
     data = traitlets.Any(allow_none=True, default_value=NoNodeData)
     set_callbacks = traitlets.Dict(key_trait=traitlets.Unicode(), value_trait=traitlets.Callable())
 
@@ -75,19 +76,10 @@ class Updater(NamedTuple):
 
 
 class DAG:
-    def __init__(self, lazy: bool = True):
+    def __init__(self):
         self._nodes: dict[str, Node] = dict()
         self._updaters: dict[str, Updater] = dict()
-        self._lazy = lazy
         self._in_top_level_call: bool = True
-
-    @property
-    def lazy(self) -> bool:
-        return self._lazy
-
-    @lazy.setter
-    def lazy(self, new_value: bool) -> None:
-        self._lazy = new_value
 
     @staticmethod
     def _data_mutating(function):
@@ -96,7 +88,7 @@ class DAG:
             this_is_top_level_call = self._in_top_level_call
             self._in_top_level_call = False
             ret = function(self, *args, **kwargs)
-            if this_is_top_level_call and not self.lazy:
+            if this_is_top_level_call:
                 err = self._clean_graph()
                 if isinstance(err, Error):
                     return Error(f"Error cleaning graph after call to data mutating function: {err.description}.")
@@ -145,6 +137,17 @@ class DAG:
         if data is not NoNodeData:
             self.set_data(name, data)
 
+    def set_evaluation_laziness(self, node_name: str, *, lazily_evaluated: bool) -> None:
+        """
+        Set whether the named node will be evaluated lazily. Nodes will be evaluated lazily by default. A node that is
+        not evaluated lazily will be re-evaluated if dirty and the required data exists, every time data in the graph
+        changes.
+        :param node_name: The name of the node to modify
+        :param lazily_evaluated: Whether the named node should be evaluated lazily
+        """
+        self.add_node(node_name)
+        self._nodes[node_name].lazily_evaluated = lazily_evaluated
+
     @_data_mutating
     def set_data(self, node_name: str, data: Any, *, check_equality: bool = False) -> None | Error:
         """
@@ -169,6 +172,19 @@ class DAG:
         # make all dependents dirty
         for dependent in self._nodes[node_name].dependents:
             self._set_dirty(dependent)
+        return None
+
+    @_data_mutating
+    def set_data_multiple(self, name_to_data_map: dict[str, Any]) -> None | Error:
+        """
+        Set the data associated with a named node. Will create the node if it doesn't exist.
+        :param name_to_data_map: Dictionary mapping names to data values.
+        :return: Nothing on success; an `Error` on failure.
+        """
+        for name, data in name_to_data_map.items():
+            err = self.set_data(name, data)
+            if isinstance(err, Error):
+                return Error(f"Error setting multiple data; specifically for '{name}': {err.description}.")
         return None
 
     def add_callback(self, node_name: str, callback_name: str, callback: Callable[[Any], None]) -> None:
@@ -220,7 +236,6 @@ class DAG:
             return Error(f"Failed to add updater '{name}', as this added cycles to the graph.")
         return None
 
-    @_data_mutating
     def remove_updater(self, name: str) -> None | Error:
         # check updater exists with given name
         if name not in self._updaters:
@@ -334,7 +349,9 @@ class DAG:
         return None
 
     def _clean_graph(self) -> None | Error:
-        for name in self._nodes:
+        for name, node in self._nodes.items():
+            if node.lazily_evaluated:
+                continue
             err = self._clean_node(name, soft=True)
             if isinstance(err, Error):
                 return Error(f"Graph clean failed on node '{name}': {err.description}.")
@@ -420,7 +437,7 @@ def data_manager() -> DAG:
 
 
 def main():
-    data_manager = DAG(lazy=False)
+    data_manager = DAG()
 
     err = data_manager.add_updater("similarity_metric", try_updater)
     if isinstance(err, Error):

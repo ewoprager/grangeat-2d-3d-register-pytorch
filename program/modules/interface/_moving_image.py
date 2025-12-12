@@ -47,6 +47,7 @@ class ViewParamWidget(widgets.Container):
 class MovingImage:
     def __init__(self):
         data_manager().add_callback("moving_image", "interface", self._set_callback)
+        data_manager().set_evaluation_laziness("moving_image", lazily_evaluated=False)
         value = data_manager().get("moving_image", soft=True)
         if isinstance(value, Error):
             raise RuntimeError(f"Error softly getting 'moving_image' from DAG: {value.description}.")
