@@ -8,7 +8,7 @@ author = "Edmund Prager"
 extensions = [  #
     "sphinx.ext.autodoc",  #
     "sphinx.ext.autosummary",  #
-    # "sphinx.ext.napoleon",  # Google/NumPy docstring support
+    "sphinx.ext.napoleon",  # Google/NumPy docstring support
     "sphinx.ext.viewcode",  # add source links
     "myst_parser"  #
 ]
