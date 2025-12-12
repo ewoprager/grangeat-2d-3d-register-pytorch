@@ -33,8 +33,8 @@ jobs:
 
       - name: Build package
         run: |
-#          pip install --upgrade pip setuptools wheel
           uv pip install -e .[cpu]
+      #          pip install --upgrade pip setuptools wheel
 
       - name: Build Doxygen HTML
         working-directory: reg23/Docs
