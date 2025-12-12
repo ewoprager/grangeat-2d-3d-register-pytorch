@@ -10,7 +10,7 @@ extensions = [  #
     "sphinx.ext.autosummary",  #
     # "sphinx.ext.napoleon",  # Google/NumPy docstring support
     "sphinx.ext.viewcode",  # add source links
-    "myst-parser"  #
+    "myst_parser"  #
 ]
 autosummary_generate = True
 
