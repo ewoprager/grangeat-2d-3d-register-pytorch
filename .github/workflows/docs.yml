@@ -24,6 +24,9 @@ jobs:
           pip install -r docs/requirements.txt
       #          pip install sphinx sphinx_rtd_theme breathe
 
+      - name: Build package
+        run: pip install -e . --no-build-isolation
+
       - name: Build Doxygen HTML
         working-directory: reg23/Docs
         run: doxygen Doxyfile
