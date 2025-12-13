@@ -9,53 +9,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: "Checkout repo"
         uses: actions/checkout@v4
 
-      - name: [reg23 C++ Docs] Install dependencies
+      - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
           sudo apt-get update
           sudo apt-get install doxygen
 
-      - name: [reg23 C++ Docs] Build Doxygen HTML
+      - name: "[ reg23 C++ Docs ] Build Doxygen HTML"
         working-directory: reg23/Docs
         run: doxygen Doxyfile
 
-      - name: [reg23-experiments Python Docs] Install uv
+      - name: "[ reg23-experiments Python Docs ] Install uv"
         uses: astral-sh/setup-uv@v5
         with:
           version: "0.5.26"
           enable-cache: true
 
-      - name: [reg23-experiments Python Docs] Set up Python
+      - name: "[ reg23-experiments Python Docs ] Set up Python"
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-#      - name: [reg23-experiments Python Docs] Install dependencies
-#        run: |
-#          pip install --upgrade pip
-#          pip install -r docs/requirements.txt
-#          pip install sphinx sphinx_rtd_theme breathe
+      #      - name: [reg23-experiments Python Docs] Install dependencies
+      #        run: |
+      #          pip install --upgrade pip
+      #          pip install -r docs/requirements.txt
+      #          pip install sphinx sphinx_rtd_theme breathe
 
-      - name: [reg23-experiments Python Docs] Set up virtual environment
+      - name: "[ reg23-experiments Python Docs ] Set up virtual environment"
         run: |
           uv venv
           uv sync --extra cpu
 
-      - name: [reg23-experiments Python Docs] Build Sphinx HTML
+      - name: "[ reg23-experiments Python Docs ] Build Sphinx HTML"
         working-directory: docs
-#        run: make html
+        #        run: make html
         run: |
           uv run sphinx-build -b html . build/html
 
-      - name: Stage combined docs for deployment
+      - name: "Stage combined docs for deployment"
         run: |
           mkdir -p site
           cp -r docs/build/html site/python
           cp -r reg23/Docs/build/html site/cpp
 
-      - name: Create landing page
+      - name: "Create landing page"
         run: |
           cat > site/index.html << 'EOF'
           <!DOCTYPE html>
@@ -71,7 +71,7 @@ jobs:
           </html>
           EOF
 
-      - name: Deploy to GitHub Pages
+      - name: "Deploy to GitHub Pages"
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
