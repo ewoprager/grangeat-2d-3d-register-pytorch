@@ -12,15 +12,6 @@ jobs:
       - name: "Checkout repo"
         uses: actions/checkout@v4
 
-      - name: "[ reg23 C++ Docs ] Install dependencies"
-        run: |
-          sudo apt-get update
-          sudo apt-get install doxygen
-
-      - name: "[ reg23 C++ Docs ] Build Doxygen HTML"
-        working-directory: reg23/Docs
-        run: doxygen Doxyfile
-
       - name: "[ reg23-experiments Python Docs ] Install uv"
         uses: astral-sh/setup-uv@v5
         with:
@@ -41,13 +32,22 @@ jobs:
       - name: "[ reg23-experiments Python Docs ] Set up virtual environment"
         run: |
           uv venv
-          uv sync --extra cpu
+          uv sync --extra cpu --group docs
 
       - name: "[ reg23-experiments Python Docs ] Build Sphinx HTML"
         working-directory: docs
         #        run: make html
         run: |
           uv run sphinx-build -b html . build/html
+
+      - name: "[ reg23 C++ Docs ] Install dependencies"
+        run: |
+          sudo apt-get update
+          sudo apt-get install doxygen
+
+      - name: "[ reg23 C++ Docs ] Build Doxygen HTML"
+        working-directory: reg23/Docs
+        run: doxygen Doxyfile
 
       - name: "Stage combined docs for deployment"
         run: |
