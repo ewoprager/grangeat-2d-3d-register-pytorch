@@ -12,31 +12,31 @@ jobs:
       - name: "Checkout repo"
         uses: actions/checkout@v4
 
-#      - name: "[ reg23-experiments Python Docs ] Install uv"
-#        uses: astral-sh/setup-uv@v5
-#        with:
-#          version: "0.5.26"
-#          enable-cache: true
-
-      - name: "[ reg23-experiments Python Docs ] Set up Python"
-        uses: actions/setup-python@v5
+      - name: "[ reg23-experiments Python Docs ] Install uv"
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.12'
+          version: "0.5.26"
+          enable-cache: true
 
-      - name: "[reg23-experiments Python Docs] Install dependencies"
-        run: |
-          pip install --upgrade pip
-          pip install pdoc3
-
-#      - name: "[ reg23-experiments Python Docs ] Set up virtual environment"
+#      - name: "[ reg23-experiments Python Docs ] Set up Python"
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.12'
+#
+#      - name: "[reg23-experiments Python Docs] Install dependencies"
 #        run: |
-#          uv venv
-#          uv sync --extra cpu --group docs
-#          uv pip install -e .[cpu]
+#          pip install --upgrade pip
+#          pip install pdoc3
+
+      - name: "[ reg23-experiments Python Docs ] Set up virtual environment"
+        run: |
+          uv venv
+          uv sync --extra cpu --group docs
+          uv pip install -e .[cpu]
 
       - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
         run: |
-          pdoc --html --output-dir docs --force program registration notification
+          uv run pdoc --html --output-dir docs --force program registration notification
 
       - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
