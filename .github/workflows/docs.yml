@@ -12,37 +12,42 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
+      - name: [reg23 C++ Docs] Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install doxygen
-          pip install --upgrade pip
-          pip install -r docs/requirements.txt
-      #          pip install sphinx sphinx_rtd_theme breathe
 
-      - name: Install uv
+      - name: [reg23 C++ Docs] Build Doxygen HTML
+        working-directory: reg23/Docs
+        run: doxygen Doxyfile
+
+      - name: [reg23-experiments Python Docs] Install uv
         uses: astral-sh/setup-uv@v5
         with:
           version: "0.5.26"
           enable-cache: true
 
-      - name: Set up virtual environment
+      - name: [reg23-experiments Python Docs] Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+#      - name: [reg23-experiments Python Docs] Install dependencies
+#        run: |
+#          pip install --upgrade pip
+#          pip install -r docs/requirements.txt
+      #          pip install sphinx sphinx_rtd_theme breathe
+
+      - name: [reg23-experiments Python Docs] Set up virtual environment
         run: |
           uv venv
           uv sync --extra cpu
 
-      - name: Build Doxygen HTML
-        working-directory: reg23/Docs
-        run: doxygen Doxyfile
-
-      - name: Build Sphinx HTML
+      - name: [reg23-experiments Python Docs] Build Sphinx HTML
         working-directory: docs
-        run: make html
+#        run: make html
+        run: |
+          uv run sphinx-build -b html . build/html
 
       - name: Stage combined docs for deployment
         run: |

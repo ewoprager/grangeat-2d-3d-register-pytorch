@@ -1,7 +1,7 @@
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath("../"))  # make project importable
+# import os
+# import sys
+#
+# sys.path.insert(0, os.path.abspath("../"))  # make project importable
 
 project = "reg23-experiments"
 author = "Edmund Prager"
