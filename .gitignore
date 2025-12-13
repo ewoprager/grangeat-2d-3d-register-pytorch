@@ -14,3 +14,6 @@ figures/truncation/
 **/*.egg-info/
 Logs/*
 data/register_plot_data/
+**/.cache/
+**/*.log
+reg23/src/mps/default_metallib.mm

@@ -1,9 +1,10 @@
+import collections
+import functools
+import logging
+from typing import Any, Callable, NamedTuple
+
 import traitlets
 from traitlets.config import SingletonConfigurable
-import functools
-import collections
-from typing import Any, Callable, NamedTuple
-import logging
 
 from program.lib.structs import Error, FunctionArgument
 
@@ -15,7 +16,8 @@ class Dependency(NamedTuple):
     depended: str
 
 
-class NoNodeDataType: pass
+class NoNodeDataType:
+    pass
 
 
 NoNodeData = NoNodeDataType()
@@ -37,7 +39,7 @@ class Node(traitlets.HasTraits):
 
     @traitlets.validate("dirty")
     def _valid_dirty(self, proposal):
-        if self.updater is None and proposal["value"] == True:
+        if self.updater is None and proposal["value"]:
             raise traitlets.TraitError("A node with no updater cannot be dirty.")
         return proposal["value"]
 
@@ -377,7 +379,7 @@ def dag_updater(*, names_returned: list[str]):
     return decorator
 
 
-def args_from_dag(*, names_left: list[str] = None):
+def args_from_dag(*, names_left: list[str] | None = None):
     """
     A decorator for indicating that a function's arguments should be read from the `DAG`. The named arguments of the
     function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be
@@ -421,7 +423,7 @@ def args_from_dag(*, names_left: list[str] = None):
         # all names specified in `named_left` must names of function arguments
         arguments = FunctionArgument.get_for_function(function)
         for name in names_left:
-            if not (name in [argument.name for argument in arguments]):
+            if name not in [argument.name for argument in arguments]:
                 raise KeyError(f"Every value in `names_left` must the name of one of the function's arguments. "
                                f"Unrecognised name '{name}'.")
 
