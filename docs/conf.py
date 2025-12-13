@@ -1,7 +1,9 @@
-# import os
-# import sys
+import os
+import sys
 #
 # sys.path.insert(0, os.path.abspath("../"))  # make project importable
+
+sys.path.insert(0, os.path.abspath(".."))  # adjust to repo root
 
 project = "reg23-experiments"
 author = "Edmund Prager"
