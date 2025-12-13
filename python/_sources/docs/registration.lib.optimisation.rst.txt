@@ -1,0 +1,7 @@
+registration.lib.optimisation module
+====================================
+
+.. automodule:: registration.lib.optimisation
+   :members:
+   :show-inheritance:
+   :undoc-members:

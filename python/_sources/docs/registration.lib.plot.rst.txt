@@ -1,0 +1,7 @@
+registration.lib.plot module
+============================
+
+.. automodule:: registration.lib.plot
+   :members:
+   :show-inheritance:
+   :undoc-members:

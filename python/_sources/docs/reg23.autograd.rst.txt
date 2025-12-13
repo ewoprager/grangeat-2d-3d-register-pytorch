@@ -1,0 +1,7 @@
+reg23.autograd module
+=====================
+
+.. automodule:: reg23.autograd
+   :members:
+   :show-inheritance:
+   :undoc-members:

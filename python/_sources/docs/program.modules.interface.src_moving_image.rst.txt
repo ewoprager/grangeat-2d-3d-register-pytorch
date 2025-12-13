@@ -1,0 +1,7 @@
+program.modules.interface.src\_moving\_image module
+===================================================
+
+.. automodule:: program.modules.interface.src_moving_image
+   :members:
+   :show-inheritance:
+   :undoc-members:
