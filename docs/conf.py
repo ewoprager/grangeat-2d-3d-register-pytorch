@@ -14,7 +14,7 @@ extensions = [  #
 ]
 autosummary_generate = True
 
-autodoc_mock_imports = ["torch", "reg23", "PyQt6", "numpy", "torch", "matplotlib", ]
+autodoc_mock_imports = ["torch", "torch.cuda", "reg23", "PyQt6", "numpy", "torch", "matplotlib", "napari"]
 
 templates_path = ["_templates"]
 exclude_patterns = []

@@ -1,18 +1,17 @@
 from typing import Tuple, Literal
 import logging
 
-logger = logging.getLogger(__name__)
-
 import torch
-import numpy as np
 import matplotlib.pyplot as plt
-
-import reg23
 
 from registration.lib.structs import SceneGeometry, Transformation, Sinogram2dGrid
 from registration.lib.sinogram import Sinogram, SinogramClassic
-import registration.lib.grangeat as grangeat
-import registration.lib.plot as myplt
+from registration.lib import grangeat
+
+__all__ = ["ncc", "local_ncc", "multiscale_ncc", "weighted_ncc", "weighted_local_ncc", "gradient_correlation",
+           "evaluate", "evaluate_direct"]
+
+logger = logging.getLogger(__name__)
 
 
 def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dim: int | Tuple | torch.Size | None = None) -> torch.Tensor:
@@ -89,8 +88,8 @@ def weighted_local_ncc(xs: torch.Tensor, ys: torch.Tensor, *, weights: torch.Ten
                                             stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
     ws_patches = torch.nn.functional.unfold(weights.unsqueeze(0), kernel_size=kernel_size,
                                             stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
-    patch_wznccs = weighted_ncc(xs_patches, ys_patches, ws_patches, dim=0) # size = (patch number)
-    patch_weights = ws_patches.mean(dim=0) # size = (patch number)
+    patch_wznccs = weighted_ncc(xs_patches, ys_patches, ws_patches, dim=0)  # size = (patch number)
+    patch_weights = ws_patches.mean(dim=0)  # size = (patch number)
     return (patch_weights * patch_wznccs).sum() / patch_weights.sum()
 
 

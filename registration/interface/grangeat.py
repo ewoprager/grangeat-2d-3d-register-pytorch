@@ -1,11 +1,11 @@
 import logging
 from typing import Callable
 
-logger = logging.getLogger(__name__)
-
-import torch
-import napari
 from magicgui import widgets
+
+__all__ = ["GrangeatWidget"]
+
+logger = logging.getLogger(__name__)
 
 
 class GrangeatWidget(widgets.Container):

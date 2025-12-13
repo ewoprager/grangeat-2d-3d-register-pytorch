@@ -5,14 +5,11 @@ from datetime import datetime
 from typing import Callable, Any, NamedTuple
 from abc import ABC, abstractmethod
 
-logger = logging.getLogger(__name__)
-
 import torch
-import napari
-from magicgui import magicgui, widgets
+from magicgui import widgets
 import numpy as np
 import matplotlib.pyplot as plt
-from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 import pyswarms
 from qtpy.QtWidgets import QApplication
@@ -25,6 +22,11 @@ from registration.interface.lib.structs import HyperParameters, WidgetSelectData
 from registration.lib import optimisation
 from registration.lib.optimisation import mapping_transformation_to_parameters, mapping_parameters_to_transformation
 from registration.interface.registration_data import RegistrationData
+
+__all__ = ["OptimisationResult", "OptimisationAlgorithm", "ParticleSwarm", "LocalSearch", "Worker", "OpAlgoWidget",
+           "PSOWidget", "LocalSearchWidget", "RegisterWidget"]
+
+logger = logging.getLogger(__name__)
 
 
 class OptimisationResult(NamedTuple):

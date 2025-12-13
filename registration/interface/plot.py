@@ -4,13 +4,10 @@ from typing import Callable, NamedTuple, Tuple
 from enum import Enum
 import pathlib
 
-logger = logging.getLogger(__name__)
-
 import torch
-import napari
 from magicgui import widgets
 import matplotlib.pyplot as plt
-from PyQt6.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from tqdm import tqdm
 from matplotlib import cm
@@ -18,6 +15,11 @@ from matplotlib import cm
 from registration.lib.structs import Transformation
 from registration.interface.transformations import TransformationWidget
 from registration.interface.lib.structs import WidgetSelectData
+
+__all__ = ["TransformationParameterType", "TransformationParameter", "ParameterRange", "landscape2", "WorkSpec",
+           "Landscape2", "four_landscapes", "Worker", "PlotWidget"]
+
+logger = logging.getLogger(__name__)
 
 
 class TransformationParameterType(Enum):
@@ -92,38 +94,42 @@ def four_landscapes(work_spec: WorkSpec) -> Tuple[Transformation, list[Landscape
     x_param = TransformationParameter(type=TransformationParameterType.ROTATION, index=0)
     y_param = TransformationParameter(type=TransformationParameterType.ROTATION, index=1)
     x_range = ParameterRange(parameter=x_param, range=x_param.get(work_spec.transformation_range),
-        count=work_spec.counts)
+                             count=work_spec.counts)
     y_range = ParameterRange(parameter=y_param, range=y_param.get(work_spec.transformation_range),
-        count=work_spec.counts)
+                             count=work_spec.counts)
     ret.append(Landscape2(x_range, y_range, landscape2(objective_function=work_spec.objective_function,
-        central_transformation=work_spec.central_transformation, x_range=x_range, y_range=y_range)))
+                                                       central_transformation=work_spec.central_transformation,
+                                                       x_range=x_range, y_range=y_range)))
 
     x_param = TransformationParameter(type=TransformationParameterType.ROTATION, index=1)
     y_param = TransformationParameter(type=TransformationParameterType.ROTATION, index=2)
     x_range = ParameterRange(parameter=x_param, range=x_param.get(work_spec.transformation_range),
-        count=work_spec.counts)
+                             count=work_spec.counts)
     y_range = ParameterRange(parameter=y_param, range=y_param.get(work_spec.transformation_range),
-        count=work_spec.counts)
+                             count=work_spec.counts)
     ret.append(Landscape2(x_range, y_range, landscape2(objective_function=work_spec.objective_function,
-        central_transformation=work_spec.central_transformation, x_range=x_range, y_range=y_range)))
+                                                       central_transformation=work_spec.central_transformation,
+                                                       x_range=x_range, y_range=y_range)))
 
     x_param = TransformationParameter(type=TransformationParameterType.TRANSLATION, index=0)
     y_param = TransformationParameter(type=TransformationParameterType.TRANSLATION, index=1)
     x_range = ParameterRange(parameter=x_param, range=x_param.get(work_spec.transformation_range),
-        count=work_spec.counts)
+                             count=work_spec.counts)
     y_range = ParameterRange(parameter=y_param, range=y_param.get(work_spec.transformation_range),
-        count=work_spec.counts)
+                             count=work_spec.counts)
     ret.append(Landscape2(x_range, y_range, landscape2(objective_function=work_spec.objective_function,
-        central_transformation=work_spec.central_transformation, x_range=x_range, y_range=y_range)))
+                                                       central_transformation=work_spec.central_transformation,
+                                                       x_range=x_range, y_range=y_range)))
 
     x_param = TransformationParameter(type=TransformationParameterType.TRANSLATION, index=1)
     y_param = TransformationParameter(type=TransformationParameterType.TRANSLATION, index=2)
     x_range = ParameterRange(parameter=x_param, range=x_param.get(work_spec.transformation_range),
-        count=work_spec.counts)
+                             count=work_spec.counts)
     y_range = ParameterRange(parameter=y_param, range=y_param.get(work_spec.transformation_range),
-        count=work_spec.counts)
+                             count=work_spec.counts)
     ret.append(Landscape2(x_range, y_range, landscape2(objective_function=work_spec.objective_function,
-        central_transformation=work_spec.central_transformation, x_range=x_range, y_range=y_range)))
+                                                       central_transformation=work_spec.central_transformation,
+                                                       x_range=x_range, y_range=y_range)))
 
     return work_spec.central_transformation, ret
 
@@ -149,7 +155,7 @@ class PlotWidget(widgets.Container):
         self._window = window
 
         self._objective_function_widget = WidgetSelectData(widget_type=widgets.ComboBox,
-            initial_choices=objective_functions, label="Obj. func.")
+                                                           initial_choices=objective_functions, label="Obj. func.")
         self.append(self._objective_function_widget.widget)
 
         self._translation_range_widgets = [widgets.SpinBox(value=30, min=1, max=100, step=1, label=s) for s in
@@ -182,8 +188,9 @@ class PlotWidget(widgets.Container):
     def _on_evaluate(self) -> None:
         self._thread = QThread()
         self._worker = Worker(WorkSpec(objective_function=self._current_obj_func(),
-            central_transformation=self._transformation_widget.get_current_transformation(),
-            transformation_range=self._current_transformation_range(), counts=self._counts_widget.get_value()))
+                                       central_transformation=self._transformation_widget.get_current_transformation(),
+                                       transformation_range=self._current_transformation_range(),
+                                       counts=self._counts_widget.get_value()))
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._worker.finished.connect(self._finish_callback)
@@ -202,16 +209,17 @@ class PlotWidget(widgets.Container):
             ys, xs = torch.meshgrid(ys, xs)
             axes.cla()
             axes.plot_surface(xs.clone().detach().cpu().numpy(), ys.clone().detach().cpu().numpy(),
-                landscape.data.clone().detach().cpu().numpy(), cmap=cm.get_cmap("viridis"))
+                              landscape.data.clone().detach().cpu().numpy(), cmap=cm.get_cmap("viridis"))
             axes.set_xlabel(str(landscape.x_range.parameter))
             axes.set_ylabel(str(landscape.y_range.parameter))
             axes.set_zlabel("objective function value")
             fname = "of_over_{}_{}.png".format(str(landscape.x_range.parameter).replace(' ', '_'),
-                str(landscape.y_range.parameter).replace(' ', '_'))
+                                               str(landscape.y_range.parameter).replace(' ', '_'))
             fig.savefig(pathlib.Path("figures") / "landscapes" / fname, dpi=300, bbox_inches='tight')
             fig.canvas.draw()
 
         self._window.add_dock_widget(widgets.Container(
             widgets=[widgets.Label(value="Landscape over two parameters around {}".format(str(central_transformation))),
-                figures_widget], labels=False), name="4 landscapes over two parameters each", area="right", tabify=True)
+                     figures_widget], labels=False), name="4 landscapes over two parameters each", area="right",
+            tabify=True)
         logger.info("Landscape plotting finished")

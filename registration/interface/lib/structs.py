@@ -5,11 +5,14 @@ import logging
 
 from registration.lib.structs import Transformation
 
-logger = logging.getLogger(__name__)
-
 import torch
 import pathlib
-from magicgui import magicgui, widgets
+from magicgui import widgets
+
+__all__ = ["Target", "Cropping", "HyperParameters", "WidgetSelectData", "WidgetManageSaved", "ViewParams",
+           "SavedXRayParams"]
+
+logger = logging.getLogger(__name__)
 
 
 class Target(NamedTuple):

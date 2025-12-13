@@ -1,4 +1,3 @@
-import copy
 import logging
 import math
 import pathlib
@@ -11,13 +10,9 @@ from registration import data, drr, pre_computed
 from registration.interface.lib.structs import HyperParameters, Target
 from registration.lib import grangeat
 from registration.lib.sinogram import Sinogram, SinogramType
-from registration.lib.structs import (
-    LinearRange,
-    SceneGeometry,
-    Sinogram2dGrid,
-    Sinogram2dRange,
-    Transformation,
-)
+from registration.lib.structs import LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation
+
+__all__ = ["RegistrationData"]
 
 logger = logging.getLogger(__name__)
 

@@ -7,6 +7,9 @@ from registration.lib.structs import Sinogram2dGrid, Sinogram3dGrid, Transformat
 
 import reg23
 
+__all__ = ["fixed_polar_to_moving_cartesian", "moving_cartesian_to_moving_spherical", "fixed_polar_to_moving_spherical",
+           "ray_cuboid_distance", "generate_drr", "generate_drr_cuboid_mask", "generate_drr_python", "plane_integrals"]
+
 
 def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, ph_matrix: torch.Tensor) -> torch.Tensor:
     device = input_grid.phi.device

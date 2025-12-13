@@ -1,12 +1,13 @@
 from typing import Callable
 import logging
 
-logger = logging.getLogger(__name__)
-
-import torch
 from magicgui import widgets
 
 from registration.interface.lib.structs import ViewParams
+
+__all__ = ["ViewWidget"]
+
+logger = logging.getLogger(__name__)
 
 
 class ViewWidget(widgets.Container):

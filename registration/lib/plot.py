@@ -10,6 +10,10 @@ from torch.distributions.constraints import independent
 
 from registration.lib.structs import Sinogram3dGrid
 
+__all__ = ["to_latex_scientific", "torch_polyfit", "fit_power_relationship", "save_colourmap_for_latex",
+           "visualise_planes_as_points", "Series", "DataFit", "LinearFit", "QuadraticFit", "PowerFit",
+           "CustomFitPowerRatio"]
+
 
 def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False):
     if x == 0:

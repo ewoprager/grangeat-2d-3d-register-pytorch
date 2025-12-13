@@ -1,10 +1,16 @@
 import math
+import logging
 
 import torch
 
-from registration.lib import grangeat
 from registration import data
-from registration.lib.sinogram import *
+from registration.lib import geometry
+from registration.lib.sinogram import DrrSpec
+from registration.lib.structs import Transformation, SceneGeometry
+
+__all__ = ["generate_drr_as_target"]
+
+logger = logging.getLogger(__name__)
 
 
 def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor,

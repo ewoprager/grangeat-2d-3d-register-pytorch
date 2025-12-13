@@ -1,8 +1,6 @@
 from tqdm import tqdm
 import logging
 
-logger = logging.getLogger(__name__)
-
 import torch
 import matplotlib.pyplot as plt
 
@@ -11,13 +9,16 @@ from registration.lib import geometry
 
 import reg23
 
+__all__ = ["calculate_radon_volume", "calculate_fixed_image", "directly_calculate_radon_slice"]
+
+logger = logging.getLogger(__name__)
+
 
 def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, samples_per_direction: int = 128,
                            output_grid: Sinogram3dGrid):
     assert output_grid.device_consistent()
     assert volume_data.device == output_grid.phi.device
-    return reg23.d_radon3d_dr(
-        volume_data, voxel_spacing, output_grid.phi.to(device=volume_data.device),
+    return reg23.d_radon3d_dr(volume_data, voxel_spacing, output_grid.phi.to(device=volume_data.device),
         output_grid.theta.to(device=volume_data.device), output_grid.r.to(device=volume_data.device),
         samples_per_direction)
 
@@ -62,8 +63,8 @@ def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, de
     # plt.colorbar(mesh)
     ##
 
-    return fixed_scaling * reg23.d_radon2d_dr(
-        g_tilde, detector_spacing, output_grid.phi, output_grid.r, samples_per_line)
+    return fixed_scaling * reg23.d_radon2d_dr(g_tilde, detector_spacing, output_grid.phi, output_grid.r,
+        samples_per_line)
 
 
 def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, ph_matrix: torch.Tensor,
@@ -87,7 +88,6 @@ def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: 
     for n in tqdm(range(rows * cols)):
         i = n % cols
         j = n // cols
-        ret[j, i] = reg23.d_radon3d_dr_v2(
-            volume_data, voxel_spacing, output_grid_sph_2d.phi[j, i].unsqueeze(0),
+        ret[j, i] = reg23.d_radon3d_dr_v2(volume_data, voxel_spacing, output_grid_sph_2d.phi[j, i].unsqueeze(0),
             output_grid_sph_2d.theta[j, i].unsqueeze(0), output_grid_sph_2d.r[j, i].unsqueeze(0), 500)
     return ret

@@ -1,15 +1,17 @@
-from typing import Any
 import time
+from typing import Type, Tuple
 import logging
-
-logger = logging.getLogger(__name__)
 
 import torch
 
-from registration.lib.structs import *
-from registration.lib.sinogram import *
+from registration.lib.structs import LinearRange
+from registration.lib.sinogram import SinogramType, SinogramClassic, SinogramHEALPix, VolumeSpec
 from registration.lib import grangeat
 from registration import data
+
+__all__ = ["calculate_volume_sinogram"]
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_volume_sinogram(cache_directory: str, volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor,

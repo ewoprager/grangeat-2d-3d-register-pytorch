@@ -2,16 +2,16 @@ import pathlib
 from typing import Callable
 import logging
 
-logger = logging.getLogger(__name__)
-
 import torch
-import napari
 from magicgui import widgets
-from magicgui.types import Undefined
 from qtpy.QtWidgets import QApplication
 
 from registration.lib.structs import Transformation
 from registration.interface.lib.structs import WidgetManageSaved
+
+__all__ = ["TransformationWidget"]
+
+logger = logging.getLogger(__name__)
 
 
 class TransformationWidget(widgets.Container):

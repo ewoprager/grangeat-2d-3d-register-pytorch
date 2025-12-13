@@ -3,8 +3,6 @@ import pathlib
 import hashlib
 from typing import NamedTuple, Type, TypeVar, Tuple, Literal, Union
 
-logger = logging.getLogger(__name__)
-
 import torch
 import nrrd
 import pydicom
@@ -13,6 +11,12 @@ from tqdm import tqdm
 
 from registration.lib.structs import SceneGeometry, Transformation, LinearRange
 from registration.lib import sinogram
+
+__all__ = ["LoadedVolume", "read_volume", "deterministic_hash_string", "deterministic_hash_int",
+           "deterministic_hash_type", "deterministic_hash_combo", "deterministic_hash_sinogram", "load_volume",
+           "read_dicom", "load_cached_volume", "load_cached_drr"]
+
+logger = logging.getLogger(__name__)
 
 torch.serialization.add_safe_globals(
     [sinogram.VolumeSpec, sinogram.DrrSpec, sinogram.SinogramClassic, sinogram.SinogramHEALPix, LinearRange,

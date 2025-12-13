@@ -5,6 +5,8 @@ import torch
 from registration.lib import sinogram
 from registration.lib.structs import Transformation
 
+__all__ = ["DrrVsGrangeatPlotData", "RegisterPlotData", "LandscapePlotData"]
+
 
 class DrrVsGrangeatPlotData(NamedTuple):
     class Dataset(NamedTuple):
