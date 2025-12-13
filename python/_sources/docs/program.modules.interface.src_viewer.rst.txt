@@ -1,7 +1,0 @@
-program.modules.interface.src\_viewer module
-============================================
-
-.. automodule:: program.modules.interface.src_viewer
-   :members:
-   :show-inheritance:
-   :undoc-members:

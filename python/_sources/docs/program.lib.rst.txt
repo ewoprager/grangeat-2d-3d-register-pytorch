@@ -4,11 +4,21 @@ program.lib package
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+program.lib.optimisation module
+-------------------------------
 
-   program.lib.optimisation
-   program.lib.structs
+.. automodule:: program.lib.optimisation
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+program.lib.structs module
+--------------------------
+
+.. automodule:: program.lib.structs
+   :members:
+   :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------

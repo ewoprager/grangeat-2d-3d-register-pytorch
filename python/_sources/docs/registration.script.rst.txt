@@ -1,7 +1,0 @@
-registration.script module
-==========================
-
-.. automodule:: registration.script
-   :members:
-   :show-inheritance:
-   :undoc-members:

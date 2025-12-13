@@ -1,7 +1,0 @@
-program.modules.registration module
-===================================
-
-.. automodule:: program.modules.registration
-   :members:
-   :show-inheritance:
-   :undoc-members:

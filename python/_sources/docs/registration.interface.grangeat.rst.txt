@@ -1,7 +1,0 @@
-registration.interface.grangeat module
-======================================
-
-.. automodule:: registration.interface.grangeat
-   :members:
-   :show-inheritance:
-   :undoc-members:

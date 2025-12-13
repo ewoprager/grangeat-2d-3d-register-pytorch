@@ -12,10 +12,13 @@ Subpackages
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+program.modules.registration module
+-----------------------------------
 
-   program.modules.registration
+.. automodule:: program.modules.registration
+   :members:
+   :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------

@@ -1,7 +1,0 @@
-program.lib.structs module
-==========================
-
-.. automodule:: program.lib.structs
-   :members:
-   :show-inheritance:
-   :undoc-members:
