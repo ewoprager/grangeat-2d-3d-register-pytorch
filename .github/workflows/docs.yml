@@ -12,16 +12,16 @@ jobs:
       - name: "Checkout repo"
         uses: actions/checkout@v4
 
-      - name: "[ reg23-experiments Python Docs ] Install uv"
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: "0.5.26"
-          enable-cache: true
+#      - name: "[ reg23-experiments Python Docs ] Install uv"
+#        uses: astral-sh/setup-uv@v5
+#        with:
+#          version: "0.5.26"
+#          enable-cache: true
 
-      - name: "[ reg23-experiments Python Docs ] Set up Python"
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+#      - name: "[ reg23-experiments Python Docs ] Set up Python"
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: '3.12'
 
       #      - name: [reg23-experiments Python Docs] Install dependencies
       #        run: |
@@ -29,17 +29,15 @@ jobs:
       #          pip install -r docs/requirements.txt
       #          pip install sphinx sphinx_rtd_theme breathe
 
-      - name: "[ reg23-experiments Python Docs ] Set up virtual environment"
-        run: |
-          uv venv
-          uv sync --extra cpu --group docs
-          uv pip install -e .[cpu]
+#      - name: "[ reg23-experiments Python Docs ] Set up virtual environment"
+#        run: |
+#          uv venv
+#          uv sync --extra cpu --group docs
+#          uv pip install -e .[cpu]
 
-      - name: "[ reg23-experiments Python Docs ] Build Sphinx HTML"
-        working-directory: docs
+      - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
         run: |
-          uv run sphinx-apidoc -o docs/ .. -f -e
-          uv run sphinx-build -b html . build/html
+          pdoc --html --output-dir docs --force program registration notification
 
       - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
@@ -53,8 +51,10 @@ jobs:
       - name: "Stage combined docs for deployment"
         run: |
           mkdir -p site
-          cp -r docs/build/html site/python
-          cp -r reg23/Docs/build/html site/cpp
+          cp -r reg23/Docs/build/html site/reg23
+          cp -r docs/registration site/registration
+          cp -r docs/notification site/notification
+          cp -r docs/program site/program
 
       - name: "Create landing page"
         run: |
@@ -65,8 +65,10 @@ jobs:
           <body>
             <h1>Documentation</h1>
             <ul>
-              <li><a href="python/">reg23-experiments Python API Docs</a></li>
               <li><a href="cpp/">reg23 C++ API Docs</a></li>
+              <li><a href="registration/">reg23-experiments `registration` API Docs</a></li>
+              <li><a href="notification/">reg23-experiments `notification` API Docs</a></li>
+              <li><a href="program/">reg23-experiments `program` API Docs</a></li>
             </ul>
           </body>
           </html>

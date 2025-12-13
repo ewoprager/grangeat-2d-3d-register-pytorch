@@ -30,7 +30,7 @@ def run_optimisation(optimisation_stage: OptimisationStage) -> optimisation.Opti
 
 class Registration(traitlets.HasTraits):
     name = traitlets.Unicode()
-    stages = traitlets.List(trait=traitlets.Instance(OptimisationStage))
+    stages = traitlets.List(trait=traitlets.Instance("OptimisationStage"))
 
 
 def run_registration(registration: Registration) -> None | Error:

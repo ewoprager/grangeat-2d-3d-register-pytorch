@@ -450,7 +450,7 @@ def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
 
 
 class DataManagerSingleton(SingletonConfigurable):
-    _data_manager = traitlets.Instance(DAG, allow_none=True, default_value=None)
+    _data_manager = traitlets.Instance("DAG", allow_none=True, default_value=None)
 
     def get(self, **init_kwargs) -> DAG:
         if self._data_manager is None:
