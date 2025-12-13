@@ -1,7 +1,0 @@
-program.lib.optimisation module
-===============================
-
-.. automodule:: program.lib.optimisation
-   :members:
-   :show-inheritance:
-   :undoc-members:

@@ -1,7 +1,0 @@
-reg23.setup module
-==================
-
-.. automodule:: reg23.setup
-   :members:
-   :show-inheritance:
-   :undoc-members:

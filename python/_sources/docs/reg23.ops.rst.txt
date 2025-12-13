@@ -1,7 +1,0 @@
-reg23.ops module
-================
-
-.. automodule:: reg23.ops
-   :members:
-   :show-inheritance:
-   :undoc-members:
