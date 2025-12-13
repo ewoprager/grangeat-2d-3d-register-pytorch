@@ -1,0 +1,7 @@
+registration.interface.lib.structs module
+=========================================
+
+.. automodule:: registration.interface.lib.structs
+   :members:
+   :show-inheritance:
+   :undoc-members:

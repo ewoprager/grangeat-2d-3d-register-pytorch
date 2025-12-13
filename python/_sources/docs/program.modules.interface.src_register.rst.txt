@@ -1,0 +1,7 @@
+program.modules.interface.src\_register module
+==============================================
+
+.. automodule:: program.modules.interface.src_register
+   :members:
+   :show-inheritance:
+   :undoc-members:

@@ -1,0 +1,7 @@
+registration.interface.register module
+======================================
+
+.. automodule:: registration.interface.register
+   :members:
+   :show-inheritance:
+   :undoc-members:

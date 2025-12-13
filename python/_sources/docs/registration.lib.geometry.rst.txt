@@ -1,0 +1,7 @@
+registration.lib.geometry module
+================================
+
+.. automodule:: registration.lib.geometry
+   :members:
+   :show-inheritance:
+   :undoc-members:

@@ -1,0 +1,26 @@
+program.modules package
+=======================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   program.modules.interface
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   program.modules.registration
+
+Module contents
+---------------
+
+.. automodule:: program.modules
+   :members:
+   :show-inheritance:
+   :undoc-members:

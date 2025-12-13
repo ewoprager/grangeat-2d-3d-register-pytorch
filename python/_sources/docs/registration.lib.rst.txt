@@ -1,0 +1,24 @@
+registration.lib package
+========================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   registration.lib.autograd_impl
+   registration.lib.geometry
+   registration.lib.grangeat
+   registration.lib.optimisation
+   registration.lib.plot
+   registration.lib.sinogram
+   registration.lib.structs
+
+Module contents
+---------------
+
+.. automodule:: registration.lib
+   :members:
+   :show-inheritance:
+   :undoc-members:

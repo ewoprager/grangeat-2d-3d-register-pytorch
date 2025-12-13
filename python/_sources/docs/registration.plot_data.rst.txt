@@ -1,0 +1,7 @@
+registration.plot\_data module
+==============================
+
+.. automodule:: registration.plot_data
+   :members:
+   :show-inheritance:
+   :undoc-members:

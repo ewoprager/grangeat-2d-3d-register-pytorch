@@ -1,0 +1,7 @@
+registration.drr module
+=======================
+
+.. automodule:: registration.drr
+   :members:
+   :show-inheritance:
+   :undoc-members:

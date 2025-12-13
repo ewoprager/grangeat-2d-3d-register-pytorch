@@ -1,0 +1,7 @@
+registration.lib.grangeat module
+================================
+
+.. automodule:: registration.lib.grangeat
+   :members:
+   :show-inheritance:
+   :undoc-members:

@@ -1,0 +1,18 @@
+registration.interface.lib package
+==================================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   registration.interface.lib.structs
+
+Module contents
+---------------
+
+.. automodule:: registration.interface.lib
+   :members:
+   :show-inheritance:
+   :undoc-members:
