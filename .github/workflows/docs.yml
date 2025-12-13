@@ -38,7 +38,7 @@ jobs:
       - name: "[ reg23-experiments Python Docs ] Build Sphinx HTML"
         working-directory: docs
         run: |
-          uv run sphinx-apidoc -o docs/ ../program ../registration ../notification -f
+          uv run sphinx-apidoc -o docs/ .. -f -e
           uv run sphinx-build -b html . build/html
 
       - name: "[ reg23 C++ Docs ] Install dependencies"

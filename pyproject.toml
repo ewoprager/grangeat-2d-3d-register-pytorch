@@ -203,8 +203,8 @@ members = ["reg23"]
 # reg23 is installed from the current workspace
 reg23 = { workspace = true }
 
-#[tool.setuptools]
-#packages = ["program", "registration", "notification"]
+[tool.setuptools]
+packages = ["program", "registration", "notification"]
 
 [tool.setuptools.packages.find]
 where = ["reg23"]
