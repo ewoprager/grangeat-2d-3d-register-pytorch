@@ -45,14 +45,14 @@ el.replaceWith(d);
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="program.src_data_manager.args_from_dag"><code class="name flex">
-<span>def <span class="ident">args_from_dag</span></span>(<span>*, names_left: list[str] = None)</span>
+<span>def <span class="ident">args_from_dag</span></span>(<span>*, names_left: list[str] | None = None)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def args_from_dag(*, names_left: list[str] = None):
+<pre><code class="python">def args_from_dag(*, names_left: list[str] | None = None):
     &#34;&#34;&#34;
     A decorator for indicating that a function&#39;s arguments should be read from the `DAG`. The named arguments of the
     function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be
@@ -96,7 +96,7 @@ el.replaceWith(d);
         # all names specified in `named_left` must names of function arguments
         arguments = FunctionArgument.get_for_function(function)
         for name in names_left:
-            if not (name in [argument.name for argument in arguments]):
+            if name not in [argument.name for argument in arguments]:
                 raise KeyError(f&#34;Every value in `names_left` must the name of one of the function&#39;s arguments. &#34;
                                f&#34;Unrecognised name &#39;{name}&#39;.&#34;)
 
@@ -960,7 +960,8 @@ instance.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class NoNodeDataType: pass</code></pre>
+<pre><code class="python">class NoNodeDataType:
+    pass</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -989,7 +990,7 @@ instance.</dd>
 
     @traitlets.validate(&#34;dirty&#34;)
     def _valid_dirty(self, proposal):
-        if self.updater is None and proposal[&#34;value&#34;] == True:
+        if self.updater is None and proposal[&#34;value&#34;]:
             raise traitlets.TraitError(&#34;A node with no updater cannot be dirty.&#34;)
         return proposal[&#34;value&#34;]</code></pre>
 </details>
