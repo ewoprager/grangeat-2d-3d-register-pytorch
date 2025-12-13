@@ -1,7 +1,0 @@
-registration.interface.registration\_data module
-================================================
-
-.. automodule:: registration.interface.registration_data
-   :members:
-   :show-inheritance:
-   :undoc-members:

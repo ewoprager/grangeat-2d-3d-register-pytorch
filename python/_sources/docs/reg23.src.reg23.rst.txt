@@ -1,7 +1,0 @@
-reg23.src.reg23 module
-======================
-
-.. automodule:: reg23.src.reg23
-   :members:
-   :show-inheritance:
-   :undoc-members:

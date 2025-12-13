@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>registration.objective_function API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>registration.objective_function</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="registration.objective_function.evaluate"><code class="name flex">
+<span>def <span class="ident">evaluate</span></span>(<span>fixed_image: torch.Tensor,<br>sinogram3d: <a title="registration.lib.sinogram.Sinogram" href="lib/sinogram.html#registration.lib.sinogram.Sinogram">Sinogram</a>,<br>*,<br>transformation: <a title="registration.lib.structs.Transformation" href="lib/structs.html#registration.lib.structs.Transformation">Transformation</a>,<br>scene_geometry: <a title="registration.lib.structs.SceneGeometry" href="lib/structs.html#registration.lib.structs.SceneGeometry">SceneGeometry</a>,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="lib/structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>,<br>save: bool = False,<br>smooth: float | None = None,<br>plot: Tuple[float, float] | None = None) ‑> Tuple[torch.Tensor, torch.Tensor]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation: Transformation,
+             scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, save: bool = False,
+             smooth: float | None = None, plot: Tuple[float, float] | None = None) -&gt; Tuple[torch.Tensor, torch.Tensor]:
+    device = sinogram3d.device
+    source_position = scene_geometry.source_position(device=device)
+    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device).to(dtype=torch.float32))
+
+    if smooth is not None and isinstance(sinogram3d, SinogramClassic):
+        resampled = sinogram3d.resample_python(ph_matrix=ph_matrix, fixed_image_grid=fixed_image_grid, smooth=smooth,
+                                               plot=plot is not None)
+    else:
+        if smooth is not None:
+            logger.warning(&#34;Cannot resample smooth as not given a SinogramClassic&#34;)
+        resampled = sinogram3d.resample(ph_matrix, fixed_image_grid)
+
+    if plot is not None:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(resampled.clone().cpu(), vmin=plot[0], vmax=plot[1])
+        axes.axis(&#39;square&#39;)
+        axes.set_title(
+            &#34;d/dr R3 [mu] resampled with sample smoothing&#34; if smooth is not None else &#34;d/dr R3 [mu] resampled&#34;)
+        axes.set_xlabel(&#34;r&#34;)
+        axes.set_ylabel(&#34;phi&#34;)
+        plt.colorbar(mesh)
+        if save:
+            plt.savefig(
+                &#34;data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf&#34; if smooth else &#34;data/temp/d_dr_R3_mu_resampled.pgf&#34;)
+
+    return ncc(fixed_image,
+               resampled), resampled  # return reg23.normalised_cross_correlation(fixed_image, resampled),  # resampled</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.objective_function.evaluate_direct"><code class="name flex">
+<span>def <span class="ident">evaluate_direct</span></span>(<span>fixed_image: torch.Tensor,<br>volume_data: torch.Tensor,<br>*,<br>transformation: <a title="registration.lib.structs.Transformation" href="lib/structs.html#registration.lib.structs.Transformation">Transformation</a>,<br>scene_geometry: <a title="registration.lib.structs.SceneGeometry" href="lib/structs.html#registration.lib.structs.SceneGeometry">SceneGeometry</a>,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="lib/structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>,<br>voxel_spacing: torch.Tensor,<br>plot: bool = False) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, transformation: Transformation,
+                    scene_geometry: SceneGeometry, fixed_image_grid: Sinogram2dGrid, voxel_spacing: torch.Tensor,
+                    plot: bool = False) -&gt; torch.Tensor:
+    device = volume_data.device
+    source_position = scene_geometry.source_position(device=device)
+    p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+
+    direct = grangeat.directly_calculate_radon_slice(volume_data, ph_matrix=ph_matrix, output_grid=fixed_image_grid,
+                                                     voxel_spacing=voxel_spacing)
+    if plot:
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(direct.cpu())
+        axes.axis(&#39;square&#39;)
+        axes.set_title(&#34;d/dr R3 [mu] calculated directly&#34;)
+        axes.set_xlabel(&#34;r&#34;)
+        axes.set_ylabel(&#34;phi&#34;)
+        plt.colorbar(mesh)
+
+    return ncc(fixed_image, direct)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.objective_function.gradient_correlation"><code class="name flex">
+<span>def <span class="ident">gradient_correlation</span></span>(<span>xs: torch.Tensor,<br>ys: torch.Tensor,<br>*,<br>gradient_method: Literal['sobel'] | Literal['central_difference'] = 'sobel') ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def gradient_correlation(xs: torch.Tensor, ys: torch.Tensor, *,
+                         gradient_method: Literal[&#34;sobel&#34;] | Literal[&#34;central_difference&#34;] = &#34;sobel&#34;) -&gt; torch.Tensor:
+    assert xs.size() == ys.size()
+    assert len(xs.size()) == 2
+    if gradient_method == &#34;sobel&#34;:
+        sobel_x = torch.tensor([[-1., 0., 1.], [-2., 0., 2.], [-1., 0., 1.]])
+        sobel_y = torch.tensor([[-1., -2., -1.], [0., 0., 0.], [1., 2., 1.]])
+        gx_xs = torch.nn.functional.conv2d(xs.unsqueeze(0).unsqueeze(0), sobel_x.unsqueeze(0).unsqueeze(0))[0, 0]
+        gy_xs = torch.nn.functional.conv2d(xs.unsqueeze(0).unsqueeze(0), sobel_y.unsqueeze(0).unsqueeze(0))[0, 0]
+        gx_ys = torch.nn.functional.conv2d(ys.unsqueeze(0).unsqueeze(0), sobel_x.unsqueeze(0).unsqueeze(0))[0, 0]
+        gy_ys = torch.nn.functional.conv2d(ys.unsqueeze(0).unsqueeze(0), sobel_y.unsqueeze(0).unsqueeze(0))[0, 0]
+    else:  # gradient_method is &#34;central_difference&#34;
+        gx_xs = torch.gradient(xs, dim=0)[0]
+        gy_xs = torch.gradient(xs, dim=1)[0]
+        gx_ys = torch.gradient(ys, dim=0)[0]
+        gy_ys = torch.gradient(ys, dim=1)[0]
+    return 0.5 * (ncc(gx_xs, gx_ys) + ncc(gy_xs, gy_ys))</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.objective_function.local_ncc"><code class="name flex">
+<span>def <span class="ident">local_ncc</span></span>(<span>xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def local_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int) -&gt; torch.Tensor:
+    &#34;&#34;&#34;
+    Divides the two input images into patches of size `kernel_size`, evaluates the ZNCC between each corresponding pair
+    of patches and returns the mean of the resulting NCC values over all the patches.
+
+    :param xs: [tensor of size (n, m)] one input image
+    :param ys: [tensor of size (n, m)] another input image
+    :param kernel_size:
+    :return: The mean of the ZNCCs of the pairs of corresponding image patches.
+    &#34;&#34;&#34;
+    assert xs.size() == ys.size()
+    assert len(xs.size()) == 2
+    xs_patches = torch.nn.functional.unfold(xs.unsqueeze(0), kernel_size=kernel_size,
+                                            stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
+    ys_patches = torch.nn.functional.unfold(ys.unsqueeze(0), kernel_size=kernel_size,
+                                            stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
+    return ncc(xs_patches, ys_patches, dim=0).mean()</code></pre>
+</details>
+<div class="desc"><p>Divides the two input images into patches of size <code>kernel_size</code>, evaluates the ZNCC between each corresponding pair
+of patches and returns the mean of the resulting NCC values over all the patches.</p>
+<p>:param xs: [tensor of size (n, m)] one input image
+:param ys: [tensor of size (n, m)] another input image
+:param kernel_size:
+:return: The mean of the ZNCCs of the pairs of corresponding image patches.</p></div>
+</dd>
+<dt id="registration.objective_function.multiscale_ncc"><code class="name flex">
+<span>def <span class="ident">multiscale_ncc</span></span>(<span>xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int, llambda: float) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def multiscale_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int, llambda: float) -&gt; torch.Tensor:
+    return ncc(xs, ys) + llambda * local_ncc(xs, ys, kernel_size=kernel_size)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.objective_function.ncc"><code class="name flex">
+<span>def <span class="ident">ncc</span></span>(<span>xs: torch.Tensor,<br>ys: torch.Tensor,<br>*,<br>dim: int | Tuple | torch.Size | None = None) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dim: int | Tuple | torch.Size | None = None) -&gt; torch.Tensor:
+    assert xs.size() == ys.size()
+    if dim is None:
+        dim = torch.Size(range(len(xs.size())))
+    sum_x = xs.sum(dim=dim)
+    sum_y = ys.sum(dim=dim)
+    sum_x2 = xs.square().sum(dim=dim)
+    sum_y2 = ys.square().sum(dim=dim)
+    sum_prod = (xs * ys).sum(dim=dim)
+    n = float(xs.numel() // sum_x.numel())
+    num = n * sum_prod - sum_x * sum_y
+    den = (n * sum_x2 - sum_x.square()).sqrt() * (n * sum_y2 - sum_y.square()).sqrt()
+    return num / (den + 1e-10)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.objective_function.weighted_local_ncc"><code class="name flex">
+<span>def <span class="ident">weighted_local_ncc</span></span>(<span>xs: torch.Tensor, ys: torch.Tensor, *, weights: torch.Tensor, kernel_size: int) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def weighted_local_ncc(xs: torch.Tensor, ys: torch.Tensor, *, weights: torch.Tensor, kernel_size: int) -&gt; torch.Tensor:
+    &#34;&#34;&#34;
+    Divides the two input images into patches of size `kernel_size`, evaluates the WZNCC between each corresponding pair
+    of patches and returns the mean of the resulting NCC values over all the patches.
+
+    :param xs: [tensor of size (n, m)] one input image
+    :param ys: [tensor of size (n, m)] another input image
+    :param weights: [tensor of size (n, m)] the image of weights
+    :param kernel_size:
+    :return: The mean of the WZNCCs of the pairs of corresponding image patches.
+    &#34;&#34;&#34;
+    assert xs.size() == ys.size()
+    assert len(xs.size()) == 2
+    xs_patches = torch.nn.functional.unfold(xs.unsqueeze(0), kernel_size=kernel_size,
+                                            stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
+    ys_patches = torch.nn.functional.unfold(ys.unsqueeze(0), kernel_size=kernel_size,
+                                            stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
+    ws_patches = torch.nn.functional.unfold(weights.unsqueeze(0), kernel_size=kernel_size,
+                                            stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
+    patch_wznccs = weighted_ncc(xs_patches, ys_patches, ws_patches, dim=0)  # size = (patch number)
+    patch_weights = ws_patches.mean(dim=0)  # size = (patch number)
+    return (patch_weights * patch_wznccs).sum() / patch_weights.sum()</code></pre>
+</details>
+<div class="desc"><p>Divides the two input images into patches of size <code>kernel_size</code>, evaluates the WZNCC between each corresponding pair
+of patches and returns the mean of the resulting NCC values over all the patches.</p>
+<p>:param xs: [tensor of size (n, m)] one input image
+:param ys: [tensor of size (n, m)] another input image
+:param weights: [tensor of size (n, m)] the image of weights
+:param kernel_size:
+:return: The mean of the WZNCCs of the pairs of corresponding image patches.</p></div>
+</dd>
+<dt id="registration.objective_function.weighted_ncc"><code class="name flex">
+<span>def <span class="ident">weighted_ncc</span></span>(<span>xs: torch.Tensor,<br>ys: torch.Tensor,<br>weights: torch.Tensor,<br>*,<br>dim: int | Tuple | torch.Size | None = None) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def weighted_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *,
+                 dim: int | torch.Size | Tuple | None = None) -&gt; torch.Tensor:
+    assert ys.size() == xs.size()
+    assert weights.size() == xs.size()
+    if dim is None:
+        dim = torch.Size(range(len(xs.size())))
+    sum_w = weights.sum(dim=dim)
+    sum_wx = (weights * xs).sum(dim=dim)
+    sum_wy = (weights * ys).sum(dim=dim)
+    sum_wx2 = (weights * xs.square()).sum(dim=dim)
+    sum_wy2 = (weights * ys.square()).sum(dim=dim)
+    sum_prod = (weights * xs * ys).sum(dim=dim)
+    num = sum_w * sum_prod - sum_wx * sum_wy
+    den = (sum_w * sum_wx2 - sum_wx.square()).sqrt() * (sum_w * sum_wy2 - sum_wy.square()).sqrt()
+    return num / (den + 1e-10)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="registration" href="index.html">registration</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="registration.objective_function.evaluate" href="#registration.objective_function.evaluate">evaluate</a></code></li>
+<li><code><a title="registration.objective_function.evaluate_direct" href="#registration.objective_function.evaluate_direct">evaluate_direct</a></code></li>
+<li><code><a title="registration.objective_function.gradient_correlation" href="#registration.objective_function.gradient_correlation">gradient_correlation</a></code></li>
+<li><code><a title="registration.objective_function.local_ncc" href="#registration.objective_function.local_ncc">local_ncc</a></code></li>
+<li><code><a title="registration.objective_function.multiscale_ncc" href="#registration.objective_function.multiscale_ncc">multiscale_ncc</a></code></li>
+<li><code><a title="registration.objective_function.ncc" href="#registration.objective_function.ncc">ncc</a></code></li>
+<li><code><a title="registration.objective_function.weighted_local_ncc" href="#registration.objective_function.weighted_local_ncc">weighted_local_ncc</a></code></li>
+<li><code><a title="registration.objective_function.weighted_ncc" href="#registration.objective_function.weighted_ncc">weighted_ncc</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

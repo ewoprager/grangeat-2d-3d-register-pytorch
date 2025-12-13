@@ -1,7 +1,0 @@
-registration.lib.autograd\_impl module
-======================================
-
-.. automodule:: registration.lib.autograd_impl
-   :members:
-   :show-inheritance:
-   :undoc-members:

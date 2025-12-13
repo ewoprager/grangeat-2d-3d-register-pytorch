@@ -1,7 +1,0 @@
-registration.lib.sinogram module
-================================
-
-.. automodule:: registration.lib.sinogram
-   :members:
-   :show-inheritance:
-   :undoc-members:

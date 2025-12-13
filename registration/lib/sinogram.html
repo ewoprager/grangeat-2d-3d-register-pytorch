@@ -1,0 +1,1616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>registration.lib.sinogram API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>registration.lib.sinogram</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="registration.lib.sinogram.DrrSpec"><code class="flex name class">
+<span>class <span class="ident">DrrSpec</span></span>
+<span>(</span><span>ct_volume_path: str,<br>detector_spacing: torch.Tensor,<br>scene_geometry: <a title="registration.lib.structs.SceneGeometry" href="structs.html#registration.lib.structs.SceneGeometry">SceneGeometry</a>,<br>image: torch.Tensor,<br>transformation: <a title="registration.lib.structs.Transformation" href="structs.html#registration.lib.structs.Transformation">Transformation</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DrrSpec(NamedTuple):
+    ct_volume_path: str
+    detector_spacing: torch.Tensor  # [mm] distances between the detectors: (vertical, horizontal)
+    scene_geometry: SceneGeometry
+    image: torch.Tensor
+    transformation: Transformation</code></pre>
+</details>
+<div class="desc"><p>DrrSpec(ct_volume_path, detector_spacing, scene_geometry, image, transformation)</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.tuple</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="registration.lib.sinogram.DrrSpec.ct_volume_path"><code class="name">var <span class="ident">ct_volume_path</span> : str</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DrrSpec(NamedTuple):
+    ct_volume_path: str
+    detector_spacing: torch.Tensor  # [mm] distances between the detectors: (vertical, horizontal)
+    scene_geometry: SceneGeometry
+    image: torch.Tensor
+    transformation: Transformation</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+<dt id="registration.lib.sinogram.DrrSpec.detector_spacing"><code class="name">var <span class="ident">detector_spacing</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DrrSpec(NamedTuple):
+    ct_volume_path: str
+    detector_spacing: torch.Tensor  # [mm] distances between the detectors: (vertical, horizontal)
+    scene_geometry: SceneGeometry
+    image: torch.Tensor
+    transformation: Transformation</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 1</p></div>
+</dd>
+<dt id="registration.lib.sinogram.DrrSpec.image"><code class="name">var <span class="ident">image</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DrrSpec(NamedTuple):
+    ct_volume_path: str
+    detector_spacing: torch.Tensor  # [mm] distances between the detectors: (vertical, horizontal)
+    scene_geometry: SceneGeometry
+    image: torch.Tensor
+    transformation: Transformation</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 3</p></div>
+</dd>
+<dt id="registration.lib.sinogram.DrrSpec.scene_geometry"><code class="name">var <span class="ident">scene_geometry</span> : <a title="registration.lib.structs.SceneGeometry" href="structs.html#registration.lib.structs.SceneGeometry">SceneGeometry</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DrrSpec(NamedTuple):
+    ct_volume_path: str
+    detector_spacing: torch.Tensor  # [mm] distances between the detectors: (vertical, horizontal)
+    scene_geometry: SceneGeometry
+    image: torch.Tensor
+    transformation: Transformation</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 2</p></div>
+</dd>
+<dt id="registration.lib.sinogram.DrrSpec.transformation"><code class="name">var <span class="ident">transformation</span> : <a title="registration.lib.structs.Transformation" href="structs.html#registration.lib.structs.Transformation">Transformation</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DrrSpec(NamedTuple):
+    ct_volume_path: str
+    detector_spacing: torch.Tensor  # [mm] distances between the detectors: (vertical, horizontal)
+    scene_geometry: SceneGeometry
+    image: torch.Tensor
+    transformation: Transformation</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 4</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="registration.lib.sinogram.Sinogram"><code class="flex name class">
+<span>class <span class="ident">Sinogram</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Sinogram(ABC):
+    @abstractmethod
+    def to(self, **kwargs) -&gt; &#39;Sinogram&#39;:
+        pass
+
+    @property
+    @abstractmethod
+    def device(self):
+        pass
+
+    @property
+    @abstractmethod
+    def data(self):
+        pass
+
+    @property
+    @abstractmethod
+    def r_range(self):
+        pass
+
+    @abstractmethod
+    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -&gt; torch.Tensor:
+        pass
+
+    @abstractmethod
+    def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -&gt; torch.Tensor:
+        pass
+
+    @abstractmethod
+    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -&gt; torch.Tensor:
+        pass</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="registration.lib.sinogram.SinogramClassic" href="#registration.lib.sinogram.SinogramClassic">SinogramClassic</a></li>
+<li><a title="registration.lib.sinogram.SinogramHEALPix" href="#registration.lib.sinogram.SinogramHEALPix">SinogramHEALPix</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="registration.lib.sinogram.Sinogram.data"><code class="name">prop <span class="ident">data</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@abstractmethod
+def data(self):
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.Sinogram.device"><code class="name">prop <span class="ident">device</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@abstractmethod
+def device(self):
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.Sinogram.r_range"><code class="name">prop <span class="ident">r_range</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+@abstractmethod
+def r_range(self):
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="registration.lib.sinogram.Sinogram.resample"><code class="name flex">
+<span>def <span class="ident">resample</span></span>(<span>self,<br>ph_matrix: torch.Tensor,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -&gt; torch.Tensor:
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.Sinogram.resample_cuda_texture"><code class="name flex">
+<span>def <span class="ident">resample_cuda_texture</span></span>(<span>self,<br>ph_matrix: torch.Tensor,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -&gt; torch.Tensor:
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.Sinogram.resample_python"><code class="name flex">
+<span>def <span class="ident">resample_python</span></span>(<span>self,<br>ph_matrix: torch.Tensor,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -&gt; torch.Tensor:
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.Sinogram.to"><code class="name flex">
+<span>def <span class="ident">to</span></span>(<span>self, **kwargs) ‑> <a title="registration.lib.sinogram.Sinogram" href="#registration.lib.sinogram.Sinogram">Sinogram</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def to(self, **kwargs) -&gt; &#39;Sinogram&#39;:
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="registration.lib.sinogram.SinogramClassic"><code class="flex name class">
+<span>class <span class="ident">SinogramClassic</span></span>
+<span>(</span><span>data: torch.Tensor,<br>r_range: <a title="registration.lib.structs.LinearRange" href="structs.html#registration.lib.structs.LinearRange">LinearRange</a>,<br>*,<br>pad: bool = True)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SinogramClassic(Sinogram):
+    phi_range = LinearRange(-0.5 * torch.pi, 0.5 * torch.pi)
+    theta_range = LinearRange(-0.5 * torch.pi, 0.5 * torch.pi)
+
+    @staticmethod
+    def build_grid(*, counts: int | Tuple[int, int, int] | torch.Size, r_range: LinearRange,
+                   device=torch.device(&#34;cpu&#34;)) -&gt; Sinogram3dGrid:
+        if isinstance(counts, int):
+            counts = (int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())),
+                      int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())), counts)
+        elif isinstance(counts, torch.Size):
+            assert len(counts) == 3
+        phis = SinogramClassic.phi_range.generate_tex_coord_grid(counts[0], device=device)
+        thetas = SinogramClassic.theta_range.generate_tex_coord_grid(counts[1], device=device)
+        rs = r_range.generate_tex_coord_grid(counts[2], device=device)
+        phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
+        return Sinogram3dGrid(phis, thetas, rs)
+
+    def __init__(self, data: torch.Tensor, r_range: LinearRange, *, pad: bool = True):
+        assert len(data.size()) == 3
+        # dimensions should be (phi, theta, r) in decreasing size
+        self._data = data
+        self._r_range = r_range
+
+        if pad:
+            # cant wrap in theta or phi directions, so we pad:
+            at_phi_left = self._data[0, :, :].unsqueeze(0)
+            at_phi_right = self._data[-1, :, :].unsqueeze(0)
+            left_padding = at_phi_right.flip(dims=(1, 2))  # flipped in r and theta directions
+            right_padding = at_phi_left.flip(dims=(1, 2))  # flipped in r and theta directions
+            self._data = torch.cat((left_padding, self._data, right_padding), dim=0)
+            at_theta_top = self._data[:, 0, :].unsqueeze(1)
+            at_theta_bot = self._data[:, -1, :].unsqueeze(1)
+            top_padding = at_theta_bot.flip(dims=(2,))  # flipped in r direction
+            bot_padding = at_theta_top.flip(dims=(2,))  # flipped in r direction
+            self._data = torch.cat((top_padding, self._data, bot_padding), dim=1)
+
+        logger.info(
+            &#34;SinogramClassic initialised with size (phi count + 2, theta count + 2, r count) = ({}, {}, {})&#34;.format(
+                self._data.size()[0], self._data.size()[1], self._data.size()[2]))
+
+        if self.device.type == &#34;cuda&#34;:
+            self._texture = reg23.CUDATexture3D(self.data, &#34;zero&#34;, &#34;zero&#34;, &#34;zero&#34;)
+
+    def __getstate__(self):
+        return {&#34;_data&#34;: self._data, &#34;_r_range&#34;: self._r_range}
+
+    def __setstate__(self, state):
+        self._data = state[&#34;_data&#34;]
+        self._r_range = state[&#34;_r_range&#34;]
+        if self.device.type == &#34;cuda&#34;:
+            self._texture = reg23.CUDATexture3D(self.data, &#34;zero&#34;, &#34;zero&#34;, &#34;zero&#34;)
+
+    @property
+    def device(self):
+        return self.data.device
+
+    @property
+    def data(self) -&gt; torch.Tensor:
+        return self._data
+
+    @property
+    def r_range(self) -&gt; LinearRange:
+        return self._r_range
+
+    @property
+    def grid(self) -&gt; Sinogram3dGrid:
+        return SinogramClassic.build_grid(
+            counts=(self.data.size()[0] - 2, self.data.size()[1] - 2, self.data.size()[2]), r_range=self.r_range,
+            device=self.device)  # the &#39;-2&#39;s adjust for padding
+
+    def to(self, **kwargs) -&gt; &#39;SinogramClassic&#39;:
+        return SinogramClassic(self.data.to(**kwargs), self.r_range, pad=False)
+
+    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                 out: torch.Tensor | None = None) -&gt; torch.Tensor:
+        return reg23.resample_sinogram3d(self.data, &#34;classic&#34;, self.r_range.get_spacing(self.data.size()[2]), ph_matrix,
+                                         fixed_image_grid.phi, fixed_image_grid.r, out=out)
+
+    def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                              out: torch.Tensor | None = None) -&gt; torch.Tensor:
+        assert self.device.type == &#34;cuda&#34;
+        return reg23.resample_sinogram3d_cuda_texture(self._texture, &#34;classic&#34;,
+                                                      self.r_range.get_spacing(self.data.size()[2]), ph_matrix,
+                                                      fixed_image_grid.phi, fixed_image_grid.r, out=out)
+
+    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
+                        plot: bool = False, out: torch.Tensor | None = None) -&gt; torch.Tensor:
+        &#34;&#34;&#34;
+        :param ph_matrix:
+        :param fixed_image_grid:
+        :param smooth:
+        :param plot:
+        :param out:
+        :return:
+        &#34;&#34;&#34;
+        assert fixed_image_grid.device_consistent()
+        assert fixed_image_grid.phi.device == self.device
+        assert ph_matrix.device == self.device
+
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+                                                                        plot=plot)
+
+        if plot:
+            myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
+            axes.axis(&#39;square&#39;)
+            axes.set_title(&#34;phi_sph resampling values&#34;)
+            axes.set_xlabel(&#34;r_pol&#34;)
+            axes.set_ylabel(&#34;phi_pol&#34;)
+            plt.colorbar(mesh)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
+            axes.axis(&#39;square&#39;)
+            axes.set_title(&#34;theta_sph resampling values&#34;)
+            axes.set_xlabel(&#34;r_pol&#34;)
+            axes.set_ylabel(&#34;phi_pol&#34;)
+            plt.colorbar(mesh)
+            _, axes = plt.subplots()
+            mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
+            axes.axis(&#39;square&#39;)
+            axes.set_title(&#34;r_sph resampling values&#34;)
+            axes.set_xlabel(&#34;r_pol&#34;)
+            axes.set_ylabel(&#34;phi_pol&#34;)
+            plt.colorbar(mesh)
+
+        grid_range = LinearRange.grid_sample_range()
+        i_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
+        theta_grid_padding_offsets: float = 2.0 / float(self._data.size()[1])
+        theta_grid_sample_range_padded = LinearRange(-1. + theta_grid_padding_offsets, 1. - theta_grid_padding_offsets)
+        j_mapping: LinearMapping = theta_grid_sample_range_padded.get_mapping_from(self.theta_range)
+        phi_grid_padding_offsets: float = 2.0 / float(self._data.size()[0])
+        phi_grid_sample_range_padded = LinearRange(-1. + phi_grid_padding_offsets, 1. - phi_grid_padding_offsets)
+        k_mapping: LinearMapping = phi_grid_sample_range_padded.get_mapping_from(self.phi_range)
+
+        if out is None:
+            out = torch.zeros_like(fixed_image_grid_sph.phi)
+        grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
+                            k_mapping(fixed_image_grid_sph.phi)), dim=-1)
+        ret = reg23.grid_sample3d(self.data, grid, &#34;zero&#34;, &#34;zero&#34;, &#34;zero&#34;, out=out)
+
+        del fixed_image_grid_sph
+
+        # sign changes - this implementation relies on the convenient coordinate system
+        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) &lt; square_radius)
+        #
+
+        ret[need_sign_change] *= -1.
+
+        del need_sign_change
+
+        return ret</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="registration.lib.sinogram.Sinogram" href="#registration.lib.sinogram.Sinogram">Sinogram</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="registration.lib.sinogram.SinogramClassic.phi_range"><code class="name">var <span class="ident">phi_range</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramClassic.theta_range"><code class="name">var <span class="ident">theta_range</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="registration.lib.sinogram.SinogramClassic.build_grid"><code class="name flex">
+<span>def <span class="ident">build_grid</span></span>(<span>*,<br>counts: int | Tuple[int, int, int] | torch.Size,<br>r_range: <a title="registration.lib.structs.LinearRange" href="structs.html#registration.lib.structs.LinearRange">LinearRange</a>,<br>device=device(type='cpu')) ‑> <a title="registration.lib.structs.Sinogram3dGrid" href="structs.html#registration.lib.structs.Sinogram3dGrid">Sinogram3dGrid</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def build_grid(*, counts: int | Tuple[int, int, int] | torch.Size, r_range: LinearRange,
+               device=torch.device(&#34;cpu&#34;)) -&gt; Sinogram3dGrid:
+    if isinstance(counts, int):
+        counts = (int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())),
+                  int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())), counts)
+    elif isinstance(counts, torch.Size):
+        assert len(counts) == 3
+    phis = SinogramClassic.phi_range.generate_tex_coord_grid(counts[0], device=device)
+    thetas = SinogramClassic.theta_range.generate_tex_coord_grid(counts[1], device=device)
+    rs = r_range.generate_tex_coord_grid(counts[2], device=device)
+    phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
+    return Sinogram3dGrid(phis, thetas, rs)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="registration.lib.sinogram.SinogramClassic.data"><code class="name">prop <span class="ident">data</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def data(self) -&gt; torch.Tensor:
+    return self._data</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramClassic.device"><code class="name">prop <span class="ident">device</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def device(self):
+    return self.data.device</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramClassic.grid"><code class="name">prop <span class="ident">grid</span> : <a title="registration.lib.structs.Sinogram3dGrid" href="structs.html#registration.lib.structs.Sinogram3dGrid">Sinogram3dGrid</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def grid(self) -&gt; Sinogram3dGrid:
+    return SinogramClassic.build_grid(
+        counts=(self.data.size()[0] - 2, self.data.size()[1] - 2, self.data.size()[2]), r_range=self.r_range,
+        device=self.device)  # the &#39;-2&#39;s adjust for padding</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramClassic.r_range"><code class="name">prop <span class="ident">r_range</span> : <a title="registration.lib.structs.LinearRange" href="structs.html#registration.lib.structs.LinearRange">LinearRange</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def r_range(self) -&gt; LinearRange:
+    return self._r_range</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="registration.lib.sinogram.SinogramClassic.resample"><code class="name flex">
+<span>def <span class="ident">resample</span></span>(<span>self,<br>ph_matrix: torch.Tensor,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>,<br>*,<br>out: torch.Tensor | None = None) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+             out: torch.Tensor | None = None) -&gt; torch.Tensor:
+    return reg23.resample_sinogram3d(self.data, &#34;classic&#34;, self.r_range.get_spacing(self.data.size()[2]), ph_matrix,
+                                     fixed_image_grid.phi, fixed_image_grid.r, out=out)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramClassic.resample_cuda_texture"><code class="name flex">
+<span>def <span class="ident">resample_cuda_texture</span></span>(<span>self,<br>ph_matrix: torch.Tensor,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>,<br>*,<br>out: torch.Tensor | None = None) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                          out: torch.Tensor | None = None) -&gt; torch.Tensor:
+    assert self.device.type == &#34;cuda&#34;
+    return reg23.resample_sinogram3d_cuda_texture(self._texture, &#34;classic&#34;,
+                                                  self.r_range.get_spacing(self.data.size()[2]), ph_matrix,
+                                                  fixed_image_grid.phi, fixed_image_grid.r, out=out)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramClassic.resample_python"><code class="name flex">
+<span>def <span class="ident">resample_python</span></span>(<span>self,<br>ph_matrix: torch.Tensor,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>,<br>*,<br>smooth: float | None = None,<br>plot: bool = False,<br>out: torch.Tensor | None = None) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, smooth: float | None = None,
+                    plot: bool = False, out: torch.Tensor | None = None) -&gt; torch.Tensor:
+    &#34;&#34;&#34;
+    :param ph_matrix:
+    :param fixed_image_grid:
+    :param smooth:
+    :param plot:
+    :param out:
+    :return:
+    &#34;&#34;&#34;
+    assert fixed_image_grid.device_consistent()
+    assert fixed_image_grid.phi.device == self.device
+    assert ph_matrix.device == self.device
+
+    fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+                                                                    plot=plot)
+
+    if plot:
+        myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
+        axes.axis(&#39;square&#39;)
+        axes.set_title(&#34;phi_sph resampling values&#34;)
+        axes.set_xlabel(&#34;r_pol&#34;)
+        axes.set_ylabel(&#34;phi_pol&#34;)
+        plt.colorbar(mesh)
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(fixed_image_grid_sph.theta.cpu())
+        axes.axis(&#39;square&#39;)
+        axes.set_title(&#34;theta_sph resampling values&#34;)
+        axes.set_xlabel(&#34;r_pol&#34;)
+        axes.set_ylabel(&#34;phi_pol&#34;)
+        plt.colorbar(mesh)
+        _, axes = plt.subplots()
+        mesh = axes.pcolormesh(fixed_image_grid_sph.r.cpu())
+        axes.axis(&#39;square&#39;)
+        axes.set_title(&#34;r_sph resampling values&#34;)
+        axes.set_xlabel(&#34;r_pol&#34;)
+        axes.set_ylabel(&#34;phi_pol&#34;)
+        plt.colorbar(mesh)
+
+    grid_range = LinearRange.grid_sample_range()
+    i_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
+    theta_grid_padding_offsets: float = 2.0 / float(self._data.size()[1])
+    theta_grid_sample_range_padded = LinearRange(-1. + theta_grid_padding_offsets, 1. - theta_grid_padding_offsets)
+    j_mapping: LinearMapping = theta_grid_sample_range_padded.get_mapping_from(self.theta_range)
+    phi_grid_padding_offsets: float = 2.0 / float(self._data.size()[0])
+    phi_grid_sample_range_padded = LinearRange(-1. + phi_grid_padding_offsets, 1. - phi_grid_padding_offsets)
+    k_mapping: LinearMapping = phi_grid_sample_range_padded.get_mapping_from(self.phi_range)
+
+    if out is None:
+        out = torch.zeros_like(fixed_image_grid_sph.phi)
+    grid = torch.stack((i_mapping(fixed_image_grid_sph.r), j_mapping(fixed_image_grid_sph.theta),
+                        k_mapping(fixed_image_grid_sph.phi)), dim=-1)
+    ret = reg23.grid_sample3d(self.data, grid, &#34;zero&#34;, &#34;zero&#34;, &#34;zero&#34;, out=out)
+
+    del fixed_image_grid_sph
+
+    # sign changes - this implementation relies on the convenient coordinate system
+    moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+    square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+    need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+        (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+        dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) &lt; square_radius)
+    #
+
+    ret[need_sign_change] *= -1.
+
+    del need_sign_change
+
+    return ret</code></pre>
+</details>
+<div class="desc"><p>:param ph_matrix:
+:param fixed_image_grid:
+:param smooth:
+:param plot:
+:param out:
+:return:</p></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramClassic.to"><code class="name flex">
+<span>def <span class="ident">to</span></span>(<span>self, **kwargs) ‑> <a title="registration.lib.sinogram.SinogramClassic" href="#registration.lib.sinogram.SinogramClassic">SinogramClassic</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to(self, **kwargs) -&gt; &#39;SinogramClassic&#39;:
+    return SinogramClassic(self.data.to(**kwargs), self.r_range, pad=False)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="registration.lib.sinogram.SinogramHEALPix"><code class="flex name class">
+<span>class <span class="ident">SinogramHEALPix</span></span>
+<span>(</span><span>data: torch.Tensor,<br>r_range: <a title="registration.lib.structs.LinearRange" href="structs.html#registration.lib.structs.LinearRange">LinearRange</a>,<br>pad: bool = True)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SinogramHEALPix(Sinogram):
+    @staticmethod
+    def spherical_to_tex_coord(spherical_grid: Sinogram3dGrid, n_side: float) -&gt; Tuple[
+        torch.Tensor, torch.Tensor, torch.Tensor]:
+        # to x_s, y_s
+        z = spherical_grid.theta.sin()  # sin instead of cos for adjustment
+        z_abs = z.abs()
+        sigma = z.sign() * (2.0 - (3.0 * (1.0 - z_abs)).sqrt())
+        equatorial_zone = z_abs &lt;= 2. / 3.
+        polar_caps = torch.logical_not(equatorial_zone)
+        x_s = torch.zeros_like(z)
+        x_s[equatorial_zone] = spherical_grid.phi[equatorial_zone] + 0.5 * torch.pi  # with pi/2 adjustment
+        x_s[polar_caps] = (spherical_grid.phi + 0.5 * torch.pi - (sigma.abs() - 1.0) * (
+                torch.fmod(spherical_grid.phi + 0.5 * torch.pi, 0.5 * torch.pi) - 0.25 * torch.pi))[
+            polar_caps]  # with pi/2 adjustment
+        y_s = torch.zeros_like(z)
+        y_s[equatorial_zone] = 3.0 * torch.pi * z[equatorial_zone] / 8.0
+        y_s[polar_caps] = torch.pi * sigma[polar_caps] / 4.0
+        del equatorial_zone, polar_caps, sigma, z, z_abs
+
+        # _, axes = plt.subplots()
+        # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), x_s.numpy())
+        # plt.colorbar(mesh)
+        # axes.set_xlabel(&#34;phi&#34;)
+        # axes.set_ylabel(&#34;theta&#34;)
+        # axes.set_title(&#34;x_s&#34;)
+        #
+        # _, axes = plt.subplots()
+        # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), y_s.numpy())
+        # plt.colorbar(mesh)
+        # axes.set_xlabel(&#34;phi&#34;)
+        # axes.set_ylabel(&#34;theta&#34;)
+        # axes.set_title(&#34;y_s&#34;)
+
+        # to x_p, y_p
+        x_p = 2.0 * n_side * x_s / torch.pi
+        y_p = n_side * (1.0 - 2.0 * y_s / torch.pi)
+        del x_s, y_s
+
+        # _, axes = plt.subplots()
+        # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), x_p.numpy())
+        # plt.colorbar(mesh)
+        # axes.set_xlabel(&#34;phi&#34;)
+        # axes.set_ylabel(&#34;theta&#34;)
+        # axes.set_title(&#34;x_p&#34;)
+        #
+        # _, axes = plt.subplots()
+        # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), y_p.numpy())
+        # plt.colorbar(mesh)
+        # axes.set_xlabel(&#34;phi&#34;)
+        # axes.set_ylabel(&#34;theta&#34;)
+        # axes.set_title(&#34;y_p&#34;)
+
+        # to u, v
+        u = x_p - y_p + 1.5 * n_side
+        v = x_p + y_p - 0.5 * n_side
+        v_high = v &gt;= 2.0 * n_side
+        u_high = u &gt;= 2.0 * n_side
+        base_pixel_6 = torch.logical_and(v_high, u_high)
+        u[base_pixel_6] -= 2.0 * n_side
+        v[v_high] -= 2.0 * n_side
+
+        # flipping base pixel 6 upside-down
+        temp = u[base_pixel_6]
+        u[base_pixel_6] = v[base_pixel_6]
+        v[base_pixel_6] = temp
+        del temp
+        r = spherical_grid.r.clone()
+        r[base_pixel_6] *= -1.0  # r is flipped for base pixel 6
+
+        base_pixel_9 = torch.logical_and(v_high, torch.logical_not(u_high))
+        u[base_pixel_9] += n_side + 2.0  # the 2 adjusts for padding
+        v[base_pixel_9] -= 2.0  # this adjusts for padding
+
+        return u + 1.0, v + 3.0, r  # the 1 and 3 adjust for padding
+
+    @staticmethod
+    def tex_coord_to_spherical(u: torch.Tensor, v: torch.Tensor, r: torch.Tensor, n_side: float) -&gt; Sinogram3dGrid:
+        assert u.size() == v.size()
+
+        u_star = u.clone()
+        v_star = v.clone()
+        base_pixel_9 = torch.logical_and(u_star &gt;= 2.0 * n_side + 2.0,
+                                         v_star &lt; n_side + 2.0)  # the added 2s adjust for padding
+        u_star -= 1.0  # this adjusts for padding
+        v_star -= 3.0  # this adjusts for padding
+        u_star[base_pixel_9] -= 2.0 + n_side  # the 2 adjusts for padding
+        v_star[base_pixel_9] += 2.0  # this adjusts for padding
+        base_pixel_6 = u_star + v_star &lt; n_side
+        u_star[base_pixel_6] += 2.0 * n_side
+        v_star[torch.logical_or(base_pixel_9, base_pixel_6)] += 2.0 * n_side
+        del base_pixel_9
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        x_p = 0.5 * (u_star + v_star - n_side)
+        y_p = 0.5 * (v_star - u_star) + n_side
+        del u_star, v_star
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        x_s = 0.5 * torch.pi * x_p / n_side
+        y_s = 0.5 * torch.pi * (1.0 - y_p / n_side)
+        del x_p, y_p
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        y_s[base_pixel_6] *= -1.0  # theta is flipped for base pixel 6
+        r_ = r.clone()
+        r_[base_pixel_6] *= -1.0  # r is flipped for base pixel 6
+        del base_pixel_6
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        # to phi, theta
+        y_s_abs = y_s.abs()
+        equatorial_zone = y_s_abs &lt;= 0.25 * torch.pi
+        polar_caps = torch.logical_not(equatorial_zone)
+        z = torch.zeros_like(x_s)
+        z[equatorial_zone] = (8.0 * y_s / (3.0 * torch.pi))[equatorial_zone]
+        z[polar_caps] = ((1.0 - (2.0 - 4.0 * y_s_abs / torch.pi).square() / 3.0) * y_s.sign())[polar_caps]
+
+        phi = torch.zeros_like(x_s)
+        phi[equatorial_zone] = x_s[equatorial_zone] - 0.5 * torch.pi  # with pi/2 adjustment
+        phi[polar_caps] = (x_s - (torch.fmod(x_s, 0.5 * torch.pi) - 0.25 * torch.pi) * (y_s_abs - 0.25 * torch.pi) / (
+                y_s_abs - 0.5 * torch.pi - 1e-5))[polar_caps] - 0.5 * torch.pi  # with pi/2 adjustment
+        del x_s, y_s, y_s_abs, equatorial_zone, polar_caps
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        theta = z.asin()  # instead of cos, for adjustment
+        del z
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        return Sinogram3dGrid(phi=phi, theta=theta, r=r_)
+
+    @staticmethod
+    def build_grid(*, n_side: int, r_range: LinearRange, r_count: int, device=torch.device(&#34;cpu&#34;)) -&gt; Sinogram3dGrid:
+        u = LinearRange(0.0, 3.0 * float(n_side)).generate_tex_coord_grid(3 * n_side, device=device)
+        v = LinearRange(0.0, 2.0 * float(n_side)).generate_tex_coord_grid(2 * n_side, device=device)
+        r = r_range.generate_grid(r_count, device=device)
+        r, v, u = torch.meshgrid(r, v, u)
+        u = u.clone()
+        v = v.clone()
+        r = r.clone()
+        base_pixel_9 = torch.logical_and(u &gt;= 2.0 * float(n_side), v &lt; float(n_side))
+        u += 1.0
+        v += 3.0
+        u[base_pixel_9] += 2.0
+        v[base_pixel_9] -= 2.0
+
+        return SinogramHEALPix.tex_coord_to_spherical(u, v, r, n_side)
+
+    def __init__(self, data: torch.Tensor, r_range: LinearRange, pad: bool = True):
+        assert len(data.size()) == 3
+        if pad:
+            # size is r, v, u
+            assert data.size()[2] % 3 == 0
+            assert data.size()[1] % 2 == 0
+            assert data.size()[2] // 3 == data.size()[1] // 2
+            n_side: int = data.size()[1] // 2
+
+            self._data = data
+
+            bp_9 = self._data[:, :n_side, (2 * n_side):]
+
+            bp_0_top_left = self._data[:, 0, n_side:(2 * n_side)].unsqueeze(1)
+            bp_0_top_right = self._data[:, :n_side, 2 * n_side - 1].unsqueeze(1)
+            bp_1_top_left = self._data[:, n_side, (2 * n_side):].unsqueeze(1)
+            bp_1_top_right = self._data[:, n_side:, -1].unsqueeze(1)
+            bp_1_bot_right = self._data[:, -1, (2 * n_side):].unsqueeze(1)
+            bp_5_bot_right = self._data[:, -1, n_side:(2 * n_side)].unsqueeze(1)
+            bp_8_bot_right = self._data[:, -1, :n_side].unsqueeze(1)
+            bp_8_bot_left = self._data[:, n_side:, 0].unsqueeze(1)
+            bp_9_top_left = self._data[:, 0, (2 * n_side):].unsqueeze(1)
+            bp_9_top_right = self._data[:, :n_side, -1].unsqueeze(1)
+            bp_9_bot_right = self._data[:, n_side - 1, (2 * n_side):].unsqueeze(1)
+            bp_9_bot_left = self._data[:, :n_side, 2 * n_side].unsqueeze(1)
+            bp_6_top_left = self._data[:, 0, :n_side].unsqueeze(1)
+            bp_6_bot_left = self._data[:, :n_side, 0].unsqueeze(1)
+
+            pad_0_top_left = bp_9_bot_right.flip(dims=(0, -1))  # wraps causing flip in theta and r
+            pad_0_top_right = bp_1_top_left.flip(dims=(-1,))
+            pad_1_top_left = bp_0_top_right.flip(dims=(-1,))
+            pad_1_top_right = bp_8_bot_left.flip(dims=(0, -1))  # wraps causing flip in theta and r
+            pad_1_bot_right = bp_6_bot_left.flip(
+                dims=(0,))  # other side of 6 because 6 is flipped, flipped in r because so is 6
+            pad_5_bot_right = bp_9_top_left
+            pad_8_bot_right = bp_9_bot_left.flip(dims=(-1,))
+            pad_8_bot_left = bp_1_top_right.flip(dims=(0, -1))  # wraps causing flip in theta and r
+            pad_6_bot_left = bp_1_bot_right.flip(
+                dims=(0,))  # other side of 6 because 6 is flipped, flipped in r because so is 6
+            pad_6_top_left = bp_9_top_right.flip(
+                dims=(0,))  # other side of 6 because 6 is flipped, flipped in r because so is 6
+
+            pad_9_top_left = bp_5_bot_right
+            pad_9_top_right = bp_6_top_left.flip(
+                dims=(0,))  # other side of 6 because 6 is flipped, flipped in r because so is 6
+            pad_9_bot_right = bp_0_top_left.flip(dims=(0, -1))  # wraps causing flip in theta and r
+            pad_9_bot_left = bp_8_bot_right.flip(dims=(-1,))
+
+            del bp_0_top_left, bp_0_top_right, bp_1_top_left, bp_1_top_right, bp_1_bot_right, bp_5_bot_right, (
+                bp_8_bot_right), bp_8_bot_left, bp_9_top_left, bp_9_top_right, bp_9_bot_right, bp_9_bot_left, (
+                bp_6_top_left), bp_6_bot_left
+
+            corner_5_right = self._data[:, 2 * n_side - 1, 2 * n_side - 1].unsqueeze(1).unsqueeze(1)
+            corner_0_top = self._data[:, 0, 2 * n_side - 1].unsqueeze(1).unsqueeze(1)
+            corner_0_left = self._data[:, 0, n_side].unsqueeze(1).unsqueeze(1)
+            corner_1_top = self._data[:, n_side, -1].unsqueeze(1).unsqueeze(1)
+            corner_1_bot = self._data[:, -1, 2 * n_side].unsqueeze(1).unsqueeze(1)
+            corner_8_bot = self._data[:, -1, 0].unsqueeze(1).unsqueeze(1)
+            corner_8_left = self._data[:, n_side, 0].unsqueeze(1).unsqueeze(1)
+            corner_8_right = self._data[:, -1, n_side - 1].unsqueeze(1).unsqueeze(1)
+            corner_9_bot = self._data[:, n_side - 1, 2 * n_side].unsqueeze(1).unsqueeze(1)
+
+            pad_6_corner_left = corner_5_right.flip(dims=(0,))  # flipped in r because so is 6
+            pad_0_corner_top = corner_8_bot.flip(dims=(0,))  # wraps causing flip in r
+            pad_1_corner_top = corner_9_bot.flip(dims=(0,))  # wraps causing flip in r
+            pad_1_corner_right = corner_8_left.flip(dims=(0,))  # wraps causing flip in r
+            pad_8_corner_bot = corner_0_top.flip(dims=(0,))  # wraps causing flip in r
+            pad_9_corner_left = corner_8_right
+            pad_9_corner_top = corner_1_bot
+            pad_9_corner_right = corner_0_left.flip(dims=(0,))  # wraps causing flip in r
+            pad_9_corner_bot = corner_1_top.flip(dims=(0,))  # wraps causing flip in r
+
+            del corner_5_right, corner_0_top, corner_0_left, corner_1_top, corner_1_bot, corner_8_bot, corner_8_left, corner_8_right, corner_9_bot
+
+            r_count = data.size()[0]
+            row_0 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2, device=self.device),  #
+                               pad_9_corner_left,  #
+                               pad_9_top_left,  #
+                               pad_9_corner_top), dim=-1)
+            row_1 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2, device=self.device),  #
+                               pad_9_bot_left[:, :, 0].unsqueeze(1),  #
+                               bp_9[:, 0, :].unsqueeze(1),  #
+                               pad_9_top_right[:, :, 0].unsqueeze(1)), dim=-1)
+            row_2 = torch.cat((pad_6_corner_left,  #
+                               pad_6_top_left,  #
+                               pad_0_top_left,  #
+                               pad_0_corner_top,  #
+                               pad_9_bot_left[:, :, 1].unsqueeze(1),  #
+                               bp_9[:, 1, :].unsqueeze(1),  #
+                               pad_9_top_right[:, :, 1].unsqueeze(1)), dim=-1)
+            rows_3_to_n = torch.cat((pad_6_bot_left[:, :, :-2].transpose(1, 2),  #
+                                     self._data[:, :(n_side - 2), :(2 * n_side)],  #
+                                     pad_0_top_right[:, :, :-2].transpose(1, 2),  #
+                                     pad_9_bot_left[:, :, 2:].transpose(1, 2),  #
+                                     bp_9[:, 2:, :],  #
+                                     pad_9_top_right[:, :, 2:].transpose(1, 2)), dim=-1)
+            row_np1 = torch.cat((pad_6_bot_left[:, :, -2].unsqueeze(1),  #
+                                 self._data[:, n_side - 2, :(2 * n_side)].unsqueeze(1),  #
+                                 pad_0_top_right[:, :, -2].unsqueeze(1),  #
+                                 pad_9_corner_bot,  #
+                                 pad_9_bot_right,  #
+                                 pad_9_corner_right), dim=-1)
+            row_np2 = torch.cat((pad_6_bot_left[:, :, -1].unsqueeze(1),  #
+                                 self._data[:, n_side - 1, :(2 * n_side)].unsqueeze(1),  #
+                                 pad_1_top_left,  #
+                                 pad_1_corner_top,  #
+                                 torch.zeros(r_count, 1, 2, device=self.device)), dim=-1)
+            rows_np3_to_2np2 = torch.cat((pad_8_bot_left.transpose(1, 2),  #
+                                          self._data[:, n_side:, :],  #
+                                          pad_1_top_right.transpose(1, 2),  #
+                                          torch.zeros(r_count, n_side, 2, device=self.device)), dim=-1)
+            row_2np3 = torch.cat((pad_8_corner_bot,  #
+                                  pad_8_bot_right,  #
+                                  pad_5_bot_right,  #
+                                  pad_1_bot_right,  #
+                                  pad_1_corner_right,  #
+                                  torch.zeros(r_count, 1, 2, device=self.device)), dim=-1)
+
+            del pad_6_corner_left, pad_0_corner_top, pad_1_corner_top, pad_1_corner_right, pad_8_corner_bot, (
+                pad_9_corner_left), pad_9_corner_top, pad_9_corner_right, pad_9_corner_bot
+
+            self._data = torch.cat((row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3),
+                                   dim=1)
+
+            del row_0, row_1, row_2, rows_3_to_n, row_np1, row_np2, rows_np3_to_2np2, row_2np3
+        else:
+            assert (data.size()[2] - 4) % 3 == 0
+            assert (data.size()[1] - 4) % 2 == 0
+            assert (data.size()[2] - 4) // 3 == (data.size()[1] - 4) // 2
+            self._data = data
+
+        logger.info(&#34;SinogramHEALPix initialised with size (r count, 2*N_side + 4, 3*N_side + 4) = ({}, {}, {})&#34;.format(
+            self._data.size()[0], self._data.size()[1], self._data.size()[2]))
+
+        self._r_range = r_range
+
+        if self.device.type == &#34;cuda&#34;:
+            self._texture = reg23.CUDATexture3D(self.data, &#34;zero&#34;, &#34;zero&#34;, &#34;zero&#34;)
+
+    def __getstate__(self):
+        return {&#34;_data&#34;: self._data, &#34;_r_range&#34;: self._r_range}
+
+    def __setstate__(self, state):
+        self._data = state[&#34;_data&#34;]
+        self._r_range = state[&#34;_r_range&#34;]
+        if self.device.type == &#34;cuda&#34;:
+            self._texture = reg23.CUDATexture3D(self.data, &#34;zero&#34;, &#34;zero&#34;, &#34;zero&#34;)
+
+    def to(self, **kwargs) -&gt; &#39;SinogramHEALPix&#39;:
+        return SinogramHEALPix(self.data.to(**kwargs), self.r_range, pad=False)
+
+    @property
+    def device(self):
+        return self.data.device
+
+    @property
+    def data(self) -&gt; torch.Tensor:
+        return self._data
+
+    @property
+    def r_range(self) -&gt; LinearRange:
+        return self._r_range
+
+    def sample(self, grid: Sinogram3dGrid, out: torch.Tensor | None = None) -&gt; torch.Tensor:
+        assert grid.device_consistent()
+        assert grid.phi.device == self.device
+        if out is not None:
+            assert out.device == self.device
+
+        n_side: int = (self.data.size()[1] - 4) // 2
+
+        u, v, r = SinogramHEALPix.spherical_to_tex_coord(grid, float(n_side))
+
+        # texCoord is in the reverse order: (X, Y, Z)
+        grid_range = LinearRange.grid_sample_range()
+        i_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[2])))
+        j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[1])))
+        k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
+
+        if out is None:
+            out = torch.zeros_like(grid.phi)
+        grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(r)), dim=-1)
+        return reg23.grid_sample3d(self.data, grid, &#34;zero&#34;, &#34;zero&#34;, &#34;zero&#34;, out=out)
+
+    def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                 out: torch.Tensor | None = None) -&gt; torch.Tensor:
+        return reg23.resample_sinogram3d(self.data, &#34;healpix&#34;, self.r_range.get_spacing(self.data.size()[0]), ph_matrix,
+                                         fixed_image_grid.phi, fixed_image_grid.r, out=out)
+
+    def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                              out: torch.Tensor | None = None) -&gt; torch.Tensor:
+        assert self.device.type == &#34;cuda&#34;
+        return reg23.resample_sinogram3d_cuda_texture(self._texture, &#34;healpix&#34;,
+                                                      self.r_range.get_spacing(self.data.size()[0]), ph_matrix,
+                                                      fixed_image_grid.phi, fixed_image_grid.r, out=out)
+
+    def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, plot: bool = False,
+                        out: torch.Tensor | None = None) -&gt; torch.Tensor:
+        &#34;&#34;&#34;
+        :param ph_matrix:
+        :param fixed_image_grid:
+        :param plot:
+        :param out:
+        :return:
+        &#34;&#34;&#34;
+        assert fixed_image_grid.device_consistent()
+        assert fixed_image_grid.phi.device == self.device
+        assert ph_matrix.device == self.device
+
+        fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+                                                                        plot=plot)
+
+        if out is None:
+            out = torch.zeros_like(fixed_image_grid_sph.phi)
+        ret = self.sample(fixed_image_grid_sph, out=out)
+        del fixed_image_grid_sph
+
+        ## sign changes - this implementation relies on the convenient coordinate system
+        moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+        square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+        need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+            (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+            dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) &lt; square_radius)
+        ##
+
+        ret[need_sign_change] *= -1.
+
+        del need_sign_change
+
+        return ret</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="registration.lib.sinogram.Sinogram" href="#registration.lib.sinogram.Sinogram">Sinogram</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="registration.lib.sinogram.SinogramHEALPix.build_grid"><code class="name flex">
+<span>def <span class="ident">build_grid</span></span>(<span>*,<br>n_side: int,<br>r_range: <a title="registration.lib.structs.LinearRange" href="structs.html#registration.lib.structs.LinearRange">LinearRange</a>,<br>r_count: int,<br>device=device(type='cpu')) ‑> <a title="registration.lib.structs.Sinogram3dGrid" href="structs.html#registration.lib.structs.Sinogram3dGrid">Sinogram3dGrid</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def build_grid(*, n_side: int, r_range: LinearRange, r_count: int, device=torch.device(&#34;cpu&#34;)) -&gt; Sinogram3dGrid:
+    u = LinearRange(0.0, 3.0 * float(n_side)).generate_tex_coord_grid(3 * n_side, device=device)
+    v = LinearRange(0.0, 2.0 * float(n_side)).generate_tex_coord_grid(2 * n_side, device=device)
+    r = r_range.generate_grid(r_count, device=device)
+    r, v, u = torch.meshgrid(r, v, u)
+    u = u.clone()
+    v = v.clone()
+    r = r.clone()
+    base_pixel_9 = torch.logical_and(u &gt;= 2.0 * float(n_side), v &lt; float(n_side))
+    u += 1.0
+    v += 3.0
+    u[base_pixel_9] += 2.0
+    v[base_pixel_9] -= 2.0
+
+    return SinogramHEALPix.tex_coord_to_spherical(u, v, r, n_side)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramHEALPix.spherical_to_tex_coord"><code class="name flex">
+<span>def <span class="ident">spherical_to_tex_coord</span></span>(<span>spherical_grid: <a title="registration.lib.structs.Sinogram3dGrid" href="structs.html#registration.lib.structs.Sinogram3dGrid">Sinogram3dGrid</a>,<br>n_side: float) ‑> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def spherical_to_tex_coord(spherical_grid: Sinogram3dGrid, n_side: float) -&gt; Tuple[
+    torch.Tensor, torch.Tensor, torch.Tensor]:
+    # to x_s, y_s
+    z = spherical_grid.theta.sin()  # sin instead of cos for adjustment
+    z_abs = z.abs()
+    sigma = z.sign() * (2.0 - (3.0 * (1.0 - z_abs)).sqrt())
+    equatorial_zone = z_abs &lt;= 2. / 3.
+    polar_caps = torch.logical_not(equatorial_zone)
+    x_s = torch.zeros_like(z)
+    x_s[equatorial_zone] = spherical_grid.phi[equatorial_zone] + 0.5 * torch.pi  # with pi/2 adjustment
+    x_s[polar_caps] = (spherical_grid.phi + 0.5 * torch.pi - (sigma.abs() - 1.0) * (
+            torch.fmod(spherical_grid.phi + 0.5 * torch.pi, 0.5 * torch.pi) - 0.25 * torch.pi))[
+        polar_caps]  # with pi/2 adjustment
+    y_s = torch.zeros_like(z)
+    y_s[equatorial_zone] = 3.0 * torch.pi * z[equatorial_zone] / 8.0
+    y_s[polar_caps] = torch.pi * sigma[polar_caps] / 4.0
+    del equatorial_zone, polar_caps, sigma, z, z_abs
+
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), x_s.numpy())
+    # plt.colorbar(mesh)
+    # axes.set_xlabel(&#34;phi&#34;)
+    # axes.set_ylabel(&#34;theta&#34;)
+    # axes.set_title(&#34;x_s&#34;)
+    #
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), y_s.numpy())
+    # plt.colorbar(mesh)
+    # axes.set_xlabel(&#34;phi&#34;)
+    # axes.set_ylabel(&#34;theta&#34;)
+    # axes.set_title(&#34;y_s&#34;)
+
+    # to x_p, y_p
+    x_p = 2.0 * n_side * x_s / torch.pi
+    y_p = n_side * (1.0 - 2.0 * y_s / torch.pi)
+    del x_s, y_s
+
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), x_p.numpy())
+    # plt.colorbar(mesh)
+    # axes.set_xlabel(&#34;phi&#34;)
+    # axes.set_ylabel(&#34;theta&#34;)
+    # axes.set_title(&#34;x_p&#34;)
+    #
+    # _, axes = plt.subplots()
+    # mesh = axes.pcolormesh(spherical_grid.phi.numpy(), spherical_grid.theta.numpy(), y_p.numpy())
+    # plt.colorbar(mesh)
+    # axes.set_xlabel(&#34;phi&#34;)
+    # axes.set_ylabel(&#34;theta&#34;)
+    # axes.set_title(&#34;y_p&#34;)
+
+    # to u, v
+    u = x_p - y_p + 1.5 * n_side
+    v = x_p + y_p - 0.5 * n_side
+    v_high = v &gt;= 2.0 * n_side
+    u_high = u &gt;= 2.0 * n_side
+    base_pixel_6 = torch.logical_and(v_high, u_high)
+    u[base_pixel_6] -= 2.0 * n_side
+    v[v_high] -= 2.0 * n_side
+
+    # flipping base pixel 6 upside-down
+    temp = u[base_pixel_6]
+    u[base_pixel_6] = v[base_pixel_6]
+    v[base_pixel_6] = temp
+    del temp
+    r = spherical_grid.r.clone()
+    r[base_pixel_6] *= -1.0  # r is flipped for base pixel 6
+
+    base_pixel_9 = torch.logical_and(v_high, torch.logical_not(u_high))
+    u[base_pixel_9] += n_side + 2.0  # the 2 adjusts for padding
+    v[base_pixel_9] -= 2.0  # this adjusts for padding
+
+    return u + 1.0, v + 3.0, r  # the 1 and 3 adjust for padding</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramHEALPix.tex_coord_to_spherical"><code class="name flex">
+<span>def <span class="ident">tex_coord_to_spherical</span></span>(<span>u: torch.Tensor, v: torch.Tensor, r: torch.Tensor, n_side: float) ‑> <a title="registration.lib.structs.Sinogram3dGrid" href="structs.html#registration.lib.structs.Sinogram3dGrid">Sinogram3dGrid</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def tex_coord_to_spherical(u: torch.Tensor, v: torch.Tensor, r: torch.Tensor, n_side: float) -&gt; Sinogram3dGrid:
+    assert u.size() == v.size()
+
+    u_star = u.clone()
+    v_star = v.clone()
+    base_pixel_9 = torch.logical_and(u_star &gt;= 2.0 * n_side + 2.0,
+                                     v_star &lt; n_side + 2.0)  # the added 2s adjust for padding
+    u_star -= 1.0  # this adjusts for padding
+    v_star -= 3.0  # this adjusts for padding
+    u_star[base_pixel_9] -= 2.0 + n_side  # the 2 adjusts for padding
+    v_star[base_pixel_9] += 2.0  # this adjusts for padding
+    base_pixel_6 = u_star + v_star &lt; n_side
+    u_star[base_pixel_6] += 2.0 * n_side
+    v_star[torch.logical_or(base_pixel_9, base_pixel_6)] += 2.0 * n_side
+    del base_pixel_9
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    x_p = 0.5 * (u_star + v_star - n_side)
+    y_p = 0.5 * (v_star - u_star) + n_side
+    del u_star, v_star
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    x_s = 0.5 * torch.pi * x_p / n_side
+    y_s = 0.5 * torch.pi * (1.0 - y_p / n_side)
+    del x_p, y_p
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    y_s[base_pixel_6] *= -1.0  # theta is flipped for base pixel 6
+    r_ = r.clone()
+    r_[base_pixel_6] *= -1.0  # r is flipped for base pixel 6
+    del base_pixel_6
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    # to phi, theta
+    y_s_abs = y_s.abs()
+    equatorial_zone = y_s_abs &lt;= 0.25 * torch.pi
+    polar_caps = torch.logical_not(equatorial_zone)
+    z = torch.zeros_like(x_s)
+    z[equatorial_zone] = (8.0 * y_s / (3.0 * torch.pi))[equatorial_zone]
+    z[polar_caps] = ((1.0 - (2.0 - 4.0 * y_s_abs / torch.pi).square() / 3.0) * y_s.sign())[polar_caps]
+
+    phi = torch.zeros_like(x_s)
+    phi[equatorial_zone] = x_s[equatorial_zone] - 0.5 * torch.pi  # with pi/2 adjustment
+    phi[polar_caps] = (x_s - (torch.fmod(x_s, 0.5 * torch.pi) - 0.25 * torch.pi) * (y_s_abs - 0.25 * torch.pi) / (
+            y_s_abs - 0.5 * torch.pi - 1e-5))[polar_caps] - 0.5 * torch.pi  # with pi/2 adjustment
+    del x_s, y_s, y_s_abs, equatorial_zone, polar_caps
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    theta = z.asin()  # instead of cos, for adjustment
+    del z
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    return Sinogram3dGrid(phi=phi, theta=theta, r=r_)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="registration.lib.sinogram.SinogramHEALPix.data"><code class="name">prop <span class="ident">data</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def data(self) -&gt; torch.Tensor:
+    return self._data</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramHEALPix.device"><code class="name">prop <span class="ident">device</span></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def device(self):
+    return self.data.device</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramHEALPix.r_range"><code class="name">prop <span class="ident">r_range</span> : <a title="registration.lib.structs.LinearRange" href="structs.html#registration.lib.structs.LinearRange">LinearRange</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def r_range(self) -&gt; LinearRange:
+    return self._r_range</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="registration.lib.sinogram.SinogramHEALPix.resample"><code class="name flex">
+<span>def <span class="ident">resample</span></span>(<span>self,<br>ph_matrix: torch.Tensor,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>,<br>*,<br>out: torch.Tensor | None = None) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resample(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+             out: torch.Tensor | None = None) -&gt; torch.Tensor:
+    return reg23.resample_sinogram3d(self.data, &#34;healpix&#34;, self.r_range.get_spacing(self.data.size()[0]), ph_matrix,
+                                     fixed_image_grid.phi, fixed_image_grid.r, out=out)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramHEALPix.resample_cuda_texture"><code class="name flex">
+<span>def <span class="ident">resample_cuda_texture</span></span>(<span>self,<br>ph_matrix: torch.Tensor,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>,<br>*,<br>out: torch.Tensor | None = None) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resample_cuda_texture(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *,
+                          out: torch.Tensor | None = None) -&gt; torch.Tensor:
+    assert self.device.type == &#34;cuda&#34;
+    return reg23.resample_sinogram3d_cuda_texture(self._texture, &#34;healpix&#34;,
+                                                  self.r_range.get_spacing(self.data.size()[0]), ph_matrix,
+                                                  fixed_image_grid.phi, fixed_image_grid.r, out=out)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramHEALPix.resample_python"><code class="name flex">
+<span>def <span class="ident">resample_python</span></span>(<span>self,<br>ph_matrix: torch.Tensor,<br>fixed_image_grid: <a title="registration.lib.structs.Sinogram2dGrid" href="structs.html#registration.lib.structs.Sinogram2dGrid">Sinogram2dGrid</a>,<br>*,<br>plot: bool = False,<br>out: torch.Tensor | None = None) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid, *, plot: bool = False,
+                    out: torch.Tensor | None = None) -&gt; torch.Tensor:
+    &#34;&#34;&#34;
+    :param ph_matrix:
+    :param fixed_image_grid:
+    :param plot:
+    :param out:
+    :return:
+    &#34;&#34;&#34;
+    assert fixed_image_grid.device_consistent()
+    assert fixed_image_grid.phi.device == self.device
+    assert ph_matrix.device == self.device
+
+    fixed_image_grid_sph = geometry.fixed_polar_to_moving_spherical(fixed_image_grid, ph_matrix=ph_matrix,
+                                                                    plot=plot)
+
+    if out is None:
+        out = torch.zeros_like(fixed_image_grid_sph.phi)
+    ret = self.sample(fixed_image_grid_sph, out=out)
+    del fixed_image_grid_sph
+
+    ## sign changes - this implementation relies on the convenient coordinate system
+    moving_origin_projected = ph_matrix[0:2, 3] / ph_matrix[3, 3]
+    square_radius: torch.Tensor = .25 * moving_origin_projected.square().sum()
+    need_sign_change = ((fixed_image_grid.r.unsqueeze(-1) * torch.stack(
+        (torch.cos(fixed_image_grid.phi), torch.sin(fixed_image_grid.phi)),
+        dim=-1) - .5 * moving_origin_projected).square().sum(dim=-1) &lt; square_radius)
+    ##
+
+    ret[need_sign_change] *= -1.
+
+    del need_sign_change
+
+    return ret</code></pre>
+</details>
+<div class="desc"><p>:param ph_matrix:
+:param fixed_image_grid:
+:param plot:
+:param out:
+:return:</p></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramHEALPix.sample"><code class="name flex">
+<span>def <span class="ident">sample</span></span>(<span>self,<br>grid: <a title="registration.lib.structs.Sinogram3dGrid" href="structs.html#registration.lib.structs.Sinogram3dGrid">Sinogram3dGrid</a>,<br>out: torch.Tensor | None = None) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sample(self, grid: Sinogram3dGrid, out: torch.Tensor | None = None) -&gt; torch.Tensor:
+    assert grid.device_consistent()
+    assert grid.phi.device == self.device
+    if out is not None:
+        assert out.device == self.device
+
+    n_side: int = (self.data.size()[1] - 4) // 2
+
+    u, v, r = SinogramHEALPix.spherical_to_tex_coord(grid, float(n_side))
+
+    # texCoord is in the reverse order: (X, Y, Z)
+    grid_range = LinearRange.grid_sample_range()
+    i_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[2])))
+    j_mapping: LinearMapping = grid_range.get_mapping_from(LinearRange(low=0., high=float(self._data.size()[1])))
+    k_mapping: LinearMapping = grid_range.get_mapping_from(self.r_range)
+
+    if out is None:
+        out = torch.zeros_like(grid.phi)
+    grid = torch.stack((i_mapping(u), j_mapping(v), k_mapping(r)), dim=-1)
+    return reg23.grid_sample3d(self.data, grid, &#34;zero&#34;, &#34;zero&#34;, &#34;zero&#34;, out=out)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="registration.lib.sinogram.SinogramHEALPix.to"><code class="name flex">
+<span>def <span class="ident">to</span></span>(<span>self, **kwargs) ‑> <a title="registration.lib.sinogram.SinogramHEALPix" href="#registration.lib.sinogram.SinogramHEALPix">SinogramHEALPix</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to(self, **kwargs) -&gt; &#39;SinogramHEALPix&#39;:
+    return SinogramHEALPix(self.data.to(**kwargs), self.r_range, pad=False)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="registration.lib.sinogram.VolumeSpec"><code class="flex name class">
+<span>class <span class="ident">VolumeSpec</span></span>
+<span>(</span><span>ct_volume_path: str,<br>downsample_factor: int,<br>sinogram: <a title="registration.lib.sinogram.Sinogram" href="#registration.lib.sinogram.Sinogram">Sinogram</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class VolumeSpec(NamedTuple):
+    ct_volume_path: str
+    downsample_factor: int
+    sinogram: Sinogram</code></pre>
+</details>
+<div class="desc"><p>VolumeSpec(ct_volume_path, downsample_factor, sinogram)</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.tuple</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="registration.lib.sinogram.VolumeSpec.ct_volume_path"><code class="name">var <span class="ident">ct_volume_path</span> : str</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class VolumeSpec(NamedTuple):
+    ct_volume_path: str
+    downsample_factor: int
+    sinogram: Sinogram</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+<dt id="registration.lib.sinogram.VolumeSpec.downsample_factor"><code class="name">var <span class="ident">downsample_factor</span> : int</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class VolumeSpec(NamedTuple):
+    ct_volume_path: str
+    downsample_factor: int
+    sinogram: Sinogram</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 1</p></div>
+</dd>
+<dt id="registration.lib.sinogram.VolumeSpec.sinogram"><code class="name">var <span class="ident">sinogram</span> : <a title="registration.lib.sinogram.Sinogram" href="#registration.lib.sinogram.Sinogram">Sinogram</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class VolumeSpec(NamedTuple):
+    ct_volume_path: str
+    downsample_factor: int
+    sinogram: Sinogram</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 2</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="registration.lib" href="index.html">registration.lib</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="registration.lib.sinogram.DrrSpec" href="#registration.lib.sinogram.DrrSpec">DrrSpec</a></code></h4>
+<ul class="">
+<li><code><a title="registration.lib.sinogram.DrrSpec.ct_volume_path" href="#registration.lib.sinogram.DrrSpec.ct_volume_path">ct_volume_path</a></code></li>
+<li><code><a title="registration.lib.sinogram.DrrSpec.detector_spacing" href="#registration.lib.sinogram.DrrSpec.detector_spacing">detector_spacing</a></code></li>
+<li><code><a title="registration.lib.sinogram.DrrSpec.image" href="#registration.lib.sinogram.DrrSpec.image">image</a></code></li>
+<li><code><a title="registration.lib.sinogram.DrrSpec.scene_geometry" href="#registration.lib.sinogram.DrrSpec.scene_geometry">scene_geometry</a></code></li>
+<li><code><a title="registration.lib.sinogram.DrrSpec.transformation" href="#registration.lib.sinogram.DrrSpec.transformation">transformation</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="registration.lib.sinogram.Sinogram" href="#registration.lib.sinogram.Sinogram">Sinogram</a></code></h4>
+<ul class="">
+<li><code><a title="registration.lib.sinogram.Sinogram.data" href="#registration.lib.sinogram.Sinogram.data">data</a></code></li>
+<li><code><a title="registration.lib.sinogram.Sinogram.device" href="#registration.lib.sinogram.Sinogram.device">device</a></code></li>
+<li><code><a title="registration.lib.sinogram.Sinogram.r_range" href="#registration.lib.sinogram.Sinogram.r_range">r_range</a></code></li>
+<li><code><a title="registration.lib.sinogram.Sinogram.resample" href="#registration.lib.sinogram.Sinogram.resample">resample</a></code></li>
+<li><code><a title="registration.lib.sinogram.Sinogram.resample_cuda_texture" href="#registration.lib.sinogram.Sinogram.resample_cuda_texture">resample_cuda_texture</a></code></li>
+<li><code><a title="registration.lib.sinogram.Sinogram.resample_python" href="#registration.lib.sinogram.Sinogram.resample_python">resample_python</a></code></li>
+<li><code><a title="registration.lib.sinogram.Sinogram.to" href="#registration.lib.sinogram.Sinogram.to">to</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="registration.lib.sinogram.SinogramClassic" href="#registration.lib.sinogram.SinogramClassic">SinogramClassic</a></code></h4>
+<ul class="">
+<li><code><a title="registration.lib.sinogram.SinogramClassic.build_grid" href="#registration.lib.sinogram.SinogramClassic.build_grid">build_grid</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.data" href="#registration.lib.sinogram.SinogramClassic.data">data</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.device" href="#registration.lib.sinogram.SinogramClassic.device">device</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.grid" href="#registration.lib.sinogram.SinogramClassic.grid">grid</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.phi_range" href="#registration.lib.sinogram.SinogramClassic.phi_range">phi_range</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.r_range" href="#registration.lib.sinogram.SinogramClassic.r_range">r_range</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.resample" href="#registration.lib.sinogram.SinogramClassic.resample">resample</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.resample_cuda_texture" href="#registration.lib.sinogram.SinogramClassic.resample_cuda_texture">resample_cuda_texture</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.resample_python" href="#registration.lib.sinogram.SinogramClassic.resample_python">resample_python</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.theta_range" href="#registration.lib.sinogram.SinogramClassic.theta_range">theta_range</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramClassic.to" href="#registration.lib.sinogram.SinogramClassic.to">to</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="registration.lib.sinogram.SinogramHEALPix" href="#registration.lib.sinogram.SinogramHEALPix">SinogramHEALPix</a></code></h4>
+<ul class="">
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.build_grid" href="#registration.lib.sinogram.SinogramHEALPix.build_grid">build_grid</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.data" href="#registration.lib.sinogram.SinogramHEALPix.data">data</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.device" href="#registration.lib.sinogram.SinogramHEALPix.device">device</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.r_range" href="#registration.lib.sinogram.SinogramHEALPix.r_range">r_range</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.resample" href="#registration.lib.sinogram.SinogramHEALPix.resample">resample</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.resample_cuda_texture" href="#registration.lib.sinogram.SinogramHEALPix.resample_cuda_texture">resample_cuda_texture</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.resample_python" href="#registration.lib.sinogram.SinogramHEALPix.resample_python">resample_python</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.sample" href="#registration.lib.sinogram.SinogramHEALPix.sample">sample</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.spherical_to_tex_coord" href="#registration.lib.sinogram.SinogramHEALPix.spherical_to_tex_coord">spherical_to_tex_coord</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.tex_coord_to_spherical" href="#registration.lib.sinogram.SinogramHEALPix.tex_coord_to_spherical">tex_coord_to_spherical</a></code></li>
+<li><code><a title="registration.lib.sinogram.SinogramHEALPix.to" href="#registration.lib.sinogram.SinogramHEALPix.to">to</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="registration.lib.sinogram.VolumeSpec" href="#registration.lib.sinogram.VolumeSpec">VolumeSpec</a></code></h4>
+<ul class="">
+<li><code><a title="registration.lib.sinogram.VolumeSpec.ct_volume_path" href="#registration.lib.sinogram.VolumeSpec.ct_volume_path">ct_volume_path</a></code></li>
+<li><code><a title="registration.lib.sinogram.VolumeSpec.downsample_factor" href="#registration.lib.sinogram.VolumeSpec.downsample_factor">downsample_factor</a></code></li>
+<li><code><a title="registration.lib.sinogram.VolumeSpec.sinogram" href="#registration.lib.sinogram.VolumeSpec.sinogram">sinogram</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

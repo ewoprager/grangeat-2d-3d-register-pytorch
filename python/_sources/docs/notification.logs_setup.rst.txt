@@ -1,7 +1,0 @@
-notification.logs\_setup module
-===============================
-
-.. automodule:: notification.logs_setup
-   :members:
-   :show-inheritance:
-   :undoc-members:

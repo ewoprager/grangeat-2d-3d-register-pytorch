@@ -1,7 +1,0 @@
-registration.data module
-========================
-
-.. automodule:: registration.data
-   :members:
-   :show-inheritance:
-   :undoc-members:

@@ -1,7 +1,0 @@
-registration.interface.view module
-==================================
-
-.. automodule:: registration.interface.view
-   :members:
-   :show-inheritance:
-   :undoc-members:

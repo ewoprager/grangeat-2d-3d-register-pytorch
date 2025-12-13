@@ -1,7 +1,0 @@
-program.modules.interface.src\_fixed\_image module
-==================================================
-
-.. automodule:: program.modules.interface.src_fixed_image
-   :members:
-   :show-inheritance:
-   :undoc-members:

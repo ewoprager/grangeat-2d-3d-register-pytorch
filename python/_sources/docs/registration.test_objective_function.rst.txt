@@ -1,7 +1,0 @@
-registration.test\_objective\_function module
-=============================================
-
-.. automodule:: registration.test_objective_function
-   :members:
-   :show-inheritance:
-   :undoc-members:
