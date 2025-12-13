@@ -33,6 +33,7 @@ jobs:
         run: |
           uv venv
           uv sync --extra cpu --group docs
+          uv pip install -e .[cpu]
 
       - name: "[ reg23-experiments Python Docs ] Build Sphinx HTML"
         working-directory: docs
