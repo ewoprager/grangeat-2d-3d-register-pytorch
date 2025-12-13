@@ -30,7 +30,8 @@ jobs:
 
       - name: "[ reg23-experiments Python Docs ] Set up virtual environment"
         run: |
-          uv venv
+          uv venv .venv
+          source .venv/bin/activate
           uv sync --extra cpu --group docs
           uv pip install -e .[cpu]
 
