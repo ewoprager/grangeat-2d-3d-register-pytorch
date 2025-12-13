@@ -1,5 +1,11 @@
 # Grangeat-based 2D/3D image registration
 
+## Documentation
+
+The documentation for this extension is available here:
+
+[https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/reg23](https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/reg23)
+
 # Package contents
 
 ```
@@ -80,11 +86,6 @@ python setup.py develop [--verbose] [--debug] [--no-cuda]
 ```
 
 This will create and fill the directory `reg23/build/`.
-
-## Documentation
-
-The documentation for this extension is uploaded
-at https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/index.html.
 
 ## Module contents
 

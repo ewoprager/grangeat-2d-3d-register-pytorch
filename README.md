@@ -1,6 +1,12 @@
 # A PyTorch extension for fast 2D/3D radiographic image registration using Grangeat's relation
 
-Based on this paper:
+### Documentation
+
+Documentation for the python libraries in this repo, as well as for the `reg23` library, can be found here:
+
+[https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/](https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/)
+
+The registration method using Grangeat's relation is from this paper:
 
 Frysch R, Pfeiffer T, Rose G. A novel approach to 2D/3D registration of X-ray images using Grangeat's relation. Med
 Image Anal. 2021 Jan;67:101815. doi: 10.1016/j.media.2020.101815. Epub 2020 Sep 30. PMID: 33065470.
