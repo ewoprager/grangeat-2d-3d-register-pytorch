@@ -42,7 +42,17 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
               <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">program.lib.structs module</a></li>
+<li><a class="reference internal" href="#">program.lib.structs module</a><ul>
+<li><a class="reference internal" href="#program.lib.structs.Error"><code class="docutils literal notranslate"><span class="pre">Error</span></code></a></li>
+<li><a class="reference internal" href="#program.lib.structs.FunctionArgument"><code class="docutils literal notranslate"><span class="pre">FunctionArgument</span></code></a><ul>
+<li><a class="reference internal" href="#program.lib.structs.FunctionArgument.annotation"><code class="docutils literal notranslate"><span class="pre">FunctionArgument.annotation</span></code></a></li>
+<li><a class="reference internal" href="#program.lib.structs.FunctionArgument.get_for_function"><code class="docutils literal notranslate"><span class="pre">FunctionArgument.get_for_function()</span></code></a></li>
+<li><a class="reference internal" href="#program.lib.structs.FunctionArgument.name"><code class="docutils literal notranslate"><span class="pre">FunctionArgument.name</span></code></a></li>
+<li><a class="reference internal" href="#program.lib.structs.FunctionArgument.required"><code class="docutils literal notranslate"><span class="pre">FunctionArgument.required</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </div>
         </div>
@@ -69,8 +79,43 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="program-lib-structs-module">
-<h1>program.lib.structs module<a class="headerlink" href="#program-lib-structs-module" title="Link to this heading"></a></h1>
+  <section id="module-program.lib.structs">
+<span id="program-lib-structs-module"></span><h1>program.lib.structs module<a class="headerlink" href="#module-program.lib.structs" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="program.lib.structs.Error">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">program.lib.structs.</span></span><span class="sig-name descname"><span class="pre">Error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/program/lib/structs.html#Error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#program.lib.structs.Error" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="program.lib.structs.FunctionArgument">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">program.lib.structs.</span></span><span class="sig-name descname"><span class="pre">FunctionArgument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">required</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annotation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/program/lib/structs.html#FunctionArgument"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#program.lib.structs.FunctionArgument" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.lib.structs.FunctionArgument.annotation">
+<span class="sig-name descname"><span class="pre">annotation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">type</span></em><a class="headerlink" href="#program.lib.structs.FunctionArgument.annotation" title="Link to this definition"></a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="program.lib.structs.FunctionArgument.get_for_function">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_for_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#program.lib.structs.FunctionArgument" title="program.lib.structs.FunctionArgument"><span class="pre">FunctionArgument</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/program/lib/structs.html#FunctionArgument.get_for_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#program.lib.structs.FunctionArgument.get_for_function" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.lib.structs.FunctionArgument.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#program.lib.structs.FunctionArgument.name" title="Link to this definition"></a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="program.lib.structs.FunctionArgument.required">
+<span class="sig-name descname"><span class="pre">required</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#program.lib.structs.FunctionArgument.required" title="Link to this definition"></a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
 
