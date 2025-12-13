@@ -18,16 +18,15 @@ jobs:
 #          version: "0.5.26"
 #          enable-cache: true
 
-#      - name: "[ reg23-experiments Python Docs ] Set up Python"
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.12'
+      - name: "[ reg23-experiments Python Docs ] Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      #      - name: [reg23-experiments Python Docs] Install dependencies
-      #        run: |
-      #          pip install --upgrade pip
-      #          pip install -r docs/requirements.txt
-      #          pip install sphinx sphinx_rtd_theme breathe
+      - name: "[reg23-experiments Python Docs] Install dependencies"
+        run: |
+          pip install --upgrade pip
+          pip install pdoc3
 
 #      - name: "[ reg23-experiments Python Docs ] Set up virtual environment"
 #        run: |
