@@ -37,8 +37,7 @@ jobs:
 
       - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
         run: |
-          sudo apt-get install -y xvfb
-          xvfb-run uv run pdoc --html --output-dir docs --force program registration notification
+          uv run pdoc --html --output-dir docs --force --skip-errors program registration notification
 
       - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
