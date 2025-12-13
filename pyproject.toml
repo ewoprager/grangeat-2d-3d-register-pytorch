@@ -180,9 +180,6 @@ docs = [
     "sphinx>=8.2.3",
     "sphinx-autodoc-typehints>=3.5.2",
     "sphinx-rtd-theme>=3.0.2",
-    "registration",
-    "program",
-    "notification",
 ]
 
 [tool.uv]
@@ -199,15 +196,17 @@ conflicts = [
 ]
 
 [tool.uv.workspace]
-members = ["reg23", "registration", "program", "notification"]
+members = ["reg23"]
 
 # these define which sources to install some particular packages from
 [tool.uv.sources]
 # reg23 is installed from the current workspace
 reg23 = { workspace = true }
-registration = { workspace = true }
-program = { workspace = true }
-notification = { workspace = true }
 
 [tool.setuptools.packages.find]
-where = ["reg23"]
+where = ["."]
+include = [
+    "registration*",
+    "program*",
+    "notification*"
+]
