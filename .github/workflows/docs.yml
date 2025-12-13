@@ -37,8 +37,8 @@ jobs:
 
       - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
         run: |
-          python -c "import docs.mock_modules"
-          uv run pdoc --html --output-dir docs --force program registration notification
+          sudo apt-get install -y xvfb
+          xvfb-run uv run pdoc --html --output-dir docs --force program registration notification
 
       - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
