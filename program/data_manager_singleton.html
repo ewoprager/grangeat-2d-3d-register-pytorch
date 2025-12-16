@@ -203,31 +203,6 @@ returned names will be used as node names for updating values in the <code><a ti
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="program.data_manager_singleton.main"><code class="name flex">
-<span>def <span class="ident">main</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def main():
-    init_data_manager()
-
-    err = data_manager().add_updater(&#34;similarity_metric&#34;, try_updater)
-    if isinstance(err, Error):
-        print(err)
-        return
-
-    data_manager().set_data(&#34;fixed_image&#34;, 2.0)
-    data_manager().set_data(&#34;moving_image&#34;, 3.0)
-
-    # print(f&#34;Data manager:\n{data_manager()}&#34;)
-
-    print(data_manager().get(&#34;similarity&#34;))</code></pre>
-</details>
-<div class="desc"></div>
-</dd>
 </dl>
 </section>
 <section>
@@ -965,183 +940,6 @@ instance.</dd>
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="program.data_manager_singleton.Node"><code class="flex name class">
-<span>class <span class="ident">Node</span></span>
-<span>(</span><span>*args: t.Any, **kwargs: t.Any)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class Node(traitlets.HasTraits):
-    dependents = traitlets.List(trait=traitlets.Unicode(), default_value=[])
-    dirty = traitlets.Bool(default_value=False)
-    updater = traitlets.Unicode(allow_none=True, default_value=None)
-    lazily_evaluated = traitlets.Bool(default_value=True)
-    data = traitlets.Any(allow_none=True, default_value=NoNodeData)
-    set_callbacks = traitlets.Dict(key_trait=traitlets.Unicode(), value_trait=traitlets.Callable())
-
-    def __str__(self) -&gt; str:
-        ret = &#34;Node(\n&#34;
-        ret += &#34;\n\t&#34;.join(f&#34;{name}={getattr(self, name)!r}&#34; for name in self.trait_names() if not name.startswith(&#39;_&#39;))
-        ret += &#34;\n)\n&#34;
-        return ret
-
-    @traitlets.validate(&#34;dirty&#34;)
-    def _valid_dirty(self, proposal):
-        if self.updater is None and proposal[&#34;value&#34;]:
-            raise traitlets.TraitError(&#34;A node with no updater cannot be dirty.&#34;)
-        return proposal[&#34;value&#34;]</code></pre>
-</details>
-<div class="desc"><p>The base class for all classes that have descriptors.</p></div>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>traitlets.traitlets.HasTraits</li>
-<li>traitlets.traitlets.HasDescriptors</li>
-</ul>
-<h3>Instance variables</h3>
-<dl>
-<dt id="program.data_manager_singleton.Node.data"><code class="name">var <span class="ident">data</span> : Self | G</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def __get__(self, obj: HasTraits | None, cls: type[t.Any]) -&gt; Self | G:
-    &#34;&#34;&#34;Get the value of the trait by self.name for the instance.
-
-    Default values are instantiated when :meth:`HasTraits.__new__`
-    is called.  Thus by the time this method gets called either the
-    default value or a user defined value (they called :meth:`__set__`)
-    is in the :class:`HasTraits` instance.
-    &#34;&#34;&#34;
-    if obj is None:
-        return self
-    else:
-        return t.cast(G, self.get(obj, cls))  # the G should encode the Optional</code></pre>
-</details>
-<div class="desc"><p>A trait which allows any value.</p></div>
-</dd>
-<dt id="program.data_manager_singleton.Node.dependents"><code class="name">var <span class="ident">dependents</span> : Self | G</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def __get__(self, obj: HasTraits | None, cls: type[t.Any]) -&gt; Self | G:
-    &#34;&#34;&#34;Get the value of the trait by self.name for the instance.
-
-    Default values are instantiated when :meth:`HasTraits.__new__`
-    is called.  Thus by the time this method gets called either the
-    default value or a user defined value (they called :meth:`__set__`)
-    is in the :class:`HasTraits` instance.
-    &#34;&#34;&#34;
-    if obj is None:
-        return self
-    else:
-        return t.cast(G, self.get(obj, cls))  # the G should encode the Optional</code></pre>
-</details>
-<div class="desc"><p>An instance of a Python list.</p></div>
-</dd>
-<dt id="program.data_manager_singleton.Node.dirty"><code class="name">var <span class="ident">dirty</span> : Self | G</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def __get__(self, obj: HasTraits | None, cls: type[t.Any]) -&gt; Self | G:
-    &#34;&#34;&#34;Get the value of the trait by self.name for the instance.
-
-    Default values are instantiated when :meth:`HasTraits.__new__`
-    is called.  Thus by the time this method gets called either the
-    default value or a user defined value (they called :meth:`__set__`)
-    is in the :class:`HasTraits` instance.
-    &#34;&#34;&#34;
-    if obj is None:
-        return self
-    else:
-        return t.cast(G, self.get(obj, cls))  # the G should encode the Optional</code></pre>
-</details>
-<div class="desc"><p>A boolean (True, False) trait.</p></div>
-</dd>
-<dt id="program.data_manager_singleton.Node.lazily_evaluated"><code class="name">var <span class="ident">lazily_evaluated</span> : Self | G</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def __get__(self, obj: HasTraits | None, cls: type[t.Any]) -&gt; Self | G:
-    &#34;&#34;&#34;Get the value of the trait by self.name for the instance.
-
-    Default values are instantiated when :meth:`HasTraits.__new__`
-    is called.  Thus by the time this method gets called either the
-    default value or a user defined value (they called :meth:`__set__`)
-    is in the :class:`HasTraits` instance.
-    &#34;&#34;&#34;
-    if obj is None:
-        return self
-    else:
-        return t.cast(G, self.get(obj, cls))  # the G should encode the Optional</code></pre>
-</details>
-<div class="desc"><p>A boolean (True, False) trait.</p></div>
-</dd>
-<dt id="program.data_manager_singleton.Node.set_callbacks"><code class="name">var <span class="ident">set_callbacks</span> : Self | G</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def __get__(self, obj: HasTraits | None, cls: type[t.Any]) -&gt; Self | G:
-    &#34;&#34;&#34;Get the value of the trait by self.name for the instance.
-
-    Default values are instantiated when :meth:`HasTraits.__new__`
-    is called.  Thus by the time this method gets called either the
-    default value or a user defined value (they called :meth:`__set__`)
-    is in the :class:`HasTraits` instance.
-    &#34;&#34;&#34;
-    if obj is None:
-        return self
-    else:
-        return t.cast(G, self.get(obj, cls))  # the G should encode the Optional</code></pre>
-</details>
-<div class="desc"><p>An instance of a Python dict.</p>
-<p>One or more traits can be passed to the constructor
-to validate the keys and/or values of the dict.
-If you need more detailed validation,
-you may use a custom validator method.</p>
-<div class="admonition versionchanged">
-<p class="admonition-title">Changed in version:&ensp;5.0</p>
-<p>Added key_trait for validating dict keys.</p>
-</div>
-<div class="admonition versionchanged">
-<p class="admonition-title">Changed in version:&ensp;5.0</p>
-<p>Deprecated ambiguous <code>trait</code>, <code>traits</code> args in favor of <code>value_trait</code>, <code>per_key_traits</code>.</p>
-</div></div>
-</dd>
-<dt id="program.data_manager_singleton.Node.updater"><code class="name">var <span class="ident">updater</span> : Self | G</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def __get__(self, obj: HasTraits | None, cls: type[t.Any]) -&gt; Self | G:
-    &#34;&#34;&#34;Get the value of the trait by self.name for the instance.
-
-    Default values are instantiated when :meth:`HasTraits.__new__`
-    is called.  Thus by the time this method gets called either the
-    default value or a user defined value (they called :meth:`__set__`)
-    is in the :class:`HasTraits` instance.
-    &#34;&#34;&#34;
-    if obj is None:
-        return self
-    else:
-        return t.cast(G, self.get(obj, cls))  # the G should encode the Optional</code></pre>
-</details>
-<div class="desc"><p>A trait for unicode strings.</p></div>
-</dd>
-</dl>
-</dd>
 <dt id="program.data_manager_singleton.Updater"><code class="flex name class">
 <span>class <span class="ident">Updater</span></span>
 <span>(</span><span>function: Callable,<br>returned: list[str],<br>arguments: list[<a title="program.lib.structs.FunctionArgument" href="lib/structs.html#program.lib.structs.FunctionArgument">FunctionArgument</a>],<br>dependencies: list[<a title="program.data_manager_singleton.Dependency" href="#program.data_manager_singleton.Dependency">Dependency</a>])</span>
@@ -1308,7 +1106,6 @@ def build(*, function: Callable, returned: list[str]) -&gt; &#39;Updater&#39;:
 <li><code><a title="program.data_manager_singleton.dag_updater" href="#program.data_manager_singleton.dag_updater">dag_updater</a></code></li>
 <li><code><a title="program.data_manager_singleton.data_manager" href="#program.data_manager_singleton.data_manager">data_manager</a></code></li>
 <li><code><a title="program.data_manager_singleton.init_data_manager" href="#program.data_manager_singleton.init_data_manager">init_data_manager</a></code></li>
-<li><code><a title="program.data_manager_singleton.main" href="#program.data_manager_singleton.main">main</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
@@ -1343,17 +1140,6 @@ def build(*, function: Callable, returned: list[str]) -&gt; &#39;Updater&#39;:
 </li>
 <li>
 <h4><code><a title="program.data_manager_singleton.NoNodeDataType" href="#program.data_manager_singleton.NoNodeDataType">NoNodeDataType</a></code></h4>
-</li>
-<li>
-<h4><code><a title="program.data_manager_singleton.Node" href="#program.data_manager_singleton.Node">Node</a></code></h4>
-<ul class="two-column">
-<li><code><a title="program.data_manager_singleton.Node.data" href="#program.data_manager_singleton.Node.data">data</a></code></li>
-<li><code><a title="program.data_manager_singleton.Node.dependents" href="#program.data_manager_singleton.Node.dependents">dependents</a></code></li>
-<li><code><a title="program.data_manager_singleton.Node.dirty" href="#program.data_manager_singleton.Node.dirty">dirty</a></code></li>
-<li><code><a title="program.data_manager_singleton.Node.lazily_evaluated" href="#program.data_manager_singleton.Node.lazily_evaluated">lazily_evaluated</a></code></li>
-<li><code><a title="program.data_manager_singleton.Node.set_callbacks" href="#program.data_manager_singleton.Node.set_callbacks">set_callbacks</a></code></li>
-<li><code><a title="program.data_manager_singleton.Node.updater" href="#program.data_manager_singleton.Node.updater">updater</a></code></li>
-</ul>
 </li>
 <li>
 <h4><code><a title="program.data_manager_singleton.Updater" href="#program.data_manager_singleton.Updater">Updater</a></code></h4>
