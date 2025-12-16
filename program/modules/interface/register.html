@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>program.modules.interface.src_register API documentation</title>
+<title>program.modules.interface.register API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
@@ -33,7 +33,7 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>program.modules.interface.src_register</code></h1>
+<h1 class="title">Module <code>program.modules.interface.register</code></h1>
 </header>
 <section id="section-intro">
 </section>
@@ -46,7 +46,7 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="program.modules.interface.src_register.OpAlgoWidget"><code class="flex name class">
+<dt id="program.modules.interface.register.OpAlgoWidget"><code class="flex name class">
 <span>class <span class="ident">OpAlgoWidget</span></span>
 </code></dt>
 <dd>
@@ -67,11 +67,11 @@ inheritance.</p></div>
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="program.modules.interface.src_register.PSOWidget" href="#program.modules.interface.src_register.PSOWidget">PSOWidget</a></li>
+<li><a title="program.modules.interface.register.PSOWidget" href="#program.modules.interface.register.PSOWidget">PSOWidget</a></li>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="program.modules.interface.src_register.OpAlgoWidget.get_op_algo"><code class="name flex">
+<dt id="program.modules.interface.register.OpAlgoWidget.get_op_algo"><code class="name flex">
 <span>def <span class="ident">get_op_algo</span></span>(<span>self) ‑> Callable</span>
 </code></dt>
 <dd>
@@ -87,7 +87,7 @@ def get_op_algo(self) -&gt; Callable:
 </dd>
 </dl>
 </dd>
-<dt id="program.modules.interface.src_register.PSOWidget"><code class="flex name class">
+<dt id="program.modules.interface.register.PSOWidget"><code class="flex name class">
 <span>class <span class="ident">PSOWidget</span></span>
 </code></dt>
 <dd>
@@ -169,12 +169,12 @@ Note: the text for each widget defaults to
 <li>collections.abc.Sized</li>
 <li>collections.abc.Iterable</li>
 <li>collections.abc.Container</li>
-<li><a title="program.modules.interface.src_register.OpAlgoWidget" href="#program.modules.interface.src_register.OpAlgoWidget">OpAlgoWidget</a></li>
+<li><a title="program.modules.interface.register.OpAlgoWidget" href="#program.modules.interface.register.OpAlgoWidget">OpAlgoWidget</a></li>
 <li>abc.ABC</li>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="program.modules.interface.src_register.PSOWidget.get_op_algo"><code class="name flex">
+<dt id="program.modules.interface.register.PSOWidget.get_op_algo"><code class="name flex">
 <span>def <span class="ident">get_op_algo</span></span>(<span>self) ‑> Callable</span>
 </code></dt>
 <dd>
@@ -189,7 +189,7 @@ Note: the text for each widget defaults to
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="program.modules.interface.src_register.PSOWidget.set_iteration_count"><code class="name flex">
+<dt id="program.modules.interface.register.PSOWidget.set_iteration_count"><code class="name flex">
 <span>def <span class="ident">set_iteration_count</span></span>(<span>self, new_value: int) ‑> None</span>
 </code></dt>
 <dd>
@@ -202,7 +202,7 @@ Note: the text for each widget defaults to
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="program.modules.interface.src_register.PSOWidget.set_particle_count"><code class="name flex">
+<dt id="program.modules.interface.register.PSOWidget.set_particle_count"><code class="name flex">
 <span>def <span class="ident">set_particle_count</span></span>(<span>self, new_value: int) ‑> None</span>
 </code></dt>
 <dd>
@@ -217,7 +217,7 @@ Note: the text for each widget defaults to
 </dd>
 </dl>
 </dd>
-<dt id="program.modules.interface.src_register.RegisterGUI"><code class="flex name class">
+<dt id="program.modules.interface.register.RegisterGUI"><code class="flex name class">
 <span>class <span class="ident">RegisterGUI</span></span>
 <span>(</span><span>objective_functions: dict[str, typing.Callable[[<a title="registration.lib.structs.Transformation" href="../../../registration/lib/structs.html#registration.lib.structs.Transformation">Transformation</a>], torch.Tensor]])</span>
 </code></dt>
@@ -352,21 +352,21 @@ Note: the text for each widget defaults to
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="program.modules.interface.src_register.OpAlgoWidget" href="#program.modules.interface.src_register.OpAlgoWidget">OpAlgoWidget</a></code></h4>
+<h4><code><a title="program.modules.interface.register.OpAlgoWidget" href="#program.modules.interface.register.OpAlgoWidget">OpAlgoWidget</a></code></h4>
 <ul class="">
-<li><code><a title="program.modules.interface.src_register.OpAlgoWidget.get_op_algo" href="#program.modules.interface.src_register.OpAlgoWidget.get_op_algo">get_op_algo</a></code></li>
+<li><code><a title="program.modules.interface.register.OpAlgoWidget.get_op_algo" href="#program.modules.interface.register.OpAlgoWidget.get_op_algo">get_op_algo</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="program.modules.interface.src_register.PSOWidget" href="#program.modules.interface.src_register.PSOWidget">PSOWidget</a></code></h4>
+<h4><code><a title="program.modules.interface.register.PSOWidget" href="#program.modules.interface.register.PSOWidget">PSOWidget</a></code></h4>
 <ul class="">
-<li><code><a title="program.modules.interface.src_register.PSOWidget.get_op_algo" href="#program.modules.interface.src_register.PSOWidget.get_op_algo">get_op_algo</a></code></li>
-<li><code><a title="program.modules.interface.src_register.PSOWidget.set_iteration_count" href="#program.modules.interface.src_register.PSOWidget.set_iteration_count">set_iteration_count</a></code></li>
-<li><code><a title="program.modules.interface.src_register.PSOWidget.set_particle_count" href="#program.modules.interface.src_register.PSOWidget.set_particle_count">set_particle_count</a></code></li>
+<li><code><a title="program.modules.interface.register.PSOWidget.get_op_algo" href="#program.modules.interface.register.PSOWidget.get_op_algo">get_op_algo</a></code></li>
+<li><code><a title="program.modules.interface.register.PSOWidget.set_iteration_count" href="#program.modules.interface.register.PSOWidget.set_iteration_count">set_iteration_count</a></code></li>
+<li><code><a title="program.modules.interface.register.PSOWidget.set_particle_count" href="#program.modules.interface.register.PSOWidget.set_particle_count">set_particle_count</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="program.modules.interface.src_register.RegisterGUI" href="#program.modules.interface.src_register.RegisterGUI">RegisterGUI</a></code></h4>
+<h4><code><a title="program.modules.interface.register.RegisterGUI" href="#program.modules.interface.register.RegisterGUI">RegisterGUI</a></code></h4>
 </li>
 </ul>
 </li>

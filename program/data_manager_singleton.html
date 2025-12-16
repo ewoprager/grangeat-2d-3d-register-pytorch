@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
-<title>program.src_data_manager API documentation</title>
+<title>program.data_manager_singleton API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
@@ -33,7 +33,7 @@ el.replaceWith(d);
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>program.src_data_manager</code></h1>
+<h1 class="title">Module <code>program.data_manager_singleton</code></h1>
 </header>
 <section id="section-intro">
 </section>
@@ -44,7 +44,7 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="program.src_data_manager.args_from_dag"><code class="name flex">
+<dt id="program.data_manager_singleton.args_from_dag"><code class="name flex">
 <span>def <span class="ident">args_from_dag</span></span>(<span>*, names_left: list[str] | None = None)</span>
 </code></dt>
 <dd>
@@ -118,10 +118,10 @@ el.replaceWith(d);
 
     return decorator</code></pre>
 </details>
-<div class="desc"><p>A decorator for indicating that a function's arguments should be read from the <code><a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></code>. The named arguments of the
-function will be interpreted as nodes from which to read data from the <code><a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></code>. The return value will not be
+<div class="desc"><p>A decorator for indicating that a function's arguments should be read from the <code><a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></code>. The named arguments of the
+function will be interpreted as nodes from which to read data from the <code><a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></code>. The return value will not be
 modified/intercepted, but an <code>Error</code> may be returned instead in the case of a failure to get any argument from
-the <code><a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></code>. Arguments that should be left alone can be listed in the decorator argument <code>names_left</code>.
+the <code><a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></code>. Arguments that should be left alone can be listed in the decorator argument <code>names_left</code>.
 :param names_left: A list of the arguments to leave in the function's signature (i.e. to not get from the DAG)</p>
 <p>Example use with no <code>names_left</code>:</p>
 <pre><code>@args_from_dag()
@@ -147,7 +147,7 @@ def subtract_moving_from_fixed(moving_image: torch.Tensor) -&gt; torch.Tensor:
     return fixed_image - moving_image
 </code></pre></div>
 </dd>
-<dt id="program.src_data_manager.dag_updater"><code class="name flex">
+<dt id="program.data_manager_singleton.dag_updater"><code class="name flex">
 <span>def <span class="ident">dag_updater</span></span>(<span>*, names_returned: list[str])</span>
 </code></dt>
 <dd>
@@ -170,15 +170,15 @@ def subtract_moving_from_fixed(moving_image: torch.Tensor) -&gt; torch.Tensor:
 
     return decorator</code></pre>
 </details>
-<div class="desc"><p>A decorator for turning a function into an <code><a title="program.src_data_manager.Updater" href="#program.src_data_manager.Updater">Updater</a></code> for use in a <code><a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></code>. The named arguments of the function will be
-interpreted as nodes from which to read data from the <code><a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></code>. The return value of the function must be a dictionary
+<div class="desc"><p>A decorator for turning a function into an <code><a title="program.data_manager_singleton.Updater" href="#program.data_manager_singleton.Updater">Updater</a></code> for use in a <code><a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></code>. The named arguments of the function will be
+interpreted as nodes from which to read data from the <code><a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></code>. The return value of the function must be a dictionary
 mapping string 'names' to values, where the strings must match the contents of the list <code>names_returned</code>. The
-returned names will be used as node names for updating values in the <code><a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></code> with the returned values.
+returned names will be used as node names for updating values in the <code><a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></code> with the returned values.
 :param names_returned: A list of the names of the values returned by the function.
-:return: An instance of <code><a title="program.src_data_manager.Updater" href="#program.src_data_manager.Updater">Updater</a></code>, built using the decorated function.</p></div>
+:return: An instance of <code><a title="program.data_manager_singleton.Updater" href="#program.data_manager_singleton.Updater">Updater</a></code>, built using the decorated function.</p></div>
 </dd>
-<dt id="program.src_data_manager.data_manager"><code class="name flex">
-<span>def <span class="ident">data_manager</span></span>(<span>) ‑> <a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></span>
+<dt id="program.data_manager_singleton.data_manager"><code class="name flex">
+<span>def <span class="ident">data_manager</span></span>(<span>) ‑> <a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></span>
 </code></dt>
 <dd>
 <details class="source">
@@ -190,8 +190,8 @@ returned names will be used as node names for updating values in the <code><a ti
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="program.src_data_manager.init_data_manager"><code class="name flex">
-<span>def <span class="ident">init_data_manager</span></span>(<span>**kwargs) ‑> <a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></span>
+<dt id="program.data_manager_singleton.init_data_manager"><code class="name flex">
+<span>def <span class="ident">init_data_manager</span></span>(<span>**kwargs) ‑> <a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></span>
 </code></dt>
 <dd>
 <details class="source">
@@ -203,7 +203,7 @@ returned names will be used as node names for updating values in the <code><a ti
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="program.src_data_manager.main"><code class="name flex">
+<dt id="program.data_manager_singleton.main"><code class="name flex">
 <span>def <span class="ident">main</span></span>(<span>)</span>
 </code></dt>
 <dd>
@@ -233,7 +233,7 @@ returned names will be used as node names for updating values in the <code><a ti
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="program.src_data_manager.DAG"><code class="flex name class">
+<dt id="program.data_manager_singleton.DAG"><code class="flex name class">
 <span>class <span class="ident">DAG</span></span>
 </code></dt>
 <dd>
@@ -546,7 +546,7 @@ returned names will be used as node names for updating values in the <code><a ti
 <div class="desc"></div>
 <h3>Methods</h3>
 <dl>
-<dt id="program.src_data_manager.DAG.add_callback"><code class="name flex">
+<dt id="program.data_manager_singleton.DAG.add_callback"><code class="name flex">
 <span>def <span class="ident">add_callback</span></span>(<span>self, node_name: str, callback_name: str, callback: Callable[[Any], None]) ‑> None</span>
 </code></dt>
 <dd>
@@ -571,8 +571,8 @@ returned names will be used as node names for updating values in the <code><a ti
 :param callback:
 :return:</p></div>
 </dd>
-<dt id="program.src_data_manager.DAG.add_node"><code class="name flex">
-<span>def <span class="ident">add_node</span></span>(<span>self,<br>name: str,<br>*,<br>data: Any = &lt;program.src_data_manager.NoNodeDataType object&gt;) ‑> None</span>
+<dt id="program.data_manager_singleton.DAG.add_node"><code class="name flex">
+<span>def <span class="ident">add_node</span></span>(<span>self,<br>name: str,<br>*,<br>data: Any = &lt;program.data_manager_singleton.NoNodeDataType object&gt;) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -594,8 +594,8 @@ returned names will be used as node names for updating values in the <code><a ti
 :param name: Name of the node.
 :param data: [Optional] Data to assign. No assignment will be made if 'NoNodeData' is passed.</p></div>
 </dd>
-<dt id="program.src_data_manager.DAG.add_updater"><code class="name flex">
-<span>def <span class="ident">add_updater</span></span>(<span>self,<br>name: str,<br>updater: <a title="program.src_data_manager.Updater" href="#program.src_data_manager.Updater">Updater</a>) ‑> None | <a title="program.lib.structs.Error" href="lib/structs.html#program.lib.structs.Error">Error</a></span>
+<dt id="program.data_manager_singleton.DAG.add_updater"><code class="name flex">
+<span>def <span class="ident">add_updater</span></span>(<span>self,<br>name: str,<br>updater: <a title="program.data_manager_singleton.Updater" href="#program.data_manager_singleton.Updater">Updater</a>) ‑> None | <a title="program.lib.structs.Error" href="lib/structs.html#program.lib.structs.Error">Error</a></span>
 </code></dt>
 <dd>
 <details class="source">
@@ -634,10 +634,10 @@ def add_updater(self, name: str, updater: Updater) -&gt; None | Error:
 </details>
 <div class="desc"><p>Add a new updater object to the DAG. Each node may only be updated by a single updater, or no updater.
 :param name: A human-readable name to assign to the added updater.
-:param updater: The updater object. Can be created from a function using the <code><a title="program.src_data_manager.dag_updater" href="#program.src_data_manager.dag_updater">dag_updater()</a></code> decorator.
+:param updater: The updater object. Can be created from a function using the <code><a title="program.data_manager_singleton.dag_updater" href="#program.data_manager_singleton.dag_updater">dag_updater()</a></code> decorator.
 :return: None, or an <code>Error</code> object on failure.</p></div>
 </dd>
-<dt id="program.src_data_manager.DAG.get"><code class="name flex">
+<dt id="program.data_manager_singleton.DAG.get"><code class="name flex">
 <span>def <span class="ident">get</span></span>(<span>self, name: str, *, soft: bool = False) ‑> typing.Any | <a title="program.lib.structs.Error" href="lib/structs.html#program.lib.structs.Error">Error</a></span>
 </code></dt>
 <dd>
@@ -669,7 +669,7 @@ changes to other values.
 :param soft: [Optional; default=False] Whether to return an Error if there is not enough data to clean the node.
 :return: The data associated with the name node, or an instance of <code>Error</code> on failure.</p></div>
 </dd>
-<dt id="program.src_data_manager.DAG.get_args"><code class="name flex">
+<dt id="program.data_manager_singleton.DAG.get_args"><code class="name flex">
 <span>def <span class="ident">get_args</span></span>(<span>self,<br>args: list[<a title="program.lib.structs.FunctionArgument" href="lib/structs.html#program.lib.structs.FunctionArgument">FunctionArgument</a>]) ‑> dict[str, typing.Any] | <a title="program.lib.structs.Error" href="lib/structs.html#program.lib.structs.Error">Error</a></span>
 </code></dt>
 <dd>
@@ -695,12 +695,12 @@ def get_args(self, args: list[FunctionArgument]) -&gt; dict[str, Any] | Error:
         ret[arg.name] = value
     return ret</code></pre>
 </details>
-<div class="desc"><p>Get the given list of named arguments from the <code><a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></code>, returning an Error if any required argument is not
+<div class="desc"><p>Get the given list of named arguments from the <code><a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></code>, returning an Error if any required argument is not
 available.
 :param args: list of function arguments, marked with whether they are required
 :return: A dictionary mapping argument name to retrieved value.</p></div>
 </dd>
-<dt id="program.src_data_manager.DAG.remove_callback"><code class="name flex">
+<dt id="program.data_manager_singleton.DAG.remove_callback"><code class="name flex">
 <span>def <span class="ident">remove_callback</span></span>(<span>self, node_name: str, callback_name: str) ‑> None | <a title="program.lib.structs.Error" href="lib/structs.html#program.lib.structs.Error">Error</a></span>
 </code></dt>
 <dd>
@@ -718,7 +718,7 @@ available.
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="program.src_data_manager.DAG.remove_updater"><code class="name flex">
+<dt id="program.data_manager_singleton.DAG.remove_updater"><code class="name flex">
 <span>def <span class="ident">remove_updater</span></span>(<span>self, name: str) ‑> None | <a title="program.lib.structs.Error" href="lib/structs.html#program.lib.structs.Error">Error</a></span>
 </code></dt>
 <dd>
@@ -744,7 +744,7 @@ available.
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="program.src_data_manager.DAG.set_data"><code class="name flex">
+<dt id="program.data_manager_singleton.DAG.set_data"><code class="name flex">
 <span>def <span class="ident">set_data</span></span>(<span>self, node_name: str, data: Any, *, check_equality: bool = False) ‑> None | <a title="program.lib.structs.Error" href="lib/structs.html#program.lib.structs.Error">Error</a></span>
 </code></dt>
 <dd>
@@ -784,7 +784,7 @@ def set_data(self, node_name: str, data: Any, *, check_equality: bool = False) -
 :param check_equality: [Optional; default=False] Whether to check the new value against the old value, and leave
 the node clean if the new value is the same.</p></div>
 </dd>
-<dt id="program.src_data_manager.DAG.set_data_multiple"><code class="name flex">
+<dt id="program.data_manager_singleton.DAG.set_data_multiple"><code class="name flex">
 <span>def <span class="ident">set_data_multiple</span></span>(<span>self, **kwargs) ‑> None | <a title="program.lib.structs.Error" href="lib/structs.html#program.lib.structs.Error">Error</a></span>
 </code></dt>
 <dd>
@@ -809,7 +809,7 @@ def set_data_multiple(self, **kwargs) -&gt; None | Error:
 Each keyword argument <code>name=value</code> will set the data <code>value</code> for the node <code>name</code>.
 :return: Nothing on success; an <code>Error</code> on failure.</p></div>
 </dd>
-<dt id="program.src_data_manager.DAG.set_evaluation_laziness"><code class="name flex">
+<dt id="program.data_manager_singleton.DAG.set_evaluation_laziness"><code class="name flex">
 <span>def <span class="ident">set_evaluation_laziness</span></span>(<span>self, node_name: str, *, lazily_evaluated: bool) ‑> None</span>
 </code></dt>
 <dd>
@@ -836,7 +836,7 @@ changes.
 </dd>
 </dl>
 </dd>
-<dt id="program.src_data_manager.DataManagerSingleton"><code class="flex name class">
+<dt id="program.data_manager_singleton.DataManagerSingleton"><code class="flex name class">
 <span>class <span class="ident">DataManagerSingleton</span></span>
 <span>(</span><span>**kwargs: t.Any)</span>
 </code></dt>
@@ -888,8 +888,8 @@ instance.</dd>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="program.src_data_manager.DataManagerSingleton.get"><code class="name flex">
-<span>def <span class="ident">get</span></span>(<span>self, **init_kwargs) ‑> <a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></span>
+<dt id="program.data_manager_singleton.DataManagerSingleton.get"><code class="name flex">
+<span>def <span class="ident">get</span></span>(<span>self, **init_kwargs) ‑> <a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></span>
 </code></dt>
 <dd>
 <details class="source">
@@ -906,7 +906,7 @@ instance.</dd>
 </dd>
 </dl>
 </dd>
-<dt id="program.src_data_manager.Dependency"><code class="flex name class">
+<dt id="program.data_manager_singleton.Dependency"><code class="flex name class">
 <span>class <span class="ident">Dependency</span></span>
 <span>(</span><span>depender: str, depended: str)</span>
 </code></dt>
@@ -926,7 +926,7 @@ instance.</dd>
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="program.src_data_manager.Dependency.depended"><code class="name">var <span class="ident">depended</span> : str</code></dt>
+<dt id="program.data_manager_singleton.Dependency.depended"><code class="name">var <span class="ident">depended</span> : str</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -938,7 +938,7 @@ instance.</dd>
 </details>
 <div class="desc"><p>Alias for field number 1</p></div>
 </dd>
-<dt id="program.src_data_manager.Dependency.depender"><code class="name">var <span class="ident">depender</span> : str</code></dt>
+<dt id="program.data_manager_singleton.Dependency.depender"><code class="name">var <span class="ident">depender</span> : str</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -952,7 +952,7 @@ instance.</dd>
 </dd>
 </dl>
 </dd>
-<dt id="program.src_data_manager.NoNodeDataType"><code class="flex name class">
+<dt id="program.data_manager_singleton.NoNodeDataType"><code class="flex name class">
 <span>class <span class="ident">NoNodeDataType</span></span>
 </code></dt>
 <dd>
@@ -965,7 +965,7 @@ instance.</dd>
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="program.src_data_manager.Node"><code class="flex name class">
+<dt id="program.data_manager_singleton.Node"><code class="flex name class">
 <span>class <span class="ident">Node</span></span>
 <span>(</span><span>*args: t.Any, **kwargs: t.Any)</span>
 </code></dt>
@@ -1002,7 +1002,7 @@ instance.</dd>
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="program.src_data_manager.Node.data"><code class="name">var <span class="ident">data</span> : Self | G</code></dt>
+<dt id="program.data_manager_singleton.Node.data"><code class="name">var <span class="ident">data</span> : Self | G</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1023,7 +1023,7 @@ instance.</dd>
 </details>
 <div class="desc"><p>A trait which allows any value.</p></div>
 </dd>
-<dt id="program.src_data_manager.Node.dependents"><code class="name">var <span class="ident">dependents</span> : Self | G</code></dt>
+<dt id="program.data_manager_singleton.Node.dependents"><code class="name">var <span class="ident">dependents</span> : Self | G</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1044,7 +1044,7 @@ instance.</dd>
 </details>
 <div class="desc"><p>An instance of a Python list.</p></div>
 </dd>
-<dt id="program.src_data_manager.Node.dirty"><code class="name">var <span class="ident">dirty</span> : Self | G</code></dt>
+<dt id="program.data_manager_singleton.Node.dirty"><code class="name">var <span class="ident">dirty</span> : Self | G</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1065,7 +1065,7 @@ instance.</dd>
 </details>
 <div class="desc"><p>A boolean (True, False) trait.</p></div>
 </dd>
-<dt id="program.src_data_manager.Node.lazily_evaluated"><code class="name">var <span class="ident">lazily_evaluated</span> : Self | G</code></dt>
+<dt id="program.data_manager_singleton.Node.lazily_evaluated"><code class="name">var <span class="ident">lazily_evaluated</span> : Self | G</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1086,7 +1086,7 @@ instance.</dd>
 </details>
 <div class="desc"><p>A boolean (True, False) trait.</p></div>
 </dd>
-<dt id="program.src_data_manager.Node.set_callbacks"><code class="name">var <span class="ident">set_callbacks</span> : Self | G</code></dt>
+<dt id="program.data_manager_singleton.Node.set_callbacks"><code class="name">var <span class="ident">set_callbacks</span> : Self | G</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1119,7 +1119,7 @@ you may use a custom validator method.</p>
 <p>Deprecated ambiguous <code>trait</code>, <code>traits</code> args in favor of <code>value_trait</code>, <code>per_key_traits</code>.</p>
 </div></div>
 </dd>
-<dt id="program.src_data_manager.Node.updater"><code class="name">var <span class="ident">updater</span> : Self | G</code></dt>
+<dt id="program.data_manager_singleton.Node.updater"><code class="name">var <span class="ident">updater</span> : Self | G</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1142,9 +1142,9 @@ you may use a custom validator method.</p>
 </dd>
 </dl>
 </dd>
-<dt id="program.src_data_manager.Updater"><code class="flex name class">
+<dt id="program.data_manager_singleton.Updater"><code class="flex name class">
 <span>class <span class="ident">Updater</span></span>
-<span>(</span><span>function: Callable,<br>returned: list[str],<br>arguments: list[<a title="program.lib.structs.FunctionArgument" href="lib/structs.html#program.lib.structs.FunctionArgument">FunctionArgument</a>],<br>dependencies: list[<a title="program.src_data_manager.Dependency" href="#program.src_data_manager.Dependency">Dependency</a>])</span>
+<span>(</span><span>function: Callable,<br>returned: list[str],<br>arguments: list[<a title="program.lib.structs.FunctionArgument" href="lib/structs.html#program.lib.structs.FunctionArgument">FunctionArgument</a>],<br>dependencies: list[<a title="program.data_manager_singleton.Dependency" href="#program.data_manager_singleton.Dependency">Dependency</a>])</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -1173,8 +1173,8 @@ you may use a custom validator method.</p>
 </ul>
 <h3>Static methods</h3>
 <dl>
-<dt id="program.src_data_manager.Updater.build"><code class="name flex">
-<span>def <span class="ident">build</span></span>(<span>*, function: Callable, returned: list[str]) ‑> <a title="program.src_data_manager.Updater" href="#program.src_data_manager.Updater">Updater</a></span>
+<dt id="program.data_manager_singleton.Updater.build"><code class="name flex">
+<span>def <span class="ident">build</span></span>(<span>*, function: Callable, returned: list[str]) ‑> <a title="program.data_manager_singleton.Updater" href="#program.data_manager_singleton.Updater">Updater</a></span>
 </code></dt>
 <dd>
 <details class="source">
@@ -1195,7 +1195,7 @@ def build(*, function: Callable, returned: list[str]) -&gt; &#39;Updater&#39;:
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="program.src_data_manager.Updater.arguments"><code class="name">var <span class="ident">arguments</span> : list[<a title="program.lib.structs.FunctionArgument" href="lib/structs.html#program.lib.structs.FunctionArgument">FunctionArgument</a>]</code></dt>
+<dt id="program.data_manager_singleton.Updater.arguments"><code class="name">var <span class="ident">arguments</span> : list[<a title="program.lib.structs.FunctionArgument" href="lib/structs.html#program.lib.structs.FunctionArgument">FunctionArgument</a>]</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1218,7 +1218,7 @@ def build(*, function: Callable, returned: list[str]) -&gt; &#39;Updater&#39;:
 </details>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
-<dt id="program.src_data_manager.Updater.dependencies"><code class="name">var <span class="ident">dependencies</span> : list[<a title="program.src_data_manager.Dependency" href="#program.src_data_manager.Dependency">Dependency</a>]</code></dt>
+<dt id="program.data_manager_singleton.Updater.dependencies"><code class="name">var <span class="ident">dependencies</span> : list[<a title="program.data_manager_singleton.Dependency" href="#program.data_manager_singleton.Dependency">Dependency</a>]</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1241,7 +1241,7 @@ def build(*, function: Callable, returned: list[str]) -&gt; &#39;Updater&#39;:
 </details>
 <div class="desc"><p>Alias for field number 3</p></div>
 </dd>
-<dt id="program.src_data_manager.Updater.function"><code class="name">var <span class="ident">function</span> : Callable</code></dt>
+<dt id="program.data_manager_singleton.Updater.function"><code class="name">var <span class="ident">function</span> : Callable</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1264,7 +1264,7 @@ def build(*, function: Callable, returned: list[str]) -&gt; &#39;Updater&#39;:
 </details>
 <div class="desc"><p>Alias for field number 0</p></div>
 </dd>
-<dt id="program.src_data_manager.Updater.returned"><code class="name">var <span class="ident">returned</span> : list[str]</code></dt>
+<dt id="program.data_manager_singleton.Updater.returned"><code class="name">var <span class="ident">returned</span> : list[str]</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -1304,65 +1304,65 @@ def build(*, function: Callable, returned: list[str]) -&gt; &#39;Updater&#39;:
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="program.src_data_manager.args_from_dag" href="#program.src_data_manager.args_from_dag">args_from_dag</a></code></li>
-<li><code><a title="program.src_data_manager.dag_updater" href="#program.src_data_manager.dag_updater">dag_updater</a></code></li>
-<li><code><a title="program.src_data_manager.data_manager" href="#program.src_data_manager.data_manager">data_manager</a></code></li>
-<li><code><a title="program.src_data_manager.init_data_manager" href="#program.src_data_manager.init_data_manager">init_data_manager</a></code></li>
-<li><code><a title="program.src_data_manager.main" href="#program.src_data_manager.main">main</a></code></li>
+<li><code><a title="program.data_manager_singleton.args_from_dag" href="#program.data_manager_singleton.args_from_dag">args_from_dag</a></code></li>
+<li><code><a title="program.data_manager_singleton.dag_updater" href="#program.data_manager_singleton.dag_updater">dag_updater</a></code></li>
+<li><code><a title="program.data_manager_singleton.data_manager" href="#program.data_manager_singleton.data_manager">data_manager</a></code></li>
+<li><code><a title="program.data_manager_singleton.init_data_manager" href="#program.data_manager_singleton.init_data_manager">init_data_manager</a></code></li>
+<li><code><a title="program.data_manager_singleton.main" href="#program.data_manager_singleton.main">main</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="program.src_data_manager.DAG" href="#program.src_data_manager.DAG">DAG</a></code></h4>
+<h4><code><a title="program.data_manager_singleton.DAG" href="#program.data_manager_singleton.DAG">DAG</a></code></h4>
 <ul class="">
-<li><code><a title="program.src_data_manager.DAG.add_callback" href="#program.src_data_manager.DAG.add_callback">add_callback</a></code></li>
-<li><code><a title="program.src_data_manager.DAG.add_node" href="#program.src_data_manager.DAG.add_node">add_node</a></code></li>
-<li><code><a title="program.src_data_manager.DAG.add_updater" href="#program.src_data_manager.DAG.add_updater">add_updater</a></code></li>
-<li><code><a title="program.src_data_manager.DAG.get" href="#program.src_data_manager.DAG.get">get</a></code></li>
-<li><code><a title="program.src_data_manager.DAG.get_args" href="#program.src_data_manager.DAG.get_args">get_args</a></code></li>
-<li><code><a title="program.src_data_manager.DAG.remove_callback" href="#program.src_data_manager.DAG.remove_callback">remove_callback</a></code></li>
-<li><code><a title="program.src_data_manager.DAG.remove_updater" href="#program.src_data_manager.DAG.remove_updater">remove_updater</a></code></li>
-<li><code><a title="program.src_data_manager.DAG.set_data" href="#program.src_data_manager.DAG.set_data">set_data</a></code></li>
-<li><code><a title="program.src_data_manager.DAG.set_data_multiple" href="#program.src_data_manager.DAG.set_data_multiple">set_data_multiple</a></code></li>
-<li><code><a title="program.src_data_manager.DAG.set_evaluation_laziness" href="#program.src_data_manager.DAG.set_evaluation_laziness">set_evaluation_laziness</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.add_callback" href="#program.data_manager_singleton.DAG.add_callback">add_callback</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.add_node" href="#program.data_manager_singleton.DAG.add_node">add_node</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.add_updater" href="#program.data_manager_singleton.DAG.add_updater">add_updater</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.get" href="#program.data_manager_singleton.DAG.get">get</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.get_args" href="#program.data_manager_singleton.DAG.get_args">get_args</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.remove_callback" href="#program.data_manager_singleton.DAG.remove_callback">remove_callback</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.remove_updater" href="#program.data_manager_singleton.DAG.remove_updater">remove_updater</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.set_data" href="#program.data_manager_singleton.DAG.set_data">set_data</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.set_data_multiple" href="#program.data_manager_singleton.DAG.set_data_multiple">set_data_multiple</a></code></li>
+<li><code><a title="program.data_manager_singleton.DAG.set_evaluation_laziness" href="#program.data_manager_singleton.DAG.set_evaluation_laziness">set_evaluation_laziness</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="program.src_data_manager.DataManagerSingleton" href="#program.src_data_manager.DataManagerSingleton">DataManagerSingleton</a></code></h4>
+<h4><code><a title="program.data_manager_singleton.DataManagerSingleton" href="#program.data_manager_singleton.DataManagerSingleton">DataManagerSingleton</a></code></h4>
 <ul class="">
-<li><code><a title="program.src_data_manager.DataManagerSingleton.get" href="#program.src_data_manager.DataManagerSingleton.get">get</a></code></li>
+<li><code><a title="program.data_manager_singleton.DataManagerSingleton.get" href="#program.data_manager_singleton.DataManagerSingleton.get">get</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="program.src_data_manager.Dependency" href="#program.src_data_manager.Dependency">Dependency</a></code></h4>
+<h4><code><a title="program.data_manager_singleton.Dependency" href="#program.data_manager_singleton.Dependency">Dependency</a></code></h4>
 <ul class="">
-<li><code><a title="program.src_data_manager.Dependency.depended" href="#program.src_data_manager.Dependency.depended">depended</a></code></li>
-<li><code><a title="program.src_data_manager.Dependency.depender" href="#program.src_data_manager.Dependency.depender">depender</a></code></li>
+<li><code><a title="program.data_manager_singleton.Dependency.depended" href="#program.data_manager_singleton.Dependency.depended">depended</a></code></li>
+<li><code><a title="program.data_manager_singleton.Dependency.depender" href="#program.data_manager_singleton.Dependency.depender">depender</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="program.src_data_manager.NoNodeDataType" href="#program.src_data_manager.NoNodeDataType">NoNodeDataType</a></code></h4>
+<h4><code><a title="program.data_manager_singleton.NoNodeDataType" href="#program.data_manager_singleton.NoNodeDataType">NoNodeDataType</a></code></h4>
 </li>
 <li>
-<h4><code><a title="program.src_data_manager.Node" href="#program.src_data_manager.Node">Node</a></code></h4>
+<h4><code><a title="program.data_manager_singleton.Node" href="#program.data_manager_singleton.Node">Node</a></code></h4>
 <ul class="two-column">
-<li><code><a title="program.src_data_manager.Node.data" href="#program.src_data_manager.Node.data">data</a></code></li>
-<li><code><a title="program.src_data_manager.Node.dependents" href="#program.src_data_manager.Node.dependents">dependents</a></code></li>
-<li><code><a title="program.src_data_manager.Node.dirty" href="#program.src_data_manager.Node.dirty">dirty</a></code></li>
-<li><code><a title="program.src_data_manager.Node.lazily_evaluated" href="#program.src_data_manager.Node.lazily_evaluated">lazily_evaluated</a></code></li>
-<li><code><a title="program.src_data_manager.Node.set_callbacks" href="#program.src_data_manager.Node.set_callbacks">set_callbacks</a></code></li>
-<li><code><a title="program.src_data_manager.Node.updater" href="#program.src_data_manager.Node.updater">updater</a></code></li>
+<li><code><a title="program.data_manager_singleton.Node.data" href="#program.data_manager_singleton.Node.data">data</a></code></li>
+<li><code><a title="program.data_manager_singleton.Node.dependents" href="#program.data_manager_singleton.Node.dependents">dependents</a></code></li>
+<li><code><a title="program.data_manager_singleton.Node.dirty" href="#program.data_manager_singleton.Node.dirty">dirty</a></code></li>
+<li><code><a title="program.data_manager_singleton.Node.lazily_evaluated" href="#program.data_manager_singleton.Node.lazily_evaluated">lazily_evaluated</a></code></li>
+<li><code><a title="program.data_manager_singleton.Node.set_callbacks" href="#program.data_manager_singleton.Node.set_callbacks">set_callbacks</a></code></li>
+<li><code><a title="program.data_manager_singleton.Node.updater" href="#program.data_manager_singleton.Node.updater">updater</a></code></li>
 </ul>
 </li>
 <li>
-<h4><code><a title="program.src_data_manager.Updater" href="#program.src_data_manager.Updater">Updater</a></code></h4>
+<h4><code><a title="program.data_manager_singleton.Updater" href="#program.data_manager_singleton.Updater">Updater</a></code></h4>
 <ul class="">
-<li><code><a title="program.src_data_manager.Updater.arguments" href="#program.src_data_manager.Updater.arguments">arguments</a></code></li>
-<li><code><a title="program.src_data_manager.Updater.build" href="#program.src_data_manager.Updater.build">build</a></code></li>
-<li><code><a title="program.src_data_manager.Updater.dependencies" href="#program.src_data_manager.Updater.dependencies">dependencies</a></code></li>
-<li><code><a title="program.src_data_manager.Updater.function" href="#program.src_data_manager.Updater.function">function</a></code></li>
-<li><code><a title="program.src_data_manager.Updater.returned" href="#program.src_data_manager.Updater.returned">returned</a></code></li>
+<li><code><a title="program.data_manager_singleton.Updater.arguments" href="#program.data_manager_singleton.Updater.arguments">arguments</a></code></li>
+<li><code><a title="program.data_manager_singleton.Updater.build" href="#program.data_manager_singleton.Updater.build">build</a></code></li>
+<li><code><a title="program.data_manager_singleton.Updater.dependencies" href="#program.data_manager_singleton.Updater.dependencies">dependencies</a></code></li>
+<li><code><a title="program.data_manager_singleton.Updater.function" href="#program.data_manager_singleton.Updater.function">function</a></code></li>
+<li><code><a title="program.data_manager_singleton.Updater.returned" href="#program.data_manager_singleton.Updater.returned">returned</a></code></li>
 </ul>
 </li>
 </ul>
