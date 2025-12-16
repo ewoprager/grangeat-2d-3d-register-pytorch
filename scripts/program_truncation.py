@@ -75,9 +75,11 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
                 hyperparameters: HyperParameters, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
                 device) -> dict[str, Any]:
     # Applying the translation offset
-    translation = copy.deepcopy(current_transformation.translation)
-    translation[0:2] += translation_offset.to(device=current_transformation.device)
-    transformation = Transformation(rotation=current_transformation.rotation, translation=translation).to(device=device)
+    new_translation = current_transformation.translation + torch.cat(
+        (torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype),
+         translation_offset.to(device=current_transformation.device)))
+    transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
+        device=device)
 
     return {"moving_image": geometry.generate_drr(ct_volumes[hyperparameters.downsample_level],
                                                   transformation=transformation,
