@@ -123,7 +123,7 @@ def set_synthetic_target_image(ct_path: str, ct_spacing: torch.Tensor, ct_volume
             "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
 
 
-@dag_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset"])
+@dag_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset", "fixed_image_size"])
 def refresh_hyperparameter_dependent(images_2d_full: list[torch.Tensor], fixed_image_spacing: torch.Tensor,
                                      hyperparameters: HyperParameters) -> dict[str, Any]:
     # Cropping for the fixed image
@@ -140,7 +140,7 @@ def refresh_hyperparameter_dependent(images_2d_full: list[torch.Tensor], fixed_i
     translation_offset = -hyperparameters.source_offset
 
     return {"cropped_target": cropped_target, "fixed_image_offset": fixed_image_offset,
-            "translation_offset": translation_offset}
+            "translation_offset": translation_offset, "fixed_image_size": cropped_target.size()}
 
 
 @dag_updater(names_returned=["sinogram2d_grid_unshifted", "sinogram2d_grid"])
@@ -162,10 +162,10 @@ def refresh_hyperparameter_dependent_grangeat(cropped_target: torch.Tensor, fixe
 
 
 @dag_updater(names_returned=["mask", "fixed_image"])
-def refresh_hyperparameter_dependent_grangeat(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
-                                              cropped_target: torch.Tensor, mask_transformation: Transformation | None,
-                                              fixed_image_spacing: torch.Tensor, fixed_image_offset: torch.Tensor,
-                                              hyperparameters: HyperParameters, source_distance: float, device) -> dict[
+def refresh_mask_transformation_dependent(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
+                                          cropped_target: torch.Tensor, mask_transformation: Transformation | None,
+                                          fixed_image_spacing: torch.Tensor, fixed_image_offset: torch.Tensor,
+                                          hyperparameters: HyperParameters, source_distance: float, device) -> dict[
     str, Any]:
     if mask_transformation is None:
         mask = torch.ones_like(cropped_target)

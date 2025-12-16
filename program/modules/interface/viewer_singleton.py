@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class ViewerSingleton(SingletonConfigurable):
-    _viewer = traitlets.Instance("napari.Viewer", allow_none=True, default_value=None)
+    _viewer = traitlets.Instance(napari.Viewer, allow_none=True, default_value=None)
 
     def get(self, **init_kwargs) -> napari.Viewer:
         if self._viewer is None:
