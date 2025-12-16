@@ -821,7 +821,7 @@ changes.
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class DataManagerSingleton(SingletonConfigurable):
-    _data_manager = traitlets.Instance(&#34;DAG&#34;, allow_none=True, default_value=None)
+    _data_manager = traitlets.Instance(DAG, allow_none=True, default_value=None)
 
     def get(self, **init_kwargs) -&gt; DAG:
         if self._data_manager is None:

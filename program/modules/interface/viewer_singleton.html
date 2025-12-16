@@ -85,7 +85,7 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ViewerSingleton(SingletonConfigurable):
-    _viewer = traitlets.Instance(&#34;napari.Viewer&#34;, allow_none=True, default_value=None)
+    _viewer = traitlets.Instance(napari.Viewer, allow_none=True, default_value=None)
 
     def get(self, **init_kwargs) -&gt; napari.Viewer:
         if self._viewer is None:
