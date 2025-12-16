@@ -1,10 +1,10 @@
 import torch
-import napari
 
 from program.lib.structs import Error
 from program import data_manager
 from program.modules.interface import viewer
 
+__all__ = ["FixedImageGUI"]
 
 class FixedImageGUI:
     def __init__(self):

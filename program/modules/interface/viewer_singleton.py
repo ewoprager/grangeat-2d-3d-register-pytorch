@@ -7,7 +7,10 @@ os.environ["QT_API"] = "PyQt6"
 
 import napari
 
+__all__ = ["ViewerSingleton", "init_viewer", "viewer"]
+
 logger = logging.getLogger(__name__)
+
 
 class ViewerSingleton(SingletonConfigurable):
     _viewer = traitlets.Instance("napari.Viewer", allow_none=True, default_value=None)
@@ -18,8 +21,10 @@ class ViewerSingleton(SingletonConfigurable):
             logger.info(f"Viewer initialised with the following parameters: {init_kwargs}")
         return self._viewer
 
+
 def init_viewer(**kwargs) -> napari.Viewer:
     return ViewerSingleton.instance().get(**kwargs)
+
 
 def viewer() -> napari.Viewer:
     return ViewerSingleton.instance().get()

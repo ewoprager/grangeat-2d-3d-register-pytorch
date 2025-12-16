@@ -1,10 +1,11 @@
 import traitlets
 import logging
-import inspect
 
-from program.lib.structs import Error, FunctionArgument
+from program.lib.structs import Error
 from program import data_manager
 from program.lib import optimisation
+
+__all__ = ["OptimisationStage", "run_optimisation", "Registration", "run_registration"]
 
 logger = logging.getLogger(__name__)
 

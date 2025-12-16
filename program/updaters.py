@@ -14,6 +14,10 @@ from registration.lib.sinogram import Sinogram, SinogramType
 from registration.lib.structs import (LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation, )
 from program import dag_updater
 
+__all__ = ["load_ct", "refresh_vif", "load_target_image", "set_synthetic_target_image",
+           "refresh_hyperparameter_dependent", "refresh_hyperparameter_dependent_grangeat",
+           "refresh_hyperparameter_dependent_grangeat", "refresh_mask_transformation_dependent_grangeat"]
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,8 +68,7 @@ def refresh_vif(self) -> dict[str, Any] | Error:
     return {"sinogram_size": this_sinogram_size, "ct_sinograms": sinogram3ds}
 
 
-@dag_updater(
-    names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
+@dag_updater(names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
 def load_target_image(ct_spacing: torch.Tensor, target: Target, device) -> dict[str, Any]:
     transformation_ground_truth = None
     # if self.target.xray_path is None:
@@ -94,8 +97,7 @@ def load_target_image(ct_spacing: torch.Tensor, target: Target, device) -> dict[
         self._target_change_callback()
 
 
-@dag_updater(
-    names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
+@dag_updater(names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
 def set_synthetic_target_image(ct_path: str, ct_spacing: torch.Tensor, ct_volumes: list[torch.Tensor],
                                new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool,
                                cache_directory: str) -> dict[str, Any]:
@@ -160,10 +162,10 @@ def refresh_hyperparameter_dependent_grangeat(cropped_target: torch.Tensor, fixe
 
 
 @dag_updater(names_returned=["mask", "fixed_image"])
-def refresh_mask_transformation_dependent(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
-                                          cropped_target: torch.Tensor, mask_transformation: Transformation | None,
-                                          fixed_image_spacing: torch.Tensor, fixed_image_offset: torch.Tensor,
-                                          hyperparameters: HyperParameters, source_distance: float, device) -> dict[
+def refresh_hyperparameter_dependent_grangeat(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
+                                              cropped_target: torch.Tensor, mask_transformation: Transformation | None,
+                                              fixed_image_spacing: torch.Tensor, fixed_image_offset: torch.Tensor,
+                                              hyperparameters: HyperParameters, source_distance: float, device) -> dict[
     str, Any]:
     if mask_transformation is None:
         mask = torch.ones_like(cropped_target)

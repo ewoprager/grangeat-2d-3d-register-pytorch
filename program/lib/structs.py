@@ -1,6 +1,8 @@
 from typing import NamedTuple, Callable
 import inspect
 
+__all__ = ["Error", "FunctionArgument"]
+
 
 class Error:
     def __init__(self, description: str):

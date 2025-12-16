@@ -1,6 +1,5 @@
 from typing import NamedTuple, Callable
 import copy
-from abc import ABC, abstractmethod
 
 import numpy as np
 import pyswarms
@@ -9,6 +8,8 @@ import torch
 from program import data_manager, args_from_dag
 from registration.lib.structs import Transformation, GrowingTensor
 from registration.lib.optimisation import mapping_transformation_to_parameters, mapping_parameters_to_transformation
+
+__all__ = ["OptimisationResult", "pso"]
 
 
 class OptimisationResult(NamedTuple):

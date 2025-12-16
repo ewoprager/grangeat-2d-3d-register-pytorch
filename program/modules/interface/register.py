@@ -1,9 +1,8 @@
 import logging
-from typing import NamedTuple, Callable, Any
+from typing import Callable
 from abc import ABC, abstractmethod
 
 import torch
-import numpy as np
 from magicgui import widgets
 
 from program.lib.structs import Error
@@ -12,6 +11,8 @@ from program.modules.interface import viewer
 from registration.interface.lib.structs import WidgetSelectData
 from registration.lib.structs import Transformation
 from program.lib import optimisation
+
+__all__ = ["OpAlgoWidget", "PSOWidget", "RegisterGUI"]
 
 logger = logging.getLogger(__name__)
 

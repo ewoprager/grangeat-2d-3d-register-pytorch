@@ -163,6 +163,7 @@ dependencies = [
     "torchviz>=0.0.3",
     "napari[pyqt6, optional]>=0.6.6; sys_platform == 'darwin'",
     "napari[all]>=0.6.6; sys_platform != 'darwin'",
+    "scipy-stubs==1.16.3.3",
 ]
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined

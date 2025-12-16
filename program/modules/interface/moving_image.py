@@ -9,8 +9,9 @@ from magicgui import widgets
 from program.lib.structs import Error
 from program import data_manager
 from program.modules.interface import viewer
-
 from registration.lib.structs import Transformation
+
+__all__ = ["ViewParams", "ViewParamWidget", "MovingImageGUI"]
 
 logger = logging.getLogger(__name__)
 
