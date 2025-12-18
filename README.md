@@ -19,10 +19,10 @@ developed as part of a PhD.
 ```text
 .
 ├── reg23/                      # A Python package with custom C++/CUDA operators for PyTorch; see the README.md inside for more information.
-├── py-lib/                     #
+├── py-lib/                     # A python library with tools for research and experiments, used by the scripts in the scripts/ directory.
 │   ├── src/reg23_experiments   #
 │   │   ├── notification/       # A python package for logging and sending notification to Pushover
-│   │   ├── program/            # 
+│   │   ├── program/            # A python package newly in development for more modular access to library functionality, with separate interface.
 │   │   └── registration/       # A python package for experimentation with 2D/3D radiographic image registration, and using the custom reg23 package.
 │   ├── README.md               #
 │   ├── Conventions.md          # Contains details of Python coding conventions, regarding style and structure.
@@ -86,22 +86,15 @@ uv sync --extra cuda
 
 # Scripts you can run
 
-Scripts which aren't contained in the root directory must be run from the root directory, with the
-`PYTHONPATH` variable set to the root directory, e.g.:
-
+Scripts are contained in the `scripts/` directory, and can be run with
+```bash
+uv run <script name> <args...>
 ```
-PYTHONPATH=$PWD uv run ...
-```
-
-In Clion, this should be done automatically in Python run configurations, so you shouldn't need to add the
-`PYTHONPATH=$PWD`.
 
 To run any script directly with the python binary:
-
 ```bash
 python <script name> <args...>
 ```
-
 This is useful if you want to run with a debugger attached (e.g. if you have this as a run configuration in an IDE),
 but note that this will not check for correctly install packages, nor initialise the build of the extension if the
 source code has changed, as `uv` is not run here, so make sure to run `uv sync` beforehand if you have changed any
@@ -112,8 +105,8 @@ dependencies or the extension.
 This can be run for interactive manipulation and registration of a CT or synthetic volume with an X-ray image or DRR:
 
 ```bash
-PYTHONPATH=$PWD uv run scripts/interface.py -h
-PYTHONPATH=$PWD uv run scripts/interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --xray-path "/path/to/x_ray.dcm"
+uv run scripts/interface.py -h
+uv run scripts/interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --xray-path "/path/to/x_ray.dcm"
 ```
 
 ![interface_2025-09-05.png](figures/readme/interface_2025-09-05.png)
@@ -203,36 +196,36 @@ that can safely be modified while a registration is running:
 ### Run Radon transform algorithms on CPU and GPU (CUDA) to compare performance:
 
 ```bash
-PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_radon2d.py "/path/to/x_ray.dcm"
-PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_radon3d.py "/path/to/ct.nrrd"
+uv run scripts/benchmaking/benchmark_radon2d.py "/path/to/x_ray.dcm"
+uv run scripts/benchmaking/benchmark_radon3d.py "/path/to/ct.nrrd"
 ```
 
 ### Run the Grangeat-based resampling algorithms on CPU and GPU (CUDA) to compare performance:
 
 ```bash
-PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_resample_sinogram3d.py -h
-PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_resample_sinogram3d.py --no-load --no-save --sinogram-size 64 # run on synthetic data
-PYTHONPATH=$PWD uv run scripts/benchmaking/benchmark_resample_sinogram3d.py --ct-nrrd-path "/path/to/ct.nrrd"
+uv run scripts/benchmaking/benchmark_resample_sinogram3d.py -h
+uv run scripts/benchmaking/benchmark_resample_sinogram3d.py --no-load --no-save --sinogram-size 64 # run on synthetic data
+uv run scripts/benchmaking/benchmark_resample_sinogram3d.py --ct-nrrd-path "/path/to/ct.nrrd"
 ```
 
 ### Run registration experiments:
 
 ```bash
-PYTHONPATH=$PWD uv run scripts/register.py -h
-PYTHONPATH=$PWD uv run scripts/register.py --no-load --no-save --sinogram-size 64 # run on synthetic data
-PYTHONPATH=$PWD uv run scripts/register.py --ct-nrrd-path "/path/to/ct.nrrd"
+uv run scripts/register.py -h
+uv run scripts/register.py --no-load --no-save --sinogram-size 64 # run on synthetic data
+uv run scripts/register.py --ct-nrrd-path "/path/to/ct.nrrd"
 ```
 
 ### Dev scripts
 
 ```bash
-PYTHONPATH=$PWD uv run registration/lib/dev_scripts/dev_sinogram.py --help 
+uv run registration/lib/dev_scripts/dev_sinogram.py --help 
 ```
 
 or
 
 ```bash
-PYTHONPATH=$PWD python registration/lib/dev_scripts/dev_sinogram.py --help 
+python registration/lib/dev_scripts/dev_sinogram.py --help 
 ```
 
 # The `reg23` extension
@@ -322,5 +315,5 @@ SE3 between the transformation and the ground truth transformation for 1000 rand
 
 All the following IDE integration advice is based on CLion 2024.3.1.1.
 
-'reg23/CMakeLists.txt' exists exclusively to aid your IDE with syntax highlighting and error detection in the
+`reg23/CMakeLists.txt` exists exclusively to aid your IDE with syntax highlighting and error detection in the
 extension .cpp and .cu source files. Configure a CMake project in your IDE to make use of this.
