@@ -1,15 +1,21 @@
 var searchData=
 [
-  ['sample_0',['sample',['../classreg23_1_1SinogramHEALPix.html#ad60d874c9f597f920efc9166ecbeeb7a',1,'reg23::SinogramHEALPix::Sample()'],['../classreg23_1_1Texture2DCPU.html#a83d57fba8eea12e11bb0545457029ca5',1,'reg23::Texture2DCPU::Sample()'],['../classreg23_1_1Texture3DCPU.html#a142dd9d3b278a4b0c50f04b38ce267e1',1,'reg23::Texture3DCPU::Sample()'],['../classreg23_1_1SinogramClassic3D.html#a1dc6db29b084912ae69f2463992f6428',1,'reg23::SinogramClassic3D::Sample()']]],
-  ['sign_1',['Sign',['../group__general__tools.html#ga4be145d2e42b129e2a744064a009417f',1,'reg23']]],
-  ['sinogramclassic3d_2',['sinogramclassic3d',['../classreg23_1_1SinogramClassic3D.html#a43a2156519c713255484a7d88bfa15b9',1,'reg23::SinogramClassic3D::SinogramClassic3D()=default'],['../classreg23_1_1SinogramClassic3D.html#a985bb59098297b026c1890217e1df8cf',1,'reg23::SinogramClassic3D::SinogramClassic3D(Base texture)'],['../classreg23_1_1SinogramClassic3D.html#aa7e718a05a38fe329b4d736c5d09105c',1,'reg23::SinogramClassic3D::SinogramClassic3D(const SinogramClassic3D &amp;)=default'],['../classreg23_1_1SinogramClassic3D.html#a42be9382e1e85f13b9ce8c1752be315e',1,'reg23::SinogramClassic3D::SinogramClassic3D(SinogramClassic3D &amp;&amp;)=default']]],
-  ['sinogramhealpix_3',['sinogramhealpix',['../classreg23_1_1SinogramHEALPix.html#aaceb43cbb07f62a823b86d3bc3a64976',1,'reg23::SinogramHEALPix::SinogramHEALPix(SinogramHEALPix &amp;&amp;)=default'],['../classreg23_1_1SinogramHEALPix.html#a5af8aa1eb1d3d2356fdff0fef5b13092',1,'reg23::SinogramHEALPix::SinogramHEALPix(const SinogramHEALPix &amp;)=default'],['../classreg23_1_1SinogramHEALPix.html#ad2336b2fba64947ec908894cc5751e91',1,'reg23::SinogramHEALPix::SinogramHEALPix(Base texture)'],['../classreg23_1_1SinogramHEALPix.html#a6ff059f3ffcb86fe70c2d651a6360a83',1,'reg23::SinogramHEALPix::SinogramHEALPix()=default']]],
-  ['size_4',['Size',['../classreg23_1_1Texture.html#a111ad5e0c1a8330152d367e04772f7ff',1,'reg23::Texture']]],
-  ['sizetensor_5',['sizetensor',['../classreg23_1_1CUDATexture2D.html#a88895a17472217a7a3b553bd01b8cc98',1,'reg23::CUDATexture2D::SizeTensor()'],['../classreg23_1_1CUDATexture3D.html#ac82ee51aaf9c8f88cf3a566aaf2e3b8c',1,'reg23::CUDATexture3D::SizeTensor()']]],
-  ['sizeworld_6',['SizeWorld',['../classreg23_1_1Texture.html#abfc8536390678e625ba68524cabdd313',1,'reg23::Texture']]],
-  ['spacing_7',['Spacing',['../classreg23_1_1Texture.html#a2d32947dcb93ddd94f55fd2d37d02641',1,'reg23::Texture']]],
-  ['square_8',['Square',['../group__general__tools.html#gac05f93968187265d84f03c8caf65736a',1,'reg23']]],
-  ['staticcast_9',['StaticCast',['../classreg23_1_1Vec.html#a01d47c2f401d48d9d26ad37ec60776a3',1,'reg23::Vec']]],
-  ['stringstoaddressmodes_10',['StringsToAddressModes',['../group__textures.html#ga41e11281be1b986d4fb9beeea39504f2',1,'reg23']]],
-  ['sum_11',['Sum',['../classreg23_1_1Vec.html#a866dfdc29aeacf98abbd118d6a67fc93',1,'reg23::Vec']]]
+  ['radon2d_0',['radon2d',['../namespacereg23_1_1ops.html#a55a2c76eb5188d1be83ec20e4ae6b807',1,'reg23::ops']]],
+  ['radon2d_5fcpu_1',['Radon2D_CPU',['../group__pytorch__functions.html#gadd393ee2ab42ad76b025563b6decc3e4',1,'reg23']]],
+  ['radon2d_5fcuda_2',['Radon2D_CUDA',['../group__pytorch__functions.html#ga6685f35545afe72a62f102ad4d6715b6',1,'reg23']]],
+  ['radon2d_5fcuda_5fv2_3',['Radon2D_CUDA_V2',['../namespacereg23.html#adfa4467dc900648682b65ab073b9e1a2',1,'reg23']]],
+  ['radon2d_5fv2_4',['radon2d_v2',['../namespacereg23_1_1ops.html#ac0308ec0add6a821dd9371b82eae31f5',1,'reg23::ops']]],
+  ['radon3d_5',['radon3d',['../namespacereg23_1_1ops.html#a75b95b82948ba224d2b3c9576c106410',1,'reg23::ops']]],
+  ['radon3d_5fcpu_6',['Radon3D_CPU',['../group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24',1,'reg23']]],
+  ['radon3d_5fcuda_7',['Radon3D_CUDA',['../group__pytorch__functions.html#ga8b088f60dae2dc0c0a6670f9f63a4468',1,'reg23']]],
+  ['radon3d_5fcuda_5fv2_8',['Radon3D_CUDA_V2',['../namespacereg23.html#a87f61adbbd554c0cb26dde418d58b44c',1,'reg23']]],
+  ['radon3d_5fv2_9',['radon3d_v2',['../namespacereg23_1_1ops.html#a22563da2821c1c6bd9fcb8537169de74',1,'reg23::ops']]],
+  ['range_10',['Range',['../classreg23_1_1Vec.html#a1db2ea0fe00b7eb17a8a0e02eb115fae',1,'reg23::Vec']]],
+  ['rayconvexpolyhedrondistance_11',['RayConvexPolyhedronDistance',['../group__general__tools.html#ga78feb4a4e08ae25e1e7576b7224ec27a',1,'reg23']]],
+  ['resample_5fsinogram3d_12',['resample_sinogram3d',['../namespacereg23_1_1ops.html#aba10f110772f93eb8cfb379c9db0b5c4',1,'reg23::ops']]],
+  ['resample_5fsinogram3d_5fcuda_5ftexture_13',['resample_sinogram3d_cuda_texture',['../namespacereg23_1_1ops.html#a66737099149365d00190f63a072a543c',1,'reg23::ops']]],
+  ['resampleplane_14',['ResamplePlane',['../structreg23_1_1ResampleSinogram3D.html#ad00b259be3397bc816fb6808f694f0a2',1,'reg23::ResampleSinogram3D']]],
+  ['resamplesinogram3d_5fcpu_15',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga4d46ac88a0dcaf74d1edeecf2719ff1d',1,'reg23']]],
+  ['resamplesinogram3d_5fcuda_16',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#gad786889c18e2d7f2adfa9561a539037b',1,'reg23']]],
+  ['resamplesinogram3dcudatexture_17',['ResampleSinogram3DCUDATexture',['../group__pytorch__functions.html#ga9fb0a5b2144685bdea16c62bd59454fa',1,'reg23']]]
 ];

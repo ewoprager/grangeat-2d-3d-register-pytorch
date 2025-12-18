@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>reg23_experiments.registration.lib.plot API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>reg23_experiments.registration.lib.plot</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.fit_power_relationship"><code class="name flex">
+<span>def <span class="ident">fit_power_relationship</span></span>(<span>xs: torch.Tensor, ys: torch.Tensor) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fit_power_relationship(xs: torch.Tensor, ys: torch.Tensor) -&gt; torch.Tensor:
+    &#34;&#34;&#34;
+    y = a * x^b
+    :param xs:
+    :param ys:
+    :return: (2,) tensor containing [a, b]
+    &#34;&#34;&#34;
+    assert xs.size() == ys.size()
+    assert (xs &gt; 0.0).all()
+    assert (ys &gt; 0.0).all()
+
+    ln_xs = xs.log()
+    ln_ys = ys.log()
+    coefficients = torch_polyfit(ln_xs, ln_ys, degree=1)
+    return torch.tensor([coefficients[0].exp(), coefficients[1]])</code></pre>
+</details>
+<div class="desc"><p>y = a * x^b
+:param xs:
+:param ys:
+:return: (2,) tensor containing [a, b]</p></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.save_colourmap_for_latex"><code class="name flex">
+<span>def <span class="ident">save_colourmap_for_latex</span></span>(<span>filename: str, colourmap: torch.Tensor)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_colourmap_for_latex(filename: str, colourmap: torch.Tensor):
+    colourmap = colourmap.clone().cpu()
+    indices = [torch.arange(0, n, 1) for n in colourmap.size()]
+    indices = torch.meshgrid(indices)
+    rows = indices[::-1] + (colourmap,)
+    rows = torch.stack([row.flatten() for row in rows], dim=-1)
+    np.savetxt(&#34;data/temp/{}.dat&#34;.format(filename), rows.numpy())</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.to_latex_scientific"><code class="name flex">
+<span>def <span class="ident">to_latex_scientific</span></span>(<span>x: float, precision: int = 2, include_plus: bool = False)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False):
+    if x == 0:
+        return f&#34;{0:.{precision}f}&#34;
+    exponent: int = int(f&#34;{x:e}&#34;.split(&#34;e&#34;)[1])
+    mantissa: float = x / (10.0 ** exponent)
+    if exponent == 0:
+        return f&#34;{mantissa:.{precision}f}&#34;
+    if include_plus:
+        return fr&#34;{mantissa:+.{precision}f} \times 10^{{{exponent}}}&#34;
+    return fr&#34;{mantissa:.{precision}f} \times 10^{{{exponent}}}&#34;</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.torch_polyfit"><code class="name flex">
+<span>def <span class="ident">torch_polyfit</span></span>(<span>xs: torch.Tensor, ys: torch.Tensor, *, degree: int = 1) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def torch_polyfit(xs: torch.Tensor, ys: torch.Tensor, *, degree: int = 1) -&gt; torch.Tensor:
+    assert xs.size() == ys.size()
+
+    A = torch.stack([xs.pow(i) for i in range(degree + 1)], dim=1)  # size = (n, degree + 1)
+    B = ys.unsqueeze(1)
+
+    ret = torch.linalg.lstsq(A, B)
+
+    return ret.solution</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.visualise_planes_as_points"><code class="name flex">
+<span>def <span class="ident">visualise_planes_as_points</span></span>(<span>grid: <a title="reg23_experiments.registration.lib.structs.Sinogram3dGrid" href="structs.html#reg23_experiments.registration.lib.structs.Sinogram3dGrid">Sinogram3dGrid</a>,<br>scalars: torch.Tensor | None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def visualise_planes_as_points(grid: Sinogram3dGrid, scalars: torch.Tensor | None):
+    ct = grid.theta.cos().flatten()
+    st = grid.theta.sin().flatten()
+    cp = grid.phi.cos().flatten()
+    sp = grid.phi.sin().flatten()
+    points = grid.r.flatten().unsqueeze(-1) * torch.stack((ct * cp, ct * sp, st), dim=-1)
+    pl = pv.Plotter()
+    if scalars is None:
+        pl.add_points(points.cpu().numpy())
+    else:
+        pl.add_points(points.cpu().numpy(), scalars=scalars.flatten().cpu().numpy())
+    pl.show()</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.CustomFitPowerRatio"><code class="flex name class">
+<span>class <span class="ident">CustomFitPowerRatio</span></span>
+<span>(</span><span>*,<br>xs: torch.Tensor,<br>series: <a title="reg23_experiments.registration.lib.plot.Series" href="#reg23_experiments.registration.lib.plot.Series">Series</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CustomFitPowerRatio(DataFit):
+    def __init__(self, *, xs: torch.Tensor, series: Series):
+        self._xs = xs
+        self._series = series
+
+        independent_variable = (xs[1:-1] if series.intersects_origin else xs[:-1]).cpu().numpy()
+        dependent_variable = ((series.ys[1:-1] if series.intersects_origin else series.ys[
+            :-1]) - series.origin_y_offset).cpu().numpy()
+        initial_parameters = np.array([3.0, 0.2])
+        result = scipy.optimize.least_squares(  #
+            fun=CustomFitPowerRatio._function,  #
+            x0=initial_parameters,  #
+            jac=CustomFitPowerRatio._jacobian,  #
+            bounds=scipy.optimize.Bounds(lb=np.zeros(2), keep_feasible=True),  #
+            args=(independent_variable, dependent_variable),  #
+            verbose=1)
+        print(result)
+        self._parameters = result.x
+
+    def text_equation(self) -&gt; str:
+        return &#34;({}, {})&#34;.format(self._parameters[0], self._parameters[1])
+
+    def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+        return torch.tensor(CustomFitPowerRatio._model(self._parameters, (
+            xs[1:] if self._series.intersects_origin else xs).cpu().numpy()))
+
+    def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+        xs_fit = (xs[1:] if self._series.intersects_origin else xs).cpu().numpy()
+        ys_fit = CustomFitPowerRatio._model(self._parameters, xs_fit) + self._series.origin_y_offset
+        axes.plot(xs_fit, ys_fit, label=&#34;{}: {}&#34;.format(label_prefix, self.text_equation()), **kwargs)
+
+    @staticmethod
+    def _model(parameters: np.ndarray, independent_variable: np.ndarray) -&gt; np.ndarray:
+        x_a = np.pow(independent_variable, parameters[0])
+        bx = parameters[1] * independent_variable
+        return (x_a + bx) / (2.0 - x_a + bx)
+
+    @staticmethod
+    def _function(parameters: np.ndarray, independent_variable: np.ndarray,
+                  dependent_variable: np.ndarray) -&gt; np.ndarray:
+        return CustomFitPowerRatio._model(parameters, independent_variable) - dependent_variable
+
+    @staticmethod
+    def _jacobian(parameters: np.ndarray, independent_variable: np.ndarray,
+                  dependent_variable: np.ndarray) -&gt; np.ndarray:
+        ret = np.empty((independent_variable.size, parameters.size))
+        x_a = np.pow(independent_variable, parameters[0])  # size matches that of independent_variable
+        bx = parameters[1] * independent_variable  # size matches that of independent_variable
+        den = 2.0 - x_a + bx  # size matches that of independent_variable
+        den = den * den  # size matches that of independent_variable
+        ret[:, 0] = 2.0 * (1.0 + bx) * x_a * np.log(independent_variable) / den
+        ret[:, 1] = 2.0 * (1.0 - x_a) * independent_variable / den
+        return ret</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="reg23_experiments.registration.lib.plot.DataFit" href="#reg23_experiments.registration.lib.plot.DataFit">DataFit</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.CustomFitPowerRatio.generate_and_plot_ys"><code class="name flex">
+<span>def <span class="ident">generate_and_plot_ys</span></span>(<span>self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+    xs_fit = (xs[1:] if self._series.intersects_origin else xs).cpu().numpy()
+    ys_fit = CustomFitPowerRatio._model(self._parameters, xs_fit) + self._series.origin_y_offset
+    axes.plot(xs_fit, ys_fit, label=&#34;{}: {}&#34;.format(label_prefix, self.text_equation()), **kwargs)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.CustomFitPowerRatio.generate_ys"><code class="name flex">
+<span>def <span class="ident">generate_ys</span></span>(<span>self, xs: torch.Tensor) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+    return torch.tensor(CustomFitPowerRatio._model(self._parameters, (
+        xs[1:] if self._series.intersects_origin else xs).cpu().numpy()))</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.CustomFitPowerRatio.text_equation"><code class="name flex">
+<span>def <span class="ident">text_equation</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def text_equation(self) -&gt; str:
+    return &#34;({}, {})&#34;.format(self._parameters[0], self._parameters[1])</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.DataFit"><code class="flex name class">
+<span>class <span class="ident">DataFit</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DataFit(ABC):
+    @abstractmethod
+    def text_equation(self) -&gt; str:
+        pass
+
+    @abstractmethod
+    def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+        pass
+
+    @abstractmethod
+    def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+        pass</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="reg23_experiments.registration.lib.plot.CustomFitPowerRatio" href="#reg23_experiments.registration.lib.plot.CustomFitPowerRatio">CustomFitPowerRatio</a></li>
+<li><a title="reg23_experiments.registration.lib.plot.LinearFit" href="#reg23_experiments.registration.lib.plot.LinearFit">LinearFit</a></li>
+<li><a title="reg23_experiments.registration.lib.plot.PowerFit" href="#reg23_experiments.registration.lib.plot.PowerFit">PowerFit</a></li>
+<li><a title="reg23_experiments.registration.lib.plot.QuadraticFit" href="#reg23_experiments.registration.lib.plot.QuadraticFit">QuadraticFit</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.DataFit.generate_and_plot_ys"><code class="name flex">
+<span>def <span class="ident">generate_and_plot_ys</span></span>(<span>self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.DataFit.generate_ys"><code class="name flex">
+<span>def <span class="ident">generate_ys</span></span>(<span>self, xs: torch.Tensor) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.DataFit.text_equation"><code class="name flex">
+<span>def <span class="ident">text_equation</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def text_equation(self) -&gt; str:
+    pass</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.LinearFit"><code class="flex name class">
+<span>class <span class="ident">LinearFit</span></span>
+<span>(</span><span>*,<br>xs: torch.Tensor,<br>series: <a title="reg23_experiments.registration.lib.plot.Series" href="#reg23_experiments.registration.lib.plot.Series">Series</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LinearFit(DataFit):
+    def __init__(self, *, xs: torch.Tensor, series: Series):
+        self._xs = xs
+        self._series = series
+        ys_fit = series.ys - self._series.origin_y_offset
+        self._coefficients = torch_polyfit(xs, ys_fit, degree=1)
+
+    @property
+    def xs(self) -&gt; torch.Tensor:
+        return self._xs
+
+    @property
+    def series(self) -&gt; Series:
+        return self._series
+
+    @property
+    def coefficients(self) -&gt; torch.Tensor:
+        return self._coefficients
+
+    def text_equation(self) -&gt; str:
+        return &#34;$y = {}x {}$&#34;.format(to_latex_scientific(self.coefficients[1].item()),
+                                     to_latex_scientific(self.coefficients[0].item(), include_plus=True))
+
+    def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+        return self.coefficients[0] + self.coefficients[1] * xs + self._series.origin_y_offset
+
+    def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+        ys_fit = self.coefficients[0] + self.coefficients[1] * xs + self._series.origin_y_offset
+        axes.plot(xs.cpu().numpy(), ys_fit.cpu().numpy(), label=&#34;{}: {}&#34;.format(label_prefix, self.text_equation()),
+                  **kwargs)
+
+    def scatter(self, axes, **kwargs) -&gt; None:
+        axes.scatter(self.xs, self.series.ys, **kwargs)
+
+    def correlation_coefficient(self) -&gt; torch.Tensor:
+        return torch.corrcoef(torch.stack((self.xs.flatten(), self.series.ys.flatten()), dim=0))[0, 1]</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="reg23_experiments.registration.lib.plot.DataFit" href="#reg23_experiments.registration.lib.plot.DataFit">DataFit</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.LinearFit.coefficients"><code class="name">prop <span class="ident">coefficients</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def coefficients(self) -&gt; torch.Tensor:
+    return self._coefficients</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.LinearFit.series"><code class="name">prop <span class="ident">series</span> : <a title="reg23_experiments.registration.lib.plot.Series" href="#reg23_experiments.registration.lib.plot.Series">Series</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def series(self) -&gt; Series:
+    return self._series</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.LinearFit.xs"><code class="name">prop <span class="ident">xs</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def xs(self) -&gt; torch.Tensor:
+    return self._xs</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.LinearFit.correlation_coefficient"><code class="name flex">
+<span>def <span class="ident">correlation_coefficient</span></span>(<span>self) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def correlation_coefficient(self) -&gt; torch.Tensor:
+    return torch.corrcoef(torch.stack((self.xs.flatten(), self.series.ys.flatten()), dim=0))[0, 1]</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.LinearFit.generate_and_plot_ys"><code class="name flex">
+<span>def <span class="ident">generate_and_plot_ys</span></span>(<span>self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+    ys_fit = self.coefficients[0] + self.coefficients[1] * xs + self._series.origin_y_offset
+    axes.plot(xs.cpu().numpy(), ys_fit.cpu().numpy(), label=&#34;{}: {}&#34;.format(label_prefix, self.text_equation()),
+              **kwargs)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.LinearFit.generate_ys"><code class="name flex">
+<span>def <span class="ident">generate_ys</span></span>(<span>self, xs: torch.Tensor) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+    return self.coefficients[0] + self.coefficients[1] * xs + self._series.origin_y_offset</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.LinearFit.scatter"><code class="name flex">
+<span>def <span class="ident">scatter</span></span>(<span>self, axes, **kwargs) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def scatter(self, axes, **kwargs) -&gt; None:
+    axes.scatter(self.xs, self.series.ys, **kwargs)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.LinearFit.text_equation"><code class="name flex">
+<span>def <span class="ident">text_equation</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def text_equation(self) -&gt; str:
+    return &#34;$y = {}x {}$&#34;.format(to_latex_scientific(self.coefficients[1].item()),
+                                 to_latex_scientific(self.coefficients[0].item(), include_plus=True))</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit"><code class="flex name class">
+<span>class <span class="ident">PowerFit</span></span>
+<span>(</span><span>*,<br>xs: torch.Tensor,<br>series: <a title="reg23_experiments.registration.lib.plot.Series" href="#reg23_experiments.registration.lib.plot.Series">Series</a>,<br>linear_fit_log_log: <a title="reg23_experiments.registration.lib.plot.LinearFit" href="#reg23_experiments.registration.lib.plot.LinearFit">LinearFit</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PowerFit(DataFit):
+    def __init__(self, *, xs: torch.Tensor, series: Series, linear_fit_log_log: LinearFit):
+        self._xs = xs
+        self._series = series
+        self._linear_fit_log_log = linear_fit_log_log
+
+    @staticmethod
+    def build(*, xs: torch.Tensor, series: Series) -&gt; Optional[&#39;PowerFit&#39;]:
+        xs_fit = xs[1:] if series.intersects_origin else xs
+        ys_fit = (series.ys[1:] if series.intersects_origin else series.ys) - series.origin_y_offset
+        if not ((xs_fit &gt; 0.0).all() and (ys_fit &gt; 0.0).all()):
+            return None
+        return PowerFit(xs=xs, series=series, linear_fit_log_log=LinearFit(  #
+            xs=xs_fit.log(), series=Series(ys_fit.log(), intersects_origin=False, origin_y_offset=0.0)))
+
+    @property
+    def xs(self) -&gt; torch.Tensor:
+        return self._xs
+
+    @property
+    def series(self) -&gt; Series:
+        return self._series
+
+    @property
+    def coefficients(self) -&gt; torch.Tensor:
+        return torch.tensor([self._linear_fit_log_log.coefficients[0].exp(), self._linear_fit_log_log.coefficients[1]])
+
+    def text_equation(self) -&gt; str:
+        return &#34;$y = {}x^{{{}}}$&#34;.format(to_latex_scientific(self.coefficients[0].item()),
+                                         to_latex_scientific(self.coefficients[1].item()))
+
+    def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+        xs_fit = xs[1:] if self._series.intersects_origin else xs
+        return self.coefficients[0] * xs_fit.pow(self.coefficients[1]) + self._series.origin_y_offset
+
+    def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+        xs_fit = xs[1:] if self._series.intersects_origin else xs
+        ys_fit = self.coefficients[0] * xs_fit.pow(self.coefficients[1]) + self._series.origin_y_offset
+        axes.plot(xs_fit.cpu().numpy(), ys_fit.cpu().numpy(), label=&#34;{}: {}&#34;.format(label_prefix, self.text_equation()),
+                  **kwargs)
+
+    def scatter_log_log(self, axes, **kwargs) -&gt; None:
+        self._linear_fit_log_log.scatter(axes, **kwargs)
+
+    def plot_fit_log_log(self, axes, label_prefix: str) -&gt; None:
+        self._linear_fit_log_log.generate_and_plot_ys(axes=axes, xs=self._linear_fit_log_log.xs,
+                                                      label_prefix=label_prefix)
+
+    def log_log_correlation_coefficient(self) -&gt; torch.Tensor:
+        return self._linear_fit_log_log.correlation_coefficient()</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="reg23_experiments.registration.lib.plot.DataFit" href="#reg23_experiments.registration.lib.plot.DataFit">DataFit</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.build"><code class="name flex">
+<span>def <span class="ident">build</span></span>(<span>*,<br>xs: torch.Tensor,<br>series: <a title="reg23_experiments.registration.lib.plot.Series" href="#reg23_experiments.registration.lib.plot.Series">Series</a>) ‑> <a title="reg23_experiments.registration.lib.plot.PowerFit" href="#reg23_experiments.registration.lib.plot.PowerFit">PowerFit</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def build(*, xs: torch.Tensor, series: Series) -&gt; Optional[&#39;PowerFit&#39;]:
+    xs_fit = xs[1:] if series.intersects_origin else xs
+    ys_fit = (series.ys[1:] if series.intersects_origin else series.ys) - series.origin_y_offset
+    if not ((xs_fit &gt; 0.0).all() and (ys_fit &gt; 0.0).all()):
+        return None
+    return PowerFit(xs=xs, series=series, linear_fit_log_log=LinearFit(  #
+        xs=xs_fit.log(), series=Series(ys_fit.log(), intersects_origin=False, origin_y_offset=0.0)))</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.coefficients"><code class="name">prop <span class="ident">coefficients</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def coefficients(self) -&gt; torch.Tensor:
+    return torch.tensor([self._linear_fit_log_log.coefficients[0].exp(), self._linear_fit_log_log.coefficients[1]])</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.series"><code class="name">prop <span class="ident">series</span> : <a title="reg23_experiments.registration.lib.plot.Series" href="#reg23_experiments.registration.lib.plot.Series">Series</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def series(self) -&gt; Series:
+    return self._series</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.xs"><code class="name">prop <span class="ident">xs</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def xs(self) -&gt; torch.Tensor:
+    return self._xs</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.generate_and_plot_ys"><code class="name flex">
+<span>def <span class="ident">generate_and_plot_ys</span></span>(<span>self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+    xs_fit = xs[1:] if self._series.intersects_origin else xs
+    ys_fit = self.coefficients[0] * xs_fit.pow(self.coefficients[1]) + self._series.origin_y_offset
+    axes.plot(xs_fit.cpu().numpy(), ys_fit.cpu().numpy(), label=&#34;{}: {}&#34;.format(label_prefix, self.text_equation()),
+              **kwargs)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.generate_ys"><code class="name flex">
+<span>def <span class="ident">generate_ys</span></span>(<span>self, xs: torch.Tensor) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+    xs_fit = xs[1:] if self._series.intersects_origin else xs
+    return self.coefficients[0] * xs_fit.pow(self.coefficients[1]) + self._series.origin_y_offset</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.log_log_correlation_coefficient"><code class="name flex">
+<span>def <span class="ident">log_log_correlation_coefficient</span></span>(<span>self) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def log_log_correlation_coefficient(self) -&gt; torch.Tensor:
+    return self._linear_fit_log_log.correlation_coefficient()</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.plot_fit_log_log"><code class="name flex">
+<span>def <span class="ident">plot_fit_log_log</span></span>(<span>self, axes, label_prefix: str) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def plot_fit_log_log(self, axes, label_prefix: str) -&gt; None:
+    self._linear_fit_log_log.generate_and_plot_ys(axes=axes, xs=self._linear_fit_log_log.xs,
+                                                  label_prefix=label_prefix)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.scatter_log_log"><code class="name flex">
+<span>def <span class="ident">scatter_log_log</span></span>(<span>self, axes, **kwargs) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def scatter_log_log(self, axes, **kwargs) -&gt; None:
+    self._linear_fit_log_log.scatter(axes, **kwargs)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.PowerFit.text_equation"><code class="name flex">
+<span>def <span class="ident">text_equation</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def text_equation(self) -&gt; str:
+    return &#34;$y = {}x^{{{}}}$&#34;.format(to_latex_scientific(self.coefficients[0].item()),
+                                     to_latex_scientific(self.coefficients[1].item()))</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.QuadraticFit"><code class="flex name class">
+<span>class <span class="ident">QuadraticFit</span></span>
+<span>(</span><span>*,<br>xs: torch.Tensor,<br>series: <a title="reg23_experiments.registration.lib.plot.Series" href="#reg23_experiments.registration.lib.plot.Series">Series</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class QuadraticFit(DataFit):
+    def __init__(self, *, xs: torch.Tensor, series: Series):
+        self._xs = xs
+        self._series = series
+        ys_fit = series.ys - self._series.origin_y_offset
+        self._coefficients = torch_polyfit(xs, ys_fit, degree=2)
+
+    @property
+    def xs(self) -&gt; torch.Tensor:
+        return self._xs
+
+    @property
+    def series(self) -&gt; Series:
+        return self._series
+
+    @property
+    def coefficients(self) -&gt; torch.Tensor:
+        return self._coefficients
+
+    def text_equation(self) -&gt; str:
+        return &#34;$y = {}x^2 {}x {}$&#34;.format(to_latex_scientific(self.coefficients[2].item()),
+                                           to_latex_scientific(self.coefficients[1].item(), include_plus=True),
+                                           to_latex_scientific(self.coefficients[0].item(), include_plus=True))
+
+    def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+        return self.coefficients[0] + self.coefficients[1] * xs + self.coefficients[
+            2] * xs * xs + self._series.origin_y_offset
+
+    def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+        ys_fit = self.coefficients[0] + self.coefficients[1] * xs + self.coefficients[
+            2] * xs * xs + self._series.origin_y_offset
+        axes.plot(xs.cpu().numpy(), ys_fit.cpu().numpy(), label=&#34;{}: {}&#34;.format(label_prefix, self.text_equation()),
+                  **kwargs)
+
+    def scatter(self, axes, **kwargs) -&gt; None:
+        axes.scatter(self.xs, self.series.ys, **kwargs)</code></pre>
+</details>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="reg23_experiments.registration.lib.plot.DataFit" href="#reg23_experiments.registration.lib.plot.DataFit">DataFit</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.QuadraticFit.coefficients"><code class="name">prop <span class="ident">coefficients</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def coefficients(self) -&gt; torch.Tensor:
+    return self._coefficients</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.QuadraticFit.series"><code class="name">prop <span class="ident">series</span> : <a title="reg23_experiments.registration.lib.plot.Series" href="#reg23_experiments.registration.lib.plot.Series">Series</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def series(self) -&gt; Series:
+    return self._series</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.QuadraticFit.xs"><code class="name">prop <span class="ident">xs</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def xs(self) -&gt; torch.Tensor:
+    return self._xs</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.QuadraticFit.generate_and_plot_ys"><code class="name flex">
+<span>def <span class="ident">generate_and_plot_ys</span></span>(<span>self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_and_plot_ys(self, *, axes, xs: torch.Tensor, label_prefix: str, **kwargs) -&gt; None:
+    ys_fit = self.coefficients[0] + self.coefficients[1] * xs + self.coefficients[
+        2] * xs * xs + self._series.origin_y_offset
+    axes.plot(xs.cpu().numpy(), ys_fit.cpu().numpy(), label=&#34;{}: {}&#34;.format(label_prefix, self.text_equation()),
+              **kwargs)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.QuadraticFit.generate_ys"><code class="name flex">
+<span>def <span class="ident">generate_ys</span></span>(<span>self, xs: torch.Tensor) ‑> torch.Tensor</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_ys(self, xs: torch.Tensor) -&gt; torch.Tensor:
+    return self.coefficients[0] + self.coefficients[1] * xs + self.coefficients[
+        2] * xs * xs + self._series.origin_y_offset</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.QuadraticFit.scatter"><code class="name flex">
+<span>def <span class="ident">scatter</span></span>(<span>self, axes, **kwargs) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def scatter(self, axes, **kwargs) -&gt; None:
+    axes.scatter(self.xs, self.series.ys, **kwargs)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.QuadraticFit.text_equation"><code class="name flex">
+<span>def <span class="ident">text_equation</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def text_equation(self) -&gt; str:
+    return &#34;$y = {}x^2 {}x {}$&#34;.format(to_latex_scientific(self.coefficients[2].item()),
+                                       to_latex_scientific(self.coefficients[1].item(), include_plus=True),
+                                       to_latex_scientific(self.coefficients[0].item(), include_plus=True))</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.Series"><code class="flex name class">
+<span>class <span class="ident">Series</span></span>
+<span>(</span><span>ys: torch.Tensor, intersects_origin: bool, origin_y_offset: float = 0.0)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Series(NamedTuple):
+    ys: torch.Tensor
+    intersects_origin: bool
+    origin_y_offset: float = 0.0</code></pre>
+</details>
+<div class="desc"><p>Series(ys, intersects_origin, origin_y_offset)</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.tuple</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="reg23_experiments.registration.lib.plot.Series.intersects_origin"><code class="name">var <span class="ident">intersects_origin</span> : bool</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Series(NamedTuple):
+    ys: torch.Tensor
+    intersects_origin: bool
+    origin_y_offset: float = 0.0</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 1</p></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.Series.origin_y_offset"><code class="name">var <span class="ident">origin_y_offset</span> : float</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Series(NamedTuple):
+    ys: torch.Tensor
+    intersects_origin: bool
+    origin_y_offset: float = 0.0</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 2</p></div>
+</dd>
+<dt id="reg23_experiments.registration.lib.plot.Series.ys"><code class="name">var <span class="ident">ys</span> : torch.Tensor</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Series(NamedTuple):
+    ys: torch.Tensor
+    intersects_origin: bool
+    origin_y_offset: float = 0.0</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="reg23_experiments.registration.lib" href="index.html">reg23_experiments.registration.lib</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="reg23_experiments.registration.lib.plot.fit_power_relationship" href="#reg23_experiments.registration.lib.plot.fit_power_relationship">fit_power_relationship</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.save_colourmap_for_latex" href="#reg23_experiments.registration.lib.plot.save_colourmap_for_latex">save_colourmap_for_latex</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.to_latex_scientific" href="#reg23_experiments.registration.lib.plot.to_latex_scientific">to_latex_scientific</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.torch_polyfit" href="#reg23_experiments.registration.lib.plot.torch_polyfit">torch_polyfit</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.visualise_planes_as_points" href="#reg23_experiments.registration.lib.plot.visualise_planes_as_points">visualise_planes_as_points</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="reg23_experiments.registration.lib.plot.CustomFitPowerRatio" href="#reg23_experiments.registration.lib.plot.CustomFitPowerRatio">CustomFitPowerRatio</a></code></h4>
+<ul class="">
+<li><code><a title="reg23_experiments.registration.lib.plot.CustomFitPowerRatio.generate_and_plot_ys" href="#reg23_experiments.registration.lib.plot.CustomFitPowerRatio.generate_and_plot_ys">generate_and_plot_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.CustomFitPowerRatio.generate_ys" href="#reg23_experiments.registration.lib.plot.CustomFitPowerRatio.generate_ys">generate_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.CustomFitPowerRatio.text_equation" href="#reg23_experiments.registration.lib.plot.CustomFitPowerRatio.text_equation">text_equation</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="reg23_experiments.registration.lib.plot.DataFit" href="#reg23_experiments.registration.lib.plot.DataFit">DataFit</a></code></h4>
+<ul class="">
+<li><code><a title="reg23_experiments.registration.lib.plot.DataFit.generate_and_plot_ys" href="#reg23_experiments.registration.lib.plot.DataFit.generate_and_plot_ys">generate_and_plot_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.DataFit.generate_ys" href="#reg23_experiments.registration.lib.plot.DataFit.generate_ys">generate_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.DataFit.text_equation" href="#reg23_experiments.registration.lib.plot.DataFit.text_equation">text_equation</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="reg23_experiments.registration.lib.plot.LinearFit" href="#reg23_experiments.registration.lib.plot.LinearFit">LinearFit</a></code></h4>
+<ul class="">
+<li><code><a title="reg23_experiments.registration.lib.plot.LinearFit.coefficients" href="#reg23_experiments.registration.lib.plot.LinearFit.coefficients">coefficients</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.LinearFit.correlation_coefficient" href="#reg23_experiments.registration.lib.plot.LinearFit.correlation_coefficient">correlation_coefficient</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.LinearFit.generate_and_plot_ys" href="#reg23_experiments.registration.lib.plot.LinearFit.generate_and_plot_ys">generate_and_plot_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.LinearFit.generate_ys" href="#reg23_experiments.registration.lib.plot.LinearFit.generate_ys">generate_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.LinearFit.scatter" href="#reg23_experiments.registration.lib.plot.LinearFit.scatter">scatter</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.LinearFit.series" href="#reg23_experiments.registration.lib.plot.LinearFit.series">series</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.LinearFit.text_equation" href="#reg23_experiments.registration.lib.plot.LinearFit.text_equation">text_equation</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.LinearFit.xs" href="#reg23_experiments.registration.lib.plot.LinearFit.xs">xs</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="reg23_experiments.registration.lib.plot.PowerFit" href="#reg23_experiments.registration.lib.plot.PowerFit">PowerFit</a></code></h4>
+<ul class="">
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.build" href="#reg23_experiments.registration.lib.plot.PowerFit.build">build</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.coefficients" href="#reg23_experiments.registration.lib.plot.PowerFit.coefficients">coefficients</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.generate_and_plot_ys" href="#reg23_experiments.registration.lib.plot.PowerFit.generate_and_plot_ys">generate_and_plot_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.generate_ys" href="#reg23_experiments.registration.lib.plot.PowerFit.generate_ys">generate_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.log_log_correlation_coefficient" href="#reg23_experiments.registration.lib.plot.PowerFit.log_log_correlation_coefficient">log_log_correlation_coefficient</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.plot_fit_log_log" href="#reg23_experiments.registration.lib.plot.PowerFit.plot_fit_log_log">plot_fit_log_log</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.scatter_log_log" href="#reg23_experiments.registration.lib.plot.PowerFit.scatter_log_log">scatter_log_log</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.series" href="#reg23_experiments.registration.lib.plot.PowerFit.series">series</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.text_equation" href="#reg23_experiments.registration.lib.plot.PowerFit.text_equation">text_equation</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.PowerFit.xs" href="#reg23_experiments.registration.lib.plot.PowerFit.xs">xs</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="reg23_experiments.registration.lib.plot.QuadraticFit" href="#reg23_experiments.registration.lib.plot.QuadraticFit">QuadraticFit</a></code></h4>
+<ul class="">
+<li><code><a title="reg23_experiments.registration.lib.plot.QuadraticFit.coefficients" href="#reg23_experiments.registration.lib.plot.QuadraticFit.coefficients">coefficients</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.QuadraticFit.generate_and_plot_ys" href="#reg23_experiments.registration.lib.plot.QuadraticFit.generate_and_plot_ys">generate_and_plot_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.QuadraticFit.generate_ys" href="#reg23_experiments.registration.lib.plot.QuadraticFit.generate_ys">generate_ys</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.QuadraticFit.scatter" href="#reg23_experiments.registration.lib.plot.QuadraticFit.scatter">scatter</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.QuadraticFit.series" href="#reg23_experiments.registration.lib.plot.QuadraticFit.series">series</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.QuadraticFit.text_equation" href="#reg23_experiments.registration.lib.plot.QuadraticFit.text_equation">text_equation</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.QuadraticFit.xs" href="#reg23_experiments.registration.lib.plot.QuadraticFit.xs">xs</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="reg23_experiments.registration.lib.plot.Series" href="#reg23_experiments.registration.lib.plot.Series">Series</a></code></h4>
+<ul class="">
+<li><code><a title="reg23_experiments.registration.lib.plot.Series.intersects_origin" href="#reg23_experiments.registration.lib.plot.Series.intersects_origin">intersects_origin</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.Series.origin_y_offset" href="#reg23_experiments.registration.lib.plot.Series.origin_y_offset">origin_y_offset</a></code></li>
+<li><code><a title="reg23_experiments.registration.lib.plot.Series.ys" href="#reg23_experiments.registration.lib.plot.Series.ys">ys</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

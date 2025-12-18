@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Grangeat-based 2D/3D image registration: /home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/reg23/include/reg23/ProjectDRRCuboidMaskCPU.h Source File</title>
+<title>Grangeat-based 2D/3D image registration: /home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/reg23/src/backend/include/reg23/ProjectDRRCuboidMaskCPU.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -84,7 +84,7 @@ $(document).ready(function() { init_codefold(0); });
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="dir_1fe8a59f05fe2996ea4d2c96da99ff31.html">reg23</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_3f615ade772d23cefe5e20dcb18424a2.html">backend</a></li><li class="navelem"><a class="el" href="dir_fea30e54bc2426158bf0d33cc8b4c181.html">include</a></li><li class="navelem"><a class="el" href="dir_8a2b0b50b75897761c5b4361daa17784.html">reg23</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -254,7 +254,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="agroup__pytorch__functions_html_ga2581397ad5b85fc99a3d572080c2aaa2"><div class="ttname"><a href="group__pytorch__functions.html#ga2581397ad5b85fc99a3d572080c2aaa2">reg23::ProjectDRRCuboidMask_CPU</a></div><div class="ttdeci">at::Tensor ProjectDRRCuboidMask_CPU(const at::Tensor &amp;volumeSize, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</div><div class="ttdoc">Calculate the distances of the intersections between the DRR-generation rays and the domain of the vo...</div><div class="ttdef"><b>Definition</b> ProjectDRRCuboidMaskCPU.cpp:9</div></div>
 <div class="ttc" id="agroup__pytorch__functions_html_ga4a729751b03c958f0dc1629137f51236"><div class="ttname"><a href="group__pytorch__functions.html#ga4a729751b03c958f0dc1629137f51236">reg23::ProjectDRRCuboidMask_CUDA</a></div><div class="ttdeci">__host__ at::Tensor ProjectDRRCuboidMask_CUDA(const at::Tensor &amp;volumeSize, const at::Tensor &amp;voxelSpacing, const at::Tensor &amp;homographyMatrixInverse, double sourceDistance, int64_t outputWidth, int64_t outputHeight, const at::Tensor &amp;outputOffset, const at::Tensor &amp;detectorSpacing)</div><div class="ttdoc">An implementation of reg23::ProjectDRRCuboidMask_CPU that uses CUDA parallelisation.</div></div>
 <div class="ttc" id="agroup__textures_html_ga41e11281be1b986d4fb9beeea39504f2"><div class="ttname"><a href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">reg23::StringsToAddressModes</a></div><div class="ttdeci">Vec&lt; TextureAddressMode, DIMENSIONALITY &gt; StringsToAddressModes(const std::array&lt; std::string_view, DIMENSIONALITY &gt; &amp;strings)</div><div class="ttdef"><b>Definition</b> Texture.h:44</div></div>
-<div class="ttc" id="anamespacereg23_html"><div class="ttname"><a href="namespacereg23.html">reg23</a></div><div class="ttdef"><b>Definition</b> Common.h:10</div></div>
+<div class="ttc" id="anamespacereg23_html"><div class="ttname"><a href="namespacereg23.html">reg23</a></div><div class="ttdef"><b>Definition</b> GridSample3DCPU.cpp:6</div></div>
 <div class="ttc" id="astructreg23_1_1ProjectDRRCuboidMask_1_1CommonData_html"><div class="ttname"><a href="structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html">reg23::ProjectDRRCuboidMask::CommonData</a></div><div class="ttdef"><b>Definition</b> ProjectDRRCuboidMaskCPU.h:114</div></div>
 <div class="ttc" id="astructreg23_1_1ProjectDRRCuboidMask_1_1CommonData_html_a1368a55e94a344dd744a125a22cec652"><div class="ttname"><a href="structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a1368a55e94a344dd744a125a22cec652">reg23::ProjectDRRCuboidMask::CommonData::flatOutput</a></div><div class="ttdeci">at::Tensor flatOutput</div><div class="ttdef"><b>Definition</b> ProjectDRRCuboidMaskCPU.h:122</div></div>
 <div class="ttc" id="astructreg23_1_1ProjectDRRCuboidMask_1_1CommonData_html_a30d437715b25bdecac13e9f9ee6fbd0d"><div class="ttname"><a href="structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a30d437715b25bdecac13e9f9ee6fbd0d">reg23::ProjectDRRCuboidMask::CommonData::detectorSpacing</a></div><div class="ttdeci">Vec&lt; float, 2 &gt; detectorSpacing</div><div class="ttdef"><b>Definition</b> ProjectDRRCuboidMaskCPU.h:117</div></div>

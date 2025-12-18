@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Grangeat-based 2D/3D image registration: /home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/reg23/include/reg23/GridSample3D.h Source File</title>
+<title>Grangeat-based 2D/3D image registration: /home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/reg23/src/backend/include/reg23/GridSample3D.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -84,7 +84,7 @@ $(document).ready(function() { init_codefold(0); });
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="dir_1fe8a59f05fe2996ea4d2c96da99ff31.html">reg23</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_3f615ade772d23cefe5e20dcb18424a2.html">backend</a></li><li class="navelem"><a class="el" href="dir_fea30e54bc2426158bf0d33cc8b4c181.html">include</a></li><li class="navelem"><a class="el" href="dir_8a2b0b50b75897761c5b4361daa17784.html">reg23</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -167,7 +167,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="agroup__pytorch__functions_html_gab831176a9559fa7959a284c3341a1c10"><div class="ttname"><a href="group__pytorch__functions.html#gab831176a9559fa7959a284c3341a1c10">reg23::GridSample3D_CPU</a></div><div class="ttdeci">at::Tensor GridSample3D_CPU(const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressModeX, const std::string &amp;addressModeY, const std::string &amp;addressModeZ, c10::optional&lt; at::Tensor &gt; out)</div><div class="ttdoc">Sample the given 3D input tensor at the positions given in grid according to the given address mode u...</div><div class="ttdef"><b>Definition</b> GridSample3DCPU.cpp:10</div></div>
 <div class="ttc" id="agroup__pytorch__functions_html_gabd75765606dee60fc2753aec825ced50"><div class="ttname"><a href="group__pytorch__functions.html#gabd75765606dee60fc2753aec825ced50">reg23::GridSample3D_CUDA</a></div><div class="ttdeci">__host__ at::Tensor GridSample3D_CUDA(const at::Tensor &amp;input, const at::Tensor &amp;grid, const std::string &amp;addressModeX, const std::string &amp;addressModeY, const std::string &amp;addressModeZ, c10::optional&lt; at::Tensor &gt; out)</div><div class="ttdoc">An implementation of reg23::GridSample3D_CPU that uses CUDA parallelisation.</div></div>
 <div class="ttc" id="agroup__textures_html_ga41e11281be1b986d4fb9beeea39504f2"><div class="ttname"><a href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">reg23::StringsToAddressModes</a></div><div class="ttdeci">Vec&lt; TextureAddressMode, DIMENSIONALITY &gt; StringsToAddressModes(const std::array&lt; std::string_view, DIMENSIONALITY &gt; &amp;strings)</div><div class="ttdef"><b>Definition</b> Texture.h:44</div></div>
-<div class="ttc" id="anamespacereg23_html"><div class="ttname"><a href="namespacereg23.html">reg23</a></div><div class="ttdef"><b>Definition</b> Common.h:10</div></div>
+<div class="ttc" id="anamespacereg23_html"><div class="ttname"><a href="namespacereg23.html">reg23</a></div><div class="ttdef"><b>Definition</b> GridSample3DCPU.cpp:6</div></div>
 <div class="ttc" id="astructreg23_1_1GridSample3D_1_1CommonData_html"><div class="ttname"><a href="structreg23_1_1GridSample3D_1_1CommonData.html">reg23::GridSample3D::CommonData</a></div><div class="ttdef"><b>Definition</b> GridSample3D.h:56</div></div>
 <div class="ttc" id="astructreg23_1_1GridSample3D_1_1CommonData_html_a4386ad5d892045325a1f9c69bee7fe0c"><div class="ttname"><a href="structreg23_1_1GridSample3D_1_1CommonData.html#a4386ad5d892045325a1f9c69bee7fe0c">reg23::GridSample3D::CommonData::flatOutput</a></div><div class="ttdeci">at::Tensor flatOutput</div><div class="ttdef"><b>Definition</b> GridSample3D.h:58</div></div>
 <div class="ttc" id="astructreg23_1_1GridSample3D_1_1CommonData_html_af2f1e9d101c38f16933e173c5fcf8882"><div class="ttname"><a href="structreg23_1_1GridSample3D_1_1CommonData.html#af2f1e9d101c38f16933e173c5fcf8882">reg23::GridSample3D::CommonData::inputTexture</a></div><div class="ttdeci">texture_t inputTexture</div><div class="ttdef"><b>Definition</b> GridSample3D.h:57</div></div>

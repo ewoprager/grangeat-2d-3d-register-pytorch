@@ -1,8 +1,9 @@
 var searchData=
 [
-  ['getdtexcoorddr_0',['getdtexcoorddr',['../structreg23_1_1Radon2D.html#a049d725ef5bf1e38dbac6d84474a0f29',1,'reg23::Radon2D::GetDTexCoordDR()'],['../structreg23_1_1Radon3D.html#af72aee4be460159875ff00b92f95f5e7',1,'reg23::Radon3D::GetDTexCoordDR()']]],
-  ['getmappingindextotexcoord_1',['getmappingindextotexcoord',['../structreg23_1_1Radon2D.html#a061eb7b5631ccd78e6013cb2f2e6628e',1,'reg23::Radon2D::GetMappingIndexToTexCoord()'],['../structreg23_1_1Radon3D.html#a4811e4e624fa9592a62f0e932589ad8a',1,'reg23::Radon3D::GetMappingIndexToTexCoord()']]],
-  ['getmappingitooffset_2',['getmappingitooffset',['../structreg23_1_1Radon2D.html#aa274d3428e0b6f8e46695c87024a3ec9',1,'reg23::Radon2D::GetMappingIToOffset()'],['../structreg23_1_1Radon3D.html#a9a64d386af4d531964390ddd283238b6',1,'reg23::Radon3D::GetMappingIToOffset()']]],
-  ['gridsample3d_5fcpu_3',['GridSample3D_CPU',['../group__pytorch__functions.html#gab831176a9559fa7959a284c3341a1c10',1,'reg23']]],
-  ['gridsample3d_5fcuda_4',['GridSample3D_CUDA',['../group__pytorch__functions.html#gabd75765606dee60fc2753aec825ced50',1,'reg23']]]
+  ['flipped_0',['Flipped',['../classreg23_1_1Vec.html#a98e7b6b208c7068166b922ca8a706b76',1,'reg23::Vec']]],
+  ['fromcudahandle_1',['fromcudahandle',['../classreg23_1_1SinogramClassic3D.html#a91a8be3c1dc29c91b2b1e287e0945596',1,'reg23::SinogramClassic3D::FromCUDAHandle()'],['../classreg23_1_1SinogramHEALPix.html#a546607226dbb20bf06d5eac2e39c9feb',1,'reg23::SinogramHEALPix::FromCUDAHandle()']]],
+  ['fromintarrayref_2',['FromIntArrayRef',['../classreg23_1_1Vec.html#a1ba68601065927ba89e2062d67f54850',1,'reg23::Vec']]],
+  ['fromtensor_3',['fromtensor',['../classreg23_1_1SinogramClassic3D.html#ae56f0e5eb9d84677dbb37ab71b17bf5b',1,'reg23::SinogramClassic3D::FromTensor()'],['../classreg23_1_1SinogramHEALPix.html#a201bb7bcca7e1c3ae45f4766bff5c38b',1,'reg23::SinogramHEALPix::FromTensor()'],['../classreg23_1_1Texture2DCPU.html#a2856cb8288970694cc164f85a0acec1e',1,'reg23::Texture2DCPU::FromTensor()'],['../classreg23_1_1Texture3DCPU.html#a3903aac3cfd09d695c93624bedd7d49f',1,'reg23::Texture3DCPU::FromTensor()'],['../classreg23_1_1Vec.html#a4d1210a509d884d7b6019fb4e917ce70',1,'reg23::Vec::FromTensor(const at::Tensor &amp;t)']]],
+  ['fromtensor2d_4',['FromTensor2D',['../classreg23_1_1Vec.html#a93f5b9a04432f933842ceb955dabc8d6',1,'reg23::Vec']]],
+  ['full_5',['Full',['../classreg23_1_1Vec.html#a94da03c4268f4c67402147acb046c80f',1,'reg23::Vec']]]
 ];

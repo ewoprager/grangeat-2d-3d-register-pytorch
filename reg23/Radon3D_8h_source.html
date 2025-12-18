@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Grangeat-based 2D/3D image registration: /home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/reg23/include/reg23/Radon3D.h Source File</title>
+<title>Grangeat-based 2D/3D image registration: /home/runner/work/grangeat-2d-3d-register-pytorch/grangeat-2d-3d-register-pytorch/reg23/src/backend/include/reg23/Radon3D.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -84,7 +84,7 @@ $(document).ready(function() { init_codefold(0); });
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="dir_1fe8a59f05fe2996ea4d2c96da99ff31.html">reg23</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_3f615ade772d23cefe5e20dcb18424a2.html">backend</a></li><li class="navelem"><a class="el" href="dir_fea30e54bc2426158bf0d33cc8b4c181.html">include</a></li><li class="navelem"><a class="el" href="dir_8a2b0b50b75897761c5b4361daa17784.html">reg23</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -251,7 +251,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="agroup__pytorch__functions_html_ga9333533a94e6ea1bed905d4914be3775"><div class="ttname"><a href="group__pytorch__functions.html#ga9333533a94e6ea1bed905d4914be3775">reg23::DRadon3DDR_CUDA</a></div><div class="ttdeci">__host__ at::Tensor DRadon3DDR_CUDA(const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</div><div class="ttdoc">An implementation of reg23::DRadon3DDR_CPU that uses CUDA parallelisation.</div></div>
 <div class="ttc" id="agroup__pytorch__functions_html_gab9d4879b7ca80226470f6a978bebfb24"><div class="ttname"><a href="group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24">reg23::Radon3D_CPU</a></div><div class="ttdeci">at::Tensor Radon3D_CPU(const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</div><div class="ttdoc">Compute an approximation of the Radon transform of the given 3D volume.</div><div class="ttdef"><b>Definition</b> Radon3DCPU.cpp:10</div></div>
 <div class="ttc" id="agroup__textures_html_ga41e11281be1b986d4fb9beeea39504f2"><div class="ttname"><a href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">reg23::StringsToAddressModes</a></div><div class="ttdeci">Vec&lt; TextureAddressMode, DIMENSIONALITY &gt; StringsToAddressModes(const std::array&lt; std::string_view, DIMENSIONALITY &gt; &amp;strings)</div><div class="ttdef"><b>Definition</b> Texture.h:44</div></div>
-<div class="ttc" id="anamespacereg23_html"><div class="ttname"><a href="namespacereg23.html">reg23</a></div><div class="ttdef"><b>Definition</b> Common.h:10</div></div>
+<div class="ttc" id="anamespacereg23_html"><div class="ttname"><a href="namespacereg23.html">reg23</a></div><div class="ttdef"><b>Definition</b> GridSample3DCPU.cpp:6</div></div>
 <div class="ttc" id="anamespacereg23_html_a41eac3126456e879bda4cad607b355cb"><div class="ttname"><a href="namespacereg23.html#a41eac3126456e879bda4cad607b355cb">reg23::DRadon3DDR_CUDA_V2</a></div><div class="ttdeci">__host__ at::Tensor DRadon3DDR_CUDA_V2(const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</div><div class="ttdoc">An implementation of reg23::DRadon3DDR_CPU that uses CUDA parallelisation.</div></div>
 <div class="ttc" id="anamespacereg23_html_a87f61adbbd554c0cb26dde418d58b44c"><div class="ttname"><a href="namespacereg23.html#a87f61adbbd554c0cb26dde418d58b44c">reg23::Radon3D_CUDA_V2</a></div><div class="ttdeci">__host__ at::Tensor Radon3D_CUDA_V2(const at::Tensor &amp;volume, const at::Tensor &amp;volumeSpacing, const at::Tensor &amp;phiValues, const at::Tensor &amp;thetaValues, const at::Tensor &amp;rValues, int64_t samplesPerDirection)</div><div class="ttdoc">An implementation of reg23::Radon3D_CPU that uses CUDA parallelisation.</div></div>
 <div class="ttc" id="astructreg23_1_1Linear2_html"><div class="ttname"><a href="structreg23_1_1Linear2.html">reg23::Linear2</a></div><div class="ttdoc">A functor class that represents a linear transformation of two variables: intercept + gradient1 * x +...</div><div class="ttdef"><b>Definition</b> Common.h:59</div></div>

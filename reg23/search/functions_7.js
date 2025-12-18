@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['identity_0',['Identity',['../classreg23_1_1Vec.html#a755bc1fab91da29344d7544c792598be',1,'reg23::Vec']]],
-  ['in_1',['In',['../classreg23_1_1Texture.html#adf5d0c4b272632abb112b4f41b2c419c',1,'reg23::Texture']]],
-  ['integratelooped_2',['integratelooped',['../structreg23_1_1Radon2D.html#a26d8a9e346a65b899abc2efe784b1682',1,'reg23::Radon2D::IntegrateLooped()'],['../structreg23_1_1Radon3D.html#a7172b6be1c8acce9283ea51db4001887',1,'reg23::Radon3D::IntegrateLooped()']]]
+  ['handle_0',['handle',['../classreg23_1_1CUDATexture2D.html#a32676e0842574a517dc4c3ab5286d464',1,'reg23::CUDATexture2D::Handle()'],['../classreg23_1_1CUDATexture3D.html#aa7f71acfbc84bdfbc25e5a480aff7042',1,'reg23::CUDATexture3D::Handle()'],['../classreg23_1_1structs_1_1CUDATexture2D.html#ae5492c7564f0066433eb8b25cb00661c',1,'reg23.structs.CUDATexture2D.handle()'],['../classreg23_1_1structs_1_1CUDATexture3D.html#a215e5449196761836ac7ad04a1131ff5',1,'reg23.structs.CUDATexture3D.handle()']]]
 ];

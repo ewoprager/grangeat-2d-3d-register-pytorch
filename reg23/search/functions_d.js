@@ -1,15 +1,14 @@
 var searchData=
 [
-  ['radon2d_5fcpu_0',['Radon2D_CPU',['../group__pytorch__functions.html#gadd393ee2ab42ad76b025563b6decc3e4',1,'reg23']]],
-  ['radon2d_5fcuda_1',['Radon2D_CUDA',['../group__pytorch__functions.html#ga6685f35545afe72a62f102ad4d6715b6',1,'reg23']]],
-  ['radon2d_5fcuda_5fv2_2',['Radon2D_CUDA_V2',['../namespacereg23.html#adfa4467dc900648682b65ab073b9e1a2',1,'reg23']]],
-  ['radon3d_5fcpu_3',['Radon3D_CPU',['../group__pytorch__functions.html#gab9d4879b7ca80226470f6a978bebfb24',1,'reg23']]],
-  ['radon3d_5fcuda_4',['Radon3D_CUDA',['../group__pytorch__functions.html#ga8b088f60dae2dc0c0a6670f9f63a4468',1,'reg23']]],
-  ['radon3d_5fcuda_5fv2_5',['Radon3D_CUDA_V2',['../namespacereg23.html#a87f61adbbd554c0cb26dde418d58b44c',1,'reg23']]],
-  ['range_6',['Range',['../classreg23_1_1Vec.html#a1db2ea0fe00b7eb17a8a0e02eb115fae',1,'reg23::Vec']]],
-  ['rayconvexpolyhedrondistance_7',['RayConvexPolyhedronDistance',['../group__general__tools.html#ga78feb4a4e08ae25e1e7576b7224ec27a',1,'reg23']]],
-  ['resampleplane_8',['ResamplePlane',['../structreg23_1_1ResampleSinogram3D.html#ad00b259be3397bc816fb6808f694f0a2',1,'reg23::ResampleSinogram3D']]],
-  ['resamplesinogram3d_5fcpu_9',['ResampleSinogram3D_CPU',['../group__pytorch__functions.html#ga4d46ac88a0dcaf74d1edeecf2719ff1d',1,'reg23']]],
-  ['resamplesinogram3d_5fcuda_10',['ResampleSinogram3D_CUDA',['../group__pytorch__functions.html#gad786889c18e2d7f2adfa9561a539037b',1,'reg23']]],
-  ['resamplesinogram3dcudatexture_11',['ResampleSinogram3DCUDATexture',['../group__pytorch__functions.html#ga9fb0a5b2144685bdea16c62bd59454fa',1,'reg23']]]
+  ['project_5fdrr_0',['project_drr',['../namespacereg23_1_1ops.html#a9678aefffbb38b7e26313dbfc6318c88',1,'reg23::ops']]],
+  ['project_5fdrr_5fbackward_1',['project_drr_backward',['../namespacereg23_1_1autograd.html#a8fc45a5011b092e4e06b6256689c6b6c',1,'reg23.autograd.project_drr_backward()'],['../namespacereg23_1_1ops.html#a7d0dc453d47043fba33390d9f777b86a',1,'reg23.ops.project_drr_backward(torch.Tensor volume, torch.Tensor voxel_spacing, torch.Tensor homography_matrix_inverse, float source_distance, int output_width, int output_height, torch.Tensor output_offset, torch.Tensor detector_spacing, torch.Tensor d_loss_d_drr)']]],
+  ['project_5fdrr_5fcuboid_5fmask_2',['project_drr_cuboid_mask',['../namespacereg23_1_1ops.html#a07bd2dc72c471ea838ad4d2c5c002889',1,'reg23::ops']]],
+  ['project_5fdrr_5fsetup_5fcontext_3',['project_drr_setup_context',['../namespacereg23_1_1autograd.html#ac5a782312a3a9cf55971ba22ea45f897',1,'reg23::autograd']]],
+  ['projectdrr_5fbackward_5fcpu_4',['ProjectDRR_backward_CPU',['../group__pytorch__functions.html#gabb37d1247aefa70e9ede160d10b5fdc6',1,'reg23']]],
+  ['projectdrr_5fbackward_5fcuda_5',['ProjectDRR_backward_CUDA',['../group__pytorch__functions.html#ga8ce9434ee55d1e217c27e1bad9bc61a1',1,'reg23']]],
+  ['projectdrr_5fcpu_6',['ProjectDRR_CPU',['../group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9',1,'reg23']]],
+  ['projectdrr_5fcuda_7',['ProjectDRR_CUDA',['../group__pytorch__functions.html#gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e',1,'reg23']]],
+  ['projectdrrcuboidmask_5fcpu_8',['ProjectDRRCuboidMask_CPU',['../group__pytorch__functions.html#ga2581397ad5b85fc99a3d572080c2aaa2',1,'reg23']]],
+  ['projectdrrcuboidmask_5fcuda_9',['ProjectDRRCuboidMask_CUDA',['../group__pytorch__functions.html#ga4a729751b03c958f0dc1629137f51236',1,'reg23']]],
+  ['pybind11_5fmodule_10',['PYBIND11_MODULE',['../namespacereg23.html#a73ace405bc1b31b592345aacdc4dd248',1,'reg23']]]
 ];
