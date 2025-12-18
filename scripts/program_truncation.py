@@ -9,15 +9,15 @@ import torchviz
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from notification import logs_setup, pushover
-from program import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
-from program.lib.structs import Error
-from registration import data, drr
-from registration.lib.optimisation import mapping_transformation_to_parameters
-from registration.lib.structs import Transformation, SceneGeometry
-from registration.lib import geometry
-from registration import objective_function
-from registration.interface.lib.structs import HyperParameters, Cropping
+from reg23_experiments.notification import logs_setup, pushover
+from reg23_experiments.program import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
+from reg23_experiments.program.lib.structs import Error
+from reg23_experiments.registration import data, drr
+from reg23_experiments.registration.lib.optimisation import mapping_transformation_to_parameters
+from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
+from reg23_experiments.registration.lib import geometry
+from reg23_experiments.registration import objective_function
+from reg23_experiments.registration.interface.lib.structs import HyperParameters, Cropping
 
 
 @dag_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])

@@ -3074,7 +3074,7 @@ requires-dist = [
 [[package]]
 name = "reg23-experiments"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "py-lib" }
 dependencies = [
     { name = "aiohappyeyeballs" },
     { name = "aiohttp" },

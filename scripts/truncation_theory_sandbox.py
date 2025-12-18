@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import torch
 from scipy.odr import quadratic
 from torchvision.transforms.v2.functional import horizontal_flip
-
 from tqdm import tqdm
-from registration.lib.plot import Series, LinearFit, PowerFit, QuadraticFit, CustomFitPowerRatio
+
+from reg23_experiments.registration.lib.plot import Series, LinearFit, PowerFit, QuadraticFit, CustomFitPowerRatio
 
 
 def initial():
