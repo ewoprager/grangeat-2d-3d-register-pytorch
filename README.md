@@ -18,75 +18,40 @@ developed as part of a PhD.
 
 ```text
 .
-├── reg23/                      # 
+├── reg23/                      # A Python package with custom C++/CUDA operators for PyTorch
+│   ├── include/reg23/          # Header files shared by all operator implementations
+│   ├── src/                    # 
+│   │   ├── cpu/                # C++ source files used for CPU implementations of operators
+│   │   ├── cuda/               # CUDA source files used for CUDA implementations of operators
+│   │   └── main.cpp            # Declares all bindings for operators of all implementations
+│   ├── tests/                  #
 │   ├── README.md               #
 │   ├── mainpage.md             #
-│   ├── Conventions.md          #
-│   ├── pyproject.toml          #
+│   ├── Conventions.md          # Contains details of C++ coding conventions, regarding style and structure.
+│   ├── pyproject.toml          # The project configuration file used by `uv` to setup the environment and dependencies of the reg23 library
 │   ├── setup.py                #
-│   ├── include/reg23/          # 
-│   ├── src/                    # 
-│   │   ├── cpu/                # 
-│   │   ├── cuda/               #
-│   │   └── main.cpp            #
-│   ├── tests/                  #
 │   ├── autograd.py             #
 │   ├── structs.py              #
 │   ├── ops.py                  #
 │   ├── autograd.py             #
 │   └── CMakeLists.txt          #
 ├── py-lib/                     #
+│   ├── src/reg23_experiments   #
+│   │   ├── notification/       # A python package for logging and sending notification to Pushover
+│   │   ├── program/            # 
+│   │   └── registration/       # A python package for experimentation with 2D/3D radiographic image registration, and using the custom reg23 package.
 │   ├── README.md               #
-│   ├── pyproject.toml          #
-│   └── src/reg23_experiments   #
-│       ├── notification/       # 
-│       ├── program/            # 
-│       └── registration/       # 
-
-
-├── tests/              # Unit and integration tests
-├── examples/           # Minimal working examples
-├── docs/               # Extended documentation
-└── scripts/            # Developer tools
-data/
-  > Data saved from experiments
-
-figures/
-  > Plots and images from experiments
-
-Logs/
-  > Any script that runs `logger = logs_setup.setup_logger()` will automatically save its output to a log file in this directory.
-
-notification/
-  > A python package for logging and sending notification to Pushover
-
-reg23/
-  > A Python package with custom C++/CUDA operators for PyTorch
-  > See the README.md in this directory for more information
-
-registration/
-  > A python package for experimentation with 2D/3D radiographic image registration, and using the custom reg23 package.
-  interface/
-    > A python package specifically for use by the script `scripts/interface.py`
-
-scripts/
-  > Some python scripts that use the `registration` module to perform experiments.
-  benchmarking/
-    > Scripts sepcifically for measuring the speeds of different implementations of algorithms in the `reg23` package
-  plotting/
-    > Scripts used for plotting data that is generated and saved by other scripts.
-
-Conventions.md
-  > Contains details of Python and C++ coding conventions, regarding style and structure.
-
-logging.conf
-  > A config file used for logging with the `logging` standard Python package.
-
-pyproject.toml
-  > The project configuration file used by `uv` to setup the environment and dependencies used by all Python scripts.
-
-uv.lock
-  > A file managed by `uv` which saves the exact installed dependency versions to install.
+│   ├── Conventions.md          # Contains details of Python coding conventions, regarding style and structure.
+│   └── pyproject.toml          # The project configuration file used by `uv` to setup the environment and dependencies of the reg23_experiments library
+├── scripts/                    # Some python scripts that use the `reg23_experiments` module to perform experiments.
+│   ├── benchmarking/           # Scripts specifically for measuring the speeds of different implementations of algorithms in the `reg23` package
+│   └── plotting                # Scripts used for plotting data that is generated and saved by other scripts.
+├── data/                       # Data saved from experiments
+├── figures/                    # Plots and images from experiments
+├── README.md                   #
+├── pyproject.toml              # The project configuration file used by `uv` to setup the environment and dependencies used by all Python scripts.
+├── uv.lock                     # A file managed by `uv` which saves the exact installed dependency versions to install.
+└── logging.conf                # A config file used for logging with the `logging` standard Python package.
 ```
 
 ## Setup
