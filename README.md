@@ -19,21 +19,22 @@ developed as part of a PhD.
 ```text
 .
 ├── reg23/                      # A Python package with custom C++/CUDA operators for PyTorch
-│   ├── include/reg23/          # Header files shared by all operator implementations
 │   ├── src/                    # 
-│   │   ├── cpu/                # C++ source files used for CPU implementations of operators
-│   │   ├── cuda/               # CUDA source files used for CUDA implementations of operators
-│   │   └── main.cpp            # Declares all bindings for operators of all implementations
+│   │   ├── backend/            #
+│   │   │   ├── include/reg23/  # Header files shared by all operator implementations
+│   │   │   ├── cpu/            # C++ source files used for CPU implementations of operators
+│   │   │   ├── cuda/           # CUDA source files used for CUDA implementations of operators
+│   │   │   └── main.cpp        # Declares all bindings for operators of all implementations
+│   │   └── reg23/              #
+│   │       ├── ops.py          #
+│   │       ├── structs.py      #
+│   │       └── autograd.py     #
 │   ├── tests/                  #
 │   ├── README.md               #
 │   ├── mainpage.md             #
 │   ├── Conventions.md          # Contains details of C++ coding conventions, regarding style and structure.
 │   ├── pyproject.toml          # The project configuration file used by `uv` to setup the environment and dependencies of the reg23 library
 │   ├── setup.py                #
-│   ├── autograd.py             #
-│   ├── structs.py              #
-│   ├── ops.py                  #
-│   ├── autograd.py             #
 │   └── CMakeLists.txt          #
 ├── py-lib/                     #
 │   ├── src/reg23_experiments   #

@@ -3,8 +3,6 @@
  * @brief CPU implementations of 2D Radon transforms
  */
 
-
-
 #include <reg23/Radon2D.h>
 #include <reg23/Texture2DCPU.h>
 

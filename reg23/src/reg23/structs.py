@@ -1,6 +1,6 @@
 import torch
 
-from .src import reg23
+from backend import reg23
 
 __all__ = []
 

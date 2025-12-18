@@ -9,10 +9,10 @@ from setuptools import setup
 from torch.utils.cpp_extension import CppExtension, CUDAExtension, BuildExtension, CUDA_HOME
 
 this_directory = pathlib.Path(__file__).parent
-extension_name: str = "reg23"
+extension_name: str = "backend.reg23"
 cpp_version: str = "-std=c++17"
-cpu_source_files: list[str] = glob.glob("src/*.cpp") + glob.glob("src/cpu/*.cpp")
-cuda_source_files: list[str] = glob.glob("src/cuda/*.cu")
+cpu_source_files: list[str] = glob.glob("src/backend/*.cpp") + glob.glob("src/backend/cpu/*.cpp")
+cuda_source_files: list[str] = glob.glob("src/backend/cuda/*.cu")
 
 debug: bool = ("--debug" in sys.argv)
 if debug:
@@ -35,7 +35,7 @@ extension_object = CUDAExtension if use_cuda else CppExtension
 
 source_files: list[str] = (cpu_source_files + cuda_source_files) if use_cuda else cpu_source_files
 
-include_dirs: list[str] = [str(this_directory / "include")]
+include_dirs: list[str] = [str(this_directory / "src/backend/include")]
 
 macros: list[Tuple] = []
 if use_cuda:

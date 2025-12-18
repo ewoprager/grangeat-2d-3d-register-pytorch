@@ -12,21 +12,21 @@ endif ()
 file(GLOB HEADERS
      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
      CONFIGURE_DEPENDS
-     "include/reg23/*.h"
+     "src/backend/include/reg23/*.h"
 )
 
 file(GLOB SOURCES
      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
      CONFIGURE_DEPENDS
-     "src/cpu/*.cpp"
-     "src/*.cpp"
+     "src/backend/cpu/*.cpp"
+     "src/backend/*.cpp"
 )
 
 if (CUDAToolkit_FOUND)
     file(GLOB CUDA_SOURCES
          RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
          CONFIGURE_DEPENDS
-         "src/cuda/*.cu"
+         "src/backend/cuda/*.cu"
     )
 
     # Get the location of CUDA
