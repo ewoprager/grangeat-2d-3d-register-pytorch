@@ -16,7 +16,38 @@ developed as part of a PhD.
 
 # Repo contents
 
-```
+```text
+.
+├── reg23/                      # 
+│   ├── README.md               #
+│   ├── mainpage.md             #
+│   ├── Conventions.md          #
+│   ├── pyproject.toml          #
+│   ├── setup.py                #
+│   ├── include/reg23/          # 
+│   ├── src/                    # 
+│   │   ├── cpu/                # 
+│   │   ├── cuda/               #
+│   │   └── main.cpp            #
+│   ├── tests/                  #
+│   ├── autograd.py             #
+│   ├── structs.py              #
+│   ├── ops.py                  #
+│   ├── autograd.py             #
+│   └── CMakeLists.txt          #
+├── py-lib/                     #
+│   ├── README.md               #
+│   ├── pyproject.toml          #
+│   └── src/reg23_experiments   #
+│       ├── notification/       # 
+│       ├── program/            # 
+│       └── registration/       # 
+
+
+├── tests/              # Unit and integration tests
+├── examples/           # Minimal working examples
+├── docs/               # Extended documentation
+└── scripts/            # Developer tools
 data/
   > Data saved from experiments
 

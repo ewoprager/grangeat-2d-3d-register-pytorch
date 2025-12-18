@@ -7,17 +7,16 @@ import torch
 import nrrd
 
 import reg23
-
-from notification import logs_setup
-from registration.lib.structs import *
-from registration.lib.sinogram import *
-from registration import drr
-from registration.lib import geometry
-from registration import data
-from registration import pre_computed
-from registration import objective_function
-from registration import script
-from registration.lib import plot
+from reg23_experiments.notification import logs_setup
+from reg23_experiments.registration.lib.structs import *
+from reg23_experiments.registration.lib.sinogram import *
+from reg23_experiments.registration import drr
+from reg23_experiments.registration.lib import geometry
+from reg23_experiments.registration import data
+from reg23_experiments.registration import pre_computed
+from reg23_experiments.registration import objective_function
+from reg23_experiments.registration import script
+from reg23_experiments.registration.lib import plot
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,

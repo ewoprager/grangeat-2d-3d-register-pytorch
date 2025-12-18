@@ -11,15 +11,15 @@ import numpy as np
 import pyswarms
 from tqdm import tqdm
 
-from notification import logs_setup
-from registration.interface.registration_data import RegistrationData
-from registration.interface.lib.structs import Target, SavedXRayParams, HyperParameters, Cropping
-from registration.lib import sinogram
-from registration.lib import geometry
-from registration.lib.structs import Transformation, SceneGeometry
-from registration import objective_function
-from notification import pushover
-from registration.plot_data import LandscapePlotData
+from reg23_experiments.notification import logs_setup
+from reg23_experiments.registration.interface.registration_data import RegistrationData
+from reg23_experiments.registration.interface.lib.structs import Target, SavedXRayParams, HyperParameters, Cropping
+from reg23_experiments.registration.lib import sinogram
+from reg23_experiments.registration.lib import geometry
+from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
+from reg23_experiments.registration import objective_function
+from reg23_experiments.notification import pushover
+from reg23_experiments.registration.plot_data import LandscapePlotData
 
 SAVE_DIRECTORY = pathlib.Path("data/temp/landscapes")
 
