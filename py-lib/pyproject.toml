@@ -177,7 +177,7 @@ cuda = [
 
 [dependency-groups]
 docs = [
-    "pdoc3>=0.11.6",
+    "pdoc>=16.0.0",
 ]
 
 [tool.uv]

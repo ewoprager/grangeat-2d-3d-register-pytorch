@@ -30,9 +30,8 @@ jobs:
           uv pip install -e .[cpu]
 
       - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
-        working-directory: py-lib
         run: |
-          uv run pdoc --html --output-dir docs --force --skip-errors src/reg23_experiments
+          uv run pdoc -o py-lib/docs py-lib/src/reg23_experiments
 
       - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
