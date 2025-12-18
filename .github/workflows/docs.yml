@@ -22,12 +22,17 @@ jobs:
         run: |
           uv venv .venv
           source .venv/bin/activate
+
+      - name: "[ reg23-experiments Python Docs ] Build package"
+        working-directory: py-lib
+        run: |
           uv sync --extra cpu --group docs
           uv pip install -e .[cpu]
 
       - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
+        working-directory: py-lib
         run: |
-          uv run pdoc --html --output-dir docs --force --skip-errors program registration notification
+          uv run pdoc --html --output-dir docs --force --skip-errors src/reg23_experiments
 
       - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
@@ -42,9 +47,7 @@ jobs:
         run: |
           mkdir -p site
           cp -r reg23/Docs/build/html site/reg23
-          cp -r docs/registration site/registration
-          cp -r docs/notification site/notification
-          cp -r docs/program site/program
+          cp -r py-lib/docs/reg23_experiments site/reg23_experiments
 
       - name: "Create landing page"
         run: |
@@ -58,9 +61,7 @@ jobs:
             <p><a href="https://github.com/ewoprager/grangeat-2d-3d-register-pytorch">GitHub repository</a></p>
             <ul>
               <li><a href="reg23/">reg23 C++ API Docs</a></li>
-              <li><a href="registration/">reg23-experiments `registration` API Docs</a></li>
-              <li><a href="notification/">reg23-experiments `notification` API Docs</a></li>
-              <li><a href="program/">reg23-experiments `program` API Docs</a></li>
+              <li><a href="reg23_experiments/">reg23-experiments Python API Docs</a></li>
             </ul>
           </body>
           </html>

@@ -18,24 +18,7 @@ developed as part of a PhD.
 
 ```text
 .
-├── reg23/                      # A Python package with custom C++/CUDA operators for PyTorch
-│   ├── src/                    # 
-│   │   ├── backend/            #
-│   │   │   ├── include/reg23/  # Header files shared by all operator implementations
-│   │   │   ├── cpu/            # C++ source files used for CPU implementations of operators
-│   │   │   ├── cuda/           # CUDA source files used for CUDA implementations of operators
-│   │   │   └── main.cpp        # Declares all bindings for operators of all implementations
-│   │   └── reg23/              #
-│   │       ├── ops.py          #
-│   │       ├── structs.py      #
-│   │       └── autograd.py     #
-│   ├── tests/                  #
-│   ├── README.md               #
-│   ├── mainpage.md             #
-│   ├── Conventions.md          # Contains details of C++ coding conventions, regarding style and structure.
-│   ├── pyproject.toml          # The project configuration file used by `uv` to setup the environment and dependencies of the reg23 library
-│   ├── setup.py                #
-│   └── CMakeLists.txt          #
+├── reg23/                      # A Python package with custom C++/CUDA operators for PyTorch; see the README.md inside for more information.
 ├── py-lib/                     #
 │   ├── src/reg23_experiments   #
 │   │   ├── notification/       # A python package for logging and sending notification to Pushover
