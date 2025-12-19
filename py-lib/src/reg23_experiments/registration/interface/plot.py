@@ -8,7 +8,6 @@ import torch
 from magicgui import widgets
 import matplotlib.pyplot as plt
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from tqdm import tqdm
 from matplotlib import cm
 
@@ -200,6 +199,7 @@ class PlotWidget(widgets.Container):
         self._thread.start()
 
     def _finish_callback(self, central_transformation: Transformation, landscapes: list[Landscape2]) -> None:
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
         figures_widget = widgets.Container(layout="horizontal", labels=False)
         for landscape in landscapes:
             fig, axes = plt.subplots(subplot_kw={"projection": "3d"})

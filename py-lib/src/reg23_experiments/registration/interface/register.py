@@ -10,7 +10,6 @@ from magicgui import widgets
 import numpy as np
 import matplotlib.pyplot as plt
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 import pyswarms
 from qtpy.QtWidgets import QApplication
 import pathlib
@@ -277,6 +276,7 @@ class RegisterWidget(widgets.Container):
         self._pre_programmed_initial_crop: Cropping = Cropping.zero(torch.Size([1, 1]))
 
         self._fig, self._axes = plt.subplots()
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
         self.native.layout().addWidget(FigureCanvasQTAgg(self._fig))
 
         ##
