@@ -63,6 +63,39 @@ class Updater(NamedTuple):
 
 
 class DAG:
+    """
+    A data manager that stores data in a directed, acyclic graph.
+
+    Each variable (piece of data) has a `str` name and is stored as a node in the graph.
+
+    The value of a variable can be set using `data_manager().set_data(<variable name>, <value>)`. Multiple can be set
+    at once using `data_manager().set_data_multiple(<variable name>=<value>, <variable name>=<value>, ...)`.
+
+    Dependencies between variables are added using instance of the `Updater` class, and the function
+    `data_manager().add_updater(<updater name>, <updater instance>)`. The `<updater name>` is just a user-defined `str`
+    name associated with the updater instance, which is used if the user wishes to remove the updater later on with
+    `data_manager().remove_updater(<updater name>)`.
+
+    Each updater defines a dependency of a set of variables on a set of other variables, as well as the mapping between
+    them.
+
+    Each variable (node) may be updated by:
+    - no updaters, so its value is always valid, and is only ever changed using `data_manager().set_data` /
+    `data_manager().set_data_multiple`, or
+    - one updater, so its value is invalidated by changes to its dependents, and will be re-evaluated automatically by
+    its updater when read.
+
+    By default, all variables are evaluated lazily, i.e. updaters will only be run to re-evaluate invalidated values
+    upon reading of the dependent variables. While this is good for optimisation, when data are displayed in a GUI, this
+    is generally not desirable, as the user will generally wish to only be shown valid data. In this case, variables
+    can manually be set to non-lazy have evaluation using
+    `data_manager().set_evaluation_laziness(<variable name>, lazily_evaluated=False)`.
+
+    It is sometimes useful to know when a variable's value changes, e.g. for updating GUI elements. Callbacks can be
+    added using `data_manager().add_callback(<variable name>, <callback name>, <callback value>)`. The `<callback name>`
+    is just a user-defined `str` name associated with the callback, which is used if the user wishes to remove the
+    callback later on with `data_manager().remove_callback(<variable name>, <callback name>)`.
+    """
     def __init__(self):
         self._nodes: dict[str, Node] = dict()
         self._updaters: dict[str, Updater] = dict()
@@ -464,10 +497,20 @@ class DataManagerSingleton(SingletonConfigurable):
 
 
 def init_data_manager(**kwargs) -> DAG:
+    """
+    If the data manager singleton has yet to be initialised, initialises it with the given keyword arguments. If the
+    data manager singleton has already been initialised, behaves exactly like `data_manager()`.
+    :param kwargs: Keyword arguments to pass to the constructor of the singleton `DAG` instance.
+    :return: The singleton `DAG` instance.
+    """
     return DataManagerSingleton.instance().get(**kwargs)
 
 
 def data_manager() -> DAG:
+    """
+    If the data manager singleton has yet to be initialised, initialises it with no arguments.
+    :return: The singleton `DAG` instance.
+    """
     return DataManagerSingleton.instance().get()
 
 
