@@ -1,50 +1,33 @@
 # Grangeat-based 2D/3D image registration
 
+## Documentation
+
+The documentation for this extension is available here:
+
+[https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/reg23](https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/reg23)
+
 # Package contents
 
-```
-Docs/
-  > Doxygen stuff for generation of the documentation linked below.
-
-include/
-  > Header C++ files
-
-src/
-  cpu/
-    > C++ source files for CPU implementations of PyTorch functions
-  cuda/
-    > .cu source files for CUDA implementations of PyTorch functions
-  mps/
-    > .mm source files for MPS implementations of PyTorch functions
-  main.cpp
-    > This is where all the Python bindings are declared.
-
-tests/
-  > Pytest test functions
-
-autograd.py
-  > Implementations of backward passes using `torch.library.register_autograd`.
-
-CMakeLists.txt
-  > Cmake is not used for building, but this file allows IDEs to find headers and process files properly for useful autocompletion and syntax checking.
-
-Conventions.md
-  > Contains details of Python and C++ coding conventions, regarding style and structure.
-
-mainpage.md
-  > The main page used for the documentation webpage.
-
-ops.py
-  > Thin wrappers for all PyTorch extension functions
-
-pyproject.toml
-  > The project configuration file used by `uv` to setup the building of the package with `setuptools`.
-
-setup.py
-  > A script used by `setuptools` to build the package.
-
-structs.py
-  > Wrapper classes for C++ structures that were given python bindings.
+```text
+.
+├── src/                    # 
+│   ├── backend/            #
+│   │   ├── include/reg23/  # Header files shared by all operator implementations
+│   │   ├── cpu/            # C++ source files used for CPU implementations of operators
+│   │   ├── cuda/           # CUDA source files used for CUDA implementations of operators
+│   │   └── main.cpp        # Declares all bindings for operators of all implementations
+│   └── reg23/              #
+│       ├── ops.py          # Thin wrappers for all PyTorch extension functions
+│       ├── structs.py      # Wrapper classes for C++ structures that were given python bindings
+│       └── autograd.py     # Implementations of backward passes using `torch.library.register_autograd`
+├── tests/                  # Pytest test functions
+├── Docs/                   # Doxygen stuff for generation of the documentation linked below.
+├── README.md               #
+├── mainpage.md             # The main page used for the documentation webpage.
+├── Conventions.md          # Contains details of C++ coding conventions, regarding style and structure.
+├── pyproject.toml          # The project configuration file used by `uv` to setup the environment and dependencies of the reg23 library
+├── setup.py                # A script used by `setuptools` to build the package.
+└── CMakeLists.txt          # Cmake is not used for building, but this file allows IDEs to find headers and process files properly for useful autocompletion and syntax checking.
 ```
 
 ## Build
@@ -85,11 +68,6 @@ python setup.py develop [--verbose] [--debug] [--no-cuda]
 ```
 
 This will create and fill the directory `reg23/build/`.
-
-## Documentation
-
-The documentation for this extension is uploaded
-at https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/index.html.
 
 ## Module contents
 

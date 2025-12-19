@@ -14,5 +14,9 @@ figures/truncation/
 **/*.egg-info/
 Logs/*
 data/register_plot_data/
-**/build-xcode/
+**/.cache/
+**/*.log
 reg23/src/mps/default_metallib.mm
+**/.zed/
+py-lib/docs/
+**/build-xcode/

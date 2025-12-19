@@ -2,37 +2,72 @@ name: Build and Deploy Docs
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: "Checkout repo"
         uses: actions/checkout@v4
 
-#      - name: Set up Python
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.11'
+      - name: "[ reg23-experiments Python Docs ] Install uv"
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.5.26"
+          enable-cache: true
 
-      - name: Install dependencies
+      - name: "[ reg23-experiments Python Docs ] Set up virtual environment"
+        run: |
+          uv venv .venv
+          source .venv/bin/activate
+
+      - name: "[ reg23-experiments Python Docs ] Build package"
+        working-directory: py-lib
+        run: |
+          uv sync --extra cpu --group docs
+
+      - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
+        run: |
+          uv pip install -e py-lib[cpu]
+          uv run pdoc -o py-lib/docs py-lib/src/reg23_experiments \!reg23_experiments.program.modules.interface \!reg23_experiments.registration.interface
+
+      - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
           sudo apt-get update
           sudo apt-get install doxygen
-#          pip install sphinx breathe sphinx_rtd_theme
 
-      - name: Build Doxygen HTML
+      - name: "[ reg23 C++ Docs ] Build Doxygen HTML"
         working-directory: reg23/Docs
         run: doxygen Doxyfile
 
-#      - name: Build Sphinx HTML
-#        working-directory: docs
-#        run: sphinx-build -b html . _build
+      - name: "Stage combined docs for deployment"
+        run: |
+          mkdir -p site
+          cp -r reg23/Docs/build/html site/reg23
+          cp -r py-lib/docs/. site/reg23_experiments
 
-      - name: Deploy to GitHub Pages
+      - name: "Create landing page"
+        run: |
+          cat > site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head><title>Documentation</title></head>
+          <body>
+            <h1>Documentation for reg23-experiments and reg23</h1>
+            <p>Contributors: <a href="https://github.com/ewoprager">Edmund Prager<a/></p>
+            <p><a href="https://github.com/ewoprager/grangeat-2d-3d-register-pytorch">GitHub repository</a></p>
+            <ul>
+              <li><a href="reg23/">reg23 C++ API Docs</a></li>
+              <li><a href="reg23_experiments/">reg23-experiments Python API Docs</a></li>
+            </ul>
+          </body>
+          </html>
+          EOF
+
+      - name: "Deploy to GitHub Pages"
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: reg23/Docs/build/html
+          publish_dir: site

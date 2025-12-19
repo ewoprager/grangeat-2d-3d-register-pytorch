@@ -10,11 +10,11 @@ from setuptools import setup
 from torch.utils.cpp_extension import CppExtension, CUDAExtension, BuildExtension, CUDA_HOME
 
 this_directory = pathlib.Path(__file__).parent
-extension_name: str = "reg23"
+extension_name: str = "backend.reg23"
 cpp_version: str = "-std=c++17"
-cpu_source_files: list[str] = glob.glob("src/*.cpp") + glob.glob("src/cpu/*.cpp")
-cuda_source_files: list[str] = glob.glob("src/cuda/*.cu")
-mps_source_files: list[str] = glob.glob("src/mps/*.mm")
+cpu_source_files: list[str] = glob.glob("src/backend/*.cpp") + glob.glob("src/backend/cpu/*.cpp")
+cuda_source_files: list[str] = glob.glob("src/backend/cuda/*.cu")
+mps_source_files: list[str] = glob.glob("src/backend/mps/*.mm")
 
 
 def compile_metal_shaders(shader_dir: pathlib.Path, output_dir: pathlib.Path) -> pathlib.Path:
@@ -96,7 +96,7 @@ if use_cuda:
 if use_mps:
     source_files.extend(mps_source_files)
 
-include_dirs: list[str] = [str(this_directory / "include")]
+include_dirs: list[str] = [str(this_directory / "src/backend/include")]
 
 macros: list[Tuple] = []
 if use_cuda:

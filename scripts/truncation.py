@@ -11,17 +11,17 @@ import numpy as np
 from sympy.abc import epsilon
 from tqdm import tqdm
 
-from notification import logs_setup
-from notification import pushover
-from registration.lib.structs import Transformation, SceneGeometry
-from registration.interface.lib.structs import Target, Cropping, HyperParameters
-from registration.lib.sinogram import SinogramClassic
-from registration.lib import geometry
-from registration import objective_function
-from registration.plot_data import LandscapePlotData
-from registration import data
-from registration import drr
-from registration.lib.optimisation import local_search, mapping_parameters_to_transformation, \
+from reg23_experiments.notification import logs_setup
+from reg23_experiments.notification import pushover
+from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
+from reg23_experiments.registration.interface.lib.structs import Target, Cropping, HyperParameters
+from reg23_experiments.registration.lib.sinogram import SinogramClassic
+from reg23_experiments.registration.lib import geometry
+from reg23_experiments.registration import objective_function
+from reg23_experiments.registration.plot_data import LandscapePlotData
+from reg23_experiments.registration import data
+from reg23_experiments.registration import drr
+from reg23_experiments.registration.lib.optimisation import local_search, mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
 
 import reg23
