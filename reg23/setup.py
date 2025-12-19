@@ -56,8 +56,8 @@ def compile_metal_shaders(shader_dir: pathlib.Path, output_dir: pathlib.Path) ->
 
 class BuildExtensionWithMetal(BuildExtension):
     def run(self):
-        shader_dir = pathlib.Path("src") / "mps" / "shaders"
-        output_dir = pathlib.Path("src") / "mps"
+        shader_dir = pathlib.Path("src") / "backend" / "mps" / "shaders"
+        output_dir = pathlib.Path("src") / "backend" / "mps"
         if shader_dir.is_dir():
             compile_metal_shaders(shader_dir, output_dir)
         else:

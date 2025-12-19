@@ -33,8 +33,9 @@ struct MPSComputeEnvironment {
 		NSError *error = nil;
 
 		// Load the shader binary
-		dispatch_data_t shaderBinary = dispatch_data_create(src_mps_default_metallib, src_mps_default_metallib_len,
-															NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+		dispatch_data_t shaderBinary =
+			dispatch_data_create(src_backend_mps_default_metallib, src_backend_mps_default_metallib_len, NULL,
+								 DISPATCH_DATA_DESTRUCTOR_DEFAULT);
 		id<MTLLibrary> library = [ret.device newLibraryWithData:shaderBinary error:&error];
 		if (!library) {
 			throw std::runtime_error("Error loading shader library: " +
@@ -49,7 +50,7 @@ struct MPSComputeEnvironment {
 		// Create a Metal compute pipeline state
 		ret.pipelineState = [ret.device newComputePipelineStateWithFunction:function error:&error];
 		if (!ret.pipelineState) {
-			NSLog(@"Pipeline error: %@", error);
+			NSLog(@ "Pipeline error: %@", error);
 			throw std::runtime_error([error.localizedDescription UTF8String]);
 		}
 

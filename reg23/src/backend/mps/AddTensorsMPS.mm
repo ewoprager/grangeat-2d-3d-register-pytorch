@@ -38,7 +38,7 @@ torch::Tensor add_tensors_metal(const torch::Tensor &a, const torch::Tensor &b) 
 		NSError *error = nil;
 
 		// Load the shader binary
-		dispatch_data_t shaderBinary = dispatch_data_create(src_mps_default_metallib, src_mps_default_metallib_len,
+		dispatch_data_t shaderBinary = dispatch_data_create(src_backend_mps_default_metallib, src_backend_mps_default_metallib_len,
 															NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
 		id<MTLLibrary> library = [device newLibraryWithData:shaderBinary error:&error];
 		if (!library) {
