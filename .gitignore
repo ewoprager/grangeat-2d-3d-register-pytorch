@@ -18,3 +18,4 @@ data/register_plot_data/
 **/*.log
 reg23/src/mps/default_metallib.mm
 **/.zed/
+py-lib/docs/
