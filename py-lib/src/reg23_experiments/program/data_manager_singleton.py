@@ -290,6 +290,14 @@ class DAG:
             ret[arg.name] = value
         return ret
 
+    def render(self) -> None:
+        import graphviz
+        g = graphviz.Digraph(format='png')
+        for name, updater in self._updaters.items():
+            for dependency in updater.dependencies:
+                g.edge(dependency.depender, dependency.depended)
+        g.render(directory=".")
+
     def _set_dirty(self, name: str) -> None:
         # make sure node exists
         self.add_node(name)

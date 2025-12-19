@@ -188,8 +188,7 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     h_matrix_inv = transformation.inverse().get_h(device=device)
 
     return reg23.project_drr(volume_data, voxel_spacing, h_matrix_inv, scene_geometry.source_distance, img_width,
-                             img_height, scene_geometry.fixed_image_offset.to(device=device, dtype=torch.float64),
-                             detector_spacing)
+                             img_height, scene_geometry.fixed_image_offset.to(device=device), detector_spacing)
 
 
 def generate_drr_cuboid_mask(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,

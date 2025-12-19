@@ -164,6 +164,7 @@ dependencies = [
     "napari[pyqt6, optional]>=0.6.6; sys_platform == 'darwin'",
     "napari[all]>=0.6.6; sys_platform != 'darwin'",
     "scipy-stubs==1.16.3.3",
+    "graphviz>=0.21",
 ]
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined

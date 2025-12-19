@@ -69,6 +69,8 @@ def main(*, ct_path: str, cache_directory: str):
         logger.error(f"Couldn't get moving image: {value.description}.")
         return
 
+    data_manager().render()
+
     napari.run()
 
 
