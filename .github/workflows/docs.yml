@@ -46,7 +46,7 @@ jobs:
         run: |
           mkdir -p site
           cp -r reg23/Docs/build/html site/reg23
-          cp -r py-lib/docs/reg23_experiments site/reg23_experiments
+          cp -r py-lib/docs/. site/reg23_experiments
 
       - name: "Create landing page"
         run: |
