@@ -31,7 +31,7 @@ jobs:
       - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
         run: |
           uv pip install -e py-lib[cpu]
-          uv run pdoc -o py-lib/docs py-lib/src/reg23_experiments
+          uv run pdoc -o py-lib/docs py-lib/src/reg23_experiments \!reg23_experiments.program.modules.interface \!reg23_experiments.registration.interface
 
       - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
