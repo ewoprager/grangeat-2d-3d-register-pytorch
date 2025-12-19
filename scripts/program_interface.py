@@ -42,8 +42,7 @@ def of(transformation: Transformation, ct_volumes: list[torch.Tensor], ct_spacin
 
 
 def main(*, ct_path: str, cache_directory: str):
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
-        "mps") if torch.mps.is_available() else torch.device("cpu")
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     init_data_manager()
     init_viewer(title="Program Test")

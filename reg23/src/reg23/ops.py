@@ -94,7 +94,7 @@ def project_drr(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_ma
                 detector_spacing: torch.Tensor) -> torch.Tensor:
     return torch.ops.reg23.project_drr.default(volume, voxel_spacing.to(dtype=torch.float64),
                                                homography_matrix_inverse.to(dtype=torch.float64), source_distance,
-                                               output_width, output_height, output_offset,
+                                               output_width, output_height, output_offset.to(dtype=torch.float64),
                                                detector_spacing.to(dtype=torch.float64))
 
 
