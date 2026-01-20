@@ -39,8 +39,8 @@ class Swarm:
             [particle_count, dimensionality], dtype=torch.float32, device=device, generator=generator)
         particle_velocities: torch.Tensor = -boundary_size + 2.0 * boundary_size * torch.rand(  #
             [particle_count, dimensionality], dtype=torch.float32, device=device, generator=generator)
-        self._particles = torch.cat(
-            [particle_positions, particle_velocities, particle_positions, torch.zeros([particle_count, 1])], dim=1)
+        self._particles = torch.cat([particle_positions, particle_velocities, particle_positions,
+                                     torch.zeros([particle_count, 1], dtype=torch.float32, device=device)], dim=1)
         # evaluating for the first particle
         self._particles[0, -1] = self._config.objective_function(self._particles[0, 0:dimensionality])
         # initialising to determine global best

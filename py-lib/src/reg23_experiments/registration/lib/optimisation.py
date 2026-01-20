@@ -20,6 +20,12 @@ def mapping_parameters_to_transformation(params: torch.Tensor) -> Transformation
         params * torch.tensor([1.0e-2, 1.0e-2, 1.0e-2, 1.0, 1.0, 10.0], device=params.device, dtype=params.dtype))
 
 
+def parameters_at_random_distance(from_parameters: torch.Tensor, distance_distribution: Callable[[], float] | Callable[
+    [], torch.Tensor]) -> torch.Tensor:
+    u_hat = torch.nn.functional.normalize(torch.randn_like(from_parameters), dim=0)
+    return from_parameters + distance_distribution() * u_hat
+
+
 def local_search(*, starting_position: torch.Tensor, initial_step_size: torch.Tensor,
                  objective_function: Callable[[torch.Tensor], torch.Tensor], step_size_reduction_ratio: float = .75,
                  no_improvement_threshold: int = 10, max_iterations: int = 5000,

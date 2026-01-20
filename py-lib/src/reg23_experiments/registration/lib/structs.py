@@ -1,4 +1,4 @@
-from typing import NamedTuple, Tuple, Sequence, Union
+from typing import NamedTuple, Tuple, Sequence, Union, Callable
 
 import torch
 import kornia

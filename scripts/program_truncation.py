@@ -1,7 +1,6 @@
 import argparse
 import os
-from typing import Any, Callable
-import copy
+from typing import Any, Literal
 
 import pathlib
 import torch
@@ -13,11 +12,13 @@ from reg23_experiments.notification import logs_setup, pushover
 from reg23_experiments.program import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
 from reg23_experiments.program.lib.structs import Error
 from reg23_experiments.registration import data, drr
-from reg23_experiments.registration.lib.optimisation import mapping_transformation_to_parameters
+from reg23_experiments.registration.lib.optimisation import mapping_transformation_to_parameters, \
+    mapping_parameters_to_transformation, parameters_at_random_distance
 from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
 from reg23_experiments.registration.lib import geometry
 from reg23_experiments.registration import objective_function
 from reg23_experiments.registration.interface.lib.structs import HyperParameters, Cropping
+from reg23_experiments.pso import swarm as pso
 
 
 @dag_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
@@ -102,7 +103,7 @@ def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
     new_value = HyperParameters(  #
         cropping=Cropping.zero(size),  #
         source_offset=torch.zeros(2),  #
-        downsample_level=2  #
+        downsample_level=4  #
     ) if isinstance(res, Error) else HyperParameters(  #
         cropping=Cropping.zero(size),  #
         source_offset=res.source_offset,  #
@@ -111,6 +112,38 @@ def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
     err = data_manager().set_data("hyperparameters", new_value)
     if isinstance(err, Error):
         logger.error(f"Error setting hyperparameters with reset cropping: {err.description}")
+
+
+def distance_distribution_delta(nominal_distance: float) -> float:
+    return nominal_distance
+
+
+def obj_func(parameters: torch.Tensor) -> torch.Tensor:
+    data_manager().set_data("current_transformation", mapping_parameters_to_transformation(parameters))
+    return data_manager().get("current_loss")
+
+
+def run_reg(starting_params: torch.Tensor, *, device: torch.device) -> int | None:
+    config = pso.OptimisationConfig(objective_function=obj_func)
+    swarm = pso.Swarm(config=config, dimensionality=6, particle_count=1000, boundary_lower=starting_params - 30.0,
+                      boundary_upper=starting_params + 30.0, device=device)
+    target = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
+    distance_threshold = 0.1
+    consecutive_in_threshold_needed = 3
+    consecutive_in_threshold = 0
+    maximum_iterations = 15
+    ret: int | None = None
+    for it in tqdm(range(1, maximum_iterations + consecutive_in_threshold_needed + 1)):
+        swarm.iterate()
+        distance = torch.linalg.vector_norm(swarm.current_optimum_position - target)
+        if distance < distance_threshold:
+            consecutive_in_threshold += 1
+            if consecutive_in_threshold >= consecutive_in_threshold_needed:
+                ret = it - consecutive_in_threshold_needed + 1
+                break
+        else:
+            consecutive_in_threshold = 0
+    return ret
 
 
 def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
@@ -164,15 +197,6 @@ def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
 
     data_manager().add_callback("images_2d_full", "reset_crop_on_img2dfull", reset_crop)
 
-    def get_grad() -> torch.Tensor:
-        data_manager().get("current_transformation").rotation.requires_grad = True
-        data_manager().get("current_transformation").translation.requires_grad = True
-        loss = data_manager().get("current_loss")
-        loss.backward()
-        return mapping_transformation_to_parameters(
-            Transformation(rotation=data_manager().get("current_transformation").rotation.grad,
-                           translation=data_manager().get("current_transformation").translation.grad))
-
     data_manager().set_data("current_transformation", data_manager().get("transformation_gt"))
 
     if show:
@@ -181,33 +205,19 @@ def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
         axes[1].imshow(data_manager().get("moving_image").cpu().numpy())
         plt.show()
 
-    count = 200
-    distances = torch.zeros(count)
-    dots = torch.zeros(count)
-    zero_vectorised = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
-    for i in tqdm(range(count)):
-        tr = Transformation.random_gaussian(  #
-            rotation_mean=data_manager().get("transformation_gt").rotation,  #
-            rotation_std=0.05,  #
-            translation_mean=data_manager().get("transformation_gt").translation,  #
-            translation_std=2.0  #
-        )
-        data_manager().set_data("current_transformation", tr)
-        try:
-            grad = get_grad()
-        except RuntimeError as e:
-            logger.warn(f"Runtime error in {e}")
-            continue
-        if (grad.abs() > 1e10).any():
-            continue
-        distances[i] = Transformation(rotation=tr.rotation.detach(), translation=tr.translation.detach()).distance(
-            data_manager().get("transformation_gt"))
-        dots[i] = torch.dot(torch.nn.functional.normalize(grad, dim=0),
-                            torch.nn.functional.normalize(mapping_transformation_to_parameters(tr) - zero_vectorised,
-                                                          dim=0))
-
-    plt.scatter(distances.detach().cpu().numpy(), dots.detach().cpu().numpy())
-    plt.show()
+    distance_distribution = distance_distribution_delta
+    nominal_distance_count = 10
+    nominal_distances = torch.linspace(0.1, 2.1, 10)
+    sample_count_per_distance = 50
+    results = torch.empty([nominal_distance_count, sample_count_per_distance], dtype=torch.int8, device=device)
+    for j in range(nominal_distance_count):
+        distance_generator = lambda: distance_distribution(nominal_distances[j].item())
+        for i in range(sample_count_per_distance):
+            starting_params = parameters_at_random_distance(
+                mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
+            res = run_reg(starting_params, device=device)
+            results[j, i] = -1 if res is None else res
+    print(results)
 
 
 if __name__ == "__main__":
