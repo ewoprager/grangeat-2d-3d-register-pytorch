@@ -83,7 +83,7 @@ def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_fraction: f
 def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
                 fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
                 hyperparameters: HyperParameters, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
-                device) -> dict[str, Any]:
+                image_2d_downsample_level: int, device) -> dict[str, Any]:
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(
         (torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype),
@@ -94,7 +94,7 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
     return {"moving_image": geometry.generate_drr(ct_volumes[hyperparameters.downsample_level],
                                                   transformation=transformation,
                                                   voxel_spacing=ct_spacing * 2.0 ** hyperparameters.downsample_level,
-                                                  detector_spacing=fixed_image_spacing * 2.0 ** hyperparameters.downsample_level,
+                                                  detector_spacing=fixed_image_spacing * 2.0 ** image_2d_downsample_level,
                                                   scene_geometry=SceneGeometry(source_distance=source_distance,
                                                                                fixed_image_offset=fixed_image_offset),
                                                   output_size=fixed_image_size)}
@@ -112,7 +112,7 @@ def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
     new_value = HyperParameters(  #
         cropping=Cropping.zero(size),  #
         source_offset=torch.zeros(2),  #
-        downsample_level=4  #
+        downsample_level=2  #
     ) if isinstance(res, Error) else HyperParameters(  #
         cropping=Cropping.zero(size),  #
         source_offset=res.source_offset,  #
@@ -132,19 +132,49 @@ def obj_func(parameters: torch.Tensor) -> torch.Tensor:
     return data_manager().get("current_loss")
 
 
-def run_reg(starting_params: torch.Tensor, *, device: torch.device) -> int | None:
+def run_reg(starting_params: torch.Tensor, *, device: torch.device, plot: bool = False) -> int | None:
+    if plot:
+        fig, axes = plt.subplots(1, 2)
+        axes = [axes[0], axes[1], axes[1].twinx()]
+        plt.ion()
+        plt.show()
+        of_values = []
+        distances = []
+
     config = pso.OptimisationConfig(objective_function=obj_func)
-    swarm = pso.Swarm(config=config, dimensionality=6, particle_count=500, boundary_lower=starting_params - 10.0,
-                      boundary_upper=starting_params + 10.0, device=device)
+    swarm = pso.Swarm(config=config, dimensionality=6, particle_count=1000, initialisation_position=starting_params,
+                      initialisation_spread=torch.full([6], 10.0), device=device)
     target = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
-    distance_threshold = 0.1
+    distance_threshold = 3.0
     consecutive_in_threshold_needed = 3
     consecutive_in_threshold = 0
-    maximum_iterations = 10
+    maximum_iterations = 20
     ret: int | None = None
     for it in tqdm(range(1, maximum_iterations + consecutive_in_threshold_needed + 1)):
         swarm.iterate()
         distance = torch.linalg.vector_norm(swarm.current_optimum_position - target)
+        if plot:
+            distances.append(distance.item())
+            of_values.append(swarm.current_optimum.item())
+            data_manager().set_data("current_transformation",
+                                    mapping_parameters_to_transformation(swarm.current_optimum_position))
+            axes[0].clear()
+            axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
+            t = data_manager().get("current_transformation")
+            axes[0].set_title("Iteration {}: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
+                it, t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
+                t.translation[1].item(), t.translation[2].item()))
+            axes[1].clear()
+            axes[1].plot(distances, color='r')
+            axes[1].set_ylabel("distance in SE(3)", color='r')
+            axes[1].plot(of_values)
+            axes[1].tick_params(axis='y', labelcolor='r')
+            axes[1].set_xlabel("iteration")
+            axes[2].plot(of_values, color='b')
+            axes[2].set_ylabel("o.f. value", color='b')
+            axes[2].tick_params(axis='y', labelcolor='b')
+            plt.draw()
+            plt.pause(0.1)
         if distance < distance_threshold:
             consecutive_in_threshold += 1
             if consecutive_in_threshold >= consecutive_in_threshold_needed:
@@ -165,7 +195,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         device=device,  #
         ct_path=ct_path,  #
         cache_directory=cache_directory,  #
-        save_to_cache=True,  #
+        save_to_cache=False,  #
         regenerate_drr=True,  #
         new_drr_size=torch.Size([1000, 1000]),  #
         truncation_fraction=0.0,  #
@@ -184,6 +214,10 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         logger.error(f"Error adding updater: {err.description}")
         return
     err = data_manager().add_updater("apply_truncation", apply_truncation)
+    if isinstance(err, Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    err = data_manager().add_updater("refresh_image_2d_downsample_level", updaters.refresh_image_2d_downsample_level)
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -210,14 +244,28 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     data_manager().set_data("current_transformation", data_manager().get("transformation_gt"))
 
     if show:
+        plt.ion()
+        plt.show()
         fig, axes = plt.subplots(1, 2)
         axes[0].imshow(data_manager().get("fixed_image").cpu().numpy())
         axes[1].imshow(data_manager().get("moving_image").cpu().numpy())
-        plt.show()
+        logger.info(f"ZNCC at G.T. = {data_manager().get("current_loss")}")
+        plt.draw()
+        plt.pause(0.1)
+
+    if False:
+        nominal_distance = 10.0
+        distance_distribution = distance_distribution_delta
+        distance_generator = lambda: distance_distribution(nominal_distance)
+        starting_params = parameters_at_random_distance(
+            mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
+        res = run_reg(starting_params, device=device, plot=True)
+        logger.info(f"Result: {res}")
+        return
 
     distance_distribution = distance_distribution_delta
     nominal_distance_count = 3
-    nominal_distances = torch.linspace(0.1, 2.1, nominal_distance_count)
+    nominal_distances = torch.linspace(0.1, 30.0, nominal_distance_count)
     sample_count_per_distance = 10
     results = torch.empty([nominal_distance_count, sample_count_per_distance], dtype=torch.int8, device=device)
     for j in range(nominal_distance_count):
@@ -226,9 +274,10 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
             starting_params = parameters_at_random_distance(
                 mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
             res = run_reg(starting_params, device=device)
-            results[j, i] = -1 if res is None else res
+            results[j, i] = torch.iinfo(results.dtype).max if res is None else res
 
-    torch.save(results, instance_output_dir / "basic.pkl")
+    torch.save(results, instance_output_dir / "iteration_counts.pkl")
+    torch.save(nominal_distances, instance_output_dir / "nominal_distances.pkl")
 
 
 if __name__ == "__main__":
@@ -252,7 +301,7 @@ if __name__ == "__main__":
     # parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
     parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
     parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
-    parser.add_argument("-d", "--data-output-dir", type=str, default="data/program_truncation",
+    parser.add_argument("-d", "--data-output-dir", type=str, default="data/temp/program_truncation",
                         help="Directory in which to save output data.")
     args = parser.parse_args()
 

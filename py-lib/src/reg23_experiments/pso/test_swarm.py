@@ -21,7 +21,7 @@ def test_swarm():
     config = OptimisationConfig(objective_function=objective_function, inertia_coefficient=0.9,
                                 cognitive_coefficient=0.5, social_coefficient=0.3)
     swarm = Swarm(config=config, dimensionality=2, particle_count=particle_count,
-                  boundary_lower=torch.tensor([-10.0, -10.0]), boundary_upper=torch.tensor([10.0, 10.0]),
+                  initialisation_position=torch.tensor([0.0, 0.0]), initialisation_spread=torch.tensor([10.0, 10.0]),
                   device=torch.device("cpu"))
     iteration_count = 50
     global_bests = torch.zeros([iteration_count])

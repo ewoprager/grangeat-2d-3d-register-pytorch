@@ -24,20 +24,20 @@ class Swarm:
     """
 
     def __init__(self, *, config: OptimisationConfig, dimensionality: int, particle_count: int,
-                 boundary_lower: torch.Tensor, boundary_upper: torch.Tensor, device: torch.device,
+                 initialisation_position: torch.Tensor, initialisation_spread: torch.Tensor, device: torch.device,
                  generator: torch.Generator | None = None):
         self._config = config
         self._dimensionality = dimensionality
-        self._boundary_lower = boundary_lower.to(dtype=torch.float32, device=device)
-        self._boundary_upper = boundary_upper.to(dtype=torch.float32, device=device)
-        assert self._boundary_lower.size() == torch.Size([self._dimensionality])
-        assert self._boundary_upper.size() == torch.Size([self._dimensionality])
+        assert initialisation_position.size() == torch.Size([self._dimensionality])
+        assert initialisation_spread.size() == torch.Size([self._dimensionality])
 
-        boundary_size: torch.Tensor = (boundary_upper - boundary_lower).abs()
-        particle_positions: torch.Tensor = self._boundary_lower + (
-                self._boundary_upper - self._boundary_lower) * torch.rand(  #
+        ipo = initialisation_position.to(dtype=torch.float32, device=device)
+        isp = initialisation_spread.to(dtype=torch.float32, device=device)
+        particle_positions: torch.Tensor = ipo + isp * torch.rand(  #
             [particle_count, dimensionality], dtype=torch.float32, device=device, generator=generator)
-        particle_velocities: torch.Tensor = -boundary_size + 2.0 * boundary_size * torch.rand(  #
+        # start one particle exactly on the initialisation position
+        particle_positions[0] = ipo
+        particle_velocities: torch.Tensor = isp * torch.randn(  #
             [particle_count, dimensionality], dtype=torch.float32, device=device, generator=generator)
         self._particles = torch.cat([particle_positions, particle_velocities, particle_positions,
                                      torch.zeros([particle_count, 1], dtype=torch.float32, device=device)], dim=1)
@@ -68,14 +68,6 @@ class Swarm:
     @property
     def particle_count(self) -> int:
         return self._particles.size(0)
-
-    @property
-    def boundary_lower(self) -> torch.Tensor:
-        return self._boundary_lower
-
-    @property
-    def boundary_upper(self) -> torch.Tensor:
-        return self._boundary_upper
 
     @property
     def current_optimum(self) -> torch.Tensor:
