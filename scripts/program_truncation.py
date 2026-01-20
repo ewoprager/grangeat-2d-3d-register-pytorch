@@ -1,6 +1,8 @@
 import argparse
 import os
 from typing import Any, Literal
+import socket
+from datetime import datetime
 
 import pathlib
 import torch
@@ -19,6 +21,13 @@ from reg23_experiments.registration.lib import geometry
 from reg23_experiments.registration import objective_function
 from reg23_experiments.registration.interface.lib.structs import HyperParameters, Cropping
 from reg23_experiments.pso import swarm as pso
+
+
+def instance_output_directory(script_output_directory: str | pathlib.Path) -> pathlib.Path:
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    ret: pathlib.Path = pathlib.Path(script_output_directory) / timestamp
+    ret.mkdir(parents=True, exist_ok=True)
+    return ret
 
 
 @dag_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
@@ -125,13 +134,13 @@ def obj_func(parameters: torch.Tensor) -> torch.Tensor:
 
 def run_reg(starting_params: torch.Tensor, *, device: torch.device) -> int | None:
     config = pso.OptimisationConfig(objective_function=obj_func)
-    swarm = pso.Swarm(config=config, dimensionality=6, particle_count=1000, boundary_lower=starting_params - 30.0,
-                      boundary_upper=starting_params + 30.0, device=device)
+    swarm = pso.Swarm(config=config, dimensionality=6, particle_count=500, boundary_lower=starting_params - 10.0,
+                      boundary_upper=starting_params + 10.0, device=device)
     target = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
     distance_threshold = 0.1
     consecutive_in_threshold_needed = 3
     consecutive_in_threshold = 0
-    maximum_iterations = 15
+    maximum_iterations = 10
     ret: int | None = None
     for it in tqdm(range(1, maximum_iterations + consecutive_in_threshold_needed + 1)):
         swarm.iterate()
@@ -146,10 +155,11 @@ def run_reg(starting_params: torch.Tensor, *, device: torch.device) -> int | Non
     return ret
 
 
-def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
+def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pathlib.Path, show: bool = False):
     torch.autograd.set_detect_anomaly(True)
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
+
     init_data_manager()
     err = data_manager().set_data_multiple(  #
         device=device,  #
@@ -206,9 +216,9 @@ def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
         plt.show()
 
     distance_distribution = distance_distribution_delta
-    nominal_distance_count = 10
-    nominal_distances = torch.linspace(0.1, 2.1, 10)
-    sample_count_per_distance = 50
+    nominal_distance_count = 3
+    nominal_distances = torch.linspace(0.1, 2.1, nominal_distance_count)
+    sample_count_per_distance = 10
     results = torch.empty([nominal_distance_count, sample_count_per_distance], dtype=torch.int8, device=device)
     for j in range(nominal_distance_count):
         distance_generator = lambda: distance_distribution(nominal_distances[j].item())
@@ -217,7 +227,8 @@ def main(*, cache_directory: str, ct_path: str | None, show: bool = False):
                 mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
             res = run_reg(starting_params, device=device)
             results[j, i] = -1 if res is None else res
-    print(results)
+
+    torch.save(results, instance_output_dir / "basic.pkl")
 
 
 if __name__ == "__main__":
@@ -241,6 +252,8 @@ if __name__ == "__main__":
     # parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
     parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
     parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
+    parser.add_argument("-d", "--data-output-dir", type=str, default="data/program_truncation",
+                        help="Directory in which to save output data.")
     args = parser.parse_args()
 
     # create cache directory
@@ -249,7 +262,7 @@ if __name__ == "__main__":
 
     try:
         main(cache_directory=args.cache_directory, ct_path=args.ct_path if "ct_path" in vars(args) else None,
-             show=args.show)
+             data_output_dir=args.data_output_dir, show=args.show)
         if args.notify:
             pushover.send_notification(__file__, "Script finished.")
     except Exception as e:
