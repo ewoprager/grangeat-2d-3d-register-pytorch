@@ -22,14 +22,17 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
 
     # basic
     data_path = data_dir / "iteration_counts.pkl"
-    if data_path.is_file():
+    nominal_distances_path = data_dir / "nominal_distances.pkl"
+    if data_path.is_file() and nominal_distances_path.is_file():
         data = torch.load(data_path)
+        nominal_distances = torch.load(nominal_distances_path)
         medians = data.to(dtype=torch.float32).quantile(0.5, dim=1)
         q1 = data.to(dtype=torch.float32).quantile(0.25, dim=1)
         q3 = data.to(dtype=torch.float32).quantile(0.75, dim=1)
-        plt.plot(medians.cpu().numpy(), label="median")
-        plt.plot(q1.cpu().numpy(), label="1st quartile")
-        plt.plot(q3.cpu().numpy(), label="3rd quartile")
+        plt.plot(nominal_distances, medians.cpu().numpy(), label="median")
+        plt.plot(nominal_distances, q1.cpu().numpy(), label="1st quartile")
+        plt.plot(nominal_distances, q3.cpu().numpy(), label="3rd quartile")
+        plt.ylim((0.0, 20.0))
         plt.legend()
         plt.show()
 

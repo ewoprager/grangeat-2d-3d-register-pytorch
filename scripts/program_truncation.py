@@ -134,11 +134,11 @@ def obj_func(parameters: torch.Tensor) -> torch.Tensor:
 
 
 class RegConfig(traitlets.HasTraits):
-    particle_count = traitlets.Int(default_value=1000)
-    particle_initialisation_spread = traitlets.Float(default_value=10.0)
-    distance_threshold = traitlets.Float(default_value=3.0)
-    consecutive_in_threshold_needed = traitlets.Int(default_value=3)
-    maximum_iterations = traitlets.Int(default_value=20)
+    particle_count = traitlets.Int(0)
+    particle_initialisation_spread = traitlets.Float()
+    distance_threshold = traitlets.Float()
+    consecutive_in_threshold_needed = traitlets.Int()
+    maximum_iterations = traitlets.Int()
 
 
 def run_reg(starting_params: torch.Tensor, *, config: RegConfig, device: torch.device,
@@ -150,7 +150,6 @@ def run_reg(starting_params: torch.Tensor, *, config: RegConfig, device: torch.d
         plt.show()
         of_values = []
         distances = []
-
     pso_config = pso.OptimisationConfig(objective_function=obj_func)
     swarm = pso.Swarm(config=pso_config, dimensionality=6, particle_count=config.particle_count,
                       initialisation_position=starting_params,
@@ -196,8 +195,22 @@ def run_reg(starting_params: torch.Tensor, *, config: RegConfig, device: torch.d
 class ExperimentConfig(traitlets.HasTraits):
     reg_config = traitlets.Instance(RegConfig)
     distance_distribution = traitlets.Callable()
-    nominal_distance_count = traitlets.Int()
+    nominal_distances = traitlets.Instance(torch.Tensor)
     sample_count_per_distance = traitlets.Int()
+
+
+def run_experiment(*, config: ExperimentConfig, device: torch.device) -> torch.Tensor:
+    ret = torch.empty([config.nominal_distances.numel(), config.sample_count_per_distance], dtype=torch.int8,
+                      device=device)
+    for j in range(config.nominal_distances.numel()):
+        distance_generator = lambda: config.distance_distribution(config.nominal_distances[j].item())
+        for i in range(config.sample_count_per_distance):
+            starting_params = parameters_at_random_distance(
+                mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
+            res = run_reg(starting_params, device=device, config=config.reg_config)
+            ret[j, i] = torch.iinfo(ret.dtype).max if res is None else res
+
+    return ret
 
 
 def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pathlib.Path, show: bool = False):
@@ -278,23 +291,18 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         logger.info(f"Result: {res}")
         return
 
-    reg_config = RegConfig()
+    reg_config = RegConfig(particle_count=1000, particle_initialisation_spread=10.0, distance_threshold=3.0,
+                           consecutive_in_threshold_needed=3, maximum_iterations=20)
+
     exp_config = ExperimentConfig(reg_config=reg_config, distance_distribution=distance_distribution_delta,
-                                  nominal_distance_count=10, sample_count_per_distance=14)
+                                  nominal_distances=torch.linspace(0.1, 20.0, 8), sample_count_per_distance=30)
 
-    nominal_distances = torch.linspace(0.1, 30.0, exp_config.nominal_distance_count)
-    results = torch.empty([exp_config.nominal_distance_count, exp_config.sample_count_per_distance], dtype=torch.int8,
-                          device=device)
-    for j in range(exp_config.nominal_distance_count):
-        distance_generator = lambda: exp_config.distance_distribution(nominal_distances[j].item())
-        for i in range(exp_config.sample_count_per_distance):
-            starting_params = parameters_at_random_distance(
-                mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
-            res = run_reg(starting_params, device=device, config=exp_config.reg_config)
-            results[j, i] = torch.iinfo(results.dtype).max if res is None else res
+    results = run_experiment(config=exp_config, device=device)
 
+    config_params = {"maximum_iterations": exp_config.reg_config.maximum_iterations}
+    torch.save(config_params, instance_output_dir / "config_params.pkl")
     torch.save(results, instance_output_dir / "iteration_counts.pkl")
-    torch.save(nominal_distances, instance_output_dir / "nominal_distances.pkl")
+    torch.save(exp_config.nominal_distances, instance_output_dir / "nominal_distances.pkl")
 
 
 if __name__ == "__main__":
