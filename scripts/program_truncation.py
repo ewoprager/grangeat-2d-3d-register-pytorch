@@ -8,6 +8,7 @@ import pathlib
 import torch
 import torchviz
 import matplotlib.pyplot as plt
+import traitlets
 from tqdm import tqdm
 
 from reg23_experiments.notification import logs_setup, pushover
@@ -132,7 +133,16 @@ def obj_func(parameters: torch.Tensor) -> torch.Tensor:
     return data_manager().get("current_loss")
 
 
-def run_reg(starting_params: torch.Tensor, *, device: torch.device, plot: bool = False) -> int | None:
+class RegConfig(traitlets.HasTraits):
+    particle_count = traitlets.Int(default_value=1000)
+    particle_initialisation_spread = traitlets.Float(default_value=10.0)
+    distance_threshold = traitlets.Float(default_value=3.0)
+    consecutive_in_threshold_needed = traitlets.Int(default_value=3)
+    maximum_iterations = traitlets.Int(default_value=20)
+
+
+def run_reg(starting_params: torch.Tensor, *, config: RegConfig, device: torch.device,
+            plot: bool = False) -> int | None:
     if plot:
         fig, axes = plt.subplots(1, 2)
         axes = [axes[0], axes[1], axes[1].twinx()]
@@ -141,16 +151,14 @@ def run_reg(starting_params: torch.Tensor, *, device: torch.device, plot: bool =
         of_values = []
         distances = []
 
-    config = pso.OptimisationConfig(objective_function=obj_func)
-    swarm = pso.Swarm(config=config, dimensionality=6, particle_count=1000, initialisation_position=starting_params,
-                      initialisation_spread=torch.full([6], 10.0), device=device)
+    pso_config = pso.OptimisationConfig(objective_function=obj_func)
+    swarm = pso.Swarm(config=pso_config, dimensionality=6, particle_count=config.particle_count,
+                      initialisation_position=starting_params,
+                      initialisation_spread=torch.full([6], config.particle_initialisation_spread), device=device)
     target = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
-    distance_threshold = 3.0
-    consecutive_in_threshold_needed = 3
     consecutive_in_threshold = 0
-    maximum_iterations = 20
     ret: int | None = None
-    for it in tqdm(range(1, maximum_iterations + consecutive_in_threshold_needed + 1)):
+    for it in tqdm(range(1, config.maximum_iterations + config.consecutive_in_threshold_needed + 1)):
         swarm.iterate()
         distance = torch.linalg.vector_norm(swarm.current_optimum_position - target)
         if plot:
@@ -175,14 +183,21 @@ def run_reg(starting_params: torch.Tensor, *, device: torch.device, plot: bool =
             axes[2].tick_params(axis='y', labelcolor='b')
             plt.draw()
             plt.pause(0.1)
-        if distance < distance_threshold:
+        if distance < config.distance_threshold:
             consecutive_in_threshold += 1
-            if consecutive_in_threshold >= consecutive_in_threshold_needed:
-                ret = it - consecutive_in_threshold_needed + 1
+            if consecutive_in_threshold >= config.consecutive_in_threshold_needed:
+                ret = it - config.consecutive_in_threshold_needed + 1
                 break
         else:
             consecutive_in_threshold = 0
     return ret
+
+
+class ExperimentConfig(traitlets.HasTraits):
+    reg_config = traitlets.Instance(RegConfig)
+    distance_distribution = traitlets.Callable()
+    nominal_distance_count = traitlets.Int()
+    sample_count_per_distance = traitlets.Int()
 
 
 def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pathlib.Path, show: bool = False):
@@ -263,17 +278,19 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         logger.info(f"Result: {res}")
         return
 
-    distance_distribution = distance_distribution_delta
-    nominal_distance_count = 3
-    nominal_distances = torch.linspace(0.1, 30.0, nominal_distance_count)
-    sample_count_per_distance = 10
-    results = torch.empty([nominal_distance_count, sample_count_per_distance], dtype=torch.int8, device=device)
-    for j in range(nominal_distance_count):
-        distance_generator = lambda: distance_distribution(nominal_distances[j].item())
-        for i in range(sample_count_per_distance):
+    reg_config = RegConfig()
+    exp_config = ExperimentConfig(reg_config=reg_config, distance_distribution=distance_distribution_delta,
+                                  nominal_distance_count=10, sample_count_per_distance=14)
+
+    nominal_distances = torch.linspace(0.1, 30.0, exp_config.nominal_distance_count)
+    results = torch.empty([exp_config.nominal_distance_count, exp_config.sample_count_per_distance], dtype=torch.int8,
+                          device=device)
+    for j in range(exp_config.nominal_distance_count):
+        distance_generator = lambda: exp_config.distance_distribution(nominal_distances[j].item())
+        for i in range(exp_config.sample_count_per_distance):
             starting_params = parameters_at_random_distance(
                 mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
-            res = run_reg(starting_params, device=device)
+            res = run_reg(starting_params, device=device, config=exp_config.reg_config)
             results[j, i] = torch.iinfo(results.dtype).max if res is None else res
 
     torch.save(results, instance_output_dir / "iteration_counts.pkl")

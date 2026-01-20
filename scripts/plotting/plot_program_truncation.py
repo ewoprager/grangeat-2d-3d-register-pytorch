@@ -24,8 +24,13 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
     data_path = data_dir / "iteration_counts.pkl"
     if data_path.is_file():
         data = torch.load(data_path)
-        means = data.to(dtype=torch.float32).quantile(0.5, dim=1)
-        plt.plot(means.cpu().numpy())
+        medians = data.to(dtype=torch.float32).quantile(0.5, dim=1)
+        q1 = data.to(dtype=torch.float32).quantile(0.25, dim=1)
+        q3 = data.to(dtype=torch.float32).quantile(0.75, dim=1)
+        plt.plot(medians.cpu().numpy(), label="median")
+        plt.plot(q1.cpu().numpy(), label="1st quartile")
+        plt.plot(q3.cpu().numpy(), label="3rd quartile")
+        plt.legend()
         plt.show()
 
 
