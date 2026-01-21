@@ -1,9 +1,23 @@
 from datetime import datetime
 import socket
 import sys
-import logging.config
+import logging
 
+from tqdm import tqdm
 import pathlib
+
+
+class TqdmStreamHandler(logging.StreamHandler):
+    """
+    A stream handler that writes to the console in a way compatible with tqdm progress bars
+    """
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            tqdm.write(msg)  # This writes safely above a tqdm progress bar
+            self.flush()
+        except Exception:
+            self.handleError(record)
 
 
 def setup_logger():

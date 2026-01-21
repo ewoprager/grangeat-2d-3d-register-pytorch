@@ -1,8 +1,9 @@
 import argparse
 import os
 from typing import Any, Literal
-import socket
 from datetime import datetime
+import types
+import pprint
 
 import pathlib
 import torch
@@ -22,6 +23,18 @@ from reg23_experiments.registration.lib import geometry
 from reg23_experiments.registration import objective_function
 from reg23_experiments.registration.interface.lib.structs import HyperParameters, Cropping
 from reg23_experiments.pso import swarm as pso
+
+
+def configs_to_dict(*vargs) -> dict[str, Any]:
+    # convert all function pointers to their `str` names and merge all configs
+    return {k: (v.__qualname__ if isinstance(v, types.FunctionType) else v) for config in vargs for k, v in
+            config.trait_values().items()}
+
+
+def save_dict(d: dict, *, directory: pathlib.Path, stem: str) -> None:
+    directory.mkdir(exist_ok=True, parents=True)
+    torch.save(d, directory / f"{stem}.pkl")
+    (directory / f"{stem}.txt").write_text(pprint.pformat(d))
 
 
 def instance_output_directory(script_output_directory: str | pathlib.Path) -> pathlib.Path:
@@ -134,14 +147,14 @@ def obj_func(parameters: torch.Tensor) -> torch.Tensor:
 
 
 class RegConfig(traitlets.HasTraits):
-    particle_count = traitlets.Int(0)
+    particle_count = traitlets.Int()
     particle_initialisation_spread = traitlets.Float()
     distance_threshold = traitlets.Float()
     consecutive_in_threshold_needed = traitlets.Int()
     maximum_iterations = traitlets.Int()
 
 
-def run_reg(starting_params: torch.Tensor, *, config: RegConfig, device: torch.device,
+def run_reg(*, starting_params: torch.Tensor, config: RegConfig, device: torch.device,
             plot: bool = False) -> int | None:
     if plot:
         fig, axes = plt.subplots(1, 2)
@@ -157,7 +170,7 @@ def run_reg(starting_params: torch.Tensor, *, config: RegConfig, device: torch.d
     target = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
     consecutive_in_threshold = 0
     ret: int | None = None
-    for it in tqdm(range(1, config.maximum_iterations + config.consecutive_in_threshold_needed + 1)):
+    for it in range(1, config.maximum_iterations + config.consecutive_in_threshold_needed + 1):
         swarm.iterate()
         distance = torch.linalg.vector_norm(swarm.current_optimum_position - target)
         if plot:
@@ -193,21 +206,22 @@ def run_reg(starting_params: torch.Tensor, *, config: RegConfig, device: torch.d
 
 
 class ExperimentConfig(traitlets.HasTraits):
-    reg_config = traitlets.Instance(RegConfig)
     distance_distribution = traitlets.Callable()
     nominal_distances = traitlets.Instance(torch.Tensor)
     sample_count_per_distance = traitlets.Int()
 
 
-def run_experiment(*, config: ExperimentConfig, device: torch.device) -> torch.Tensor:
-    ret = torch.empty([config.nominal_distances.numel(), config.sample_count_per_distance], dtype=torch.int8,
+def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, device: torch.device) -> torch.Tensor:
+    ret = torch.empty([exp_config.nominal_distances.numel(), exp_config.sample_count_per_distance], dtype=torch.int8,
                       device=device)
-    for j in range(config.nominal_distances.numel()):
-        distance_generator = lambda: config.distance_distribution(config.nominal_distances[j].item())
-        for i in range(config.sample_count_per_distance):
+    for j in range(exp_config.nominal_distances.numel()):
+        logger.info("Nominal distance {}/{} = {:.3f}".format(j + 1, exp_config.nominal_distances.numel(),
+                                                             exp_config.nominal_distances[j].item()))
+        distance_generator = lambda: exp_config.distance_distribution(exp_config.nominal_distances[j].item())
+        for i in tqdm(range(exp_config.sample_count_per_distance)):
             starting_params = parameters_at_random_distance(
                 mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
-            res = run_reg(starting_params, device=device, config=config.reg_config)
+            res = run_reg(config=reg_config, starting_params=starting_params, device=device)
             ret[j, i] = torch.iinfo(ret.dtype).max if res is None else res
 
     return ret
@@ -227,7 +241,11 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         regenerate_drr=True,  #
         new_drr_size=torch.Size([1000, 1000]),  #
         truncation_fraction=0.0,  #
-        current_transformation=Transformation.random_uniform(device=device),  #
+        hyperparameters=HyperParameters(  #
+            cropping=None,  #
+            source_offset=torch.zeros(2),  #
+            downsample_level=3  #
+        ), current_transformation=Transformation.random_uniform(device=device),  #
         mask_transformation=Transformation.zero(device=device)  #
     )
     if isinstance(err, Error):
@@ -291,18 +309,41 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         logger.info(f"Result: {res}")
         return
 
-    reg_config = RegConfig(particle_count=1000, particle_initialisation_spread=10.0, distance_threshold=3.0,
-                           consecutive_in_threshold_needed=3, maximum_iterations=20)
+    reg_config = RegConfig(particle_count=500, particle_initialisation_spread=10.0, distance_threshold=3.0,
+                           consecutive_in_threshold_needed=3, maximum_iterations=8)
 
-    exp_config = ExperimentConfig(reg_config=reg_config, distance_distribution=distance_distribution_delta,
-                                  nominal_distances=torch.linspace(0.1, 20.0, 8), sample_count_per_distance=30)
+    exp_config = ExperimentConfig(distance_distribution=distance_distribution_delta,
+                                  nominal_distances=torch.linspace(0.1, 5.0, 5), sample_count_per_distance=8)
 
-    results = run_experiment(config=exp_config, device=device)
+    truncation_fractions = torch.linspace(0.0, 0.7, 1)
 
-    config_params = {"maximum_iterations": exp_config.reg_config.maximum_iterations}
-    torch.save(config_params, instance_output_dir / "config_params.pkl")
-    torch.save(results, instance_output_dir / "iteration_counts.pkl")
-    torch.save(exp_config.nominal_distances, instance_output_dir / "nominal_distances.pkl")
+    save_dict(  #
+        {  #
+            "ct_path": data_manager().get("ct_path"),  #
+            "x_ray_path": "DRR",  #
+            "notes": "Just varying truncation fraction",  #
+        } | configs_to_dict(reg_config, exp_config),  #
+        directory=instance_output_dir,  #
+        stem="config")
+
+    save_dict({  #
+        "mask": "None",  #
+        "cropping": "None",  #
+        "sim_metric": "zncc",  #
+        "downsample_level": data_manager().get("hyperparameters").downsample_level,  #
+    }, directory=instance_output_dir, stem="shared_parameters")
+
+    for truncation_fraction in truncation_fractions:
+        logger.info("##### Running at truncation fraction {:.3f} #####".format(truncation_fraction.item()))
+        data_manager().set_data("truncation_fraction", float(truncation_fraction))
+        results = run_experiment(reg_config=reg_config, exp_config=exp_config, device=device)
+        results_dir: pathlib.Path = instance_output_dir / "truncation_fraction_{:.3f}".format(
+            float(truncation_fraction)).replace(".", "p")
+        results_dir.mkdir(exist_ok=True)
+        torch.save(results, results_dir / "iteration_counts.pkl")
+        save_dict({  #
+            "truncation_fraction": truncation_fraction.item(),  #
+        }, directory=results_dir, stem="parameters")
 
 
 if __name__ == "__main__":

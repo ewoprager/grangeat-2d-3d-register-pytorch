@@ -2,6 +2,7 @@ import argparse
 
 import torch
 import pathlib
+from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as plt
 
 from reg23_experiments.notification import logs_setup
@@ -21,21 +22,28 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
     assert data_dir.is_dir()
 
     # basic
-    data_path = data_dir / "iteration_counts.pkl"
-    nominal_distances_path = data_dir / "nominal_distances.pkl"
-    if data_path.is_file() and nominal_distances_path.is_file():
-        data = torch.load(data_path)
-        nominal_distances = torch.load(nominal_distances_path)
-        medians = data.to(dtype=torch.float32).quantile(0.5, dim=1)
-        q1 = data.to(dtype=torch.float32).quantile(0.25, dim=1)
-        q3 = data.to(dtype=torch.float32).quantile(0.75, dim=1)
-        plt.plot(nominal_distances, medians.cpu().numpy(), label="median")
-        plt.plot(nominal_distances, q1.cpu().numpy(), label="1st quartile")
-        plt.plot(nominal_distances, q3.cpu().numpy(), label="3rd quartile")
-        plt.ylim((0.0, 20.0))
-        plt.legend()
-        plt.show()
+    truncation_fractions = []
+    medians = None
+    for element in data_dir.iterdir():
+        if not element.is_dir():
+            continue
+        truncation_fractions.append(float(str(element.stem)[-5:].replace("p", ".")))
+        iteration_counts = torch.load(element / "iteration_counts.pkl")
+        m = iteration_counts.to(dtype=torch.float32).quantile(0.5, dim=1).unsqueeze(0)
+        if medians is None:
+            medians = m
+        else:
+            medians = torch.cat([medians, m], dim=0)
 
+    nominal_distances = torch.linspace(0.1, 20.0, 8).numpy()
+    for i in range(len(truncation_fractions)):
+        f = float(i) / float(len(truncation_fractions) - 1)
+        plt.plot(nominal_distances, medians[i].cpu().numpy(), label=f"tf={truncation_fractions[i]}",
+                 color=(f, 1.0 - f, 0.0))
+    plt.ylim((0.0, 20.0))
+    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.legend()
+    plt.show()
 
 
 if __name__ == "__main__":
