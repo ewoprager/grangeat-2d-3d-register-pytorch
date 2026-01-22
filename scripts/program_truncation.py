@@ -343,7 +343,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     reg_config = RegConfig(particle_count=2000, particle_initialisation_spread=5.0, distance_threshold=3.0,
                            consecutive_in_threshold_needed=2, maximum_iterations=10)
 
-    if True:
+    if False:
         nominal_distance = 0.1
         distance_distribution = distance_distribution_delta
         distance_generator = lambda: distance_distribution(nominal_distance)
@@ -399,6 +399,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         }, directory=results_dir, stem="parameters")
 
     logger.info("##### Yes masking #####")
+    tqdm_truncation_fraction = tqdm(truncation_fractions, desc="Truncation fractions")
     for truncation_fraction in tqdm_truncation_fraction:
         tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}...".format(truncation_fraction.item()))
         data_manager().set_data("truncation_fraction", float(truncation_fraction))
