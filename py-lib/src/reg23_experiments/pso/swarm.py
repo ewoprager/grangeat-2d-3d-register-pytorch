@@ -31,7 +31,7 @@ class Swarm:
     Swarm.current_optimum, and the location of that optimum can be read using Swarm.current_optimum_position.
 
     To perform an iteration of the optimisation, simply call the Swarm `iterate()` method. This will involve
-    `particle_count` objective function evaluation.
+    `particle_count` objective function evaluations.
 
     The values in the `config` of this class can be read and safely mutated between iterations using `Swarm.config`.
     This allows the objective function and optimisation parameters to be changed on the fly if desired.
