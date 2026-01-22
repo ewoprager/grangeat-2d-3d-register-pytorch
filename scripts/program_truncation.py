@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, Sequence
 from datetime import datetime
 import types
 import pprint
@@ -45,10 +45,16 @@ def instance_output_directory(script_output_directory: str | pathlib.Path) -> pa
 
 
 @dag_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
-def load_untruncated_ct(ct_path: str, device) -> dict[str, Any]:
+def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
+    str, Any]:
     ct_volume, ct_spacing = data.load_volume(pathlib.Path(ct_path))
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
     ct_spacing = ct_spacing.to(device=device)
+
+    if ct_permutation is not None:
+        assert len(ct_permutation) == 3
+        ct_volume = ct_volume.permute(*ct_permutation)
+        ct_spacing = ct_spacing[torch.tensor(ct_permutation)]
 
     return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing}
 
@@ -195,6 +201,7 @@ def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, conf
             data_manager().set_data("current_transformation",
                                     mapping_parameters_to_transformation(swarm.current_optimum_position))
             axes[0].clear()
+            axes[0].set_title("moving image")
             axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
             t = data_manager().get("current_transformation")
             axes[0].set_title("Iteration {}: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
@@ -211,6 +218,7 @@ def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, conf
             axes[2].tick_params(axis='y', labelcolor='b')
             if plot == "mask":
                 axes[3].clear()
+                axes[3].set_title("fixed image")
                 axes[3].imshow(data_manager().get("fixed_image").cpu().numpy())
             plt.draw()
             plt.pause(0.1)
@@ -318,22 +326,25 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
 
     data_manager().set_data("current_transformation", data_manager().get("transformation_gt"))
 
+    data_manager().set_data("truncation_fraction", 0.1)
+
     if show:
-        plt.ion()
+        plt.ion()  # figures are non-blocking
         plt.show()
         fig, axes = plt.subplots(1, 2)
         axes[0].imshow(data_manager().get("fixed_image").cpu().numpy())
+        axes[0].set_title("fixed image")
         axes[1].imshow(data_manager().get("moving_image").cpu().numpy())
+        axes[1].set_title("moving image at G.T.")
         logger.info(f"ZNCC at G.T. = {data_manager().get("current_loss")}")
         plt.draw()
         plt.pause(0.1)
 
-    reg_config = RegConfig(particle_count=2000, particle_initialisation_spread=15.0, distance_threshold=3.0,
-                           consecutive_in_threshold_needed=2, maximum_iterations=20)
+    reg_config = RegConfig(particle_count=2000, particle_initialisation_spread=5.0, distance_threshold=3.0,
+                           consecutive_in_threshold_needed=2, maximum_iterations=10)
 
-    if False:
-        data_manager().set_data("truncation_fraction", 0.05)
-        nominal_distance = 10.0
+    if True:
+        nominal_distance = 0.1
         distance_distribution = distance_distribution_delta
         distance_generator = lambda: distance_distribution(nominal_distance)
         starting_params = random_parameters_at_distance(
@@ -341,12 +352,14 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         res = run_reg(objective_function=obj_func_masked, starting_params=starting_params, config=reg_config,
                       device=device, plot="mask")
         logger.info(f"Result: {res}")
+        plt.ioff()  # figures are blocking
+        plt.show()
         return
 
     exp_config = ExperimentConfig(distance_distribution=distance_distribution_delta,
                                   nominal_distances=torch.linspace(0.1, 20.0, 4), sample_count_per_distance=20)
 
-    truncation_fractions = torch.linspace(0.1, 0.7, 3)
+    truncation_fractions = torch.tensor([0.1, 0.5])  # torch.linspace(0.1, 0.5, 2)
 
     # config
     save_dict(  #

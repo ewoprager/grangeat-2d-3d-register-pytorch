@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 def mapping_transformation_to_parameters(transformation: Transformation) -> torch.Tensor:
     ret = transformation.vectorised()
-    return ret * torch.tensor([32.0, 32.0, 32.0, 1.0, 1.0, 0.01], device=ret.device, dtype=ret.dtype)
+    return ret * torch.tensor([32.0, 32.0, 32.0, 1.0, 1.0, 0.05], device=ret.device, dtype=ret.dtype)
 
 
 def mapping_parameters_to_transformation(params: torch.Tensor) -> Transformation:
     return Transformation.from_vector(
-        params * torch.tensor([0.03125, 0.03125, 0.03125, 1.0, 1.0, 100.0], device=params.device, dtype=params.dtype))
+        params * torch.tensor([0.03125, 0.03125, 0.03125, 1.0, 1.0, 20.0], device=params.device, dtype=params.dtype))
 
 
 def random_parameters_at_distance(from_parameters: torch.Tensor, distance: float | torch.Tensor) -> torch.Tensor:
