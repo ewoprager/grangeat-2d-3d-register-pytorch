@@ -164,7 +164,11 @@ class RegConfig(traitlets.HasTraits):
 def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, config: RegConfig, device: torch.device,
             plot: bool = False) -> int | None:
     if plot:
-        fig, axes = plt.subplots(1, 2)
+        ncols = 2
+        if True:
+            ncols += 1
+        fig, axes = plt.subplots(1, ncols)
+        # ToDo: Convert axes np array to list properly, and plot masking! maybe us literal for value of `plot`
         axes = [axes[0], axes[1], axes[1].twinx()]
         plt.ion()
         plt.show()
@@ -308,18 +312,19 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         plt.draw()
         plt.pause(0.1)
 
-    if False:
+    reg_config = RegConfig(particle_count=1000, particle_initialisation_spread=10.0, distance_threshold=3.0,
+                           consecutive_in_threshold_needed=3, maximum_iterations=20)
+
+    if True:
         nominal_distance = 10.0
         distance_distribution = distance_distribution_delta
         distance_generator = lambda: distance_distribution(nominal_distance)
         starting_params = parameters_at_random_distance(
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
-        res = run_reg(starting_params, device=device, plot=True)
+        res = run_reg(objective_function=obj_func_masked, starting_params=starting_params, config=reg_config,
+                      device=device, plot=True)
         logger.info(f"Result: {res}")
         return
-
-    reg_config = RegConfig(particle_count=1000, particle_initialisation_spread=10.0, distance_threshold=3.0,
-                           consecutive_in_threshold_needed=3, maximum_iterations=20)
 
     exp_config = ExperimentConfig(distance_distribution=distance_distribution_delta,
                                   nominal_distances=torch.linspace(0.1, 20.0, 5), sample_count_per_distance=30)

@@ -184,7 +184,8 @@ def refresh_mask_transformation_dependent(ct_volumes: list[torch.Tensor], ct_spa
             volume_size=torch.tensor(ct_volumes[0].size(), device=device).flip(dims=(0,)),  #
             voxel_spacing=ct_spacing.to(device=device),  #
             homography_matrix_inverse=mask_transformation.inverse().get_h().to(device=device),  #
-            source_distance=source_distance, output_width=cropped_target.size()[1],  #
+            source_distance=source_distance,#
+            output_width=cropped_target.size()[1],  #
             output_height=cropped_target.size()[0],  #
             output_offset=fixed_image_offset.to(device=device, dtype=torch.float64),  #
             detector_spacing=fixed_image_spacing_at_current_level.to(device=device)  #
