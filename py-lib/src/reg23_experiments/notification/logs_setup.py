@@ -2,6 +2,7 @@ from datetime import datetime
 import socket
 import sys
 import logging
+import logging.config
 
 from tqdm import tqdm
 import pathlib

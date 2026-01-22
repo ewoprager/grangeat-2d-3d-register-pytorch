@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import Any, Literal
+from typing import Any, Callable
 from datetime import datetime
 import types
 import pprint
@@ -20,7 +20,7 @@ from reg23_experiments.registration.lib.optimisation import mapping_transformati
     mapping_parameters_to_transformation, parameters_at_random_distance
 from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
 from reg23_experiments.registration.lib import geometry
-from reg23_experiments.registration import objective_function
+from reg23_experiments.registration import objective_function as lib_objective_function
 from reg23_experiments.registration.interface.lib.structs import HyperParameters, Cropping
 from reg23_experiments.pso import swarm as pso
 
@@ -116,7 +116,7 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 
 @dag_updater(names_returned=["current_loss"])
 def of_zncc(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> dict[str, Any]:
-    return {"current_loss": -objective_function.ncc(moving_image, fixed_image)}
+    return {"current_loss": -lib_objective_function.ncc(moving_image, fixed_image)}
 
 
 def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
@@ -146,6 +146,13 @@ def obj_func(parameters: torch.Tensor) -> torch.Tensor:
     return data_manager().get("current_loss")
 
 
+def obj_func_masked(parameters: torch.Tensor) -> torch.Tensor:
+    t = mapping_parameters_to_transformation(parameters)
+    data_manager().set_data("current_transformation", t)
+    data_manager().set_data("mask_transformation", t)
+    return data_manager().get("current_loss")
+
+
 class RegConfig(traitlets.HasTraits):
     particle_count = traitlets.Int()
     particle_initialisation_spread = traitlets.Float()
@@ -154,7 +161,7 @@ class RegConfig(traitlets.HasTraits):
     maximum_iterations = traitlets.Int()
 
 
-def run_reg(*, starting_params: torch.Tensor, config: RegConfig, device: torch.device,
+def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, config: RegConfig, device: torch.device,
             plot: bool = False) -> int | None:
     if plot:
         fig, axes = plt.subplots(1, 2)
@@ -163,7 +170,7 @@ def run_reg(*, starting_params: torch.Tensor, config: RegConfig, device: torch.d
         plt.show()
         of_values = []
         distances = []
-    pso_config = pso.OptimisationConfig(objective_function=obj_func)
+    pso_config = pso.OptimisationConfig(objective_function=objective_function)
     swarm = pso.Swarm(config=pso_config, dimensionality=6, particle_count=config.particle_count,
                       initialisation_position=starting_params,
                       initialisation_spread=torch.full([6], config.particle_initialisation_spread), device=device)
@@ -211,7 +218,8 @@ class ExperimentConfig(traitlets.HasTraits):
     sample_count_per_distance = traitlets.Int()
 
 
-def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, device: torch.device) -> torch.Tensor:
+def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, objective_function: Callable,
+                   device: torch.device) -> torch.Tensor:
     ret = torch.empty([exp_config.nominal_distances.numel(), exp_config.sample_count_per_distance], dtype=torch.int8,
                       device=device)
     for j in range(exp_config.nominal_distances.numel()):
@@ -221,7 +229,8 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
         for i in tqdm(range(exp_config.sample_count_per_distance)):
             starting_params = parameters_at_random_distance(
                 mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
-            res = run_reg(config=reg_config, starting_params=starting_params, device=device)
+            res = run_reg(objective_function=objective_function, config=reg_config, starting_params=starting_params,
+                          device=device)
             ret[j, i] = torch.iinfo(ret.dtype).max if res is None else res
 
     return ret
@@ -244,7 +253,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         hyperparameters=HyperParameters(  #
             cropping=None,  #
             source_offset=torch.zeros(2),  #
-            downsample_level=3  #
+            downsample_level=2  #
         ), current_transformation=Transformation.random_uniform(device=device),  #
         mask_transformation=Transformation.zero(device=device)  #
     )
@@ -309,14 +318,15 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         logger.info(f"Result: {res}")
         return
 
-    reg_config = RegConfig(particle_count=500, particle_initialisation_spread=10.0, distance_threshold=3.0,
-                           consecutive_in_threshold_needed=3, maximum_iterations=8)
+    reg_config = RegConfig(particle_count=1000, particle_initialisation_spread=10.0, distance_threshold=3.0,
+                           consecutive_in_threshold_needed=3, maximum_iterations=20)
 
     exp_config = ExperimentConfig(distance_distribution=distance_distribution_delta,
-                                  nominal_distances=torch.linspace(0.1, 5.0, 5), sample_count_per_distance=8)
+                                  nominal_distances=torch.linspace(0.1, 20.0, 5), sample_count_per_distance=30)
 
-    truncation_fractions = torch.linspace(0.0, 0.7, 1)
+    truncation_fractions = torch.linspace(0.0, 0.7, 4)[0:3]
 
+    # config
     save_dict(  #
         {  #
             "ct_path": data_manager().get("ct_path"),  #
@@ -326,23 +336,43 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         directory=instance_output_dir,  #
         stem="config")
 
+    # shared parameters
     save_dict({  #
-        "mask": "None",  #
         "cropping": "None",  #
         "sim_metric": "zncc",  #
         "downsample_level": data_manager().get("hyperparameters").downsample_level,  #
     }, directory=instance_output_dir, stem="shared_parameters")
 
+    # logger.info("##### No masking #####")
+    # for truncation_fraction in truncation_fractions:
+    #     logger.info("Running at truncation fraction {:.3f}...".format(truncation_fraction.item()))
+    #     data_manager().set_data("truncation_fraction", float(truncation_fraction))
+    #     results = run_experiment(reg_config=reg_config, exp_config=exp_config, objective_function=obj_func,
+    #                              device=device)
+    #     results_dir: pathlib.Path = instance_output_dir / "truncation_fraction_{:.3f}".format(
+    #         float(truncation_fraction)).replace(".", "p")
+    #     results_dir.mkdir(exist_ok=True)
+    #     torch.save(results, results_dir / "iteration_counts.pkl")
+    #     # parameters
+    #     save_dict({  #
+    #         "truncation_fraction": truncation_fraction.item(),  #
+    #         "mask": "None",  #
+    #     }, directory=results_dir, stem="parameters")
+
+    logger.info("##### Yes masking #####")
     for truncation_fraction in truncation_fractions:
-        logger.info("##### Running at truncation fraction {:.3f} #####".format(truncation_fraction.item()))
+        logger.info("Running at truncation fraction {:.3f}...".format(truncation_fraction.item()))
         data_manager().set_data("truncation_fraction", float(truncation_fraction))
-        results = run_experiment(reg_config=reg_config, exp_config=exp_config, device=device)
-        results_dir: pathlib.Path = instance_output_dir / "truncation_fraction_{:.3f}".format(
+        results = run_experiment(reg_config=reg_config, exp_config=exp_config, objective_function=obj_func_masked,
+                                 device=device)
+        results_dir: pathlib.Path = instance_output_dir / "masked_truncation_fraction_{:.3f}".format(
             float(truncation_fraction)).replace(".", "p")
         results_dir.mkdir(exist_ok=True)
         torch.save(results, results_dir / "iteration_counts.pkl")
+        # parameters
         save_dict({  #
             "truncation_fraction": truncation_fraction.item(),  #
+            "mask": "Every evaluation",  #
         }, directory=results_dir, stem="parameters")
 
 
