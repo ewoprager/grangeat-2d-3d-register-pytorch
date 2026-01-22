@@ -21,6 +21,8 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
     data_dir: pathlib.Path = load_dir / which_dataset
     assert data_dir.is_dir()
 
+    config = torch.load(data_dir / "config.pkl")
+
     # basic
     if False:
         truncation_fractions = []
@@ -85,8 +87,10 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
             f = float(i) / float(tf_n - 1)
             plt.plot(nominal_distances, medians[0, i].cpu().numpy(), label=f"tf={tfs[i]}",
                      color=(f, 1.0 - f, 0.0))
-        plt.ylim((0.0, 20.0))
+        plt.ylim((0, config["maximum_iterations"]))
         plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+        plt.xlabel("Nominal distance in SE(3)")
+        plt.ylabel("Iterations until within {:.2f} of G.T. in SE(3)".format(config["distance_threshold"]))
         plt.legend()
 
         plt.figure()
@@ -95,8 +99,10 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
             f = float(i) / float(tf_n - 1)
             plt.plot(nominal_distances, medians[1, i].cpu().numpy(), label=f"tf={tfs[i]}",
                      color=(f, 1.0 - f, 0.0))
-        plt.ylim((0.0, 20.0))
+        plt.ylim((0, config["maximum_iterations"]))
         plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+        plt.xlabel("Nominal distance in SE(3)")
+        plt.ylabel("Iterations until within {:.2f} of G.T. in SE(3)".format(config["distance_threshold"]))
         plt.legend()
 
         plt.show()
