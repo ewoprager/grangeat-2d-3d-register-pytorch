@@ -26,6 +26,15 @@
             <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
                    pattern=".+" required>
 
+            <h2>Contents</h2>
+            <ul>
+  <li><a href="#pso"><code>pso</code></a></li>
+  <li><a href="#pso"><code>md5-3b70e70f454ae7edfa49d58308022477</code"></a>
+  <ul>
+    <li><a href="#example-use">Example use</a></li>
+  </ul></li>
+</ul>
+
 
             <h2>Submodules</h2>
             <ul>
@@ -47,7 +56,44 @@
                     <h1 class="modulename">
 <a href="./../reg23_experiments.html">reg23_experiments</a><wbr>.pso    </h1>
 
-                        <div class="docstring"><p></p>
+                        <div class="docstring"><h1 id="pso"><code>pso</code></h1>
+
+<p>A simple, flexible particle swarm optimisation package based on <code>torch.Tensor</code>s.</p>
+
+<p>A single particle swarm optimisation (PSO) task is performed using an instance of the <code>Swarm</code> class. Particles are
+initialised on construction of an instance of the <code>Swarm</code> class, and iterations are manually executed using the class's
+<code>iterate()</code> method.</p>
+
+<p>This allows for completely flexible termination conditions and per-iteration behaviour / logic.</p>
+
+<p>An additional element of flexibility is the mutable swarm configuration. The <code>Swarm</code>'s configuration is provided and
+stored as an instance of the <code>OptimisationConfig</code> class. This can be accessed as a property of the <code>Swarm</code> instance, and
+safely modified between iterations.</p>
+
+<h2 id="example-use">Example use</h2>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn"><a href="pso/swarm.html">reg23_experiments.pso.swarm</a></span><span class="w"> </span><span class="kn">import</span> <span class="n">OptimisationConfig</span><span class="p">,</span> <span class="n">Swarm</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">obj_func</span><span class="p">(</span><span class="n">xy</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">xy</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mf">3.0</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">xy</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mf">2.0</span>
+    <span class="k">return</span> <span class="n">p</span> <span class="o">*</span> <span class="n">p</span> <span class="o">+</span> <span class="n">q</span> <span class="o">*</span> <span class="n">q</span>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">OptimisationConfig</span><span class="p">(</span><span class="n">objective_function</span><span class="o">=</span><span class="n">obj_func</span><span class="p">)</span>
+<span class="n">swarm</span> <span class="o">=</span> <span class="n">Swarm</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">dimensionality</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">particle_count</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">initialisation_position</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+              <span class="n">initialisation_spread</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">),</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">))</span>
+<span class="n">iteration_count</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">bests</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">iteration_count</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iteration_count</span><span class="p">):</span>
+    <span class="n">swarm</span><span class="o">.</span><span class="n">iterate</span><span class="p">()</span>
+    <span class="n">bests</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">swarm</span><span class="o">.</span><span class="n">current_optimum</span>
+<span class="o">...</span>
+</code></pre>
+</div>
 </div>
 
                         <input id="mod-pso-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
