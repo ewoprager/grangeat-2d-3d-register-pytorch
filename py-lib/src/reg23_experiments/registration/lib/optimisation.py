@@ -5,7 +5,8 @@ import torch
 
 from reg23_experiments.registration.lib.structs import Transformation
 
-__all__ = ["mapping_transformation_to_parameters", "mapping_parameters_to_transformation", "local_search"]
+__all__ = ["mapping_transformation_to_parameters", "mapping_parameters_to_transformation", "local_search",
+           "random_parameters_at_distance"]
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +21,9 @@ def mapping_parameters_to_transformation(params: torch.Tensor) -> Transformation
         params * torch.tensor([0.03125, 0.03125, 0.03125, 1.0, 1.0, 100.0], device=params.device, dtype=params.dtype))
 
 
-def parameters_at_random_distance(from_parameters: torch.Tensor, distance_distribution: Callable[[], float] | Callable[
-    [], torch.Tensor]) -> torch.Tensor:
+def random_parameters_at_distance(from_parameters: torch.Tensor, distance: float | torch.Tensor) -> torch.Tensor:
     u_hat = torch.nn.functional.normalize(torch.randn_like(from_parameters), dim=0)
-    return from_parameters + distance_distribution() * u_hat
+    return from_parameters + distance * u_hat
 
 
 def local_search(*, starting_position: torch.Tensor, initial_step_size: torch.Tensor,

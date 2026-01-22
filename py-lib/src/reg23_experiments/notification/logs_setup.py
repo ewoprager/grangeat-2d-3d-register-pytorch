@@ -4,21 +4,7 @@ import sys
 import logging
 import logging.config
 
-from tqdm import tqdm
 import pathlib
-
-
-class TqdmStreamHandler(logging.StreamHandler):
-    """
-    A stream handler that writes to the console in a way compatible with tqdm progress bars
-    """
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            tqdm.write(msg)  # This writes safely above a tqdm progress bar
-            self.flush()
-        except Exception:
-            self.handleError(record)
 
 
 def setup_logger():

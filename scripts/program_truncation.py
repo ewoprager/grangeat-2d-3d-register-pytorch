@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 from datetime import datetime
 import types
 import pprint
@@ -10,14 +10,14 @@ import torch
 import torchviz
 import matplotlib.pyplot as plt
 import traitlets
-from tqdm import tqdm
 
+from reg23_experiments.notification.console_logging import tqdm
 from reg23_experiments.notification import logs_setup, pushover
 from reg23_experiments.program import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
 from reg23_experiments.program.lib.structs import Error
 from reg23_experiments.registration import data, drr
 from reg23_experiments.registration.lib.optimisation import mapping_transformation_to_parameters, \
-    mapping_parameters_to_transformation, parameters_at_random_distance
+    mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
 from reg23_experiments.registration.lib import geometry
 from reg23_experiments.registration import objective_function as lib_objective_function
@@ -55,16 +55,18 @@ def load_untruncated_ct(ct_path: str, device) -> dict[str, Any]:
 
 @dag_updater(names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
 def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
-                     new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str) -> dict[
-    str, Any]:
+                     new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
+                     ap_transformation: Transformation, target_ap_distance: float) -> dict[str, Any]:
     # generate a DRR through the volume
     drr_spec = None
     if not regenerate_drr and ct_path is not None:
         drr_spec = data.load_cached_drr(cache_directory, ct_path)
 
     if drr_spec is None:
+        tr = mapping_parameters_to_transformation(
+            random_parameters_at_distance(mapping_transformation_to_parameters(ap_transformation), target_ap_distance))
         drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
-                                              save_to_cache=save_to_cache, size=new_drr_size)
+                                              save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
 
     fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
     del drr_spec
@@ -162,29 +164,32 @@ class RegConfig(traitlets.HasTraits):
 
 
 def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, config: RegConfig, device: torch.device,
-            plot: bool = False) -> int | None:
-    if plot:
+            plot: Literal["no", "yes", "mask"] = "no", tqdm_position: int = 0) -> int | None:
+    if plot != "no":
         ncols = 2
-        if True:
+        if plot == "mask":
             ncols += 1
         fig, axes = plt.subplots(1, ncols)
-        # ToDo: Convert axes np array to list properly, and plot masking! maybe us literal for value of `plot`
-        axes = [axes[0], axes[1], axes[1].twinx()]
+        axes = axes.tolist()
+        axes.insert(2, axes[1].twinx())
         plt.ion()
         plt.show()
         of_values = []
         distances = []
     pso_config = pso.OptimisationConfig(objective_function=objective_function)
+    tqdm_iterator = tqdm(range(1, config.maximum_iterations + config.consecutive_in_threshold_needed + 1),
+                         desc="PSO iterations", position=tqdm_position, leave=None)
     swarm = pso.Swarm(config=pso_config, dimensionality=6, particle_count=config.particle_count,
                       initialisation_position=starting_params,
                       initialisation_spread=torch.full([6], config.particle_initialisation_spread), device=device)
+    tqdm_iterator.update()
     target = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
     consecutive_in_threshold = 0
     ret: int | None = None
-    for it in range(1, config.maximum_iterations + config.consecutive_in_threshold_needed + 1):
+    for it in range(2, config.maximum_iterations + config.consecutive_in_threshold_needed + 1):
         swarm.iterate()
         distance = torch.linalg.vector_norm(swarm.current_optimum_position - target)
-        if plot:
+        if plot != "no":
             distances.append(distance.item())
             of_values.append(swarm.current_optimum.item())
             data_manager().set_data("current_transformation",
@@ -204,6 +209,9 @@ def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, conf
             axes[2].plot(of_values, color='b')
             axes[2].set_ylabel("o.f. value", color='b')
             axes[2].tick_params(axis='y', labelcolor='b')
+            if plot == "mask":
+                axes[3].clear()
+                axes[3].imshow(data_manager().get("fixed_image").cpu().numpy())
             plt.draw()
             plt.pause(0.1)
         if distance < config.distance_threshold:
@@ -213,6 +221,8 @@ def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, conf
                 break
         else:
             consecutive_in_threshold = 0
+        tqdm_iterator.update()
+        tqdm_iterator.set_postfix(best=swarm.current_optimum.item(), distance=distance.item())
     return ret
 
 
@@ -223,18 +233,20 @@ class ExperimentConfig(traitlets.HasTraits):
 
 
 def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, objective_function: Callable,
-                   device: torch.device) -> torch.Tensor:
+                   device: torch.device, tqdm_position: int = 0) -> torch.Tensor:
     ret = torch.empty([exp_config.nominal_distances.numel(), exp_config.sample_count_per_distance], dtype=torch.int8,
                       device=device)
-    for j in range(exp_config.nominal_distances.numel()):
-        logger.info("Nominal distance {}/{} = {:.3f}".format(j + 1, exp_config.nominal_distances.numel(),
-                                                             exp_config.nominal_distances[j].item()))
+    tqdm_nominal_distances = tqdm(range(exp_config.nominal_distances.numel()), desc="Nominal distances",
+                                  position=tqdm_position, leave=None)
+    for j in tqdm_nominal_distances:
+        tqdm_nominal_distances.set_postfix_str("Nominal distance {:.3f}".format(exp_config.nominal_distances[j].item()))
         distance_generator = lambda: exp_config.distance_distribution(exp_config.nominal_distances[j].item())
-        for i in tqdm(range(exp_config.sample_count_per_distance)):
-            starting_params = parameters_at_random_distance(
-                mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
+        for i in tqdm(range(exp_config.sample_count_per_distance), desc="Repeated samples", position=tqdm_position + 1,
+                      leave=None):
+            starting_params = random_parameters_at_distance(
+                mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator())
             res = run_reg(objective_function=objective_function, config=reg_config, starting_params=starting_params,
-                          device=device)
+                          device=device, tqdm_position=tqdm_position + 2)
             ret[j, i] = torch.iinfo(ret.dtype).max if res is None else res
 
     return ret
@@ -258,7 +270,11 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
             cropping=None,  #
             source_offset=torch.zeros(2),  #
             downsample_level=2  #
-        ), current_transformation=Transformation.random_uniform(device=device),  #
+        ),  #
+        ap_transformation=Transformation(rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], device=device),
+                                         translation=torch.zeros(3, device=device)),  #
+        target_ap_distance=5.0,  #
+        current_transformation=Transformation.random_uniform(device=device),  #
         mask_transformation=Transformation.zero(device=device)  #
     )
     if isinstance(err, Error):
@@ -312,24 +328,25 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         plt.draw()
         plt.pause(0.1)
 
-    reg_config = RegConfig(particle_count=1000, particle_initialisation_spread=10.0, distance_threshold=3.0,
-                           consecutive_in_threshold_needed=3, maximum_iterations=20)
+    reg_config = RegConfig(particle_count=2000, particle_initialisation_spread=15.0, distance_threshold=3.0,
+                           consecutive_in_threshold_needed=2, maximum_iterations=20)
 
-    if True:
+    if False:
+        data_manager().set_data("truncation_fraction", 0.05)
         nominal_distance = 10.0
         distance_distribution = distance_distribution_delta
         distance_generator = lambda: distance_distribution(nominal_distance)
-        starting_params = parameters_at_random_distance(
-            mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator)
+        starting_params = random_parameters_at_distance(
+            mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator())
         res = run_reg(objective_function=obj_func_masked, starting_params=starting_params, config=reg_config,
-                      device=device, plot=True)
+                      device=device, plot="mask")
         logger.info(f"Result: {res}")
         return
 
     exp_config = ExperimentConfig(distance_distribution=distance_distribution_delta,
-                                  nominal_distances=torch.linspace(0.1, 20.0, 5), sample_count_per_distance=30)
+                                  nominal_distances=torch.linspace(0.1, 20.0, 4), sample_count_per_distance=20)
 
-    truncation_fractions = torch.linspace(0.0, 0.7, 4)[0:3]
+    truncation_fractions = torch.linspace(0.1, 0.7, 3)
 
     # config
     save_dict(  #
@@ -348,28 +365,32 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         "downsample_level": data_manager().get("hyperparameters").downsample_level,  #
     }, directory=instance_output_dir, stem="shared_parameters")
 
-    # logger.info("##### No masking #####")
-    # for truncation_fraction in truncation_fractions:
-    #     logger.info("Running at truncation fraction {:.3f}...".format(truncation_fraction.item()))
-    #     data_manager().set_data("truncation_fraction", float(truncation_fraction))
-    #     results = run_experiment(reg_config=reg_config, exp_config=exp_config, objective_function=obj_func,
-    #                              device=device)
-    #     results_dir: pathlib.Path = instance_output_dir / "truncation_fraction_{:.3f}".format(
-    #         float(truncation_fraction)).replace(".", "p")
-    #     results_dir.mkdir(exist_ok=True)
-    #     torch.save(results, results_dir / "iteration_counts.pkl")
-    #     # parameters
-    #     save_dict({  #
-    #         "truncation_fraction": truncation_fraction.item(),  #
-    #         "mask": "None",  #
-    #     }, directory=results_dir, stem="parameters")
+    import sys
+    logger.info(sys.stderr.isatty())
+
+    logger.info("##### No masking #####")
+    tqdm_truncation_fraction = tqdm(truncation_fractions, desc="Truncation fractions")
+    for truncation_fraction in tqdm_truncation_fraction:
+        tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}".format(truncation_fraction.item()))
+        data_manager().set_data("truncation_fraction", float(truncation_fraction))
+        results = run_experiment(reg_config=reg_config, exp_config=exp_config, objective_function=obj_func,
+                                 device=device, tqdm_position=1)
+        results_dir: pathlib.Path = instance_output_dir / "truncation_fraction_{:.3f}".format(
+            float(truncation_fraction)).replace(".", "p")
+        results_dir.mkdir(exist_ok=True)
+        torch.save(results, results_dir / "iteration_counts.pkl")
+        # parameters
+        save_dict({  #
+            "truncation_fraction": truncation_fraction.item(),  #
+            "mask": "None",  #
+        }, directory=results_dir, stem="parameters")
 
     logger.info("##### Yes masking #####")
-    for truncation_fraction in truncation_fractions:
-        logger.info("Running at truncation fraction {:.3f}...".format(truncation_fraction.item()))
+    for truncation_fraction in tqdm_truncation_fraction:
+        tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}...".format(truncation_fraction.item()))
         data_manager().set_data("truncation_fraction", float(truncation_fraction))
         results = run_experiment(reg_config=reg_config, exp_config=exp_config, objective_function=obj_func_masked,
-                                 device=device)
+                                 device=device, tqdm_position=1)
         results_dir: pathlib.Path = instance_output_dir / "masked_truncation_fraction_{:.3f}".format(
             float(truncation_fraction)).replace(".", "p")
         results_dir.mkdir(exist_ok=True)
