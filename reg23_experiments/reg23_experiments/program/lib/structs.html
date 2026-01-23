@@ -63,6 +63,15 @@
                 </ul>
 
             </li>
+            <li>
+                    <a class="class" href="#StrictHasTraits">StrictHasTraits</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#StrictHasTraits.__init__">StrictHasTraits</a>
+                        </li>
+                </ul>
+
+            </li>
     </ul>
 
 
@@ -88,7 +97,7 @@
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 </span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">traitlets</span>
 </span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Error&quot;</span><span class="p">,</span> <span class="s2">&quot;FunctionArgument&quot;</span><span class="p">]</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Error&quot;</span><span class="p">,</span> <span class="s2">&quot;FunctionArgument&quot;</span><span class="p">,</span> <span class="s2">&quot;StrictHasTraits&quot;</span><span class="p">]</span>
 </span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
 </span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Error</span><span class="p">:</span>
@@ -312,6 +321,91 @@
 </span><span id="FunctionArgument.get_for_function-32"><a href="#FunctionArgument.get_for_function-32"><span class="linenos">32</span></a>            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">):</span>
 </span><span id="FunctionArgument.get_for_function-33"><a href="#FunctionArgument.get_for_function-33"><span class="linenos">33</span></a>                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FunctionArgument</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="n">required</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="p">))</span>
 </span><span id="FunctionArgument.get_for_function-34"><a href="#FunctionArgument.get_for_function-34"><span class="linenos">34</span></a>        <span class="k">return</span> <span class="n">ret</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                </section>
+                <section id="StrictHasTraits">
+                            <input id="StrictHasTraits-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">StrictHasTraits</span><wbr>(<span class="base">traitlets.traitlets.HasTraits</span>):
+
+                <label class="view-source-button" for="StrictHasTraits-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#StrictHasTraits"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="StrictHasTraits-37"><a href="#StrictHasTraits-37"><span class="linenos">37</span></a><span class="k">class</span><span class="w"> </span><span class="nc">StrictHasTraits</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
+</span><span id="StrictHasTraits-38"><a href="#StrictHasTraits-38"><span class="linenos">38</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="StrictHasTraits-39"><a href="#StrictHasTraits-39"><span class="linenos">39</span></a><span class="sd">    A `HasTraits` subclass with strict `__init__` semantics:</span>
+</span><span id="StrictHasTraits-40"><a href="#StrictHasTraits-40"><span class="linenos">40</span></a><span class="sd">      - unknown kwargs are rejected</span>
+</span><span id="StrictHasTraits-41"><a href="#StrictHasTraits-41"><span class="linenos">41</span></a><span class="sd">      - traits with `default_value=Undefined` are required</span>
+</span><span id="StrictHasTraits-42"><a href="#StrictHasTraits-42"><span class="linenos">42</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="StrictHasTraits-43"><a href="#StrictHasTraits-43"><span class="linenos">43</span></a>
+</span><span id="StrictHasTraits-44"><a href="#StrictHasTraits-44"><span class="linenos">44</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="StrictHasTraits-45"><a href="#StrictHasTraits-45"><span class="linenos">45</span></a>        <span class="c1"># reject unknown kwargs</span>
+</span><span id="StrictHasTraits-46"><a href="#StrictHasTraits-46"><span class="linenos">46</span></a>        <span class="n">valid_traits</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traits</span><span class="p">())</span>
+</span><span id="StrictHasTraits-47"><a href="#StrictHasTraits-47"><span class="linenos">47</span></a>        <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-</span> <span class="n">valid_traits</span>
+</span><span id="StrictHasTraits-48"><a href="#StrictHasTraits-48"><span class="linenos">48</span></a>        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+</span><span id="StrictHasTraits-49"><a href="#StrictHasTraits-49"><span class="linenos">49</span></a>            <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+</span><span id="StrictHasTraits-50"><a href="#StrictHasTraits-50"><span class="linenos">50</span></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2"> got unexpected keyword arguments: </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="StrictHasTraits-51"><a href="#StrictHasTraits-51"><span class="linenos">51</span></a>
+</span><span id="StrictHasTraits-52"><a href="#StrictHasTraits-52"><span class="linenos">52</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="StrictHasTraits-53"><a href="#StrictHasTraits-53"><span class="linenos">53</span></a>
+</span><span id="StrictHasTraits-54"><a href="#StrictHasTraits-54"><span class="linenos">54</span></a>        <span class="c1"># enforce required traits</span>
+</span><span id="StrictHasTraits-55"><a href="#StrictHasTraits-55"><span class="linenos">55</span></a>        <span class="n">missing</span> <span class="o">=</span> <span class="p">{</span>  <span class="c1">#</span>
+</span><span id="StrictHasTraits-56"><a href="#StrictHasTraits-56"><span class="linenos">56</span></a>            <span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">trait</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traits</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span>
+</span><span id="StrictHasTraits-57"><a href="#StrictHasTraits-57"><span class="linenos">57</span></a>            <span class="n">trait</span><span class="o">.</span><span class="n">default_value</span> <span class="ow">is</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Undefined</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Undefined</span>  <span class="c1">#</span>
+</span><span id="StrictHasTraits-58"><a href="#StrictHasTraits-58"><span class="linenos">58</span></a>        <span class="p">}</span>
+</span><span id="StrictHasTraits-59"><a href="#StrictHasTraits-59"><span class="linenos">59</span></a>
+</span><span id="StrictHasTraits-60"><a href="#StrictHasTraits-60"><span class="linenos">60</span></a>        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+</span><span id="StrictHasTraits-61"><a href="#StrictHasTraits-61"><span class="linenos">61</span></a>            <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+</span><span id="StrictHasTraits-62"><a href="#StrictHasTraits-62"><span class="linenos">62</span></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2"> missing required arguments: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>A <code>HasTraits</code> subclass with strict <code><a href="#StrictHasTraits.__init__">__init__</a></code> semantics:</p>
+
+<ul>
+<li>unknown kwargs are rejected</li>
+<li>traits with <code>default_value=Undefined</code> are required</li>
+</ul>
+</div>
+
+
+                            <div id="StrictHasTraits.__init__" class="classattr">
+                                        <input id="StrictHasTraits.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">StrictHasTraits</span><span class="signature pdoc-code condensed">(<span class="param"><span class="o">**</span><span class="n">kwargs</span></span>)</span>
+
+                <label class="view-source-button" for="StrictHasTraits.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#StrictHasTraits.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="StrictHasTraits.__init__-44"><a href="#StrictHasTraits.__init__-44"><span class="linenos">44</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+</span><span id="StrictHasTraits.__init__-45"><a href="#StrictHasTraits.__init__-45"><span class="linenos">45</span></a>        <span class="c1"># reject unknown kwargs</span>
+</span><span id="StrictHasTraits.__init__-46"><a href="#StrictHasTraits.__init__-46"><span class="linenos">46</span></a>        <span class="n">valid_traits</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">traits</span><span class="p">())</span>
+</span><span id="StrictHasTraits.__init__-47"><a href="#StrictHasTraits.__init__-47"><span class="linenos">47</span></a>        <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-</span> <span class="n">valid_traits</span>
+</span><span id="StrictHasTraits.__init__-48"><a href="#StrictHasTraits.__init__-48"><span class="linenos">48</span></a>        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+</span><span id="StrictHasTraits.__init__-49"><a href="#StrictHasTraits.__init__-49"><span class="linenos">49</span></a>            <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+</span><span id="StrictHasTraits.__init__-50"><a href="#StrictHasTraits.__init__-50"><span class="linenos">50</span></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2"> got unexpected keyword arguments: </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="StrictHasTraits.__init__-51"><a href="#StrictHasTraits.__init__-51"><span class="linenos">51</span></a>
+</span><span id="StrictHasTraits.__init__-52"><a href="#StrictHasTraits.__init__-52"><span class="linenos">52</span></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="StrictHasTraits.__init__-53"><a href="#StrictHasTraits.__init__-53"><span class="linenos">53</span></a>
+</span><span id="StrictHasTraits.__init__-54"><a href="#StrictHasTraits.__init__-54"><span class="linenos">54</span></a>        <span class="c1"># enforce required traits</span>
+</span><span id="StrictHasTraits.__init__-55"><a href="#StrictHasTraits.__init__-55"><span class="linenos">55</span></a>        <span class="n">missing</span> <span class="o">=</span> <span class="p">{</span>  <span class="c1">#</span>
+</span><span id="StrictHasTraits.__init__-56"><a href="#StrictHasTraits.__init__-56"><span class="linenos">56</span></a>            <span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">trait</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">traits</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span>
+</span><span id="StrictHasTraits.__init__-57"><a href="#StrictHasTraits.__init__-57"><span class="linenos">57</span></a>            <span class="n">trait</span><span class="o">.</span><span class="n">default_value</span> <span class="ow">is</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Undefined</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Undefined</span>  <span class="c1">#</span>
+</span><span id="StrictHasTraits.__init__-58"><a href="#StrictHasTraits.__init__-58"><span class="linenos">58</span></a>        <span class="p">}</span>
+</span><span id="StrictHasTraits.__init__-59"><a href="#StrictHasTraits.__init__-59"><span class="linenos">59</span></a>
+</span><span id="StrictHasTraits.__init__-60"><a href="#StrictHasTraits.__init__-60"><span class="linenos">60</span></a>        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+</span><span id="StrictHasTraits.__init__-61"><a href="#StrictHasTraits.__init__-61"><span class="linenos">61</span></a>            <span class="bp">cls</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+</span><span id="StrictHasTraits.__init__-62"><a href="#StrictHasTraits.__init__-62"><span class="linenos">62</span></a>            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2"> missing required arguments: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 
