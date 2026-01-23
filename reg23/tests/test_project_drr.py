@@ -24,7 +24,7 @@ def test_project_drr():
         # axes[1].imshow(res_cuda.cpu().numpy())
         # axes[1].set_title("cuda")
         assert res == pytest.approx(res_cuda.cpu(), abs=0.01)
-    plt.show()
+    # plt.show()
 
     # input must be 3D, so these should raise a runtime error
     input_ = torch.rand((11, 12, 8, 5))
@@ -158,3 +158,22 @@ def test_project_drr_autograd():
             print(out)  # assert h_matrix_inv.grad == pytest.approx(out.detach().cpu(), abs=0.001, rel=0.01)
     if display:
         plt.show()
+
+
+def test_project_drrs_batched():
+    if not torch.cuda.is_available():
+        return
+    input_ = torch.rand((11, 12, 8))
+    voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
+    inv_hs = torch.stack([torch.eye(4), torch.eye(4), torch.eye(4)])
+    source_distance = 1000.0
+    output_size = torch.Size([3, 10, 15])
+    detector_spacing = torch.tensor([0.2, 0.25])
+    res_cuda = project_drrs_batched(input_.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance, output_size[1],
+                                    output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing.cuda())
+    fig, axes = plt.subplots(1, 3)
+    axes[0].imshow(res_cuda[0].cpu().numpy())
+    axes[1].imshow(res_cuda[1].cpu().numpy())
+    axes[2].imshow(res_cuda[2].cpu().numpy())
+    assert res_cuda.size() == output_size
+    plt.show()
