@@ -21,7 +21,7 @@ from reg23_experiments.registration.lib.optimisation import mapping_transformati
 from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
 from reg23_experiments.registration.lib import geometry
 from reg23_experiments.registration import objective_function as lib_objective_function
-from reg23_experiments.registration.interface.lib.structs import HyperParameters, Cropping
+from reg23_experiments.registration.interface.lib.structs import Cropping
 from reg23_experiments.pso import swarm as pso
 
 
@@ -104,7 +104,7 @@ def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_fraction: f
 @dag_updater(names_returned=["moving_image"])
 def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
                 fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
-                hyperparameters: HyperParameters, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
+                downsample_level: int, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
                 image_2d_downsample_level: int, device) -> dict[str, Any]:
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(
@@ -113,13 +113,48 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
     transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
         device=device)
 
-    return {"moving_image": geometry.generate_drr(ct_volumes[hyperparameters.downsample_level],
-                                                  transformation=transformation,
-                                                  voxel_spacing=ct_spacing * 2.0 ** hyperparameters.downsample_level,
+    return {"moving_image": geometry.generate_drr(ct_volumes[downsample_level], transformation=transformation,
+                                                  voxel_spacing=ct_spacing * 2.0 ** downsample_level,
                                                   detector_spacing=fixed_image_spacing * 2.0 ** image_2d_downsample_level,
                                                   scene_geometry=SceneGeometry(source_distance=source_distance,
                                                                                fixed_image_offset=fixed_image_offset),
                                                   output_size=fixed_image_size)}
+
+
+@args_from_dag()
+def get_crop_nonzero_drr(images_2d_full: list[torch.Tensor], source_distance: float,
+                         current_transformation: Transformation, ct_volumes: list[torch.Tensor]) -> Cropping:
+    image_size = images_2d_full[0].size()
+    image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
+
+    def project(vector: torch.Tensor) -> torch.Tensor:
+        p_matrix = SceneGeometry.projection_matrix(source_position=torch.tensor([0.0, 0.0, source_distance]))
+        ph_matrix = torch.matmul(p_matrix, current_transformation.get_h().to(dtype=torch.float32))
+        ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1]))))
+        return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
+
+    volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), dtype=torch.float32).flip(
+        dims=(0,)) * data_manager().get("ct_spacing").cpu()
+    volume_vertices = [  #
+        torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, 1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
+    ]
+    projected_vertices = torch.stack([project(vertex) for vertex in volume_vertices]) / data_manager().get(
+        "fixed_image_spacing")
+    mins, maxs = torch.aminmax(projected_vertices, dim=0)
+    left, top = (mins + 0.5 * image_size_vector).floor().to(dtype=torch.int32)
+    right, bottom = (maxs + 0.5 * image_size_vector).ceil().to(dtype=torch.int32)
+    left = min(max(left.item(), 0), image_size[1])
+    right = min(max(right.item(), left + 1), image_size[1])
+    top = min(max(top.item(), 0), image_size[0])
+    bottom = min(max(bottom.item(), top + 1), image_size[0])
+    return Cropping(left=left, right=right, bottom=bottom, top=top)
 
 
 @dag_updater(names_returned=["current_loss"])
@@ -130,19 +165,9 @@ def of_zncc(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> dict[str, 
 def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
     size = images_2d_full[0].size()
     logger.info(f"Resetting crop for new value of 'images_2d_full'; size = [{size[0]} x {size[1]}].")
-    res = data_manager().get("hyperparameters")
-    new_value = HyperParameters(  #
-        cropping=Cropping.zero(size),  #
-        source_offset=torch.zeros(2),  #
-        downsample_level=2  #
-    ) if isinstance(res, Error) else HyperParameters(  #
-        cropping=Cropping.zero(size),  #
-        source_offset=res.source_offset,  #
-        downsample_level=res.downsample_level  #
-    )
-    err = data_manager().set_data("hyperparameters", new_value)
+    err = data_manager().set_data("cropping", Cropping.zero(size))
     if isinstance(err, Error):
-        logger.error(f"Error setting hyperparameters with reset cropping: {err.description}")
+        logger.error(f"Error setting resetting cropping: {err.description}")
 
 
 def distance_distribution_delta(nominal_distance: float) -> float:
@@ -308,11 +333,9 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         regenerate_drr=True,  #
         new_drr_size=torch.Size([1000, 1000]),  #
         truncation_fraction=0.0,  #
-        hyperparameters=HyperParameters(  #
-            cropping=None,  #
-            source_offset=torch.zeros(2),  #
-            downsample_level=2  #
-        ),  #
+        cropping=None,  #
+        source_offset=torch.zeros(2),  #
+        downsample_level=2,  #
         ap_transformation=Transformation(rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], device=device),
                                          translation=torch.zeros(3, device=device)),  #
         target_ap_distance=5.0,  #
@@ -387,6 +410,8 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         distance_generator = lambda: distance_distribution(nominal_distance)
         starting_params = random_parameters_at_distance(
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator())
+        # data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
+        # set_crop_to_nonzero_drr()
         res = run_reg(objective_function=obj_func, starting_params=starting_params, config=reg_config, device=device,
                       plot="mask")  # size = (iteration count, dimensionality + 1)
         logger.info(f"Result: {res}")
@@ -394,20 +419,21 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         plt.show()  # return
         return
 
-    nominal_distances = torch.tensor([10.0])  # torch.linspace(0.1, 20.0, nominal_distance_count)
+    nominal_distances = torch.tensor([15.0])  # torch.linspace(0.1, 20.0, nominal_distance_count)
 
     exp_config = ExperimentConfig(distance_distribution=distance_distribution_delta,
                                   nominal_distances=nominal_distances,
                                   sample_count_per_distance=sample_count_per_distance)
 
     truncation_fractions = torch.linspace(0.0, 0.6, truncation_fraction_count)
+    downsample_levels = [3]
 
     # config
     save_dict(  #
         {  #
             "ct_path": data_manager().get("ct_path"),  #
             "x_ray_path": "DRR",  #
-            "notes": "Just varying truncation fraction",  #
+            "notes": "Varying truncation fraction and downsample level",  #
         } | configs_to_dict(reg_config, exp_config),  #
         directory=instance_output_dir,  #
         stem="config")
@@ -416,53 +442,62 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     save_dict({  #
         "cropping": "None",  #
         "sim_metric": "zncc",  #
-        "downsample_level": data_manager().get("hyperparameters").downsample_level,  #
     }, directory=instance_output_dir, stem="shared_parameters")
 
     import sys
     logger.info(sys.stderr.isatty())
 
     logger.info("##### No masking #####")
-    tqdm_truncation_fraction = tqdm(truncation_fractions, desc="Truncation fractions")
-    for truncation_fraction in tqdm_truncation_fraction:
-        tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}".format(truncation_fraction.item()))
-        data_manager().set_data("truncation_fraction", float(truncation_fraction))
-        results = run_experiment(  #
-            reg_config=reg_config,  #
-            exp_config=exp_config,  #
-            objective_function=obj_func,  #
-            device=device,  #
-            tqdm_position=1)  # size = (nominal distance count, iteration count)
-        results_dir: pathlib.Path = instance_output_dir / "truncation_fraction_{:.3f}".format(
-            float(truncation_fraction)).replace(".", "p")
-        results_dir.mkdir(exist_ok=True)
-        torch.save(results, results_dir / "convergence_series.pkl")
-        # parameters
-        save_dict({  #
-            "truncation_fraction": truncation_fraction.item(),  #
-            "mask": "None",  #
-        }, directory=results_dir, stem="parameters")
+    tqdm_downsample_level = tqdm(downsample_levels, desc="Downsample levels")
+    for downsample_level in tqdm_downsample_level:
+        tqdm_downsample_level.set_postfix_str("Downsample level {}".format(downsample_level))
+        data_manager().set_data("downsample_level", downsample_level)
+        tqdm_truncation_fraction = tqdm(truncation_fractions, desc="Truncation fractions", position=1, leave=None)
+        for truncation_fraction in tqdm_truncation_fraction:
+            tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}".format(truncation_fraction.item()))
+            data_manager().set_data("truncation_fraction", float(truncation_fraction))
+            results = run_experiment(  #
+                reg_config=reg_config,  #
+                exp_config=exp_config,  #
+                objective_function=obj_func,  #
+                device=device,  #
+                tqdm_position=2)  # size = (nominal distance count, iteration count)
+            results_dir: pathlib.Path = instance_output_dir / "tf_{:.3f}_dl_{}".format(  #
+                float(truncation_fraction), downsample_level).replace(".", "p")
+            results_dir.mkdir(exist_ok=True)
+            torch.save(results, results_dir / "convergence_series.pkl")
+            # parameters
+            save_dict({  #
+                "truncation_fraction": truncation_fraction.item(),  #
+                "downsample_level": downsample_level,  #
+                "mask": "None",  #
+            }, directory=results_dir, stem="parameters")
 
     logger.info("##### Yes masking #####")
-    tqdm_truncation_fraction = tqdm(truncation_fractions, desc="Truncation fractions")
-    for truncation_fraction in tqdm_truncation_fraction:
-        tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}".format(truncation_fraction.item()))
-        data_manager().set_data("truncation_fraction", float(truncation_fraction))
-        results = run_experiment(  #
-            reg_config=reg_config,  #
-            exp_config=exp_config,  #
-            objective_function=obj_func_masked,  #
-            device=device,  #
-            tqdm_position=1)  # size = (nominal distance count, iteration count)
-        results_dir: pathlib.Path = instance_output_dir / "masked_truncation_fraction_{:.3f}".format(
-            float(truncation_fraction)).replace(".", "p")
-        results_dir.mkdir(exist_ok=True)
-        torch.save(results, results_dir / "convergence_series.pkl")
-        # parameters
-        save_dict({  #
-            "truncation_fraction": truncation_fraction.item(),  #
-            "mask": "Every evaluation",  #
-        }, directory=results_dir, stem="parameters")
+    tqdm_downsample_level = tqdm(downsample_levels, desc="Downsample levels")
+    for downsample_level in tqdm_downsample_level:
+        tqdm_downsample_level.set_postfix_str("Downsample level {}".format(downsample_level))
+        data_manager().set_data("downsample_level", downsample_level)
+        tqdm_truncation_fraction = tqdm(truncation_fractions, desc="Truncation fractions", position=1, leave=None)
+        for truncation_fraction in tqdm_truncation_fraction:
+            tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}".format(truncation_fraction.item()))
+            data_manager().set_data("truncation_fraction", float(truncation_fraction))
+            results = run_experiment(  #
+                reg_config=reg_config,  #
+                exp_config=exp_config,  #
+                objective_function=obj_func_masked,  #
+                device=device,  #
+                tqdm_position=2)  # size = (nominal distance count, iteration count)
+            results_dir: pathlib.Path = instance_output_dir / "masked_tf_{:.3f}_dl_{}".format(  #
+                float(truncation_fraction), downsample_level).replace(".", "p")
+            results_dir.mkdir(exist_ok=True)
+            torch.save(results, results_dir / "convergence_series.pkl")
+            # parameters
+            save_dict({  #
+                "truncation_fraction": truncation_fraction.item(),  #
+                "downsample_level": downsample_level,  #
+                "mask": "Every evaluation",  #
+            }, directory=results_dir, stem="parameters")
 
 
 if __name__ == "__main__":

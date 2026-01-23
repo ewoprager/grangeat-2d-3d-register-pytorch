@@ -9,8 +9,7 @@ import torch
 import pathlib
 from magicgui import widgets
 
-__all__ = ["Target", "Cropping", "HyperParameters", "WidgetSelectData", "WidgetManageSaved", "ViewParams",
-           "SavedXRayParams"]
+__all__ = ["Target", "Cropping", "WidgetSelectData", "WidgetManageSaved", "ViewParams", "SavedXRayParams"]
 
 logger = logging.getLogger(__name__)
 
@@ -38,27 +37,18 @@ class Cropping(NamedTuple):
     def apply(self, tensor: torch.Tensor) -> torch.Tensor:
         return tensor[self.top:self.bottom, self.left:self.right]
 
+    def to_downsample_level(self, downsample_level: int, *, image_size: torch.Size) -> 'Cropping':
+        downsample_factor = int(2 ** downsample_level)
+        return Cropping(top=self.top // downsample_factor,
+                        bottom=min(self.bottom // downsample_factor, image_size[0] - 1),
+                        left=self.left // downsample_factor,
+                        right=min(self.right // downsample_factor, image_size[1] - 1))
 
-class HyperParameters(NamedTuple):
-    cropping: Cropping
-    source_offset: torch.Tensor  # size = (2,), dtype = torch.float64
-    downsample_level: int  # downsample factor is 2^downsample_level
 
-    @staticmethod
-    def zero(image_size: torch.Size) -> 'HyperParameters':
-        return HyperParameters(cropping=Cropping.zero(image_size), source_offset=torch.zeros(2), downsample_level=0)
-
-    def is_close(self, other: 'HyperParameters') -> bool:
-        return (self.cropping == other.cropping and  #
-                torch.allclose(self.source_offset, other.source_offset) and  #
-                self.downsample_level == other.downsample_level)
-
-    def downsampled_crop(self, image_size: torch.Size) -> Cropping:
-        downsample_factor = int(2 ** self.downsample_level)
-        return Cropping(top=self.cropping.top // downsample_factor,
-                        bottom=min(self.cropping.bottom // downsample_factor, image_size[0] - 1),
-                        left=self.cropping.left // downsample_factor,
-                        right=min(self.cropping.right // downsample_factor, image_size[1] - 1))
+# class HyperParameters(NamedTuple):
+#     cropping: Cropping
+#     source_offset: torch.Tensor  # size = (2,), dtype = torch.float64
+#     downsample_level: int  # downsample factor is 2^downsample_level
 
 
 class WidgetSelectData:
@@ -199,5 +189,6 @@ class ViewParams(NamedTuple):
 
 class SavedXRayParams(NamedTuple):
     transformation: Transformation
-    hyperparameters: HyperParameters
+    cropping: Cropping
+    source_offset: torch.Tensor
     flipped: bool

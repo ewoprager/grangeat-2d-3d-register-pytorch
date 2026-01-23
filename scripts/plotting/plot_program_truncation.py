@@ -139,12 +139,12 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
         it_n = distances_no_masking.size(2)
 
         plt.figure()
-        for i in range(nd_n):
-            f = float(i) / float(nd_n - 1)
-            plt.plot(range(1, it_n + 1), distances_no_masking[0, i].cpu().numpy(),
-                     label=f"no masking; nd={nominal_distances[i].item()}", color=(f, 1.0 - f, 0.0), linestyle="--")
-            plt.plot(range(1, it_n + 1), distances_masking[0, i].cpu().numpy(),
-                     label=f"masking; nd={nominal_distances[i].item()}", color=(f, 1.0 - f, 0.0))
+        for i in range(tf_n):
+            f = float(i) / float(tf_n - 1)
+            plt.plot(range(1, it_n + 1), distances_no_masking[i, 0].cpu().numpy(),
+                     label=f"no masking; tf={truncation_fractions[i].item()}", color=(f, 1.0 - f, 0.0), linestyle="--")
+            plt.plot(range(1, it_n + 1), distances_masking[i, 0].cpu().numpy(),
+                     label=f"masking; tf={truncation_fractions[i].item()}", color=(f, 1.0 - f, 0.0))
         plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
         plt.xlabel("Iteration")
         plt.ylabel("Avg. distance of best from G.T. in SE(3)")

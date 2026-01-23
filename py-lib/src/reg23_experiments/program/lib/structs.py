@@ -2,7 +2,7 @@ from typing import NamedTuple, Callable
 import inspect
 import traitlets
 
-__all__ = ["Error", "FunctionArgument"]
+__all__ = ["Error", "FunctionArgument", "StrictHasTraits"]
 
 
 class Error:

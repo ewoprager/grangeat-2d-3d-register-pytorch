@@ -29,12 +29,17 @@ if (CUDAToolkit_FOUND)
          "src/backend/cuda/*.cu"
     )
 
+    message(STATUS "Python3_EXECUTABLE is '${Python3_EXECUTABLE}'")
+
     # Get the location of CUDA
     execute_process(COMMAND ${Python3_EXECUTABLE} -c "import torch; from torch.utils import cpp_extension; print(cpp_extension.CUDA_HOME)"
                     OUTPUT_VARIABLE CUDA_HOME
                     OUTPUT_STRIP_TRAILING_WHITESPACE
                     RESULT_VARIABLE RESULT
     )
+
+    message(STATUS "CUDA_HOME is '${CUDA_HOME}'")
+
     string(COMPARE EQUAL ${RESULT} "0" PROCESS_SUCCESS)
     if (NOT PROCESS_SUCCESS)
         message(FATAL_ERROR "Failed to get torch.utils.cpp_extension.CUDA_HOME: ${RESULT}")
@@ -80,7 +85,7 @@ string(REPLACE "," ";" TORCH_INCLUDE_DIRS ${TORCH_INCLUDE_DIRS})
 find_package(Python COMPONENTS Development REQUIRED)
 
 if (CUDAToolkit_FOUND)
-    include_directories("${CMAKE_SOURCE_DIR}/include"
+    include_directories("${CMAKE_SOURCE_DIR}/src/backend/include"
                         ${TORCH_INCLUDE_DIRS}
                         ${Python_INCLUDE_DIRS}
                         "${CUDA_HOME}/include")
@@ -100,7 +105,7 @@ if (CUDAToolkit_FOUND)
                                __CUDACC__
     )
 else ()
-    include_directories("${CMAKE_SOURCE_DIR}/include"
+    include_directories("${CMAKE_SOURCE_DIR}/src/backend/include"
                         ${TORCH_INCLUDE_DIRS}
                         ${Python_INCLUDE_DIRS})
 
