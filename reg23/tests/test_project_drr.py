@@ -171,9 +171,9 @@ def test_project_drrs_batched():
     detector_spacing = torch.tensor([0.2, 0.25])
     res_cuda = project_drrs_batched(input_.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance, output_size[1],
                                     output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing.cuda())
+    assert res_cuda.size() == output_size
     fig, axes = plt.subplots(1, 3)
     axes[0].imshow(res_cuda[0].cpu().numpy())
     axes[1].imshow(res_cuda[1].cpu().numpy())
     axes[2].imshow(res_cuda[2].cpu().numpy())
-    assert res_cuda.size() == output_size
     plt.show()

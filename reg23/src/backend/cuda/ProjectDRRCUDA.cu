@@ -128,7 +128,7 @@ __host__ at::Tensor ProjectDRRsBatched_CUDA(const at::Tensor &volume, const at::
 	const Vec<double, 2> outputOffsetVec = Vec<double, 2>::FromTensor(outputOffset);
 	const Vec<double, 2> detectorSpacingVec = Vec<double, 2>::FromTensor(detectorSpacing);
 
-	const at::IntArrayRef batchSizes = invHMatrices.sizes().slice(invHMatrices.sizes().size() - 2);
+	const at::IntArrayRef batchSizes = invHMatrices.sizes().slice(0, invHMatrices.sizes().size() - 2);
 	long batchCount = 1;
 	for (auto n : batchSizes) batchCount *= n;
 
