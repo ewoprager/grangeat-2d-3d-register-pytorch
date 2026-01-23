@@ -4,7 +4,7 @@ approaches, leveraging the GPU-accelerated implementations from the `reg23` pack
 
 ## program
 
-`program`
+[`program`](program.html)
 
 This package provides a suite of modular tools built around a directed acyclic graph (`DAG`) data structure for managing
 data.
