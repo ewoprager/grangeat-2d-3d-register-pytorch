@@ -49,7 +49,7 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
         plt.show()
 
     # with and without masking
-    if True:
+    if False:
         tf_to_ic_no_masking = {}  # truncation fraction to iteration counts
         tf_to_ic_masking = {}  # truncation fraction to iteration counts
         medians = None
@@ -73,7 +73,7 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
 
         tf_n = len(tf_to_ic_masking)
         assert len(tf_to_ic_no_masking) == tf_n
-        tfs = torch.empty(tf_n) # truncation fractions
+        tfs = torch.empty(tf_n)  # truncation fractions
         medians = torch.empty([2, tf_n, nd_n])
         for i, ((tf, ics_masking), (_, ics_no_masking)) in enumerate(
                 zip(tf_to_ic_masking.items(), tf_to_ic_no_masking.items())):
@@ -85,8 +85,7 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
         plt.title("No masking")
         for i in range(tf_n):
             f = float(i) / float(tf_n - 1)
-            plt.plot(nominal_distances, medians[0, i].cpu().numpy(), label=f"tf={tfs[i]}",
-                     color=(f, 1.0 - f, 0.0))
+            plt.plot(nominal_distances, medians[0, i].cpu().numpy(), label=f"tf={tfs[i]}", color=(f, 1.0 - f, 0.0))
         plt.ylim((0, config["maximum_iterations"]))
         plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
         plt.xlabel("Nominal distance in SE(3)")
@@ -97,12 +96,58 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
         plt.title("With masking")
         for i in range(tf_n):
             f = float(i) / float(tf_n - 1)
-            plt.plot(nominal_distances, medians[1, i].cpu().numpy(), label=f"tf={tfs[i]}",
-                     color=(f, 1.0 - f, 0.0))
+            plt.plot(nominal_distances, medians[1, i].cpu().numpy(), label=f"tf={tfs[i]}", color=(f, 1.0 - f, 0.0))
         plt.ylim((0, config["maximum_iterations"]))
         plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
         plt.xlabel("Nominal distance in SE(3)")
         plt.ylabel("Iterations until within {:.2f} of G.T. in SE(3)".format(config["distance_threshold"]))
+        plt.legend()
+
+        plt.show()
+
+    # convergence curves with and without masking
+    if True:
+        tf_to_dist_no_masking = {}  # truncation fraction to distances
+        tf_to_dist_masking = {}  # truncation fraction to distances
+        for element in data_dir.iterdir():
+            if not element.is_dir():
+                continue
+            parameters = torch.load(element / "parameters.pkl")
+            convergence_series = torch.load(element / "convergence_series.pkl")
+            if parameters["mask"] == "Every evaluation":
+                tf_to_dist_masking[parameters["truncation_fraction"]] = convergence_series
+            else:
+                assert parameters["mask"] == "None"
+                tf_to_dist_no_masking[parameters["truncation_fraction"]] = convergence_series
+        truncation_fractions, distances_no_masking = zip(*sorted(tf_to_dist_no_masking.items()))
+        _, distances_masking = zip(*sorted(tf_to_dist_masking.items()))
+
+        truncation_fractions = torch.tensor(truncation_fractions)  # size = (truncation fraction count,)
+        distances_no_masking = torch.stack(
+            distances_no_masking)  # size = (truncation fraction count, nominal distance count, iteration count)
+        distances_masking = torch.stack(
+            distances_masking)  # size = (truncation fraction count, nominal distance count, iteration count)
+
+        assert len(truncation_fractions.size()) == 1
+        assert distances_no_masking.size() == distances_masking.size()
+        assert distances_no_masking.size(0) == truncation_fractions.numel()
+
+        config = torch.load(data_dir / "config.pkl")
+        nominal_distances = config["nominal_distances"]
+        nd_n = nominal_distances.numel()
+        tf_n = truncation_fractions.numel()
+        it_n = distances_no_masking.size(2)
+
+        plt.figure()
+        plt.title("No masking")
+        # f = float(i) / float(tf_n - 1)
+        plt.plot(range(1, it_n + 1), distances_no_masking[0, 0].cpu().numpy(),
+                 label="no masking")  # , label=f"tf={tfs[i]}", color=(f, 1.0 - f, 0.0))
+        plt.plot(range(1, it_n + 1), distances_masking[0, 0].cpu().numpy(),
+                 label="masking")  # , label=f"tf={tfs[i]}", color=(f, 1.0 - f, 0.0))
+        plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+        plt.xlabel("Iteration")
+        plt.ylabel("Avg. distance of best from G.T. in SE(3)")
         plt.legend()
 
         plt.show()

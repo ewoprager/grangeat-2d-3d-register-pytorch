@@ -14,7 +14,7 @@ import traitlets
 from reg23_experiments.notification.console_logging import tqdm
 from reg23_experiments.notification import logs_setup, pushover
 from reg23_experiments.program import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
-from reg23_experiments.program.lib.structs import Error
+from reg23_experiments.program.lib.structs import Error, StrictHasTraits
 from reg23_experiments.registration import data, drr
 from reg23_experiments.registration.lib.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
@@ -161,101 +161,135 @@ def obj_func_masked(parameters: torch.Tensor) -> torch.Tensor:
     return data_manager().get("current_loss")
 
 
-class RegConfig(traitlets.HasTraits):
-    particle_count = traitlets.Int()
-    particle_initialisation_spread = traitlets.Float()
-    distance_threshold = traitlets.Float()
-    consecutive_in_threshold_needed = traitlets.Int()
-    maximum_iterations = traitlets.Int()
+class RegConfig(StrictHasTraits):
+    particle_count = traitlets.Int(default_value=traitlets.Undefined)
+    particle_initialisation_spread = traitlets.Float(default_value=traitlets.Undefined)
+    iteration_count = traitlets.Int(default_value=traitlets.Undefined)
 
 
 def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, config: RegConfig, device: torch.device,
-            plot: Literal["no", "yes", "mask"] = "no", tqdm_position: int = 0) -> int | None:
+            plot: Literal["no", "yes", "mask"] = "no", tqdm_position: int = 0) -> torch.Tensor:
+    """
+
+    :param objective_function:
+    :param starting_params:
+    :param config:
+    :param device:
+    :param plot:
+    :param tqdm_position:
+    :return: A tensor of size (iteration count, dimensionality + 1), where each row corresponds to an iteration of the optimisation, and stores the following data: | <- position of current best -> | current best |
+    """
     if plot != "no":
         ncols = 2
         if plot == "mask":
             ncols += 1
         fig, axes = plt.subplots(1, ncols)
         axes = axes.tolist()
-        axes.insert(2, axes[1].twinx())
+        # axes.insert(2, axes[1].twinx())
         plt.ion()
         plt.show()
-        of_values = []
-        distances = []
+        t = mapping_parameters_to_transformation(starting_params)
+        axes[0].clear()
+        axes[0].set_title("moving image AT start: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
+            t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
+            t.translation[1].item(), t.translation[2].item()))
+        data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
+        axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
+        plt.draw()
+        plt.pause(0.1)
+
     pso_config = pso.OptimisationConfig(objective_function=objective_function)
-    tqdm_iterator = tqdm(range(1, config.maximum_iterations + config.consecutive_in_threshold_needed + 1),
-                         desc="PSO iterations", position=tqdm_position, leave=None)
-    swarm = pso.Swarm(config=pso_config, dimensionality=6, particle_count=config.particle_count,
+    dimensionality = starting_params.numel()
+    # initialise the return tensor
+    ret = torch.empty([config.iteration_count, dimensionality + 1], dtype=torch.float32, device=device)
+    tqdm_iterator = tqdm(range(config.iteration_count), desc="PSO iterations", position=tqdm_position, leave=None)
+    # initialise the swarm, which performs an o.f. evaluation for each particle
+    swarm = pso.Swarm(config=pso_config, dimensionality=dimensionality, particle_count=config.particle_count,
                       initialisation_position=starting_params,
-                      initialisation_spread=torch.full([6], config.particle_initialisation_spread), device=device)
+                      initialisation_spread=torch.full([dimensionality], config.particle_initialisation_spread),
+                      device=device)
+    ret[0, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
+    ret[0, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
     tqdm_iterator.update()
-    target = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
-    consecutive_in_threshold = 0
-    ret: int | None = None
-    for it in range(2, config.maximum_iterations + config.consecutive_in_threshold_needed + 1):
+
+    for it in range(1, config.iteration_count):
         swarm.iterate()
-        distance = torch.linalg.vector_norm(swarm.current_optimum_position - target)
+        ret[it, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
+        ret[it, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
+
         if plot != "no":
-            distances.append(distance.item())
-            of_values.append(swarm.current_optimum.item())
             data_manager().set_data("current_transformation",
                                     mapping_parameters_to_transformation(swarm.current_optimum_position))
             axes[0].clear()
-            axes[0].set_title("moving image")
             axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
             t = data_manager().get("current_transformation")
             axes[0].set_title("Iteration {}: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
                 it, t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
                 t.translation[1].item(), t.translation[2].item()))
             axes[1].clear()
-            axes[1].plot(distances, color='r')
-            axes[1].set_ylabel("distance in SE(3)", color='r')
-            axes[1].plot(of_values)
-            axes[1].tick_params(axis='y', labelcolor='r')
+            axes[1].plot(ret[0:it + 1, -1].cpu().numpy())
             axes[1].set_xlabel("iteration")
-            axes[2].plot(of_values, color='b')
-            axes[2].set_ylabel("o.f. value", color='b')
-            axes[2].tick_params(axis='y', labelcolor='b')
+            axes[1].set_ylabel("o.f. value")
             if plot == "mask":
-                axes[3].clear()
-                axes[3].set_title("fixed image")
-                axes[3].imshow(data_manager().get("fixed_image").cpu().numpy())
+                axes[2].clear()
+                axes[2].set_title("fixed image")
+                axes[2].imshow(data_manager().get("fixed_image").cpu().numpy())
             plt.draw()
             plt.pause(0.1)
-        if distance < config.distance_threshold:
-            consecutive_in_threshold += 1
-            if consecutive_in_threshold >= config.consecutive_in_threshold_needed:
-                ret = it - config.consecutive_in_threshold_needed + 1
-                break
-        else:
-            consecutive_in_threshold = 0
+
         tqdm_iterator.update()
-        tqdm_iterator.set_postfix(best=swarm.current_optimum.item(), distance=distance.item())
+        tqdm_iterator.set_postfix(best=swarm.current_optimum.item())
     return ret
 
 
-class ExperimentConfig(traitlets.HasTraits):
-    distance_distribution = traitlets.Callable()
-    nominal_distances = traitlets.Instance(torch.Tensor)
-    sample_count_per_distance = traitlets.Int()
+class ExperimentConfig(StrictHasTraits):
+    distance_distribution = traitlets.Callable(default_value=traitlets.Undefined)
+    nominal_distances = traitlets.Instance(torch.Tensor, default_value=traitlets.Undefined)
+    sample_count_per_distance = traitlets.Int(default_value=traitlets.Undefined)
 
 
 def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, objective_function: Callable,
                    device: torch.device, tqdm_position: int = 0) -> torch.Tensor:
-    ret = torch.empty([exp_config.nominal_distances.numel(), exp_config.sample_count_per_distance], dtype=torch.int8,
-                      device=device)
-    tqdm_nominal_distances = tqdm(range(exp_config.nominal_distances.numel()), desc="Nominal distances",
-                                  position=tqdm_position, leave=None)
+    """
+
+    :param reg_config:
+    :param exp_config:
+    :param objective_function:
+    :param device:
+    :param tqdm_position:
+    :return: A tensor of size (nominal distance count, iteration count); the distance from g.t. of the optimisation at each iteration, averaged over `sample_count_per_distance` repetitions, for each nominal starting distance
+    """
+    dimensionality = 6
+    ret = torch.empty([exp_config.nominal_distances.numel(), reg_config.iteration_count], dtype=torch.float32,
+                      device=device)  # size = (nominal distance count, iteration count)
+    tqdm_nominal_distances = tqdm(  #
+        range(exp_config.nominal_distances.numel()),  #
+        desc="Nominal distances",  #
+        position=tqdm_position,  #
+        leave=None)
+    ground_truth = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
     for j in tqdm_nominal_distances:
         tqdm_nominal_distances.set_postfix_str("Nominal distance {:.3f}".format(exp_config.nominal_distances[j].item()))
         distance_generator = lambda: exp_config.distance_distribution(exp_config.nominal_distances[j].item())
-        for i in tqdm(range(exp_config.sample_count_per_distance), desc="Repeated samples", position=tqdm_position + 1,
-                      leave=None):
+        distance_samples = torch.empty([int(exp_config.sample_count_per_distance), reg_config.iteration_count],
+                                       dtype=torch.float32, device=device)  # size = (sample count, iteration count)
+        for i in tqdm(  #
+                range(int(exp_config.sample_count_per_distance)),  #
+                desc="Repeated samples",  #
+                position=tqdm_position + 1,  #
+                leave=None  #
+        ):
             starting_params = random_parameters_at_distance(
                 mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator())
-            res = run_reg(objective_function=objective_function, config=reg_config, starting_params=starting_params,
-                          device=device, tqdm_position=tqdm_position + 2)
-            ret[j, i] = torch.iinfo(ret.dtype).max if res is None else res
+            res = run_reg(  #
+                objective_function=objective_function,  #
+                config=reg_config,  #
+                starting_params=starting_params,  #
+                device=device,  #
+                tqdm_position=tqdm_position + 2)  # size = (iteration count, dimensionality + 1)
+            distance_samples[i] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
+                                                           dim=1)  # size = (iteration count,)
+        ret[j] = distance_samples.mean(dim=0)  # size = (iteration count,)
 
     return ret
 
@@ -326,7 +360,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
 
     data_manager().set_data("current_transformation", data_manager().get("transformation_gt"))
 
-    data_manager().set_data("truncation_fraction", 0.1)
+    data_manager().set_data("truncation_fraction", 0.05)
 
     if show:
         plt.ion()  # figures are non-blocking
@@ -340,26 +374,31 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         plt.draw()
         plt.pause(0.1)
 
-    reg_config = RegConfig(particle_count=2000, particle_initialisation_spread=5.0, distance_threshold=3.0,
-                           consecutive_in_threshold_needed=2, maximum_iterations=10)
+    truncation_fraction_count = 1
+    nominal_distance_count = 3
+    sample_count_per_distance = 10
+    iteration_count = 15
+
+    reg_config = RegConfig(particle_count=1000, particle_initialisation_spread=5.0, iteration_count=iteration_count)
 
     if False:
-        nominal_distance = 0.1
+        nominal_distance = 5.0
         distance_distribution = distance_distribution_delta
         distance_generator = lambda: distance_distribution(nominal_distance)
         starting_params = random_parameters_at_distance(
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator())
-        res = run_reg(objective_function=obj_func_masked, starting_params=starting_params, config=reg_config,
-                      device=device, plot="mask")
+        res = run_reg(objective_function=obj_func, starting_params=starting_params, config=reg_config, device=device,
+                      plot="mask")  # size = (iteration count, dimensionality + 1)
         logger.info(f"Result: {res}")
         plt.ioff()  # figures are blocking
-        plt.show()
+        plt.show()  # return
         return
 
     exp_config = ExperimentConfig(distance_distribution=distance_distribution_delta,
-                                  nominal_distances=torch.linspace(0.1, 20.0, 4), sample_count_per_distance=20)
+                                  nominal_distances=torch.linspace(0.1, 20.0, nominal_distance_count),
+                                  sample_count_per_distance=sample_count_per_distance)
 
-    truncation_fractions = torch.tensor([0.1, 0.5])  # torch.linspace(0.1, 0.5, 2)
+    truncation_fractions = torch.linspace(0.0, 0.6, truncation_fraction_count)
 
     # config
     save_dict(  #
@@ -386,12 +425,16 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     for truncation_fraction in tqdm_truncation_fraction:
         tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}".format(truncation_fraction.item()))
         data_manager().set_data("truncation_fraction", float(truncation_fraction))
-        results = run_experiment(reg_config=reg_config, exp_config=exp_config, objective_function=obj_func,
-                                 device=device, tqdm_position=1)
+        results = run_experiment(  #
+            reg_config=reg_config,  #
+            exp_config=exp_config,  #
+            objective_function=obj_func,  #
+            device=device,  #
+            tqdm_position=1)  # size = (nominal distance count, iteration count)
         results_dir: pathlib.Path = instance_output_dir / "truncation_fraction_{:.3f}".format(
             float(truncation_fraction)).replace(".", "p")
         results_dir.mkdir(exist_ok=True)
-        torch.save(results, results_dir / "iteration_counts.pkl")
+        torch.save(results, results_dir / "convergence_series.pkl")
         # parameters
         save_dict({  #
             "truncation_fraction": truncation_fraction.item(),  #
@@ -401,14 +444,18 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     logger.info("##### Yes masking #####")
     tqdm_truncation_fraction = tqdm(truncation_fractions, desc="Truncation fractions")
     for truncation_fraction in tqdm_truncation_fraction:
-        tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}...".format(truncation_fraction.item()))
+        tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}".format(truncation_fraction.item()))
         data_manager().set_data("truncation_fraction", float(truncation_fraction))
-        results = run_experiment(reg_config=reg_config, exp_config=exp_config, objective_function=obj_func_masked,
-                                 device=device, tqdm_position=1)
+        results = run_experiment(  #
+            reg_config=reg_config,  #
+            exp_config=exp_config,  #
+            objective_function=obj_func_masked,  #
+            device=device,  #
+            tqdm_position=1)  # size = (nominal distance count, iteration count)
         results_dir: pathlib.Path = instance_output_dir / "masked_truncation_fraction_{:.3f}".format(
             float(truncation_fraction)).replace(".", "p")
         results_dir.mkdir(exist_ok=True)
-        torch.save(results, results_dir / "iteration_counts.pkl")
+        torch.save(results, results_dir / "convergence_series.pkl")
         # parameters
         save_dict({  #
             "truncation_fraction": truncation_fraction.item(),  #
