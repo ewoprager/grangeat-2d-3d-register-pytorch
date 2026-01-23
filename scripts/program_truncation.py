@@ -374,9 +374,9 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         plt.draw()
         plt.pause(0.1)
 
-    truncation_fraction_count = 1
-    nominal_distance_count = 3
-    sample_count_per_distance = 10
+    truncation_fraction_count = 3
+    nominal_distance_count = 1
+    sample_count_per_distance = 6
     iteration_count = 15
 
     reg_config = RegConfig(particle_count=1000, particle_initialisation_spread=5.0, iteration_count=iteration_count)
@@ -394,8 +394,10 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         plt.show()  # return
         return
 
+    nominal_distances = torch.tensor([10.0])  # torch.linspace(0.1, 20.0, nominal_distance_count)
+
     exp_config = ExperimentConfig(distance_distribution=distance_distribution_delta,
-                                  nominal_distances=torch.linspace(0.1, 20.0, nominal_distance_count),
+                                  nominal_distances=nominal_distances,
                                   sample_count_per_distance=sample_count_per_distance)
 
     truncation_fractions = torch.linspace(0.0, 0.6, truncation_fraction_count)
