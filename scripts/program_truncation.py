@@ -273,28 +273,32 @@ class ExperimentConfig(StrictHasTraits):
     downsample_level = traitlets.Int(min=0, default_value=traitlets.Undefined)
     truncation_percent = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
     cropping = traitlets.Enum(values=["None"], default_value=traitlets.Undefined)
-    mask = traitlets.Enum(values=["None"], default_value=traitlets.Undefined)
+    mask = traitlets.Enum(values=["None", "Every evaluation"], default_value=traitlets.Undefined)
     sim_metric = traitlets.Enum(values=["zncc"], default_value=traitlets.Undefined)
     starting_distance = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance = traitlets.Int(min=1, default_value=traitlets.Undefined)
 
 
-def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, objective_function: Callable,
-                   device: torch.device, tqdm_position: int = 0) -> torch.Tensor:
+def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, device: torch.device,
+                   tqdm_position: int = 0) -> torch.Tensor:
     """
 
     :param reg_config:
     :param exp_config:
-    :param objective_function:
     :param device:
     :param tqdm_position:
     :return: A tensor of size (iteration count,); the distance from g.t. of the optimisation at each iteration, averaged over `sample_count_per_distance` repetitions
     """
+    objective_function = obj_func
+
     data_manager().set_data("ct_path", exp_config.ct_path, check_equality=True)
     data_manager().set_data("downsample_level", exp_config.downsample_level, check_equality=True)
     data_manager().set_data("truncation_percent", exp_config.truncation_percent, check_equality=True)
     assert exp_config.cropping == "None"  # ToDo: Cropping
-    assert exp_config.mask == "None"  # ToDo: Masking
+    if exp_config.mask == "Every evaluation":
+        objective_function = obj_func_masked
+    else:
+        assert exp_config.mask == "None"
     assert exp_config.sim_metric == "zncc"  # ToDo: Sim metrics
     dimensionality = 6
     distance_samples = torch.empty([int(exp_config.sample_count_per_distance), int(reg_config.iteration_count)],
@@ -320,8 +324,9 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, objec
     return distance_samples.mean(dim=0)  # size = (iteration count,)
 
 
-def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants: dict[str, Any], device: torch.device,
-                    tqdm_position: int = 0) -> pd.DataFrame:
+def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants: dict[str, Any],
+                    output_directory: pathlib.Path, device: torch.device, tqdm_position: int = 0) -> None:
+    assert output_directory.is_dir()
     each_range_length = []
     for name, values in params_to_vary.items():
         if isinstance(values, torch.Tensor):
@@ -331,7 +336,6 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
     for l in each_range_length:
         total *= l
     logger.info(f"Running experiments with the following constant parameters: \n{pprint.pformat(constants)}")
-    rows_out = []
     tqdm_iterator = tqdm(itertools.product(*(range(l) for l in each_range_length)), desc="Experiments", total=total,
                          position=tqdm_position, leave=None)
     for indices in tqdm_iterator:
@@ -357,12 +361,18 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
             logger.error(f"Error constructing experiment configuration at indices {indices}: {e}")
             continue
         # Running the experiment
-        res = run_experiment(reg_config=reg_config, exp_config=exp_config, objective_function=obj_func, device=device,
-                             tqdm_position=tqdm_position + 1)
-        # Adding the rows for the DataFrame
-        for iteration in range(len(res)):
-            rows_out.append(instance_all | {"iteration": iteration, "distance": res[iteration].item()})
-    return pd.DataFrame(rows_out)
+        try:
+            res = run_experiment(reg_config=reg_config, exp_config=exp_config, device=device,
+                                 tqdm_position=tqdm_position + 1)
+        except Exception as e:
+            logger.error(f"Error running experiment at indices {indices}: {e}")
+            continue
+        # Getting the rows for the DataFrame and saving
+        df = pd.DataFrame([  #
+            instance_all | {"iteration": iteration, "distance": res[iteration].item()}  #
+            for iteration in range(len(res))  #
+        ])
+        df.to_parquet(output_directory / f"data_{"_".join([str(i) for i in indices])}.parquet")
 
 
 def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pathlib.Path, show: bool = False):
@@ -446,17 +456,17 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     constants = {  #
         # ExperimentConfig
         "ct_path": data_manager().get("ct_path"),  #
-        "downsample_level": 1,  #
+        "downsample_level": 2,  #
         # - varying truncation percent
         "cropping": "None",  #
-        "mask": "None",  #
+        # - varying - "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 15.0,  #
-        "sample_count_per_distance": 10,  #
+        "sample_count_per_distance": 6,  #
         # RegConfig
-        "particle_count": 2000,  #
+        "particle_count": 1000,  #
         "particle_initialisation_spread": 5.0,  #
-        "iteration_count": 15,  #
+        "iteration_count": 8,  #
     }
 
     if False:
@@ -474,87 +484,13 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         plt.show()  # return
         return
 
-    truncation_percent_count = 3
-    # starting_distance_count= 3
+    (instance_output_dir / "notes.txt").write_text(  #
+        "Varying truncation percent and mask.")
 
-    df = run_experiments(params_to_vary={  #
-        "truncation_percent": [0, 20]  #
-    }, constants=constants, device=device)
-    df.to_parquet(instance_output_dir / "data.parquet")
-
-    starting_distances = torch.linspace(0.1, 20.0, starting_distance_count)
-
-    exp_config = ExperimentConfig(starting_distance=starting_distance,
-                                  sample_count_per_distance=sample_count_per_distance)
-
-    truncation_percents = torch.linspace(0.0, 0.6, truncation_percent_count)
-    downsample_levels = [1, 2, 3]
-
-    config = {  #
-                 "ct_path": data_manager().get("ct_path"),  #
-                 "cropping": "None",  #
-                 "sim_metric": "zncc",  #
-             } | configs_to_dict(reg_config, exp_config)
-
-    import sys
-    logger.info(sys.stderr.isatty())
-
-    logger.info("##### No masking #####")
-
-    tqdm_truncation_percent = tqdm(truncation_percents, desc="Truncation fractions", position=1, leave=None)
-    for truncation_percent in tqdm_truncation_percent:
-        tqdm_truncation_percent.set_postfix_str("Truncation fraction {:.3f}".format(truncation_percent.item()))
-        data_manager().set_data("truncation_percent", float(truncation_percent))
-        tqdm_starting_distances = tqdm(  #
-            range(exp_config.starting_distances.numel()),  #
-            desc="starting distances",  #
-            position=tqdm_position,  #
-            leave=None)
-        for j in tqdm_starting_distances:
-            tqdm_starting_distances.set_postfix_str(
-                "starting distance {:.3f}".format(exp_config.starting_distances[j].item()))
-            results = run_experiment(  #
-                reg_config=reg_config,  #
-                exp_config=exp_config,  #
-                objective_function=obj_func,  #
-                device=device,  #
-                tqdm_position=2)  # size = (starting distance count, iteration count)
-            results_dir: pathlib.Path = instance_output_dir / "tf_{:.3f}_dl_{}".format(  #
-                float(truncation_percent), downsample_level).replace(".", "p")
-            results_dir.mkdir(exist_ok=True)
-            torch.save(results, results_dir / "convergence_series.pkl")
-            # parameters
-            save_dict({  #
-                "truncation_percent": truncation_percent.item(),  #
-                "downsample_level": downsample_level,  #
-                "mask": "None",  #
-            }, directory=results_dir, stem="parameters")
-
-    logger.info("##### Yes masking #####")
-    tqdm_downsample_level = tqdm(downsample_levels, desc="Downsample levels")
-    for downsample_level in tqdm_downsample_level:
-        tqdm_downsample_level.set_postfix_str("Downsample level {}".format(downsample_level))
-        data_manager().set_data("downsample_level", downsample_level)
-        tqdm_truncation_percent = tqdm(truncation_percents, desc="Truncation fractions", position=1, leave=None)
-        for truncation_percent in tqdm_truncation_percent:
-            tqdm_truncation_percent.set_postfix_str("Truncation fraction {:.3f}".format(truncation_percent.item()))
-            data_manager().set_data("truncation_percent", float(truncation_percent))
-            results = run_experiment(  #
-                reg_config=reg_config,  #
-                exp_config=exp_config,  #
-                objective_function=obj_func_masked,  #
-                device=device,  #
-                tqdm_position=2)  # size = (starting distance count, iteration count)
-            results_dir: pathlib.Path = instance_output_dir / "masked_tf_{:.3f}_dl_{}".format(  #
-                float(truncation_percent), downsample_level).replace(".", "p")
-            results_dir.mkdir(exist_ok=True)
-            torch.save(results, results_dir / "convergence_series.pkl")
-            # parameters
-            save_dict({  #
-                "truncation_percent": truncation_percent.item(),  #
-                "downsample_level": downsample_level,  #
-                "mask": "Every evaluation",  #
-            }, directory=results_dir, stem="parameters")
+    run_experiments(params_to_vary={  #
+        "mask": ["None", "Every evaluation"],  #
+        "truncation_percent": [0, 10, 20, 40]  #
+    }, output_directory=instance_output_dir, constants=constants, device=device)
 
 
 if __name__ == "__main__":
