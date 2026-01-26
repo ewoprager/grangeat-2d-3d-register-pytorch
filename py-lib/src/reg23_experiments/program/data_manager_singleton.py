@@ -4,6 +4,7 @@ import logging
 from typing import Any, Callable, NamedTuple
 import traitlets
 from traitlets.config import SingletonConfigurable
+import inspect
 
 from reg23_experiments.program.lib.structs import Error, FunctionArgument
 
@@ -23,6 +24,16 @@ class NoNodeDataType:
 
 
 NoNodeData = NoNodeDataType()
+
+
+def takes_positional_args(func) -> bool:
+    sig = inspect.signature(func)
+    for param in sig.parameters.values():
+        if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                          inspect.Parameter.VAR_POSITIONAL,  # *args
+                          ):
+            return True
+    return False
 
 
 class Node(traitlets.HasTraits):
@@ -96,6 +107,7 @@ class DAG:
     is just a user-defined `str` name associated with the callback, which is used if the user wishes to remove the
     callback later on with `data_manager().remove_callback(<variable name>, <callback name>)`.
     """
+
     def __init__(self):
         self._nodes: dict[str, Node] = dict()
         self._updaters: dict[str, Updater] = dict()
@@ -463,6 +475,9 @@ def args_from_dag(*, names_left: list[str] | None = None):
         names_left = []
 
     def decorator(function):
+        if takes_positional_args(function):
+            raise ValueError(f"Functions decorated with `args_from_dag` must not take positional arguments. Prepend "
+                             f"arguments with `*` to ensure this.")
         # all names specified in `named_left` must names of function arguments
         arguments = FunctionArgument.get_for_function(function)
         for name in names_left:

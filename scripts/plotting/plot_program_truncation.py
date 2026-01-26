@@ -110,7 +110,7 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
     if True:
         # converting to a tensor, with an axis per variable
         distances, axis_values = dataframe_to_tensor(  #
-            df.loc[(df["mask"] == "None")],  #
+            df.loc[(df["mask"] == "Every evaluation weighting zncc")],  #
             ordered_axes=["truncation_percent", "iteration"],  #
             value_column="distance")
 

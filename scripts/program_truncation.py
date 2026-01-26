@@ -127,7 +127,7 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 
 
 @args_from_dag()
-def get_crop_nonzero_drr(images_2d_full: list[torch.Tensor], source_distance: float,
+def get_crop_nonzero_drr(*, images_2d_full: list[torch.Tensor], source_distance: float,
                          current_transformation: Transformation, ct_volumes: list[torch.Tensor]) -> Cropping:
     image_size = images_2d_full[0].size()
     image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
@@ -162,11 +162,6 @@ def get_crop_nonzero_drr(images_2d_full: list[torch.Tensor], source_distance: fl
     return Cropping(left=left, right=right, bottom=bottom, top=top)
 
 
-@dag_updater(names_returned=["current_loss"])
-def of_zncc(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> dict[str, Any]:
-    return {"current_loss": -lib_objective_function.ncc(moving_image, fixed_image)}
-
-
 def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
     size = images_2d_full[0].size()
     logger.info(f"Resetting crop for new value of 'images_2d_full'; size = [{size[0]} x {size[1]}].")
@@ -175,16 +170,27 @@ def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
         logger.error(f"Error setting resetting cropping: {err.description}")
 
 
-def obj_func(parameters: torch.Tensor) -> torch.Tensor:
+@args_from_dag(names_left=["parameters"])
+def obj_func(*, parameters: torch.Tensor, moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
     data_manager().set_data("current_transformation", mapping_parameters_to_transformation(parameters))
-    return data_manager().get("current_loss")
+    return -lib_objective_function.ncc(moving_image, fixed_image)
 
 
-def obj_func_masked(parameters: torch.Tensor) -> torch.Tensor:
+@args_from_dag(names_left=["parameters"])
+def obj_func_masked(*, parameters: torch.Tensor, moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
     t = mapping_parameters_to_transformation(parameters)
     data_manager().set_data("current_transformation", t)
     data_manager().set_data("mask_transformation", t)
-    return data_manager().get("current_loss")
+    return -lib_objective_function.ncc(moving_image, fixed_image)
+
+
+@args_from_dag(names_left=["parameters"])
+def obj_func_masked_weighted(*, parameters: torch.Tensor, moving_image: torch.Tensor,
+                             fixed_image: torch.Tensor) -> torch.Tensor:
+    t = mapping_parameters_to_transformation(parameters)
+    data_manager().set_data("current_transformation", t)
+    data_manager().set_data("mask_transformation", t)
+    return -lib_objective_function.weighted_ncc(moving_image, fixed_image, data_manager().get("mask"))
 
 
 class RegConfig(StrictHasTraits):
@@ -273,7 +279,8 @@ class ExperimentConfig(StrictHasTraits):
     downsample_level = traitlets.Int(min=0, default_value=traitlets.Undefined)
     truncation_percent = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
     cropping = traitlets.Enum(values=["None"], default_value=traitlets.Undefined)
-    mask = traitlets.Enum(values=["None", "Every evaluation"], default_value=traitlets.Undefined)
+    mask = traitlets.Enum(values=["None", "Every evaluation", "Every evaluation weighting zncc"],
+                          default_value=traitlets.Undefined)
     sim_metric = traitlets.Enum(values=["zncc"], default_value=traitlets.Undefined)
     starting_distance = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance = traitlets.Int(min=1, default_value=traitlets.Undefined)
@@ -297,8 +304,11 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     assert exp_config.cropping == "None"  # ToDo: Cropping
     if exp_config.mask == "Every evaluation":
         objective_function = obj_func_masked
+    elif exp_config.mask == "Every evaluation weighting zncc":
+        objective_function = obj_func_masked_weighted
     else:
         assert exp_config.mask == "None"
+        data_manager().set_data("mask_transformation", None)
     assert exp_config.sim_metric == "zncc"  # ToDo: Sim metrics
     dimensionality = 6
     distance_samples = torch.empty([int(exp_config.sample_count_per_distance), int(reg_config.iteration_count)],
@@ -313,7 +323,7 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
         starting_params = random_parameters_at_distance(
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), exp_config.starting_distance)
         res = run_reg(  #
-            objective_function=objective_function,  #
+            objective_function=lambda x: objective_function(parameters=x),  #
             config=reg_config,  #
             starting_params=starting_params,  #
             device=device,  #
@@ -396,7 +406,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
                                          translation=torch.zeros(3, device=device)),  #
         target_ap_distance=5.0,  #
         current_transformation=Transformation.random_uniform(device=device),  #
-        mask_transformation=Transformation.zero(device=device)  #
+        mask_transformation=None  #
     )
     if isinstance(err, Error):
         logger.error(f"Error setting initial data values: {err.description}")
@@ -430,10 +440,6 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("sim_metric", of_zncc)
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
 
     data_manager().add_callback("images_2d_full", "reset_crop_on_img2dfull", reset_crop)
 
@@ -444,25 +450,32 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     if show:
         plt.ion()  # figures are non-blocking
         plt.show()
-        fig, axes = plt.subplots(1, 2)
-        axes[0].imshow(data_manager().get("fixed_image").cpu().numpy())
+        fig, axes = plt.subplots(1, 3)
+        fixed_image = data_manager().get("fixed_image")
+        axes[0].imshow(fixed_image.cpu().numpy())
         axes[0].set_title("fixed image")
-        axes[1].imshow(data_manager().get("moving_image").cpu().numpy())
+        moving_image = data_manager().get("moving_image")
+        axes[1].imshow(moving_image.cpu().numpy())
         axes[1].set_title("moving image at G.T.")
-        logger.info(f"ZNCC at G.T. = {data_manager().get("current_loss")}")
+        data_manager().set_data("mask_transformation", data_manager().get("current_transformation"))
+        mask = data_manager().get("mask")
+        axes[2].imshow(mask.cpu().numpy())
+        axes[2].set_title("mask at G.T.")
+        logger.info(
+            f"ZNCC at G.T. with masking = {-lib_objective_function.weighted_ncc(moving_image, fixed_image, mask)}")
         plt.draw()
         plt.pause(0.1)
 
     constants = {  #
         # ExperimentConfig
         "ct_path": data_manager().get("ct_path"),  #
-        "downsample_level": 2,  #
+        "downsample_level": data_manager().get("downsample_level"),  #
         # - varying truncation percent
         "cropping": "None",  #
         # - varying - "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 15.0,  #
-        "sample_count_per_distance": 6,  #
+        "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 1000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -488,8 +501,8 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         "Varying truncation percent and mask.")
 
     run_experiments(params_to_vary={  #
-        "mask": ["None", "Every evaluation"],  #
-        "truncation_percent": [0, 10, 20, 40]  #
+        "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
+        "truncation_percent": [0, 20, 40]  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 
