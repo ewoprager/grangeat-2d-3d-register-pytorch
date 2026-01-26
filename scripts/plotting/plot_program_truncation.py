@@ -41,17 +41,17 @@ def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
 def dataframe_to_tensor(df: pd.DataFrame, *, ordered_axes: list[str], value_column: str) -> tuple[
     torch.Tensor, dict[str, torch.Tensor]]:
     s = df.set_index(ordered_axes)[value_column].sort_index()
-    axis_levels = [#
-        s.index.levels[s.index.names.index(name)]#
-        for name in ordered_axes#
+    axis_levels = [  #
+        s.index.levels[s.index.names.index(name)]  #
+        for name in ordered_axes  #
     ]
     full_index = pd.MultiIndex.from_product(axis_levels, names=ordered_axes)
     s = s.reindex(full_index)
     if s.isna().any():
         logger.warn("Grid is incomplete — missing coordinate combinations.")
-    axis_values = {#
-        name: torch.from_numpy(level.to_numpy())#
-        for name, level in zip(ordered_axes, axis_levels)#
+    axis_values = {  #
+        name: torch.from_numpy(level.to_numpy())  #
+        for name, level in zip(ordered_axes, axis_levels)  #
     }
     axis_lengths = [len(level) for level in axis_levels]
     tensor = torch.from_numpy(s.to_numpy()).view(*axis_lengths)
@@ -78,31 +78,58 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
         if element.stem.startswith("data") and element.suffix == ".parquet"  #
     ])
 
-    # converting to a tensor, with an axis per variable
-    distances, axis_values = dataframe_to_tensor(  #
-        df.loc[(df["mask"] == "Every evaluation")],  #
-        ordered_axes=["downsample_level", "truncation_fraction", "starting_distance", "iteration"],  #
-        value_column="distance")
+    # data over downsample level, truncation fraction and starting distance, stratified by masking
+    if False:
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_to_tensor(  #
+            df.loc[(df["mask"] == "Every evaluation")],  #
+            ordered_axes=["downsample_level", "truncation_percent", "starting_distance", "iteration"],  #
+            value_column="distance")
 
-    fig, axes = plt.subplots(distances.size(0), distances.size(1))
-    fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                        right=0.98,  # right margin
-                        bottom=0.08,  # bottom margin
-                        top=0.95,  # top margin
-                        wspace=0.2,  # width space between columns
-                        hspace=0.3  # height space between rows
-                        )
-    for k, dl in enumerate(axis_values["downsample_level"]):
-        for j, tf in enumerate(axis_values["truncation_fraction"]):
-            for i, sd in enumerate(axis_values["starting_distance"]):
-                axes[k, j].plot(axis_values["iteration"], distances[k, j, i, :], label="s.d. {:.3f}".format(sd))
-                axes[k, j].set_title("d.l. {}; t.f. {:.3f}".format(dl, tf))
-                axes[k, j].set_xlabel("iteration")
-                axes[k, j].xaxis.set_major_locator(MaxNLocator(integer=True))
-                axes[k, j].set_ylabel("distance from G.T.")
-                axes[k, j].set_ylim((0.0, None))
-                axes[k, j].legend()
-    plt.show()
+        fig, axes = plt.subplots(distances.size(0), distances.size(1))
+        fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                            right=0.98,  # right margin
+                            bottom=0.08,  # bottom margin
+                            top=0.95,  # top margin
+                            wspace=0.2,  # width space between columns
+                            hspace=0.3  # height space between rows
+                            )
+        for k, dl in enumerate(axis_values["downsample_level"]):
+            for j, tf in enumerate(axis_values["truncation_percent"]):
+                for i, sd in enumerate(axis_values["starting_distance"]):
+                    axes[k, j].plot(axis_values["iteration"], distances[k, j, i, :], label="s.d. {:.3f}".format(sd))
+                    axes[k, j].set_title("d.l. {}; t.f. {:.3f}".format(dl, tf))
+                    axes[k, j].set_xlabel("iteration")
+                    axes[k, j].xaxis.set_major_locator(MaxNLocator(integer=True))
+                    axes[k, j].set_ylabel("distance from G.T.")
+                    axes[k, j].set_ylim((0.0, None))
+                    axes[k, j].legend()
+        plt.show()
+
+    # data over truncation fraction, stratified by masking
+    if True:
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_to_tensor(  #
+            df.loc[(df["mask"] == "None")],  #
+            ordered_axes=["truncation_percent", "iteration"],  #
+            value_column="distance")
+
+        fig, axes = plt.subplots()
+        fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                            right=0.98,  # right margin
+                            bottom=0.08,  # bottom margin
+                            top=0.95,  # top margin
+                            wspace=0.2,  # width space between columns
+                            hspace=0.3  # height space between rows
+                            )
+        for j, tf in enumerate(axis_values["truncation_percent"]):
+            axes.plot(axis_values["iteration"], distances[j, :], label="t.f. {:.3f}".format(tf))
+            axes.set_xlabel("iteration")
+            axes.xaxis.set_major_locator(MaxNLocator(integer=True))
+            axes.set_ylabel("distance from G.T.")
+            # axes.set_ylim((0.0, None))
+            axes.legend()
+        plt.show()
 
 
 if __name__ == "__main__":
