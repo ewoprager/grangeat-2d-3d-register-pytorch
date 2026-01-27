@@ -1,12 +1,24 @@
 import argparse
 
+import itertools
 import torch
 import pathlib
 from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 from reg23_experiments.notification import logs_setup
+
+
+def separate_subplots(n_rows: int, n_cols: int, **fig_kwargs) -> tuple[np.ndarray, np.ndarray]:
+    figs = np.empty((n_rows, n_cols), dtype=object)
+    axs = np.empty((n_rows, n_cols), dtype=object)
+    for i in range(n_rows):
+        for j in range(n_cols):
+            figs[i, j] = plt.figure(**fig_kwargs)
+            axs[i, j] = figs[i, j].add_subplot(111)
+    return figs, axs
 
 
 def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
@@ -58,7 +70,8 @@ def dataframe_to_tensor(df: pd.DataFrame, *, ordered_axes: list[str], value_colu
     return tensor, axis_values
 
 
-def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> None:
+def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figures: bool,
+         save_directory: pathlib.Path) -> None:
     assert load_dir.is_dir()
     # Getting the latest data instance if desired
     if which_dataset == "latest":
@@ -139,14 +152,14 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
             df.loc[(df["mask"] == "None")],  #
             ordered_axes=["downsample_level", "truncation_percent", "iteration"],  #
             value_column="distance")
-        fig, axes = plt.subplots(3, distances.size(0))
-        fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                            right=0.98,  # right margin
-                            bottom=0.08,  # bottom margin
-                            top=0.95,  # top margin
-                            wspace=0.2,  # width space between columns
-                            hspace=0.3  # height space between rows
-                            )
+        fig, axes = (separate_subplots if save_figures else plt.subplots)(3, distances.size(0))
+        if not save_figures:
+            fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                                right=0.98,  # right margin
+                                bottom=0.08,  # bottom margin
+                                top=0.95,  # top margin
+                                wspace=0.2,  # width space between columns
+                                hspace=0.3)  # height space between rows
         for k, mask in enumerate(["None", "Every evaluation", "Every evaluation weighting zncc"]):
             # converting to a tensor, with an axis per variable
             distances, axis_values = dataframe_to_tensor(  #
@@ -165,8 +178,13 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
                 axes[k, j].xaxis.set_major_locator(MaxNLocator(integer=True))
                 axes[k, j].set_ylabel("distance from G.T.")
                 axes[k, j].set_ylim((0.0, starting_distance))
-                axes[k, j].set_title(f"Mask: {mask}, d.l. {dl}")
+                if not save_figures:
+                    axes[k, j].set_title(f"Mask: {mask}, d.l. {dl}")
                 axes[k, j].legend()
+        if save_figures:
+            for k, j in itertools.product(range(3), range(len(axis_values["downsample_level"]))):
+                fig[k, j].tight_layout()
+                fig[k, j].savefig(save_directory / f"convergence_{k}_{j}.pgf")
 
         fig, axes = plt.subplots()
         for j, mask in enumerate(["None", "Every evaluation", "Every evaluation weighting zncc"]):
@@ -180,7 +198,11 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
         axes.set_ylabel(f"Converged distance after {iteration_count} iterations")
         axes.set_ylim((0.0, starting_distance))
         axes.legend()
-        plt.show()
+        if save_figures:
+            fig.tight_layout()
+            fig.savefig(save_directory / "converged_against_truncation.pgf")
+        if display:
+            plt.show()
 
 
 if __name__ == "__main__":
@@ -191,7 +213,7 @@ if __name__ == "__main__":
     plt.rcParams["text.usetex"] = True
     plt.rcParams["font.family"] = "serif"
     plt.rcParams["scatter.marker"] = 'x'
-    # plt.rcParams["font.size"] = 22  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib
+    plt.rcParams["font.size"] = 15  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib
     # scales up by 1.2 (God only knows why). 36 is tool big, however, so going a bit smaller than 30
 
     # parse arguments
@@ -200,9 +222,12 @@ if __name__ == "__main__":
                         help="Directory in which to find the data files.")
     parser.add_argument("-w", "--which-dataset", type=str, default="latest",
                         help="Which dataset to plot. Either 'latest', or a timestamp in the format 'YYYY-MM-DD_hh-mm-ss'.")
-    # parser.add_argument("-s", "--save-path", type=str, default="figures/truncation/measurement",
-    #                     help="Set a directory in which to save the resulting figures..")
+    parser.add_argument("-s", "--save-dir", type=str, default="figures/truncation/program_truncation",
+                        help="Set a directory in which to save the resulting figures.")
+    parser.add_argument("-r", "--save-figures", action='store_true',
+                        help="Format plots appropriately for using in a report and save them in the save directory.")
     parser.add_argument("-d", "--display", action='store_true', help="Display/plot the resulting data.")
     args = parser.parse_args()
 
-    main(load_dir=pathlib.Path(args.load_dir), which_dataset=args.which_dataset, display=args.display)
+    main(load_dir=pathlib.Path(args.load_dir), which_dataset=args.which_dataset, display=args.display,
+         save_figures=args.save_figures, save_directory=pathlib.Path(args.save_dir))
