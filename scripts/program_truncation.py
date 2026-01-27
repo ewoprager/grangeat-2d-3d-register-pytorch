@@ -170,27 +170,30 @@ def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
         logger.error(f"Error setting resetting cropping: {err.description}")
 
 
-@args_from_dag(names_left=["parameters"])
-def obj_func(*, parameters: torch.Tensor, moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
+def obj_func(parameters: torch.Tensor) -> torch.Tensor:
     data_manager().set_data("current_transformation", mapping_parameters_to_transformation(parameters))
+    moving_image = data_manager().get("moving_image")
+    fixed_image = data_manager().get("fixed_image")
     return -lib_objective_function.ncc(moving_image, fixed_image)
 
 
-@args_from_dag(names_left=["parameters"])
-def obj_func_masked(*, parameters: torch.Tensor, moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
+def obj_func_masked(parameters: torch.Tensor) -> torch.Tensor:
     t = mapping_parameters_to_transformation(parameters)
     data_manager().set_data("current_transformation", t)
     data_manager().set_data("mask_transformation", t)
+    moving_image = data_manager().get("moving_image")
+    fixed_image = data_manager().get("fixed_image")
     return -lib_objective_function.ncc(moving_image, fixed_image)
 
 
-@args_from_dag(names_left=["parameters"])
-def obj_func_masked_weighted(*, parameters: torch.Tensor, moving_image: torch.Tensor,
-                             fixed_image: torch.Tensor) -> torch.Tensor:
+def obj_func_masked_weighted(parameters: torch.Tensor) -> torch.Tensor:
     t = mapping_parameters_to_transformation(parameters)
     data_manager().set_data("current_transformation", t)
     data_manager().set_data("mask_transformation", t)
-    return -lib_objective_function.weighted_ncc(moving_image, fixed_image, data_manager().get("mask"))
+    moving_image = data_manager().get("moving_image")
+    fixed_image = data_manager().get("fixed_image")
+    mask = data_manager().get("mask")
+    return -lib_objective_function.weighted_ncc(moving_image, fixed_image, mask)
 
 
 class RegConfig(StrictHasTraits):
@@ -296,12 +299,12 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     :param tqdm_position:
     :return: A tensor of size (iteration count,); the distance from g.t. of the optimisation at each iteration, averaged over `sample_count_per_distance` repetitions
     """
-    objective_function = obj_func
-
     data_manager().set_data("ct_path", exp_config.ct_path, check_equality=True)
     data_manager().set_data("downsample_level", exp_config.downsample_level, check_equality=True)
     data_manager().set_data("truncation_percent", exp_config.truncation_percent, check_equality=True)
     assert exp_config.cropping == "None"  # ToDo: Cropping
+    # Setting the objective function based on masking
+    objective_function = obj_func
     if exp_config.mask == "Every evaluation":
         objective_function = obj_func_masked
     elif exp_config.mask == "Every evaluation weighting zncc":
@@ -323,7 +326,7 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
         starting_params = random_parameters_at_distance(
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), exp_config.starting_distance)
         res = run_reg(  #
-            objective_function=lambda x: objective_function(parameters=x),  #
+            objective_function=objective_function,  #
             config=reg_config,  #
             starting_params=starting_params,  #
             device=device,  #
@@ -469,40 +472,41 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     constants = {  #
         # ExperimentConfig
         "ct_path": data_manager().get("ct_path"),  #
-        "downsample_level": data_manager().get("downsample_level"),  #
+        # - varying downsample level - "downsample_level": data_manager().get("downsample_level"),  #
         # - varying truncation percent
         "cropping": "None",  #
         # - varying - "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 15.0,  #
-        "sample_count_per_distance": 10,  #
+        "sample_count_per_distance": 14,  #
         # RegConfig
-        "particle_count": 1000,  #
+        "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
-        "iteration_count": 8,  #
+        "iteration_count": 10,  #
     }
 
-    if False:
+    if show:
         starting_params = random_parameters_at_distance(
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), 15.0)
-        data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
+        # data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
         # set_crop_to_nonzero_drr()
         res = run_reg(objective_function=obj_func, starting_params=starting_params, config=RegConfig(  #
             particle_count=constants["particle_count"],  #
             particle_initialisation_spread=constants["particle_initialisation_spread"],  #
             iteration_count=constants["iteration_count"],  #
-        ), device=device, plot="mask")  # size = (iteration count, dimensionality + 1)
+        ), device=device, plot="yes")  # size = (iteration count, dimensionality + 1)
         logger.info(f"Result: {res}")
         plt.ioff()  # figures are blocking
         plt.show()  # return
         return
 
     (instance_output_dir / "notes.txt").write_text(  #
-        "Varying truncation percent and mask.")
+        "Varying downsample leve, truncation percent and mask.")
 
     run_experiments(params_to_vary={  #
+        "downsample_level": [1, 2, 3], #
         "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
-        "truncation_percent": [0, 20, 40]  #
+        "truncation_percent": [0, 5, 10, 20, 40]  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 

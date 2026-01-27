@@ -106,15 +106,40 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
                     axes[k, j].legend()
         plt.show()
 
-    # data over truncation fraction, stratified by masking
-    if True:
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_to_tensor(  #
-            df.loc[(df["mask"] == "Every evaluation weighting zncc")],  #
-            ordered_axes=["truncation_percent", "iteration"],  #
-            value_column="distance")
+    if False:
+        # data over truncation fraction, stratified by masking
+        for mask in ["None", "Every evaluation", "Every evaluation weighting zncc"]:
+            # converting to a tensor, with an axis per variable
+            distances, axis_values = dataframe_to_tensor(  #
+                df.loc[(df["mask"] == mask)],  #
+                ordered_axes=["truncation_percent", "iteration"],  #
+                value_column="distance")
 
-        fig, axes = plt.subplots()
+            fig, axes = plt.subplots()
+            fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                                right=0.98,  # right margin
+                                bottom=0.08,  # bottom margin
+                                top=0.95,  # top margin
+                                wspace=0.2,  # width space between columns
+                                hspace=0.3  # height space between rows
+                                )
+            for j, tf in enumerate(axis_values["truncation_percent"]):
+                axes.plot(axis_values["iteration"], distances[j, :], label="t.f. {:.3f}".format(tf))
+                axes.set_xlabel("iteration")
+                axes.xaxis.set_major_locator(MaxNLocator(integer=True))
+                axes.set_ylabel("distance from G.T.")
+                # axes.set_ylim((0.0, None))
+                axes.legend()
+
+    if True:
+        # data over downsample level and truncation fraction, stratified by masking
+        starting_distance = df["starting_distance"].values[0]
+        iteration_count = df["iteration_count"].values[0]
+        distances, axis_values = dataframe_to_tensor(  #
+            df.loc[(df["mask"] == "None")],  #
+            ordered_axes=["downsample_level", "truncation_percent", "iteration"],  #
+            value_column="distance")
+        fig, axes = plt.subplots(3, distances.size(0))
         fig.subplots_adjust(left=0.05,  # margin on left side of figure
                             right=0.98,  # right margin
                             bottom=0.08,  # bottom margin
@@ -122,13 +147,39 @@ def main(*, load_dir: str | pathlib.Path, which_dataset: str, display: bool) -> 
                             wspace=0.2,  # width space between columns
                             hspace=0.3  # height space between rows
                             )
-        for j, tf in enumerate(axis_values["truncation_percent"]):
-            axes.plot(axis_values["iteration"], distances[j, :], label="t.f. {:.3f}".format(tf))
-            axes.set_xlabel("iteration")
-            axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-            axes.set_ylabel("distance from G.T.")
-            # axes.set_ylim((0.0, None))
-            axes.legend()
+        for k, mask in enumerate(["None", "Every evaluation", "Every evaluation weighting zncc"]):
+            # converting to a tensor, with an axis per variable
+            distances, axis_values = dataframe_to_tensor(  #
+                df.loc[(df["mask"] == mask)],  #
+                ordered_axes=["downsample_level", "truncation_percent", "iteration"],  #
+                value_column="distance")
+            max_truncation = axis_values["truncation_percent"].max()
+            for j, dl in enumerate(axis_values["downsample_level"]):
+                for i, tf in enumerate(axis_values["truncation_percent"]):
+                    axes[k, j].plot(  #
+                        axis_values["iteration"] + 1,  #
+                        distances[j, i, :],  #
+                        label="t.f. {:.3f}".format(tf.item()),  #
+                        color=((tf / max_truncation).item(), 1.0 - (tf / max_truncation).item(), 0.0))
+                axes[k, j].set_xlabel("iteration")
+                axes[k, j].xaxis.set_major_locator(MaxNLocator(integer=True))
+                axes[k, j].set_ylabel("distance from G.T.")
+                axes[k, j].set_ylim((0.0, starting_distance))
+                axes[k, j].set_title(f"Mask: {mask}, d.l. {dl}")
+                axes[k, j].legend()
+
+        fig, axes = plt.subplots()
+        for j, mask in enumerate(["None", "Every evaluation", "Every evaluation weighting zncc"]):
+            distances = df.loc[  #
+                (df["mask"] == mask) &  #
+                (df["downsample_level"] == 1) &  #
+                (df["iteration"] == iteration_count - 1)  #
+                ].set_index("truncation_percent")["distance"].sort_index()
+            axes.plot(distances, label=mask)
+        axes.set_xlabel("Truncation percent")
+        axes.set_ylabel(f"Converged distance after {iteration_count} iterations")
+        axes.set_ylim((0.0, starting_distance))
+        axes.legend()
         plt.show()
 
 
