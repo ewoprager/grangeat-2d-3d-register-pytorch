@@ -4,8 +4,12 @@ from typing import Any, Callable, Literal, Sequence
 from datetime import datetime
 import types
 import pprint
+import itertools
+import copy
 
 import pathlib
+
+import pandas as pd
 import torch
 import torchviz
 import matplotlib.pyplot as plt
@@ -88,8 +92,9 @@ def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volu
 
 
 @dag_updater(names_returned=["ct_volumes"])
-def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_fraction: float) -> dict[str, Any]:
+def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
     # truncate the volume
+    truncation_fraction = 0.01 * float(truncation_percent)
     top_bottom_chop = int(round(0.5 * truncation_fraction * float(untruncated_ct_volume.size()[0])))
     ct_volume = untruncated_ct_volume[
         top_bottom_chop:max(top_bottom_chop + 1, untruncated_ct_volume.size()[0] - top_bottom_chop)]
@@ -122,7 +127,7 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 
 
 @args_from_dag()
-def get_crop_nonzero_drr(images_2d_full: list[torch.Tensor], source_distance: float,
+def get_crop_nonzero_drr(*, images_2d_full: list[torch.Tensor], source_distance: float,
                          current_transformation: Transformation, ct_volumes: list[torch.Tensor]) -> Cropping:
     image_size = images_2d_full[0].size()
     image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
@@ -157,11 +162,6 @@ def get_crop_nonzero_drr(images_2d_full: list[torch.Tensor], source_distance: fl
     return Cropping(left=left, right=right, bottom=bottom, top=top)
 
 
-@dag_updater(names_returned=["current_loss"])
-def of_zncc(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> dict[str, Any]:
-    return {"current_loss": -lib_objective_function.ncc(moving_image, fixed_image)}
-
-
 def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
     size = images_2d_full[0].size()
     logger.info(f"Resetting crop for new value of 'images_2d_full'; size = [{size[0]} x {size[1]}].")
@@ -170,20 +170,30 @@ def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
         logger.error(f"Error setting resetting cropping: {err.description}")
 
 
-def distance_distribution_delta(nominal_distance: float) -> float:
-    return nominal_distance
-
-
 def obj_func(parameters: torch.Tensor) -> torch.Tensor:
     data_manager().set_data("current_transformation", mapping_parameters_to_transformation(parameters))
-    return data_manager().get("current_loss")
+    moving_image = data_manager().get("moving_image")
+    fixed_image = data_manager().get("fixed_image")
+    return -lib_objective_function.ncc(moving_image, fixed_image)
 
 
 def obj_func_masked(parameters: torch.Tensor) -> torch.Tensor:
     t = mapping_parameters_to_transformation(parameters)
     data_manager().set_data("current_transformation", t)
     data_manager().set_data("mask_transformation", t)
-    return data_manager().get("current_loss")
+    moving_image = data_manager().get("moving_image")
+    fixed_image = data_manager().get("fixed_image")
+    return -lib_objective_function.ncc(moving_image, fixed_image)
+
+
+def obj_func_masked_weighted(parameters: torch.Tensor) -> torch.Tensor:
+    t = mapping_parameters_to_transformation(parameters)
+    data_manager().set_data("current_transformation", t)
+    data_manager().set_data("mask_transformation", t)
+    moving_image = data_manager().get("moving_image")
+    fixed_image = data_manager().get("fixed_image")
+    mask = data_manager().get("mask")
+    return -lib_objective_function.weighted_ncc(moving_image, fixed_image, mask)
 
 
 class RegConfig(StrictHasTraits):
@@ -268,55 +278,114 @@ def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, conf
 
 
 class ExperimentConfig(StrictHasTraits):
-    distance_distribution = traitlets.Callable(default_value=traitlets.Undefined)
-    nominal_distances = traitlets.Instance(torch.Tensor, default_value=traitlets.Undefined)
-    sample_count_per_distance = traitlets.Int(default_value=traitlets.Undefined)
+    ct_path = traitlets.Unicode(default_value=traitlets.Undefined)
+    downsample_level = traitlets.Int(min=0, default_value=traitlets.Undefined)
+    truncation_percent = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
+    cropping = traitlets.Enum(values=["None"], default_value=traitlets.Undefined)
+    mask = traitlets.Enum(values=["None", "Every evaluation", "Every evaluation weighting zncc"],
+                          default_value=traitlets.Undefined)
+    sim_metric = traitlets.Enum(values=["zncc"], default_value=traitlets.Undefined)
+    starting_distance = traitlets.Float(default_value=traitlets.Undefined)
+    sample_count_per_distance = traitlets.Int(min=1, default_value=traitlets.Undefined)
 
 
-def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, objective_function: Callable,
-                   device: torch.device, tqdm_position: int = 0) -> torch.Tensor:
+def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, device: torch.device,
+                   tqdm_position: int = 0) -> torch.Tensor:
     """
 
     :param reg_config:
     :param exp_config:
-    :param objective_function:
     :param device:
     :param tqdm_position:
-    :return: A tensor of size (nominal distance count, iteration count); the distance from g.t. of the optimisation at each iteration, averaged over `sample_count_per_distance` repetitions, for each nominal starting distance
+    :return: A tensor of size (iteration count,); the distance from g.t. of the optimisation at each iteration, averaged over `sample_count_per_distance` repetitions
     """
+    data_manager().set_data("ct_path", exp_config.ct_path, check_equality=True)
+    data_manager().set_data("downsample_level", exp_config.downsample_level, check_equality=True)
+    data_manager().set_data("truncation_percent", exp_config.truncation_percent, check_equality=True)
+    assert exp_config.cropping == "None"  # ToDo: Cropping
+    # Setting the objective function based on masking
+    objective_function = obj_func
+    if exp_config.mask == "Every evaluation":
+        objective_function = obj_func_masked
+    elif exp_config.mask == "Every evaluation weighting zncc":
+        objective_function = obj_func_masked_weighted
+    else:
+        assert exp_config.mask == "None"
+        data_manager().set_data("mask_transformation", None)
+    assert exp_config.sim_metric == "zncc"  # ToDo: Sim metrics
     dimensionality = 6
-    ret = torch.empty([exp_config.nominal_distances.numel(), reg_config.iteration_count], dtype=torch.float32,
-                      device=device)  # size = (nominal distance count, iteration count)
-    tqdm_nominal_distances = tqdm(  #
-        range(exp_config.nominal_distances.numel()),  #
-        desc="Nominal distances",  #
-        position=tqdm_position,  #
-        leave=None)
+    distance_samples = torch.empty([int(exp_config.sample_count_per_distance), int(reg_config.iteration_count)],
+                                   dtype=torch.float32, device=device)  # size = (sample count, iteration count)
     ground_truth = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
-    for j in tqdm_nominal_distances:
-        tqdm_nominal_distances.set_postfix_str("Nominal distance {:.3f}".format(exp_config.nominal_distances[j].item()))
-        distance_generator = lambda: exp_config.distance_distribution(exp_config.nominal_distances[j].item())
-        distance_samples = torch.empty([int(exp_config.sample_count_per_distance), reg_config.iteration_count],
-                                       dtype=torch.float32, device=device)  # size = (sample count, iteration count)
-        for i in tqdm(  #
-                range(int(exp_config.sample_count_per_distance)),  #
-                desc="Repeated samples",  #
-                position=tqdm_position + 1,  #
-                leave=None  #
-        ):
-            starting_params = random_parameters_at_distance(
-                mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator())
-            res = run_reg(  #
-                objective_function=objective_function,  #
-                config=reg_config,  #
-                starting_params=starting_params,  #
-                device=device,  #
-                tqdm_position=tqdm_position + 2)  # size = (iteration count, dimensionality + 1)
-            distance_samples[i] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
-                                                           dim=1)  # size = (iteration count,)
-        ret[j] = distance_samples.mean(dim=0)  # size = (iteration count,)
+    for i in tqdm(  #
+            range(int(exp_config.sample_count_per_distance)),  #
+            desc="Repeated samples",  #
+            position=tqdm_position,  #
+            leave=None  #
+    ):
+        starting_params = random_parameters_at_distance(
+            mapping_transformation_to_parameters(data_manager().get("transformation_gt")), exp_config.starting_distance)
+        res = run_reg(  #
+            objective_function=objective_function,  #
+            config=reg_config,  #
+            starting_params=starting_params,  #
+            device=device,  #
+            tqdm_position=tqdm_position + 1)  # size = (iteration count, dimensionality + 1)
+        distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
+                                                          dim=1)  # size = (iteration count,)
 
-    return ret
+    return distance_samples.mean(dim=0)  # size = (iteration count,)
+
+
+def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants: dict[str, Any],
+                    output_directory: pathlib.Path, device: torch.device, tqdm_position: int = 0) -> None:
+    assert output_directory.is_dir()
+    each_range_length = []
+    for name, values in params_to_vary.items():
+        if isinstance(values, torch.Tensor):
+            assert len(values.size()) == 1
+        each_range_length.append(len(values))
+    total = 1
+    for l in each_range_length:
+        total *= l
+    logger.info(f"Running experiments with the following constant parameters: \n{pprint.pformat(constants)}")
+    tqdm_iterator = tqdm(itertools.product(*(range(l) for l in each_range_length)), desc="Experiments", total=total,
+                         position=tqdm_position, leave=None)
+    for indices in tqdm_iterator:
+        instance_specific = {  #
+            name: values[index]  #
+            for index, (name, values) in zip(indices, params_to_vary.items())  #
+        }  # config specific to this instance
+        tqdm_iterator.set_postfix(**instance_specific)  # displaying this
+        instance_all = instance_specific | constants  # all the config for this instance
+        # Separating the config into registration and experiment configs
+        exp_config_by_name = copy.deepcopy(instance_all)
+        try:
+            reg_config = RegConfig(  #
+                particle_count=exp_config_by_name.pop("particle_count"),  #
+                particle_initialisation_spread=exp_config_by_name.pop("particle_initialisation_spread"),  #
+                iteration_count=exp_config_by_name.pop("iteration_count"))
+        except Exception as e:
+            logger.error(f"Error constructing registration configuration at indices {indices}: {e}")
+            continue
+        try:
+            exp_config = ExperimentConfig(**exp_config_by_name)
+        except Exception as e:
+            logger.error(f"Error constructing experiment configuration at indices {indices}: {e}")
+            continue
+        # Running the experiment
+        try:
+            res = run_experiment(reg_config=reg_config, exp_config=exp_config, device=device,
+                                 tqdm_position=tqdm_position + 1)
+        except Exception as e:
+            logger.error(f"Error running experiment at indices {indices}: {e}")
+            continue
+        # Getting the rows for the DataFrame and saving
+        df = pd.DataFrame([  #
+            instance_all | {"iteration": iteration, "distance": res[iteration].item()}  #
+            for iteration in range(len(res))  #
+        ])
+        df.to_parquet(output_directory / f"data_{"_".join([str(i) for i in indices])}.parquet")
 
 
 def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pathlib.Path, show: bool = False):
@@ -332,7 +401,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         save_to_cache=False,  #
         regenerate_drr=True,  #
         new_drr_size=torch.Size([1000, 1000]),  #
-        truncation_fraction=0.0,  #
+        truncation_percent=0,  #
         cropping=None,  #
         source_offset=torch.zeros(2),  #
         downsample_level=2,  #
@@ -340,7 +409,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
                                          translation=torch.zeros(3, device=device)),  #
         target_ap_distance=5.0,  #
         current_transformation=Transformation.random_uniform(device=device),  #
-        mask_transformation=Transformation.zero(device=device)  #
+        mask_transformation=None  #
     )
     if isinstance(err, Error):
         logger.error(f"Error setting initial data values: {err.description}")
@@ -374,130 +443,71 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("sim_metric", of_zncc)
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
 
     data_manager().add_callback("images_2d_full", "reset_crop_on_img2dfull", reset_crop)
 
     data_manager().set_data("current_transformation", data_manager().get("transformation_gt"))
 
-    data_manager().set_data("truncation_fraction", 0.05)
+    data_manager().set_data("truncation_percent", 5)
 
     if show:
         plt.ion()  # figures are non-blocking
         plt.show()
-        fig, axes = plt.subplots(1, 2)
-        axes[0].imshow(data_manager().get("fixed_image").cpu().numpy())
+        fig, axes = plt.subplots(1, 3)
+        fixed_image = data_manager().get("fixed_image")
+        axes[0].imshow(fixed_image.cpu().numpy())
         axes[0].set_title("fixed image")
-        axes[1].imshow(data_manager().get("moving_image").cpu().numpy())
+        moving_image = data_manager().get("moving_image")
+        axes[1].imshow(moving_image.cpu().numpy())
         axes[1].set_title("moving image at G.T.")
-        logger.info(f"ZNCC at G.T. = {data_manager().get("current_loss")}")
+        data_manager().set_data("mask_transformation", data_manager().get("current_transformation"))
+        mask = data_manager().get("mask")
+        axes[2].imshow(mask.cpu().numpy())
+        axes[2].set_title("mask at G.T.")
+        logger.info(
+            f"ZNCC at G.T. with masking = {-lib_objective_function.weighted_ncc(moving_image, fixed_image, mask)}")
         plt.draw()
         plt.pause(0.1)
 
-    truncation_fraction_count = 3
-    nominal_distance_count = 1
-    sample_count_per_distance = 6
-    iteration_count = 15
+    constants = {  #
+        # ExperimentConfig
+        "ct_path": data_manager().get("ct_path"),  #
+        # - varying downsample level - "downsample_level": data_manager().get("downsample_level"),  #
+        # - varying truncation percent
+        "cropping": "None",  #
+        # - varying - "mask": "None",  #
+        "sim_metric": "zncc",  #
+        "starting_distance": 15.0,  #
+        "sample_count_per_distance": 14,  #
+        # RegConfig
+        "particle_count": 2000,  #
+        "particle_initialisation_spread": 5.0,  #
+        "iteration_count": 10,  #
+    }
 
-    reg_config = RegConfig(particle_count=1000, particle_initialisation_spread=5.0, iteration_count=iteration_count)
-
-    if False:
-        nominal_distance = 5.0
-        distance_distribution = distance_distribution_delta
-        distance_generator = lambda: distance_distribution(nominal_distance)
+    if show:
         starting_params = random_parameters_at_distance(
-            mapping_transformation_to_parameters(data_manager().get("transformation_gt")), distance_generator())
+            mapping_transformation_to_parameters(data_manager().get("transformation_gt")), 15.0)
         # data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
         # set_crop_to_nonzero_drr()
-        res = run_reg(objective_function=obj_func, starting_params=starting_params, config=reg_config, device=device,
-                      plot="mask")  # size = (iteration count, dimensionality + 1)
+        res = run_reg(objective_function=obj_func, starting_params=starting_params, config=RegConfig(  #
+            particle_count=constants["particle_count"],  #
+            particle_initialisation_spread=constants["particle_initialisation_spread"],  #
+            iteration_count=constants["iteration_count"],  #
+        ), device=device, plot="yes")  # size = (iteration count, dimensionality + 1)
         logger.info(f"Result: {res}")
         plt.ioff()  # figures are blocking
         plt.show()  # return
         return
 
-    nominal_distances = torch.tensor([15.0])  # torch.linspace(0.1, 20.0, nominal_distance_count)
+    (instance_output_dir / "notes.txt").write_text(  #
+        "Varying downsample leve, truncation percent and mask.")
 
-    exp_config = ExperimentConfig(distance_distribution=distance_distribution_delta,
-                                  nominal_distances=nominal_distances,
-                                  sample_count_per_distance=sample_count_per_distance)
-
-    truncation_fractions = torch.linspace(0.0, 0.6, truncation_fraction_count)
-    downsample_levels = [3]
-
-    # config
-    save_dict(  #
-        {  #
-            "ct_path": data_manager().get("ct_path"),  #
-            "x_ray_path": "DRR",  #
-            "notes": "Varying truncation fraction and downsample level",  #
-        } | configs_to_dict(reg_config, exp_config),  #
-        directory=instance_output_dir,  #
-        stem="config")
-
-    # shared parameters
-    save_dict({  #
-        "cropping": "None",  #
-        "sim_metric": "zncc",  #
-    }, directory=instance_output_dir, stem="shared_parameters")
-
-    import sys
-    logger.info(sys.stderr.isatty())
-
-    logger.info("##### No masking #####")
-    tqdm_downsample_level = tqdm(downsample_levels, desc="Downsample levels")
-    for downsample_level in tqdm_downsample_level:
-        tqdm_downsample_level.set_postfix_str("Downsample level {}".format(downsample_level))
-        data_manager().set_data("downsample_level", downsample_level)
-        tqdm_truncation_fraction = tqdm(truncation_fractions, desc="Truncation fractions", position=1, leave=None)
-        for truncation_fraction in tqdm_truncation_fraction:
-            tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}".format(truncation_fraction.item()))
-            data_manager().set_data("truncation_fraction", float(truncation_fraction))
-            results = run_experiment(  #
-                reg_config=reg_config,  #
-                exp_config=exp_config,  #
-                objective_function=obj_func,  #
-                device=device,  #
-                tqdm_position=2)  # size = (nominal distance count, iteration count)
-            results_dir: pathlib.Path = instance_output_dir / "tf_{:.3f}_dl_{}".format(  #
-                float(truncation_fraction), downsample_level).replace(".", "p")
-            results_dir.mkdir(exist_ok=True)
-            torch.save(results, results_dir / "convergence_series.pkl")
-            # parameters
-            save_dict({  #
-                "truncation_fraction": truncation_fraction.item(),  #
-                "downsample_level": downsample_level,  #
-                "mask": "None",  #
-            }, directory=results_dir, stem="parameters")
-
-    logger.info("##### Yes masking #####")
-    tqdm_downsample_level = tqdm(downsample_levels, desc="Downsample levels")
-    for downsample_level in tqdm_downsample_level:
-        tqdm_downsample_level.set_postfix_str("Downsample level {}".format(downsample_level))
-        data_manager().set_data("downsample_level", downsample_level)
-        tqdm_truncation_fraction = tqdm(truncation_fractions, desc="Truncation fractions", position=1, leave=None)
-        for truncation_fraction in tqdm_truncation_fraction:
-            tqdm_truncation_fraction.set_postfix_str("Truncation fraction {:.3f}".format(truncation_fraction.item()))
-            data_manager().set_data("truncation_fraction", float(truncation_fraction))
-            results = run_experiment(  #
-                reg_config=reg_config,  #
-                exp_config=exp_config,  #
-                objective_function=obj_func_masked,  #
-                device=device,  #
-                tqdm_position=2)  # size = (nominal distance count, iteration count)
-            results_dir: pathlib.Path = instance_output_dir / "masked_tf_{:.3f}_dl_{}".format(  #
-                float(truncation_fraction), downsample_level).replace(".", "p")
-            results_dir.mkdir(exist_ok=True)
-            torch.save(results, results_dir / "convergence_series.pkl")
-            # parameters
-            save_dict({  #
-                "truncation_fraction": truncation_fraction.item(),  #
-                "downsample_level": downsample_level,  #
-                "mask": "Every evaluation",  #
-            }, directory=results_dir, stem="parameters")
+    run_experiments(params_to_vary={  #
+        "downsample_level": [1, 2, 3], #
+        "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
+        "truncation_percent": [0, 5, 10, 20, 40]  #
+    }, output_directory=instance_output_dir, constants=constants, device=device)
 
 
 if __name__ == "__main__":

@@ -66,6 +66,24 @@ __host__ at::Tensor ProjectDRR_backward_CUDA(const at::Tensor &volume, const at:
                                              const at::Tensor &detectorSpacing, const at::Tensor &dLossDDRR);
 
 /**
+ * @ingroup pytorch_functions
+ * @brief An implementation similar to reg23::ProjectDRR_CUDA that evaluates projections for multiple transformations in parallel.
+ * @param volume a tensor of size (P,Q,R): The CT volume through which to project the DRR
+ * @param voxelSpacing a tensor of size (3,): The spacing in [mm] between the volume layers in each cartesian direction
+ * @param invHMatrices a tensor of size (..., 4, 4): The **column-major** matrices representing the homography transformations of the volume.
+ * @param sourceDistance The distance in [mm] of the source from the detector array
+ * @param outputWidth The width in pixels of the DRR to generate.
+ * @param outputHeight The height in pixels of the DRR to generate.
+ * @param outputOffset a tensor of size (2,) containing `torch.float64`s: The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array.
+ * @param detectorSpacing a tensor of size (2,): The spacing in [mm] between the columns and rows of the DRR image.
+ * @return a tensor of size (..., outputHeight, outputWidth): The DRR projection through the given volume at the given transformation. The '...' dimensions correspond to those of the invHMatrices tensor.
+ */
+__host__ at::Tensor ProjectDRRsBatched_CUDA(const at::Tensor &volume, const at::Tensor &voxelSpacing,
+									const at::Tensor &invHMatrices, double sourceDistance, int64_t outputWidth,
+									int64_t outputHeight,  const at::Tensor &outputOffset,
+									const at::Tensor &detectorSpacing);
+
+/**
  * @tparam texture_t Type of the texture object that input data will be converted to for sampling.
  *
  * This struct is used as a namespace for code that is shared between different implementations of `ProjectDRR_...`

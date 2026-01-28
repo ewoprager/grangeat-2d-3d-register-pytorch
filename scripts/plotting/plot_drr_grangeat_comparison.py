@@ -1,15 +1,13 @@
 import argparse
-import pickle
 
 import torch
 import numpy as np
-import matplotlib.ticker as mplt
 import matplotlib.pyplot as plt
 
-from notification import logs_setup
-from registration import plot_data
-from registration.lib import sinogram
-from registration.lib.plot import to_latex_scientific
+from reg23_experiments.notification import logs_setup
+from reg23_experiments.registration import plot_data
+from reg23_experiments.registration.lib import sinogram
+from reg23_experiments.registration.lib.plot import to_latex_scientific
 
 
 def main():
