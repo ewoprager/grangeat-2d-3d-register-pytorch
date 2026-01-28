@@ -218,7 +218,7 @@ def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConf
     if plot != "no":
         ncols = 2
         if plot == "mask":
-            ncols += 1
+            ncols += 2
         fig, axes = plt.subplots(1, ncols)
         axes = axes.tolist()
         # axes.insert(2, axes[1].twinx())
@@ -268,8 +268,11 @@ def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConf
             axes[1].set_ylabel("o.f. value")
             if plot == "mask":
                 axes[2].clear()
-                axes[2].set_title("fixed image")
-                axes[2].imshow(data_manager().get("fixed_image").cpu().numpy())
+                axes[2].set_title("mask")
+                axes[2].imshow(data_manager().get("mask").cpu().numpy())
+                axes[3].clear()
+                axes[3].set_title("masked fixed image")
+                axes[3].imshow(data_manager().get("fixed_image").cpu().numpy())
             plt.draw()
             plt.pause(0.1)
 
@@ -534,10 +537,11 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), 15.0)
         # data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
         # set_crop_to_nonzero_drr()
+        data_manager().set_data("truncation_percent", 30)
         res = run_reg(  #
-            obj_fun=lambda p: objective_function_drr(  #
+            obj_fun=lambda p: objective_function_drr_masked_weighted(  #
                 p,  #
-                sim_met=lambda a, b: similarity_metric.local_ncc(a, b, kernel_size=8)  #
+                sim_met=lambda a, b, w: similarity_metric.weighted_local_ncc(a, b, w, kernel_size=4)  #
             ),  #
             starting_params=starting_params, config=RegConfig(  #
                 particle_count=constants["particle_count"],  #
@@ -545,7 +549,7 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
                 iteration_count=constants["iteration_count"],  #
             ),  #
             device=device,  #
-            plot="yes")  # size = (iteration count, dimensionality + 1)
+            plot="mask")  # size = (iteration count, dimensionality + 1)
         logger.info(f"Result: {res}")
         plt.ioff()  # figures are blocking
         plt.show()  # return
