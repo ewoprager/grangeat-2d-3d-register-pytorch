@@ -63,7 +63,7 @@ def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequ
     return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing}
 
 
-@dag_updater(names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
+@dag_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
 def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
                      new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
                      ap_transformation: Transformation, target_ap_distance: float) -> dict[str, Any]:
@@ -81,13 +81,7 @@ def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volu
     fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
     del drr_spec
 
-    # Generating X-ray mipmap
-    down_sampler = torch.nn.AvgPool2d(2)
-    images_2d_full = [image_2d_full]
-    while min(images_2d_full[-1].size()) > 1:
-        images_2d_full.append(down_sampler(images_2d_full[-1].unsqueeze(0))[0])
-
-    return {"source_distance": scene_geometry.source_distance, "images_2d_full": images_2d_full,
+    return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
             "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
 
 
@@ -110,7 +104,7 @@ def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: in
 def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
                 fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
                 downsample_level: int, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
-                image_2d_downsample_level: int, device) -> dict[str, Any]:
+                image_2d_scale_factor: float, device) -> dict[str, Any]:
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(
         (torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype),
@@ -120,17 +114,16 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 
     return {"moving_image": geometry.generate_drr(ct_volumes[downsample_level], transformation=transformation,
                                                   voxel_spacing=ct_spacing * 2.0 ** downsample_level,
-                                                  detector_spacing=fixed_image_spacing * 2.0 **
-                                                                   image_2d_downsample_level,
+                                                  detector_spacing=fixed_image_spacing / image_2d_scale_factor,
                                                   scene_geometry=SceneGeometry(source_distance=source_distance,
                                                                                fixed_image_offset=fixed_image_offset),
                                                   output_size=fixed_image_size)}
 
 
 @args_from_dag()
-def get_crop_nonzero_drr(*, images_2d_full: list[torch.Tensor], source_distance: float,
-                         current_transformation: Transformation, ct_volumes: list[torch.Tensor]) -> Cropping:
-    image_size = images_2d_full[0].size()
+def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float, current_transformation: Transformation,
+                         ct_volumes: list[torch.Tensor]) -> Cropping:
+    image_size = image_2d_full.size()
     image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
 
     def project(vector: torch.Tensor) -> torch.Tensor:
@@ -163,9 +156,9 @@ def get_crop_nonzero_drr(*, images_2d_full: list[torch.Tensor], source_distance:
     return Cropping(left=left, right=right, bottom=bottom, top=top)
 
 
-def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
-    size = images_2d_full[0].size()
-    logger.info(f"Resetting crop for new value of 'images_2d_full'; size = [{size[0]} x {size[1]}].")
+def reset_crop(image_2d_full: torch.Tensor) -> None:
+    size = image_2d_full.size()
+    logger.info(f"Resetting crop for new value of 'image_2d_full'; size = [{size[0]} x {size[1]}].")
     err = data_manager().set_data("cropping", Cropping.zero(size))
     if isinstance(err, Error):
         logger.error(f"Error setting resetting cropping: {err.description}")
@@ -439,7 +432,6 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
 def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.Path, show: bool = False):
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
 
     init_data_manager()
     err = data_manager().set_data_multiple(  #
@@ -474,7 +466,7 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_image_2d_downsample_level", updaters.refresh_image_2d_downsample_level)
+    err = data_manager().add_updater("refresh_image_2d_scale_factor", updaters.refresh_image_2d_scale_factor)
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -492,7 +484,7 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         logger.error(f"Error adding updater: {err.description}")
         return
 
-    data_manager().add_callback("images_2d_full", "reset_crop_on_img2dfull", reset_crop)
+    data_manager().add_callback("image_2d_full", "reset_crop_on_img2dfull", reset_crop)
 
     data_manager().set_data("current_transformation", data_manager().get("transformation_gt"))
 
@@ -501,17 +493,22 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
     if show:
         plt.ion()  # figures are non-blocking
         plt.show()
-        fig, axes = plt.subplots(1, 3)
+        fig, axes = plt.subplots(1, 4)
+        image_2d_full = data_manager().get("image_2d_full")
+        axes[0].imshow(image_2d_full.cpu().numpy())
+        axes[0].set_title("original target")
         fixed_image = data_manager().get("fixed_image")
-        axes[0].imshow(fixed_image.cpu().numpy())
-        axes[0].set_title("fixed image")
+        if isinstance(fixed_image, Error):
+            raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
+        axes[1].imshow(fixed_image.cpu().numpy())
+        axes[1].set_title("fixed image")
         moving_image = data_manager().get("moving_image")
-        axes[1].imshow(moving_image.cpu().numpy())
-        axes[1].set_title("moving image at G.T.")
+        axes[2].imshow(moving_image.cpu().numpy())
+        axes[2].set_title("moving image at G.T.")
         data_manager().set_data("mask_transformation", data_manager().get("current_transformation"))
         mask = data_manager().get("mask")
-        axes[2].imshow(mask.cpu().numpy())
-        axes[2].set_title("mask at G.T.")
+        axes[3].imshow(mask.cpu().numpy())
+        axes[3].set_title("mask at G.T.")
         logger.info(f"ZNCC at G.T. with masking = {-similarity_metric.weighted_ncc(moving_image, fixed_image, mask)}")
         plt.draw()
         plt.pause(0.1)
@@ -519,10 +516,10 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
     constants = {  #
         # ExperimentConfig
         "ct_path": data_manager().get("ct_path"),  #
-        "downsample_level": data_manager().get("downsample_level"),  #
-        "truncation_percent": 0,  #
+        "downsample_level": 1,  #
+        "truncation_percent": 30,  #
         "cropping": "None",  #
-        "mask": "None",  #
+        "mask": "Every evaluation",  #
         # - varying - "sim_metric": "zncc",  #
         "starting_distance": 15.0,  #
         "sample_count_per_distance": 10,  #
@@ -538,7 +535,10 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         # data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
         # set_crop_to_nonzero_drr()
         res = run_reg(  #
-            obj_fun=lambda p: objective_function_drr(p, sim_met=similarity_metric.ncc),  #
+            obj_fun=lambda p: objective_function_drr(  #
+                p,  #
+                sim_met=lambda a, b: similarity_metric.local_ncc(a, b, kernel_size=8)  #
+            ),  #
             starting_params=starting_params, config=RegConfig(  #
                 particle_count=constants["particle_count"],  #
                 particle_initialisation_spread=constants["particle_initialisation_spread"],  #
@@ -551,11 +551,13 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         plt.show()  # return
         return
 
+    instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
+
     (instance_output_dir / "notes.txt").write_text(  #
         "Varying similarity metric only.")
 
     run_experiments(params_to_vary={  #
-        "sim_metric": ["gradient_correlation"],  #
+        "sim_metric": ["zncc", "local_zncc", "multiscale_zncc", "gradient_correlation"],  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 

@@ -37,12 +37,11 @@ class Cropping(NamedTuple):
     def apply(self, tensor: torch.Tensor) -> torch.Tensor:
         return tensor[self.top:self.bottom, self.left:self.right]
 
-    def to_downsample_level(self, downsample_level: int, *, image_size: torch.Size) -> 'Cropping':
-        downsample_factor = int(2 ** downsample_level)
-        return Cropping(top=self.top // downsample_factor,
-                        bottom=min(self.bottom // downsample_factor, image_size[0] - 1),
-                        left=self.left // downsample_factor,
-                        right=min(self.right // downsample_factor, image_size[1] - 1))
+    def to_scale(self, scale: float, *, image_size: torch.Size) -> 'Cropping':
+        return Cropping(top=int(round(self.top * scale)),
+                        bottom=min(int(round(self.bottom * scale)), image_size[0] - 1),
+                        left=int(round(self.left * scale)),
+                        right=min(int(round(self.right * scale)), image_size[1] - 1))
 
 
 # class HyperParameters(NamedTuple):

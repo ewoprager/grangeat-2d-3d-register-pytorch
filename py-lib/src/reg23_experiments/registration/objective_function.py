@@ -1,4 +1,4 @@
-from typing import Tuple, Callable, Any
+from typing import Tuple, Callable
 import inspect
 import logging
 
@@ -10,7 +10,7 @@ from reg23_experiments.registration.lib.sinogram import Sinogram, SinogramClassi
 from reg23_experiments.registration.lib import grangeat
 from reg23_experiments.registration.lib import similarity_metric
 
-__all__ = ["evaluate", "evaluate_direct"]
+__all__ = ["ParametrisedSimilarityMetric", "evaluate", "evaluate_direct"]
 
 logger = logging.getLogger(__name__)
 
@@ -64,10 +64,10 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
         plt.colorbar(mesh)
         if save:
             plt.savefig(
-                "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else "data/temp/d_dr_R3_mu_resampled.pgf")
+                "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else
+                "data/temp/d_dr_R3_mu_resampled.pgf")
 
-    return ncc(fixed_image,
-               resampled), resampled  # return reg23.normalised_cross_correlation(fixed_image, resampled),  # resampled
+    return similarity_metric.ncc(fixed_image, resampled), resampled
 
 
 def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, transformation: Transformation,
@@ -89,4 +89,4 @@ def evaluate_direct(fixed_image: torch.Tensor, volume_data: torch.Tensor, *, tra
         axes.set_ylabel("phi")
         plt.colorbar(mesh)
 
-    return ncc(fixed_image, direct)
+    return similarity_metric.ncc(fixed_image, direct)

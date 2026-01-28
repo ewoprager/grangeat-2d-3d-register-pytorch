@@ -68,7 +68,7 @@ def refresh_vif(self) -> dict[str, Any] | Error:
     return {"sinogram_size": this_sinogram_size, "ct_sinograms": sinogram3ds}
 
 
-@dag_updater(names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
+@dag_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
 def load_target_image(ct_spacing: torch.Tensor, target: Target, device) -> dict[str, Any]:
     transformation_ground_truth = None
     # if self.target.xray_path is None:
@@ -83,13 +83,7 @@ def load_target_image(ct_spacing: torch.Tensor, target: Target, device) -> dict[
         logger.info("Flipping target image horizontally.")
         image_2d_full = image_2d_full.flip(dims=(1,))
 
-    # Generating X-ray mipmap
-    down_sampler = torch.nn.AvgPool2d(2)
-    images_2d_full = [image_2d_full]
-    while min(images_2d_full[-1].size()) > 1:
-        images_2d_full.append(down_sampler(images_2d_full[-1].unsqueeze(0))[0])
-
-    return {"source_distance": scene_geometry.source_distance, "images_2d_full": images_2d_full,
+    return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
             "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
     self.hyperparameters = HyperParameters.zero(self.images_2d_full[0].size())
 
@@ -97,7 +91,7 @@ def load_target_image(ct_spacing: torch.Tensor, target: Target, device) -> dict[
         self._target_change_callback()
 
 
-@dag_updater(names_returned=["source_distance", "images_2d_full", "fixed_image_spacing", "transformation_gt"])
+@dag_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
 def set_synthetic_target_image(ct_path: str, ct_spacing: torch.Tensor, ct_volumes: list[torch.Tensor],
                                new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool,
                                cache_directory: str) -> dict[str, Any]:
@@ -113,35 +107,35 @@ def set_synthetic_target_image(ct_path: str, ct_spacing: torch.Tensor, ct_volume
     fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
     del drr_spec
 
-    # Generating X-ray mipmap
-    down_sampler = torch.nn.AvgPool2d(2)
-    images_2d_full = [image_2d_full]
-    while min(images_2d_full[-1].size()) > 1:
-        images_2d_full.append(down_sampler(images_2d_full[-1].unsqueeze(0))[0])
-
-    return {"source_distance": scene_geometry.source_distance, "images_2d_full": images_2d_full,
+    return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
             "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
 
 
-@dag_updater(names_returned=["image_2d_downsample_level"])
-def refresh_image_2d_downsample_level(fixed_image_spacing: torch.Tensor, downsample_level: int,
-                                      ct_spacing: torch.Tensor) -> dict[str, Any]:
-    extra_ds_level: int = (ct_spacing.mean() / fixed_image_spacing.mean()).log2().floor().to(dtype=torch.int64).item()
-    return {"image_2d_downsample_level": downsample_level + extra_ds_level}
+@dag_updater(names_returned=["image_2d_scale_factor"])
+def refresh_image_2d_scale_factor(  #
+        fixed_image_spacing: torch.Tensor, downsample_level: int, ct_spacing: torch.Tensor) -> dict[str, Any]:
+    downsampled_ct_spacing = ct_spacing * 2.0 ** float(downsample_level)
+    return {"image_2d_scale_factor": (fixed_image_spacing.mean() / downsampled_ct_spacing.mean()).item()}
 
 
 @dag_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset", "fixed_image_size"])
-def refresh_hyperparameter_dependent(images_2d_full: list[torch.Tensor], fixed_image_spacing: torch.Tensor,
-                                     cropping: Cropping, downsample_level: int, source_offset: torch.Tensor,
-                                     image_2d_downsample_level: int) -> dict[str, Any]:
+def refresh_hyperparameter_dependent(image_2d_full: torch.Tensor, fixed_image_spacing: torch.Tensor, cropping: Cropping,
+                                     source_offset: torch.Tensor, image_2d_scale_factor: float) -> dict[str, Any]:
+    # Downsampling the image 2d
+    scaled_image_2d = torch.nn.functional.interpolate(  #
+        image_2d_full.unsqueeze(0).unsqueeze(0),  #
+        scale_factor=image_2d_scale_factor,  #
+        mode="bilinear",  #
+        recompute_scale_factor=True,  #
+        antialias=True)[0, 0]
     # Cropping for the fixed image
-    cropped_target = cropping.to_downsample_level(  #
-        downsample_level, image_size=images_2d_full[image_2d_downsample_level].size()  #
-    ).apply(images_2d_full[image_2d_downsample_level])
+    cropped_target = cropping.to_scale(  #
+        image_2d_scale_factor, image_size=scaled_image_2d.size()  #
+    ).apply(scaled_image_2d)
 
     # The fixed image is offset to adjust for the cropping, and according to the source offset
     # This isn't affected by downsample level
-    fixed_image_offset = (fixed_image_spacing * cropping.get_centre_offset(images_2d_full[0].size()) - source_offset)
+    fixed_image_offset = (fixed_image_spacing * cropping.get_centre_offset(image_2d_full.size()) - source_offset)
 
     # The translation offset prevents the source offset parameters from fighting the translation parameters in
     # the optimisation
@@ -173,13 +167,13 @@ def refresh_hyperparameter_dependent_grangeat(cropped_target: torch.Tensor, fixe
 def refresh_mask_transformation_dependent(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
                                           cropped_target: torch.Tensor, mask_transformation: Transformation | None,
                                           fixed_image_spacing: torch.Tensor, fixed_image_offset: torch.Tensor,
-                                          image_2d_downsample_level: int, source_distance: float, device) -> dict[
+                                          image_2d_scale_factor: float, source_distance: float, device) -> dict[
     str, Any]:
     if mask_transformation is None:
         mask = torch.ones_like(cropped_target)
         fixed_image = cropped_target
     else:
-        fixed_image_spacing_at_current_level = fixed_image_spacing * 2.0 ** image_2d_downsample_level
+        fixed_image_spacing_at_current_level = fixed_image_spacing / image_2d_scale_factor
         mask = reg23.project_drr_cuboid_mask(  #
             volume_size=torch.tensor(ct_volumes[0].size(), device=device).flip(dims=(0,)),  #
             voxel_spacing=ct_spacing.to(device=device),  #
@@ -197,9 +191,9 @@ def refresh_mask_transformation_dependent(ct_volumes: list[torch.Tensor], ct_spa
 
 @dag_updater(names_returned=["sinogram2d"])
 def refresh_mask_transformation_dependent_grangeat(fixed_image: torch.Tensor, source_distance: float,
-                                                   fixed_image_spacing: torch.Tensor, image_2d_downsample_level: int,
+                                                   fixed_image_spacing: torch.Tensor, image_2d_scale_factor: float,
                                                    sinogram2d_grid_unshifted: Sinogram2dGrid) -> dict[str, Any]:
-    fixed_image_spacing_at_current_level = fixed_image_spacing * 2.0 ** image_2d_downsample_level
+    fixed_image_spacing_at_current_level = fixed_image_spacing / image_2d_scale_factor
     sinogram2d = grangeat.calculate_fixed_image(  #
         fixed_image,  #
         source_distance=source_distance, detector_spacing=fixed_image_spacing_at_current_level,
