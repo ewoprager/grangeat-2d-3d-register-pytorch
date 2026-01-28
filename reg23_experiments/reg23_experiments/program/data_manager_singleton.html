@@ -347,8 +347,8 @@
 </span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a><span class="sd">        Set the data associated with a named node. Will create the node if it doesn&#39;t exist.</span>
 </span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a><span class="sd">        :param node_name: Name of the node.</span>
 </span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a><span class="sd">        :param data: New data to assign.</span>
-</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a><span class="sd">        :param check_equality: [Optional; default=False] Whether to check the new value against the old value, and leave</span>
-</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a><span class="sd">        the node clean if the new value is the same.</span>
+</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a><span class="sd">        :param check_equality: [Optional; default=False] Whether to check the new value against the old value,</span>
+</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a><span class="sd">        and leave the node clean if the new value is the same.</span>
 </span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>        <span class="c1"># make sure node exists</span>
 </span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
@@ -1062,8 +1062,8 @@
 </span><span id="DAG-187"><a href="#DAG-187"><span class="linenos">187</span></a><span class="sd">        Set the data associated with a named node. Will create the node if it doesn&#39;t exist.</span>
 </span><span id="DAG-188"><a href="#DAG-188"><span class="linenos">188</span></a><span class="sd">        :param node_name: Name of the node.</span>
 </span><span id="DAG-189"><a href="#DAG-189"><span class="linenos">189</span></a><span class="sd">        :param data: New data to assign.</span>
-</span><span id="DAG-190"><a href="#DAG-190"><span class="linenos">190</span></a><span class="sd">        :param check_equality: [Optional; default=False] Whether to check the new value against the old value, and leave</span>
-</span><span id="DAG-191"><a href="#DAG-191"><span class="linenos">191</span></a><span class="sd">        the node clean if the new value is the same.</span>
+</span><span id="DAG-190"><a href="#DAG-190"><span class="linenos">190</span></a><span class="sd">        :param check_equality: [Optional; default=False] Whether to check the new value against the old value,</span>
+</span><span id="DAG-191"><a href="#DAG-191"><span class="linenos">191</span></a><span class="sd">        and leave the node clean if the new value is the same.</span>
 </span><span id="DAG-192"><a href="#DAG-192"><span class="linenos">192</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="DAG-193"><a href="#DAG-193"><span class="linenos">193</span></a>        <span class="c1"># make sure node exists</span>
 </span><span id="DAG-194"><a href="#DAG-194"><span class="linenos">194</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
@@ -1473,8 +1473,8 @@ changes.</p>
 </span><span id="DAG.set_data-187"><a href="#DAG.set_data-187"><span class="linenos">187</span></a><span class="sd">        Set the data associated with a named node. Will create the node if it doesn&#39;t exist.</span>
 </span><span id="DAG.set_data-188"><a href="#DAG.set_data-188"><span class="linenos">188</span></a><span class="sd">        :param node_name: Name of the node.</span>
 </span><span id="DAG.set_data-189"><a href="#DAG.set_data-189"><span class="linenos">189</span></a><span class="sd">        :param data: New data to assign.</span>
-</span><span id="DAG.set_data-190"><a href="#DAG.set_data-190"><span class="linenos">190</span></a><span class="sd">        :param check_equality: [Optional; default=False] Whether to check the new value against the old value, and leave</span>
-</span><span id="DAG.set_data-191"><a href="#DAG.set_data-191"><span class="linenos">191</span></a><span class="sd">        the node clean if the new value is the same.</span>
+</span><span id="DAG.set_data-190"><a href="#DAG.set_data-190"><span class="linenos">190</span></a><span class="sd">        :param check_equality: [Optional; default=False] Whether to check the new value against the old value,</span>
+</span><span id="DAG.set_data-191"><a href="#DAG.set_data-191"><span class="linenos">191</span></a><span class="sd">        and leave the node clean if the new value is the same.</span>
 </span><span id="DAG.set_data-192"><a href="#DAG.set_data-192"><span class="linenos">192</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="DAG.set_data-193"><a href="#DAG.set_data-193"><span class="linenos">193</span></a>        <span class="c1"># make sure node exists</span>
 </span><span id="DAG.set_data-194"><a href="#DAG.set_data-194"><span class="linenos">194</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">node_name</span><span class="p">)</span>
@@ -1502,8 +1502,8 @@ changes.</p>
 <ul>
 <li><strong>node_name</strong>:  Name of the node.</li>
 <li><strong>data</strong>:  New data to assign.</li>
-<li><strong>check_equality</strong>:  [Optional; default=False] Whether to check the new value against the old value, and leave
-the node clean if the new value is the same.</li>
+<li><strong>check_equality</strong>:  [Optional; default=False] Whether to check the new value against the old value,
+and leave the node clean if the new value is the same.</li>
 </ul>
 </div>
 
