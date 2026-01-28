@@ -418,7 +418,7 @@ class DAG:
         return count == len(self._nodes)
 
 
-def dag_updater(*, names_returned: list[str]):
+def dag_updater(*, names_returned: list[str]) -> Callable[[Callable], Updater]:
     """
     A decorator for turning a function into an `Updater` for use in a `DAG`. The named arguments of the function will be
     interpreted as nodes from which to read data from the `DAG`. The return value of the function must be a dictionary
@@ -428,7 +428,7 @@ def dag_updater(*, names_returned: list[str]):
     :return: An instance of `Updater`, built using the decorated function.
     """
 
-    def decorator(function):
+    def decorator(function) -> Updater:
         return Updater.build(function=function, returned=names_returned)
 
     return decorator

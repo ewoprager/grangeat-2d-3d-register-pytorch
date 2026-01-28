@@ -23,8 +23,8 @@ from reg23_experiments.registration import data, drr
 from reg23_experiments.registration.lib.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
-from reg23_experiments.registration.lib import geometry
-from reg23_experiments.registration import objective_function as lib_objective_function
+from reg23_experiments.registration.lib import geometry, similarity_metric
+from reg23_experiments.registration.objective_function import ParametrisedSimilarityMetric
 from reg23_experiments.registration.interface.lib.structs import Cropping
 from reg23_experiments.pso import swarm as pso
 
@@ -69,7 +69,7 @@ def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volu
                      ap_transformation: Transformation, target_ap_distance: float) -> dict[str, Any]:
     # generate a DRR through the volume
     drr_spec = None
-    if not regenerate_drr and ct_path is not None:
+    if not regenerate_drr:
         drr_spec = data.load_cached_drr(cache_directory, ct_path)
 
     if drr_spec is None:
@@ -170,43 +170,49 @@ def reset_crop(images_2d_full: list[torch.Tensor]) -> None:
         logger.error(f"Error setting resetting cropping: {err.description}")
 
 
-def obj_func(parameters: torch.Tensor) -> torch.Tensor:
+def objective_function_drr(  #
+        parameters: torch.Tensor, *,  #
+        sim_met: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]) -> torch.Tensor:
     data_manager().set_data("current_transformation", mapping_parameters_to_transformation(parameters))
     moving_image = data_manager().get("moving_image")
     fixed_image = data_manager().get("fixed_image")
-    return -lib_objective_function.ncc(moving_image, fixed_image)
+    return -sim_met(moving_image, fixed_image)
 
 
-def obj_func_masked(parameters: torch.Tensor) -> torch.Tensor:
+def objective_function_drr_masked(  #
+        parameters: torch.Tensor, *,  #
+        sim_met: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]) -> torch.Tensor:
     t = mapping_parameters_to_transformation(parameters)
     data_manager().set_data("current_transformation", t)
     data_manager().set_data("mask_transformation", t)
     moving_image = data_manager().get("moving_image")
     fixed_image = data_manager().get("fixed_image")
-    return -lib_objective_function.ncc(moving_image, fixed_image)
+    return -sim_met(moving_image, fixed_image)
 
 
-def obj_func_masked_weighted(parameters: torch.Tensor) -> torch.Tensor:
+def objective_function_drr_masked_weighted(  #
+        parameters: torch.Tensor, *,  #
+        sim_met: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]) -> torch.Tensor:
     t = mapping_parameters_to_transformation(parameters)
     data_manager().set_data("current_transformation", t)
     data_manager().set_data("mask_transformation", t)
     moving_image = data_manager().get("moving_image")
     fixed_image = data_manager().get("fixed_image")
     mask = data_manager().get("mask")
-    return -lib_objective_function.weighted_ncc(moving_image, fixed_image, mask)
+    return -sim_met(moving_image, fixed_image, mask)
 
 
 class RegConfig(StrictHasTraits):
-    particle_count = traitlets.Int(default_value=traitlets.Undefined)
-    particle_initialisation_spread = traitlets.Float(default_value=traitlets.Undefined)
-    iteration_count = traitlets.Int(default_value=traitlets.Undefined)
+    particle_count: int = traitlets.Int(default_value=traitlets.Undefined)
+    particle_initialisation_spread: float = traitlets.Float(default_value=traitlets.Undefined)
+    iteration_count: int = traitlets.Int(default_value=traitlets.Undefined)
 
 
-def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, config: RegConfig, device: torch.device,
+def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConfig, device: torch.device,
             plot: Literal["no", "yes", "mask"] = "no", tqdm_position: int = 0) -> torch.Tensor:
     """
 
-    :param objective_function:
+    :param obj_fun:
     :param starting_params:
     :param config:
     :param device:
@@ -233,7 +239,7 @@ def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, conf
         plt.draw()
         plt.pause(0.1)
 
-    pso_config = pso.OptimisationConfig(objective_function=objective_function)
+    pso_config = pso.OptimisationConfig(objective_function=obj_fun)
     dimensionality = starting_params.numel()
     # initialise the return tensor
     ret = torch.empty([config.iteration_count, dimensionality + 1], dtype=torch.float32, device=device)
@@ -278,41 +284,66 @@ def run_reg(*, objective_function: Callable, starting_params: torch.Tensor, conf
 
 
 class ExperimentConfig(StrictHasTraits):
-    ct_path = traitlets.Unicode(default_value=traitlets.Undefined)
-    downsample_level = traitlets.Int(min=0, default_value=traitlets.Undefined)
-    truncation_percent = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
-    cropping = traitlets.Enum(values=["None"], default_value=traitlets.Undefined)
-    mask = traitlets.Enum(values=["None", "Every evaluation", "Every evaluation weighting zncc"],
-                          default_value=traitlets.Undefined)
-    sim_metric = traitlets.Enum(values=["zncc"], default_value=traitlets.Undefined)
-    starting_distance = traitlets.Float(default_value=traitlets.Undefined)
-    sample_count_per_distance = traitlets.Int(min=1, default_value=traitlets.Undefined)
+    ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
+    downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
+    truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
+    cropping: str = traitlets.Enum(values=["None"], default_value=traitlets.Undefined)
+    mask: str = traitlets.Enum(values=["None", "Every evaluation", "Every evaluation weighting zncc"],
+                               default_value=traitlets.Undefined)
+    sim_metric: str = traitlets.Enum(values=["zncc"], default_value=traitlets.Undefined)
+    starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
+    sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
+
+
+def string_to_sim_met(config_string: str, *, kernel_size: int = 8, llambda: float = 1.0, gradient_method: Literal[
+    "sobel", "central_difference"] = "sobel") -> ParametrisedSimilarityMetric:
+    if config_string == "zncc":
+        return ParametrisedSimilarityMetric(similarity_metric.ncc)
+    elif config_string == "local_zncc":
+        return ParametrisedSimilarityMetric(similarity_metric.local_ncc, kernel_size=kernel_size)
+    elif config_string == "multiscale_ncc":
+        return ParametrisedSimilarityMetric(similarity_metric.multiscale_ncc, kernel_size=kernel_size, llambda=llambda)
+    elif config_string == "gradient_correlation":
+        return ParametrisedSimilarityMetric(similarity_metric.gradient_correlation, gradient_method=gradient_method)
+    raise ValueError(f"Unknown similarity metric '{config_string}'.")
 
 
 def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, device: torch.device,
-                   tqdm_position: int = 0) -> torch.Tensor:
+                   tqdm_position: int = 0) -> torch.Tensor | None:
     """
 
     :param reg_config:
     :param exp_config:
     :param device:
     :param tqdm_position:
-    :return: A tensor of size (iteration count,); the distance from g.t. of the optimisation at each iteration, averaged over `sample_count_per_distance` repetitions
+    :return: A tensor of size (iteration count,) or None; the distance from g.t. of the optimisation at each iteration, averaged over `sample_count_per_distance` repetitions, unless the configuration is trivial / unnecessary, in which case `None`.
     """
     data_manager().set_data("ct_path", exp_config.ct_path, check_equality=True)
     data_manager().set_data("downsample_level", exp_config.downsample_level, check_equality=True)
     data_manager().set_data("truncation_percent", exp_config.truncation_percent, check_equality=True)
+    # -----
+    # Configuring according to desired cropping technique
     assert exp_config.cropping == "None"  # ToDo: Cropping
-    # Setting the objective function based on masking
-    objective_function = obj_func
-    if exp_config.mask == "Every evaluation":
-        objective_function = obj_func_masked
-    elif exp_config.mask == "Every evaluation weighting zncc":
-        objective_function = obj_func_masked_weighted
-    else:
-        assert exp_config.mask == "None"
+    # -----
+    # Configuring according to desired similarity metric
+    sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
+    # -----
+    # Configuring according to desired masking technique
+    if exp_config.mask == "None":
+        obj_fun = lambda p: objective_function_drr(p, sim_met=sim_met.func)
         data_manager().set_data("mask_transformation", None)
-    assert exp_config.sim_metric == "zncc"  # ToDo: Sim metrics
+    elif exp_config.mask == "Every evaluation":
+        obj_fun = lambda p: objective_function_drr_masked(p, sim_met=sim_met.func)
+    elif exp_config.mask == "Every evaluation weighting zncc":
+        weighted_sim_met = sim_met.func_weighted
+        if weighted_sim_met is None:
+            # No weighted counterpart of the similarity metric; skipping this configuration
+            return None
+        obj_fun = lambda p: objective_function_drr_masked_weighted(p, sim_met=weighted_sim_met)
+    else:
+        raise ValueError(f"Unknown mask technique '{exp_config.mask}'.")
+    # -----
+    # Running repeated registrations with configured parameters
     dimensionality = 6
     distance_samples = torch.empty([int(exp_config.sample_count_per_distance), int(reg_config.iteration_count)],
                                    dtype=torch.float32, device=device)  # size = (sample count, iteration count)
@@ -326,7 +357,7 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
         starting_params = random_parameters_at_distance(
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), exp_config.starting_distance)
         res = run_reg(  #
-            objective_function=objective_function,  #
+            obj_fun=obj_fun,  #
             config=reg_config,  #
             starting_params=starting_params,  #
             device=device,  #
@@ -348,7 +379,7 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
     total = 1
     for l in each_range_length:
         total *= l
-    logger.info(f"Running experiments with the following constant parameters: \n{pprint.pformat(constants)}")
+    logger.info(f"Running experiments with the following constant parameters:\n{pprint.pformat(constants)}")
     tqdm_iterator = tqdm(itertools.product(*(range(l) for l in each_range_length)), desc="Experiments", total=total,
                          position=tqdm_position, leave=None)
     for indices in tqdm_iterator:
@@ -380,6 +411,10 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
         except Exception as e:
             logger.error(f"Error running experiment at indices {indices}: {e}")
             continue
+        if res is None:
+            logger.info(
+                f"Experiment at indices {indices}; configuration: \n{pprint.pformat(instance_specific)}\nwas deemed trivial / unnecessary.")
+            continue
         # Getting the rows for the DataFrame and saving
         df = pd.DataFrame([  #
             instance_all | {"iteration": iteration, "distance": res[iteration].item()}  #
@@ -388,7 +423,7 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
         df.to_parquet(output_directory / f"data_{"_".join([str(i) for i in indices])}.parquet")
 
 
-def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pathlib.Path, show: bool = False):
+def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.Path, show: bool = False):
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
@@ -464,8 +499,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         mask = data_manager().get("mask")
         axes[2].imshow(mask.cpu().numpy())
         axes[2].set_title("mask at G.T.")
-        logger.info(
-            f"ZNCC at G.T. with masking = {-lib_objective_function.weighted_ncc(moving_image, fixed_image, mask)}")
+        logger.info(f"ZNCC at G.T. with masking = {-similarity_metric.weighted_ncc(moving_image, fixed_image, mask)}")
         plt.draw()
         plt.pause(0.1)
 
@@ -490,11 +524,15 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), 15.0)
         # data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
         # set_crop_to_nonzero_drr()
-        res = run_reg(objective_function=obj_func, starting_params=starting_params, config=RegConfig(  #
-            particle_count=constants["particle_count"],  #
-            particle_initialisation_spread=constants["particle_initialisation_spread"],  #
-            iteration_count=constants["iteration_count"],  #
-        ), device=device, plot="yes")  # size = (iteration count, dimensionality + 1)
+        res = run_reg(  #
+            obj_fun=lambda p: objective_function_drr(p, sim_met=similarity_metric.ncc),  #
+            starting_params=starting_params, config=RegConfig(  #
+                particle_count=constants["particle_count"],  #
+                particle_initialisation_spread=constants["particle_initialisation_spread"],  #
+                iteration_count=constants["iteration_count"],  #
+            ),  #
+            device=device,  #
+            plot="yes")  # size = (iteration count, dimensionality + 1)
         logger.info(f"Result: {res}")
         plt.ioff()  # figures are blocking
         plt.show()  # return
@@ -504,7 +542,7 @@ def main(*, cache_directory: str, ct_path: str | None, data_output_dir: str | pa
         "Varying downsample leve, truncation percent and mask.")
 
     run_experiments(params_to_vary={  #
-        "downsample_level": [1, 2, 3], #
+        "downsample_level": [1, 2, 3],  #
         "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
         "truncation_percent": [0, 5, 10, 20, 40]  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
@@ -519,7 +557,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--cache-directory", type=str, default="cache",
                         help="Set the directory where data that is expensive to calculate will be saved. The default "
                              "is 'cache'.")
-    parser.add_argument("-p", "--ct-path", type=str,
+    parser.add_argument("-p", "--ct-path", type=str, required=True,
                         help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to process. If not "
                              "provided, some simple synthetic data will be used instead - note that in this case, data will not be "
                              "saved to the cache.")
