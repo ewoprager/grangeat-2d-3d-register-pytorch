@@ -288,9 +288,17 @@ class ExperimentConfig(StrictHasTraits):
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
     truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
     cropping: str = traitlets.Enum(values=["None"], default_value=traitlets.Undefined)
-    mask: str = traitlets.Enum(values=["None", "Every evaluation", "Every evaluation weighting zncc"],
-                               default_value=traitlets.Undefined)
-    sim_metric: str = traitlets.Enum(values=["zncc"], default_value=traitlets.Undefined)
+    mask: str = traitlets.Enum(values=[  #
+        "None",  #
+        "Every evaluation",  #
+        "Every evaluation weighting zncc"  #
+    ], default_value=traitlets.Undefined)
+    sim_metric: str = traitlets.Enum(values=[  #
+        "zncc",  #
+        "local_zncc",  #
+        "multiscale_zncc",  #
+        "gradient_correlation"  #
+    ], default_value=traitlets.Undefined)
     starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
 
@@ -301,7 +309,7 @@ def string_to_sim_met(config_string: str, *, kernel_size: int = 8, llambda: floa
         return ParametrisedSimilarityMetric(similarity_metric.ncc)
     elif config_string == "local_zncc":
         return ParametrisedSimilarityMetric(similarity_metric.local_ncc, kernel_size=kernel_size)
-    elif config_string == "multiscale_ncc":
+    elif config_string == "multiscale_zncc":
         return ParametrisedSimilarityMetric(similarity_metric.multiscale_ncc, kernel_size=kernel_size, llambda=llambda)
     elif config_string == "gradient_correlation":
         return ParametrisedSimilarityMetric(similarity_metric.gradient_correlation, gradient_method=gradient_method)
@@ -506,15 +514,15 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
     constants = {  #
         # ExperimentConfig
         "ct_path": data_manager().get("ct_path"),  #
-        # - varying downsample level - "downsample_level": data_manager().get("downsample_level"),  #
-        # - varying truncation percent
+        "downsample_level": data_manager().get("downsample_level"),  #
+        "truncation_percent": 0,  #
         "cropping": "None",  #
-        # - varying - "mask": "None",  #
-        "sim_metric": "zncc",  #
+        "mask": "None",  #
+        # - varying - "sim_metric": "zncc",  #
         "starting_distance": 15.0,  #
-        "sample_count_per_distance": 14,  #
+        "sample_count_per_distance": 10,  #
         # RegConfig
-        "particle_count": 2000,  #
+        "particle_count": 1000,  #
         "particle_initialisation_spread": 5.0,  #
         "iteration_count": 10,  #
     }
@@ -539,12 +547,10 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         return
 
     (instance_output_dir / "notes.txt").write_text(  #
-        "Varying downsample leve, truncation percent and mask.")
+        "Varying similarity metric only.")
 
     run_experiments(params_to_vary={  #
-        "downsample_level": [1, 2, 3],  #
-        "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
-        "truncation_percent": [0, 5, 10, 20, 40]  #
+        "sim_metric": ["gradient_correlation"],  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 

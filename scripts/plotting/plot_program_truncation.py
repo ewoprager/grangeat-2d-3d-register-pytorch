@@ -51,7 +51,7 @@ def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
 
 
 def dataframe_to_tensor(df: pd.DataFrame, *, ordered_axes: list[str], value_column: str) -> tuple[
-    torch.Tensor, dict[str, torch.Tensor]]:
+    torch.Tensor, dict[str, np.ndarray]]:
     s = df.set_index(ordered_axes)[value_column].sort_index()
     axis_levels = [  #
         s.index.levels[s.index.names.index(name)]  #
@@ -62,7 +62,7 @@ def dataframe_to_tensor(df: pd.DataFrame, *, ordered_axes: list[str], value_colu
     if s.isna().any():
         logger.warn("Grid is incomplete — missing coordinate combinations.")
     axis_values = {  #
-        name: torch.from_numpy(level.to_numpy())  #
+        name: level.to_numpy()  #
         for name, level in zip(ordered_axes, axis_levels)  #
     }
     axis_lengths = [len(level) for level in axis_levels]
@@ -119,8 +119,8 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
                     axes[k, j].legend()
         plt.show()
 
+    # data over truncation fraction, stratified by masking
     if False:
-        # data over truncation fraction, stratified by masking
         for mask in ["None", "Every evaluation", "Every evaluation weighting zncc"]:
             # converting to a tensor, with an axis per variable
             distances, axis_values = dataframe_to_tensor(  #
@@ -144,8 +144,8 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
                 # axes.set_ylim((0.0, None))
                 axes.legend()
 
-    if True:
-        # data over downsample level and truncation fraction, stratified by masking
+    # data over downsample level and truncation fraction, stratified by masking
+    if False:
         starting_distance = df["starting_distance"].values[0]
         iteration_count = df["iteration_count"].values[0]
         distances, axis_values = dataframe_to_tensor(  #
@@ -201,6 +201,25 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
         if save_figures:
             fig.tight_layout()
             fig.savefig(save_directory / "converged_against_truncation.pgf")
+        if display:
+            plt.show()
+
+    # data over similarity metric only
+    if True:
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_to_tensor(  #
+            df,  #
+            ordered_axes=["sim_metric", "iteration"],  #
+            value_column="distance")
+
+        fig, axes = plt.subplots()
+        for i, sm in enumerate(axis_values["sim_metric"]):
+            axes.plot(axis_values["iteration"], distances[i, :], label=sm)
+            axes.set_xlabel("iteration")
+            axes.xaxis.set_major_locator(MaxNLocator(integer=True))
+            axes.set_ylabel("distance from G.T.")
+            # axes.set_ylim((0.0, None))
+            axes.legend()
         if display:
             plt.show()
 

@@ -89,11 +89,15 @@ def weighted_local_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor
 
 def gradient_correlation(xs: torch.Tensor, ys: torch.Tensor, *,
                          gradient_method: Literal["sobel", "central_difference"] = "sobel") -> torch.Tensor:
+    device = xs.device
+    dtype = xs.dtype
+    assert ys.device == device
+    assert ys.dtype == dtype
     assert xs.size() == ys.size()
     assert len(xs.size()) == 2
     if gradient_method == "sobel":
-        sobel_x = torch.tensor([[-1., 0., 1.], [-2., 0., 2.], [-1., 0., 1.]])
-        sobel_y = torch.tensor([[-1., -2., -1.], [0., 0., 0.], [1., 2., 1.]])
+        sobel_x = torch.tensor([[-1., 0., 1.], [-2., 0., 2.], [-1., 0., 1.]], dtype=dtype, device=device)
+        sobel_y = torch.tensor([[-1., -2., -1.], [0., 0., 0.], [1., 2., 1.]], dtype=dtype, device=device)
         gx_xs = torch.nn.functional.conv2d(xs.unsqueeze(0).unsqueeze(0), sobel_x.unsqueeze(0).unsqueeze(0))[0, 0]
         gy_xs = torch.nn.functional.conv2d(xs.unsqueeze(0).unsqueeze(0), sobel_y.unsqueeze(0).unsqueeze(0))[0, 0]
         gx_ys = torch.nn.functional.conv2d(ys.unsqueeze(0).unsqueeze(0), sobel_x.unsqueeze(0).unsqueeze(0))[0, 0]
