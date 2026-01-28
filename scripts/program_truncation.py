@@ -120,7 +120,8 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 
     return {"moving_image": geometry.generate_drr(ct_volumes[downsample_level], transformation=transformation,
                                                   voxel_spacing=ct_spacing * 2.0 ** downsample_level,
-                                                  detector_spacing=fixed_image_spacing * 2.0 ** image_2d_downsample_level,
+                                                  detector_spacing=fixed_image_spacing * 2.0 **
+                                                                   image_2d_downsample_level,
                                                   scene_geometry=SceneGeometry(source_distance=source_distance,
                                                                                fixed_image_offset=fixed_image_offset),
                                                   output_size=fixed_image_size)}
@@ -218,7 +219,8 @@ def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConf
     :param device:
     :param plot:
     :param tqdm_position:
-    :return: A tensor of size (iteration count, dimensionality + 1), where each row corresponds to an iteration of the optimisation, and stores the following data: | <- position of current best -> | current best |
+    :return: A tensor of size (iteration count, dimensionality + 1), where each row corresponds to an iteration of
+    the optimisation, and stores the following data: | <- position of current best -> | current best |
     """
     if plot != "no":
         ncols = 2
@@ -324,7 +326,9 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     :param exp_config:
     :param device:
     :param tqdm_position:
-    :return: A tensor of size (iteration count,) or None; the distance from g.t. of the optimisation at each iteration, averaged over `sample_count_per_distance` repetitions, unless the configuration is trivial / unnecessary, in which case `None`.
+    :return: A tensor of size (iteration count,) or None; the distance from g.t. of the optimisation at each
+    iteration, averaged over `sample_count_per_distance` repetitions, unless the configuration is trivial /
+    unnecessary, in which case `None`.
     """
     data_manager().set_data("ct_path", exp_config.ct_path, check_equality=True)
     data_manager().set_data("downsample_level", exp_config.downsample_level, check_equality=True)
@@ -421,7 +425,8 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
             continue
         if res is None:
             logger.info(
-                f"Experiment at indices {indices}; configuration: \n{pprint.pformat(instance_specific)}\nwas deemed trivial / unnecessary.")
+                f"Experiment at indices {indices}; configuration: \n{pprint.pformat(instance_specific)}\nwas deemed "
+                f"trivial / unnecessary.")
             continue
         # Getting the rows for the DataFrame and saving
         df = pd.DataFrame([  #
@@ -564,9 +569,9 @@ if __name__ == "__main__":
                         help="Set the directory where data that is expensive to calculate will be saved. The default "
                              "is 'cache'.")
     parser.add_argument("-p", "--ct-path", type=str, required=True,
-                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to process. If not "
-                             "provided, some simple synthetic data will be used instead - note that in this case, data will not be "
-                             "saved to the cache.")
+                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
+                             "process. If not provided, some simple synthetic data will be used instead - note that "
+                             "in this case, data will not be saved to the cache.")
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")
     # parser.add_argument(

@@ -186,8 +186,8 @@ class DAG:
         Set the data associated with a named node. Will create the node if it doesn't exist.
         :param node_name: Name of the node.
         :param data: New data to assign.
-        :param check_equality: [Optional; default=False] Whether to check the new value against the old value, and leave
-        the node clean if the new value is the same.
+        :param check_equality: [Optional; default=False] Whether to check the new value against the old value,
+        and leave the node clean if the new value is the same.
         """
         # make sure node exists
         self.add_node(node_name)
