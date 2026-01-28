@@ -108,6 +108,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga8ce9434ee55d1e217c27e1bad9bc61a1" id="r_ga8ce9434ee55d1e217c27e1bad9bc61a1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga8ce9434ee55d1e217c27e1bad9bc61a1">reg23::ProjectDRR_backward_CUDA</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">volume</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">voxelSpacing</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;homographyMatrixInverse, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">double</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">sourceDistance</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">int64_t</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">outputWidth</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">int64_t</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">outputHeight</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;outputOffset, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;detectorSpacing, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">dLossDDRR</a>)</td></tr>
 <tr class="memdesc:ga8ce9434ee55d1e217c27e1bad9bc61a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation of <a class="el" href="group__pytorch__functions.html#gabb37d1247aefa70e9ede160d10b5fdc6" title="Evaluate the derivative of some scalar loss that is a function of a DRR projected from the given volu...">reg23::ProjectDRR_backward_CPU</a> that uses CUDA parallelisation.  <br /></td></tr>
 <tr class="separator:ga8ce9434ee55d1e217c27e1bad9bc61a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2fb0c5cebeefb478d05a339f116ddd7d" id="r_ga2fb0c5cebeefb478d05a339f116ddd7d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga2fb0c5cebeefb478d05a339f116ddd7d">reg23::ProjectDRRsBatched_CUDA</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">volume</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">voxelSpacing</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">invHMatrices</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">double</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">sourceDistance</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">int64_t</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">outputWidth</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">int64_t</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">outputHeight</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;outputOffset, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;detectorSpacing)</td></tr>
+<tr class="memdesc:ga2fb0c5cebeefb478d05a339f116ddd7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">An implementation similar to <a class="el" href="group__pytorch__functions.html#gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e" title="An implementation of reg23::ProjectDRR_CPU that uses CUDA parallelisation.">reg23::ProjectDRR_CUDA</a> that evaluates projections for multiple transformations in parallel.  <br /></td></tr>
+<tr class="separator:ga2fb0c5cebeefb478d05a339f116ddd7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga2581397ad5b85fc99a3d572080c2aaa2" id="r_ga2581397ad5b85fc99a3d572080c2aaa2"><td class="memItemLeft" align="right" valign="top">at::Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__pytorch__functions.html#ga2581397ad5b85fc99a3d572080c2aaa2">reg23::ProjectDRRCuboidMask_CPU</a> (<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">volumeSize</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;<a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">voxelSpacing</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;homographyMatrixInverse, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">double</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">sourceDistance</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">int64_t</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">outputWidth</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">int64_t</a> <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">outputHeight</a>, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;outputOffset, <a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;detectorSpacing)</td></tr>
 <tr class="memdesc:ga2581397ad5b85fc99a3d572080c2aaa2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the distances of the intersections between the DRR-generation rays and the domain of the volume data.  <br /></td></tr>
 <tr class="separator:ga2581397ad5b85fc99a3d572080c2aaa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1033,6 +1036,86 @@ a tuple: (ZNCC; sum of values in <code>a</code>; sum of values in <code>b</code>
 </div><div class="memdoc">
 
 <p>An implementation of <a class="el" href="group__pytorch__functions.html#ga2581397ad5b85fc99a3d572080c2aaa2" title="Calculate the distances of the intersections between the DRR-generation rays and the domain of the vo...">reg23::ProjectDRRCuboidMask_CPU</a> that uses CUDA parallelisation. </p>
+
+</div>
+</div>
+<a id="ga2fb0c5cebeefb478d05a339f116ddd7d" name="ga2fb0c5cebeefb478d05a339f116ddd7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2fb0c5cebeefb478d05a339f116ddd7d">&#9670;&#160;</a></span>ProjectDRRsBatched_CUDA()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="Global_8h.html#a803050db3c78e0db3ea59a0c35499622">__host__</a> at::Tensor reg23::ProjectDRRsBatched_CUDA </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>volume</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>voxelSpacing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>invHMatrices</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">double</a>&#160;</td>
+          <td class="paramname"><em>sourceDistance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">int64_t</a>&#160;</td>
+          <td class="paramname"><em>outputWidth</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">int64_t</a>&#160;</td>
+          <td class="paramname"><em>outputHeight</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>outputOffset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__textures.html#ga41e11281be1b986d4fb9beeea39504f2">const</a> at::Tensor &amp;&#160;</td>
+          <td class="paramname"><em>detectorSpacing</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>An implementation similar to <a class="el" href="group__pytorch__functions.html#gaacc0d8d5bd8a39dfa0547cb5a3fe4d8e" title="An implementation of reg23::ProjectDRR_CPU that uses CUDA parallelisation.">reg23::ProjectDRR_CUDA</a> that evaluates projections for multiple transformations in parallel. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">volume</td><td>a tensor of size (P,Q,R): The CT volume through which to project the DRR </td></tr>
+    <tr><td class="paramname">voxelSpacing</td><td>a tensor of size (3,): The spacing in [mm] between the volume layers in each cartesian direction </td></tr>
+    <tr><td class="paramname">invHMatrices</td><td>a tensor of size (..., 4, 4): The <b>column-major</b> matrices representing the homography transformations of the volume. </td></tr>
+    <tr><td class="paramname">sourceDistance</td><td>The distance in [mm] of the source from the detector array </td></tr>
+    <tr><td class="paramname">outputWidth</td><td>The width in pixels of the DRR to generate. </td></tr>
+    <tr><td class="paramname">outputHeight</td><td>The height in pixels of the DRR to generate. </td></tr>
+    <tr><td class="paramname">outputOffset</td><td>a tensor of size (2,) containing <code>torch.float64</code>s: The offset in [mm] of the centre of the DRR from the central ray from the X-ray source perpendicularly onto the detector array. </td></tr>
+    <tr><td class="paramname">detectorSpacing</td><td>a tensor of size (2,): The spacing in [mm] between the columns and rows of the DRR image. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a tensor of size (..., outputHeight, outputWidth): The DRR projection through the given volume at the given transformation. The '...' dimensions correspond to those of the invHMatrices tensor. </dd></dl>
 
 </div>
 </div>
