@@ -5,6 +5,8 @@ import torch
 
 __all__ = ["ncc", "local_ncc", "multiscale_ncc", "weighted_ncc", "weighted_local_ncc", "gradient_correlation", ]
 
+from attr.filters import exclude
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,7 +22,10 @@ def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dim: int | Tuple | torch.Size | N
     n = float(xs.numel() // sum_x.numel())
     num = n * sum_prod - sum_x * sum_y
     den = (n * sum_x2 - sum_x.square()).sqrt() * (n * sum_y2 - sum_y.square()).sqrt()
-    return num / (den + 1e-10)
+    ret = num / (den + 1e-10)
+    if ret.isnan():
+        logger.warning("Hello {ret.item()}")
+    return ret
 
 
 def local_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int) -> torch.Tensor:
@@ -48,19 +53,33 @@ def multiscale_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int, llam
 
 def weighted_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *,
                  dim: int | torch.Size | Tuple | None = None) -> torch.Tensor:
-    assert ys.size() == xs.size()
-    assert weights.size() == xs.size()
+    size = xs.size()
+    dtype = xs.dtype
+    device = xs.device
+    assert ys.size() == size
+    assert ys.dtype == dtype
+    assert ys.device == device
+    assert weights.size() == size
+    assert weights.dtype == dtype
+    assert weights.device == device
     if dim is None:
-        dim = torch.Size(range(len(xs.size())))
-    sum_w = weights.sum(dim=dim)
-    sum_wx = (weights * xs).sum(dim=dim)
-    sum_wy = (weights * ys).sum(dim=dim)
-    sum_wx2 = (weights * xs.square()).sum(dim=dim)
-    sum_wy2 = (weights * ys.square()).sum(dim=dim)
-    sum_prod = (weights * xs * ys).sum(dim=dim)
+        dim = torch.Size(range(len(size)))#
+    # filtering out ZNCC calculations where fewer than 2 value pairs are being used
+    keep_mask = weights.count_nonzero(dim=dim) < 2
+    if keep_mask.count_nonzero() < 1:
+         return torch.tensor(0.0, dtype=dtype, device=device)
+    sum_w = weights.sum(dim=dim)[keep_mask]
+    sum_wx = (weights * xs).sum(dim=dim)[keep_mask]
+    sum_wy = (weights * ys).sum(dim=dim)[keep_mask]
+    sum_wx2 = (weights * xs.square()).sum(dim=dim)[keep_mask]
+    sum_wy2 = (weights * ys.square()).sum(dim=dim)[keep_mask]
+    sum_prod = (weights * xs * ys).sum(dim=dim)[keep_mask]
     num = sum_w * sum_prod - sum_wx * sum_wy
     den = (sum_w * sum_wx2 - sum_wx.square()).sqrt() * (sum_w * sum_wy2 - sum_wy.square()).sqrt()
-    return num / (den + 1e-10)
+    ret = num / (den + 1e-10)
+    if ret.mean().abs() > 1.0:
+        logger.warning("Ahh")
+    return ret
 
 
 def weighted_local_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *, kernel_size: int) -> torch.Tensor:
@@ -84,7 +103,11 @@ def weighted_local_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor
                                             stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
     patch_wznccs = weighted_ncc(xs_patches, ys_patches, ws_patches, dim=0)  # size = (patch number)
     patch_weights = ws_patches.mean(dim=0)  # size = (patch number)
-    return (patch_weights * patch_wznccs).sum() / patch_weights.sum()
+    # return (patch_weights * patch_wznccs).sum() / patch_weights.sum()
+    ret = (patch_weights * patch_wznccs).sum() / patch_weights.sum()
+    if ret.abs() > 1.0:
+        logger.warning(f"Hello {ret}")
+    return ret
 
 
 def gradient_correlation(xs: torch.Tensor, ys: torch.Tensor, *,
