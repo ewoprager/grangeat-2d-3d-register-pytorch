@@ -512,7 +512,9 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         mask = data_manager().get("mask")
         axes[3].imshow(mask.cpu().numpy())
         axes[3].set_title("mask at G.T.")
-        logger.info(f"ZNCC at G.T. with masking = {-similarity_metric.weighted_ncc(moving_image, fixed_image, mask)}")
+        logger.info(
+            f"ZNCC at G.T. with masking = "
+            f"{-similarity_metric.weighted_local_ncc(moving_image, fixed_image, mask, kernel_size=8)}")
         plt.draw()
         plt.pause(0.1)
 
