@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-from reg23_experiments.notification import logs_setup
+from reg23_experiments.utils import logs_setup
 
 
 def separate_subplots(n_rows: int, n_cols: int, **fig_kwargs) -> tuple[np.ndarray, np.ndarray]:

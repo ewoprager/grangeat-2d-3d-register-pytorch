@@ -5,14 +5,14 @@ from typing import Any
 import torch
 import napari
 
-from reg23_experiments.notification import logs_setup, pushover
+from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.program.lib.structs import Error
 from reg23_experiments.program import init_data_manager, data_manager, dag_updater
 from reg23_experiments.program.modules.interface import init_viewer, viewer, FixedImageGUI, MovingImageGUI, RegisterGUI
-from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
-from reg23_experiments.registration.lib.geometry import generate_drr
+from reg23_experiments.data.structs import Transformation, SceneGeometry
+from reg23_experiments.ops.geometry import generate_drr
 from reg23_experiments.program import updaters, args_from_dag
-from reg23_experiments.registration.objective_function import ncc
+from reg23_experiments.ops.similarity_metric import ncc
 
 
 @dag_updater(names_returned=["fixed_image"])

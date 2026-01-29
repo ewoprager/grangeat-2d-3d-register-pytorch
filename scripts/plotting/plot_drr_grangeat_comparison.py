@@ -4,9 +4,9 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from reg23_experiments.notification import logs_setup
-from reg23_experiments.registration import plot_data
-from reg23_experiments.registration.lib import sinogram
+from reg23_experiments.utils import logs_setup
+from reg23_experiments.data import plot_data
+from reg23_experiments.data import sinogram
 from reg23_experiments.registration.lib.plot import to_latex_scientific
 
 

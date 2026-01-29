@@ -9,7 +9,7 @@ from magicgui import widgets
 from reg23_experiments.program.lib.structs import Error
 from reg23_experiments.program import data_manager
 from reg23_experiments.program.modules.interface import viewer
-from reg23_experiments.registration.lib.structs import Transformation
+from reg23_experiments.data.structs import Transformation
 
 __all__ = ["ViewParams", "ViewParamWidget", "MovingImageGUI"]
 

@@ -15,18 +15,18 @@ import torchviz
 import matplotlib.pyplot as plt
 import traitlets
 
-from reg23_experiments.notification.console_logging import tqdm
-from reg23_experiments.notification import logs_setup, pushover
+from reg23_experiments.utils.console_logging import tqdm
+from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.program import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
 from reg23_experiments.program.lib.structs import Error, StrictHasTraits
-from reg23_experiments.registration import data, drr
-from reg23_experiments.registration.lib.optimisation import mapping_transformation_to_parameters, \
+from reg23_experiments.io import image, volume, drr
+from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
-from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
-from reg23_experiments.registration.lib import geometry, similarity_metric
-from reg23_experiments.registration.objective_function import ParametrisedSimilarityMetric
-from reg23_experiments.registration.interface.lib.structs import Cropping
-from reg23_experiments.pso import swarm as pso
+from reg23_experiments.data.structs import Transformation, SceneGeometry
+from reg23_experiments.ops import geometry, similarity_metric
+from reg23_experiments.ops.objective_function import ParametrisedSimilarityMetric
+from reg23_experiments.ui.old.lib.structs import Cropping
+from reg23_experiments.ops import swarm as pso
 
 
 def configs_to_dict(*vargs) -> dict[str, Any]:

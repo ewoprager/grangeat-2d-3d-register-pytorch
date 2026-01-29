@@ -8,8 +8,8 @@ from magicgui import widgets
 from reg23_experiments.program.lib.structs import Error
 from reg23_experiments.program import data_manager
 from reg23_experiments.program.modules.interface import viewer
-from reg23_experiments.registration.interface.lib.structs import WidgetSelectData
-from reg23_experiments.registration.lib.structs import Transformation
+from reg23_experiments.ui.old.lib.structs import WidgetSelectData
+from reg23_experiments.data.structs import Transformation
 from reg23_experiments.program.lib import optimisation
 
 __all__ = ["OpAlgoWidget", "PSOWidget", "RegisterGUI"]
