@@ -5,7 +5,8 @@ import numpy as np
 import torch
 import scipy
 
-from reg23_experiments.analysis.helpers import torch_polyfit, to_latex_scientific
+from reg23_experiments.analysis.helpers import to_latex_scientific
+from reg23_experiments.analysis.fit import torch_polyfit
 
 __all__ = ["Series", "DataFit", "LinearFit", "QuadraticFit", "PowerFit", "CustomFitPowerRatio"]
 

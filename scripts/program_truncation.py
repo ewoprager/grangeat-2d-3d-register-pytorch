@@ -18,8 +18,11 @@ import traitlets
 from reg23_experiments.utils.console_logging import tqdm
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.ops.data_manager import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
-from reg23_experiments.data.structs import Error, StrictHasTraits
-from reg23_experiments.io import image, volume, drr
+from reg23_experiments.data.structs import Error
+from reg23_experiments.utils.data import StrictHasTraits
+from reg23_experiments.ops import drr
+from reg23_experiments.io.volume import load_volume
+from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.data.structs import Transformation, SceneGeometry
@@ -51,7 +54,7 @@ def instance_output_directory(script_output_directory: str | pathlib.Path) -> pa
 @dag_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
 def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
-    ct_volume, ct_spacing = data.load_volume(pathlib.Path(ct_path))
+    ct_volume, ct_spacing = load_volume(pathlib.Path(ct_path))
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
     ct_spacing = ct_spacing.to(device=device)
 
@@ -70,7 +73,7 @@ def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volu
     # generate a DRR through the volume
     drr_spec = None
     if not regenerate_drr:
-        drr_spec = data.load_cached_drr(cache_directory, ct_path)
+        drr_spec = load_cached_drr(cache_directory, ct_path)
 
     if drr_spec is None:
         tr = mapping_parameters_to_transformation(
@@ -512,9 +515,8 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         mask = data_manager().get("mask")
         axes[3].imshow(mask.cpu().numpy())
         axes[3].set_title("mask at G.T.")
-        logger.info(
-            f"ZNCC at G.T. with masking = "
-            f"{-similarity_metric.weighted_local_ncc(moving_image, fixed_image, mask, kernel_size=8)}")
+        logger.info(f"ZNCC at G.T. with masking = "
+                    f"{-similarity_metric.weighted_local_ncc(moving_image, fixed_image, mask, kernel_size=8)}")
         plt.draw()
         plt.pause(0.1)
 

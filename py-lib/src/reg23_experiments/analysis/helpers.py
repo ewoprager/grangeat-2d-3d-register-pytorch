@@ -1,11 +1,12 @@
+import logging
+
 import numpy as np
 import torch
-import pyvista as pv
+import pandas as pd
 
-from reg23_experiments.data.structs import Sinogram3dGrid
+__all__ = ["to_latex_scientific", "save_colourmap_for_latex", "dataframe_to_tensor"]
 
-__all__ = ["to_latex_scientific", "torch_polyfit", "fit_power_relationship", "save_colourmap_for_latex",
-           "visualise_planes_as_points"]
+logger = logging.getLogger(__name__)
 
 
 def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False):
@@ -20,34 +21,6 @@ def to_latex_scientific(x: float, precision: int = 2, include_plus: bool = False
     return fr"{mantissa:.{precision}f} \times 10^{{{exponent}}}"
 
 
-def torch_polyfit(xs: torch.Tensor, ys: torch.Tensor, *, degree: int = 1) -> torch.Tensor:
-    assert xs.size() == ys.size()
-
-    A = torch.stack([xs.pow(i) for i in range(degree + 1)], dim=1)  # size = (n, degree + 1)
-    B = ys.unsqueeze(1)
-
-    ret = torch.linalg.lstsq(A, B)
-
-    return ret.solution
-
-
-def fit_power_relationship(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
-    """
-    y = a * x^b
-    :param xs:
-    :param ys:
-    :return: (2,) tensor containing [a, b]
-    """
-    assert xs.size() == ys.size()
-    assert (xs > 0.0).all()
-    assert (ys > 0.0).all()
-
-    ln_xs = xs.log()
-    ln_ys = ys.log()
-    coefficients = torch_polyfit(ln_xs, ln_ys, degree=1)
-    return torch.tensor([coefficients[0].exp(), coefficients[1]])
-
-
 def save_colourmap_for_latex(filename: str, colourmap: torch.Tensor):
     colourmap = colourmap.clone().cpu()
     indices = [torch.arange(0, n, 1) for n in colourmap.size()]
@@ -57,15 +30,21 @@ def save_colourmap_for_latex(filename: str, colourmap: torch.Tensor):
     np.savetxt("data/temp/{}.dat".format(filename), rows.numpy())
 
 
-def visualise_planes_as_points(grid: Sinogram3dGrid, scalars: torch.Tensor | None):
-    ct = grid.theta.cos().flatten()
-    st = grid.theta.sin().flatten()
-    cp = grid.phi.cos().flatten()
-    sp = grid.phi.sin().flatten()
-    points = grid.r.flatten().unsqueeze(-1) * torch.stack((ct * cp, ct * sp, st), dim=-1)
-    pl = pv.Plotter()
-    if scalars is None:
-        pl.add_points(points.cpu().numpy())
-    else:
-        pl.add_points(points.cpu().numpy(), scalars=scalars.flatten().cpu().numpy())
-    pl.show()
+def dataframe_to_tensor(df: pd.DataFrame, *, ordered_axes: list[str], value_column: str) -> tuple[
+    torch.Tensor, dict[str, np.ndarray]]:
+    s = df.set_index(ordered_axes)[value_column].sort_index()
+    axis_levels = [  #
+        s.index.levels[s.index.names.index(name)]  #
+        for name in ordered_axes  #
+    ]
+    full_index = pd.MultiIndex.from_product(axis_levels, names=ordered_axes)
+    s = s.reindex(full_index)
+    if s.isna().any():
+        logger.warning("Grid is incomplete — missing coordinate combinations.")
+    axis_values = {  #
+        name: level.to_numpy()  #
+        for name, level in zip(ordered_axes, axis_levels)  #
+    }
+    axis_lengths = [len(level) for level in axis_levels]
+    tensor = torch.from_numpy(s.to_numpy()).view(*axis_lengths)
+    return tensor, axis_values

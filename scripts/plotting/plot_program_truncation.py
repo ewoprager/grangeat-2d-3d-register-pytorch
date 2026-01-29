@@ -6,19 +6,10 @@ import pathlib
 from matplotlib.ticker import MaxNLocator
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 
 from reg23_experiments.utils import logs_setup
-
-
-def separate_subplots(n_rows: int, n_cols: int, **fig_kwargs) -> tuple[np.ndarray, np.ndarray]:
-    figs = np.empty((n_rows, n_cols), dtype=object)
-    axs = np.empty((n_rows, n_cols), dtype=object)
-    for i in range(n_rows):
-        for j in range(n_cols):
-            figs[i, j] = plt.figure(**fig_kwargs)
-            axs[i, j] = figs[i, j].add_subplot(111)
-    return figs, axs
+from reg23_experiments.analysis.helpers import dataframe_to_tensor
+from reg23_experiments.analysis.plot import separate_subplots
 
 
 def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
@@ -48,26 +39,6 @@ def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
                 rows_out.append(rows_here | {"starting_distance": nominal_distances[j].item(), "iteration": i,
                                              "distance": convergence_series[j, i].item()})
     return pd.DataFrame(rows_out)
-
-
-def dataframe_to_tensor(df: pd.DataFrame, *, ordered_axes: list[str], value_column: str) -> tuple[
-    torch.Tensor, dict[str, np.ndarray]]:
-    s = df.set_index(ordered_axes)[value_column].sort_index()
-    axis_levels = [  #
-        s.index.levels[s.index.names.index(name)]  #
-        for name in ordered_axes  #
-    ]
-    full_index = pd.MultiIndex.from_product(axis_levels, names=ordered_axes)
-    s = s.reindex(full_index)
-    if s.isna().any():
-        logger.warn("Grid is incomplete — missing coordinate combinations.")
-    axis_values = {  #
-        name: level.to_numpy()  #
-        for name, level in zip(ordered_axes, axis_levels)  #
-    }
-    axis_lengths = [len(level) for level in axis_levels]
-    tensor = torch.from_numpy(s.to_numpy()).view(*axis_lengths)
-    return tensor, axis_values
 
 
 def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figures: bool,
@@ -240,7 +211,8 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--load-dir", type=str, default="data/temp/program_truncation",
                         help="Directory in which to find the data files.")
     parser.add_argument("-w", "--which-dataset", type=str, default="latest",
-                        help="Which dataset to plot. Either 'latest', or a timestamp in the format 'YYYY-MM-DD_hh-mm-ss'.")
+                        help="Which dataset to plot. Either 'latest', or a timestamp in the format "
+                             "'YYYY-MM-DD_hh-mm-ss'.")
     parser.add_argument("-s", "--save-dir", type=str, default="figures/truncation/program_truncation",
                         help="Set a directory in which to save the resulting figures.")
     parser.add_argument("-r", "--save-figures", action='store_true',
