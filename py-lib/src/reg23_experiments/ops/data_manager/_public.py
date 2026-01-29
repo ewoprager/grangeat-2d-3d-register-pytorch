@@ -2,7 +2,9 @@ import functools
 import logging
 from typing import Any, Callable
 
-from reg23_experiments.program.lib.structs import Error, FunctionArgument
+from reg23_experiments.data.structs import Error
+from reg23_experiments.utils.reflection import FunctionArgument
+
 from ._core import Updater, DAG, DataManagerSingleton
 from ._helpers import takes_positional_args
 

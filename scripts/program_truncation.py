@@ -17,8 +17,8 @@ import traitlets
 
 from reg23_experiments.utils.console_logging import tqdm
 from reg23_experiments.utils import logs_setup, pushover
-from reg23_experiments.program import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
-from reg23_experiments.program.lib.structs import Error, StrictHasTraits
+from reg23_experiments.ops.data_manager import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
+from reg23_experiments.data.structs import Error, StrictHasTraits
 from reg23_experiments.io import image, volume, drr
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance

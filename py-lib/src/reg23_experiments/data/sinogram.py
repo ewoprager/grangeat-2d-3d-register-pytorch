@@ -7,10 +7,10 @@ import torch
 import matplotlib.pyplot as plt
 
 import reg23
-from reg23_experiments.data.structs import SceneGeometry, Transformation, Sinogram2dGrid, LinearMapping, \
-    LinearRange, Sinogram3dGrid
+from reg23_experiments.data.structs import SceneGeometry, Transformation, Sinogram2dGrid, LinearMapping, LinearRange, \
+    Sinogram3dGrid
 from reg23_experiments.ops import geometry
-from reg23_experiments.registration.lib import plot as myplt
+from reg23_experiments.analysis.helpers import visualise_planes_as_points
 
 __all__ = ["SinogramType", "Sinogram", "SinogramClassic", "SinogramHEALPix", "VolumeSpec", "DrrSpec"]
 
@@ -156,7 +156,7 @@ class SinogramClassic(Sinogram):
                                                                         plot=plot)
 
         if plot:
-            myplt.visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
+            visualise_planes_as_points(fixed_image_grid_sph, fixed_image_grid_sph.phi)
             _, axes = plt.subplots()
             mesh = axes.pcolormesh(fixed_image_grid_sph.phi.cpu())
             axes.axis('square')
@@ -560,7 +560,8 @@ class SinogramHEALPix(Sinogram):
             pad_9_corner_right = corner_0_left.flip(dims=(0,))  # wraps causing flip in r
             pad_9_corner_bot = corner_1_top.flip(dims=(0,))  # wraps causing flip in r
 
-            del corner_5_right, corner_0_top, corner_0_left, corner_1_top, corner_1_bot, corner_8_bot, corner_8_left, corner_8_right, corner_9_bot
+            del corner_5_right, corner_0_top, corner_0_left, corner_1_top, corner_1_bot, corner_8_bot, corner_8_left,\
+                corner_8_right, corner_9_bot
 
             r_count = data.size()[0]
             row_0 = torch.cat((torch.zeros(r_count, 1, 2 * n_side + 2, device=self.device),  #

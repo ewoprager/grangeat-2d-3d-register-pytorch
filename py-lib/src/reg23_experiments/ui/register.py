@@ -5,12 +5,11 @@ from abc import ABC, abstractmethod
 import torch
 from magicgui import widgets
 
-from reg23_experiments.program.lib.structs import Error
-from reg23_experiments.program import data_manager
-from reg23_experiments.program.modules.interface import viewer
+from reg23_experiments.data.structs import Error
+from reg23_experiments.ops.data_manager import data_manager
+from reg23_experiments.ui.viewer_singleton import viewer
 from reg23_experiments.ui.old.lib.structs import WidgetSelectData
 from reg23_experiments.data.structs import Transformation
-from reg23_experiments.program.lib import optimisation
 
 __all__ = ["OpAlgoWidget", "PSOWidget", "RegisterGUI"]
 
@@ -43,7 +42,7 @@ class PSOWidget(widgets.Container, OpAlgoWidget):
     def get_op_algo(self) -> Callable:
         # return ParticleSwarm(particle_count=self._particle_count_widget.get_value(),
         #                      iteration_count=self._iteration_count_widget.get_value())
-        return optimisation.pso
+        return None  # ToDo: Rewrite this optimisation algorithm optimisation.pso
 
     def set_particle_count(self, new_value: int) -> None:
         self._particle_count_widget.set_value(new_value)
@@ -62,7 +61,8 @@ class PSOWidget(widgets.Container, OpAlgoWidget):
 #     def __init__(self, *, no_improvement_threshold: int, max_reductions: int):
 #         super().__init__(layout="vertical", labels=False)
 #
-#         self._no_improvement_threshold_widget = widgets.SpinBox(value=no_improvement_threshold, min=2, max=1000, step=1,
+#         self._no_improvement_threshold_widget = widgets.SpinBox(value=no_improvement_threshold, min=2, max=1000,
+#         step=1,
 #                                                                 label="reduction thresh.")
 #
 #         self._max_reductions_widget = widgets.SpinBox(value=max_reductions, min=0, max=500, step=1,

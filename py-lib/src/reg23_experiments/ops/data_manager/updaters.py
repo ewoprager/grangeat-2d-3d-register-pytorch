@@ -6,7 +6,7 @@ from typing import Any, Type
 import torch
 
 import reg23
-from reg23_experiments.program.lib.structs import Error
+from reg23_experiments.data.structs import Error
 from reg23_experiments.io.volume import load_volume, load_cached_volume
 from reg23_experiments.io.image import read_dicom, load_cached_drr
 from reg23_experiments.io.helpers import deterministic_hash_sinogram

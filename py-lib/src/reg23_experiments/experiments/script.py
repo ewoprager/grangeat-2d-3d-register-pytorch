@@ -4,8 +4,9 @@ import math
 
 import torch
 
-from reg23_experiments.io import image, volume
-from reg23_experiments.registration import pre_computed
+from reg23_experiments.io.volume import load_volume, load_cached_volume
+from reg23_experiments.io.helpers import deterministic_hash_sinogram
+from reg23_experiments.ops import pre_computed
 from reg23_experiments.data import sinogram
 
 __all__ = ["get_volume_and_sinogram"]
@@ -25,8 +26,7 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
         vol_data[3:6, 2, 3] = 0.8
         voxel_spacing = torch.tensor([10., 10., 10.])
     else:
-        vol_data, voxel_spacing = data.load_volume(pathlib.Path(ct_volume_path),
-                                                   downsample_factor=volume_downsample_factor)
+        vol_data, voxel_spacing = load_volume(pathlib.Path(ct_volume_path), downsample_factor=volume_downsample_factor)
         vol_data = vol_data.to(device=device, dtype=torch.float32)
 
     if sinogram_size is None:
@@ -35,9 +35,9 @@ def get_volume_and_sinogram(ct_volume_path: str | None, cache_directory: str, *,
     volume_spec = None
     sinogram3d = None
     if load_cached and ct_volume_path is not None:
-        sinogram_hash = data.deterministic_hash_sinogram(ct_volume_path, sinogram_type, sinogram_size,
-                                                         volume_downsample_factor)
-        volume_spec = data.load_cached_volume(cache_directory, sinogram_hash)
+        sinogram_hash = deterministic_hash_sinogram(ct_volume_path, sinogram_type, sinogram_size,
+                                                    volume_downsample_factor)
+        volume_spec = load_cached_volume(cache_directory, sinogram_hash)
 
     if volume_spec is not None:
         _, sinogram3d = volume_spec

@@ -1,4 +1,4 @@
-from typing import NamedTuple, Tuple, Sequence, Union, Callable
+from typing import NamedTuple, Tuple, Sequence, Union
 
 import torch
 import kornia
@@ -112,7 +112,7 @@ class Transformation(NamedTuple):
     def to(self, **kwargs) -> 'Transformation':
         return Transformation(self.rotation.to(**kwargs), self.translation.to(**kwargs))
 
-    def clone(self) -> 'Tranformation':
+    def clone(self) -> 'Transformation':
         return Transformation(self.rotation.clone(), self.translation.clone())
 
     def device_consistent(self) -> bool:
@@ -120,10 +120,10 @@ class Transformation(NamedTuple):
 
     def distance(self, other: 'Transformation') -> float:
         device = self.translation.device
-        r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
-                                                                                                         dtype=torch.float32)
-        r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(other.rotation.unsqueeze(0))[0].to(device=device,
-                                                                                                          dtype=torch.float32)
+        r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
+            self.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float32)
+        r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
+            other.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float32)
         return (((self.translation - other.translation) / 100.).square().sum() + torch.tensor(
             numpy.array([numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))]),
             device=device).square().sum()).sqrt().item()
@@ -276,8 +276,8 @@ class Sinogram3dGrid(NamedTuple):
     # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None
     # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count
     # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,
-    # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #
-    # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #
+    # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #
+    # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #
     # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #
     # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #
     # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,

@@ -5,7 +5,8 @@ from typing import Any, Callable, NamedTuple
 import traitlets
 from traitlets.config import SingletonConfigurable
 
-from reg23_experiments.program.lib.structs import Error, FunctionArgument
+from reg23_experiments.data.structs import Error
+from reg23_experiments.utils.reflection import FunctionArgument
 
 __all__ = ["Dependency", "NoNodeDataType", "NoNodeData", "Updater", "DAG", "DataManagerSingleton"]
 

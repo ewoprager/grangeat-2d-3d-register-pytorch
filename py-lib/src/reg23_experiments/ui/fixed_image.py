@@ -1,8 +1,8 @@
 import torch
 
-from reg23_experiments.program.lib.structs import Error
-from reg23_experiments.program import data_manager
-from reg23_experiments.program.modules.interface import viewer
+from reg23_experiments.data.structs import Error
+from reg23_experiments.ops.data_manager import data_manager
+from reg23_experiments.ui.viewer_singleton import viewer
 
 __all__ = ["FixedImageGUI"]
 
