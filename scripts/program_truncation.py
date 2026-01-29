@@ -288,7 +288,7 @@ class ExperimentConfig(StrictHasTraits):
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
     truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
-    cropping: str = traitlets.Enum(values=["None"], default_value=traitlets.Undefined)
+    cropping: str = traitlets.Enum(values=["None", "nonzero_drr"], default_value=traitlets.Undefined)
     mask: str = traitlets.Enum(values=[  #
         "None",  #
         "Every evaluation",  #
@@ -334,7 +334,12 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     data_manager().set_data("truncation_percent", exp_config.truncation_percent, check_equality=True)
     # -----
     # Configuring according to desired cropping technique
-    assert exp_config.cropping == "None"  # ToDo: Cropping
+    if exp_config.cropping == "None":
+        pass  # ToDo
+    elif exp_config.cropping == "nonzero_drr":
+        pass  # ToDo
+    else:
+        raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
     # -----
     # Configuring according to desired similarity metric
     sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
