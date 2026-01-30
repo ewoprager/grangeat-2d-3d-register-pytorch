@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from reg23_experiments.utils import logs_setup
-from reg23_experiments.analysis.helpers import dataframe_to_tensor
+from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_tensor
 from reg23_experiments.analysis.plot import separate_subplots
 
 
@@ -176,7 +176,7 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
             plt.show()
 
     # data over similarity metric only
-    if True:
+    if False:
         # converting to a tensor, with an axis per variable
         distances, axis_values = dataframe_to_tensor(  #
             df,  #
@@ -186,6 +186,25 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
         fig, axes = plt.subplots()
         for i, sm in enumerate(axis_values["sim_metric"]):
             axes.plot(axis_values["iteration"], distances[i, :], label=sm)
+            axes.set_xlabel("iteration")
+            axes.xaxis.set_major_locator(MaxNLocator(integer=True))
+            axes.set_ylabel("distance from G.T.")
+            # axes.set_ylim((0.0, None))
+            axes.legend()
+        if display:
+            plt.show()
+
+    # data over cropping only
+    if True:
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df,  #
+            ordered_axes=["cropping", "iteration"],  #
+            value_column="distance")
+
+        fig, axes = plt.subplots()
+        for i, cropping_desc in enumerate(axis_values["cropping"]):
+            axes.plot(axis_values["iteration"], distances[i, :], label=cropping_desc)
             axes.set_xlabel("iteration")
             axes.xaxis.set_major_locator(MaxNLocator(integer=True))
             axes.set_ylabel("distance from G.T.")
