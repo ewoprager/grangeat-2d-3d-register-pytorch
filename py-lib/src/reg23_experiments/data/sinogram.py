@@ -10,7 +10,7 @@ import reg23
 from reg23_experiments.data.structs import SceneGeometry, Transformation, Sinogram2dGrid, LinearMapping, LinearRange, \
     Sinogram3dGrid
 from reg23_experiments.ops import geometry
-from reg23_experiments.analysis.helpers import visualise_planes_as_points
+from reg23_experiments.analysis.plot import visualise_planes_as_points
 
 __all__ = ["SinogramType", "Sinogram", "SinogramClassic", "SinogramHEALPix", "VolumeSpec", "DrrSpec"]
 

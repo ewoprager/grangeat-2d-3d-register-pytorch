@@ -6,12 +6,12 @@ from typing import Any, Type
 import torch
 
 import reg23
-from reg23_experiments.data.structs import Error
+from reg23_experiments.data.structs import Error, Cropping
 from reg23_experiments.io.volume import load_volume, load_cached_volume
 from reg23_experiments.io.image import read_dicom, load_cached_drr
 from reg23_experiments.io.helpers import deterministic_hash_sinogram
 from reg23_experiments.ops import drr, pre_computed
-from reg23_experiments.ui.old.lib.structs import Cropping, Target
+from reg23_experiments.ui.old.lib.structs import Target
 from reg23_experiments.ops import grangeat
 from reg23_experiments.data.sinogram import Sinogram, SinogramType
 from reg23_experiments.data.structs import (LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation, )
@@ -132,13 +132,15 @@ def refresh_hyperparameter_dependent(image_2d_full: torch.Tensor, fixed_image_sp
         recompute_scale_factor=True,  #
         antialias=True)[0, 0]
     # Cropping for the fixed image
-    cropped_target = cropping.to_scale(  #
-        image_2d_scale_factor, image_size=scaled_image_2d.size()  #
-    ).apply(scaled_image_2d)
+    cropped_target = cropping.apply(scaled_image_2d)
 
     # The fixed image is offset to adjust for the cropping, and according to the source offset
     # This isn't affected by downsample level
-    fixed_image_offset = (fixed_image_spacing * cropping.get_centre_offset(image_2d_full.size()) - source_offset)
+    fixed_image_offset = (  #
+            fixed_image_spacing * cropping.get_fractional_centre_offset() * torch.tensor(  #
+        image_2d_full.size(),  #
+        dtype=torch.float64).flip(dims=(0,))  #
+            - source_offset)
 
     # The translation offset prevents the source offset parameters from fighting the translation parameters in
     # the optimisation

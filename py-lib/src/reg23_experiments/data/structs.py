@@ -1,11 +1,12 @@
 from typing import NamedTuple, Tuple, Sequence, Union
+import traitlets
 
 import torch
 import kornia
 import scipy
 import numpy
 
-__all__ = ["Error", "GrowingTensor", "LinearMapping", "LinearRange", "Transformation", "SceneGeometry",
+__all__ = ["Error", "GrowingTensor", "LinearMapping", "LinearRange", "Transformation", "SceneGeometry", "Cropping",
            "Sinogram2dRange", "Sinogram2dGrid", "Sinogram3dGrid"]
 
 
@@ -195,6 +196,33 @@ class SceneGeometry(NamedTuple):
         return torch.hstack((m_matrix, -torch.matmul(m_matrix, source_position.t().unsqueeze(-1))))
 
 
+class Cropping(traitlets.HasTraits):
+    """
+    Struct that represents rectangular cropping of an image, by the positions of the right, top, left and bottom edges
+    of the rectangle as fractions of the dimensions of the image.
+
+    The positive directions are to the right and down, and fractional distances are given in these positive directions,
+    so 'no cropping' is represented by `Cropping(right=1.0, top=0.0, left=0.0, bottom=1.0)` (the default values).
+
+    A valid Cropping must have right > left, and bottom > top.
+    """
+
+    right: float = traitlets.Float(default_value=1.0, min=0.0, max=1.0)
+    top: float = traitlets.Float(default_value=0.0, min=0.0, max=1.0)
+    left: float = traitlets.Float(default_value=0.0, min=0.0, max=1.0)
+    bottom: float = traitlets.Float(default_value=1.0, min=0.0, max=1.0)
+
+    def get_fractional_centre_offset(self) -> torch.Tensor:
+        return 0.5 * torch.tensor([self.left + self.right, self.top + self.bottom]) - 0.5
+
+    def apply(self, tensor: torch.Tensor) -> torch.Tensor:
+        i0 = int(round(self.left * float(tensor.size(1))))
+        i1 = int(round(self.right * float(tensor.size(1))))
+        j0 = int(round(self.top * float(tensor.size(0))))
+        j1 = int(round(self.bottom * float(tensor.size(0))))
+        return tensor[j0:j1, i0:i1]
+
+
 class Sinogram2dRange(NamedTuple):
     phi: LinearRange
     r: LinearRange
@@ -276,7 +304,7 @@ class Sinogram3dGrid(NamedTuple):
     # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None
     # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count
     # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,
-    # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #
+    # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #
     # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #
     # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #
     # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #

@@ -18,18 +18,14 @@ import traitlets
 from reg23_experiments.utils.console_logging import tqdm
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.ops.data_manager import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
-from reg23_experiments.data.structs import Error
+from reg23_experiments.data.structs import Error, Transformation, SceneGeometry, Cropping
 from reg23_experiments.utils.data import StrictHasTraits
-from reg23_experiments.ops import drr
 from reg23_experiments.io.volume import load_volume
 from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
-from reg23_experiments.data.structs import Transformation, SceneGeometry
-from reg23_experiments.ops import geometry, similarity_metric
+from reg23_experiments.ops import drr, geometry, similarity_metric, swarm as pso
 from reg23_experiments.ops.objective_function import ParametrisedSimilarityMetric
-from reg23_experiments.ui.old.lib.structs import Cropping
-from reg23_experiments.ops import swarm as pso
 
 
 def configs_to_dict(*vargs) -> dict[str, Any]:
@@ -126,9 +122,6 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 @args_from_dag()
 def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float, current_transformation: Transformation,
                          ct_volumes: list[torch.Tensor]) -> Cropping:
-    image_size = image_2d_full.size()
-    image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
-
     def project(vector: torch.Tensor) -> torch.Tensor:
         p_matrix = SceneGeometry.projection_matrix(source_position=torch.tensor([0.0, 0.0, source_distance]))
         ph_matrix = torch.matmul(p_matrix, current_transformation.get_h().to(dtype=torch.float32))
@@ -147,56 +140,20 @@ def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float,
         torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
         torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
     ]
-    projected_vertices = torch.stack([project(vertex) for vertex in volume_vertices]) / data_manager().get(
-        "fixed_image_spacing")
-    mins, maxs = torch.aminmax(projected_vertices, dim=0)
-    left, top = (mins + 0.5 * image_size_vector).floor().to(dtype=torch.int32)
-    right, bottom = (maxs + 0.5 * image_size_vector).ceil().to(dtype=torch.int32)
-    left = min(max(left.item(), 0), image_size[1])
-    right = min(max(right.item(), left + 1), image_size[1])
-    top = min(max(top.item(), 0), image_size[0])
-    bottom = min(max(bottom.item(), top + 1), image_size[0])
-    return Cropping(left=left, right=right, bottom=bottom, top=top)
-
-
-def reset_crop(image_2d_full: torch.Tensor) -> None:
-    size = image_2d_full.size()
-    logger.info(f"Resetting crop for new value of 'image_2d_full'; size = [{size[0]} x {size[1]}].")
-    err = data_manager().set_data("cropping", Cropping.zero(size))
-    if isinstance(err, Error):
-        logger.error(f"Error setting resetting cropping: {err.description}")
-
-
-def objective_function_drr(  #
-        parameters: torch.Tensor, *,  #
-        sim_met: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]) -> torch.Tensor:
-    data_manager().set_data("current_transformation", mapping_parameters_to_transformation(parameters))
-    moving_image = data_manager().get("moving_image")
-    fixed_image = data_manager().get("fixed_image")
-    return -sim_met(moving_image, fixed_image)
-
-
-def objective_function_drr_masked(  #
-        parameters: torch.Tensor, *,  #
-        sim_met: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]) -> torch.Tensor:
-    t = mapping_parameters_to_transformation(parameters)
-    data_manager().set_data("current_transformation", t)
-    data_manager().set_data("mask_transformation", t)
-    moving_image = data_manager().get("moving_image")
-    fixed_image = data_manager().get("fixed_image")
-    return -sim_met(moving_image, fixed_image)
-
-
-def objective_function_drr_masked_weighted(  #
-        parameters: torch.Tensor, *,  #
-        sim_met: Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor]) -> torch.Tensor:
-    t = mapping_parameters_to_transformation(parameters)
-    data_manager().set_data("current_transformation", t)
-    data_manager().set_data("mask_transformation", t)
-    moving_image = data_manager().get("moving_image")
-    fixed_image = data_manager().get("fixed_image")
-    mask = data_manager().get("mask")
-    return -sim_met(moving_image, fixed_image, mask)
+    # project the vertices into points on the detector array, measured in mm from the centre
+    projected_vertices = torch.stack([project(vertex) for vertex in volume_vertices])  # [mm]
+    mins, maxs = torch.aminmax(projected_vertices, dim=0)  # [mm]
+    # get the size of the image in mm
+    image_size: torch.Tensor = torch.tensor(  #
+        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * data_manager().get("fixed_image_spacing")  # [mm]
+    # convert the edges of the crop rectangle from mm to fractional in the fixed image
+    left, top = mins / image_size + 0.5
+    right, bottom = maxs / image_size + 0.5
+    left = min(max(left.item(), 0.0), 1.0)
+    right = min(max(right.item(), left), 1.0)
+    top = min(max(top.item(), 0.0), 1.0)
+    bottom = min(max(bottom.item(), top), 1.0)
+    return Cropping(right=right, top=top, left=left, bottom=bottom)
 
 
 class RegConfig(StrictHasTraits):
@@ -335,29 +292,53 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     # -----
     # Configuring according to desired cropping technique
     if exp_config.cropping == "None":
-        pass  # ToDo
+        apply_cropping = False
+        data_manager().set_data("cropping", Cropping(), check_equality=True)
     elif exp_config.cropping == "nonzero_drr":
-        pass  # ToDo
+        apply_cropping = True
     else:
         raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
     # -----
     # Configuring according to desired similarity metric
-    sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
+    p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
     # -----
     # Configuring according to desired masking technique
     if exp_config.mask == "None":
-        obj_fun = lambda p: objective_function_drr(p, sim_met=sim_met.func)
-        data_manager().set_data("mask_transformation", None)
+        apply_mask = False
+        data_manager().set_data("mask_transformation", None, check_equality=True)
     elif exp_config.mask == "Every evaluation":
-        obj_fun = lambda p: objective_function_drr_masked(p, sim_met=sim_met.func)
+        apply_mask = True
+        weight_with_mask = False
     elif exp_config.mask == "Every evaluation weighting zncc":
-        weighted_sim_met = sim_met.func_weighted
-        if weighted_sim_met is None:
+        apply_mask = True
+        weight_with_mask = True
+        # Checking that the parametrised sim. metric has a weighted counterpart
+        if p_sim_met.func_weighted is None:
             # No weighted counterpart of the similarity metric; skipping this configuration
             return None
-        obj_fun = lambda p: objective_function_drr_masked_weighted(p, sim_met=weighted_sim_met)
     else:
         raise ValueError(f"Unknown mask technique '{exp_config.mask}'.")
+
+    # -----
+    # Defining the objective function accordingly
+    def objective_function(parameters: torch.Tensor) -> torch.Tensor:
+        t = mapping_parameters_to_transformation(parameters)
+        # Setting the parameters
+        data_manager().set_data("current_transformation", t)
+        if apply_cropping:
+            data_manager().set_data("cropping", get_crop_nonzero_drr())
+        if apply_mask:
+            data_manager().set_data("mask_transformation", t)
+        # Getting the resulting moving and fixed images
+        moving_image = data_manager().get("moving_image")
+        fixed_image = data_manager().get("fixed_image")
+        # Comparing, potentially weighting with a mask
+        if apply_mask:
+            mask = data_manager().get("mask")
+            if weight_with_mask:
+                return -p_sim_met.func_weighted(moving_image, fixed_image, mask)
+        return -p_sim_met.func(moving_image, fixed_image)
+
     # -----
     # Running repeated registrations with configured parameters
     dimensionality = 6
@@ -373,7 +354,7 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
         starting_params = random_parameters_at_distance(
             mapping_transformation_to_parameters(data_manager().get("transformation_gt")), exp_config.starting_distance)
         res = run_reg(  #
-            obj_fun=obj_fun,  #
+            obj_fun=objective_function,  #
             config=reg_config,  #
             starting_params=starting_params,  #
             device=device,  #
@@ -495,8 +476,6 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         logger.error(f"Error adding updater: {err.description}")
         return
 
-    data_manager().add_callback("image_2d_full", "reset_crop_on_img2dfull", reset_crop)
-
     data_manager().set_data("current_transformation", data_manager().get("transformation_gt"))
 
     data_manager().set_data("truncation_percent", 5)
@@ -529,12 +508,12 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         # ExperimentConfig
         "ct_path": data_manager().get("ct_path"),  #
         "downsample_level": 1,  #
-        "truncation_percent": 30,  #
-        "cropping": "None",  #
+        "truncation_percent": 15,  #
+        # - varying - "cropping": "None",  #
         "mask": "Every evaluation",  #
-        # - varying - "sim_metric": "zncc",  #
+        "sim_metric": "zncc",  #
         "starting_distance": 15.0,  #
-        "sample_count_per_distance": 10,  #
+        "sample_count_per_distance": 5,  #
         # RegConfig
         "particle_count": 1000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -547,11 +526,15 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         # data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
         # set_crop_to_nonzero_drr()
         data_manager().set_data("truncation_percent", 30)
+
+        def objective_function(parameters: torch.Tensor) -> torch.Tensor:
+            data_manager().set_data("current_transformation", mapping_parameters_to_transformation(parameters))
+            _moving_image = data_manager().get("moving_image")
+            _fixed_image = data_manager().get("fixed_image")
+            return -similarity_metric.ncc(_moving_image, _fixed_image)
+
         res = run_reg(  #
-            obj_fun=lambda p: objective_function_drr_masked_weighted(  #
-                p,  #
-                sim_met=lambda a, b, w: similarity_metric.weighted_local_ncc(a, b, w, kernel_size=4)  #
-            ),  #
+            obj_fun=lambda p: objective_function,  #
             starting_params=starting_params, config=RegConfig(  #
                 particle_count=constants["particle_count"],  #
                 particle_initialisation_spread=constants["particle_initialisation_spread"],  #
@@ -570,7 +553,7 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         "Varying similarity metric only.")
 
     run_experiments(params_to_vary={  #
-        "sim_metric": ["zncc", "local_zncc", "multiscale_zncc", "gradient_correlation"],  #
+        "cropping": ["None", "nonzero_drr"],  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 
