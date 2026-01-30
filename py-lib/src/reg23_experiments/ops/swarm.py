@@ -1,6 +1,4 @@
 """
-# `pso`
-
 A simple, flexible particle swarm optimisation package based on `torch.Tensor`s.
 
 A single particle swarm optimisation (PSO) task is performed using an instance of the `Swarm` class. Particles are
@@ -107,13 +105,20 @@ class Swarm:
                  initialisation_position: torch.Tensor, initialisation_spread: torch.Tensor, device: torch.device,
                  generator: torch.Generator | None = None):
         """
-        :param config: The configuration of the swarm. This is stored as a property and can be mutated safely between iterations.
-        :param dimensionality: The dimensionality of the search space (the length of the input tensor to the objective function)
+        :param config: The configuration of the swarm. This is stored as a property and can be mutated safely between
+        iterations.
+        :param dimensionality: The dimensionality of the search space (the length of the input tensor to the
+        objective function)
         :param particle_count: The number of particles in the swarm.
-        :param initialisation_position: The central position in the search space around which the particles will be initialised. One particle will be initialised at exactly this position, for conservation of best found optima between multiple optimisations. This must have size `(dimensionality,)`.
-        :param initialisation_spread: The spread of the particles' initialisation positions in the search space around the `initialisation_position`. The value for each dimension is the standard deviation used to sample the particles' initialisation positions in that dimension. This must have size `(dimensionality,)`.
+        :param initialisation_position: The central position in the search space around which the particles will be
+        initialised. One particle will be initialised at exactly this position, for conservation of best found optima
+        between multiple optimisations. This must have size `(dimensionality,)`.
+        :param initialisation_spread: The spread of the particles' initialisation positions in the search space
+        around the `initialisation_position`. The value for each dimension is the standard deviation used to sample
+        the particles' initialisation positions in that dimension. This must have size `(dimensionality,)`.
         :param device: The device on which to store all `torch.Tensor`s.
-        :param generator: Optional; a generator with which to generate random values for initialisation and movement of the particles.
+        :param generator: Optional; a generator with which to generate random values for initialisation and movement
+        of the particles.
         """
         self._config = config
         self._dimensionality = dimensionality

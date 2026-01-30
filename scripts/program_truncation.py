@@ -121,7 +121,8 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 
 @args_from_dag()
 def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float, current_transformation: Transformation,
-                         ct_volumes: list[torch.Tensor]) -> Cropping:
+                         ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
+                         fixed_image_spacing: torch.Tensor) -> Cropping:
     def project(vector: torch.Tensor) -> torch.Tensor:
         p_matrix = SceneGeometry.projection_matrix(source_position=torch.tensor([0.0, 0.0, source_distance]))
         ph_matrix = torch.matmul(p_matrix, current_transformation.get_h().to(dtype=torch.float32))
@@ -129,7 +130,7 @@ def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float,
         return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
 
     volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), dtype=torch.float32).flip(
-        dims=(0,)) * data_manager().get("ct_spacing").cpu()
+        dims=(0,)) * ct_spacing.cpu()
     volume_vertices = [  #
         torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
         torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
@@ -145,10 +146,83 @@ def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float,
     mins, maxs = torch.aminmax(projected_vertices, dim=0)  # [mm]
     # get the size of the image in mm
     image_size: torch.Tensor = torch.tensor(  #
-        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * data_manager().get("fixed_image_spacing")  # [mm]
+        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * fixed_image_spacing  # [mm]
     # convert the edges of the crop rectangle from mm to fractional in the fixed image
     left, top = mins / image_size + 0.5
     right, bottom = maxs / image_size + 0.5
+    left = min(max(left.item(), 0.0), 1.0)
+    right = min(max(right.item(), left), 1.0)
+    top = min(max(top.item(), 0.0), 1.0)
+    bottom = min(max(bottom.item(), top), 1.0)
+    return Cropping(right=right, top=top, left=left, bottom=bottom)
+
+
+@args_from_dag()
+def get_crop_full_depth_drr(*, image_2d_full: torch.Tensor, source_distance: float,
+                            current_transformation: Transformation, ct_volumes: list[torch.Tensor],
+                            ct_spacing: torch.Tensor, fixed_image_spacing: torch.Tensor) -> Cropping:
+    image_size = image_2d_full.size()
+    image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
+
+    def project(vector: torch.Tensor) -> torch.Tensor:
+        """
+        :param vector: (3,) tensor
+        :return: (2,) tensor
+        """
+        p_matrix = SceneGeometry.projection_matrix(source_position=torch.tensor([0.0, 0.0, source_distance]))
+        ph_matrix = torch.matmul(p_matrix, current_transformation.get_h().to(dtype=torch.float32))
+        ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1]))))
+        return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
+
+    volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), dtype=torch.float32).flip(
+        dims=(0,)) * ct_spacing.cpu()
+    volume_vertices = [  #
+        torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, 1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
+    ]  # size = (8, 3)
+    projected_vertices = torch.stack(
+        [project(vertex) for vertex in volume_vertices])  # [mm], origin centered on detector; size = (8, 2)
+
+    # vertical bounds
+    upper = projected_vertices[0:4]  # size = (4, 2)
+    lower = projected_vertices[4:8]  # size = (4, 2)
+    if upper[:, 1].sum() > lower[:, 1].sum():
+        lower, upper = upper, lower
+    # lower is now the 4 truncated vertices that have the higher average projected y-value (appear lower on the
+    # screen), upper is the other 4
+    top = upper[:, 1].max()  # size = (,)
+    bottom = lower[:, 1].min()  # size = (,)
+    height = torch.maximum(bottom - top, torch.tensor(0.1))  # size = (,) # ToDo: set this padding value properly
+    vertical_centre = 0.5 * (top + bottom)  # size = (,)
+    top = vertical_centre - 0.5 * height
+    bottom = vertical_centre + 0.5 * height
+
+    # horizontal bounds
+    horizontally_sorted_order = projected_vertices[:, 0].argsort(dim=0)
+    horizontally_sorted = projected_vertices[horizontally_sorted_order]
+    on_left = horizontally_sorted[0:4]  # size = (4, 2)
+    on_right = horizontally_sorted[4:8]  # size = (4, 2)
+    left = on_left[:, 0].max()  # size = (,)
+    right = on_right[:, 0].min()  # size = (,)
+    width = torch.maximum(right - left, torch.tensor(0.1))  # size = (,) # ToDo: set this padding value properly
+    horizontal_centre = 0.5 * (left + right)  # size = (,)
+    left = horizontal_centre - 0.5 * width
+    right = horizontal_centre + 0.5 * width
+    # get the size of the image in mm
+    image_size: torch.Tensor = torch.tensor(  #
+        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * fixed_image_spacing  # [mm]
+    # convert from [mm] centred on origin to fractions through image in rightward and downward directions
+    right = right / image_size[1] + 0.5
+    top = top / image_size[0] + 0.5
+    left = left / image_size[1] + 0.5
+    bottom = bottom / image_size[0] + 0.5
+    # clamping within valid ranges
     left = min(max(left.item(), 0.0), 1.0)
     right = min(max(right.item(), left), 1.0)
     top = min(max(top.item(), 0.0), 1.0)
@@ -245,7 +319,7 @@ class ExperimentConfig(StrictHasTraits):
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
     truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
-    cropping: str = traitlets.Enum(values=["None", "nonzero_drr"], default_value=traitlets.Undefined)
+    cropping: str = traitlets.Enum(values=["None", "nonzero_drr", "full_depth_drr"], default_value=traitlets.Undefined)
     mask: str = traitlets.Enum(values=[  #
         "None",  #
         "Every evaluation",  #
@@ -292,10 +366,12 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     # -----
     # Configuring according to desired cropping technique
     if exp_config.cropping == "None":
-        apply_cropping = False
+        apply_cropping = None
         data_manager().set_data("cropping", Cropping(), check_equality=True)
     elif exp_config.cropping == "nonzero_drr":
-        apply_cropping = True
+        apply_cropping = get_crop_nonzero_drr
+    elif exp_config.cropping == "full_depth_drr":
+        apply_cropping = get_crop_full_depth_drr
     else:
         raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
     # -----
@@ -325,8 +401,8 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
         t = mapping_parameters_to_transformation(parameters)
         # Setting the parameters
         data_manager().set_data("current_transformation", t)
-        if apply_cropping:
-            data_manager().set_data("cropping", get_crop_nonzero_drr())
+        if apply_cropping is not None:
+            data_manager().set_data("cropping", apply_cropping())
         if apply_mask:
             data_manager().set_data("mask_transformation", t)
         # Getting the resulting moving and fixed images
@@ -399,14 +475,17 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
         try:
             exp_config = ExperimentConfig(**exp_config_by_name)
         except Exception as e:
-            logger.error(f"Error constructing experiment configuration at indices {indices}: {e}")
+            logger.error(
+                f"Error constructing experiment configuration at indices {indices}: {e}\nParameters:\n"
+                f"{pprint.pformat(instance_all)}")
             continue
         # Running the experiment
         try:
             res = run_experiment(reg_config=reg_config, exp_config=exp_config, device=device,
                                  tqdm_position=tqdm_position + 1)
         except Exception as e:
-            logger.error(f"Error running experiment at indices {indices}: {e}")
+            logger.error(
+                f"Error running experiment at indices {indices}: {e}\nParameters:\n{pprint.pformat(instance_all)}")
             continue
         if res is None:
             logger.info(
@@ -508,9 +587,9 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         # ExperimentConfig
         "ct_path": data_manager().get("ct_path"),  #
         "downsample_level": 1,  #
-        "truncation_percent": 15,  #
+        # - varying "truncation_percent": 15,  #
         # - varying - "cropping": "None",  #
-        "mask": "Every evaluation",  #
+        "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 15.0,  #
         "sample_count_per_distance": 5,  #
@@ -553,7 +632,8 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         "Varying similarity metric only.")
 
     run_experiments(params_to_vary={  #
-        "cropping": ["None", "nonzero_drr"],  #
+        "truncation_percent": [30],  # '[0, 30], #
+        "cropping": ["full_depth_drr"],  # ["None", "nonzero_drr", "full_depth_drr"],  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 
