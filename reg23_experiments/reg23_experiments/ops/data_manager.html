@@ -26,6 +26,11 @@
             <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
                    pattern=".+" required>
 
+            <h2>Contents</h2>
+            <ul>
+  <li><a href="#getting-started">Getting started</a></li>
+</ul>
+
 
             <h2>Submodules</h2>
             <ul>
@@ -134,16 +139,126 @@
                     <h1 class="modulename">
 <a href="./../../reg23_experiments.html">reg23_experiments</a><wbr>.<a href="./../ops.html">ops</a><wbr>.data_manager    </h1>
 
-                
+                        <div class="docstring"><p>This package provides a suite of modular tools built around a directed acyclic graph (<code><a href="#DAG">DAG</a></code>) data structure for managing
+data.</p>
+
+<h2 id="getting-started">Getting started</h2>
+
+<p>The <code><a href="#data_manager">data_manager()</a></code> is a singleton instance of <code><a href="#DAG">DAG</a></code> used to keep track of data and which data depends on which other
+data. Here is an example to illustrate its purpose:</p>
+
+<h3 id="motivation-behind-the-data_manager">Motivation behind the <code><a href="#data_manager">data_manager()</a></code></h3>
+
+<p>Let's say you have some data read from files at the start, like a CT scan and an X-ray image. Dependent on these you
+have a long pipeline of images and data which depend on each other and these images, for example involving cropping,
+masking, downsampling, projecting etc.... The <code><a href="#DAG">DAG</a></code> allows you to only define the dependencies between the images, and
+will automatically perform the operations that evaluate the images when the dependencies change.</p>
+
+<h4 id="a-simple-example">A simple example</h4>
+
+<p>You have a CT scan volume loaded from a file, and want to use it at various downsampling ratios. You could just store
+the raw CT volume, and perform a downsampling whenever you want to access it, like so:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">ct_volume</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">=</span> <span class="n">load_from_file</span><span class="p">(</span><span class="s2">&quot;/my_ct_volume.nrrd&quot;</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">downsample_ct_volume</span><span class="p">(</span><span class="n">vol</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">ratio</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">avg_pool3d</span><span class="p">(</span><span class="n">vol</span><span class="p">,</span> <span class="n">ratio</span><span class="p">)</span>
+
+<span class="o">...</span>
+
+    <span class="n">use_ct_volume</span><span class="p">(</span><span class="n">downsample_ct_volume</span><span class="p">(</span><span class="n">ct_volume</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="o">...</span>
+    <span class="n">use_ct_volume_again</span><span class="p">(</span><span class="n">downsample_ct_volume</span><span class="p">(</span><span class="n">ct_volume</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="o">...</span>
+    <span class="n">use_ct_volume_again</span><span class="p">(</span><span class="n">downsample_ct_volume</span><span class="p">(</span><span class="n">ct_volume</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<p>The issue with this is that <code>downsample_ct_volume</code> could be quite expensive for a large volume, so a lot of time would
+wasted if the same downsampling ratio was used multiple times in a row. This also becomes much more ugly and even less
+efficient if there are more layers of dependency, e.g. if the <code>ct_volume</code> itself depended on something else (like if the
+path from which the volume was loaded might change), or if another value was dependent on the downsampled volume.</p>
+
+<p>Caching of values using <code>functools</code> would solve the former of these two issues, so long as the input values were not
+floating-point, which would be quite a restriction.</p>
+
+<p>To partially solve the former issue, and completely solve the latter, we use the <code><a href="#DAG">DAG</a></code> as follows:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">reg23_experiments.program.data_manager_singleton</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_data_manager</span><span class="p">,</span> <span class="n">data_manager</span><span class="p">,</span> <span class="n">dag_updater</span>
+
+<span class="n">init_data_manager</span><span class="p">()</span>
+
+<span class="n">data_manager</span><span class="p">()</span><span class="o">.</span><span class="n">set_data_multiple</span><span class="p">(</span><span class="n">ct_path</span><span class="o">=</span><span class="s2">&quot;/my_ct_volume.nrrd&quot;</span><span class="p">,</span> <span class="n">downsample_ratio</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="nd">@dag_updater</span><span class="p">(</span><span class="n">names_returned</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ct_volume&quot;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_ct_volume</span><span class="p">(</span><span class="n">ct_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;ct_volume&quot;</span><span class="p">:</span> <span class="n">load_from_file</span><span class="p">(</span><span class="n">ct_path</span><span class="p">)}</span>
+
+<span class="nd">@dag_updater</span><span class="p">(</span><span class="n">names_returned</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ct_volume_downsampled&quot;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">downsample_ct</span><span class="p">(</span><span class="n">ct_volume</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">downsample_ratio</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;ct_volume_downsampled&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">functional</span><span class="o">.</span><span class="n">avg_pool3d</span><span class="p">(</span><span class="n">ct_volume</span><span class="p">,</span> <span class="n">downsample_ratio</span><span class="p">)}</span>
+
+<span class="n">data_manager</span><span class="p">()</span><span class="o">.</span><span class="n">add_updater</span><span class="p">(</span><span class="s2">&quot;load_ct_volume&quot;</span><span class="p">,</span> <span class="n">load_ct_volume</span><span class="p">)</span>
+<span class="n">data_manager</span><span class="p">()</span><span class="o">.</span><span class="n">add_updater</span><span class="p">(</span><span class="s2">&quot;downsample_ct&quot;</span><span class="p">,</span> <span class="n">downsample_ct</span><span class="p">)</span>
+
+<span class="o">...</span>
+
+    <span class="n">use_ct_volume</span><span class="p">(</span><span class="n">data_manager</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ct_volume_downsampled&quot;</span><span class="p">))</span>
+    <span class="o">...</span>
+    <span class="n">use_ct_volume_again</span><span class="p">(</span><span class="n">data_manager</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ct_volume_downsampled&quot;</span><span class="p">))</span>
+    <span class="o">...</span>
+    <span class="n">data_manager</span><span class="p">()</span><span class="o">.</span><span class="n">set_data</span><span class="p">(</span><span class="s2">&quot;downsample_ratio&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">use_ct_volume_again</span><span class="p">(</span><span class="n">data_manager</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ct_volume_downsampled&quot;</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<p>A walk through the above code:</p>
+
+<ul>
+<li>We first call <code><a href="#init_data_manager">init_data_manager()</a></code> as good practice, as if we want to pass arguments to the constructor in future,
+this is where we'd do so. As we aren't, this isn't actually necessary, as the singleton instance would be constructed
+with no arguments on the first call to <code><a href="#data_manager">data_manager()</a></code> if we didn't call <code><a href="#init_data_manager">init_data_manager()</a></code> first.</li>
+<li>We set some values in the data manager using <code>data_manager().set_data_multiple(...)</code>. This just interprets each
+keyword argument as a new (name, value) pair to insert into the graph.</li>
+<li>We define two instances of the <code><a href="#Updater">Updater</a></code> class using the <code>@dag_updater</code> decorator, which transforms the decorated
+function into an instance of <code><a href="#Updater">Updater</a></code>. This is an object which is used to define dependencies between nodes in the data
+manager graph: the arguments of the function define the variables that are depended upon, and the (key, value) pairs in
+the returned dictionary define the variables that are dependent on them. The function itself defines the mapping from 
+the 'depended' to the 'dependent'.</li>
+<li>We insert these <code><a href="#Updater">Updater</a></code>s into the data manager using <code>data_manager().add_updater(...)</code>. The strings passed here are
+just arbitrary names, which we have chosen to match the updater names. Updaters can also be removed from the data,
+and this is done by the string name passed here.</li>
+<li>Then, to obtain the downsample CT image, we need only call <code>data_manager().get("ct_volume_downsampled")</code>. This will
+retrieve a previously calculated value if it is consistent with the dependencies, or run the appropriate <code><a href="#Updater">Updater</a></code>s to
+re-evaluate the variable if the dependencies have changed.</li>
+<li>The first call to <code>data_manager().get("ct_volume_downsampled")</code> in the code above will result in both <code>load_ct_volume</code>
+and <code>downsample_ct</code> being called for the first time to evaluate <code>"ct_volume"</code> and then <code>"ct_volume_downsampled"</code>.</li>
+<li>The second call will not perform any evaluation, as the dependencies <code>"ct_path"</code> and <code>"downsample_ratio"</code> have not
+changed since the value of <code>"ct_volume_downsampled"</code> was last evaluated.</li>
+<li>The third call will result in <code>downsample_ct</code> being called once more, as the value of <code>"downsample_ratio"</code> has changed
+since <code>"ct_volume_downsampled"</code> was last evaluated.</li>
+</ul>
+</div>
+
                         <input id="mod-data_manager-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
                         <label class="view-source-button" for="mod-data_manager-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._public</span><span class="w"> </span><span class="kn">import</span> <span class="n">dag_updater</span><span class="p">,</span> <span class="n">args_from_dag</span><span class="p">,</span> <span class="n">init_data_manager</span><span class="p">,</span> <span class="n">data_manager</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAG</span><span class="p">,</span> <span class="n">DataManagerSingleton</span><span class="p">,</span> <span class="n">Updater</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos">3</span></a>
-</span><span id="L-4"><a href="#L-4"><span class="linenos">4</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;updaters&quot;</span><span class="p">,</span> <span class="s2">&quot;dag_updater&quot;</span><span class="p">,</span> <span class="s2">&quot;args_from_dag&quot;</span><span class="p">,</span> <span class="s2">&quot;init_data_manager&quot;</span><span class="p">,</span> <span class="s2">&quot;data_manager&quot;</span><span class="p">,</span> <span class="s2">&quot;DAG&quot;</span><span class="p">,</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos">5</span></a>           <span class="s2">&quot;DataManagerSingleton&quot;</span><span class="p">,</span> <span class="s2">&quot;Updater&quot;</span><span class="p">]</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a><span class="sd">.. include:: package_documentation.md</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">3</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">4</span></a>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._public</span><span class="w"> </span><span class="kn">import</span> <span class="n">dag_updater</span><span class="p">,</span> <span class="n">args_from_dag</span><span class="p">,</span> <span class="n">init_data_manager</span><span class="p">,</span> <span class="n">data_manager</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">6</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._core</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAG</span><span class="p">,</span> <span class="n">DataManagerSingleton</span><span class="p">,</span> <span class="n">Updater</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">7</span></a>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">8</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;updaters&quot;</span><span class="p">,</span> <span class="s2">&quot;dag_updater&quot;</span><span class="p">,</span> <span class="s2">&quot;args_from_dag&quot;</span><span class="p">,</span> <span class="s2">&quot;init_data_manager&quot;</span><span class="p">,</span> <span class="s2">&quot;data_manager&quot;</span><span class="p">,</span> <span class="s2">&quot;DAG&quot;</span><span class="p">,</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">9</span></a>           <span class="s2">&quot;DataManagerSingleton&quot;</span><span class="p">,</span> <span class="s2">&quot;Updater&quot;</span><span class="p">]</span>
 </span></pre></div>
 
 
