@@ -161,9 +161,6 @@ def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float,
 def get_crop_full_depth_drr(*, image_2d_full: torch.Tensor, source_distance: float,
                             current_transformation: Transformation, ct_volumes: list[torch.Tensor],
                             ct_spacing: torch.Tensor, fixed_image_spacing: torch.Tensor) -> Cropping:
-    image_size = image_2d_full.size()
-    image_size_vector = torch.tensor(image_size, dtype=torch.float32).flip(dims=(0,))
-
     def project(vector: torch.Tensor) -> torch.Tensor:
         """
         :param vector: (3,) tensor
@@ -196,24 +193,15 @@ def get_crop_full_depth_drr(*, image_2d_full: torch.Tensor, source_distance: flo
         lower, upper = upper, lower
     # lower is now the 4 truncated vertices that have the higher average projected y-value (appear lower on the
     # screen), upper is the other 4
-    top = upper[:, 1].max()  # size = (,)
-    bottom = lower[:, 1].min()  # size = (,)
-    height = torch.maximum(bottom - top, torch.tensor(0.1))  # size = (,) # ToDo: set this padding value properly
-    vertical_centre = 0.5 * (top + bottom)  # size = (,)
-    top = vertical_centre - 0.5 * height
-    bottom = vertical_centre + 0.5 * height
-
+    top = upper[:, 1].max()  # [mm]; size = (,)
+    bottom = lower[:, 1].min()  # [mm]; size = (,)
     # horizontal bounds
     horizontally_sorted_order = projected_vertices[:, 0].argsort(dim=0)
     horizontally_sorted = projected_vertices[horizontally_sorted_order]
     on_left = horizontally_sorted[0:4]  # size = (4, 2)
     on_right = horizontally_sorted[4:8]  # size = (4, 2)
-    left = on_left[:, 0].max()  # size = (,)
-    right = on_right[:, 0].min()  # size = (,)
-    width = torch.maximum(right - left, torch.tensor(0.1))  # size = (,) # ToDo: set this padding value properly
-    horizontal_centre = 0.5 * (left + right)  # size = (,)
-    left = horizontal_centre - 0.5 * width
-    right = horizontal_centre + 0.5 * width
+    left = on_left[:, 0].max()  # [mm]; size = (,)
+    right = on_right[:, 0].min()  # [mm]; size = (,)
     # get the size of the image in mm
     image_size: torch.Tensor = torch.tensor(  #
         image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * fixed_image_spacing  # [mm]
@@ -227,6 +215,20 @@ def get_crop_full_depth_drr(*, image_2d_full: torch.Tensor, source_distance: flo
     right = min(max(right.item(), left), 1.0)
     top = min(max(top.item(), 0.0), 1.0)
     bottom = min(max(bottom.item(), top), 1.0)
+    # ensuring minimum size
+    width = max(right - left, 0.1)
+    height = max(bottom - top, 0.1)
+    horizontal_centre = min(max(0.5 * (left + right), 0.05), 0.95)
+    vertical_centre = min(max(0.5 * (top + bottom), 0.05), 0.95)
+    left = horizontal_centre - 0.5 * width
+    right = horizontal_centre + 0.5 * width
+    top = vertical_centre - 0.5 * height
+    bottom = vertical_centre + 0.5 * height
+    # clamping within valid ranges
+    left = min(max(left, 0.0), 1.0)
+    right = min(max(right, left), 1.0)
+    top = min(max(top, 0.0), 1.0)
+    bottom = min(max(bottom, top), 1.0)
     return Cropping(right=right, top=top, left=left, bottom=bottom)
 
 
@@ -367,7 +369,7 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     # Configuring according to desired cropping technique
     if exp_config.cropping == "None":
         apply_cropping = None
-        data_manager().set_data("cropping", Cropping(), check_equality=True)
+        data_manager().set_data("cropping", None, check_equality=True)
     elif exp_config.cropping == "nonzero_drr":
         apply_cropping = get_crop_nonzero_drr
     elif exp_config.cropping == "full_depth_drr":
@@ -475,9 +477,8 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
         try:
             exp_config = ExperimentConfig(**exp_config_by_name)
         except Exception as e:
-            logger.error(
-                f"Error constructing experiment configuration at indices {indices}: {e}\nParameters:\n"
-                f"{pprint.pformat(instance_all)}")
+            logger.error(f"Error constructing experiment configuration at indices {indices}: {e}\nParameters:\n"
+                         f"{pprint.pformat(instance_all)}")
             continue
         # Running the experiment
         try:
@@ -592,9 +593,9 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 15.0,  #
-        "sample_count_per_distance": 5,  #
+        "sample_count_per_distance": 10,  #
         # RegConfig
-        "particle_count": 1000,  #
+        "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
         "iteration_count": 10,  #
     }
@@ -632,8 +633,8 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         "Varying similarity metric only.")
 
     run_experiments(params_to_vary={  #
-        "truncation_percent": [30],  # '[0, 30], #
-        "cropping": ["full_depth_drr"],  # ["None", "nonzero_drr", "full_depth_drr"],  #
+        "truncation_percent": [0, 15, 30, 45],  #
+        "cropping": ["None", "nonzero_drr", "full_depth_drr"],  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 

@@ -122,8 +122,9 @@ def refresh_image_2d_scale_factor(  #
 
 
 @dag_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset", "fixed_image_size"])
-def refresh_hyperparameter_dependent(image_2d_full: torch.Tensor, fixed_image_spacing: torch.Tensor, cropping: Cropping,
-                                     source_offset: torch.Tensor, image_2d_scale_factor: float) -> dict[str, Any]:
+def refresh_hyperparameter_dependent(image_2d_full: torch.Tensor, fixed_image_spacing: torch.Tensor,
+                                     cropping: Cropping | None, source_offset: torch.Tensor,
+                                     image_2d_scale_factor: float) -> dict[str, Any]:
     # Downsampling the image 2d
     scaled_image_2d = torch.nn.functional.interpolate(  #
         image_2d_full.unsqueeze(0).unsqueeze(0),  #
@@ -131,16 +132,20 @@ def refresh_hyperparameter_dependent(image_2d_full: torch.Tensor, fixed_image_sp
         mode="bilinear",  #
         recompute_scale_factor=True,  #
         antialias=True)[0, 0]
+
     # Cropping for the fixed image
-    cropped_target = cropping.apply(scaled_image_2d)
+    if cropping is None:
+        cropped_target = scaled_image_2d
+        offset_from_cropping = torch.zeros(2, dtype=torch.float64)
+    else:
+        cropped_target = cropping.apply(scaled_image_2d)
+        offset_from_cropping = (fixed_image_spacing  #
+                                * cropping.get_fractional_centre_offset()  #
+                                * torch.tensor(image_2d_full.size(), dtype=torch.float64).flip(dims=(0,)))
 
     # The fixed image is offset to adjust for the cropping, and according to the source offset
     # This isn't affected by downsample level
-    fixed_image_offset = (  #
-            fixed_image_spacing * cropping.get_fractional_centre_offset() * torch.tensor(  #
-        image_2d_full.size(),  #
-        dtype=torch.float64).flip(dims=(0,))  #
-            - source_offset)
+    fixed_image_offset = offset_from_cropping - source_offset
 
     # The translation offset prevents the source offset parameters from fighting the translation parameters in
     # the optimisation
