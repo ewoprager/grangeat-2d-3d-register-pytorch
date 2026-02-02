@@ -8,7 +8,12 @@ import napari
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.data.structs import Error
 from reg23_experiments.ops.data_manager import init_data_manager, data_manager, dag_updater
-from reg23_experiments.ui import init_viewer, viewer, FixedImageGUI, MovingImageGUI, RegisterGUI
+from reg23_experiments.ui.viewer_singleton import init_viewer, viewer
+from reg23_experiments.ui.fixed_image import FixedImageGUI
+from reg23_experiments.ui.moving_image import MovingImageGUI
+from reg23_experiments.ui.parameters import ParameterWidget
+from reg23_experiments.experiments.parameters import Parameters, PsoParameters
+from reg23_experiments.ui.register import RegisterGUI
 from reg23_experiments.data.structs import Transformation, SceneGeometry
 from reg23_experiments.ops.geometry import generate_drr
 from reg23_experiments.ops.data_manager import updaters, args_from_dag
@@ -31,7 +36,7 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 
 
 @args_from_dag(names_left=["transformation"])
-def of(transformation: Transformation, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
+def of(*, transformation: Transformation, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
        fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
        fixed_image: torch.Tensor) -> torch.Tensor:
     moving_image = generate_drr(ct_volumes[0], transformation=transformation, voxel_spacing=ct_spacing,
@@ -48,7 +53,7 @@ def main(*, ct_path: str, cache_directory: str):
     init_viewer(title="Program Test")
     fixed_image_gui = FixedImageGUI()
     moving_image_gui = MovingImageGUI()
-    register_gui = RegisterGUI({"the_only_one": of})
+    # register_gui = RegisterGUI({"the_only_one": of})
     data_manager().add_updater("fixed_image_updater", fixed_image_updater)
     data_manager().add_updater("project_drr", project_drr)
     data_manager().add_updater("load_ct", updaters.load_ct)
@@ -68,7 +73,21 @@ def main(*, ct_path: str, cache_directory: str):
         logger.error(f"Couldn't get moving image: {value.description}.")
         return
 
-    data_manager().render()
+    parameters = Parameters(  #
+        ct_path=data_manager().get("ct_path"),  #
+        downsample_level=0,  #
+        truncation_percent=0,  #
+        cropping="None",  #
+        mask="None",  #
+        sim_metric="zncc",  #
+        optimisation_algorithm="pso",  #
+        op_algo_parameters=PsoParameters()  #
+    )
+    parameters_widget = ParameterWidget(parameters)
+    viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
+                                    tabify=True)
+
+    # data_manager().render()
 
     napari.run()
 
@@ -83,8 +102,10 @@ if __name__ == "__main__":
                         help="Set the directory where data that is expensive to calculate will be saved. The default "
                              "is 'cache'.")
     parser.add_argument("-p", "--ct-path", type=str,
-                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to process. If not "
-                             "provided, some simple synthetic data will be used instead - note that in this case, data will not be "
+                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
+                             "process. If not "
+                             "provided, some simple synthetic data will be used instead - note that in this case, "
+                             "data will not be "
                              "saved to the cache.")
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")

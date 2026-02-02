@@ -91,11 +91,13 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
         plt.show()
 
     # data over truncation fraction, stratified by masking
-    if False:
-        for mask in ["None", "Every evaluation", "Every evaluation weighting zncc"]:
+    if True:
+        for crop in ["None", "full_depth_drr", "nonzero_drr"]:
+        # for mask in ["None", "Every evaluation", "Every evaluation weighting zncc"]:
             # converting to a tensor, with an axis per variable
-            distances, axis_values = dataframe_to_tensor(  #
-                df.loc[(df["mask"] == mask)],  #
+            distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+                df.loc[(df["cropping"] == crop)],  #
+                # df.loc[(df["mask"] == mask)],  #
                 ordered_axes=["truncation_percent", "iteration"],  #
                 value_column="distance")
 
@@ -114,6 +116,7 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
                 axes.set_ylabel("distance from G.T.")
                 # axes.set_ylim((0.0, None))
                 axes.legend()
+                axes.set_title(crop)
 
     # data over downsample level and truncation fraction, stratified by masking
     if False:
@@ -195,7 +198,7 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
             plt.show()
 
     # data over cropping only
-    if True:
+    if False:
         # converting to a tensor, with an axis per variable
         distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
             df,  #
@@ -210,8 +213,9 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
             axes.set_ylabel("distance from G.T.")
             # axes.set_ylim((0.0, None))
             axes.legend()
-        if display:
-            plt.show()
+
+    if display:
+        plt.show()
 
 
 if __name__ == "__main__":

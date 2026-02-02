@@ -37,7 +37,6 @@ for i in range(iteration_count):
 """
 
 import logging
-
 import traitlets
 
 import torch
