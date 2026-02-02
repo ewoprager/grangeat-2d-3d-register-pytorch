@@ -1,6 +1,12 @@
 from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe
+from typing import Any
 
 from reg23_experiments.utils.data import StrictHasTraits
+from reg23_experiments.ops.data_manager import data_manager
+
+
+class NoParameters(StrictHasTraits):
+    pass
 
 
 class PsoParameters(StrictHasTraits):
@@ -17,42 +23,53 @@ class LocalSearchParameters(StrictHasTraits):
     max_iterations = Int(min=1, default_value=5000).tag(ui=True)
 
 
+class LocalZnccParameters(StrictHasTraits):
+    kernel_size = Int(min=1, default_value=8).tag(ui=True)
+
+
 class Parameters(StrictHasTraits):
-    ct_path = Unicode(default_value=Undefined).tag(ui=True)
-    downsample_level = Int(min=0, default_value=Undefined).tag(ui=True)
-    truncation_percent = Int(min=0, max=100, default_value=Undefined).tag(ui=True)
-    cropping = Enum(values=[  #
+    ct_path: str = Unicode(default_value=Undefined).tag(ui=True)
+    downsample_level: int = Int(min=0, default_value=Undefined).tag(ui=True)
+    truncation_percent: int = Int(min=0, max=100, default_value=Undefined).tag(ui=True)
+    cropping: str = Enum(values=[  #
         "None",  #
         "nonzero_drr",  #
         "full_depth_drr"  #
     ]).tag(ui=True)
-    mask = Enum(values=[  #
+    mask: str = Enum(values=[  #
         "None",  #
         "Every evaluation",  #
         "Every evaluation weighting zncc"  #
     ], default_value=Undefined).tag(ui=True)
-    sim_metric = Enum(values=[  #
+    sim_metric: str = Enum(values=[  #
         "zncc",  #
         "local_zncc",  #
         "multiscale_zncc",  #
         "gradient_correlation"  #
     ], default_value=Undefined).tag(ui=True)
-    starting_distance = Float(min=0.0)
-    sample_count_per_distance = Int(min=1)
-    optimisation_algorithm = Enum(values=[  #
+    sim_metric_parameters: HasTraits = Instance(HasTraits, allow_none=False, default_value=Undefined).tag(ui=True)
+    starting_distance: float = Float(min=0.0)
+    sample_count_per_distance: int = Int(min=1)
+    optimisation_algorithm: str = Enum(values=[  #
         "pso",  #
         "local_search"  #
     ], default=Undefined).tag(ui=True)
-    op_algo_parameters = Instance(HasTraits, allow_none=False, default_value=Undefined).tag(ui=True)
+    op_algo_parameters: HasTraits = Instance(HasTraits, allow_none=False, default_value=Undefined).tag(ui=True)
 
     def __init__(self, **kwargs):
-        self._op_algo_cache = {}
+        self._op_algo_cache: dict[str, Any] = {}
+        self._sim_metric_cache: dict[str, Any] = {}
         super().__init__(**kwargs)
         self._update_op_algo_params()
+        self._update_sim_metric_params()
 
     @observe("optimisation_algorithm")
     def _op_algo_changed(self, _):
         self._update_op_algo_params()
+
+    @observe("sim_metric")
+    def _sim_metric_changed(self, _):
+        self._update_sim_metric_params()
 
     def _update_op_algo_params(self):
         if self.optimisation_algorithm not in self._op_algo_cache:
@@ -64,3 +81,18 @@ class Parameters(StrictHasTraits):
                 raise ValueError(f"Unrecognised optimisation algorithm '{self.optimisation_algorithm}'.")
 
         self.op_algo_parameters = self._op_algo_cache[self.optimisation_algorithm]
+
+    def _update_sim_metric_params(self):
+        if self.sim_metric not in self._sim_metric_cache:
+            if self.sim_metric == "zncc":
+                self._sim_metric_cache[self.sim_metric] = NoParameters()
+            elif self.sim_metric == "local_zncc":
+                self._sim_metric_cache[self.sim_metric] = LocalZnccParameters()
+            elif self.sim_metric == "multiscale_zncc":
+                self._sim_metric_cache[self.sim_metric] = NoParameters()
+            elif self.sim_metric == "gradient_correlation":
+                self._sim_metric_cache[self.sim_metric] = NoParameters()
+            else:
+                raise ValueError(f"Unrecognised optimisation algorithm '{self.sim_metric}'.")
+
+        self.sim_metric_parameters = self._sim_metric_cache[self.sim_metric]

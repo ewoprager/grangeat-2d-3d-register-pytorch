@@ -12,7 +12,7 @@ from reg23_experiments.ui.viewer_singleton import init_viewer, viewer
 from reg23_experiments.ui.fixed_image import FixedImageGUI
 from reg23_experiments.ui.moving_image import MovingImageGUI
 from reg23_experiments.ui.parameters import ParameterWidget
-from reg23_experiments.experiments.parameters import Parameters, PsoParameters
+from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters
 from reg23_experiments.ui.register import RegisterGUI
 from reg23_experiments.data.structs import Transformation, SceneGeometry
 from reg23_experiments.ops.geometry import generate_drr
@@ -80,12 +80,20 @@ def main(*, ct_path: str, cache_directory: str):
         cropping="None",  #
         mask="None",  #
         sim_metric="zncc",  #
+        sim_metric_parameters=NoParameters(),  #
         optimisation_algorithm="pso",  #
         op_algo_parameters=PsoParameters()  #
     )
     parameters_widget = ParameterWidget(parameters)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
+
+    parameters.observe(lambda change: data_manager().set_data("ct_path", change.new, check_equality=True),
+                       names=["ct_path"])
+    parameters.observe(lambda change: data_manager().set_data("downsample_level", change.new, check_equality=True),
+                       names=["downsample_level"])
+    parameters.observe(lambda change: data_manager().set_data("truncation_percent", change.new, check_equality=True),
+                       names=["truncation_percent"])
 
     # data_manager().render()
 
