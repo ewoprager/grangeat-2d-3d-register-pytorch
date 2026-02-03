@@ -10,7 +10,7 @@ from reg23_experiments.data.structs import Transformation, GrowingTensor
 from reg23_experiments.ops.data_manager import args_from_dag
 
 __all__ = ["mapping_transformation_to_parameters", "mapping_parameters_to_transformation", "local_search",
-           "random_parameters_at_distance"]
+           "random_parameters_at_distance", "OptimisationAlgorithm"]
 
 logger = logging.getLogger(__name__)
 
@@ -98,3 +98,4 @@ def pso(*, transformation: Transformation, objective_function: Callable[[torch.T
     cost, converged_params = optimiser.optimize(objective_pso, iters=pso_iteration_count)
     return OptimisationResult(params=torch.from_numpy(converged_params), param_history=param_history.get(),
                               value_history=value_history.get())
+

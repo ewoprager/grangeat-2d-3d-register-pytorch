@@ -155,7 +155,7 @@ def main(*, ct_path: str, cache_directory: str):
     init_data_manager()
 
     # -----
-    # Viewer and GUI modules
+    # Viewer and image GUI modules
     # -----
     init_viewer(title="Program Test")
     fixed_image_gui = FixedImageGUI()
@@ -193,6 +193,10 @@ def main(*, ct_path: str, cache_directory: str):
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
+
+    # -----
+    # Data nodes
+    # -----
     data_manager().set_data_multiple(  #
         source_distance=1000.0,  #
         fixed_image_spacing=torch.tensor([0.2, 0.2]),  #
@@ -262,7 +266,7 @@ def main(*, ct_path: str, cache_directory: str):
     # -----
     # Register GUI module
     # -----
-    register_gui = RegisterGUI(objective_function)
+    register_gui = RegisterGUI(parameters=parameters, objective_function=objective_function)
 
     value = data_manager().get("moving_image")
     if isinstance(value, Error):
