@@ -592,8 +592,8 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         # - varying - "cropping": "None",  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
-        "starting_distance": 15.0,  #
-        "sample_count_per_distance": 10,  #
+        "starting_distance": 10.0,  #
+        "sample_count_per_distance": 30,  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -630,7 +630,7 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
     instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
 
     (instance_output_dir / "notes.txt").write_text(  #
-        "Varying similarity metric only.")
+        "Varying truncation and cropping.")
 
     run_experiments(params_to_vary={  #
         "truncation_percent": [0, 15, 30, 45],  #

@@ -90,7 +90,7 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
                     axes[k, j].legend()
         plt.show()
 
-    # data over truncation fraction, stratified by masking
+    # data over truncation fraction, stratified by cropping
     if True:
         for crop in ["None", "full_depth_drr", "nonzero_drr"]:
         # for mask in ["None", "Every evaluation", "Every evaluation weighting zncc"]:
