@@ -156,7 +156,6 @@ dependencies = [
     "wrapt==1.17.2",
     "wslink==2.2.2",
     "yarl==1.18.3",
-    "pynvml>=12.0.0",
     "objgraph>=3.6.2",
     "pylibjpeg>=2.0.1",
     "pylibjpeg-libjpeg>=2.3.0",
@@ -166,6 +165,7 @@ dependencies = [
     "scipy-stubs==1.16.3.3",
     "graphviz>=0.21",
     "pyarrow>=23.0.0",
+    "nvidia-ml-py>=13.590.48",
 ]
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined

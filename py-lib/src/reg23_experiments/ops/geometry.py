@@ -3,7 +3,7 @@ import copy
 import torch
 import pyvista as pv
 
-from reg23_experiments.data.structs import Sinogram2dGrid, Sinogram3dGrid, Transformation, SceneGeometry
+from reg23_experiments.data.structs import Sinogram2dGrid, Sinogram3dGrid, Transformation, SceneGeometry, Cropping
 
 import reg23
 
@@ -56,8 +56,10 @@ def ray_cuboid_distance(cuboid_centre: torch.Tensor, cuboid_half_sizes: torch.Te
     Determines the lengths of ray intersections between given rays and an axis-aligned cuboid.
     :param cuboid_centre: A tensor of size (,3); the position of the centre of the cuboid
     :param cuboid_half_sizes: A tensor of size (,3); the half sizes of the cuboid in the x-, y- and z-directions
-    :param ray_points: A tensor of size (..., 3); point(s) through which the input rays each pass, either one for all, or one per ray
-    :param ray_unit_directions: A tensor of size matching ray_points or (..., 3) if ray_points is of size (,3); unit vectors in the directions of each input ray
+    :param ray_points: A tensor of size (..., 3); point(s) through which the input rays each pass, either one for
+    all, or one per ray
+    :param ray_unit_directions: A tensor of size matching ray_points or (..., 3) if ray_points is of size (,
+    3); unit vectors in the directions of each input ray
     :return: A tensor of size ray_points.size()[:-1]; the lengths of the intersections of each ray with the cuboid
     """
     assert cuboid_centre.device == cuboid_half_sizes.device
@@ -325,3 +327,114 @@ def plane_integrals(volume_data: torch.Tensor, *, phi_values: torch.Tensor, thet
         ret_flat[i] = integrate_plane(phi_flat[i], theta_flat[i], r_flat[i])
 
     return ret
+
+
+def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float, current_transformation: Transformation,
+                         ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
+                         fixed_image_spacing: torch.Tensor) -> Cropping:
+    def project(vector: torch.Tensor) -> torch.Tensor:
+        p_matrix = SceneGeometry.projection_matrix(source_position=torch.tensor([0.0, 0.0, source_distance]))
+        ph_matrix = torch.matmul(p_matrix, current_transformation.get_h().to(dtype=torch.float32))
+        ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1]))))
+        return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
+
+    volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), dtype=torch.float32).flip(
+        dims=(0,)) * ct_spacing.cpu()
+    volume_vertices = [  #
+        torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, 1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
+    ]
+    # project the vertices into points on the detector array, measured in mm from the centre
+    projected_vertices = torch.stack([project(vertex) for vertex in volume_vertices])  # [mm]
+    mins, maxs = torch.aminmax(projected_vertices, dim=0)  # [mm]
+    # get the size of the image in mm
+    image_size: torch.Tensor = torch.tensor(  #
+        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * fixed_image_spacing  # [mm]
+    # convert the edges of the crop rectangle from mm to fractional in the fixed image
+    left, top = mins / image_size + 0.5
+    right, bottom = maxs / image_size + 0.5
+    left = min(max(left.item(), 0.0), 1.0)
+    right = min(max(right.item(), left), 1.0)
+    top = min(max(top.item(), 0.0), 1.0)
+    bottom = min(max(bottom.item(), top), 1.0)
+    return Cropping(right=right, top=top, left=left, bottom=bottom)
+
+
+def get_crop_full_depth_drr(*, image_2d_full: torch.Tensor, source_distance: float,
+                            current_transformation: Transformation, ct_volumes: list[torch.Tensor],
+                            ct_spacing: torch.Tensor, fixed_image_spacing: torch.Tensor) -> Cropping:
+    def project(vector: torch.Tensor) -> torch.Tensor:
+        """
+        :param vector: (3,) tensor
+        :return: (2,) tensor
+        """
+        p_matrix = SceneGeometry.projection_matrix(source_position=torch.tensor([0.0, 0.0, source_distance]))
+        ph_matrix = torch.matmul(p_matrix, current_transformation.get_h().to(dtype=torch.float32))
+        ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1]))))
+        return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
+
+    volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), dtype=torch.float32).flip(
+        dims=(0,)) * ct_spacing.cpu()
+    volume_vertices = [  #
+        torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, 1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, 1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
+    ]  # size = (8, 3)
+    projected_vertices = torch.stack(
+        [project(vertex) for vertex in volume_vertices])  # [mm], origin centered on detector; size = (8, 2)
+
+    # vertical bounds
+    upper = projected_vertices[0:4]  # size = (4, 2)
+    lower = projected_vertices[4:8]  # size = (4, 2)
+    if upper[:, 1].sum() > lower[:, 1].sum():
+        lower, upper = upper, lower
+    # lower is now the 4 truncated vertices that have the higher average projected y-value (appear lower on the
+    # screen), upper is the other 4
+    top = upper[:, 1].max()  # [mm]; size = (,)
+    bottom = lower[:, 1].min()  # [mm]; size = (,)
+    # horizontal bounds
+    horizontally_sorted_order = projected_vertices[:, 0].argsort(dim=0)
+    horizontally_sorted = projected_vertices[horizontally_sorted_order]
+    on_left = horizontally_sorted[0:4]  # size = (4, 2)
+    on_right = horizontally_sorted[4:8]  # size = (4, 2)
+    left = on_left[:, 0].max()  # [mm]; size = (,)
+    right = on_right[:, 0].min()  # [mm]; size = (,)
+    # get the size of the image in mm
+    image_size: torch.Tensor = torch.tensor(  #
+        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * fixed_image_spacing  # [mm]
+    # convert from [mm] centred on origin to fractions through image in rightward and downward directions
+    right = right / image_size[1] + 0.5
+    top = top / image_size[0] + 0.5
+    left = left / image_size[1] + 0.5
+    bottom = bottom / image_size[0] + 0.5
+    # clamping within valid ranges
+    left = min(max(left.item(), 0.0), 1.0)
+    right = min(max(right.item(), left), 1.0)
+    top = min(max(top.item(), 0.0), 1.0)
+    bottom = min(max(bottom.item(), top), 1.0)
+    # ensuring minimum size
+    width = max(right - left, 0.1)
+    height = max(bottom - top, 0.1)
+    horizontal_centre = min(max(0.5 * (left + right), 0.05), 0.95)
+    vertical_centre = min(max(0.5 * (top + bottom), 0.05), 0.95)
+    left = horizontal_centre - 0.5 * width
+    right = horizontal_centre + 0.5 * width
+    top = vertical_centre - 0.5 * height
+    bottom = vertical_centre + 0.5 * height
+    # clamping within valid ranges
+    left = min(max(left, 0.0), 1.0)
+    right = min(max(right, left), 1.0)
+    top = min(max(top, 0.0), 1.0)
+    bottom = min(max(bottom, top), 1.0)
+    return Cropping(right=right, top=top, left=left, bottom=bottom)
