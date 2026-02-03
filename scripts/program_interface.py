@@ -113,7 +113,7 @@ def set_mask_to_current_transformation(current_transformation) -> None:
 
 
 def respond_to_mask_change(change) -> None:
-    if change["new"] == "None":
+    if change.new == "None":
         data_manager().remove_callback("current_transformation", "mask_callback")
         data_manager().set_data("mask_transformation", None, check_equality=True)
     else:
@@ -133,14 +133,14 @@ def set_crop_to_full_depth_drr(*_) -> None:
 
 
 def respond_to_crop_change(change) -> None:
-    if change["new"] == "None":
+    if change.new == "None":
         data_manager().remove_callback("current_transformation", "crop_callback")
         data_manager().set_data("cropping", None)
-    elif change["new"] == "nonzero_drr":
+    elif change.new == "nonzero_drr":
         data_manager().remove_callback("current_transformation", "crop_callback")
         set_crop_to_nonzero_drr()
         data_manager().add_callback("current_transformation", "crop_callback", set_crop_to_nonzero_drr)
-    elif change["new"] == "full_depth_drr":
+    elif change.new == "full_depth_drr":
         data_manager().remove_callback("current_transformation", "crop_callback")
         set_crop_to_full_depth_drr()
         data_manager().add_callback("current_transformation", "crop_callback", set_crop_to_full_depth_drr)
