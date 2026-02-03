@@ -149,14 +149,21 @@ def respond_to_crop_change(change) -> None:
 def main(*, ct_path: str, cache_directory: str):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
+    # -----
+    # The data manager
+    # -----
     init_data_manager()
+
+    # -----
+    # Viewer and GUI modules
+    # -----
     init_viewer(title="Program Test")
     fixed_image_gui = FixedImageGUI()
     moving_image_gui = MovingImageGUI()
-    # register_gui = RegisterGUI({"the_only_one": of})
-    # data_manager().add_updater("fixed_image_updater", fixed_image_updater)
-    # data_manager().add_updater("load_ct", updaters.load_ct)
-    # data_manager().add_updater("set_synthetic_target_image", updaters.set_synthetic_target_image)
+
+    # -----
+    # Updaters
+    # -----
     err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
@@ -206,11 +213,10 @@ def main(*, ct_path: str, cache_directory: str):
                                          translation=torch.zeros(3, device=device)),  #
         target_ap_distance=5.0,  #
     )
-    value = data_manager().get("moving_image")
-    if isinstance(value, Error):
-        logger.error(f"Couldn't get moving image: {value.description}.")
-        return
 
+    # -----
+    # Parameters
+    # -----
     parameters = Parameters(  #
         ct_path=data_manager().get("ct_path"),  #
         downsample_level=0,  #
@@ -235,7 +241,33 @@ def main(*, ct_path: str, cache_directory: str):
     parameters.observe(respond_to_mask_change, names=["mask"])
     parameters.observe(respond_to_crop_change, names=["cropping"])
 
-    # data_manager().render()
+    # -----
+    # The universal objective function
+    # -----
+    def objective_function(x: torch.Tensor) -> torch.Tensor:
+        t = mapping_parameters_to_transformation(x)
+        # Setting the parameters
+        data_manager().set_data("current_transformation", t)
+        # Getting the resulting moving and fixed images
+        moving_image = data_manager().get("moving_image")
+        fixed_image = data_manager().get("fixed_image")
+        # Comparing, potentially weighting with a mask
+        # if apply_mask:
+        #     mask = data_manager().get("mask")
+        #     if weight_with_mask:
+        #         return -p_sim_met.func_weighted(moving_image, fixed_image, mask)
+        # return -p_sim_met.func(moving_image, fixed_image)
+        return -ncc(fixed_image, moving_image)  # ToDo: configured sim metric
+
+    # -----
+    # Register GUI module
+    # -----
+    register_gui = RegisterGUI(objective_function)
+
+    value = data_manager().get("moving_image")
+    if isinstance(value, Error):
+        logger.error(f"Couldn't get moving image: {value.description}.")
+        return
 
     napari.run()
 
