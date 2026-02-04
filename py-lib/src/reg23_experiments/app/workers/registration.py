@@ -11,7 +11,7 @@ from reg23_experiments.ops.optimisation import mapping_transformation_to_paramet
 from reg23_experiments.data.structs import OptimisationInstance
 from reg23_experiments.ops.optimisation_instances import PsoInstance
 from reg23_experiments.app.state import AppState
-from reg23_experiments.experiments.parameters import Parameters, PsoParameters
+from reg23_experiments.experiments.parameters import PsoParameters
 from reg23_experiments.ops.swarm import SwarmConfig
 from reg23_experiments.ops.data_manager import DAG, ChildDAG
 
@@ -49,22 +49,26 @@ class RegistrationWorker(QObject):
     progress = pyqtSignal(torch.Tensor, torch.Tensor)  # current best position, o.f. value at position
     finished = pyqtSignal(torch.Tensor, torch.Tensor)  # best position found, o.f. value at position
 
-    def __init__(self, app_state: AppState, objective_function: Callable[
-        [DAG | ChildDAG, torch.Tensor], torch.Tensor]):
+    def __init__(self, *, app_state: AppState, objective_function: Callable[
+        [DAG | ChildDAG, torch.Tensor], torch.Tensor], max_iterations: int | None = None):
         super().__init__()
+        self._max_iterations = max_iterations
         self._app_state = app_state
         self._objective_function = objective_function
 
+        if self._max_iterations is None:
+            self._max_iterations = self._app_state.parameters.iteration_count
+
     def run(self):
         logger.info("Optimisation worker initialising...")
-        logger.info("Optimisation worker initialised. Optimisation worker running...")
-        max_iterations = self._app_state.parameters.iteration_count
         child_dag, op_instance = new_optimisation_instance(self._app_state, self._objective_function)
-        for it in range(max_iterations):
+        logger.info(
+            f"Optimisation worker initialised. Optimisation worker running for {self._max_iterations} iterations...")
+        for it in range(self._max_iterations):
             terminate = op_instance.step()
             self.progress.emit(op_instance.get_best_position(), op_instance.get_best())
             if terminate:
-                logger.info(f"Optimisation terminating after iteration {it + 1}/{max_iterations}.")
+                logger.info(f"Optimisation terminating after iteration {it + 1}/{self._max_iterations}.")
                 break
         logger.info("Optimisation worker finished.")
         self.finished.emit(op_instance.get_best_position(), op_instance.get_best())

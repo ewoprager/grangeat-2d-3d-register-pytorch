@@ -122,7 +122,7 @@ def main(*, ct_path: str, cache_directory: str):
     init_data_manager()
 
     # -----
-    # Viewer and image GUI modules
+    # Viewer
     # -----
     init_viewer(title="Program Test")
 
@@ -202,10 +202,6 @@ def main(*, ct_path: str, cache_directory: str):
                                     tabify=True)
 
     app_state = AppState(parameters=parameters, dag=data_manager())
-    controller = Controller(app_state)
-
-    fixed_image_gui = FixedImageGUI(app_state)
-    moving_image_gui = MovingImageGUI(app_state)
 
     # -----
     # The universal objective function
@@ -226,8 +222,11 @@ def main(*, ct_path: str, cache_directory: str):
         return -ncc(fixed_image, moving_image)  # ToDo: configured sim metric
 
     # -----
-    # Register GUI module
+    # Modules
     # -----
+    controller = Controller(app_state=app_state, objective_function=objective_function)
+    fixed_image_gui = FixedImageGUI(app_state)
+    moving_image_gui = MovingImageGUI(app_state)
     register_gui = RegisterGUI(app_state)
 
     value = data_manager().get("moving_image")

@@ -2,7 +2,6 @@ from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Unde
 from typing import Any
 
 from reg23_experiments.utils.data import StrictHasTraits
-from reg23_experiments.ops.data_manager import data_manager
 
 
 class NoParameters(StrictHasTraits):
