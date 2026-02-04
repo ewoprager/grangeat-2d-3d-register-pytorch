@@ -10,7 +10,7 @@ import weakref
 from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
 
-__all__ = ["Dependency", "NoNodeDataType", "NoNodeData", "Updater", "DAG", "DataManagerSingleton"]
+__all__ = ["Dependency", "NoNodeDataType", "NoNodeData", "Updater", "DAG", "ChildDAG", "DataManagerSingleton"]
 
 logger = logging.getLogger(__name__)
 
