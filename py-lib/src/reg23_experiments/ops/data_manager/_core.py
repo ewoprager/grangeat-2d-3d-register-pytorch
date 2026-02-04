@@ -122,7 +122,7 @@ class DAG:
         return wrapper
 
     def __str__(self) -> str:
-        ret = "DataDAG(\n"
+        ret = "DAG(\n"
         ret += "\tNodes:\n"
         for name, value in self._nodes.items():
             ret += f"\t\t{name}: {value},\n"
@@ -443,6 +443,22 @@ class ChildDAG:
         # ToDo?: child's own updaters?
         self._in_top_level_call: bool = True
 
+    def __str__(self) -> str:
+        ret = "ChildDAG(\n"
+        ret += "\tMy nodes:\n"
+        for name, value in self._nodes.items():
+            ret += f"\t\t{name}: {value},\n"
+        ret += "\tParent nodes I am still using:\n"
+        for name, value in self._parent._nodes.items():
+            if name in self._nodes or name not in self._nodes_inheriting:
+                continue
+            ret += f"\t\t{name}: {value},\n"
+        ret += "\tUpdaters in my parent:\n"
+        for name, value in self._parent._updaters.items():
+            ret += f"\t\t{name}: {value},\n"
+        ret += ")\n"
+        return ret
+
     @staticmethod
     def _data_mutating(function):
         @functools.wraps(function)
@@ -630,20 +646,23 @@ class ChildDAG:
     def _get_node_if_exists(self, name: str) -> Node | None:
         if name in self._nodes:
             return self._nodes[name]
+        if name not in self._nodes_inheriting:
+            return None
         return self._parent._get_node_if_exists(name)
 
     def _get_node_ensure_exists(self, name: str) -> Node:
         if name in self._nodes:
             return self._nodes[name]
-        maybe_parent_node: Node | None = self._parent._get_node_if_exists(name)
-        if isinstance(maybe_parent_node, Node):
-            return maybe_parent_node
+        if name in self._nodes_inheriting:
+            maybe_parent_node: Node | None = self._parent._get_node_if_exists(name)
+            if isinstance(maybe_parent_node, Node):
+                return maybe_parent_node
         self._nodes[name] = Node()
         return self._nodes[name]
 
     def _get_all_name_node_pairs(self) -> list[tuple[str, Node]]:
         return list(self._nodes.items()) + [(name, node) for name, node in self._parent._nodes.items() if
-                                            name not in self._nodes]
+                                            name not in self._nodes and name in self._nodes_inheriting]
 
     def _set_dirty(self, name: str) -> None:
         node = self._get_node_ensure_exists(name)
@@ -717,7 +736,8 @@ class ChildDAG:
 
     def _eval_in_degrees(self) -> dict[str, int]:
         ret = {node_name: 0 for node_name in self._nodes} | {node_name: 0 for node_name in self._parent._nodes if
-                                                             node_name not in self._nodes}
+                                                             node_name not in self._nodes and node_name in
+                                                             self._nodes_inheriting}
         for name, node in self._get_all_name_node_pairs():
             for dependent in node.dependents:
                 ret[dependent] += 1
@@ -728,7 +748,9 @@ class ChildDAG:
         q = collections.deque(
             [node_name for node_name in self._nodes if in_degrees[node_name] == 0] + [node_name for node_name in
                                                                                       self._parent._nodes if
-                                                                                      node_name not in self._nodes and
+                                                                                      node_name not in self._nodes
+                                                                                      and node_name in
+                                                                                      self._nodes_inheriting and
                                                                                       in_degrees[node_name] == 0])
         count: int = 0
         while q:
