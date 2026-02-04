@@ -477,10 +477,10 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         "downsample_level": 1,  #
         # - varying "truncation_percent": 15,  #
         # - varying - "cropping": "None",  #
-        "mask": "None",  #
+        # - varying - "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 10.0,  #
-        "sample_count_per_distance": 30,  #
+        "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -522,6 +522,9 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
     run_experiments(params_to_vary={  #
         "truncation_percent": [0, 15, 30, 45],  #
         "cropping": ["None", "nonzero_drr", "full_depth_drr"],  #
+        "mask": ["None",  #
+                     "Every evaluation",  #
+                     "Every evaluation weighting zncc"],  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 
