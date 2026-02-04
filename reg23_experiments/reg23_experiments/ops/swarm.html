@@ -36,19 +36,19 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
-                    <a class="class" href="#OptimisationConfig">OptimisationConfig</a>
+                    <a class="class" href="#SwarmConfig">SwarmConfig</a>
                             <ul class="memberlist">
                         <li>
-                                <a class="variable" href="#OptimisationConfig.objective_function">objective_function</a>
+                                <a class="variable" href="#SwarmConfig.objective_function">objective_function</a>
                         </li>
                         <li>
-                                <a class="variable" href="#OptimisationConfig.inertia_coefficient">inertia_coefficient</a>
+                                <a class="variable" href="#SwarmConfig.inertia_coefficient">inertia_coefficient</a>
                         </li>
                         <li>
-                                <a class="variable" href="#OptimisationConfig.cognitive_coefficient">cognitive_coefficient</a>
+                                <a class="variable" href="#SwarmConfig.cognitive_coefficient">cognitive_coefficient</a>
                         </li>
                         <li>
-                                <a class="variable" href="#OptimisationConfig.social_coefficient">social_coefficient</a>
+                                <a class="variable" href="#SwarmConfig.social_coefficient">social_coefficient</a>
                         </li>
                 </ul>
 
@@ -108,7 +108,7 @@ initialised on construction of an instance of the <code><a href="#Swarm">Swarm</
 <p>This allows for completely flexible termination conditions and per-iteration behaviour / logic.</p>
 
 <p>An additional element of flexibility is the mutable swarm configuration. The <code><a href="#Swarm">Swarm</a></code>'s configuration is provided and
-stored as an instance of the <code><a href="#OptimisationConfig">OptimisationConfig</a></code> class. This can be accessed as a property of the <code><a href="#Swarm">Swarm</a></code> instance, and
+stored as an instance of the <code>OptimisationConfig</code> class. This can be accessed as a property of the <code><a href="#Swarm">Swarm</a></code> instance, and
 safely modified between iterations.</p>
 
 <h2 id="example-use">Example use</h2>
@@ -184,12 +184,12 @@ safely modified between iterations.</p>
 </span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>
 </span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 </span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>
-</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;OptimisationConfig&quot;</span><span class="p">,</span> <span class="s2">&quot;Swarm&quot;</span><span class="p">]</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SwarmConfig&quot;</span><span class="p">,</span> <span class="s2">&quot;Swarm&quot;</span><span class="p">]</span>
 </span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>
 </span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>
 </span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>
-</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="k">class</span><span class="w"> </span><span class="nc">OptimisationConfig</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SwarmConfig</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
 </span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="sd">    A struct that contains configuration information for an instance of the `Swarm` class. These values can safely be</span>
 </span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a><span class="sd">    mutated between iterations of the swarm.</span>
@@ -243,7 +243,7 @@ safely modified between iterations.</p>
 </span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd">    Let dimensionality be D; the width of the `particles` tensor is therefore 3*D + 1</span>
 </span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>
-</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">OptimisationConfig</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">particle_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">SwarmConfig</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">particle_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 </span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>                 <span class="n">initialisation_position</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">initialisation_spread</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
 </span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>                 <span class="n">generator</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Generator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 </span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -295,7 +295,7 @@ safely modified between iterations.</p>
 </span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particles</span><span class="o">.</span><span class="n">device</span>
 </span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>
 </span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>    <span class="nd">@property</span>
-</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OptimisationConfig</span><span class="p">:</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SwarmConfig</span><span class="p">:</span>
 </span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a><span class="sd">        :return: A reference to the swarm&#39;s configuration struct. This can safely be mutated between iterations.</span>
 </span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -359,26 +359,26 @@ safely modified between iterations.</p>
 
 
             </section>
-                <section id="OptimisationConfig">
-                            <input id="OptimisationConfig-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                <section id="SwarmConfig">
+                            <input id="SwarmConfig-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr class">
             
     <span class="def">class</span>
-    <span class="name">OptimisationConfig</span><wbr>(<span class="base">traitlets.traitlets.HasTraits</span>):
+    <span class="name">SwarmConfig</span><wbr>(<span class="base">traitlets.traitlets.HasTraits</span>):
 
-                <label class="view-source-button" for="OptimisationConfig-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="SwarmConfig-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#OptimisationConfig"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="OptimisationConfig-50"><a href="#OptimisationConfig-50"><span class="linenos">50</span></a><span class="k">class</span><span class="w"> </span><span class="nc">OptimisationConfig</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
-</span><span id="OptimisationConfig-51"><a href="#OptimisationConfig-51"><span class="linenos">51</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="OptimisationConfig-52"><a href="#OptimisationConfig-52"><span class="linenos">52</span></a><span class="sd">    A struct that contains configuration information for an instance of the `Swarm` class. These values can safely be</span>
-</span><span id="OptimisationConfig-53"><a href="#OptimisationConfig-53"><span class="linenos">53</span></a><span class="sd">    mutated between iterations of the swarm.</span>
-</span><span id="OptimisationConfig-54"><a href="#OptimisationConfig-54"><span class="linenos">54</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="OptimisationConfig-55"><a href="#OptimisationConfig-55"><span class="linenos">55</span></a>    <span class="n">objective_function</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Callable</span><span class="p">()</span>
-</span><span id="OptimisationConfig-56"><a href="#OptimisationConfig-56"><span class="linenos">56</span></a>    <span class="n">inertia_coefficient</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="n">default_value</span><span class="o">=</span><span class="mf">0.28</span><span class="p">)</span>
-</span><span id="OptimisationConfig-57"><a href="#OptimisationConfig-57"><span class="linenos">57</span></a>    <span class="n">cognitive_coefficient</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="n">default_value</span><span class="o">=</span><span class="mf">2.525</span><span class="p">)</span>
-</span><span id="OptimisationConfig-58"><a href="#OptimisationConfig-58"><span class="linenos">58</span></a>    <span class="n">social_coefficient</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="n">default_value</span><span class="o">=</span><span class="mf">1.225</span><span class="p">)</span>
+    <a class="headerlink" href="#SwarmConfig"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SwarmConfig-50"><a href="#SwarmConfig-50"><span class="linenos">50</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SwarmConfig</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
+</span><span id="SwarmConfig-51"><a href="#SwarmConfig-51"><span class="linenos">51</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SwarmConfig-52"><a href="#SwarmConfig-52"><span class="linenos">52</span></a><span class="sd">    A struct that contains configuration information for an instance of the `Swarm` class. These values can safely be</span>
+</span><span id="SwarmConfig-53"><a href="#SwarmConfig-53"><span class="linenos">53</span></a><span class="sd">    mutated between iterations of the swarm.</span>
+</span><span id="SwarmConfig-54"><a href="#SwarmConfig-54"><span class="linenos">54</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="SwarmConfig-55"><a href="#SwarmConfig-55"><span class="linenos">55</span></a>    <span class="n">objective_function</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Callable</span><span class="p">()</span>
+</span><span id="SwarmConfig-56"><a href="#SwarmConfig-56"><span class="linenos">56</span></a>    <span class="n">inertia_coefficient</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="n">default_value</span><span class="o">=</span><span class="mf">0.28</span><span class="p">)</span>
+</span><span id="SwarmConfig-57"><a href="#SwarmConfig-57"><span class="linenos">57</span></a>    <span class="n">cognitive_coefficient</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="n">default_value</span><span class="o">=</span><span class="mf">2.525</span><span class="p">)</span>
+</span><span id="SwarmConfig-58"><a href="#SwarmConfig-58"><span class="linenos">58</span></a>    <span class="n">social_coefficient</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="n">default_value</span><span class="o">=</span><span class="mf">1.225</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -387,13 +387,13 @@ mutated between iterations of the swarm.</p>
 </div>
 
 
-                            <div id="OptimisationConfig.objective_function" class="classattr">
+                            <div id="SwarmConfig.objective_function" class="classattr">
                                 <div class="attr variable">
             <span class="name">objective_function</span>
 
         
     </div>
-    <a class="headerlink" href="#OptimisationConfig.objective_function"></a>
+    <a class="headerlink" href="#SwarmConfig.objective_function"></a>
     
             <div class="docstring"><p>A trait which is callable.</p>
 
@@ -405,39 +405,39 @@ with a __call__() method.</p>
 
 
                             </div>
-                            <div id="OptimisationConfig.inertia_coefficient" class="classattr">
+                            <div id="SwarmConfig.inertia_coefficient" class="classattr">
                                 <div class="attr variable">
             <span class="name">inertia_coefficient</span>
 
         
     </div>
-    <a class="headerlink" href="#OptimisationConfig.inertia_coefficient"></a>
+    <a class="headerlink" href="#SwarmConfig.inertia_coefficient"></a>
     
             <div class="docstring"><p>A float trait.</p>
 </div>
 
 
                             </div>
-                            <div id="OptimisationConfig.cognitive_coefficient" class="classattr">
+                            <div id="SwarmConfig.cognitive_coefficient" class="classattr">
                                 <div class="attr variable">
             <span class="name">cognitive_coefficient</span>
 
         
     </div>
-    <a class="headerlink" href="#OptimisationConfig.cognitive_coefficient"></a>
+    <a class="headerlink" href="#SwarmConfig.cognitive_coefficient"></a>
     
             <div class="docstring"><p>A float trait.</p>
 </div>
 
 
                             </div>
-                            <div id="OptimisationConfig.social_coefficient" class="classattr">
+                            <div id="SwarmConfig.social_coefficient" class="classattr">
                                 <div class="attr variable">
             <span class="name">social_coefficient</span>
 
         
     </div>
-    <a class="headerlink" href="#OptimisationConfig.social_coefficient"></a>
+    <a class="headerlink" href="#SwarmConfig.social_coefficient"></a>
     
             <div class="docstring"><p>A float trait.</p>
 </div>
@@ -499,7 +499,7 @@ with a __call__() method.</p>
 </span><span id="Swarm-101"><a href="#Swarm-101"><span class="linenos">101</span></a><span class="sd">    Let dimensionality be D; the width of the `particles` tensor is therefore 3*D + 1</span>
 </span><span id="Swarm-102"><a href="#Swarm-102"><span class="linenos">102</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="Swarm-103"><a href="#Swarm-103"><span class="linenos">103</span></a>
-</span><span id="Swarm-104"><a href="#Swarm-104"><span class="linenos">104</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">OptimisationConfig</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">particle_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+</span><span id="Swarm-104"><a href="#Swarm-104"><span class="linenos">104</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">SwarmConfig</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">particle_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 </span><span id="Swarm-105"><a href="#Swarm-105"><span class="linenos">105</span></a>                 <span class="n">initialisation_position</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">initialisation_spread</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
 </span><span id="Swarm-106"><a href="#Swarm-106"><span class="linenos">106</span></a>                 <span class="n">generator</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Generator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 </span><span id="Swarm-107"><a href="#Swarm-107"><span class="linenos">107</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -551,7 +551,7 @@ with a __call__() method.</p>
 </span><span id="Swarm-153"><a href="#Swarm-153"><span class="linenos">153</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_particles</span><span class="o">.</span><span class="n">device</span>
 </span><span id="Swarm-154"><a href="#Swarm-154"><span class="linenos">154</span></a>
 </span><span id="Swarm-155"><a href="#Swarm-155"><span class="linenos">155</span></a>    <span class="nd">@property</span>
-</span><span id="Swarm-156"><a href="#Swarm-156"><span class="linenos">156</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OptimisationConfig</span><span class="p">:</span>
+</span><span id="Swarm-156"><a href="#Swarm-156"><span class="linenos">156</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SwarmConfig</span><span class="p">:</span>
 </span><span id="Swarm-157"><a href="#Swarm-157"><span class="linenos">157</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Swarm-158"><a href="#Swarm-158"><span class="linenos">158</span></a><span class="sd">        :return: A reference to the swarm&#39;s configuration struct. This can safely be mutated between iterations.</span>
 </span><span id="Swarm-159"><a href="#Swarm-159"><span class="linenos">159</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -663,13 +663,13 @@ Let dimensionality be D; the width of the <code>particles</code> tensor is there
                                         <input id="Swarm.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
-        <span class="name">Swarm</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">config</span><span class="p">:</span> <span class="n"><a href="#OptimisationConfig">OptimisationConfig</a></span>,</span><span class="param">	<span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">particle_count</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">initialisation_position</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>,</span><span class="param">	<span class="n">initialisation_spread</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>,</span><span class="param">	<span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span>,</span><span class="param">	<span class="n">generator</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">_C</span><span class="o">.</span><span class="n">Generator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
+        <span class="name">Swarm</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">config</span><span class="p">:</span> <span class="n"><a href="#SwarmConfig">SwarmConfig</a></span>,</span><span class="param">	<span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">particle_count</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">initialisation_position</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>,</span><span class="param">	<span class="n">initialisation_spread</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>,</span><span class="param">	<span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span>,</span><span class="param">	<span class="n">generator</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">_C</span><span class="o">.</span><span class="n">Generator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span>)</span>
 
                 <label class="view-source-button" for="Swarm.__init__-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#Swarm.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Swarm.__init__-104"><a href="#Swarm.__init__-104"><span class="linenos">104</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">OptimisationConfig</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">particle_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Swarm.__init__-104"><a href="#Swarm.__init__-104"><span class="linenos">104</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">SwarmConfig</span><span class="p">,</span> <span class="n">dimensionality</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">particle_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 </span><span id="Swarm.__init__-105"><a href="#Swarm.__init__-105"><span class="linenos">105</span></a>                 <span class="n">initialisation_position</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">initialisation_spread</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
 </span><span id="Swarm.__init__-106"><a href="#Swarm.__init__-106"><span class="linenos">106</span></a>                 <span class="n">generator</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Generator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 </span><span id="Swarm.__init__-107"><a href="#Swarm.__init__-107"><span class="linenos">107</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -761,14 +761,14 @@ of the particles.</li>
                             <div id="Swarm.config" class="classattr">
                                         <input id="Swarm.config-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr variable">
-            <span class="name">config</span><span class="annotation">: <a href="#OptimisationConfig">OptimisationConfig</a></span>
+            <span class="name">config</span><span class="annotation">: <a href="#SwarmConfig">SwarmConfig</a></span>
 
                 <label class="view-source-button" for="Swarm.config-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#Swarm.config"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Swarm.config-155"><a href="#Swarm.config-155"><span class="linenos">155</span></a>    <span class="nd">@property</span>
-</span><span id="Swarm.config-156"><a href="#Swarm.config-156"><span class="linenos">156</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OptimisationConfig</span><span class="p">:</span>
+</span><span id="Swarm.config-156"><a href="#Swarm.config-156"><span class="linenos">156</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SwarmConfig</span><span class="p">:</span>
 </span><span id="Swarm.config-157"><a href="#Swarm.config-157"><span class="linenos">157</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Swarm.config-158"><a href="#Swarm.config-158"><span class="linenos">158</span></a><span class="sd">        :return: A reference to the swarm&#39;s configuration struct. This can safely be mutated between iterations.</span>
 </span><span id="Swarm.config-159"><a href="#Swarm.config-159"><span class="linenos">159</span></a><span class="sd">        &quot;&quot;&quot;</span>
