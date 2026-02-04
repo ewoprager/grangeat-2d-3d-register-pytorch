@@ -16,12 +16,14 @@ from reg23_experiments.ops.data_manager import init_data_manager, data_manager, 
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.ops import drr
-from reg23_experiments.ui.viewer_singleton import init_viewer, viewer
-from reg23_experiments.ui.fixed_image import FixedImageGUI
-from reg23_experiments.ui.moving_image import MovingImageGUI
-from reg23_experiments.ui.parameters import ParameterWidget
+from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
+from reg23_experiments.app.gui.fixed_image import FixedImageGUI
+from reg23_experiments.app.gui.moving_image import MovingImageGUI
+from reg23_experiments.app.gui.parameters import ParameterWidget
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters
-from reg23_experiments.ui.register import RegisterGUI
+from reg23_experiments.app.gui.register import RegisterGUI
+from reg23_experiments.app.state import AppState
+from reg23_experiments.app.controller import Controller
 from reg23_experiments.data.structs import Transformation, SceneGeometry, Cropping
 from reg23_experiments.ops import geometry
 from reg23_experiments.ops.data_manager import updaters, args_from_dag
@@ -111,7 +113,6 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 #     return ncc(moving_image, fixed_image)
 
 
-
 def main(*, ct_path: str, cache_directory: str):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -124,8 +125,6 @@ def main(*, ct_path: str, cache_directory: str):
     # Viewer and image GUI modules
     # -----
     init_viewer(title="Program Test")
-    fixed_image_gui = FixedImageGUI()
-    moving_image_gui = MovingImageGUI()
 
     # -----
     # Updaters
@@ -202,14 +201,11 @@ def main(*, ct_path: str, cache_directory: str):
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
 
-    parameters.observe(lambda change: data_manager().set_data("ct_path", change.new, check_equality=True),
-                       names=["ct_path"])
-    parameters.observe(lambda change: data_manager().set_data("downsample_level", change.new, check_equality=True),
-                       names=["downsample_level"])
-    parameters.observe(lambda change: data_manager().set_data("truncation_percent", change.new, check_equality=True),
-                       names=["truncation_percent"])
-    parameters.observe(respond_to_mask_change, names=["mask"])
-    parameters.observe(respond_to_crop_change, names=["cropping"])
+    app_state = AppState(parameters=parameters, dag=data_manager())
+    controller = Controller(app_state)
+
+    fixed_image_gui = FixedImageGUI(app_state)
+    moving_image_gui = MovingImageGUI(app_state)
 
     # -----
     # The universal objective function
@@ -232,7 +228,7 @@ def main(*, ct_path: str, cache_directory: str):
     # -----
     # Register GUI module
     # -----
-    register_gui = RegisterGUI(dag=data_manager(), parameters=parameters, objective_function=objective_function)
+    register_gui = RegisterGUI(app_state)
 
     value = data_manager().get("moving_image")
     if isinstance(value, Error):

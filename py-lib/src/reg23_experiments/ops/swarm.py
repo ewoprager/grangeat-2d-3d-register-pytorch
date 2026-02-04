@@ -41,12 +41,12 @@ import traitlets
 
 import torch
 
-__all__ = ["OptimisationConfig", "Swarm"]
+__all__ = ["SwarmConfig", "Swarm"]
 
 logger = logging.getLogger(__name__)
 
 
-class OptimisationConfig(traitlets.HasTraits):
+class SwarmConfig(traitlets.HasTraits):
     """
     A struct that contains configuration information for an instance of the `Swarm` class. These values can safely be
     mutated between iterations of the swarm.
@@ -100,7 +100,7 @@ class Swarm:
     Let dimensionality be D; the width of the `particles` tensor is therefore 3*D + 1
     """
 
-    def __init__(self, *, config: OptimisationConfig, dimensionality: int, particle_count: int,
+    def __init__(self, *, config: SwarmConfig, dimensionality: int, particle_count: int,
                  initialisation_position: torch.Tensor, initialisation_spread: torch.Tensor, device: torch.device,
                  generator: torch.Generator | None = None):
         """
@@ -152,7 +152,7 @@ class Swarm:
         return self._particles.device
 
     @property
-    def config(self) -> OptimisationConfig:
+    def config(self) -> SwarmConfig:
         """
         :return: A reference to the swarm's configuration struct. This can safely be mutated between iterations.
         """

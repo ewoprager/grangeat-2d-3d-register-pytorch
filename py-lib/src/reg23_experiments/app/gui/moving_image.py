@@ -48,7 +48,6 @@ class ViewParamWidget(widgets.Container):
 class MovingImageGUI:
     def __init__(self, app_state: AppState):
         self._app_state = app_state
-        self._app_state.dag.add_callback("moving_image", "interface", self._set_callback)
         self._app_state.dag.set_evaluation_laziness("moving_image", lazily_evaluated=False)
         value = self._app_state.dag.get("moving_image", soft=True)
         if isinstance(value, Error):
@@ -63,6 +62,7 @@ class MovingImageGUI:
         self._view_widget = ViewParamWidget(self.set_view_params)
         viewer().window.add_dock_widget(self._view_widget, name="View options", area="left",
                                         menu=viewer().window.window_menu)
+        self._app_state.dag.add_callback("moving_image", "interface", self._set_callback)
 
     def _set_callback(self, new_value: torch.Tensor) -> None:
         self._layer.data = new_value.cpu().numpy()

@@ -11,7 +11,7 @@ from reg23_experiments.io.volume import load_volume, load_cached_volume
 from reg23_experiments.io.image import read_dicom, load_cached_drr
 from reg23_experiments.io.helpers import deterministic_hash_sinogram
 from reg23_experiments.ops import drr, pre_computed
-from reg23_experiments.ui.old.lib.structs import Target
+from reg23_experiments.app.gui.old.lib.structs import Target
 from reg23_experiments.ops import grangeat
 from reg23_experiments.data.sinogram import Sinogram, SinogramType
 from reg23_experiments.data.structs import (LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation, )

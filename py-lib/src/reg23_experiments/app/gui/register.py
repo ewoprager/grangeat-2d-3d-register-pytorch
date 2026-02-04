@@ -1,6 +1,5 @@
 import logging
 from typing import Callable, Any
-from abc import ABC, abstractmethod
 import os
 
 os.environ["QT_API"] = "PyQt6"
@@ -15,36 +14,13 @@ from reg23_experiments.ops.optimisation import mapping_transformation_to_paramet
 from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.app.state import AppState
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters
-from reg23_experiments.ops.swarm import Swarm, OptimisationConfig as SwarmConfig
+from reg23_experiments.ops.swarm import Swarm, SwarmConfig
 
 __all__ = ["RegisterGUI"]
 
 logger = logging.getLogger(__name__)
 
 
-# class OptimisationAlgorithm(ABC):
-#     @abstractmethod
-#     def name(self) -> str:
-#         """
-#         :return: The name of this algorithm.
-#         """
-#         pass
-#
-#     @abstractmethod
-#     def step(self) -> bool:
-#         """
-#         Execute one step of the optimisation
-#         :return: Whether the optimisation should terminate.
-#         """
-#         pass
-#
-#     @abstractmethod
-#     def get_best(self) -> torch.Tensor:
-#         pass
-#
-#     @abstractmethod
-#     def get_best_position(self) -> torch.Tensor:
-#         pass
 #
 #
 # class OptimisationJob:
@@ -130,47 +106,9 @@ logger = logging.getLogger(__name__)
 #         self.finished.emit(self._optimisation_job.best_position, self._optimisation_job.best)
 #
 #
-# class PsoAlgorithm(OptimisationAlgorithm):
-#     def __init__(self, *, particle_count: int, starting_pos: torch.Tensor, starting_spread: float,
-#                  objective_function: Callable[[torch.Tensor], torch.Tensor], device):
-#         self._swarm = Swarm(config=SwarmConfig(objective_function=objective_function), dimensionality=6,
-#                             particle_count=particle_count, initialisation_position=starting_pos,
-#                             initialisation_spread=torch.full_like(starting_pos, starting_spread), device=device)
-#
-#     def name(self) -> str:
-#         return "PSO"
-#
-#     def step(self) -> bool:
-#         self._swarm.iterate()
-#         return False
-#
-#     def get_best_position(self) -> torch.Tensor:
-#         return self._swarm.current_optimum_position
-#
-#     def get_best(self) -> torch.Tensor:
-#         return self._swarm.current_optimum
-#
-#
-# def new_op_job(*, dag: DAG, parameters: Parameters,
-#                objective_function: Callable[[DAG | ChildDAG, torch.Tensor], torch.Tensor]) -> OptimisationJob:
-#     if parameters.optimisation_algorithm == "pso":
-#         assert isinstance(parameters.op_algo_parameters, PsoParameters)
-#         return OptimisationJob(  #
-#             parent_dag=dag,  #
-#             max_iterations=10,  #
-#             obj_func=objective_function,  #
-#             op_algo_cls=PsoAlgorithm,  #
-#             particle_count=parameters.op_algo_parameters.particle_count,  #
-#             starting_pos=mapping_transformation_to_parameters(dag.get("current_transformation")),  #
-#             starting_spread=1.0,  #
-#             device=dag.get("device"),  #
-#         )
-#     else:
-#         raise ValueError(f"Unrecognised optimisation algorithm: '{parameters.optimisation_algorithm}'.")
-
 
 class RegisterGUI(widgets.Container):
-    def __init__(self, *, app_state: AppState):
+    def __init__(self, app_state: AppState):
         super().__init__(labels=False)
         self._app_state = app_state
 
@@ -185,7 +123,7 @@ class RegisterGUI(widgets.Container):
 
         self.append(widgets.Container(widgets=[  #
             self._eval_once_button,  #
-            self._eval_result_label,  #
+            self._eval_once_result_label,  #
         ], layout="horizontal", label="Obj. func."))
 
         # -----

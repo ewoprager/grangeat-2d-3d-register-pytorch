@@ -11,6 +11,7 @@ class NoParameters(StrictHasTraits):
 
 class PsoParameters(StrictHasTraits):
     particle_count: int = Int(min=1, default_value=2000).tag(ui=True)
+    starting_spread: float = Float(min=0.0, default_value=1.0).tag(ui=True)
     inertia_coefficient: float = Float(min=0.0, default_value=0.28).tag(ui=True)
     cognitive_coefficient: float = Float(min=0.0, default_value=2.525).tag(ui=True)
     social_coefficient: float = Float(min=0.0, default_value=1.225).tag(ui=True)
@@ -56,6 +57,7 @@ class Parameters(StrictHasTraits):
         "local_search"  #
     ], default=Undefined).tag(ui=True)
     op_algo_parameters: HasTraits = Instance(HasTraits, allow_none=False, default_value=Undefined).tag(ui=True)
+    iteration_count: int = Int(min=0).tag(ui=True)
 
     def __init__(self, **kwargs):
         self._op_algo_cache: dict[str, Any] = {}

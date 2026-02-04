@@ -1,5 +1,6 @@
 from typing import NamedTuple, Tuple, Sequence, Union
 import traitlets
+from abc import ABC, abstractmethod
 
 import torch
 import kornia
@@ -7,7 +8,7 @@ import scipy
 import numpy
 
 __all__ = ["Error", "GrowingTensor", "LinearMapping", "LinearRange", "Transformation", "SceneGeometry", "Cropping",
-           "Sinogram2dRange", "Sinogram2dGrid", "Sinogram3dGrid"]
+           "Sinogram2dRange", "Sinogram2dGrid", "Sinogram3dGrid", "OptimisationInstance"]
 
 
 class Error:
@@ -310,3 +311,28 @@ class Sinogram3dGrid(NamedTuple):
     # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #
     # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,
     # thetas, rs)
+
+
+class OptimisationInstance(ABC):
+    @abstractmethod
+    def name(self) -> str:
+        """
+        :return: The name of this algorithm.
+        """
+        pass
+
+    @abstractmethod
+    def step(self) -> bool:
+        """
+        Execute one step of the optimisation
+        :return: Whether the optimisation should terminate.
+        """
+        pass
+
+    @abstractmethod
+    def get_best(self) -> torch.Tensor:
+        pass
+
+    @abstractmethod
+    def get_best_position(self) -> torch.Tensor:
+        pass
