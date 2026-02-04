@@ -15,6 +15,8 @@ class AppState(HasTraits):
 
     button_evaluate_once: bool = Bool(default_value=False)
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)
+    job_state_description: str | None = Unicode(allow_none=True, default_value=None)
+    button_run_one_iteration: bool = Bool(default_value=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

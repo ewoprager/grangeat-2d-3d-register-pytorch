@@ -7,9 +7,9 @@ import scipy
 from magicgui import widgets
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.ops.data_manager import data_manager
-from reg23_experiments.ui.viewer_singleton import viewer
+from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.data.structs import Transformation
+from reg23_experiments.app.state import AppState
 
 __all__ = ["ViewParams", "ViewParamWidget", "MovingImageGUI"]
 
@@ -46,13 +46,14 @@ class ViewParamWidget(widgets.Container):
 
 
 class MovingImageGUI:
-    def __init__(self):
-        data_manager().add_callback("moving_image", "interface", self._set_callback)
-        data_manager().set_evaluation_laziness("moving_image", lazily_evaluated=False)
-        value = data_manager().get("moving_image", soft=True)
+    def __init__(self, app_state: AppState):
+        self._app_state = app_state
+        self._app_state.dag.add_callback("moving_image", "interface", self._set_callback)
+        self._app_state.dag.set_evaluation_laziness("moving_image", lazily_evaluated=False)
+        value = self._app_state.dag.get("moving_image", soft=True)
         if isinstance(value, Error):
             raise RuntimeError(f"Error softly getting 'moving_image' from DAG: {value.description}.")
-        initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((2, 2))
+        initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
         self._layer = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
                                          interpolation2d="linear", name="DRR")
         self._layer.mouse_drag_callbacks.append(self._mouse_drag)
@@ -80,7 +81,7 @@ class MovingImageGUI:
             dragged = False
             drag_start = np.array([event.position[1], -event.position[0]])
             rotation_start = scipy.spatial.transform.Rotation.from_rotvec(
-                rotvec=data_manager().get("current_transformation").rotation.cpu().numpy())
+                rotvec=self._app_state.dag.get("current_transformation").rotation.cpu().numpy())
             yield
             # on move
             while event.type == "mouse_move":
@@ -91,8 +92,8 @@ class MovingImageGUI:
                 euler_angles = [delta[1], delta[0], 0.0]
                 rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
                 rot_combined = rot_euler * rotation_start
-                prev = data_manager().get("current_transformation")
-                data_manager().set_data(  #
+                prev = self._app_state.dag.get("current_transformation")
+                self._app_state.dag.set_data(  #
                     "current_transformation",  #
                     Transformation(  #
                         rotation=torch.tensor(  #
@@ -116,7 +117,7 @@ class MovingImageGUI:
             dragged = False
             drag_start = torch.tensor(event.position)
             # rotation_start = scipy.spatial.transform.Rotation.from_rotvec(transformation.rotation.cpu().numpy())
-            translation_start = data_manager().get("current_transformation").translation[0:2].cpu()
+            translation_start = self._app_state.dag.get("current_transformation").translation[0:2].cpu()
             yield
             # on move
             while event.type == "mouse_move":
@@ -124,10 +125,10 @@ class MovingImageGUI:
 
                 delta = self._view_params.translation_sensitivity * (torch.tensor(event.position) - drag_start).flip(
                     (0,))
-                prev = data_manager().get("current_transformation")
+                prev = self._app_state.dag.get("current_transformation")
                 tr = prev.translation
                 tr[0:2] = (translation_start + delta).to(device=tr.device)
-                data_manager().set_data(  #
+                self._app_state.dag.set_data(  #
                     "current_transformation",  #
                     Transformation(  #
                         translation=tr,  #
