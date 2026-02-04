@@ -20,10 +20,7 @@ developed as part of a PhD.
 .
 ├── reg23/                      # A Python package with custom C++/CUDA operators for PyTorch; see the README.md inside for more information.
 ├── py-lib/                     # A python library with tools for research and experiments, used by the scripts in the scripts/ directory.
-│   ├── src/reg23_experiments   #
-│   │   ├── notification/       # A python package for logging and sending notification to Pushover
-│   │   ├── program/            # A python package newly in development for more modular access to library functionality, with separate interface.
-│   │   └── registration/       # A python package for experimentation with 2D/3D radiographic image registration, and using the custom reg23 package.
+│   ├── src/reg23_experiments/  # The source for the library
 │   ├── README.md               #
 │   ├── Conventions.md          # Contains details of Python coding conventions, regarding style and structure.
 │   └── pyproject.toml          # The project configuration file used by `uv` to setup the environment and dependencies of the reg23_experiments library

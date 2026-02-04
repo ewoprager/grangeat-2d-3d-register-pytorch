@@ -110,42 +110,6 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 #                                          output_size=fixed_image_size)
 #     return ncc(moving_image, fixed_image)
 
-def set_mask_to_current_transformation(current_transformation) -> None:
-    data_manager().set_data("mask_transformation", current_transformation)
-
-
-def respond_to_mask_change(change) -> None:
-    if change.new == "None":
-        data_manager().remove_callback("current_transformation", "mask_callback")
-        data_manager().set_data("mask_transformation", None, check_equality=True)
-    else:
-        data_manager().remove_callback("current_transformation", "mask_callback")
-        set_mask_to_current_transformation(data_manager().get("current_transformation"))
-        data_manager().add_callback("current_transformation", "mask_callback", set_mask_to_current_transformation)
-
-
-def set_crop_to_nonzero_drr(*_) -> None:
-    cropping: Cropping = args_from_dag()(geometry.get_crop_nonzero_drr)()
-    data_manager().set_data("cropping", cropping)
-
-
-def set_crop_to_full_depth_drr(*_) -> None:
-    cropping: Cropping = args_from_dag()(geometry.get_crop_full_depth_drr)()
-    data_manager().set_data("cropping", cropping)
-
-
-def respond_to_crop_change(change) -> None:
-    if change.new == "None":
-        data_manager().remove_callback("current_transformation", "crop_callback")
-        data_manager().set_data("cropping", None)
-    elif change.new == "nonzero_drr":
-        data_manager().remove_callback("current_transformation", "crop_callback")
-        set_crop_to_nonzero_drr()
-        data_manager().add_callback("current_transformation", "crop_callback", set_crop_to_nonzero_drr)
-    elif change.new == "full_depth_drr":
-        data_manager().remove_callback("current_transformation", "crop_callback")
-        set_crop_to_full_depth_drr()
-        data_manager().add_callback("current_transformation", "crop_callback", set_crop_to_full_depth_drr)
 
 
 def main(*, ct_path: str, cache_directory: str):

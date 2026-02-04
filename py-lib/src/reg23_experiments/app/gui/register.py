@@ -12,7 +12,8 @@ from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from reg23_experiments.data.structs import Error
 from reg23_experiments.ops.data_manager import DAG, ChildDAG
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters
-from reg23_experiments.ui.viewer_singleton import viewer
+from reg23_experiments.app.gui.viewer_singleton import viewer
+from reg23_experiments.app.state import AppState
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters
 from reg23_experiments.ops.swarm import Swarm, OptimisationConfig as SwarmConfig
 
@@ -169,19 +170,17 @@ def new_op_job(*, dag: DAG, parameters: Parameters,
 
 
 class RegisterGUI(widgets.Container):
-    def __init__(self, *, parameters: Parameters, dag: DAG,
-                 objective_function: Callable[[DAG | ChildDAG, torch.Tensor], torch.Tensor]):
+    def __init__(self, *, app_state: AppState):
         super().__init__(labels=False)
-        self._parameters = parameters
-        self._dag = dag
-        self._objective_function = objective_function
+        self._app_state = app_state
 
         # -----
         # Evaluate once button and result
         # -----
         self._eval_once_button = widgets.PushButton(label="Evaluate once")
         self._eval_once_button.changed.connect(self._on_eval_once)
-        self._eval_result_label = widgets.Label(label="Result:", value="n/a")
+        self._eval_once_result_label = widgets.Label(label="Result:", value="n/a")
+        self._app_state.observe(self._update_eval_once_result_label, names=["eval_once_result"])
         self.append(widgets.Container(widgets=[  #
             self._eval_once_button,  #
             self._eval_result_label,  #
@@ -211,12 +210,10 @@ class RegisterGUI(widgets.Container):
                                         tabify=True)
 
     def _on_eval_once(self, *args) -> None:
-        tr = self._dag.get("current_transformation")
-        if isinstance(tr, Error):
-            logger.error(f"Error getting 'current_transformation' for eval. once: {tr.description}")
-            return
-        self._eval_result_label.value = "{:.4f}".format(
-            self._objective_function(self._dag, mapping_transformation_to_parameters(tr)).item())
+        self._app_state.button_evaluate_once = True
+
+    def _update_eval_once_result_label(self, change) -> None:
+        self._eval_once_result_label.value = "n/a" if change.new is None else change.new
 
     def _update_op_algo_state_display(self) -> None:
         if self._parameters.optimisation_algorithm not in self._op_job_cache:
