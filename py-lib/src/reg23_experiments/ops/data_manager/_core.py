@@ -7,6 +7,8 @@ import traitlets
 from traitlets.config import SingletonConfigurable
 import weakref
 
+import torch
+
 from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
 
@@ -46,6 +48,26 @@ class Node(traitlets.HasTraits):
         if self.updater is None and proposal["value"]:
             raise traitlets.TraitError("A node with no updater cannot be dirty.")
         return proposal["value"]
+
+    def copy(self) -> 'Node':
+        return Node(  #
+            dependents=copy.deepcopy(self.dependents),  #
+            dirty=self.dirty,  #
+            updater=copy.deepcopy(self.updater),  #
+            lazily_evaluated=self.lazily_evaluated,  #
+            data=self.data.clone() if isinstance(self.data, torch.Tensor) else copy.deepcopy(self.data),  #
+            set_callbacks=dict(),  #
+        )
+
+    def copy_with_new_data(self, data) -> 'Node':
+        return Node(  #
+            dependents=copy.deepcopy(self.dependents),  #
+            dirty=self.dirty,  #
+            updater=copy.deepcopy(self.updater),  #
+            lazily_evaluated=self.lazily_evaluated,  #
+            data=data,  #
+            set_callbacks=dict(),  #
+        )
 
 
 class Updater(NamedTuple):
@@ -481,7 +503,7 @@ class ChildDAG:
         maybe_parent_node = self._parent._get_node_if_exists(node_name)
         if isinstance(maybe_parent_node, Error):
             return Error(f"Could not copy node '{node_name}' to child as it doesn't exist in the parent.")
-        self._nodes[node_name] = copy.deepcopy(maybe_parent_node)
+        self._nodes[node_name] = maybe_parent_node.copy()
         return None
 
     @_data_mutating
@@ -527,7 +549,7 @@ class ChildDAG:
         node = self._get_node_ensure_exists(node_name)
         if node_name not in self._nodes:
             # This is a parent node, so we copy in order to mutate
-            self._nodes[node_name] = copy.deepcopy(node)
+            self._nodes[node_name] = node.copy()
             node = self._nodes[node_name]
         node.lazily_evaluated = lazily_evaluated
 
@@ -548,18 +570,11 @@ class ChildDAG:
         if node_name in self._nodes:
             # this node is already in the child, so we can just mutate it
             node.data = data
-            node.dirty = False
         else:
             # this is a parent node, so now we copy this node to the child so that we can mutate it
-            self._nodes[node_name] = Node(  #
-                dependents=copy.deepcopy(node.dependents),  #
-                dirty=False,  #
-                updater=copy.deepcopy(node.updater),  #
-                lazily_evaluated=node.lazily_evaluated,  #
-                data=data,  #
-                set_callbacks=copy.deepcopy(node.set_callbacks),  #
-            )
+            self._nodes[node_name] = node.copy_with_new_data(data)
             node = self._nodes[node_name]
+        node.dirty = False
         # call the node's set callbacks
         for _, callback in node.set_callbacks.items():
             err = callback(data)
@@ -594,7 +609,7 @@ class ChildDAG:
         node = self._get_node_ensure_exists(node_name)
         if node_name not in self._nodes:
             # This is a parent node, so we copy in order to mutate
-            self._nodes[node_name] = copy.deepcopy(node)
+            self._nodes[node_name] = node.copy()
             node = self._nodes[node_name]
 
         node.set_callbacks[callback_name] = callback
@@ -607,7 +622,7 @@ class ChildDAG:
             return Error(f"No callback named '{callback_name}' in node '{node_name}'.")
         if node_name not in self._nodes:
             # This is a parent node, so we copy in order to mutate
-            self._nodes[node_name] = copy.deepcopy(node)
+            self._nodes[node_name] = node.copy()
             node = self._nodes[node_name]
         node.set_callbacks.pop(callback_name)
         return None
@@ -668,7 +683,7 @@ class ChildDAG:
         node = self._get_node_ensure_exists(name)
         if name not in self._nodes:
             # This is a parent node, so we copy in order to mutate
-            self._nodes[name] = copy.deepcopy(node)
+            self._nodes[name] = node.copy()
             node = self._nodes[name]
         # make node and all dependents dirty
         node.dirty = True

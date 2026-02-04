@@ -10,21 +10,22 @@ class NoParameters(StrictHasTraits):
 
 
 class PsoParameters(StrictHasTraits):
-    inertia_coefficient = Float(min=0.0, default_value=0.28).tag(ui=True)
-    cognitive_coefficient = Float(min=0.0, default_value=2.525).tag(ui=True)
-    social_coefficient = Float(min=0.0, default_value=1.225).tag(ui=True)
+    particle_count: int = Int(min=1, default_value=2000).tag(ui=True)
+    inertia_coefficient: float = Float(min=0.0, default_value=0.28).tag(ui=True)
+    cognitive_coefficient: float = Float(min=0.0, default_value=2.525).tag(ui=True)
+    social_coefficient: float = Float(min=0.0, default_value=1.225).tag(ui=True)
 
 
 class LocalSearchParameters(StrictHasTraits):
-    initial_step_size = Float(min=0.0, default_value=0.1).tag(ui=True)
-    no_improvement_threshold = Int(min=0, default_value=10).tag(ui=True)
-    step_size_reduction_ratio = Float(min=0.0, max=1.0, default_value=0.75).tag(ui=True)
-    max_reductions = Int(min=0, default_value=4).tag(ui=True)
-    max_iterations = Int(min=1, default_value=5000).tag(ui=True)
+    initial_step_size: float = Float(min=0.0, default_value=0.1).tag(ui=True)
+    no_improvement_threshold: int = Int(min=0, default_value=10).tag(ui=True)
+    step_size_reduction_ratio: float = Float(min=0.0, max=1.0, default_value=0.75).tag(ui=True)
+    max_reductions: int = Int(min=0, default_value=4).tag(ui=True)
+    max_iterations: int = Int(min=1, default_value=5000).tag(ui=True)
 
 
 class LocalZnccParameters(StrictHasTraits):
-    kernel_size = Int(min=1, default_value=8).tag(ui=True)
+    kernel_size: int = Int(min=1, default_value=8).tag(ui=True)
 
 
 class Parameters(StrictHasTraits):

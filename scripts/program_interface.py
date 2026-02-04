@@ -2,6 +2,8 @@ import argparse
 import os
 from typing import Any, Sequence
 
+os.environ["QT_API"] = "PyQt6"
+
 import torch
 import napari
 import pathlib
@@ -10,7 +12,7 @@ from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.io.volume import load_volume
 from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.data.structs import Error
-from reg23_experiments.ops.data_manager import init_data_manager, data_manager, dag_updater
+from reg23_experiments.ops.data_manager import init_data_manager, data_manager, dag_updater, DAG, ChildDAG
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.ops import drr
@@ -248,13 +250,13 @@ def main(*, ct_path: str, cache_directory: str):
     # -----
     # The universal objective function
     # -----
-    def objective_function(x: torch.Tensor) -> torch.Tensor:
+    def objective_function(dag: DAG | ChildDAG, x: torch.Tensor) -> torch.Tensor:
         t = mapping_parameters_to_transformation(x)
         # Setting the parameters
-        data_manager().set_data("current_transformation", t)
+        dag.set_data("current_transformation", t)
         # Getting the resulting moving and fixed images
-        moving_image = data_manager().get("moving_image")
-        fixed_image = data_manager().get("fixed_image")
+        moving_image = dag.get("moving_image")
+        fixed_image = dag.get("fixed_image")
         # Comparing, potentially weighting with a mask
         # if apply_mask:
         #     mask = data_manager().get("mask")
@@ -266,7 +268,7 @@ def main(*, ct_path: str, cache_directory: str):
     # -----
     # Register GUI module
     # -----
-    register_gui = RegisterGUI(parameters=parameters, objective_function=objective_function)
+    register_gui = RegisterGUI(dag=data_manager(), parameters=parameters, objective_function=objective_function)
 
     value = data_manager().get("moving_image")
     if isinstance(value, Error):
