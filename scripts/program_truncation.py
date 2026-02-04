@@ -517,14 +517,14 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
     instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
 
     (instance_output_dir / "notes.txt").write_text(  #
-        "Varying truncation and cropping.")
+        "Varying truncation and cropping and masking; finished off the previous dataset: 2026-02-03_16-49-22; just "
+        "the last two dataframes.")
 
     run_experiments(params_to_vary={  #
-        "truncation_percent": [0, 15, 30, 45],  #
-        "cropping": ["None", "nonzero_drr", "full_depth_drr"],  #
-        "mask": ["None",  #
-                     "Every evaluation",  #
-                     "Every evaluation weighting zncc"],  #
+        "truncation_percent": [45],  #
+        "cropping": ["full_depth_drr"],  #
+        "mask": ["Every evaluation",  #
+                 "Every evaluation weighting zncc"],  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 

@@ -90,8 +90,36 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
                     axes[k, j].legend()
         plt.show()
 
-    # data over truncation fraction, stratified by cropping
+    # data over truncation percent, masking and cropping
     if True:
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df,  #
+            ordered_axes=["cropping", "mask", "truncation_percent", "iteration"],  #
+            value_column="distance")
+
+        fig, axes = plt.subplots(distances.size(0), distances.size(1))
+        fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                            right=0.98,  # right margin
+                            bottom=0.08,  # bottom margin
+                            top=0.95,  # top margin
+                            wspace=0.2,  # width space between columns
+                            hspace=0.3  # height space between rows
+                            )
+        for k, cp in enumerate(axis_values["cropping"]):
+            for j, mk in enumerate(axis_values["mask"]):
+                for i, tp in enumerate(axis_values["truncation_percent"]):
+                    axes[k, j].plot(axis_values["iteration"], distances[k, j, i, :], label="t.p. {:.3f}".format(tp))
+                    axes[k, j].set_title("cp. {}; mk. {}".format(cp, mk))
+                    axes[k, j].set_xlabel("iteration")
+                    axes[k, j].xaxis.set_major_locator(MaxNLocator(integer=True))
+                    axes[k, j].set_ylabel("distance from G.T.")
+                    axes[k, j].set_ylim((0.0, None))
+                    axes[k, j].legend()
+        plt.show()
+
+    # data over truncation fraction, stratified by cropping
+    if False:
         for crop in ["None", "full_depth_drr", "nonzero_drr"]:
         # for mask in ["None", "Every evaluation", "Every evaluation weighting zncc"]:
             # converting to a tensor, with an axis per variable
