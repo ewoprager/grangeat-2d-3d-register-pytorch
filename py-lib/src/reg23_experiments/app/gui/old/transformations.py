@@ -7,7 +7,7 @@ from magicgui import widgets
 from qtpy.QtWidgets import QApplication
 
 from reg23_experiments.data.structs import Transformation
-from reg23_experiments.ui.old.lib.structs import WidgetManageSaved
+from reg23_experiments.app.gui.old.lib.structs import WidgetManageSaved
 
 __all__ = ["TransformationWidget"]
 

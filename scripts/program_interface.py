@@ -23,11 +23,12 @@ from reg23_experiments.app.gui.parameters import ParameterWidget
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters
 from reg23_experiments.app.gui.register import RegisterGUI
 from reg23_experiments.app.state import AppState
-from reg23_experiments.app.controller import Controller
+from reg23_experiments.app.worker_manager import WorkerManager
 from reg23_experiments.data.structs import Transformation, SceneGeometry, Cropping
 from reg23_experiments.ops import geometry
 from reg23_experiments.ops.data_manager import updaters, args_from_dag
 from reg23_experiments.ops.similarity_metric import ncc
+from reg23_experiments.app.save_data_manager import SaveDataManager
 
 
 @dag_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
@@ -201,7 +202,8 @@ def main(*, ct_path: str, cache_directory: str):
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
 
-    app_state = AppState(parameters=parameters, dag=data_manager())
+    app_state = AppState(parameters=parameters, dag=data_manager(),
+                         transformation_save_directory=pathlib.Path("data/program_interface_transformation_save_data"))
 
     # -----
     # The universal objective function
@@ -224,10 +226,11 @@ def main(*, ct_path: str, cache_directory: str):
     # -----
     # Modules
     # -----
-    controller = Controller(app_state=app_state, objective_function=objective_function)
+    worker_manager = WorkerManager(app_state=app_state, objective_function=objective_function)
     fixed_image_gui = FixedImageGUI(app_state)
     moving_image_gui = MovingImageGUI(app_state)
     register_gui = RegisterGUI(app_state)
+    save_data_manager = SaveDataManager(app_state)
 
     value = data_manager().get("moving_image")
     if isinstance(value, Error):

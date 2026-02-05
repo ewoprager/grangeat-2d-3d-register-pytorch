@@ -51,9 +51,9 @@ class Cropping(NamedTuple):
 
 
 class WidgetSelectData:
-    def __init__(self, *, widget_type: type, initial_choices: dict[str, Any] = {}, **kwargs):
+    def __init__(self, *, widget_type: type, initial_choices: dict[str, Any] | None = None, **kwargs):
         self._widget = widget_type(choices=[key for key in initial_choices], **kwargs)
-        self._data = initial_choices
+        self._data = dict() if initial_choices is None else initial_choices
 
     @property
     def widget(self) -> Any:

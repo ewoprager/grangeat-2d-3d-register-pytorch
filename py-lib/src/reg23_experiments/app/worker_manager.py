@@ -9,12 +9,12 @@ from reg23_experiments.ops.data_manager import DAG, ChildDAG
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters
 from reg23_experiments.app.workers.registration import RegistrationWorker
 
-__all__ = ["Controller"]
+__all__ = ["WorkerManager"]
 
 logger = logging.getLogger(__name__)
 
 
-class Controller:
+class WorkerManager:
     def __init__(self, *, app_state: AppState, objective_function: Callable[
         [DAG | ChildDAG, torch.Tensor], torch.Tensor]):
         self._app_state = app_state
@@ -29,16 +29,16 @@ class Controller:
     def _button_evaluate_once(self, change) -> None:
         if not change.new:
             return
+        self._app_state.button_evaluate_once = False
 
         result = self._objective_function(self._app_state.dag, mapping_transformation_to_parameters(
             self._app_state.dag.get("current_transformation")))
         self._app_state.eval_once_result = "{:.4f}".format(result.item())
 
-        self._app_state.button_evaluate_once = False
-
     def _button_run_one_iteration(self, change) -> None:
         if not change.new:
             return
+        self._app_state.button_run_one_iteration = False
 
         self._thread = QThread()
         self._worker = RegistrationWorker(app_state=self._app_state, objective_function=self._objective_function)
@@ -53,8 +53,6 @@ class Controller:
         # self._worker.progress.connect(self._iteration_callback)
         self._thread.start()
         # self._state_label.value = "Running..."
-
-        self._app_state.button_run_one_iteration = False
 
     def _update_job_state_description_label(self, best_position: torch.Tensor, best: torch.Tensor) -> None:
         self._app_state.job_state_description = "Current best is f(x) = {:.4f}\nat x = {}".format(best.item(),

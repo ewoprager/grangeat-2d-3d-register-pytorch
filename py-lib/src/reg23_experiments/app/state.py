@@ -1,4 +1,6 @@
-from traitlets import HasTraits, Instance, Bool, Unicode
+from traitlets import HasTraits, Instance, Bool, Unicode, validate, TraitError, List, Union
+
+import pathlib
 
 from reg23_experiments.ops.data_manager import DAG
 from reg23_experiments.experiments.parameters import Parameters
@@ -18,6 +20,13 @@ class AppState(HasTraits):
 
     job_state_description: str | None = Unicode(allow_none=True, default_value=None)
     button_run_one_iteration: bool = Bool(default_value=False)
+
+    transformation_save_directory: pathlib.Path = Instance(pathlib.Path, allow_none=False)
+    saved_transformation_names: list[str] = List(trait=Unicode(), default_value=[])
+    text_input_transformation_name: str = Unicode(default_value="")
+    button_save_transformation: bool = Bool(default_value=False)
+    button_load_transformation_of_name: str | None = Unicode(allow_none=True, default_value=None)
+    button_delete_transformation_of_name: str | None = Unicode(allow_none=True, default_value=None)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -39,3 +48,9 @@ class AppState(HasTraits):
 
     def _update_dag_truncation_percent(self, change) -> None:
         self.dag.set_data("truncation_percent", change.new, check_equality=True)
+
+    @validate("transformation_save_directory")
+    def _validate_transformation_save_directory(self, proposal):
+        if not proposal["value"].is_dir():
+            raise TraitError("'transformation_save_directory' must be a valid directory")
+        return proposal["value"]

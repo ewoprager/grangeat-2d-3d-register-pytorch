@@ -15,13 +15,13 @@ from qtpy.QtWidgets import QApplication
 import pathlib
 
 from reg23_experiments.data.structs import Transformation, GrowingTensor, SceneGeometry
-from reg23_experiments.ui.old.transformations import TransformationWidget
-from reg23_experiments.ui.old.lib.structs import HyperParameters, WidgetSelectData, WidgetManageSaved, \
+from reg23_experiments.app.gui.old.transformations import TransformationWidget
+from reg23_experiments.app.gui.old.lib.structs import HyperParameters, WidgetSelectData, WidgetManageSaved, \
     Cropping, SavedXRayParams, Target
 from reg23_experiments.ops import optimisation
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation
-from reg23_experiments.ui.old.registration_data import RegistrationData
+from reg23_experiments.app.gui.old.registration_data import RegistrationData
 
 __all__ = ["OptimisationResult", "OptimisationAlgorithm", "ParticleSwarm", "LocalSearch", "Worker", "OpAlgoWidget",
            "PSOWidget", "LocalSearchWidget", "RegisterWidget"]
