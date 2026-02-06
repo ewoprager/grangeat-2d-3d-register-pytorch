@@ -1,17 +1,16 @@
 from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe, Union
 from typing import Any
 
-from reg23_experiments.utils.data import StrictHasTraits
 from reg23_experiments.ops.data_manager import DAG, ChildDAG
 
 __all__ = ["NoParameters", "PsoParameters", "LocalZnccParameters", "LocalSearchParameters", "Parameters", "Context"]
 
 
-class NoParameters(StrictHasTraits):
+class NoParameters(HasTraits):
     pass
 
 
-class PsoParameters(StrictHasTraits):
+class PsoParameters(HasTraits):
     particle_count: int = Int(min=1, default_value=2000).tag(ui=True)
     starting_spread: float = Float(min=0.0, default_value=1.0).tag(ui=True)
     inertia_coefficient: float = Float(min=0.0, default_value=0.28).tag(ui=True)
@@ -19,7 +18,7 @@ class PsoParameters(StrictHasTraits):
     social_coefficient: float = Float(min=0.0, default_value=1.225).tag(ui=True)
 
 
-class LocalSearchParameters(StrictHasTraits):
+class LocalSearchParameters(HasTraits):
     initial_step_size: float = Float(min=0.0, default_value=0.1).tag(ui=True)
     no_improvement_threshold: int = Int(min=0, default_value=10).tag(ui=True)
     step_size_reduction_ratio: float = Float(min=0.0, max=1.0, default_value=0.75).tag(ui=True)
@@ -27,14 +26,14 @@ class LocalSearchParameters(StrictHasTraits):
     max_iterations: int = Int(min=1, default_value=5000).tag(ui=True)
 
 
-class LocalZnccParameters(StrictHasTraits):
+class LocalZnccParameters(HasTraits):
     kernel_size: int = Int(min=1, default_value=8).tag(ui=True)
 
 
-class Parameters(StrictHasTraits):
-    ct_path: str = Unicode(default_value=Undefined).tag(ui=True)
-    downsample_level: int = Int(min=0, default_value=Undefined).tag(ui=True)
-    truncation_percent: int = Int(min=0, max=100, default_value=Undefined).tag(ui=True)
+class Parameters(HasTraits):
+    ct_path: str = Unicode(allow_none=False).tag(ui=True)
+    downsample_level: int = Int(min=0).tag(ui=True)
+    truncation_percent: int = Int(min=0, max=100).tag(ui=True)
     cropping: str = Enum(values=[  #
         "None",  #
         "nonzero_drr",  #
@@ -44,21 +43,21 @@ class Parameters(StrictHasTraits):
         "None",  #
         "Every evaluation",  #
         "Every evaluation weighting zncc"  #
-    ], default_value=Undefined).tag(ui=True)
+    ]).tag(ui=True)
     sim_metric: str = Enum(values=[  #
         "zncc",  #
         "local_zncc",  #
         "multiscale_zncc",  #
         "gradient_correlation"  #
-    ], default_value=Undefined).tag(ui=True)
-    sim_metric_parameters: HasTraits = Instance(HasTraits, allow_none=False, default_value=Undefined).tag(ui=True)
+    ]).tag(ui=True)
+    sim_metric_parameters: HasTraits = Instance(HasTraits, allow_none=False).tag(ui=True)
     starting_distance: float = Float(min=0.0)
     sample_count_per_distance: int = Int(min=1)
     optimisation_algorithm: str = Enum(values=[  #
         "pso",  #
         "local_search"  #
     ], default=Undefined).tag(ui=True)
-    op_algo_parameters: HasTraits = Instance(HasTraits, allow_none=False, default_value=Undefined).tag(ui=True)
+    op_algo_parameters: HasTraits = Instance(HasTraits, allow_none=False).tag(ui=True)
     iteration_count: int = Int(min=0).tag(ui=True)
 
     def __init__(self, **kwargs):
@@ -103,7 +102,7 @@ class Parameters(StrictHasTraits):
         self.sim_metric_parameters = self._sim_metric_cache[self.sim_metric]
 
 
-class Context(StrictHasTraits):
+class Context(HasTraits):
     parameters: Parameters = Instance(Parameters, allow_none=False)
     dag: DAG | ChildDAG = Union(trait_types=[Instance(DAG, allow_none=False), Instance(ChildDAG, allow_none=False)],
                                 allow_none=False)

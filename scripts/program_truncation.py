@@ -6,6 +6,7 @@ import types
 import pprint
 import itertools
 import copy
+import traitlets
 
 import pathlib
 
@@ -19,7 +20,6 @@ from reg23_experiments.utils.console_logging import tqdm
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.ops.data_manager import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
 from reg23_experiments.data.structs import Error, Transformation, SceneGeometry, Cropping
-from reg23_experiments.utils.data import StrictHasTraits
 from reg23_experiments.io.volume import load_volume
 from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
@@ -119,7 +119,7 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
                                                   output_size=fixed_image_size)}
 
 
-class RegConfig(StrictHasTraits):
+class RegConfig(traitlets.HasTraits):
     particle_count: int = traitlets.Int(default_value=traitlets.Undefined)
     particle_initialisation_spread: float = traitlets.Float(default_value=traitlets.Undefined)
     iteration_count: int = traitlets.Int(default_value=traitlets.Undefined)
@@ -204,7 +204,7 @@ def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConf
     return ret
 
 
-class ExperimentConfig(StrictHasTraits):
+class ExperimentConfig(traitlets.HasTraits):
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
     truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)

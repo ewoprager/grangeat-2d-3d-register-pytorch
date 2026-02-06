@@ -201,6 +201,11 @@ def main(*, ct_path: str, cache_directory: str):
         sample_count_per_distance=1,  #
         iteration_count=10,  #
     )
+
+    from reg23_experiments.utils.data import clone_has_traits
+    parameters.op_algo_parameters.particle_count = 5
+    test = clone_has_traits(parameters)
+
     parameters_widget = ParameterWidget(parameters)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
