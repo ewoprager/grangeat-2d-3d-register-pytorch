@@ -357,7 +357,7 @@ class DAG:
             self._nodes[dependency.depended].dependents.append(dependency.depender)
         # make depender dirty
         self._send_children_copies(dependency.depender)
-        self._nodes[dependency.depender].dirty = True
+        self._set_dirty(dependency.depender)
 
     def _remove_dependency(self, dependency: Dependency) -> None | Error:
         # check both nodes exist
