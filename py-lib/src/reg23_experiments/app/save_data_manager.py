@@ -47,7 +47,8 @@ class SaveDataManager:
         if isinstance(tr, Error):
             logger.error(f"Error loading transformation '{name}' from save manager: {tr.description}")
             return
-        self._app_state.dag.set_data("current_transformation", tr)
+        device = self._app_state.dag.get("current_transformation").rotation.device
+        self._app_state.dag.set_data("current_transformation", tr.to(device=device))
 
     def _button_delete_transformation_of_name(self, change) -> None:
         if change.new is None:

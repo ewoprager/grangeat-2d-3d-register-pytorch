@@ -39,6 +39,8 @@ class AppState(HasTraits):
         self.dag.set_data("downsample_level", self.parameters.downsample_level)
         self.parameters.observe(self._update_dag_truncation_percent, names=["truncation_percent"])
         self.dag.set_data("truncation_percent", self.parameters.truncation_percent)
+        self.parameters.observe(self._update_dag_target_flipped, names=["target_flipped"])
+        self.dag.set_data("target_flipped", self.parameters.target_flipped)
         self.parameters.observe(lambda change: respond_to_mask_change(self.dag, change), names=["mask"])
         self.parameters.observe(lambda change: respond_to_crop_change(self.dag, change), names=["cropping"])
 
@@ -50,6 +52,9 @@ class AppState(HasTraits):
 
     def _update_dag_truncation_percent(self, change) -> None:
         self.dag.set_data("truncation_percent", change.new, check_equality=True)
+
+    def _update_dag_target_flipped(self, change) -> None:
+        self.dag.set_data("target_flipped", change.new, check_equality=True)
 
     @validate("transformation_save_directory")
     def _validate_transformation_save_directory(self, proposal):

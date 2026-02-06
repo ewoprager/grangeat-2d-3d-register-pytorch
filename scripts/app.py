@@ -29,6 +29,7 @@ from reg23_experiments.ops import geometry
 from reg23_experiments.ops.data_manager import updaters, args_from_dag
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.save_data_manager import SaveDataManager
+from reg23_experiments.io.image import read_dicom
 
 
 @dag_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
@@ -49,20 +50,32 @@ def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequ
 @dag_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
 def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
                      new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
-                     ap_transformation: Transformation, target_ap_distance: float) -> dict[str, Any]:
-    # generate a DRR through the volume
-    drr_spec = None
-    if not regenerate_drr:
-        drr_spec = load_cached_drr(cache_directory, ct_path)
+                     ap_transformation: Transformation, target_ap_distance: float, xray_path: str | None,
+                     target_flipped: bool, device: torch.device) -> dict[str, Any]:
+    if xray_path is None:
+        # generate a DRR through the volume
+        drr_spec = None
+        if not regenerate_drr:
+            drr_spec = load_cached_drr(cache_directory, ct_path)
 
-    if drr_spec is None:
-        tr = mapping_parameters_to_transformation(
-            random_parameters_at_distance(mapping_transformation_to_parameters(ap_transformation), target_ap_distance))
-        drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
-                                              save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
+        if drr_spec is None:
+            tr = mapping_parameters_to_transformation(
+                random_parameters_at_distance(mapping_transformation_to_parameters(ap_transformation),
+                                              target_ap_distance))
+            drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
+                                                  save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
 
-    fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
-    del drr_spec
+        fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
+        del drr_spec
+    else:
+        image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(  #
+            xray_path, downsample_to_ct_spacing=ct_spacing.mean().item())
+        transformation_ground_truth = None
+
+    if target_flipped:
+        image_2d_full = image_2d_full.flip(dims=(1,))
+
+    image_2d_full = image_2d_full.to(device=device)
 
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
             "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
@@ -114,7 +127,7 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 #     return ncc(moving_image, fixed_image)
 
 
-def main(*, ct_path: str, cache_directory: str):
+def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # -----
@@ -173,6 +186,7 @@ def main(*, ct_path: str, cache_directory: str):
         save_to_cache=True,  #
         new_drr_size=torch.Size([500, 500]),  #
         ct_path=ct_path,  #
+        xray_path=xray_path,  #
         device=device,  #
         source_offset=torch.zeros(2),  #
         mask_transformation=None,  #
@@ -259,10 +273,10 @@ if __name__ == "__main__":
                              "is 'cache'.")
     parser.add_argument("-p", "--ct-path", type=str,
                         help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
-                             "process. If not "
-                             "provided, some simple synthetic data will be used instead - note that in this case, "
-                             "data will not be "
-                             "saved to the cache.")
+                             "process.")
+    parser.add_argument("-x", "--xray-path", type=str, default=None,
+                        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
+                             "this is provided, the X-ray will by used instead of any DRR.")
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")
     # parser.add_argument(
@@ -278,7 +292,7 @@ if __name__ == "__main__":
         os.makedirs(args.cache_directory)
 
     try:
-        main(ct_path=args.ct_path, cache_directory=args.cache_directory)
+        main(ct_path=args.ct_path, xray_path=args.xray_path, cache_directory=args.cache_directory)
         if args.notify:
             pushover.send_notification(__file__, "Script finished.")
     except Exception as e:
