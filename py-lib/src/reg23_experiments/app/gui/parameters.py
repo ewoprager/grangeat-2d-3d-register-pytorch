@@ -36,13 +36,7 @@ class ParameterWidget(Container):
                     child.min = trait.min
                 if trait.max is not None:
                     child.max = trait.max
-
-                def _update_spin_box(v, n=name):
-                    logger.info(f"int '{n}' updating to {v}")
-                    setattr(params, n, v)
-
-                child.changed.connect(_update_spin_box)
-                # child.changed.connect(lambda v, n=name: setattr(params, n, v))
+                child.changed.connect(lambda v, n=name: setattr(params, n, v))
                 self.append(child)
             # Bool
             elif isinstance(trait, traitlets.Bool):

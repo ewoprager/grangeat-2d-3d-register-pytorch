@@ -27,12 +27,10 @@ logger = logging.getLogger(__name__)
 def new_optimisation_instance(app_state: AppState,
                               objective_function: Callable[[Context, torch.Tensor], torch.Tensor]) -> tuple[
     Context, OptimisationInstance]:
-    logger.info(f"pc = {app_state.parameters.op_algo_parameters.particle_count}")
     context = Context(parameters=clone_has_traits(app_state.parameters), dag=ChildDAG(app_state.dag))
     if context.parameters.optimisation_algorithm == "pso":
         oa_params = context.parameters.op_algo_parameters
         assert isinstance(oa_params, PsoParameters)
-        logger.info(f"after clone = {oa_params.particle_count}")
         return context, PsoInstance(  #
             particle_count=oa_params.particle_count,  #
             starting_pos=mapping_transformation_to_parameters(app_state.dag.get("current_transformation")),  #

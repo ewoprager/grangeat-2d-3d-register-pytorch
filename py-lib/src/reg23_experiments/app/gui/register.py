@@ -39,16 +39,28 @@ class RegisterGUI(widgets.Container):
         # -----
         # Run optimisation
         # -----
-        self._job_state_description_label = widgets.Label()
-        self._app_state.observe(self._update_job_state_description_label, names=["job_state_description"])
+        self._run_button = widgets.PushButton(label="Run")
+        # ToDo: connect this button
 
         self._one_iteration_button = widgets.PushButton(label="One iteration")
         self._one_iteration_button.changed.connect(self._on_one_iteration)
 
+        self._job_state_description_label = widgets.Label()
+        self._app_state.observe(self._update_job_state_description_label, names=["current_best_x"])
+
+        self._load_current_best_button = widgets.PushButton(label="Load best x")
+        self._load_current_best_button.changed.connect(self._on_load_current_best)
+
         self.append(widgets.Container(widgets=[  #
-            self._job_state_description_label,  #
-            self._one_iteration_button,  #
-        ], layout="horizontal", label="Optimise"))
+            widgets.Container(widgets=[  #
+                self._run_button,  #
+                self._one_iteration_button  #
+            ], labels=False, layout="horizontal"),  #
+            widgets.Container(widgets=[  #
+                self._job_state_description_label,  #
+                self._load_current_best_button  #
+            ], labels=False, layout="horizontal"),  #
+        ], layout="vertical", label="Optimise", labels=False))
 
         # ----
         # Transformations
@@ -66,11 +78,11 @@ class RegisterGUI(widgets.Container):
         self._x_loop_preventer = False
         # Float spin boxes for the current transformation in native units
         self._rotation_widgets = [  #
-            widgets.FloatSpinBox(value=current_t.rotation[i].item(), step=0.001, min=-1.04, max=1.0e4)  #
+            widgets.FloatSpinBox(value=current_t.rotation[i].item(), step=0.001, min=-1.0e4, max=1.0e4)  #
             for i in range(3)  #
         ]
         self._translation_widgets = [  #
-            widgets.FloatSpinBox(value=current_t.translation[i].item(), step=0.1, min=-1.08, max=1.0e8)  #
+            widgets.FloatSpinBox(value=current_t.translation[i].item(), step=0.1, min=-1.0e8, max=1.0e8)  #
             for i in range(3)  #
         ]
         self.append(widgets.Container(widgets=self._rotation_widgets + self._translation_widgets, layout="horizontal",
@@ -115,7 +127,8 @@ class RegisterGUI(widgets.Container):
         self._eval_once_result_label.value = "n/a" if change.new is None else change.new
 
     def _update_job_state_description_label(self, change) -> None:
-        self._job_state_description_label.value = "No job has been run." if change.new is None else change.new
+        self._job_state_description_label.value = "No job has been run." if change.new is None else (f"Best x = "
+                                                                                                     f"{change.new}.")
 
     def _on_one_iteration(self, *args) -> None:
         self._app_state.button_run_one_iteration = True
@@ -188,3 +201,6 @@ class RegisterGUI(widgets.Container):
                 self._rotation_widgets[i].value = current_transformation.rotation[i].item()
                 self._translation_widgets[i].value = current_transformation.translation[i].item()
             self._t_loop_preventer = False
+
+    def _on_load_current_best(self, *args) -> None:
+        self._app_state.button_load_current_best = True

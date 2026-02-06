@@ -6,8 +6,9 @@ from PyQt6.QtCore import QObject, QThread, pyqtSignal
 
 from reg23_experiments.app.state import AppState
 from reg23_experiments.experiments.parameters import Context
-from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters
-from reg23_experiments.app.workers.registration import RegistrationWorker
+from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
+    mapping_parameters_to_transformation
+from reg23_experiments.app.workers.registration_worker import RegistrationWorker
 
 __all__ = ["WorkerManager"]
 
@@ -21,6 +22,7 @@ class WorkerManager:
 
         self._app_state.observe(self._button_evaluate_once, names=["button_evaluate_once"])
         self._app_state.observe(self._button_run_one_iteration, names=["button_run_one_iteration"])
+        self._app_state.observe(self._button_load_current_best, names=["button_load_current_best"])
 
         self._thread = None
         self._worker = None
@@ -41,10 +43,11 @@ class WorkerManager:
         self._app_state.button_run_one_iteration = False
 
         self._thread = QThread()
-        self._worker = RegistrationWorker(app_state=self._app_state, objective_function=self._objective_function)
+        self._worker = RegistrationWorker(app_state=self._app_state, objective_function=self._objective_function,
+                                          max_iterations=1)
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
-        self._worker.finished.connect(self._update_job_state_description_label)
+        self._worker.finished.connect(self._update_current_best_x)
         self._worker.finished.connect(self._thread.quit)
         self._worker.finished.connect(self._worker.deleteLater)
         self._thread.finished.connect(self._thread.deleteLater)
@@ -53,6 +56,16 @@ class WorkerManager:
         # self._worker.progress.connect(self._iteration_callback)
         self._thread.start()  # self._state_label.value = "Running..."
 
-    def _update_job_state_description_label(self, best_position: torch.Tensor, best: torch.Tensor) -> None:
-        self._app_state.job_state_description = "Current best is f(x) = {:.4f}\nat x = {}".format(best.item(),
-                                                                                                  best_position)
+    def _update_current_best_x(self, best_position: torch.Tensor, best: torch.Tensor) -> None:
+        self._app_state.current_best_x = best_position
+
+    def _button_load_current_best(self, change) -> None:
+        if not change.new:
+            return
+        self._app_state.button_load_current_best = False
+
+        if self._app_state.current_best_x is None:
+            logger.warning("Cannot load current best; no registration has been run.")
+            return
+        self._app_state.dag.set_data("current_transformation",
+                                     mapping_parameters_to_transformation(self._app_state.current_best_x))

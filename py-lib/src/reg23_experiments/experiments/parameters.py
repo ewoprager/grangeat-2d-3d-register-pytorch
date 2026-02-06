@@ -60,6 +60,18 @@ class Parameters(HasTraits):
     op_algo_parameters: HasTraits = Instance(HasTraits, allow_none=False).tag(ui=True)
     iteration_count: int = Int(min=0).tag(ui=True)
 
+    OP_ALGO_PARAM_CLASSES: dict[str, type] = {  #
+        "pso": PsoParameters,  #
+        "local_search": LocalSearchParameters,  #
+    }
+
+    SIM_MET_PARAM_CLASSES: dict[str, type] = {  #
+        "zncc": NoParameters,  #
+        "local_zncc": LocalZnccParameters,  #
+        "multiscale_zncc": NoParameters,  #
+        "gradient_correlation": NoParameters,  #
+    }
+
     def __init__(self, **kwargs):
         self._op_algo_cache: dict[str, Any] = {}
         self._sim_metric_cache: dict[str, Any] = {}
@@ -76,30 +88,22 @@ class Parameters(HasTraits):
         self._update_sim_metric_params()
 
     def _update_op_algo_params(self):
-        if self.optimisation_algorithm not in self._op_algo_cache:
-            if self.optimisation_algorithm == "pso":
-                self._op_algo_cache[self.optimisation_algorithm] = PsoParameters()
-            elif self.optimisation_algorithm == "local_search":
-                self._op_algo_cache[self.optimisation_algorithm] = LocalSearchParameters()
-            else:
-                raise ValueError(f"Unrecognised optimisation algorithm '{self.optimisation_algorithm}'.")
-
-        self.op_algo_parameters = self._op_algo_cache[self.optimisation_algorithm]
+        desired_cls: type = Parameters.OP_ALGO_PARAM_CLASSES[self.optimisation_algorithm]
+        if isinstance(self.op_algo_parameters, desired_cls):
+            self._op_algo_cache[self.optimisation_algorithm] = self.op_algo_parameters
+        else:
+            if self.optimisation_algorithm not in self._op_algo_cache:
+                self._op_algo_cache[self.optimisation_algorithm] = desired_cls()
+            self.op_algo_parameters = self._op_algo_cache[self.optimisation_algorithm]
 
     def _update_sim_metric_params(self):
-        if self.sim_metric not in self._sim_metric_cache:
-            if self.sim_metric == "zncc":
-                self._sim_metric_cache[self.sim_metric] = NoParameters()
-            elif self.sim_metric == "local_zncc":
-                self._sim_metric_cache[self.sim_metric] = LocalZnccParameters()
-            elif self.sim_metric == "multiscale_zncc":
-                self._sim_metric_cache[self.sim_metric] = NoParameters()
-            elif self.sim_metric == "gradient_correlation":
-                self._sim_metric_cache[self.sim_metric] = NoParameters()
-            else:
-                raise ValueError(f"Unrecognised optimisation algorithm '{self.sim_metric}'.")
-
-        self.sim_metric_parameters = self._sim_metric_cache[self.sim_metric]
+        desired_cls: type = Parameters.SIM_MET_PARAM_CLASSES[self.sim_metric]
+        if isinstance(self.sim_metric_parameters, desired_cls):
+            self._sim_metric_cache[self.sim_metric] = self.sim_metric_parameters
+        else:
+            if self.sim_metric not in self._sim_metric_cache:
+                self._sim_metric_cache[self.sim_metric] = desired_cls()
+            self.sim_metric_parameters = self._sim_metric_cache[self.sim_metric]
 
 
 class Context(HasTraits):

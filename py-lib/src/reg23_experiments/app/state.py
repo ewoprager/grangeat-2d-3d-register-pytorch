@@ -1,6 +1,7 @@
 from traitlets import HasTraits, Instance, Bool, Unicode, validate, TraitError, List, Union
 
 import pathlib
+import torch
 
 from reg23_experiments.ops.data_manager import DAG
 from reg23_experiments.experiments.parameters import Parameters
@@ -18,8 +19,9 @@ class AppState(HasTraits):
     button_evaluate_once: bool = Bool(default_value=False)
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)
 
-    job_state_description: str | None = Unicode(allow_none=True, default_value=None)
+    current_best_x: torch.Tensor | None = Instance(torch.Tensor, allow_none=True, default_value=None)
     button_run_one_iteration: bool = Bool(default_value=False)
+    button_load_current_best: bool = Bool(default_value=False)
 
     transformation_save_directory: pathlib.Path = Instance(pathlib.Path, allow_none=False)
     saved_transformation_names: list[str] = List(trait=Unicode(), default_value=[])

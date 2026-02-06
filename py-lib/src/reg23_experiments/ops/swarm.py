@@ -38,6 +38,7 @@ for i in range(iteration_count):
 
 import logging
 import traitlets
+from typing import Callable
 
 import torch
 
@@ -51,10 +52,10 @@ class SwarmConfig(traitlets.HasTraits):
     A struct that contains configuration information for an instance of the `Swarm` class. These values can safely be
     mutated between iterations of the swarm.
     """
-    objective_function = traitlets.Callable()
-    inertia_coefficient = traitlets.Float(default_value=0.28)
-    cognitive_coefficient = traitlets.Float(default_value=2.525)
-    social_coefficient = traitlets.Float(default_value=1.225)
+    objective_function: Callable = traitlets.Callable()
+    inertia_coefficient: float = traitlets.Float(default_value=0.28)
+    cognitive_coefficient: float = traitlets.Float(default_value=2.525)
+    social_coefficient: float = traitlets.Float(default_value=1.225)
 
 
 class Swarm:
@@ -142,7 +143,6 @@ class Swarm:
         self._global_best = self._particles[0, -1]
         # evaluating for rest of particles, and determining global best
         for particle in range(particle_count):
-            logger.info(f"particle {particle}/{particle_count} initialising")
             self._particles[particle, -1] = self._config.objective_function(self._particles[particle, 0:dimensionality])
             if self._particles[particle, -1] < self._global_best:
                 self._global_best = self._particles[particle, -1]
