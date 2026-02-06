@@ -1,7 +1,10 @@
-from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe
+from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe, Union
 from typing import Any
 
 from reg23_experiments.utils.data import StrictHasTraits
+from reg23_experiments.ops.data_manager import DAG, ChildDAG
+
+__all__ = ["NoParameters", "PsoParameters", "LocalZnccParameters", "LocalSearchParameters", "Parameters", "Context"]
 
 
 class NoParameters(StrictHasTraits):
@@ -98,3 +101,9 @@ class Parameters(StrictHasTraits):
                 raise ValueError(f"Unrecognised optimisation algorithm '{self.sim_metric}'.")
 
         self.sim_metric_parameters = self._sim_metric_cache[self.sim_metric]
+
+
+class Context(StrictHasTraits):
+    parameters: Parameters = Instance(Parameters, allow_none=False)
+    dag: DAG | ChildDAG = Union(trait_types=[Instance(DAG, allow_none=False), Instance(ChildDAG, allow_none=False)],
+                                allow_none=False)

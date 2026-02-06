@@ -27,7 +27,7 @@ class ParameterWidget(Container):
                     child.min = trait.min
                 if trait.max is not None:
                     child.max = trait.max
-                child.changed.connect(lambda v, n=name: setattr(self._params, n, v))
+                child.changed.connect(lambda v, n=name: setattr(params, n, v))
                 self.append(child)
             # Int
             elif isinstance(trait, traitlets.Int):
@@ -36,17 +36,23 @@ class ParameterWidget(Container):
                     child.min = trait.min
                 if trait.max is not None:
                     child.max = trait.max
-                child.changed.connect(lambda v, n=name: setattr(self._params, n, v))
+
+                def _update_spin_box(v, n=name):
+                    logger.info(f"int '{n}' updating to {v}")
+                    setattr(params, n, v)
+
+                child.changed.connect(_update_spin_box)
+                # child.changed.connect(lambda v, n=name: setattr(params, n, v))
                 self.append(child)
             # Bool
             elif isinstance(trait, traitlets.Bool):
                 child = CheckBox(name=name, value=value)
-                child.changed.connect(lambda s, n=name: setattr(self._params, n, bool(s)))
+                child.changed.connect(lambda s, n=name: setattr(params, n, bool(s)))
                 self.append(child)
             # Enum
             elif isinstance(trait, traitlets.Enum):
                 child = ComboBox(name=name, choices=trait.values, value=value)
-                child.changed.connect(lambda v, n=name: setattr(self._params, n, v))
+                child.changed.connect(lambda v, n=name: setattr(params, n, v))
                 self.append(child)
             # Unicode; ToDo: Currently read-only
             elif isinstance(trait, traitlets.Unicode):
@@ -69,7 +75,7 @@ class ParameterWidget(Container):
                     self.append(new_child)
                     self._subwidgets[_name] = new_child
 
-                self._params.observe(replace_child, names=name)
+                params.observe(replace_child, names=name)
                 self.append(child)
             # Unsupported
             else:

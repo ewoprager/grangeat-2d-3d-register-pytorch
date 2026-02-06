@@ -142,6 +142,7 @@ class Swarm:
         self._global_best = self._particles[0, -1]
         # evaluating for rest of particles, and determining global best
         for particle in range(particle_count):
+            logger.info(f"particle {particle}/{particle_count} initialising")
             self._particles[particle, -1] = self._config.objective_function(self._particles[particle, 0:dimensionality])
             if self._particles[particle, -1] < self._global_best:
                 self._global_best = self._particles[particle, -1]

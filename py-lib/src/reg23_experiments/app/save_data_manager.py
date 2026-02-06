@@ -33,7 +33,8 @@ class SaveDataManager:
                                                     self._app_state.dag.get("current_transformation"))
         if isinstance(err, Error):
             logger.error(
-                f"Error saving transformation with name '{self._app_state.text_input_transformation_name}' to save manager: {err.description}")
+                f"Error saving transformation with name '{self._app_state.text_input_transformation_name}' to save "
+                f"manager: {err.description}")
         self._update_saved_transformation_names()
         self._app_state.button_save_transformation = False
 

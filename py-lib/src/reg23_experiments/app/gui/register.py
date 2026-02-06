@@ -4,10 +4,13 @@ import os
 os.environ["QT_API"] = "PyQt6"
 
 from magicgui import widgets
+import torch
 
-from reg23_experiments.data.structs import Error
+from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.app.state import AppState
+from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
+    mapping_parameters_to_transformation
 
 __all__ = ["RegisterGUI"]
 
@@ -16,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class RegisterGUI(widgets.Container):
     def __init__(self, app_state: AppState):
-        super().__init__(labels=False)
+        super().__init__(labels=True)
         self._app_state = app_state
 
         # -----
@@ -37,7 +40,6 @@ class RegisterGUI(widgets.Container):
         # Run optimisation
         # -----
         self._job_state_description_label = widgets.Label()
-        self.append(self._job_state_description_label)
         self._app_state.observe(self._update_job_state_description_label, names=["job_state_description"])
 
         self._one_iteration_button = widgets.PushButton(label="One iteration")
@@ -48,10 +50,43 @@ class RegisterGUI(widgets.Container):
             self._one_iteration_button,  #
         ], layout="horizontal", label="Optimise"))
 
+        # ----
+        # Transformations
+        # ----
+        current_t: Transformation = self._app_state.dag.get("current_transformation")
+        current_params: torch.Tensor = mapping_transformation_to_parameters(current_t)
+        # Float spin boxes for the current transformation in parameter space
+        self._x_widgets = [  #
+            widgets.FloatSpinBox(value=current_params[i].item(), step=0.01, min=-1.0e6, max=1.0e6)  #
+            for i in range(6)  #
+        ]
+        self.append(widgets.Container(widgets=self._x_widgets, layout="horizontal", labels=False, label="x"))
+        for i in range(6):
+            self._x_widgets[i].changed.connect(self._update_current_transformation_from_x)
+        self._x_loop_preventer = False
+        # Float spin boxes for the current transformation in native units
+        self._rotation_widgets = [  #
+            widgets.FloatSpinBox(value=current_t.rotation[i].item(), step=0.001, min=-1.04, max=1.0e4)  #
+            for i in range(3)  #
+        ]
+        self._translation_widgets = [  #
+            widgets.FloatSpinBox(value=current_t.translation[i].item(), step=0.1, min=-1.08, max=1.0e8)  #
+            for i in range(3)  #
+        ]
+        self.append(widgets.Container(widgets=self._rotation_widgets + self._translation_widgets, layout="horizontal",
+                                      labels=False, label="T"))
+        for i in range(3):
+            self._rotation_widgets[i].changed.connect(self._update_current_transformation_from_t)
+            self._translation_widgets[i].changed.connect(self._update_current_transformation_from_t)
+        self._t_loop_preventer = False
+        # A callback to keep both x and t spin boxes updated
+        self._app_state.dag.add_callback("current_transformation", "x_t_display", self._update_x_t_display)
+
         # -----
-        # Save transformations
+        # Saving and loading transformations
         # -----
-        self._saved_transformations_select = widgets.Select(choices=self._app_state.saved_transformation_names)
+        self._saved_transformations_select = widgets.Select(choices=self._app_state.saved_transformation_names,
+                                                            label="Saved\nTrs.")
         self._app_state.observe(self._update_saved_transformations_select, names=["saved_transformation_names"])
         self.append(self._saved_transformations_select)
         self._transformation_name_input = widgets.LineEdit(value="")
@@ -116,3 +151,40 @@ class RegisterGUI(widgets.Container):
             logger.warning(f"Failed to delete transformation: {res.description}")
             return
         self._app_state.button_delete_transformation_of_name = res
+
+    def _update_current_transformation_from_x(self, *args) -> None:
+        if self._x_loop_preventer:
+            return
+        self._x_loop_preventer = True
+        params: list[float] = [widget.value for widget in self._x_widgets]
+        current_t: Transformation = self._app_state.dag.get("current_transformation")
+        new_params = torch.tensor(params, device=current_t.rotation.device, dtype=current_t.rotation.dtype)
+        self._app_state.dag.set_data("current_transformation", mapping_parameters_to_transformation(new_params))
+        self._x_loop_preventer = False
+
+    def _update_current_transformation_from_t(self, *args) -> None:
+        if self._t_loop_preventer:
+            return
+        self._t_loop_preventer = True
+        current_t: Transformation = self._app_state.dag.get("current_transformation")
+        rotation = torch.tensor([widget.value for widget in self._rotation_widgets], dtype=current_t.rotation.dtype,
+                                device=current_t.rotation.device)
+        translation = torch.tensor([widget.value for widget in self._translation_widgets],
+                                   dtype=current_t.rotation.dtype, device=current_t.rotation.device)
+        self._app_state.dag.set_data("current_transformation",
+                                     Transformation(rotation=rotation, translation=translation))
+        self._t_loop_preventer = False
+
+    def _update_x_t_display(self, current_transformation: Transformation) -> None:
+        if not self._x_loop_preventer:
+            self._x_loop_preventer = True
+            params: torch.Tensor = mapping_transformation_to_parameters(current_transformation)
+            for i in range(6):
+                self._x_widgets[i].value = params[i].item()
+            self._x_loop_preventer = False
+        if not self._t_loop_preventer:
+            self._t_loop_preventer = True
+            for i in range(3):
+                self._rotation_widgets[i].value = current_transformation.rotation[i].item()
+                self._translation_widgets[i].value = current_transformation.translation[i].item()
+            self._t_loop_preventer = False

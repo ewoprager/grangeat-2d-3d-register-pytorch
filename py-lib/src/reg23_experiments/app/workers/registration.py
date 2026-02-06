@@ -2,6 +2,8 @@ from typing import Callable
 import os
 import logging
 
+import traitlets
+
 os.environ["QT_API"] = "PyQt6"
 
 import torch
@@ -11,28 +13,32 @@ from reg23_experiments.ops.optimisation import mapping_transformation_to_paramet
 from reg23_experiments.data.structs import OptimisationInstance
 from reg23_experiments.ops.optimisation_instances import PsoInstance
 from reg23_experiments.app.state import AppState
-from reg23_experiments.experiments.parameters import PsoParameters
+from reg23_experiments.experiments.parameters import Parameters, PsoParameters
 from reg23_experiments.ops.swarm import SwarmConfig
+from reg23_experiments.experiments.parameters import Context
 from reg23_experiments.ops.data_manager import DAG, ChildDAG
+from reg23_experiments.utils.data import clone_has_traits
 
 __all__ = ["new_optimisation_instance", "RegistrationWorker"]
 
 logger = logging.getLogger(__name__)
 
 
-def new_optimisation_instance(app_state: AppState, objective_function: Callable[
-    [DAG | ChildDAG, torch.Tensor], torch.Tensor]) -> tuple[ChildDAG, OptimisationInstance]:
-    child_dag = ChildDAG(app_state.dag)
-    params = app_state.parameters
-    if params.optimisation_algorithm == "pso":
-        oa_params = params.op_algo_parameters
+def new_optimisation_instance(app_state: AppState,
+                              objective_function: Callable[[Context, torch.Tensor], torch.Tensor]) -> tuple[
+    Context, OptimisationInstance]:
+    logger.info(f"pc = {app_state.parameters.op_algo_parameters.particle_count}")
+    context = Context(parameters=clone_has_traits(app_state.parameters), dag=ChildDAG(app_state.dag))
+    if context.parameters.optimisation_algorithm == "pso":
+        oa_params = context.parameters.op_algo_parameters
         assert isinstance(oa_params, PsoParameters)
-        return child_dag, PsoInstance(  #
+        logger.info(f"after clone = {oa_params.particle_count}")
+        return context, PsoInstance(  #
             particle_count=oa_params.particle_count,  #
             starting_pos=mapping_transformation_to_parameters(app_state.dag.get("current_transformation")),  #
             starting_spread=oa_params.starting_spread,  #
             config=SwarmConfig(  #
-                objective_function=lambda x: objective_function(child_dag, x),  #
+                objective_function=lambda x: objective_function(context, x),  #
                 inertia_coefficient=oa_params.inertia_coefficient,  #
                 cognitive_coefficient=oa_params.cognitive_coefficient,  #
                 social_coefficient=oa_params.social_coefficient,  #
@@ -42,15 +48,15 @@ def new_optimisation_instance(app_state: AppState, objective_function: Callable[
     # elif parameters.optimisation_algorithm == "local_search":
     #     pass
     else:
-        raise ValueError(f"Unrecognised optimisation algorithm: '{params.optimisation_algorithm}'.")
+        raise ValueError(f"Unrecognised optimisation algorithm: '{context.parameters.optimisation_algorithm}'.")
 
 
 class RegistrationWorker(QObject):
     progress = pyqtSignal(torch.Tensor, torch.Tensor)  # current best position, o.f. value at position
     finished = pyqtSignal(torch.Tensor, torch.Tensor)  # best position found, o.f. value at position
 
-    def __init__(self, *, app_state: AppState, objective_function: Callable[
-        [DAG | ChildDAG, torch.Tensor], torch.Tensor], max_iterations: int | None = None):
+    def __init__(self, *, app_state: AppState, objective_function: Callable[[Context, torch.Tensor], torch.Tensor],
+                 max_iterations: int | None = None):
         super().__init__()
         self._max_iterations = max_iterations
         self._app_state = app_state

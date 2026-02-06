@@ -1,6 +1,8 @@
 import traitlets
+import copy
+from typing import Any
 
-__all__ = ["StrictHasTraits"]
+__all__ = ["StrictHasTraits", "clone_has_traits"]
 
 
 class StrictHasTraits(traitlets.HasTraits):
@@ -29,3 +31,16 @@ class StrictHasTraits(traitlets.HasTraits):
         if missing:
             cls = type(self).__name__
             raise TypeError(f"{cls} missing required arguments: {missing}")
+
+
+def clone_has_traits(obj: Any) -> Any:
+    if isinstance(obj, traitlets.HasTraits):
+        cls = obj.__class__
+        kwargs = {}
+        for name in obj.traits().keys():
+            if name.startswith("_"):
+                continue
+            kwargs[name] = clone_has_traits(getattr(obj, name))
+        return cls(**kwargs)
+    else:
+        return copy.copy(obj)

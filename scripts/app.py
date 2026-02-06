@@ -20,7 +20,7 @@ from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
 from reg23_experiments.app.gui.fixed_image import FixedImageGUI
 from reg23_experiments.app.gui.moving_image import MovingImageGUI
 from reg23_experiments.app.gui.parameters import ParameterWidget
-from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters
+from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters, Context
 from reg23_experiments.app.gui.register import RegisterGUI
 from reg23_experiments.app.state import AppState
 from reg23_experiments.app.worker_manager import WorkerManager
@@ -196,7 +196,10 @@ def main(*, ct_path: str, cache_directory: str):
         sim_metric="zncc",  #
         sim_metric_parameters=NoParameters(),  #
         optimisation_algorithm="pso",  #
-        op_algo_parameters=PsoParameters()  #
+        op_algo_parameters=PsoParameters(),  #
+        starting_distance=0.0,  #
+        sample_count_per_distance=1,  #
+        iteration_count=10,  #
     )
     parameters_widget = ParameterWidget(parameters)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
@@ -208,13 +211,13 @@ def main(*, ct_path: str, cache_directory: str):
     # -----
     # The universal objective function
     # -----
-    def objective_function(dag: DAG | ChildDAG, x: torch.Tensor) -> torch.Tensor:
+    def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
         t = mapping_parameters_to_transformation(x)
         # Setting the parameters
-        dag.set_data("current_transformation", t)
+        context.dag.set_data("current_transformation", t)
         # Getting the resulting moving and fixed images
-        moving_image = dag.get("moving_image")
-        fixed_image = dag.get("fixed_image")
+        moving_image = context.dag.get("moving_image")
+        fixed_image = context.dag.get("fixed_image")
         # Comparing, potentially weighting with a mask
         # if apply_mask:
         #     mask = data_manager().get("mask")
