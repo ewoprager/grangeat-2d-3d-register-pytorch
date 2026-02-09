@@ -1,4 +1,4 @@
-from traitlets import HasTraits, Instance, Bool, Unicode, validate, Enum, TraitError, List, Union
+from traitlets import HasTraits, Instance, Float, Int, Bool, Unicode, validate, Enum, TraitError, List, Union
 from typing import Literal
 
 import pathlib
@@ -9,7 +9,15 @@ from reg23_experiments.experiments.parameters import Parameters
 
 from ._gui_param_to_dag_node import respond_to_crop_change, respond_to_mask_change
 
-__all__ = ["AppState"]
+__all__ = ["AppState", "WorkerState"]
+
+
+class WorkerState(HasTraits):
+    current_best_f: torch.Tensor = Instance(torch.Tensor, allow_none=True)
+    current_best_x: torch.Tensor = Instance(torch.Tensor, allow_none=True)
+    iteration: int | Literal["initialising", "finished"] | None = Union(
+        trait_types=[Int(), Enum(values=["initialising", "finished"])], allow_none=True, default_value=None)
+    max_iterations: int = Int()
 
 
 class AppState(HasTraits):
@@ -20,8 +28,7 @@ class AppState(HasTraits):
     button_evaluate_once: bool = Bool(default_value=False)
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)
 
-    current_best_x: torch.Tensor | None = Instance(torch.Tensor, allow_none=True, default_value=None)
-    worker_state: str = Enum(values=["none", "running", "finished"])
+    worker_state: WorkerState | None = Instance(WorkerState, allow_none=True, default_value=None)
     button_run_one_iteration: bool = Bool(default_value=False)
     button_run: bool = Bool(default_value=False)
     button_load_current_best: bool = Bool(default_value=False)

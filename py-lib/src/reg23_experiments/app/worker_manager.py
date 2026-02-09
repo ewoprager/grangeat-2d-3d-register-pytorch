@@ -4,7 +4,7 @@ from typing import Callable
 import torch
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
 
-from reg23_experiments.app.state import AppState
+from reg23_experiments.app.state import AppState, WorkerState
 from reg23_experiments.experiments.parameters import Context
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation
@@ -48,7 +48,7 @@ class WorkerManager:
                                           max_iterations=1)
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
-        self._worker.finished.connect(self._update_current_best_x)
+        self._worker.finished.connect(self._update_from_worker)
         self._worker.finished.connect(self._thread.quit)
         self._worker.finished.connect(self._worker.deleteLater)
         self._thread.finished.connect(self._thread.deleteLater)
@@ -66,8 +66,8 @@ class WorkerManager:
         self._worker = RegistrationWorker(app_state=self._app_state, objective_function=self._objective_function)
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
-        self._worker.progress.connect(self._update_current_best_x)
-        self._worker.finished.connect(self._update_current_best_x)
+        self._worker.progress.connect(self._update_from_worker)
+        self._worker.finished.connect(self._update_from_worker)
         self._worker.finished.connect(self._thread.quit)
         self._worker.finished.connect(self._worker.deleteLater)
         self._thread.finished.connect(self._thread.deleteLater)
@@ -76,16 +76,16 @@ class WorkerManager:
         # self._worker.progress.connect(self._iteration_callback)
         self._thread.start()  # self._state_label.value = "Running..."
 
-    def _update_current_best_x(self, best_position: torch.Tensor, best: torch.Tensor) -> None:
-        self._app_state.current_best_x = best_position
+    def _update_from_worker(self, worker_state: WorkerState) -> None:
+        self._app_state.worker_state = worker_state
 
     def _button_load_current_best(self, change) -> None:
         if not change.new:
             return
         self._app_state.button_load_current_best = False
 
-        if self._app_state.current_best_x is None:
+        if self._app_state.worker_state is None:
             logger.warning("Cannot load current best; no registration has been run.")
             return
         self._app_state.dag.set_data("current_transformation",
-                                     mapping_parameters_to_transformation(self._app_state.current_best_x))
+                                     mapping_parameters_to_transformation(self._app_state.worker_state.current_best_x))

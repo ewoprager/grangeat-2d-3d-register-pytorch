@@ -8,7 +8,7 @@ import torch
 
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.app.gui.viewer_singleton import viewer
-from reg23_experiments.app.state import AppState
+from reg23_experiments.app.state import AppState, WorkerState
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation
 
@@ -46,7 +46,7 @@ class RegisterGUI(widgets.Container):
         self._one_iteration_button.changed.connect(self._on_one_iteration)
 
         self._job_state_description_label = widgets.Label()
-        self._app_state.observe(self._update_job_state_description_label, names=["current_best_x"])
+        self._app_state.observe(self._update_job_state_description_label, names=["worker_state"])
 
         self._load_current_best_button = widgets.PushButton(label="Load best x")
         self._load_current_best_button.changed.connect(self._on_load_current_best)
@@ -127,8 +127,23 @@ class RegisterGUI(widgets.Container):
         self._eval_once_result_label.value = "n/a" if change.new is None else change.new
 
     def _update_job_state_description_label(self, change) -> None:
-        self._job_state_description_label.value = "No job has been run." if change.new is None else (f"Best x = "
-                                                                                                     f"{change.new}.")
+        if change.new is None:
+            self._job_state_description_label.value = "No job has been run."
+        else:
+            assert isinstance(change.new, WorkerState)
+            if change.new.iteration == "finished":
+                self._job_state_description_label.value = ("Optimisation finished all {} iterations;\nBest f found = {"
+                                                           ":.3f}\nat x = {}").format(change.new.max_iterations,
+                                                                                      change.new.current_best_f,
+                                                                                      change.new.current_best_x)
+            elif change.new.iteration == "initialising":
+                self._job_state_description_label.value = "Optimisation initialising..."
+            else:
+                assert isinstance(change.new.iteration, int)
+                self._job_state_description_label.value = (
+                    "Optimisation running; {}/{} iterations complete;\nBest f found = {"
+                    ":.3f}\nat x = {}").format(change.new.iteration, change.new.max_iterations,
+                                               change.new.current_best_f, change.new.current_best_x)
 
     def _on_one_iteration(self, *args) -> None:
         self._app_state.button_run_one_iteration = True
