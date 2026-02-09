@@ -208,10 +208,10 @@ class Cropping(traitlets.HasTraits):
     A valid Cropping must have right > left, and bottom > top.
     """
 
-    right: float = traitlets.Float(default_value=1.0, min=0.0, max=1.0)
-    top: float = traitlets.Float(default_value=0.0, min=0.0, max=1.0)
-    left: float = traitlets.Float(default_value=0.0, min=0.0, max=1.0)
-    bottom: float = traitlets.Float(default_value=1.0, min=0.0, max=1.0)
+    right: float = traitlets.Float(default_value=1.0, min=0.0, max=1.0).tag(ui=True)
+    top: float = traitlets.Float(default_value=0.0, min=0.0, max=1.0).tag(ui=True)
+    left: float = traitlets.Float(default_value=0.0, min=0.0, max=1.0).tag(ui=True)
+    bottom: float = traitlets.Float(default_value=1.0, min=0.0, max=1.0).tag(ui=True)
 
     def get_fractional_centre_offset(self) -> torch.Tensor:
         return 0.5 * torch.tensor([self.left + self.right, self.top + self.bottom]) - 0.5

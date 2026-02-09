@@ -4,6 +4,8 @@ from typing import Any
 
 from magicgui.widgets import Widget, FloatSpinBox, SpinBox, CheckBox, ComboBox, Container, Label
 
+from reg23_experiments.experiments.parameters import NoParameters
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,6 +15,12 @@ class ParameterWidget(Container):
 
         self._params = params
         self._subwidgets: dict[str, Any] = {}
+
+        if isinstance(params, NoParameters):
+            self.labels = False
+            child = Label(value="n/a")
+            self.append(child)
+            return
 
         for name, trait in params.traits().items():
             if not trait.metadata.get("ui", False):

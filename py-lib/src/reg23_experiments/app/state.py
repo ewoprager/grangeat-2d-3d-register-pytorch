@@ -1,4 +1,4 @@
-from traitlets import HasTraits, Instance, Float, Int, Bool, Unicode, validate, Enum, TraitError, List, Union
+from traitlets import HasTraits, Instance, Float, Int, Bool, Unicode, validate, Enum, TraitError, List, Union, All
 from typing import Literal
 
 import pathlib
@@ -7,7 +7,8 @@ import torch
 from reg23_experiments.ops.data_manager import DAG
 from reg23_experiments.experiments.parameters import Parameters
 
-from ._gui_param_to_dag_node import respond_to_crop_change, respond_to_mask_change
+from ._gui_param_to_dag_node import respond_to_crop_change, respond_to_mask_change, respond_to_crop_value_change, \
+    respond_to_crop_value_value_change
 
 __all__ = ["AppState", "WorkerState"]
 
@@ -53,6 +54,7 @@ class AppState(HasTraits):
         self.dag.set_data("target_flipped", self.parameters.target_flipped)
         self.parameters.observe(lambda change: respond_to_mask_change(self.dag, change), names=["mask"])
         self.parameters.observe(lambda change: respond_to_crop_change(self.dag, change), names=["cropping"])
+        self.parameters.observe(lambda change: respond_to_crop_value_change(self.dag, change), names=["cropping_value"])
 
     def _update_dag_ct_path(self, change) -> None:
         self.dag.set_data("ct_path", change.new, check_equality=True)

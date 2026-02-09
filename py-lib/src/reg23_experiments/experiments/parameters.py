@@ -2,6 +2,7 @@ from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Unde
 from typing import Any
 
 from reg23_experiments.ops.data_manager import DAG, ChildDAG
+from reg23_experiments.data.structs import Cropping
 
 __all__ = ["NoParameters", "PsoParameters", "LocalZnccParameters", "LocalSearchParameters", "Parameters", "Context"]
 
@@ -38,8 +39,11 @@ class Parameters(HasTraits):
     cropping: str = Enum(values=[  #
         "None",  #
         "nonzero_drr",  #
-        "full_depth_drr"  #
+        "full_depth_drr",  #
+        "fixed"  #
     ]).tag(ui=True)
+    cropping_value: Cropping | NoParameters = Instance(HasTraits, allow_none=False, default_value=NoParameters()).tag(
+        ui=True)
     mask: str = Enum(values=[  #
         "None",  #
         "Every evaluation",  #
@@ -76,9 +80,11 @@ class Parameters(HasTraits):
     def __init__(self, **kwargs):
         self._op_algo_cache: dict[str, Any] = {}
         self._sim_metric_cache: dict[str, Any] = {}
+        self._cropping_cache: Cropping | None = None
         super().__init__(**kwargs)
         self._update_op_algo_params()
         self._update_sim_metric_params()
+        self._update_cropping_value()
 
     @observe("optimisation_algorithm")
     def _op_algo_changed(self, _):
@@ -87,6 +93,10 @@ class Parameters(HasTraits):
     @observe("sim_metric")
     def _sim_metric_changed(self, _):
         self._update_sim_metric_params()
+
+    @observe("cropping")
+    def _cropping_changed(self, _):
+        self._update_cropping_value()
 
     def _update_op_algo_params(self):
         desired_cls: type = Parameters.OP_ALGO_PARAM_CLASSES[self.optimisation_algorithm]
@@ -105,6 +115,19 @@ class Parameters(HasTraits):
             if self.sim_metric not in self._sim_metric_cache:
                 self._sim_metric_cache[self.sim_metric] = desired_cls()
             self.sim_metric_parameters = self._sim_metric_cache[self.sim_metric]
+
+    def _update_cropping_value(self):
+        if self.cropping == "fixed":
+            if isinstance(self.cropping_value, Cropping):
+                return
+            if self._cropping_cache is None:
+                self._cropping_cache = Cropping()
+            self.cropping_value = self._cropping_cache
+        else:
+            if isinstance(self.cropping_value, NoParameters):
+                return
+            self._cropping_cache = self.cropping_value
+            self.cropping_value = NoParameters()
 
 
 class Context(HasTraits):
