@@ -40,7 +40,7 @@ class RegisterGUI(widgets.Container):
         # Run optimisation
         # -----
         self._run_button = widgets.PushButton(label="Run")
-        # ToDo: connect this button
+        self._run_button.changed.connect(self._on_run)
 
         self._one_iteration_button = widgets.PushButton(label="One iteration")
         self._one_iteration_button.changed.connect(self._on_one_iteration)
@@ -132,6 +132,9 @@ class RegisterGUI(widgets.Container):
 
     def _on_one_iteration(self, *args) -> None:
         self._app_state.button_run_one_iteration = True
+
+    def _on_run(self, *args) -> None:
+        self._app_state.button_run = True
 
     def _update_saved_transformations_select(self, change) -> None:
         # ToDo: manage persistence of selection?

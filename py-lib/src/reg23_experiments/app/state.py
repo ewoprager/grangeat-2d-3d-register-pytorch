@@ -1,4 +1,5 @@
-from traitlets import HasTraits, Instance, Bool, Unicode, validate, TraitError, List, Union
+from traitlets import HasTraits, Instance, Bool, Unicode, validate, Enum, TraitError, List, Union
+from typing import Literal
 
 import pathlib
 import torch
@@ -20,7 +21,9 @@ class AppState(HasTraits):
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)
 
     current_best_x: torch.Tensor | None = Instance(torch.Tensor, allow_none=True, default_value=None)
+    worker_state: str = Enum(values=["none", "running", "finished"])
     button_run_one_iteration: bool = Bool(default_value=False)
+    button_run: bool = Bool(default_value=False)
     button_load_current_best: bool = Bool(default_value=False)
 
     transformation_save_directory: pathlib.Path = Instance(pathlib.Path, allow_none=False)

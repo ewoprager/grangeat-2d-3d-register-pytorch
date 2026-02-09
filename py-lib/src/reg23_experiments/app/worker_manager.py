@@ -22,6 +22,7 @@ class WorkerManager:
 
         self._app_state.observe(self._button_evaluate_once, names=["button_evaluate_once"])
         self._app_state.observe(self._button_run_one_iteration, names=["button_run_one_iteration"])
+        self._app_state.observe(self._button_run, names=["button_run"])
         self._app_state.observe(self._button_load_current_best, names=["button_load_current_best"])
 
         self._thread = None
@@ -47,6 +48,25 @@ class WorkerManager:
                                           max_iterations=1)
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
+        self._worker.finished.connect(self._update_current_best_x)
+        self._worker.finished.connect(self._thread.quit)
+        self._worker.finished.connect(self._worker.deleteLater)
+        self._thread.finished.connect(self._thread.deleteLater)
+        # self._thread.finished.connect(self._update_state_label_to_finished)
+        # self._thread.finished.connect(self._thread_finish_callback)
+        # self._worker.progress.connect(self._iteration_callback)
+        self._thread.start()  # self._state_label.value = "Running..."
+
+    def _button_run(self, change) -> None:
+        if not change.new:
+            return
+        self._app_state.button_run = False
+
+        self._thread = QThread()
+        self._worker = RegistrationWorker(app_state=self._app_state, objective_function=self._objective_function)
+        self._worker.moveToThread(self._thread)
+        self._thread.started.connect(self._worker.run)
+        self._worker.progress.connect(self._update_current_best_x)
         self._worker.finished.connect(self._update_current_best_x)
         self._worker.finished.connect(self._thread.quit)
         self._worker.finished.connect(self._worker.deleteLater)
