@@ -27,6 +27,10 @@ class LocalSearchParameters(HasTraits):
     max_iterations: int = Int(min=1, default_value=5000).tag(ui=True)
 
 
+class CmaesParameters(HasTraits):
+    pass
+
+
 class LocalZnccParameters(HasTraits):
     kernel_size: int = Int(min=1, default_value=8).tag(ui=True)
 
@@ -60,7 +64,8 @@ class Parameters(HasTraits):
     sample_count_per_distance: int = Int(min=1)
     optimisation_algorithm: str = Enum(values=[  #
         "pso",  #
-        "local_search"  #
+        "local_search",  #
+        "cmaes",  #
     ], default=Undefined).tag(ui=True)
     op_algo_parameters: HasTraits = Instance(HasTraits, allow_none=False).tag(ui=True)
     iteration_count: int = Int(min=0).tag(ui=True)
