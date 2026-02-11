@@ -151,7 +151,7 @@
                                 <a class="variable" href="#Context.parameters">parameters</a>
                         </li>
                         <li>
-                                <a class="variable" href="#Context.dag">dag</a>
+                                <a class="variable" href="#Context.dadg">dadg</a>
                         </li>
                 </ul>
 
@@ -177,10 +177,10 @@
 
                         <label class="view-source-button" for="mod-parameters-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">traitlets</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasTraits</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Instance</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">Unicode</span><span class="p">,</span> <span class="n">Undefined</span><span class="p">,</span> <span class="n">observe</span><span class="p">,</span> <span class="n">Union</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">traitlets</span><span class="w"> </span><span class="kn">import</span> <span class="n">HasTraits</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Instance</span><span class="p">,</span> <span class="n">Bool</span><span class="p">,</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">Unicode</span><span class="p">,</span> <span class="n">Undefined</span><span class="p">,</span> <span class="n">observe</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 </span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a>
-</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">reg23_experiments.ops.data_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAG</span><span class="p">,</span> <span class="n">ChildDAG</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">reg23_experiments.ops.data_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">IDirectedAcyclicDataGraph</span>
 </span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">reg23_experiments.data.structs</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cropping</span>
 </span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a>
 </span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;NoParameters&quot;</span><span class="p">,</span> <span class="s2">&quot;PsoParameters&quot;</span><span class="p">,</span> <span class="s2">&quot;LocalZnccParameters&quot;</span><span class="p">,</span> <span class="s2">&quot;LocalSearchParameters&quot;</span><span class="p">,</span> <span class="s2">&quot;Parameters&quot;</span><span class="p">,</span> <span class="s2">&quot;Context&quot;</span><span class="p">]</span>
@@ -316,8 +316,7 @@
 </span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>
 </span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Context</span><span class="p">(</span><span class="n">HasTraits</span><span class="p">):</span>
 </span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Parameters</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>    <span class="n">dag</span><span class="p">:</span> <span class="n">DAG</span> <span class="o">|</span> <span class="n">ChildDAG</span> <span class="o">=</span> <span class="n">Union</span><span class="p">(</span><span class="n">trait_types</span><span class="o">=</span><span class="p">[</span><span class="n">Instance</span><span class="p">(</span><span class="n">DAG</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">Instance</span><span class="p">(</span><span class="n">ChildDAG</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)],</span>
-</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>                                <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>    <span class="n">dadg</span><span class="p">:</span> <span class="n">IDirectedAcyclicDataGraph</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">IDirectedAcyclicDataGraph</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -931,8 +930,7 @@
     <a class="headerlink" href="#Context"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Context-139"><a href="#Context-139"><span class="linenos">139</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Context</span><span class="p">(</span><span class="n">HasTraits</span><span class="p">):</span>
 </span><span id="Context-140"><a href="#Context-140"><span class="linenos">140</span></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Parameters</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="Context-141"><a href="#Context-141"><span class="linenos">141</span></a>    <span class="n">dag</span><span class="p">:</span> <span class="n">DAG</span> <span class="o">|</span> <span class="n">ChildDAG</span> <span class="o">=</span> <span class="n">Union</span><span class="p">(</span><span class="n">trait_types</span><span class="o">=</span><span class="p">[</span><span class="n">Instance</span><span class="p">(</span><span class="n">DAG</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">Instance</span><span class="p">(</span><span class="n">ChildDAG</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)],</span>
-</span><span id="Context-142"><a href="#Context-142"><span class="linenos">142</span></a>                                <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="Context-141"><a href="#Context-141"><span class="linenos">141</span></a>    <span class="n">dadg</span><span class="p">:</span> <span class="n">IDirectedAcyclicDataGraph</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">IDirectedAcyclicDataGraph</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -957,15 +955,19 @@
 
 
                             </div>
-                            <div id="Context.dag" class="classattr">
+                            <div id="Context.dadg" class="classattr">
                                 <div class="attr variable">
-            <span class="name">dag</span><span class="annotation">: <a href="../ops/data_manager.html#DAG">reg23_experiments.ops.data_manager.DAG</a> | <a href="../ops/data_manager.html#ChildDAG">reg23_experiments.ops.data_manager.ChildDAG</a></span>
+            <span class="name">dadg</span><span class="annotation">: <a href="../ops/data_manager.html#IDirectedAcyclicDataGraph">reg23_experiments.ops.data_manager.IDirectedAcyclicDataGraph</a></span>
 
         
     </div>
-    <a class="headerlink" href="#Context.dag"></a>
+    <a class="headerlink" href="#Context.dadg"></a>
     
-            <div class="docstring"><p>A trait type representing a Union type.</p>
+            <div class="docstring"><p>A trait whose value must be an instance of a specified class.</p>
+
+<p>The value can also be an instance of a subclass of the specified class.</p>
+
+<p>Subclasses can declare default classes by overriding the klass attribute</p>
 </div>
 
 
