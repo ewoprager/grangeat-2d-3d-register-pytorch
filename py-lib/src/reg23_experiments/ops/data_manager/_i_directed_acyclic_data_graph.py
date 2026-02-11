@@ -58,11 +58,11 @@ class IDirectedAcyclicDataGraph(ABC):
         pass
 
     @abstractmethod
-    def get(self, node_name: str, *, soft: bool) -> Any | Error:
+    def get(self, node_name: str, *, soft: bool = False) -> Any | Error:
         pass
 
     @abstractmethod
-    def set(self, node_name: str, data: Any, *, check_equality: bool) -> None | Error:
+    def set(self, node_name: str, data: Any, *, check_equality: bool = False) -> None | Error:
         pass
 
     @abstractmethod

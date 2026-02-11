@@ -7,7 +7,7 @@ import numpy as np
 import pyswarms
 
 from reg23_experiments.data.structs import Transformation, GrowingTensor
-from reg23_experiments.ops.data_manager import args_from_dag
+from reg23_experiments.ops.data_manager import args_from_dadg
 
 __all__ = ["mapping_transformation_to_parameters", "mapping_parameters_to_transformation", "local_search",
            "random_parameters_at_distance"]
@@ -65,7 +65,7 @@ class OptimisationResult(NamedTuple):
     value_history: torch.Tensor
 
 
-@args_from_dag(names_left=["transformation"])
+@args_from_dadg(names_left=["transformation"])
 def pso(*, transformation: Transformation, objective_function: Callable[[torch.Tensor], torch.Tensor],
         pso_particle_count: int, pso_iteration_count: int,
         iteration_callback: Callable[[torch.Tensor, torch.Tensor], None] | None = None) -> OptimisationResult:

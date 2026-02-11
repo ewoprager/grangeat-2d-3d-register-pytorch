@@ -33,9 +33,9 @@ class WorkerManager:
             return
         self._app_state.button_evaluate_once = False
 
-        context = Context(parameters=self._app_state.parameters, dag=self._app_state.dag)
+        context = Context(parameters=self._app_state.parameters, dadg=self._app_state.dadg)
         result = self._objective_function(context, mapping_transformation_to_parameters(
-            self._app_state.dag.get("current_transformation")))
+            self._app_state.dadg.get("current_transformation")))
         self._app_state.eval_once_result = "{:.4f}".format(result.item())
 
     def _button_run_one_iteration(self, change) -> None:
@@ -87,5 +87,5 @@ class WorkerManager:
         if self._app_state.worker_state is None:
             logger.warning("Cannot load current best; no registration has been run.")
             return
-        self._app_state.dag.set_data("current_transformation",
-                                     mapping_parameters_to_transformation(self._app_state.worker_state.current_best_x))
+        self._app_state.dadg.set("current_transformation",
+                                 mapping_parameters_to_transformation(self._app_state.worker_state.current_best_x))

@@ -6,7 +6,7 @@ import torch
 
 from reg23_experiments.ops.geometry import get_crop_nonzero_drr, get_crop_full_depth_drr
 from reg23_experiments.data.structs import Cropping, Transformation
-from reg23_experiments.ops.data_manager import DAG, dag_updater
+from reg23_experiments.ops.data_manager import IDirectedAcyclicDataGraph, dadg_updater
 
 __all__ = ["mask_follows_transformation", "cropping_follows_nonzero_drr", "cropping_follows_full_depth_drr",
            "respond_to_mask_change", "respond_to_crop_change", "respond_to_crop_value_change",
@@ -15,12 +15,12 @@ __all__ = ["mask_follows_transformation", "cropping_follows_nonzero_drr", "cropp
 logger = logging.getLogger(__name__)
 
 
-@dag_updater(names_returned=["mask_transformation"])
+@dadg_updater(names_returned=["mask_transformation"])
 def mask_follows_transformation(current_transformation: Transformation) -> dict[str, Any]:
     return {"mask_transformation": current_transformation}
 
 
-@dag_updater(names_returned=["cropping"])
+@dadg_updater(names_returned=["cropping"])
 def cropping_follows_nonzero_drr(image_2d_full: torch.Tensor, source_distance: float,
                                  current_transformation: Transformation, ct_volumes: list[torch.Tensor],
                                  ct_spacing: torch.Tensor, fixed_image_spacing: torch.Tensor) -> dict[str, Any]:
@@ -29,7 +29,7 @@ def cropping_follows_nonzero_drr(image_2d_full: torch.Tensor, source_distance: f
                                              ct_spacing=ct_spacing, fixed_image_spacing=fixed_image_spacing)}
 
 
-@dag_updater(names_returned=["cropping"])
+@dadg_updater(names_returned=["cropping"])
 def cropping_follows_full_depth_drr(image_2d_full: torch.Tensor, source_distance: float,
                                     current_transformation: Transformation, ct_volumes: list[torch.Tensor],
                                     ct_spacing: torch.Tensor, fixed_image_spacing: torch.Tensor) -> dict[str, Any]:
@@ -38,36 +38,36 @@ def cropping_follows_full_depth_drr(image_2d_full: torch.Tensor, source_distance
                                                 ct_spacing=ct_spacing, fixed_image_spacing=fixed_image_spacing)}
 
 
-def respond_to_mask_change(dag: DAG, change) -> None:
+def respond_to_mask_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
     if change.new == "None":
-        dag.remove_updater("mask_follows_transformation")
-        dag.set_data("mask_transformation", None, check_equality=True)
+        dadg.remove_updater("mask_follows_transformation")
+        dadg.set("mask_transformation", None, check_equality=True)
     else:
-        dag.add_updater("mask_follows_transformation", mask_follows_transformation)
+        dadg.add_updater("mask_follows_transformation", mask_follows_transformation)
 
 
-def respond_to_crop_change(dag: DAG, change) -> None:
+def respond_to_crop_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
     if change.new == "None":
-        dag.remove_updater("cropping_follows_transformation")
-        dag.set_data("cropping", None)
+        dadg.remove_updater("cropping_follows_transformation")
+        dadg.set("cropping", None)
     elif change.new == "nonzero_drr":
-        dag.remove_updater("cropping_follows_transformation")
-        dag.add_updater("cropping_follows_transformation", cropping_follows_nonzero_drr)
+        dadg.remove_updater("cropping_follows_transformation")
+        dadg.add_updater("cropping_follows_transformation", cropping_follows_nonzero_drr)
     elif change.new == "full_depth_drr":
-        dag.remove_updater("cropping_follows_transformation")
-        dag.add_updater("cropping_follows_transformation", cropping_follows_full_depth_drr)
+        dadg.remove_updater("cropping_follows_transformation")
+        dadg.add_updater("cropping_follows_transformation", cropping_follows_full_depth_drr)
     elif change.new == "fixed":
-        dag.remove_updater("cropping_follows_transformation")
-        dag.set_data("cropping", change.owner.cropping_value)
+        dadg.remove_updater("cropping_follows_transformation")
+        dadg.set("cropping", change.owner.cropping_value)
 
 
-def respond_to_crop_value_change(dag: DAG, change) -> None:
+def respond_to_crop_value_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
     if change.owner.cropping != "fixed":
         return
     assert isinstance(change.new, Cropping)
-    dag.set_data("cropping", change.new)
-    change.new.observe(lambda _change: respond_to_crop_value_value_change(dag, _change), names=traitlets.All)
+    dadg.set("cropping", change.new)
+    change.new.observe(lambda _change: respond_to_crop_value_value_change(dadg, _change), names=traitlets.All)
 
 
-def respond_to_crop_value_value_change(dag: DAG, change) -> None:
-    dag.set_data("cropping", change.owner)
+def respond_to_crop_value_value_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
+    dadg.set("cropping", change.owner)

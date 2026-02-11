@@ -65,7 +65,7 @@ class RegisterGUI(widgets.Container):
         # ----
         # Transformations
         # ----
-        current_t: Transformation = self._app_state.dag.get("current_transformation")
+        current_t: Transformation = self._app_state.dadg.get("current_transformation")
         current_params: torch.Tensor = mapping_transformation_to_parameters(current_t)
         # Float spin boxes for the current transformation in parameter space
         self._x_widgets = [  #
@@ -92,7 +92,7 @@ class RegisterGUI(widgets.Container):
             self._translation_widgets[i].changed.connect(self._update_current_transformation_from_t)
         self._t_loop_preventer = False
         # A callback to keep both x and t spin boxes updated
-        self._app_state.dag.add_callback("current_transformation", "x_t_display", self._update_x_t_display)
+        self._app_state.dadg.observe("current_transformation", "x_t_display", self._update_x_t_display)
 
         # -----
         # Saving and loading transformations
@@ -188,22 +188,21 @@ class RegisterGUI(widgets.Container):
             return
         self._x_loop_preventer = True
         params: list[float] = [widget.value for widget in self._x_widgets]
-        current_t: Transformation = self._app_state.dag.get("current_transformation")
+        current_t: Transformation = self._app_state.dadg.get("current_transformation")
         new_params = torch.tensor(params, device=current_t.rotation.device, dtype=current_t.rotation.dtype)
-        self._app_state.dag.set_data("current_transformation", mapping_parameters_to_transformation(new_params))
+        self._app_state.dadg.set("current_transformation", mapping_parameters_to_transformation(new_params))
         self._x_loop_preventer = False
 
     def _update_current_transformation_from_t(self, *args) -> None:
         if self._t_loop_preventer:
             return
         self._t_loop_preventer = True
-        current_t: Transformation = self._app_state.dag.get("current_transformation")
+        current_t: Transformation = self._app_state.dadg.get("current_transformation")
         rotation = torch.tensor([widget.value for widget in self._rotation_widgets], dtype=current_t.rotation.dtype,
                                 device=current_t.rotation.device)
         translation = torch.tensor([widget.value for widget in self._translation_widgets],
                                    dtype=current_t.rotation.dtype, device=current_t.rotation.device)
-        self._app_state.dag.set_data("current_transformation",
-                                     Transformation(rotation=rotation, translation=translation))
+        self._app_state.dadg.set("current_transformation", Transformation(rotation=rotation, translation=translation))
         self._t_loop_preventer = False
 
     def _update_x_t_display(self, current_transformation: Transformation) -> None:

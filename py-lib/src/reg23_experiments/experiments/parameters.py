@@ -1,7 +1,7 @@
-from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe, Union
+from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe
 from typing import Any
 
-from reg23_experiments.ops.data_manager import DAG, ChildDAG
+from reg23_experiments.ops.data_manager import IDirectedAcyclicDataGraph
 from reg23_experiments.data.structs import Cropping
 
 __all__ = ["NoParameters", "PsoParameters", "LocalZnccParameters", "LocalSearchParameters", "Parameters", "Context"]
@@ -137,5 +137,4 @@ class Parameters(HasTraits):
 
 class Context(HasTraits):
     parameters: Parameters = Instance(Parameters, allow_none=False)
-    dag: DAG | ChildDAG = Union(trait_types=[Instance(DAG, allow_none=False), Instance(ChildDAG, allow_none=False)],
-                                allow_none=False)
+    dadg: IDirectedAcyclicDataGraph = Instance(IDirectedAcyclicDataGraph, allow_none=False)

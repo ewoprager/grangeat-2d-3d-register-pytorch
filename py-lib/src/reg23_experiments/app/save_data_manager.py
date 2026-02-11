@@ -30,7 +30,7 @@ class SaveDataManager:
             logger.warning("Cannot save transformation; no name given.")
             return
         err = self._transformation_save_manager.set(self._app_state.text_input_transformation_name,
-                                                    self._app_state.dag.get("current_transformation"))
+                                                    self._app_state.dadg.get("current_transformation"))
         if isinstance(err, Error):
             logger.error(
                 f"Error saving transformation with name '{self._app_state.text_input_transformation_name}' to save "
@@ -47,8 +47,8 @@ class SaveDataManager:
         if isinstance(tr, Error):
             logger.error(f"Error loading transformation '{name}' from save manager: {tr.description}")
             return
-        device = self._app_state.dag.get("current_transformation").rotation.device
-        self._app_state.dag.set_data("current_transformation", tr.to(device=device))
+        device = self._app_state.dadg.get("current_transformation").rotation.device
+        self._app_state.dadg.set("current_transformation", tr.to(device=device))
 
     def _button_delete_transformation_of_name(self, change) -> None:
         if change.new is None:

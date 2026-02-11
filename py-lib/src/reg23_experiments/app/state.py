@@ -4,7 +4,7 @@ from typing import Literal
 import pathlib
 import torch
 
-from reg23_experiments.ops.data_manager import DAG
+from reg23_experiments.ops.data_manager import IDirectedAcyclicDataGraph
 from reg23_experiments.experiments.parameters import Parameters
 
 from ._gui_param_to_dag_node import respond_to_crop_change, respond_to_mask_change, respond_to_crop_value_change, \
@@ -24,7 +24,7 @@ class WorkerState(HasTraits):
 class AppState(HasTraits):
     parameters: Parameters = Instance(Parameters, allow_none=False)
 
-    dag: DAG = Instance(DAG, allow_none=False)
+    dadg: IDirectedAcyclicDataGraph = Instance(IDirectedAcyclicDataGraph, allow_none=False)
 
     button_evaluate_once: bool = Bool(default_value=False)
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)
@@ -45,28 +45,29 @@ class AppState(HasTraits):
         super().__init__(**kwargs)
 
         self.parameters.observe(self._update_dag_ct_path, names=["ct_path"])
-        self.dag.set_data("ct_path", self.parameters.ct_path)
+        self.dadg.set("ct_path", self.parameters.ct_path)
         self.parameters.observe(self._update_dag_downsample_level, names=["downsample_level"])
-        self.dag.set_data("downsample_level", self.parameters.downsample_level)
+        self.dadg.set("downsample_level", self.parameters.downsample_level)
         self.parameters.observe(self._update_dag_truncation_percent, names=["truncation_percent"])
-        self.dag.set_data("truncation_percent", self.parameters.truncation_percent)
+        self.dadg.set("truncation_percent", self.parameters.truncation_percent)
         self.parameters.observe(self._update_dag_target_flipped, names=["target_flipped"])
-        self.dag.set_data("target_flipped", self.parameters.target_flipped)
-        self.parameters.observe(lambda change: respond_to_mask_change(self.dag, change), names=["mask"])
-        self.parameters.observe(lambda change: respond_to_crop_change(self.dag, change), names=["cropping"])
-        self.parameters.observe(lambda change: respond_to_crop_value_change(self.dag, change), names=["cropping_value"])
+        self.dadg.set("target_flipped", self.parameters.target_flipped)
+        self.parameters.observe(lambda change: respond_to_mask_change(self.dadg, change), names=["mask"])
+        self.parameters.observe(lambda change: respond_to_crop_change(self.dadg, change), names=["cropping"])
+        self.parameters.observe(lambda change: respond_to_crop_value_change(self.dadg, change),
+                                names=["cropping_value"])
 
     def _update_dag_ct_path(self, change) -> None:
-        self.dag.set_data("ct_path", change.new, check_equality=True)
+        self.dadg.set("ct_path", change.new, check_equality=True)
 
     def _update_dag_downsample_level(self, change) -> None:
-        self.dag.set_data("downsample_level", change.new, check_equality=True)
+        self.dadg.set("downsample_level", change.new, check_equality=True)
 
     def _update_dag_truncation_percent(self, change) -> None:
-        self.dag.set_data("truncation_percent", change.new, check_equality=True)
+        self.dadg.set("truncation_percent", change.new, check_equality=True)
 
     def _update_dag_target_flipped(self, change) -> None:
-        self.dag.set_data("target_flipped", change.new, check_equality=True)
+        self.dadg.set("target_flipped", change.new, check_equality=True)
 
     @validate("transformation_save_directory")
     def _validate_transformation_save_directory(self, proposal):

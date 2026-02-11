@@ -12,7 +12,7 @@ from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.io.volume import load_volume
 from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.data.structs import Error
-from reg23_experiments.ops.data_manager import init_data_manager, data_manager, dag_updater, DAG, ChildDAG
+from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, args_from_dadg
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.ops import drr
@@ -26,13 +26,12 @@ from reg23_experiments.app.state import AppState
 from reg23_experiments.app.worker_manager import WorkerManager
 from reg23_experiments.data.structs import Transformation, SceneGeometry, Cropping
 from reg23_experiments.ops import geometry
-from reg23_experiments.ops.data_manager import updaters, args_from_dag
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.save_data_manager import SaveDataManager
 from reg23_experiments.io.image import read_dicom
 
 
-@dag_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
+@dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
 def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
     ct_volume, ct_spacing = load_volume(pathlib.Path(ct_path))
@@ -47,7 +46,7 @@ def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequ
     return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing}
 
 
-@dag_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
 def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
                      new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
                      ap_transformation: Transformation, target_ap_distance: float, xray_path: str | None,
@@ -81,7 +80,7 @@ def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volu
             "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
 
 
-@dag_updater(names_returned=["ct_volumes"])
+@dadg_updater(names_returned=["ct_volumes"])
 def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
     # truncate the volume
     truncation_fraction = 0.01 * float(truncation_percent)
@@ -96,7 +95,7 @@ def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: in
     return {"ct_volumes": ct_volumes}
 
 
-@dag_updater(names_returned=["moving_image"])
+@dadg_updater(names_returned=["moving_image"])
 def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
                 fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
                 downsample_level: int, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
@@ -129,11 +128,6 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 
 def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-
-    # -----
-    # The data manager
-    # -----
-    init_data_manager()
 
     # -----
     # Viewer
@@ -176,7 +170,7 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
     # -----
     # Data nodes
     # -----
-    data_manager().set_data_multiple(  #
+    data_manager().set_multiple(  #
         source_distance=1000.0,  #
         fixed_image_spacing=torch.tensor([0.2, 0.2]),  #
         fixed_image_size=torch.Size([500, 500]),  #
@@ -224,7 +218,7 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
 
-    app_state = AppState(parameters=parameters, dag=data_manager(),
+    app_state = AppState(parameters=parameters, dadg=data_manager(),
                          transformation_save_directory=pathlib.Path("data/program_interface_transformation_save_data"))
 
     # -----
@@ -233,10 +227,10 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
     def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
         t = mapping_parameters_to_transformation(x)
         # Setting the parameters
-        context.dag.set_data("current_transformation", t)
+        context.dadg.set("current_transformation", t)
         # Getting the resulting moving and fixed images
-        moving_image = context.dag.get("moving_image")
-        fixed_image = context.dag.get("fixed_image")
+        moving_image = context.dadg.get("moving_image")
+        fixed_image = context.dadg.get("fixed_image")
         # Comparing, potentially weighting with a mask
         # if apply_mask:
         #     mask = data_manager().get("mask")

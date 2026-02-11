@@ -16,7 +16,7 @@ from reg23_experiments.app.state import AppState, WorkerState
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters
 from reg23_experiments.ops.swarm import SwarmConfig
 from reg23_experiments.experiments.parameters import Context
-from reg23_experiments.ops.data_manager import DAG, ChildDAG
+from reg23_experiments.ops.data_manager import ChildDADG
 from reg23_experiments.utils.data import clone_has_traits
 
 __all__ = ["new_optimisation_instance", "RegistrationWorker"]
@@ -27,13 +27,13 @@ logger = logging.getLogger(__name__)
 def new_optimisation_instance(app_state: AppState,
                               objective_function: Callable[[Context, torch.Tensor], torch.Tensor]) -> tuple[
     Context, OptimisationInstance]:
-    context = Context(parameters=clone_has_traits(app_state.parameters), dag=ChildDAG(app_state.dag))
+    context = Context(parameters=clone_has_traits(app_state.parameters), dadg=ChildDADG(app_state.dadg))
     if context.parameters.optimisation_algorithm == "pso":
         oa_params = context.parameters.op_algo_parameters
         assert isinstance(oa_params, PsoParameters)
         return context, PsoInstance(  #
             particle_count=oa_params.particle_count,  #
-            starting_pos=mapping_transformation_to_parameters(app_state.dag.get("current_transformation")),  #
+            starting_pos=mapping_transformation_to_parameters(app_state.dadg.get("current_transformation")),  #
             starting_spread=oa_params.starting_spread,  #
             config=SwarmConfig(  #
                 objective_function=lambda x: objective_function(context, x),  #
@@ -41,7 +41,7 @@ def new_optimisation_instance(app_state: AppState,
                 cognitive_coefficient=oa_params.cognitive_coefficient,  #
                 social_coefficient=oa_params.social_coefficient,  #
             ),  #
-            device=app_state.dag.get("device"),  #
+            device=app_state.dadg.get("device"),  #
         )
     # elif parameters.optimisation_algorithm == "local_search":
     #     pass
@@ -71,7 +71,7 @@ class RegistrationWorker(QObject):
             iteration="initialising",  #
             max_iterations=self._max_iterations,  #
         ))
-        child_dag, op_instance = new_optimisation_instance(self._app_state, self._objective_function)
+        context, op_instance = new_optimisation_instance(self._app_state, self._objective_function)
         logger.info(
             f"Optimisation worker initialised. Optimisation worker running for {self._max_iterations} iterations...")
         self.progress.emit(WorkerState(  #
