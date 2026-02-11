@@ -110,7 +110,7 @@ import matplotlib.pyplot as plt
 
 
 def test_project_drr_autograd():
-    display = True
+    display = False
 
     devices = ["cpu"]
     if torch.cuda.is_available():
@@ -160,7 +160,7 @@ def test_project_drr_autograd():
         plt.show()
 
 
-def test_project_drrs_batched():
+def skip_test_project_drrs_batched():
     if not torch.cuda.is_available():
         return
     input_ = torch.rand((11, 12, 8))

@@ -3,7 +3,7 @@ import logging
 import torch
 import matplotlib.pyplot as plt
 
-from reg23_experiments.ops.swarm import OptimisationConfig, Swarm
+from reg23_experiments.ops.swarm import SwarmConfig, Swarm
 
 __all__ = ["test_swarm"]
 
@@ -18,8 +18,8 @@ def test_swarm():
         q = xy[1] - 2.0
         return p * p + q * q
 
-    config = OptimisationConfig(objective_function=objective_function, inertia_coefficient=0.9,
-                                cognitive_coefficient=0.5, social_coefficient=0.3)
+    config = SwarmConfig(objective_function=objective_function, inertia_coefficient=0.9, cognitive_coefficient=0.5,
+                         social_coefficient=0.3)
     swarm = Swarm(config=config, dimensionality=2, particle_count=particle_count,
                   initialisation_position=torch.tensor([0.0, 0.0]), initialisation_spread=torch.tensor([10.0, 10.0]),
                   device=torch.device("cpu"))
