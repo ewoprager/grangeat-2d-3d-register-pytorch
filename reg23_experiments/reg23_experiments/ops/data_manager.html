@@ -82,43 +82,43 @@
 
             </li>
             <li>
-                    <a class="class" href="#IDirectedAcyclicDataGraph">IDirectedAcyclicDataGraph</a>
+                    <a class="class" href="#DirectedAcyclicDataGraph">DirectedAcyclicDataGraph</a>
                             <ul class="memberlist">
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.has_node">has_node</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.has_node">has_node</a>
                         </li>
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.get">get</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.get">get</a>
                         </li>
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.set">set</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.set">set</a>
                         </li>
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.set_multiple">set_multiple</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.set_multiple">set_multiple</a>
                         </li>
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.set_evaluation_laziness">set_evaluation_laziness</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.set_evaluation_laziness">set_evaluation_laziness</a>
                         </li>
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.observe">observe</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.observe">observe</a>
                         </li>
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.remove_observer">remove_observer</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.remove_observer">remove_observer</a>
                         </li>
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.add_updater">add_updater</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.add_updater">add_updater</a>
                         </li>
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.remove_updater">remove_updater</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.remove_updater">remove_updater</a>
                         </li>
                         <li>
-                                <a class="function" href="#IDirectedAcyclicDataGraph.get_with_args">get_with_args</a>
+                                <a class="function" href="#DirectedAcyclicDataGraph.get_with_args">get_with_args</a>
                         </li>
                 </ul>
 
             </li>
             <li>
-                    <a class="class" href="#IChildDirectedAcyclicDataGraph">IChildDirectedAcyclicDataGraph</a>
+                    <a class="class" href="#ChildDirectedAcyclicDataGraph">ChildDirectedAcyclicDataGraph</a>
                             <ul class="memberlist">
                 </ul>
 
@@ -232,7 +232,7 @@ which other data. Here is an example to illustrate its purpose:</p>
 
 <p>Let's say you have some data read from files at the start, like a CT scan and an X-ray image. Dependent on these you
 have a long pipeline of images and data which depend on each other and these images, for example involving cropping,
-masking, downsampling, projecting etc.... The <code><a href="#IDirectedAcyclicDataGraph">IDirectedAcyclicDataGraph</a></code> allows you to only define the dependencies
+masking, downsampling, projecting etc.... The <code>IDirectedAcyclicDataGraph</code> allows you to only define the dependencies
 between the images, and will automatically perform the operations that evaluate the images when the dependencies change.</p>
 
 <h4 id="a-simple-example">A simple example</h4>
@@ -268,7 +268,7 @@ path from which the volume was loaded might change), or if another value was dep
 <p>Caching of values using <code>functools</code> would solve the former of these two issues, so long as the input values were not
 floating-point, which would be quite a restriction.</p>
 
-<p>To partially solve the former issue, and completely solve the latter, we use the <code><a href="#IDirectedAcyclicDataGraph">IDirectedAcyclicDataGraph</a></code> as follows:</p>
+<p>To partially solve the former issue, and completely solve the latter, we use the <code>IDirectedAcyclicDataGraph</code> as follows:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
@@ -338,12 +338,12 @@ since <code>"ct_volume_downsampled"</code> was last evaluated.</li>
 </span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
 </span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._public</span><span class="w"> </span><span class="kn">import</span> <span class="n">dadg_updater</span><span class="p">,</span> <span class="n">args_from_dadg</span><span class="p">,</span> <span class="n">data_manager</span>
 </span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Updater</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._i_directed_acyclic_data_graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">IDirectedAcyclicDataGraph</span><span class="p">,</span> <span class="n">IChildDirectedAcyclicDataGraph</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._directed_acyclic_data_graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">DirectedAcyclicDataGraph</span><span class="p">,</span> <span class="n">ChildDirectedAcyclicDataGraph</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._dadg_standalone</span><span class="w"> </span><span class="kn">import</span> <span class="n">StandaloneDADG</span><span class="p">,</span> <span class="n">StandaloneDADGSingleton</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._dadg_child</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChildDADG</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>
 </span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;updaters&quot;</span><span class="p">,</span> <span class="s2">&quot;dadg_updater&quot;</span><span class="p">,</span> <span class="s2">&quot;args_from_dadg&quot;</span><span class="p">,</span> <span class="s2">&quot;data_manager&quot;</span><span class="p">,</span> <span class="s2">&quot;StandaloneDADGSingleton&quot;</span><span class="p">,</span> <span class="s2">&quot;Updater&quot;</span><span class="p">,</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>           <span class="s2">&quot;IDirectedAcyclicDataGraph&quot;</span><span class="p">,</span> <span class="s2">&quot;IChildDirectedAcyclicDataGraph&quot;</span><span class="p">,</span> <span class="s2">&quot;StandaloneDADG&quot;</span><span class="p">,</span> <span class="s2">&quot;ChildDADG&quot;</span><span class="p">]</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>           <span class="s2">&quot;DirectedAcyclicDataGraph&quot;</span><span class="p">,</span> <span class="s2">&quot;ChildDirectedAcyclicDataGraph&quot;</span><span class="p">,</span> <span class="s2">&quot;StandaloneDADG&quot;</span><span class="p">,</span> <span class="s2">&quot;ChildDADG&quot;</span><span class="p">]</span>
 </span></pre></div>
 
 
@@ -377,11 +377,11 @@ since <code>"ct_volume_downsampled"</code> was last evaluated.</li>
 </span></pre></div>
 
 
-            <div class="docstring"><p>A decorator for turning a function into an <code><a href="#Updater">Updater</a></code> for use in an <code><a href="#IDirectedAcyclicDataGraph">IDirectedAcyclicDataGraph</a></code>. The named
+            <div class="docstring"><p>A decorator for turning a function into an <code><a href="#Updater">Updater</a></code> for use in an <code>IDirectedAcyclicDataGraph</code>. The named
 arguments of the function will be interpreted as nodes from which to read data from the
-<code><a href="#IDirectedAcyclicDataGraph">IDirectedAcyclicDataGraph</a></code>. The return value of the function must be a dictionary mapping string 'names' to
+<code>IDirectedAcyclicDataGraph</code>. The return value of the function must be a dictionary mapping string 'names' to
 values, where the strings must match the contents of the list <code>names_returned</code>. The returned names will be used
-as node names for updating values in the <code><a href="#IDirectedAcyclicDataGraph">IDirectedAcyclicDataGraph</a></code> with the returned values.</p>
+as node names for updating values in the <code>IDirectedAcyclicDataGraph</code> with the returned values.</p>
 
 <h6 id="parameters">Parameters</h6>
 
@@ -734,76 +734,76 @@ or <em>any</em> subclass. To create and retrieve such a class use the
 
                             </div>
                 </section>
-                <section id="IDirectedAcyclicDataGraph">
-                            <input id="IDirectedAcyclicDataGraph-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                <section id="DirectedAcyclicDataGraph">
+                            <input id="DirectedAcyclicDataGraph-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr class">
             
     <span class="def">class</span>
-    <span class="name">IDirectedAcyclicDataGraph</span><wbr>(<span class="base">abc.ABC</span>):
+    <span class="name">DirectedAcyclicDataGraph</span><wbr>(<span class="base">abc.ABC</span>):
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph-56"><a href="#IDirectedAcyclicDataGraph-56"><span class="linenos"> 56</span></a><span class="k">class</span><span class="w"> </span><span class="nc">IDirectedAcyclicDataGraph</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-</span><span id="IDirectedAcyclicDataGraph-57"><a href="#IDirectedAcyclicDataGraph-57"><span class="linenos"> 57</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-58"><a href="#IDirectedAcyclicDataGraph-58"><span class="linenos"> 58</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">has_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-59"><a href="#IDirectedAcyclicDataGraph-59"><span class="linenos"> 59</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-60"><a href="#IDirectedAcyclicDataGraph-60"><span class="linenos"> 60</span></a>
-</span><span id="IDirectedAcyclicDataGraph-61"><a href="#IDirectedAcyclicDataGraph-61"><span class="linenos"> 61</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-62"><a href="#IDirectedAcyclicDataGraph-62"><span class="linenos"> 62</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">soft</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-63"><a href="#IDirectedAcyclicDataGraph-63"><span class="linenos"> 63</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-64"><a href="#IDirectedAcyclicDataGraph-64"><span class="linenos"> 64</span></a>
-</span><span id="IDirectedAcyclicDataGraph-65"><a href="#IDirectedAcyclicDataGraph-65"><span class="linenos"> 65</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-66"><a href="#IDirectedAcyclicDataGraph-66"><span class="linenos"> 66</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">check_equality</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-67"><a href="#IDirectedAcyclicDataGraph-67"><span class="linenos"> 67</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-68"><a href="#IDirectedAcyclicDataGraph-68"><span class="linenos"> 68</span></a>
-</span><span id="IDirectedAcyclicDataGraph-69"><a href="#IDirectedAcyclicDataGraph-69"><span class="linenos"> 69</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-70"><a href="#IDirectedAcyclicDataGraph-70"><span class="linenos"> 70</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_multiple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-71"><a href="#IDirectedAcyclicDataGraph-71"><span class="linenos"> 71</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-72"><a href="#IDirectedAcyclicDataGraph-72"><span class="linenos"> 72</span></a>
-</span><span id="IDirectedAcyclicDataGraph-73"><a href="#IDirectedAcyclicDataGraph-73"><span class="linenos"> 73</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-74"><a href="#IDirectedAcyclicDataGraph-74"><span class="linenos"> 74</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_evaluation_laziness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lazily_evaluated</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-75"><a href="#IDirectedAcyclicDataGraph-75"><span class="linenos"> 75</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-76"><a href="#IDirectedAcyclicDataGraph-76"><span class="linenos"> 76</span></a>
-</span><span id="IDirectedAcyclicDataGraph-77"><a href="#IDirectedAcyclicDataGraph-77"><span class="linenos"> 77</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-78"><a href="#IDirectedAcyclicDataGraph-78"><span class="linenos"> 78</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-79"><a href="#IDirectedAcyclicDataGraph-79"><span class="linenos"> 79</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-80"><a href="#IDirectedAcyclicDataGraph-80"><span class="linenos"> 80</span></a>
-</span><span id="IDirectedAcyclicDataGraph-81"><a href="#IDirectedAcyclicDataGraph-81"><span class="linenos"> 81</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-82"><a href="#IDirectedAcyclicDataGraph-82"><span class="linenos"> 82</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">remove_observer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-83"><a href="#IDirectedAcyclicDataGraph-83"><span class="linenos"> 83</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-84"><a href="#IDirectedAcyclicDataGraph-84"><span class="linenos"> 84</span></a>
-</span><span id="IDirectedAcyclicDataGraph-85"><a href="#IDirectedAcyclicDataGraph-85"><span class="linenos"> 85</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-86"><a href="#IDirectedAcyclicDataGraph-86"><span class="linenos"> 86</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_updater</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">updater</span><span class="p">:</span> <span class="n">Updater</span><span class="p">):</span>
-</span><span id="IDirectedAcyclicDataGraph-87"><a href="#IDirectedAcyclicDataGraph-87"><span class="linenos"> 87</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-88"><a href="#IDirectedAcyclicDataGraph-88"><span class="linenos"> 88</span></a>
-</span><span id="IDirectedAcyclicDataGraph-89"><a href="#IDirectedAcyclicDataGraph-89"><span class="linenos"> 89</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-90"><a href="#IDirectedAcyclicDataGraph-90"><span class="linenos"> 90</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">remove_updater</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-91"><a href="#IDirectedAcyclicDataGraph-91"><span class="linenos"> 91</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-92"><a href="#IDirectedAcyclicDataGraph-92"><span class="linenos"> 92</span></a>
-</span><span id="IDirectedAcyclicDataGraph-93"><a href="#IDirectedAcyclicDataGraph-93"><span class="linenos"> 93</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-94"><a href="#IDirectedAcyclicDataGraph-94"><span class="linenos"> 94</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_with_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FunctionArgument</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-95"><a href="#IDirectedAcyclicDataGraph-95"><span class="linenos"> 95</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-96"><a href="#IDirectedAcyclicDataGraph-96"><span class="linenos"> 96</span></a>
-</span><span id="IDirectedAcyclicDataGraph-97"><a href="#IDirectedAcyclicDataGraph-97"><span class="linenos"> 97</span></a>    <span class="c1">#### Protected properties and methods for access by ChildDADG</span>
-</span><span id="IDirectedAcyclicDataGraph-98"><a href="#IDirectedAcyclicDataGraph-98"><span class="linenos"> 98</span></a>
-</span><span id="IDirectedAcyclicDataGraph-99"><a href="#IDirectedAcyclicDataGraph-99"><span class="linenos"> 99</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-100"><a href="#IDirectedAcyclicDataGraph-100"><span class="linenos">100</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_get_node_if_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph-101"><a href="#IDirectedAcyclicDataGraph-101"><span class="linenos">101</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-102"><a href="#IDirectedAcyclicDataGraph-102"><span class="linenos">102</span></a>
-</span><span id="IDirectedAcyclicDataGraph-103"><a href="#IDirectedAcyclicDataGraph-103"><span class="linenos">103</span></a>    <span class="nd">@property</span>
-</span><span id="IDirectedAcyclicDataGraph-104"><a href="#IDirectedAcyclicDataGraph-104"><span class="linenos">104</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-105"><a href="#IDirectedAcyclicDataGraph-105"><span class="linenos">105</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Node</span><span class="p">]:</span>
-</span><span id="IDirectedAcyclicDataGraph-106"><a href="#IDirectedAcyclicDataGraph-106"><span class="linenos">106</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-107"><a href="#IDirectedAcyclicDataGraph-107"><span class="linenos">107</span></a>
-</span><span id="IDirectedAcyclicDataGraph-108"><a href="#IDirectedAcyclicDataGraph-108"><span class="linenos">108</span></a>    <span class="nd">@property</span>
-</span><span id="IDirectedAcyclicDataGraph-109"><a href="#IDirectedAcyclicDataGraph-109"><span class="linenos">109</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph-110"><a href="#IDirectedAcyclicDataGraph-110"><span class="linenos">110</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_updaters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Updater</span><span class="p">]:</span>
-</span><span id="IDirectedAcyclicDataGraph-111"><a href="#IDirectedAcyclicDataGraph-111"><span class="linenos">111</span></a>        <span class="k">pass</span>
-</span><span id="IDirectedAcyclicDataGraph-112"><a href="#IDirectedAcyclicDataGraph-112"><span class="linenos">112</span></a>
-</span><span id="IDirectedAcyclicDataGraph-113"><a href="#IDirectedAcyclicDataGraph-113"><span class="linenos">113</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_add_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">:</span> <span class="s1">&#39;IChildDirectedAcyclicDataGraph&#39;</span><span class="p">):</span>
-</span><span id="IDirectedAcyclicDataGraph-114"><a href="#IDirectedAcyclicDataGraph-114"><span class="linenos">114</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph-56"><a href="#DirectedAcyclicDataGraph-56"><span class="linenos"> 56</span></a><span class="k">class</span><span class="w"> </span><span class="nc">DirectedAcyclicDataGraph</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+</span><span id="DirectedAcyclicDataGraph-57"><a href="#DirectedAcyclicDataGraph-57"><span class="linenos"> 57</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-58"><a href="#DirectedAcyclicDataGraph-58"><span class="linenos"> 58</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">has_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-59"><a href="#DirectedAcyclicDataGraph-59"><span class="linenos"> 59</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-60"><a href="#DirectedAcyclicDataGraph-60"><span class="linenos"> 60</span></a>
+</span><span id="DirectedAcyclicDataGraph-61"><a href="#DirectedAcyclicDataGraph-61"><span class="linenos"> 61</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-62"><a href="#DirectedAcyclicDataGraph-62"><span class="linenos"> 62</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">soft</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-63"><a href="#DirectedAcyclicDataGraph-63"><span class="linenos"> 63</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-64"><a href="#DirectedAcyclicDataGraph-64"><span class="linenos"> 64</span></a>
+</span><span id="DirectedAcyclicDataGraph-65"><a href="#DirectedAcyclicDataGraph-65"><span class="linenos"> 65</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-66"><a href="#DirectedAcyclicDataGraph-66"><span class="linenos"> 66</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">check_equality</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-67"><a href="#DirectedAcyclicDataGraph-67"><span class="linenos"> 67</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-68"><a href="#DirectedAcyclicDataGraph-68"><span class="linenos"> 68</span></a>
+</span><span id="DirectedAcyclicDataGraph-69"><a href="#DirectedAcyclicDataGraph-69"><span class="linenos"> 69</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-70"><a href="#DirectedAcyclicDataGraph-70"><span class="linenos"> 70</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_multiple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-71"><a href="#DirectedAcyclicDataGraph-71"><span class="linenos"> 71</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-72"><a href="#DirectedAcyclicDataGraph-72"><span class="linenos"> 72</span></a>
+</span><span id="DirectedAcyclicDataGraph-73"><a href="#DirectedAcyclicDataGraph-73"><span class="linenos"> 73</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-74"><a href="#DirectedAcyclicDataGraph-74"><span class="linenos"> 74</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_evaluation_laziness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lazily_evaluated</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-75"><a href="#DirectedAcyclicDataGraph-75"><span class="linenos"> 75</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-76"><a href="#DirectedAcyclicDataGraph-76"><span class="linenos"> 76</span></a>
+</span><span id="DirectedAcyclicDataGraph-77"><a href="#DirectedAcyclicDataGraph-77"><span class="linenos"> 77</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-78"><a href="#DirectedAcyclicDataGraph-78"><span class="linenos"> 78</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-79"><a href="#DirectedAcyclicDataGraph-79"><span class="linenos"> 79</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-80"><a href="#DirectedAcyclicDataGraph-80"><span class="linenos"> 80</span></a>
+</span><span id="DirectedAcyclicDataGraph-81"><a href="#DirectedAcyclicDataGraph-81"><span class="linenos"> 81</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-82"><a href="#DirectedAcyclicDataGraph-82"><span class="linenos"> 82</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">remove_observer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-83"><a href="#DirectedAcyclicDataGraph-83"><span class="linenos"> 83</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-84"><a href="#DirectedAcyclicDataGraph-84"><span class="linenos"> 84</span></a>
+</span><span id="DirectedAcyclicDataGraph-85"><a href="#DirectedAcyclicDataGraph-85"><span class="linenos"> 85</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-86"><a href="#DirectedAcyclicDataGraph-86"><span class="linenos"> 86</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_updater</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">updater</span><span class="p">:</span> <span class="n">Updater</span><span class="p">):</span>
+</span><span id="DirectedAcyclicDataGraph-87"><a href="#DirectedAcyclicDataGraph-87"><span class="linenos"> 87</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-88"><a href="#DirectedAcyclicDataGraph-88"><span class="linenos"> 88</span></a>
+</span><span id="DirectedAcyclicDataGraph-89"><a href="#DirectedAcyclicDataGraph-89"><span class="linenos"> 89</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-90"><a href="#DirectedAcyclicDataGraph-90"><span class="linenos"> 90</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">remove_updater</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-91"><a href="#DirectedAcyclicDataGraph-91"><span class="linenos"> 91</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-92"><a href="#DirectedAcyclicDataGraph-92"><span class="linenos"> 92</span></a>
+</span><span id="DirectedAcyclicDataGraph-93"><a href="#DirectedAcyclicDataGraph-93"><span class="linenos"> 93</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-94"><a href="#DirectedAcyclicDataGraph-94"><span class="linenos"> 94</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_with_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FunctionArgument</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-95"><a href="#DirectedAcyclicDataGraph-95"><span class="linenos"> 95</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-96"><a href="#DirectedAcyclicDataGraph-96"><span class="linenos"> 96</span></a>
+</span><span id="DirectedAcyclicDataGraph-97"><a href="#DirectedAcyclicDataGraph-97"><span class="linenos"> 97</span></a>    <span class="c1">#### Protected properties and methods for access by ChildDADG</span>
+</span><span id="DirectedAcyclicDataGraph-98"><a href="#DirectedAcyclicDataGraph-98"><span class="linenos"> 98</span></a>
+</span><span id="DirectedAcyclicDataGraph-99"><a href="#DirectedAcyclicDataGraph-99"><span class="linenos"> 99</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-100"><a href="#DirectedAcyclicDataGraph-100"><span class="linenos">100</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_get_node_if_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph-101"><a href="#DirectedAcyclicDataGraph-101"><span class="linenos">101</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-102"><a href="#DirectedAcyclicDataGraph-102"><span class="linenos">102</span></a>
+</span><span id="DirectedAcyclicDataGraph-103"><a href="#DirectedAcyclicDataGraph-103"><span class="linenos">103</span></a>    <span class="nd">@property</span>
+</span><span id="DirectedAcyclicDataGraph-104"><a href="#DirectedAcyclicDataGraph-104"><span class="linenos">104</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-105"><a href="#DirectedAcyclicDataGraph-105"><span class="linenos">105</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Node</span><span class="p">]:</span>
+</span><span id="DirectedAcyclicDataGraph-106"><a href="#DirectedAcyclicDataGraph-106"><span class="linenos">106</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-107"><a href="#DirectedAcyclicDataGraph-107"><span class="linenos">107</span></a>
+</span><span id="DirectedAcyclicDataGraph-108"><a href="#DirectedAcyclicDataGraph-108"><span class="linenos">108</span></a>    <span class="nd">@property</span>
+</span><span id="DirectedAcyclicDataGraph-109"><a href="#DirectedAcyclicDataGraph-109"><span class="linenos">109</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph-110"><a href="#DirectedAcyclicDataGraph-110"><span class="linenos">110</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_updaters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Updater</span><span class="p">]:</span>
+</span><span id="DirectedAcyclicDataGraph-111"><a href="#DirectedAcyclicDataGraph-111"><span class="linenos">111</span></a>        <span class="k">pass</span>
+</span><span id="DirectedAcyclicDataGraph-112"><a href="#DirectedAcyclicDataGraph-112"><span class="linenos">112</span></a>
+</span><span id="DirectedAcyclicDataGraph-113"><a href="#DirectedAcyclicDataGraph-113"><span class="linenos">113</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_add_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">:</span> <span class="s1">&#39;ChildDirectedAcyclicDataGraph&#39;</span><span class="p">):</span>
+</span><span id="DirectedAcyclicDataGraph-114"><a href="#DirectedAcyclicDataGraph-114"><span class="linenos">114</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
@@ -812,210 +812,210 @@ inheritance.</p>
 </div>
 
 
-                            <div id="IDirectedAcyclicDataGraph.has_node" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.has_node-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.has_node" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.has_node-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">has_node</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.has_node-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.has_node-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.has_node"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.has_node-57"><a href="#IDirectedAcyclicDataGraph.has_node-57"><span class="linenos">57</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.has_node-58"><a href="#IDirectedAcyclicDataGraph.has_node-58"><span class="linenos">58</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">has_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph.has_node-59"><a href="#IDirectedAcyclicDataGraph.has_node-59"><span class="linenos">59</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.has_node"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.has_node-57"><a href="#DirectedAcyclicDataGraph.has_node-57"><span class="linenos">57</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.has_node-58"><a href="#DirectedAcyclicDataGraph.has_node-58"><span class="linenos">58</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">has_node</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph.has_node-59"><a href="#DirectedAcyclicDataGraph.has_node-59"><span class="linenos">59</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
     
 
                             </div>
-                            <div id="IDirectedAcyclicDataGraph.get" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.get-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.get" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.get-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">get</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">soft</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span> <span class="o">|</span> <span class="n"><a href="../data/structs.html#Error">reg23_experiments.data.structs.Error</a></span>:</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.get-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.get-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.get"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.get-61"><a href="#IDirectedAcyclicDataGraph.get-61"><span class="linenos">61</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.get-62"><a href="#IDirectedAcyclicDataGraph.get-62"><span class="linenos">62</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">soft</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph.get-63"><a href="#IDirectedAcyclicDataGraph.get-63"><span class="linenos">63</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.get"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.get-61"><a href="#DirectedAcyclicDataGraph.get-61"><span class="linenos">61</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.get-62"><a href="#DirectedAcyclicDataGraph.get-62"><span class="linenos">62</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">soft</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph.get-63"><a href="#DirectedAcyclicDataGraph.get-63"><span class="linenos">63</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
     
 
                             </div>
-                            <div id="IDirectedAcyclicDataGraph.set" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.set-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.set" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.set-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">set</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">data</span><span class="p">:</span> <span class="n">Any</span>,</span><span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">check_equality</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a href="../data/structs.html#Error">reg23_experiments.data.structs.Error</a></span>:</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.set-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.set-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.set"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.set-65"><a href="#IDirectedAcyclicDataGraph.set-65"><span class="linenos">65</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.set-66"><a href="#IDirectedAcyclicDataGraph.set-66"><span class="linenos">66</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">check_equality</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph.set-67"><a href="#IDirectedAcyclicDataGraph.set-67"><span class="linenos">67</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.set"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.set-65"><a href="#DirectedAcyclicDataGraph.set-65"><span class="linenos">65</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.set-66"><a href="#DirectedAcyclicDataGraph.set-66"><span class="linenos">66</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">check_equality</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph.set-67"><a href="#DirectedAcyclicDataGraph.set-67"><span class="linenos">67</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
     
 
                             </div>
-                            <div id="IDirectedAcyclicDataGraph.set_multiple" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.set_multiple-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.set_multiple" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.set_multiple-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">set_multiple</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="o">**</span><span class="n">kwargs</span></span><span class="return-annotation">) -> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a href="../data/structs.html#Error">reg23_experiments.data.structs.Error</a></span>:</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.set_multiple-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.set_multiple-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.set_multiple"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.set_multiple-69"><a href="#IDirectedAcyclicDataGraph.set_multiple-69"><span class="linenos">69</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.set_multiple-70"><a href="#IDirectedAcyclicDataGraph.set_multiple-70"><span class="linenos">70</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_multiple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph.set_multiple-71"><a href="#IDirectedAcyclicDataGraph.set_multiple-71"><span class="linenos">71</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.set_multiple"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.set_multiple-69"><a href="#DirectedAcyclicDataGraph.set_multiple-69"><span class="linenos">69</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.set_multiple-70"><a href="#DirectedAcyclicDataGraph.set_multiple-70"><span class="linenos">70</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_multiple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph.set_multiple-71"><a href="#DirectedAcyclicDataGraph.set_multiple-71"><span class="linenos">71</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
     
 
                             </div>
-                            <div id="IDirectedAcyclicDataGraph.set_evaluation_laziness" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.set_evaluation_laziness-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.set_evaluation_laziness" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.set_evaluation_laziness-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">set_evaluation_laziness</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="o">*</span>, </span><span class="param"><span class="n">lazily_evaluated</span><span class="p">:</span> <span class="nb">bool</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.set_evaluation_laziness-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.set_evaluation_laziness-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.set_evaluation_laziness"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.set_evaluation_laziness-73"><a href="#IDirectedAcyclicDataGraph.set_evaluation_laziness-73"><span class="linenos">73</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.set_evaluation_laziness-74"><a href="#IDirectedAcyclicDataGraph.set_evaluation_laziness-74"><span class="linenos">74</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_evaluation_laziness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lazily_evaluated</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph.set_evaluation_laziness-75"><a href="#IDirectedAcyclicDataGraph.set_evaluation_laziness-75"><span class="linenos">75</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.set_evaluation_laziness"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.set_evaluation_laziness-73"><a href="#DirectedAcyclicDataGraph.set_evaluation_laziness-73"><span class="linenos">73</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.set_evaluation_laziness-74"><a href="#DirectedAcyclicDataGraph.set_evaluation_laziness-74"><span class="linenos">74</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_evaluation_laziness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lazily_evaluated</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph.set_evaluation_laziness-75"><a href="#DirectedAcyclicDataGraph.set_evaluation_laziness-75"><span class="linenos">75</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
     
 
                             </div>
-                            <div id="IDirectedAcyclicDataGraph.observe" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.observe-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.observe" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.observe-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">observe</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.observe-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.observe-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.observe"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.observe-77"><a href="#IDirectedAcyclicDataGraph.observe-77"><span class="linenos">77</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.observe-78"><a href="#IDirectedAcyclicDataGraph.observe-78"><span class="linenos">78</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph.observe-79"><a href="#IDirectedAcyclicDataGraph.observe-79"><span class="linenos">79</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.observe"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.observe-77"><a href="#DirectedAcyclicDataGraph.observe-77"><span class="linenos">77</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.observe-78"><a href="#DirectedAcyclicDataGraph.observe-78"><span class="linenos">78</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph.observe-79"><a href="#DirectedAcyclicDataGraph.observe-79"><span class="linenos">79</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
     
 
                             </div>
-                            <div id="IDirectedAcyclicDataGraph.remove_observer" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.remove_observer-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.remove_observer" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.remove_observer-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">remove_observer</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a href="../data/structs.html#Error">reg23_experiments.data.structs.Error</a></span>:</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.remove_observer-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.remove_observer-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.remove_observer"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.remove_observer-81"><a href="#IDirectedAcyclicDataGraph.remove_observer-81"><span class="linenos">81</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.remove_observer-82"><a href="#IDirectedAcyclicDataGraph.remove_observer-82"><span class="linenos">82</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">remove_observer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph.remove_observer-83"><a href="#IDirectedAcyclicDataGraph.remove_observer-83"><span class="linenos">83</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.remove_observer"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.remove_observer-81"><a href="#DirectedAcyclicDataGraph.remove_observer-81"><span class="linenos">81</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.remove_observer-82"><a href="#DirectedAcyclicDataGraph.remove_observer-82"><span class="linenos">82</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">remove_observer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observer_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph.remove_observer-83"><a href="#DirectedAcyclicDataGraph.remove_observer-83"><span class="linenos">83</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
     
 
                             </div>
-                            <div id="IDirectedAcyclicDataGraph.add_updater" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.add_updater-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.add_updater" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.add_updater-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">add_updater</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">updater</span><span class="p">:</span> <span class="n"><a href="#Updater">Updater</a></span></span><span class="return-annotation">):</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.add_updater-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.add_updater-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.add_updater"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.add_updater-85"><a href="#IDirectedAcyclicDataGraph.add_updater-85"><span class="linenos">85</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.add_updater-86"><a href="#IDirectedAcyclicDataGraph.add_updater-86"><span class="linenos">86</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_updater</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">updater</span><span class="p">:</span> <span class="n">Updater</span><span class="p">):</span>
-</span><span id="IDirectedAcyclicDataGraph.add_updater-87"><a href="#IDirectedAcyclicDataGraph.add_updater-87"><span class="linenos">87</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.add_updater"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.add_updater-85"><a href="#DirectedAcyclicDataGraph.add_updater-85"><span class="linenos">85</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.add_updater-86"><a href="#DirectedAcyclicDataGraph.add_updater-86"><span class="linenos">86</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_updater</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">updater</span><span class="p">:</span> <span class="n">Updater</span><span class="p">):</span>
+</span><span id="DirectedAcyclicDataGraph.add_updater-87"><a href="#DirectedAcyclicDataGraph.add_updater-87"><span class="linenos">87</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
     
 
                             </div>
-                            <div id="IDirectedAcyclicDataGraph.remove_updater" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.remove_updater-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.remove_updater" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.remove_updater-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">remove_updater</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a href="../data/structs.html#Error">reg23_experiments.data.structs.Error</a></span>:</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.remove_updater-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.remove_updater-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.remove_updater"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.remove_updater-89"><a href="#IDirectedAcyclicDataGraph.remove_updater-89"><span class="linenos">89</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.remove_updater-90"><a href="#IDirectedAcyclicDataGraph.remove_updater-90"><span class="linenos">90</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">remove_updater</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph.remove_updater-91"><a href="#IDirectedAcyclicDataGraph.remove_updater-91"><span class="linenos">91</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.remove_updater"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.remove_updater-89"><a href="#DirectedAcyclicDataGraph.remove_updater-89"><span class="linenos">89</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.remove_updater-90"><a href="#DirectedAcyclicDataGraph.remove_updater-90"><span class="linenos">90</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">remove_updater</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">updater_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph.remove_updater-91"><a href="#DirectedAcyclicDataGraph.remove_updater-91"><span class="linenos">91</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
     
 
                             </div>
-                            <div id="IDirectedAcyclicDataGraph.get_with_args" class="classattr">
-                                        <input id="IDirectedAcyclicDataGraph.get_with_args-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                            <div id="DirectedAcyclicDataGraph.get_with_args" class="classattr">
+                                        <input id="DirectedAcyclicDataGraph.get_with_args-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
                     <div class="decorator decorator-abstractmethod">@abstractmethod</div>
 
         <span class="def">def</span>
         <span class="name">get_with_args</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n"><a href="../utils/reflection.html#FunctionArgument">reg23_experiments.utils.reflection.FunctionArgument</a></span><span class="p">]</span></span><span class="return-annotation">) -> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n"><a href="../data/structs.html#Error">reg23_experiments.data.structs.Error</a></span>:</span></span>
 
-                <label class="view-source-button" for="IDirectedAcyclicDataGraph.get_with_args-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="DirectedAcyclicDataGraph.get_with_args-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IDirectedAcyclicDataGraph.get_with_args"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IDirectedAcyclicDataGraph.get_with_args-93"><a href="#IDirectedAcyclicDataGraph.get_with_args-93"><span class="linenos">93</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IDirectedAcyclicDataGraph.get_with_args-94"><a href="#IDirectedAcyclicDataGraph.get_with_args-94"><span class="linenos">94</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_with_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FunctionArgument</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IDirectedAcyclicDataGraph.get_with_args-95"><a href="#IDirectedAcyclicDataGraph.get_with_args-95"><span class="linenos">95</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#DirectedAcyclicDataGraph.get_with_args"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DirectedAcyclicDataGraph.get_with_args-93"><a href="#DirectedAcyclicDataGraph.get_with_args-93"><span class="linenos">93</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="DirectedAcyclicDataGraph.get_with_args-94"><a href="#DirectedAcyclicDataGraph.get_with_args-94"><span class="linenos">94</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_with_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FunctionArgument</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="DirectedAcyclicDataGraph.get_with_args-95"><a href="#DirectedAcyclicDataGraph.get_with_args-95"><span class="linenos">95</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
@@ -1023,22 +1023,22 @@ inheritance.</p>
 
                             </div>
                 </section>
-                <section id="IChildDirectedAcyclicDataGraph">
-                            <input id="IChildDirectedAcyclicDataGraph-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                <section id="ChildDirectedAcyclicDataGraph">
+                            <input id="ChildDirectedAcyclicDataGraph-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr class">
             
     <span class="def">class</span>
-    <span class="name">IChildDirectedAcyclicDataGraph</span><wbr>(<span class="base"><a href="#IDirectedAcyclicDataGraph">reg23_experiments.ops.data_manager.IDirectedAcyclicDataGraph</a></span>):
+    <span class="name">ChildDirectedAcyclicDataGraph</span><wbr>(<span class="base"><a href="#DirectedAcyclicDataGraph">reg23_experiments.ops.data_manager.DirectedAcyclicDataGraph</a></span>):
 
-                <label class="view-source-button" for="IChildDirectedAcyclicDataGraph-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="ChildDirectedAcyclicDataGraph-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#IChildDirectedAcyclicDataGraph"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="IChildDirectedAcyclicDataGraph-117"><a href="#IChildDirectedAcyclicDataGraph-117"><span class="linenos">117</span></a><span class="k">class</span><span class="w"> </span><span class="nc">IChildDirectedAcyclicDataGraph</span><span class="p">(</span><span class="n">IDirectedAcyclicDataGraph</span><span class="p">):</span>
-</span><span id="IChildDirectedAcyclicDataGraph-118"><a href="#IChildDirectedAcyclicDataGraph-118"><span class="linenos">118</span></a>    <span class="c1">#### Protected properties and methods for access by parent DADG</span>
-</span><span id="IChildDirectedAcyclicDataGraph-119"><a href="#IChildDirectedAcyclicDataGraph-119"><span class="linenos">119</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="IChildDirectedAcyclicDataGraph-120"><a href="#IChildDirectedAcyclicDataGraph-120"><span class="linenos">120</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_make_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="IChildDirectedAcyclicDataGraph-121"><a href="#IChildDirectedAcyclicDataGraph-121"><span class="linenos">121</span></a>        <span class="k">pass</span>
+    <a class="headerlink" href="#ChildDirectedAcyclicDataGraph"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ChildDirectedAcyclicDataGraph-117"><a href="#ChildDirectedAcyclicDataGraph-117"><span class="linenos">117</span></a><span class="k">class</span><span class="w"> </span><span class="nc">ChildDirectedAcyclicDataGraph</span><span class="p">(</span><span class="n">DirectedAcyclicDataGraph</span><span class="p">):</span>
+</span><span id="ChildDirectedAcyclicDataGraph-118"><a href="#ChildDirectedAcyclicDataGraph-118"><span class="linenos">118</span></a>    <span class="c1">#### Protected properties and methods for access by parent DADG</span>
+</span><span id="ChildDirectedAcyclicDataGraph-119"><a href="#ChildDirectedAcyclicDataGraph-119"><span class="linenos">119</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="ChildDirectedAcyclicDataGraph-120"><a href="#ChildDirectedAcyclicDataGraph-120"><span class="linenos">120</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_make_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="ChildDirectedAcyclicDataGraph-121"><a href="#ChildDirectedAcyclicDataGraph-121"><span class="linenos">121</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
@@ -1053,13 +1053,13 @@ inheritance.</p>
 <div class="attr class">
             
     <span class="def">class</span>
-    <span class="name">StandaloneDADG</span><wbr>(<span class="base"><a href="#IDirectedAcyclicDataGraph">reg23_experiments.ops.data_manager.IDirectedAcyclicDataGraph</a></span>):
+    <span class="name">StandaloneDADG</span><wbr>(<span class="base"><a href="#DirectedAcyclicDataGraph">reg23_experiments.ops.data_manager.DirectedAcyclicDataGraph</a></span>):
 
                 <label class="view-source-button" for="StandaloneDADG-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#StandaloneDADG"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="StandaloneDADG-21"><a href="#StandaloneDADG-21"><span class="linenos"> 21</span></a><span class="k">class</span><span class="w"> </span><span class="nc">StandaloneDADG</span><span class="p">(</span><span class="n">IDirectedAcyclicDataGraph</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="StandaloneDADG-21"><a href="#StandaloneDADG-21"><span class="linenos"> 21</span></a><span class="k">class</span><span class="w"> </span><span class="nc">StandaloneDADG</span><span class="p">(</span><span class="n">DirectedAcyclicDataGraph</span><span class="p">):</span>
 </span><span id="StandaloneDADG-22"><a href="#StandaloneDADG-22"><span class="linenos"> 22</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="StandaloneDADG-23"><a href="#StandaloneDADG-23"><span class="linenos"> 23</span></a><span class="sd">    A data manager that stores data in a directed, acyclic graph.</span>
 </span><span id="StandaloneDADG-24"><a href="#StandaloneDADG-24"><span class="linenos"> 24</span></a>
@@ -1099,7 +1099,7 @@ inheritance.</p>
 </span><span id="StandaloneDADG-58"><a href="#StandaloneDADG-58"><span class="linenos"> 58</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__updaters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Updater</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 </span><span id="StandaloneDADG-59"><a href="#StandaloneDADG-59"><span class="linenos"> 59</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__in_top_level_call</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="StandaloneDADG-60"><a href="#StandaloneDADG-60"><span class="linenos"> 60</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__children</span><span class="p">:</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">[</span>
-</span><span id="StandaloneDADG-61"><a href="#StandaloneDADG-61"><span class="linenos"> 61</span></a>            <span class="n">IChildDirectedAcyclicDataGraph</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">()</span>  <span class="c1"># children add themselves, and will be automatically</span>
+</span><span id="StandaloneDADG-61"><a href="#StandaloneDADG-61"><span class="linenos"> 61</span></a>            <span class="n">ChildDirectedAcyclicDataGraph</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">()</span>  <span class="c1"># children add themselves, and will be automatically</span>
 </span><span id="StandaloneDADG-62"><a href="#StandaloneDADG-62"><span class="linenos"> 62</span></a>        <span class="c1"># removed on destruction</span>
 </span><span id="StandaloneDADG-63"><a href="#StandaloneDADG-63"><span class="linenos"> 63</span></a>
 </span><span id="StandaloneDADG-64"><a href="#StandaloneDADG-64"><span class="linenos"> 64</span></a>    <span class="nd">@staticmethod</span>
@@ -1321,7 +1321,7 @@ inheritance.</p>
 </span><span id="StandaloneDADG-280"><a href="#StandaloneDADG-280"><span class="linenos">280</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_updaters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Updater</span><span class="p">]:</span>
 </span><span id="StandaloneDADG-281"><a href="#StandaloneDADG-281"><span class="linenos">281</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__updaters</span>
 </span><span id="StandaloneDADG-282"><a href="#StandaloneDADG-282"><span class="linenos">282</span></a>
-</span><span id="StandaloneDADG-283"><a href="#StandaloneDADG-283"><span class="linenos">283</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_add_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">:</span> <span class="n">IChildDirectedAcyclicDataGraph</span><span class="p">):</span>
+</span><span id="StandaloneDADG-283"><a href="#StandaloneDADG-283"><span class="linenos">283</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_add_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">:</span> <span class="n">ChildDirectedAcyclicDataGraph</span><span class="p">):</span>
 </span><span id="StandaloneDADG-284"><a href="#StandaloneDADG-284"><span class="linenos">284</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__children</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
 </span><span id="StandaloneDADG-285"><a href="#StandaloneDADG-285"><span class="linenos">285</span></a>
 </span><span id="StandaloneDADG-286"><a href="#StandaloneDADG-286"><span class="linenos">286</span></a>    <span class="c1">##### Private methods</span>
@@ -1931,14 +1931,14 @@ available.</p>
 <div class="attr class">
             
     <span class="def">class</span>
-    <span class="name">ChildDADG</span><wbr>(<span class="base"><a href="#IChildDirectedAcyclicDataGraph">reg23_experiments.ops.data_manager.IChildDirectedAcyclicDataGraph</a></span>):
+    <span class="name">ChildDADG</span><wbr>(<span class="base"><a href="#ChildDirectedAcyclicDataGraph">reg23_experiments.ops.data_manager.ChildDirectedAcyclicDataGraph</a></span>):
 
                 <label class="view-source-button" for="ChildDADG-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#ChildDADG"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ChildDADG-20"><a href="#ChildDADG-20"><span class="linenos"> 20</span></a><span class="k">class</span><span class="w"> </span><span class="nc">ChildDADG</span><span class="p">(</span><span class="n">IChildDirectedAcyclicDataGraph</span><span class="p">):</span>
-</span><span id="ChildDADG-21"><a href="#ChildDADG-21"><span class="linenos"> 21</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">IDirectedAcyclicDataGraph</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ChildDADG-20"><a href="#ChildDADG-20"><span class="linenos"> 20</span></a><span class="k">class</span><span class="w"> </span><span class="nc">ChildDADG</span><span class="p">(</span><span class="n">ChildDirectedAcyclicDataGraph</span><span class="p">):</span>
+</span><span id="ChildDADG-21"><a href="#ChildDADG-21"><span class="linenos"> 21</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">DirectedAcyclicDataGraph</span><span class="p">):</span>
 </span><span id="ChildDADG-22"><a href="#ChildDADG-22"><span class="linenos"> 22</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__parent</span> <span class="o">=</span> <span class="n">parent</span>  <span class="c1"># strong reference to parent, so parent stays alive as long as there are children</span>
 </span><span id="ChildDADG-23"><a href="#ChildDADG-23"><span class="linenos"> 23</span></a>        <span class="c1"># parent holds weak reference to this, which will automatically be removed from the WeakSet when this is</span>
 </span><span id="ChildDADG-24"><a href="#ChildDADG-24"><span class="linenos"> 24</span></a>        <span class="c1"># destroyed</span>
@@ -1948,7 +1948,7 @@ available.</p>
 </span><span id="ChildDADG-28"><a href="#ChildDADG-28"><span class="linenos"> 28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__updaters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Updater</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__parent</span><span class="o">.</span><span class="n">_updaters</span><span class="p">)</span>
 </span><span id="ChildDADG-29"><a href="#ChildDADG-29"><span class="linenos"> 29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__in_top_level_call</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="ChildDADG-30"><a href="#ChildDADG-30"><span class="linenos"> 30</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__children</span><span class="p">:</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">[</span>
-</span><span id="ChildDADG-31"><a href="#ChildDADG-31"><span class="linenos"> 31</span></a>            <span class="n">IChildDirectedAcyclicDataGraph</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">()</span>  <span class="c1"># children add themselves, and will be automatically</span>
+</span><span id="ChildDADG-31"><a href="#ChildDADG-31"><span class="linenos"> 31</span></a>            <span class="n">ChildDirectedAcyclicDataGraph</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">()</span>  <span class="c1"># children add themselves, and will be automatically</span>
 </span><span id="ChildDADG-32"><a href="#ChildDADG-32"><span class="linenos"> 32</span></a>        <span class="c1"># removed on destruction</span>
 </span><span id="ChildDADG-33"><a href="#ChildDADG-33"><span class="linenos"> 33</span></a>
 </span><span id="ChildDADG-34"><a href="#ChildDADG-34"><span class="linenos"> 34</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -2204,7 +2204,7 @@ available.</p>
 </span><span id="ChildDADG-284"><a href="#ChildDADG-284"><span class="linenos">284</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_updaters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Updater</span><span class="p">]:</span>
 </span><span id="ChildDADG-285"><a href="#ChildDADG-285"><span class="linenos">285</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__updaters</span>
 </span><span id="ChildDADG-286"><a href="#ChildDADG-286"><span class="linenos">286</span></a>
-</span><span id="ChildDADG-287"><a href="#ChildDADG-287"><span class="linenos">287</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_add_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">:</span> <span class="n">IChildDirectedAcyclicDataGraph</span><span class="p">):</span>
+</span><span id="ChildDADG-287"><a href="#ChildDADG-287"><span class="linenos">287</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_add_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">:</span> <span class="n">ChildDirectedAcyclicDataGraph</span><span class="p">):</span>
 </span><span id="ChildDADG-288"><a href="#ChildDADG-288"><span class="linenos">288</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__children</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
 </span><span id="ChildDADG-289"><a href="#ChildDADG-289"><span class="linenos">289</span></a>
 </span><span id="ChildDADG-290"><a href="#ChildDADG-290"><span class="linenos">290</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_make_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
@@ -2368,13 +2368,13 @@ inheritance.</p>
                                         <input id="ChildDADG.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
-        <span class="name">ChildDADG</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">parent</span><span class="p">:</span> <span class="n"><a href="#IDirectedAcyclicDataGraph">IDirectedAcyclicDataGraph</a></span></span>)</span>
+        <span class="name">ChildDADG</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">parent</span><span class="p">:</span> <span class="n"><a href="#DirectedAcyclicDataGraph">DirectedAcyclicDataGraph</a></span></span>)</span>
 
                 <label class="view-source-button" for="ChildDADG.__init__-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#ChildDADG.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="ChildDADG.__init__-21"><a href="#ChildDADG.__init__-21"><span class="linenos">21</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">IDirectedAcyclicDataGraph</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="ChildDADG.__init__-21"><a href="#ChildDADG.__init__-21"><span class="linenos">21</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">DirectedAcyclicDataGraph</span><span class="p">):</span>
 </span><span id="ChildDADG.__init__-22"><a href="#ChildDADG.__init__-22"><span class="linenos">22</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__parent</span> <span class="o">=</span> <span class="n">parent</span>  <span class="c1"># strong reference to parent, so parent stays alive as long as there are children</span>
 </span><span id="ChildDADG.__init__-23"><a href="#ChildDADG.__init__-23"><span class="linenos">23</span></a>        <span class="c1"># parent holds weak reference to this, which will automatically be removed from the WeakSet when this is</span>
 </span><span id="ChildDADG.__init__-24"><a href="#ChildDADG.__init__-24"><span class="linenos">24</span></a>        <span class="c1"># destroyed</span>
@@ -2384,7 +2384,7 @@ inheritance.</p>
 </span><span id="ChildDADG.__init__-28"><a href="#ChildDADG.__init__-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__updaters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Updater</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__parent</span><span class="o">.</span><span class="n">_updaters</span><span class="p">)</span>
 </span><span id="ChildDADG.__init__-29"><a href="#ChildDADG.__init__-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__in_top_level_call</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="ChildDADG.__init__-30"><a href="#ChildDADG.__init__-30"><span class="linenos">30</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">__children</span><span class="p">:</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">[</span>
-</span><span id="ChildDADG.__init__-31"><a href="#ChildDADG.__init__-31"><span class="linenos">31</span></a>            <span class="n">IChildDirectedAcyclicDataGraph</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">()</span>  <span class="c1"># children add themselves, and will be automatically</span>
+</span><span id="ChildDADG.__init__-31"><a href="#ChildDADG.__init__-31"><span class="linenos">31</span></a>            <span class="n">ChildDirectedAcyclicDataGraph</span><span class="p">]</span> <span class="o">=</span> <span class="n">weakref</span><span class="o">.</span><span class="n">WeakSet</span><span class="p">()</span>  <span class="c1"># children add themselves, and will be automatically</span>
 </span><span id="ChildDADG.__init__-32"><a href="#ChildDADG.__init__-32"><span class="linenos">32</span></a>        <span class="c1"># removed on destruction</span>
 </span></pre></div>
 
