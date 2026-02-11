@@ -17,8 +17,9 @@ from reg23_experiments.ops.optimisation import mapping_transformation_to_paramet
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.ops import drr
 from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
-from reg23_experiments.app.gui.fixed_image import FixedImageGUI
+from reg23_experiments.app.gui.fixed_image import FixedImageGUI, Image2DFullGUI
 from reg23_experiments.app.gui.moving_image import MovingImageGUI
+from reg23_experiments.app.gui.electrodes import ElectrodesGUI
 from reg23_experiments.app.gui.parameters import ParameterWidget
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters, Context
 from reg23_experiments.app.gui.register import RegisterGUI
@@ -67,8 +68,7 @@ def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volu
         fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
         del drr_spec
     else:
-        image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(  #
-            xray_path, downsample_to_ct_spacing=ct_spacing.mean().item())
+        image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(xray_path)
         transformation_ground_truth = None
 
     if target_flipped:
@@ -219,7 +219,8 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
                                     tabify=True)
 
     app_state = AppState(parameters=parameters, dadg=data_manager(),
-                         transformation_save_directory=pathlib.Path("data/program_interface_transformation_save_data"))
+                         transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
+                         electrode_save_directory=pathlib.Path("data/app_electrode_save_data"))
 
     # -----
     # The universal objective function
@@ -244,9 +245,11 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
     # -----
     worker_manager = WorkerManager(app_state=app_state, objective_function=objective_function)
     fixed_image_gui = FixedImageGUI(app_state)
+    image_2d_full_gui = Image2DFullGUI(app_state)
     moving_image_gui = MovingImageGUI(app_state)
     register_gui = RegisterGUI(app_state)
     save_data_manager = SaveDataManager(app_state)
+    electrodes_gui = ElectrodesGUI(app_state)
 
     value = data_manager().get("moving_image")
     if isinstance(value, Error):

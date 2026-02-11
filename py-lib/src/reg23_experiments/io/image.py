@@ -31,10 +31,7 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
     return detector_spacing, scene_geometry, drr_image, transformation_ground_truth
 
 
-def read_dicom(path: str, *, downsample_factor: int | None = None, downsample_to_ct_spacing: float | None = None) -> \
-        Tuple[torch.Tensor, torch.Tensor, SceneGeometry]:
-    if downsample_factor is not None and downsample_to_ct_spacing is not None:
-        raise RuntimeError("Cannot pass both downsample_factor and downsample_to_ct_spacing to `read_dicom()`.")
+def read_dicom(path: str) -> Tuple[torch.Tensor, torch.Tensor, SceneGeometry]:
     logger.info("Loading X-ray DICOM file {}...".format(path))
     dataset = pydicom.dcmread(path)
     image = torch.tensor(pydicom.pixels.pixel_array(dataset), dtype=torch.float32)
@@ -98,17 +95,5 @@ def read_dicom(path: str, *, downsample_factor: int | None = None, downsample_to
         logger.info("X-ray imager pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
         scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToDetector"].value)
         logger.info("X-ray distance source-to-detector = {} mm".format(scene_geometry.source_distance))
-
-    if downsample_to_ct_spacing is not None:
-        target_detector_spacing = downsample_to_ct_spacing * spacing_spread_ratio
-        average_spacing = spacing.mean().item()
-        downsample_factor = int(round(target_detector_spacing / average_spacing))
-
-    if downsample_factor is not None and downsample_factor > 1:
-        down_sampler = torch.nn.AvgPool2d(downsample_factor)
-        image = down_sampler(image.unsqueeze(0))[0]
-        spacing *= float(downsample_factor)
-        logger.info("X-ray image size and spacing after down-sampling = [{} x {}]; [{} x {}] mm"
-                    "".format(image.size()[0], image.size()[1], spacing[0], spacing[1]))
 
     return image, spacing, scene_geometry

@@ -11,6 +11,7 @@ __all__ = ["TransformationSaveData", "TransformationSaveManager"]
 
 class TransformationSaveData(SaveData):
     """
+    ToDo: The 'name' should be the index column.
     Stores a list of 6 d.o.f. transformations as rows of a pd.DataFrame, with the following columns:
     Column name: 'name', 'x0', 'x1', 'x2', 'x3', 'x4', 'x5'
     Type: str, float, float, float, float, float, float

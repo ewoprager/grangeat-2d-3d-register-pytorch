@@ -80,21 +80,16 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
     raise Exception("Given path '{}' is not a file or directory.".format(str(path)))
 
 
-def load_volume(path: pathlib.Path, *, downsample_factor: int | Literal["mipmap"] = 1) -> Tuple[
-    Union[torch.Tensor, list[torch.Tensor]], torch.Tensor]:
+def load_volume(path: pathlib.Path, *, hu_cutoff: float = -800.0) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    Load a CT volume from a file or directory, with desired downsampling.
+    Load a CT volume from a file or directory
 
     :param path: Path to a .nrrd file (a CT volume) or a directory containing multiple .dcm files (one for each slice
     of a CT volume)
+    :param hu_cutoff: The cutoff lower bound in Hounsfield units to clamp to.
     :type path: pathlib.Path
-    :param downsample_factor: The factor by which to downsample the volume. If "mipmap" is given, all power-of-two
-    downsample factors are applied, and the resulting list of images is returned.
-    :type downsample_factor: int or the string literal "mipmap"
-    :return: If downsample_factor is "mipmap", the list of volumes at the mip levels, and the voxel spacing at the
-    original resolution; otherwise the volume at the desired downsample factor, and the associated voxel spacing.
-    :rtype: If downsample_factor is "mipmap": Tuple[list[torch.Tensor], torch.Tensor]; otherwise Tuple[torch.Tensor,
-    torch.Tensor]
+    :return: (The ct volume, a tensor of size (3,): the spacing of the volume voxels)
+    :rtype: Tuple[torch.Tensor, torch.Tensor]
     """
     loaded_volume = read_volume(path)
     sizes = loaded_volume.data.size()
@@ -102,27 +97,10 @@ def load_volume(path: pathlib.Path, *, downsample_factor: int | Literal["mipmap"
     logger.info("CT data volume size and spacing = [{} x {} x {}]; [{} x {} x {}] mm"
                 "".format(sizes[0], sizes[1], sizes[2], spacing[0], spacing[1], spacing[2]))
     image = loaded_volume.data.to(dtype=torch.float32)
-    image[image < -800.0] = -800.0
+    image[image < hu_cutoff] = hu_cutoff
     image -= image.min()
     image /= image.max()
 
-    if downsample_factor == "mipmap":
-        logger.info("Downsampling volume into mipmap (all power-of-two downsample factors)...")
-        down_sampler = torch.nn.AvgPool3d(2)
-        images = [image]
-        while min(images[-1].size()) > 1:
-            images.append(down_sampler(images[-1].unsqueeze(0))[0])
-        logger.info("Volume downsampled to {} total mip levels.".format(len(images)))
-        return images, spacing
-
-    assert isinstance(downsample_factor, int)
-    if downsample_factor > 1:
-        down_sampler = torch.nn.AvgPool3d(downsample_factor)
-        image = down_sampler(image.unsqueeze(0))[0]
-        sizes = image.size()
-        spacing *= float(downsample_factor)
-        logger.info("CT volume size and spacing after down-sampling = [{} x {} x {}]; [{} x {} x {}] mm"
-                    "".format(sizes[0], sizes[1], sizes[2], spacing[0], spacing[1], spacing[2]))
     return image, spacing
 
 

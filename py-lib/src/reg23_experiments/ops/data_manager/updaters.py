@@ -26,9 +26,20 @@ logger = logging.getLogger(__name__)
 
 @dadg_updater(names_returned=["ct_volumes", "ct_spacing"])
 def load_ct(ct_path: str, device) -> dict[str, Any]:
-    ct_volumes, ct_spacing = load_volume(pathlib.Path(ct_path), downsample_factor="mipmap")
-    ct_volumes = [ct_volume.to(device=device, dtype=torch.float32) for ct_volume in ct_volumes]
+    ct_volume, ct_spacing = load_volume(pathlib.Path(ct_path))
+    ct_volume = ct_volume.to(device=device, dtype=torch.float32)
     ct_spacing = ct_spacing.to(device=device)
+
+    ct_volumes = [ct_volume]
+    level: int = 1
+    while torch.tensor(ct_volumes[-1].size()).min() > 3:
+        ct_volumes.append(torch.nn.functional.interpolate(  #
+            ct_volumes[0].unsqueeze(0).unsqueeze(0),  #
+            scale_factor=0.5 ** float(level),  #
+            mode="trilinear",  #
+            recompute_scale_factor=True,  #
+            antialias=True)[0, 0])
+        level += 1
 
     return {"ct_volumes": ct_volumes, "ct_spacing": ct_spacing}
 
@@ -72,14 +83,13 @@ def refresh_vif(self) -> dict[str, Any] | Error:
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
-def load_target_image(ct_spacing: torch.Tensor, target: Target, device) -> dict[str, Any]:
+def load_target_image(target: Target, device) -> dict[str, Any]:
     transformation_ground_truth = None
     # if self.target.xray_path is None:
     #     # Load /
     # else:
     #     Load the given X-ray
-    image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(  #
-        target.xray_path, downsample_to_ct_spacing=ct_spacing.mean().item())
+    image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(target.xray_path)
     image_2d_full = image_2d_full.to(device=device)
 
     if target.flipped:
