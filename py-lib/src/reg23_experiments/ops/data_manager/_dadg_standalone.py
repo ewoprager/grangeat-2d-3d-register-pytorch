@@ -10,14 +10,14 @@ from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
 
 from ._data import NoNodeData, Updater, Dependency
-from ._i_directed_acyclic_data_graph import Node, IDirectedAcyclicDataGraph, IChildDirectedAcyclicDataGraph
+from ._directed_acyclic_data_graph import Node, DirectedAcyclicDataGraph, ChildDirectedAcyclicDataGraph
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["StandaloneDADG", "StandaloneDADGSingleton"]
 
 
-class StandaloneDADG(IDirectedAcyclicDataGraph):
+class StandaloneDADG(DirectedAcyclicDataGraph):
     """
     A data manager that stores data in a directed, acyclic graph.
 
@@ -57,7 +57,7 @@ class StandaloneDADG(IDirectedAcyclicDataGraph):
         self.__updaters: dict[str, Updater] = dict()
         self.__in_top_level_call: bool = True
         self.__children: weakref.WeakSet[
-            IChildDirectedAcyclicDataGraph] = weakref.WeakSet()  # children add themselves, and will be automatically
+            ChildDirectedAcyclicDataGraph] = weakref.WeakSet()  # children add themselves, and will be automatically
         # removed on destruction
 
     @staticmethod
@@ -279,7 +279,7 @@ class StandaloneDADG(IDirectedAcyclicDataGraph):
     def _updaters(self) -> dict[str, Updater]:
         return self.__updaters
 
-    def _add_child(self, child: IChildDirectedAcyclicDataGraph):
+    def _add_child(self, child: ChildDirectedAcyclicDataGraph):
         self.__children.add(child)
 
     ##### Private methods

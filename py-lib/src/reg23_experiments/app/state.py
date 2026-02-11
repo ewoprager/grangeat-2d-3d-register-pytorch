@@ -4,7 +4,7 @@ from typing import Literal
 import pathlib
 import torch
 
-from reg23_experiments.ops.data_manager import IDirectedAcyclicDataGraph
+from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.experiments.parameters import Parameters
 
 from ._gui_param_to_dag_node import respond_to_crop_change, respond_to_mask_change, respond_to_crop_value_change, \
@@ -24,7 +24,7 @@ class WorkerState(HasTraits):
 class AppState(HasTraits):
     parameters: Parameters = Instance(Parameters, allow_none=False)
 
-    dadg: IDirectedAcyclicDataGraph = Instance(IDirectedAcyclicDataGraph, allow_none=False)
+    dadg: DirectedAcyclicDataGraph = Instance(DirectedAcyclicDataGraph, allow_none=False)
 
     button_evaluate_once: bool = Bool(default_value=False)
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)

@@ -9,15 +9,15 @@ from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
 
 from ._data import NoNodeData, Updater, Dependency
-from ._i_directed_acyclic_data_graph import Node, IDirectedAcyclicDataGraph, IChildDirectedAcyclicDataGraph
+from ._directed_acyclic_data_graph import Node, DirectedAcyclicDataGraph, ChildDirectedAcyclicDataGraph
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["ChildDADG"]
 
 
-class ChildDADG(IChildDirectedAcyclicDataGraph):
-    def __init__(self, parent: IDirectedAcyclicDataGraph):
+class ChildDADG(ChildDirectedAcyclicDataGraph):
+    def __init__(self, parent: DirectedAcyclicDataGraph):
         self.__parent = parent  # strong reference to parent, so parent stays alive as long as there are children
         # parent holds weak reference to this, which will automatically be removed from the WeakSet when this is
         # destroyed
@@ -27,7 +27,7 @@ class ChildDADG(IChildDirectedAcyclicDataGraph):
         self.__updaters: dict[str, Updater] = copy.copy(self.__parent._updaters)
         self.__in_top_level_call: bool = True
         self.__children: weakref.WeakSet[
-            IChildDirectedAcyclicDataGraph] = weakref.WeakSet()  # children add themselves, and will be automatically
+            ChildDirectedAcyclicDataGraph] = weakref.WeakSet()  # children add themselves, and will be automatically
         # removed on destruction
 
     def __str__(self) -> str:
@@ -283,7 +283,7 @@ class ChildDADG(IChildDirectedAcyclicDataGraph):
     def _updaters(self) -> dict[str, Updater]:
         return self.__updaters
 
-    def _add_child(self, child: IChildDirectedAcyclicDataGraph):
+    def _add_child(self, child: ChildDirectedAcyclicDataGraph):
         self.__children.add(child)
 
     def _make_copy(self, node_name: str) -> None | Error:

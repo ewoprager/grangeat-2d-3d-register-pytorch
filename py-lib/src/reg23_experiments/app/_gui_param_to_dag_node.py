@@ -6,7 +6,7 @@ import torch
 
 from reg23_experiments.ops.geometry import get_crop_nonzero_drr, get_crop_full_depth_drr
 from reg23_experiments.data.structs import Cropping, Transformation
-from reg23_experiments.ops.data_manager import IDirectedAcyclicDataGraph, dadg_updater
+from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, dadg_updater
 
 __all__ = ["mask_follows_transformation", "cropping_follows_nonzero_drr", "cropping_follows_full_depth_drr",
            "respond_to_mask_change", "respond_to_crop_change", "respond_to_crop_value_change",
@@ -38,7 +38,7 @@ def cropping_follows_full_depth_drr(image_2d_full: torch.Tensor, source_distance
                                                 ct_spacing=ct_spacing, fixed_image_spacing=fixed_image_spacing)}
 
 
-def respond_to_mask_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
+def respond_to_mask_change(dadg: DirectedAcyclicDataGraph, change) -> None:
     if change.new == "None":
         dadg.remove_updater("mask_follows_transformation")
         dadg.set("mask_transformation", None, check_equality=True)
@@ -46,7 +46,7 @@ def respond_to_mask_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
         dadg.add_updater("mask_follows_transformation", mask_follows_transformation)
 
 
-def respond_to_crop_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
+def respond_to_crop_change(dadg: DirectedAcyclicDataGraph, change) -> None:
     if change.new == "None":
         dadg.remove_updater("cropping_follows_transformation")
         dadg.set("cropping", None)
@@ -61,7 +61,7 @@ def respond_to_crop_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
         dadg.set("cropping", change.owner.cropping_value)
 
 
-def respond_to_crop_value_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
+def respond_to_crop_value_change(dadg: DirectedAcyclicDataGraph, change) -> None:
     if change.owner.cropping != "fixed":
         return
     assert isinstance(change.new, Cropping)
@@ -69,5 +69,5 @@ def respond_to_crop_value_change(dadg: IDirectedAcyclicDataGraph, change) -> Non
     change.new.observe(lambda _change: respond_to_crop_value_value_change(dadg, _change), names=traitlets.All)
 
 
-def respond_to_crop_value_value_change(dadg: IDirectedAcyclicDataGraph, change) -> None:
+def respond_to_crop_value_value_change(dadg: DirectedAcyclicDataGraph, change) -> None:
     dadg.set("cropping", change.owner)

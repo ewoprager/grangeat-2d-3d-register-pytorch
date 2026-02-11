@@ -8,7 +8,7 @@ from reg23_experiments.utils.reflection import FunctionArgument
 
 from ._data import NoNodeData, Updater
 
-__all__ = ["Node", "IDirectedAcyclicDataGraph", "IChildDirectedAcyclicDataGraph"]
+__all__ = ["Node", "DirectedAcyclicDataGraph", "ChildDirectedAcyclicDataGraph"]
 
 
 class Node(traitlets.HasTraits):
@@ -52,7 +52,7 @@ class Node(traitlets.HasTraits):
         )
 
 
-class IDirectedAcyclicDataGraph(ABC):
+class DirectedAcyclicDataGraph(ABC):
     @abstractmethod
     def has_node(self, node_name: str) -> bool:
         pass
@@ -109,11 +109,11 @@ class IDirectedAcyclicDataGraph(ABC):
     def _updaters(self) -> dict[str, Updater]:
         pass
 
-    def _add_child(self, child: 'IChildDirectedAcyclicDataGraph'):
+    def _add_child(self, child: 'ChildDirectedAcyclicDataGraph'):
         pass
 
 
-class IChildDirectedAcyclicDataGraph(IDirectedAcyclicDataGraph):
+class ChildDirectedAcyclicDataGraph(DirectedAcyclicDataGraph):
     #### Protected properties and methods for access by parent DADG
     @abstractmethod
     def _make_copy(self, node_name: str) -> None | Error:

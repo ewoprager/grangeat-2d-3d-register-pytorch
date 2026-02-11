@@ -7,7 +7,7 @@ from reg23_experiments.utils.reflection import FunctionArgument
 
 from ._data import Updater
 from ._dadg_standalone import StandaloneDADG, StandaloneDADGSingleton
-from ._i_directed_acyclic_data_graph import IDirectedAcyclicDataGraph
+from ._directed_acyclic_data_graph import DirectedAcyclicDataGraph
 from ._helpers import takes_positional_args
 
 __all__ = ["dadg_updater", "args_from_dadg", "data_manager"]
