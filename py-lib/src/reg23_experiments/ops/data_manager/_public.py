@@ -5,20 +5,23 @@ from typing import Any, Callable
 from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
 
-from ._core import Updater, DAG, DataManagerSingleton
+from ._data import Updater
+from ._dadg_standalone import StandaloneDADG, StandaloneDADGSingleton
+from ._i_directed_acyclic_data_graph import IDirectedAcyclicDataGraph
 from ._helpers import takes_positional_args
 
-__all__ = ["dag_updater", "args_from_dag", "init_data_manager", "data_manager"]
+__all__ = ["dadg_updater", "args_from_dadg", "data_manager"]
 
 logger = logging.getLogger(__name__)
 
 
-def dag_updater(*, names_returned: list[str]) -> Callable[[Callable], Updater]:
+def dadg_updater(*, names_returned: list[str]) -> Callable[[Callable], Updater]:
     """
-    A decorator for turning a function into an `Updater` for use in a `DAG`. The named arguments of the function will be
-    interpreted as nodes from which to read data from the `DAG`. The return value of the function must be a dictionary
-    mapping string 'names' to values, where the strings must match the contents of the list `names_returned`. The
-    returned names will be used as node names for updating values in the `DAG` with the returned values.
+    A decorator for turning a function into an `Updater` for use in an `IDirectedAcyclicDataGraph`. The named
+    arguments of the function will be interpreted as nodes from which to read data from the
+    `IDirectedAcyclicDataGraph`. The return value of the function must be a dictionary mapping string 'names' to
+    values, where the strings must match the contents of the list `names_returned`. The returned names will be used
+    as node names for updating values in the `IDirectedAcyclicDataGraph` with the returned values.
     :param names_returned: A list of the names of the values returned by the function.
     :return: An instance of `Updater`, built using the decorated function.
     """
@@ -29,7 +32,7 @@ def dag_updater(*, names_returned: list[str]) -> Callable[[Callable], Updater]:
     return decorator
 
 
-def args_from_dag(*, names_left: list[str] | None = None):
+def args_from_dadg(*, names_left: list[str] | None = None):
     """
     A decorator for indicating that a function's arguments should be read from the `DAG`. The named arguments of the
     function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be
@@ -83,12 +86,12 @@ def args_from_dag(*, names_left: list[str] | None = None):
         @functools.wraps(function)
         def wrapper(**kwargs) -> Any | Error:
             # check all left names are in **kwargs
-            for name in names_left:
-                if name not in kwargs:
-                    return Error(f"Argument '{name}' specified in `names_left` not provided to function.")
+            for _name in names_left:
+                if _name not in kwargs:
+                    return Error(f"Argument '{_name}' specified in `names_left` not provided to function.")
             # get appropriate args from the DAG
             arguments_to_get = [argument for argument in arguments if argument.name not in names_left]
-            from_dag = data_manager().get_args(arguments_to_get)
+            from_dag = data_manager().get_with_args(arguments_to_get)
             if isinstance(from_dag, Error):
                 return Error(f"Failed to get arguments to run function from dag: {from_dag.description}")
             # execute the function
@@ -99,39 +102,27 @@ def args_from_dag(*, names_left: list[str] | None = None):
     return decorator
 
 
-def init_data_manager(**kwargs) -> DAG:
-    """
-    If the data manager singleton has yet to be initialised, initialises it with the given keyword arguments. If the
-    data manager singleton has already been initialised, behaves exactly like `data_manager()`.
-    :param kwargs: Keyword arguments to pass to the constructor of the singleton `DAG` instance.
-    :return: The singleton `DAG` instance.
-    """
-    return DataManagerSingleton.instance().get(**kwargs)
-
-
-def data_manager() -> DAG:
+def data_manager() -> StandaloneDADG:
     """
     If the data manager singleton has yet to be initialised, initialises it with no arguments.
     :return: The singleton `DAG` instance.
     """
-    return DataManagerSingleton.instance().get()
+    return StandaloneDADGSingleton.instance().get()
 
 
-@dag_updater(names_returned=["similarity"])
+@dadg_updater(names_returned=["similarity"])
 def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
     return {"similarity": fixed_image * moving_image}
 
 
 def main():
-    init_data_manager()
-
     err = data_manager().add_updater("similarity_metric", try_updater)
     if isinstance(err, Error):
         print(err)
         return
 
-    data_manager().set_data("fixed_image", 2.0)
-    data_manager().set_data("moving_image", 3.0)
+    data_manager().set("fixed_image", 2.0)
+    data_manager().set("moving_image", 3.0)
 
     # print(f"Data manager:\n{data_manager()}")
 
