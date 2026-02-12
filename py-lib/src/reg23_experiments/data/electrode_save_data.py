@@ -151,7 +151,7 @@ def compute_changes(xray_path: str, old_data: torch.Tensor, new_data: torch.Tens
 
 class ElectrodeSaveManager:
     def __init__(self, directory: pathlib.Path):
-        self._save_data_manager = SaveDataManager[ElectrodeSaveData](cls=ElectrodeSaveData, directory=directory)
+        self._save_data_manager = SaveDataManager[ElectrodeSaveData](cls=ElectrodeSaveData, save_directory=directory)
 
     def get(self, xray_path: str) -> torch.Tensor | None:
         df: pd.DataFrame = self._save_data_manager.get_data()

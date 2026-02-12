@@ -14,3 +14,13 @@
 {"action": "remove", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm"}
 {"action": "remove", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm"}
 {"action": "remove", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm"}
+{"action": "add", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "x": 458.02106044083166, "y": 250.4206879196896}
+{"action": "add", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "x": 322.84007277636056, "y": 450.68881779298}
+{"action": "add", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "x": 422.5300911367044, "y": 655.6207596973966}
+{"action": "move", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "index": 1, "x": 415.0957951391059, "y": 446.67769942938236}
+{"action": "move", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "index": 1, "x": 489.17359444445844, "y": 460.050413793294}
+{"action": "move", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "index": 1, "x": 785.8086662146831, "y": 989.1832445185591}
+{"action": "move", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "index": 2, "x": 784.5714674714295, "y": 977.7975175394577}
+{"action": "move", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "index": 0, "x": 793.3351144264677, "y": 996.2092755755233}
+{"action": "move", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "index": 1, "x": 795.2005699683061, "y": 990.6859491191389}
+{"action": "move", "xray_path": "/home/eprager/.local/share/Cryptomator/mnt/Cochlea/xrays_collected/xray001.dcm", "index": 2, "x": 794.7147235253424, "y": 986.7198261053995}

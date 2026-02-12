@@ -153,6 +153,8 @@ class RegisterGUI(widgets.Container):
 
     def _update_saved_transformations_select(self, change) -> None:
         # ToDo: manage persistence of selection?
+        # ToDo: For some reason the transformation choices disappear from the Select widget when the layers are
+        # re-ordered in the GUI, without this method being called.
         self._saved_transformations_select.choices = change.new
 
     def _on_transformation_name_input(self, *args) -> None:

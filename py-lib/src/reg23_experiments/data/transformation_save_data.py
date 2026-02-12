@@ -82,7 +82,7 @@ class TransformationSaveData(SaveData):
 class TransformationSaveManager:
     def __init__(self, directory: pathlib.Path):
         self._save_data_manager = SaveDataManager[TransformationSaveData](cls=TransformationSaveData,
-                                                                          directory=directory)
+                                                                          save_directory=directory)
 
     def get_names(self) -> list[str]:
         df: pd.DataFrame = self._save_data_manager.get_data()

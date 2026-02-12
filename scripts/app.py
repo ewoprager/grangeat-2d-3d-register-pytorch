@@ -241,15 +241,19 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
         return -ncc(fixed_image, moving_image)  # ToDo: configured sim metric
 
     # -----
-    # Modules
+    # GUI Modules
     # -----
-    worker_manager = WorkerManager(app_state=app_state, objective_function=objective_function)
     fixed_image_gui = FixedImageGUI(app_state)
     image_2d_full_gui = Image2DFullGUI(app_state)
     moving_image_gui = MovingImageGUI(app_state)
     register_gui = RegisterGUI(app_state)
-    transformation_saver = TransformationSaver(app_state)
     electrodes_gui = ElectrodesGUI(app_state)
+
+    # -----
+    # Modules
+    # -----
+    worker_manager = WorkerManager(app_state=app_state, objective_function=objective_function)
+    transformation_saver = TransformationSaver(app_state)
 
     value = data_manager().get("moving_image")
     if isinstance(value, Error):

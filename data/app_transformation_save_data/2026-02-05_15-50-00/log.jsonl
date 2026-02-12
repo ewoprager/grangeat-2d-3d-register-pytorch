@@ -11,3 +11,4 @@
 {"action": "remove", "name": "poop"}
 {"action": "remove", "name": "30"}
 {"action": "remove", "name": "a"}
+{"action": "set", "name": "hi", "x0": 0.0, "x1": 0.0, "x2": 0.0, "x3": 0.0, "x4": 0.0, "x5": 0.0}
