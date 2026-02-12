@@ -16,6 +16,7 @@ from reg23_experiments.ops import grangeat
 from reg23_experiments.data.sinogram import Sinogram, SinogramType
 from reg23_experiments.data.structs import LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation
 from reg23_experiments.ops.data_manager import dadg_updater
+from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 
 __all__ = ["load_ct", "refresh_vif", "load_target_image", "set_synthetic_target_image",
            "refresh_hyperparameter_dependent", "refresh_hyperparameter_dependent_grangeat",
@@ -33,12 +34,7 @@ def load_ct(ct_path: str, device) -> dict[str, Any]:
     ct_volumes = [ct_volume]
     level: int = 1
     while torch.tensor(ct_volumes[-1].size()).min() > 3:
-        ct_volumes.append(torch.nn.functional.interpolate(  #
-            ct_volumes[0].unsqueeze(0).unsqueeze(0),  #
-            scale_factor=0.5 ** float(level),  #
-            mode="trilinear",  #
-            recompute_scale_factor=True,  #
-            antialias=True)[0, 0])
+        ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[0], scale_factor=0.5 ** float(level)))
         level += 1
 
     return {"ct_volumes": ct_volumes, "ct_spacing": ct_spacing}

@@ -18,14 +18,17 @@ import traitlets
 
 from reg23_experiments.utils.console_logging import tqdm
 from reg23_experiments.utils import logs_setup, pushover
-from reg23_experiments.ops.data_manager import data_manager, init_data_manager, dag_updater, updaters, args_from_dag
+from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, args_from_dadg
 from reg23_experiments.data.structs import Error, Transformation, SceneGeometry, Cropping
 from reg23_experiments.io.volume import load_volume
-from reg23_experiments.io.image import load_cached_drr
+from reg23_experiments.io.image import load_cached_drr, read_dicom
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.ops import drr, geometry, similarity_metric, swarm as pso
 from reg23_experiments.ops.objective_function import ParametrisedSimilarityMetric
+from reg23_experiments.ops.volume import downsample_trilinear_antialiased
+from reg23_experiments.io.save_data import load_latest_save
+from reg23_experiments.data.transformation_save_data import TransformationSaveData
 
 
 def configs_to_dict(*vargs) -> dict[str, Any]:
@@ -47,7 +50,7 @@ def instance_output_directory(script_output_directory: str | pathlib.Path) -> pa
     return ret
 
 
-@dag_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
+@dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
 def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
     ct_volume, ct_spacing = load_volume(pathlib.Path(ct_path))
@@ -62,10 +65,11 @@ def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequ
     return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing}
 
 
-@dag_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
-def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
-                     new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
-                     ap_transformation: Transformation, target_ap_distance: float) -> dict[str, Any]:
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
+def set_synthetic_target_image(  #
+        ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor, new_drr_size: torch.Size,
+        regenerate_drr: bool, save_to_cache: bool, cache_directory: str, ap_transformation: Transformation,
+        target_ap_distance: float) -> dict[str, Any]:
     # generate a DRR through the volume
     drr_spec = None
     if not regenerate_drr:
@@ -84,7 +88,15 @@ def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volu
             "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
 
 
-@dag_updater(names_returned=["ct_volumes"])
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing"])
+def set_xray_target_image(xray_path: str, device: torch.device) -> dict[str, Any]:
+    image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(xray_path)
+    image_2d_full = image_2d_full.to(device=device)
+    return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
+            "fixed_image_spacing": fixed_image_spacing}
+
+
+@dadg_updater(names_returned=["ct_volumes"])
 def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
     # truncate the volume
     truncation_fraction = 0.01 * float(truncation_percent)
@@ -92,14 +104,15 @@ def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: in
     ct_volume = untruncated_ct_volume[
         top_bottom_chop:max(top_bottom_chop + 1, untruncated_ct_volume.size()[0] - top_bottom_chop)]
     # mipmap the volume
-    down_sampler = torch.nn.AvgPool3d(2)
     ct_volumes = [ct_volume]
-    while min(ct_volumes[-1].size()) > 1:
-        ct_volumes.append(down_sampler(ct_volumes[-1].unsqueeze(0))[0])
+    level: int = 1
+    while torch.tensor(ct_volumes[-1].size()).min() > 3:
+        ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[0], scale_factor=0.5 ** float(level)))
+        level += 1
     return {"ct_volumes": ct_volumes}
 
 
-@dag_updater(names_returned=["moving_image"])
+@dadg_updater(names_returned=["moving_image"])
 def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
                 fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
                 downsample_level: int, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
@@ -152,12 +165,12 @@ def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConf
         axes[0].set_title("moving image AT start: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
             t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
             t.translation[1].item(), t.translation[2].item()))
-        data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
+        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
         axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
         plt.draw()
         plt.pause(0.1)
 
-    pso_config = pso.OptimisationConfig(objective_function=obj_fun)
+    pso_config = pso.SwarmConfig(objective_function=obj_fun)
     dimensionality = starting_params.numel()
     # initialise the return tensor
     ret = torch.empty([config.iteration_count, dimensionality + 1], dtype=torch.float32, device=device)
@@ -177,8 +190,8 @@ def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConf
         ret[it, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
 
         if plot != "no":
-            data_manager().set_data("current_transformation",
-                                    mapping_parameters_to_transformation(swarm.current_optimum_position))
+            data_manager().set("current_transformation",
+                               mapping_parameters_to_transformation(swarm.current_optimum_position))
             axes[0].clear()
             axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
             t = data_manager().get("current_transformation")
@@ -249,18 +262,18 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     iteration, averaged over `sample_count_per_distance` repetitions, unless the configuration is trivial /
     unnecessary, in which case `None`.
     """
-    data_manager().set_data("ct_path", exp_config.ct_path, check_equality=True)
-    data_manager().set_data("downsample_level", exp_config.downsample_level, check_equality=True)
-    data_manager().set_data("truncation_percent", exp_config.truncation_percent, check_equality=True)
+    data_manager().set("ct_path", exp_config.ct_path, check_equality=True)
+    data_manager().set("downsample_level", exp_config.downsample_level, check_equality=True)
+    data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
     # -----
     # Configuring according to desired cropping technique
     if exp_config.cropping == "None":
         apply_cropping = None
-        data_manager().set_data("cropping", None, check_equality=True)
+        data_manager().set("cropping", None, check_equality=True)
     elif exp_config.cropping == "nonzero_drr":
-        apply_cropping = args_from_dag()(geometry.get_crop_nonzero_drr)
+        apply_cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)
     elif exp_config.cropping == "full_depth_drr":
-        apply_cropping = args_from_dag()(geometry.get_crop_full_depth_drr)
+        apply_cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)
     else:
         raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
     # -----
@@ -270,7 +283,7 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     # Configuring according to desired masking technique
     if exp_config.mask == "None":
         apply_mask = False
-        data_manager().set_data("mask_transformation", None, check_equality=True)
+        data_manager().set("mask_transformation", None, check_equality=True)
     elif exp_config.mask == "Every evaluation":
         apply_mask = True
         weight_with_mask = False
@@ -289,11 +302,11 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     def objective_function(parameters: torch.Tensor) -> torch.Tensor:
         t = mapping_parameters_to_transformation(parameters)
         # Setting the parameters
-        data_manager().set_data("current_transformation", t)
+        data_manager().set("current_transformation", t)
         if apply_cropping is not None:
-            data_manager().set_data("cropping", apply_cropping())
+            data_manager().set("cropping", apply_cropping())
         if apply_mask:
-            data_manager().set_data("mask_transformation", t)
+            data_manager().set("mask_transformation", t)
         # Getting the resulting moving and fixed images
         moving_image = data_manager().get("moving_image")
         fixed_image = data_manager().get("fixed_image")
@@ -388,18 +401,16 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
         df.to_parquet(output_directory / f"data_{"_".join([str(i) for i in indices])}.parquet")
 
 
-def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.Path, show: bool = False):
+def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_output_dir: str | pathlib.Path,
+         show: bool = False):
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    init_data_manager()
-    err = data_manager().set_data_multiple(  #
+    err = data_manager().set_multiple(  #
         device=device,  #
         ct_path=ct_path,  #
         cache_directory=cache_directory,  #
         save_to_cache=False,  #
-        regenerate_drr=True,  #
-        new_drr_size=torch.Size([1000, 1000]),  #
         truncation_percent=0,  #
         cropping=None,  #
         source_offset=torch.zeros(2),  #
@@ -413,11 +424,50 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
     if isinstance(err, Error):
         logger.error(f"Error setting initial data values: {err.description}")
         return
-    err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
+
+    if xray_path is None:
+        err = data_manager().set_multiple(  #
+            regenerate_drr=True,  #
+            new_drr_size=torch.Size([1000, 1000]),  #
+            target_ap_distance=5.0,  #
+        )
+        if isinstance(err, Error):
+            logger.error(f"Error setting initial data values: {err.description}")
+            return
+
+        err = data_manager().add_updater("set_target_image", set_synthetic_target_image)
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+    else:
+        res = load_latest_save(TransformationSaveData, save_directory=pathlib.Path("data/app_transformation_save_data"))
+        if isinstance(res, Error):
+            raise RuntimeError(f"Failed to load saved transformation: {res.description}")
+        _, saved_transformations, _ = res
+        df: pd.DataFrame = saved_transformations.get_data()
+        indices_matching = df.index[df['name'] == "cimp001 aligned"].tolist()
+        if len(indices_matching) > 1:
+            raise RuntimeError(f"Found multiple transformations in the save data with name '{"cimp001 aligned"}'.")
+        columns = [f"x{i}" for i in range(6)]
+        values = df.loc[indices_matching[0], columns].tolist()
+
+        err = data_manager().set_multiple(  #
+            xray_path=xray_path,  #
+            transformation_gt=Transformation.from_vector(torch.tensor(values, device=device)),  #
+        )
+        if isinstance(err, Error):
+            logger.error(f"Error setting initial data values: {err.description}")
+            return
+
+        err = data_manager().add_updater("set_target_image", set_xray_target_image)
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+
     if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
+        logger.error(f"Error setting initial data values: {err.description}")
         return
-    err = data_manager().add_updater("set_target_image", set_target_image)
+    err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -443,9 +493,8 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         logger.error(f"Error adding updater: {err.description}")
         return
 
-    data_manager().set_data("current_transformation", data_manager().get("transformation_gt"))
-
-    data_manager().set_data("truncation_percent", 5)
+    if data_manager().get("transformation_gt") is not None:
+        data_manager().set("current_transformation", data_manager().get("transformation_gt"))
 
     if show:
         plt.ion()  # figures are non-blocking
@@ -454,6 +503,7 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         image_2d_full = data_manager().get("image_2d_full")
         axes[0].imshow(image_2d_full.cpu().numpy())
         axes[0].set_title("original target")
+        data_manager().set("cropping", args_from_dadg()(geometry.get_crop_full_depth_drr)())
         fixed_image = data_manager().get("fixed_image")
         if isinstance(fixed_image, Error):
             raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
@@ -462,7 +512,7 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         moving_image = data_manager().get("moving_image")
         axes[2].imshow(moving_image.cpu().numpy())
         axes[2].set_title("moving image at G.T.")
-        data_manager().set_data("mask_transformation", data_manager().get("current_transformation"))
+        data_manager().set("mask_transformation", data_manager().get("current_transformation"))
         mask = data_manager().get("mask")
         axes[3].imshow(mask.cpu().numpy())
         axes[3].set_title("mask at G.T.")
@@ -479,7 +529,7 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
         # - varying - "cropping": "None",  #
         # - varying - "mask": "None",  #
         "sim_metric": "zncc",  #
-        "starting_distance": 10.0,  #
+        "starting_distance": 1.0,  #
         "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 2000,  #
@@ -488,20 +538,24 @@ def main(*, cache_directory: str, ct_path: str, data_output_dir: str | pathlib.P
     }
 
     if show:
-        starting_params = random_parameters_at_distance(
-            mapping_transformation_to_parameters(data_manager().get("transformation_gt")), 15.0)
-        # data_manager().set_data("current_transformation", mapping_parameters_to_transformation(starting_params))
+        t = data_manager().get("transformation_gt")
+        if t is None:
+            t = data_manager().get("ap_transformation")
+        starting_params = mapping_transformation_to_parameters(t)
+
+        # starting_params = random_parameters_at_distance(mapping_transformation_to_parameters(t), 15.0)
+        # data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
         # set_crop_to_nonzero_drr()
-        data_manager().set_data("truncation_percent", 30)
+        # data_manager().set("truncation_percent", 30)
 
         def objective_function(parameters: torch.Tensor) -> torch.Tensor:
-            data_manager().set_data("current_transformation", mapping_parameters_to_transformation(parameters))
+            data_manager().set("current_transformation", mapping_parameters_to_transformation(parameters))
             _moving_image = data_manager().get("moving_image")
             _fixed_image = data_manager().get("fixed_image")
             return -similarity_metric.ncc(_moving_image, _fixed_image)
 
         res = run_reg(  #
-            obj_fun=lambda p: objective_function,  #
+            obj_fun=objective_function,  #
             starting_params=starting_params, config=RegConfig(  #
                 particle_count=constants["particle_count"],  #
                 particle_initialisation_spread=constants["particle_initialisation_spread"],  #
@@ -541,6 +595,9 @@ if __name__ == "__main__":
                         help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
                              "process. If not provided, some simple synthetic data will be used instead - note that "
                              "in this case, data will not be saved to the cache.")
+    parser.add_argument("-x", "--xray-path", type=str, default=None,
+                        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
+                             "this is provided, the X-ray will by used instead of any DRR.")
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")
     # parser.add_argument(
@@ -558,7 +615,7 @@ if __name__ == "__main__":
         os.makedirs(args.cache_directory)
 
     try:
-        main(cache_directory=args.cache_directory, ct_path=args.ct_path if "ct_path" in vars(args) else None,
+        main(cache_directory=args.cache_directory, ct_path=args.ct_path, xray_path=args.xray_path,
              data_output_dir=args.data_output_dir, show=args.show)
         if args.notify:
             pushover.send_notification(__file__, "Script finished.")

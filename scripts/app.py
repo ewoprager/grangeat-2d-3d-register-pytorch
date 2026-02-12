@@ -27,6 +27,7 @@ from reg23_experiments.app.state import AppState
 from reg23_experiments.app.worker_manager import WorkerManager
 from reg23_experiments.data.structs import Transformation, SceneGeometry, Cropping
 from reg23_experiments.ops import geometry
+from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
 from reg23_experiments.io.image import read_dicom
@@ -88,10 +89,11 @@ def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: in
     ct_volume = untruncated_ct_volume[
         top_bottom_chop:max(top_bottom_chop + 1, untruncated_ct_volume.size()[0] - top_bottom_chop)]
     # mipmap the volume
-    down_sampler = torch.nn.AvgPool3d(2)
     ct_volumes = [ct_volume]
-    while min(ct_volumes[-1].size()) > 1:
-        ct_volumes.append(down_sampler(ct_volumes[-1].unsqueeze(0))[0])
+    level: int = 1
+    while torch.tensor(ct_volumes[-1].size()).min() > 3:
+        ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[0], scale_factor=0.5 ** float(level)))
+        level += 1
     return {"ct_volumes": ct_volumes}
 
 
