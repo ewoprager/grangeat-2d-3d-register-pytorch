@@ -70,7 +70,8 @@ class ElectrodeSaveData(SaveData):
             y = change["y"]
             if not isinstance(y, float):
                 return Error("'y' value in 'add' action change should be a `float`.")
-            previous_count = self._contents.xs(xray_path, level="xray_path").shape[0]
+            previous_count = 0 if self._contents.index.get_level_values("xray_path").empty else \
+                self._contents.xs(xray_path, level="xray_path").shape[0]
             index = pd.MultiIndex.from_tuples([(xray_path, previous_count)], names=["xray_path", "indices"])
             self._contents = pd.concat([self._contents, pd.DataFrame([{"x": x, "y": y}], index=index)])
             return None
@@ -105,7 +106,7 @@ class ElectrodeSaveData(SaveData):
             if not isinstance(xray_path, str):
                 return Error("'xray_path' value in 'remove' action change should be a `str`.")
             previous_count = self._contents.xs(xray_path, level="xray_path").shape[0]
-            self._contents = self._contents.drop(index=(xray_path, previous_count))
+            self._contents = self._contents.drop(index=(xray_path, previous_count - 1))
             return None
         else:
             return Error(f"Unrecognised action '{change["action"]}'.")

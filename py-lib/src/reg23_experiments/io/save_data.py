@@ -77,6 +77,7 @@ class SaveDataManager(Generic[T_SaveData]):
         self._change_count += 1
         if self._change_count >= self._changes_per_snapshot:
             self._start_from_new_snapshot()
+        return None
 
     def _start_from_new_snapshot(self) -> None:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
