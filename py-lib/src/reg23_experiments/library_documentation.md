@@ -29,8 +29,3 @@ Experiment orchestration structs and functions.
 ## [analysis](reg23_experiments/analysis.html)
 
 Plotting and data analysis.
-
-
-## [ui](reg23_experiments/ui.html)
-
-Qt interface.

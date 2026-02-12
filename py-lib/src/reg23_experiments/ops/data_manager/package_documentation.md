@@ -45,7 +45,7 @@ path from which the volume was loaded might change), or if another value was dep
 Caching of values using `functools` would solve the former of these two issues, so long as the input values were not
 floating-point, which would be quite a restriction.
 
-To partially solve the former issue, and completely solve the latter, we use the `IDirectedAcyclicDataGraph` as follows:
+To partially solve the former issue, and completely solve the latter, we use the `DirectedAcyclicDataGraph` as follows:
 
 ```Python
 from typing import Any
@@ -85,8 +85,8 @@ A walk through the above code:
   keyword argument as a new (name, value) pair to insert into the graph.
 - We define two instances of the `Updater` class using the `@dadg_updater` decorator, which transforms the decorated
   function into an instance of `Updater`. This is an object which is used to define dependencies between nodes in the
-  data manager graph: the arguments of the function define the variables that are depended upon, and the (key, value) 
-  pairs in the returned dictionary define the variables that are dependent on them. The function itself defines the 
+  data manager graph: the arguments of the function define the variables that are depended upon, and the (key, value)
+  pairs in the returned dictionary define the variables that are dependent on them. The function itself defines the
   mapping from the 'depended' to the 'dependent'.
 - We insert these `Updater`s into the data manager using `data_manager().add_updater(...)`. The strings passed here are
   just arbitrary names, which we have chosen to match the updater names. Updaters can also be removed from the data,
