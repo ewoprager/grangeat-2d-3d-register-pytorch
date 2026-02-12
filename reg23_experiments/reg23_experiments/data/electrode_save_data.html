@@ -460,7 +460,13 @@ Type: float, float</p>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>The data currently stored by this object.</p>
+</blockquote>
+</div>
+
 
                             </div>
                             <div id="ElectrodeSaveData.new_value" class="classattr">
@@ -484,7 +490,16 @@ Type: float, float</p>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>This is used when there is no existing snapshot file to load from.</p>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>A default-initialised instance of this class, with default-initialised data (e.g. an empty data
+  structure).</p>
+</blockquote>
+</div>
+
 
                             </div>
                             <div id="ElectrodeSaveData.load_from_file" class="classattr">
@@ -505,7 +520,21 @@ Type: float, float</p>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>This is used to load snapshot files.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>file</strong>:  Path to the file to load. Can be expected to have the suffix <code><a href="#ElectrodeSaveData.file_suffix">file_suffix</a></code></li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>An instance of this class, initialised with the data loaded from the given file.</p>
+</blockquote>
+</div>
+
 
                             </div>
                             <div id="ElectrodeSaveData.apply_change" class="classattr">
@@ -581,7 +610,21 @@ Type: float, float</p>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Apply the given change to the data. This is used when changes are applied.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>change</strong>:  A trivially JSON-serialisable object that described a change to make to the data.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>The error, if one has occurred.</p>
+</blockquote>
+</div>
+
 
                             </div>
                             <div id="ElectrodeSaveData.save_to_file" class="classattr">
@@ -600,7 +643,15 @@ Type: float, float</p>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Save the data stored in this object to the given file. This is used for saving snapshots.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>file</strong>:  Path to the file to save to. Can be expected to the have the suffix <code><a href="#ElectrodeSaveData.file_suffix">file_suffix</a></code>.</li>
+</ul>
+</div>
+
 
                             </div>
                 </section>

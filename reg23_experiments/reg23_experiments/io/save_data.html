@@ -91,122 +91,215 @@
                     <h1 class="modulename">
 <a href="./../../reg23_experiments.html">reg23_experiments</a><wbr>.<a href="./../io.html">io</a><wbr>.save_data    </h1>
 
-                
+                        <div class="docstring"><p>A setup for saving data with versioning in a memory-efficient way.</p>
+
+<p>Can be applied to any desired data structure, but the serialising/deserialising of changes to the data must
+be implemented.</p>
+
+<p>The whole data structure is saved as 'snapshots' every N (default=32) changes. Between snapshots, only the changes that
+are made to the data are saved, specifically as lines in a jsonl log file.</p>
+
+<p>Any change to the data must be represented by a <code><a href="#Change">Change</a></code> object, which is just a Python object that can be trivially
+serialised into JSON.</p>
+
+<p>The user must provide a class that implements <code><a href="#SaveData">SaveData</a></code>, which has the custom code for using a <code><a href="#Change">Change</a></code> object to apply
+the desired change to the data.</p>
+
+<p>The user can then instantiate a SaveDataManager, passing their <code><a href="#SaveData">SaveData</a></code> class as the Generic parameter, and <code>cls</code>
+parameter. This object will automatically load existing save data if present, and manage all subsequent changes and
+saving.</p>
+
+<p>On loading of saved data (e.g. on program startup), the most recent snapshot is loaded, and all subsequent changes are
+applied in order such that the data is restored to the same state it was in when the program was last run.</p>
+</div>
+
                         <input id="mod-save_data-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
                         <label class="view-source-button" for="mod-save_data-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generic</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">Any</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a>
-</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
-</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a>
-</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">reg23_experiments.data.structs</span><span class="w"> </span><span class="kn">import</span> <span class="n">Error</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">  1</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">  2</span></a><span class="sd">A setup for saving data with versioning in a memory-efficient way.</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">  3</span></a>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">  4</span></a><span class="sd">Can be applied to any desired data structure, but the serialising/deserialising of changes to the data must</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">  5</span></a><span class="sd">be implemented.</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="sd">The whole data structure is saved as &#39;snapshots&#39; every N (default=32) changes. Between snapshots, only the changes that</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="sd">are made to the data are saved, specifically as lines in a jsonl log file.</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a>
-</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Change&quot;</span><span class="p">,</span> <span class="s2">&quot;JsonSerializable&quot;</span><span class="p">,</span> <span class="s2">&quot;SaveData&quot;</span><span class="p">,</span> <span class="s2">&quot;SaveDataManager&quot;</span><span class="p">]</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>
-</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="nb">type</span> <span class="n">JsonSerializable</span> <span class="o">=</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">JsonSerializable</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">JsonSerializable</span><span class="p">]</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="nb">type</span> <span class="n">Change</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">JsonSerializable</span><span class="p">]</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="sd">Any change to the data must be represented by a `Change` object, which is just a Python object that can be trivially</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="sd">serialised into JSON.</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="sd">The user must provide a class that implements `SaveData`, which has the custom code for using a `Change` object to apply</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="sd">the desired change to the data.</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>
-</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveData</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>    <span class="n">file_suffix</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a>
-</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>    <span class="nd">@staticmethod</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">new_value</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a>        <span class="k">pass</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="sd">The user can then instantiate a SaveDataManager, passing their `SaveData` class as the Generic parameter, and `cls`</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="sd">parameter. This object will automatically load existing save data if present, and manage all subsequent changes and</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="sd">saving.</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="sd">On loading of saved data (e.g. on program startup), the most recent snapshot is loaded, and all subsequent changes are</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="sd">applied in order such that the data is restored to the same state it was in when the program was last run.</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a>
-</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>    <span class="nd">@staticmethod</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>        <span class="k">pass</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generic</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">Any</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 </span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a>
-</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>        <span class="k">pass</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>
+</span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">reg23_experiments.data.structs</span><span class="w"> </span><span class="kn">import</span> <span class="n">Error</span>
 </span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a>
-</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a>        <span class="k">pass</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>
-</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>        <span class="k">pass</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>
-</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>
-</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="n">T_SaveData</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_SaveData&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">SaveData</span><span class="p">)</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Change&quot;</span><span class="p">,</span> <span class="s2">&quot;JsonSerializable&quot;</span><span class="p">,</span> <span class="s2">&quot;SaveData&quot;</span><span class="p">,</span> <span class="s2">&quot;SaveDataManager&quot;</span><span class="p">]</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="nb">type</span> <span class="n">JsonSerializable</span> <span class="o">=</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">JsonSerializable</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">JsonSerializable</span><span class="p">]</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="nb">type</span> <span class="n">Change</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">JsonSerializable</span><span class="p">]</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>
+</span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>
+</span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveData</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a><span class="sd">    An interface to be implemented by a class that wishes to store and manage the serialisation of some data.</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>    <span class="n">file_suffix</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 </span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>
-</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveDataManager</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">]):</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">],</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">changes_per_snapshot</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">):</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>        <span class="c1"># store the class type; must be done first</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span> <span class="o">=</span> <span class="bp">cls</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">=</span> <span class="n">directory</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span> <span class="o">=</span> <span class="n">changes_per_snapshot</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>        <span class="c1"># find the latest save directory, if there is one</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>        <span class="k">assert</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>        <span class="n">latest</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">directory</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">and</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span> <span class="o">&gt;</span> <span class="n">latest</span><span class="p">:</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>                <span class="n">latest</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>        <span class="n">latest_dir</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="n">latest</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>        <span class="c1"># load from the latest save directory if it exists, otherwise initialise a new one</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">):</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">latest_dir</span>
-</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_from_save_data</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">)</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a>            <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">:</span> <span class="n">T_SaveData</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">new_value</span><span class="p">()</span>
-</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
-</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>
-</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
-</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>
-</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>        <span class="n">res</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
-</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">Error</span><span class="p">):</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>            <span class="k">return</span> <span class="n">res</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span>
-</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">change</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span><span class="p">:</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
-</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>        <span class="k">return</span> <span class="kc">None</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>
-</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_start_from_new_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H-%M-%S&quot;</span><span class="p">)</span>
-</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">/</span> <span class="n">timestamp</span>
-</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">))</span>
-</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>    <span class="nd">@staticmethod</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">new_value</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a><span class="sd">        This is used when there is no existing snapshot file to load from.</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a><span class="sd">        :return: A default-initialised instance of this class, with default-initialised data (e.g. an empty data</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a><span class="sd">        structure).</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>        <span class="k">pass</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>    <span class="nd">@staticmethod</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a><span class="sd">        This is used to load snapshot files.</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="sd">        :param file: Path to the file to load. Can be expected to have the suffix `file_suffix`</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a><span class="sd">        :return: An instance of this class, initialised with the data loaded from the given file.</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>        <span class="k">pass</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>
+</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">        Apply the given change to the data. This is used when changes are applied.</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a><span class="sd">        :param change: A trivially JSON-serialisable object that described a change to make to the data.</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a><span class="sd">        :return: The error, if one has occurred.</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>        <span class="k">pass</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="sd">        :return: The data currently stored by this object.</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>        <span class="k">pass</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a><span class="sd">        Save the data stored in this object to the given file. This is used for saving snapshots.</span>
+</span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a><span class="sd">        :param file: Path to the file to save to. Can be expected to the have the suffix `file_suffix`.</span>
+</span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>        <span class="k">pass</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a>
 </span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>
-</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_snapshot_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
-</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>        <span class="k">return</span> <span class="n">directory</span> <span class="o">/</span> <span class="p">(</span><span class="s2">&quot;snapshot&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">file_suffix</span><span class="p">)</span>
+</span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a><span class="n">T_SaveData</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T_SaveData&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">SaveData</span><span class="p">)</span>
+</span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>
 </span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>
-</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_is_valid_save_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a>        <span class="k">return</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span>
-</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>
-</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_state_from_save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
-</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="n">directory</span><span class="p">))</span>
-</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span>
-</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>        <span class="n">change_count</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>        <span class="k">if</span> <span class="n">log_file</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>                    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>                        <span class="n">change</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
-</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>                        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">change</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing line: &#39;</span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">&#39; as JSON from log file &#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>                    <span class="n">ret</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
-</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>                    <span class="n">change_count</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>        <span class="k">return</span> <span class="n">ret</span><span class="p">,</span> <span class="n">change_count</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveDataManager</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">]):</span>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a><span class="sd">    Object parametrised by a user-implemented class type derived from `SaveData`. Manages saving and loading of data</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a><span class="sd">    change-by-change between snapshots according to the methods implemented by the user&#39;s class.</span>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">],</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">changes_per_snapshot</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">):</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="sd">        Constructor. Loads any existing data from the save directory `directory`.</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="sd">        Each snapshot is stored in its own directory with the given `directory`, named with a timestamp:</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a><span class="sd">        YYYY-MM-DD_hh-mm-ss. Subsequent changes are stored as lines of a file `log.jsonl` saved in the same directory.</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="sd">        :param cls: User-implemented class derived from `SaveData` used for interpretation of `Change` objects.</span>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="sd">        :param directory: The save directory from which to load and to which to save data.</span>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="sd">        :param changes_per_snapshot: The number of changes to save between snapshots. Does not affect previous saves.</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>        <span class="c1"># store the class type; must be done first</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span> <span class="o">=</span> <span class="bp">cls</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">=</span> <span class="n">directory</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span> <span class="o">=</span> <span class="n">changes_per_snapshot</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>        <span class="c1"># find the latest save directory, if there is one</span>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>        <span class="k">assert</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>        <span class="n">latest</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">directory</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">and</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span> <span class="o">&gt;</span> <span class="n">latest</span><span class="p">:</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>                <span class="n">latest</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>        <span class="n">latest_dir</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="n">latest</span>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>        <span class="c1"># load from the latest save directory if it exists, otherwise initialise a new one</span>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">):</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">latest_dir</span>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_from_save_data</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">)</span>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a>            <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">:</span> <span class="n">T_SaveData</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">new_value</span><span class="p">()</span>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="sd">        :return: The data currently stored.</span>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a><span class="sd">        Apply the given change to the data and save the change to log.jsonl. If at least `changes_per_snapshot` changes</span>
+</span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a><span class="sd">        have been logged, save a new snapshot.</span>
+</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a><span class="sd">        :param change: The change to apply and save.</span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a><span class="sd">        :return: The error if one occurs.</span>
+</span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>        <span class="n">res</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
+</span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">Error</span><span class="p">):</span>
+</span><span id="L-145"><a href="#L-145"><span class="linenos">145</span></a>            <span class="k">return</span> <span class="n">res</span>
+</span><span id="L-146"><a href="#L-146"><span class="linenos">146</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span>
+</span><span id="L-147"><a href="#L-147"><span class="linenos">147</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-148"><a href="#L-148"><span class="linenos">148</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">change</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-149"><a href="#L-149"><span class="linenos">149</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span><span class="p">:</span>
+</span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
+</span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_start_from_new_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H-%M-%S&quot;</span><span class="p">)</span>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">/</span> <span class="n">timestamp</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">))</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_snapshot_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>        <span class="k">return</span> <span class="n">directory</span> <span class="o">/</span> <span class="p">(</span><span class="s2">&quot;snapshot&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">file_suffix</span><span class="p">)</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_is_valid_save_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>        <span class="k">return</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_state_from_save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="n">directory</span><span class="p">))</span>
+</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span>
+</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>        <span class="n">change_count</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>        <span class="k">if</span> <span class="n">log_file</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>                    <span class="k">try</span><span class="p">:</span>
+</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>                        <span class="n">change</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>                        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">change</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing line: &#39;</span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">&#39; as JSON from log file &#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>                    <span class="n">ret</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
+</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>                    <span class="n">change_count</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>        <span class="k">return</span> <span class="n">ret</span><span class="p">,</span> <span class="n">change_count</span>
 </span></pre></div>
 
 
@@ -246,35 +339,59 @@
 
     </div>
     <a class="headerlink" href="#SaveData"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData-17"><a href="#SaveData-17"><span class="linenos">17</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveData</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-</span><span id="SaveData-18"><a href="#SaveData-18"><span class="linenos">18</span></a>    <span class="n">file_suffix</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-</span><span id="SaveData-19"><a href="#SaveData-19"><span class="linenos">19</span></a>
-</span><span id="SaveData-20"><a href="#SaveData-20"><span class="linenos">20</span></a>    <span class="nd">@staticmethod</span>
-</span><span id="SaveData-21"><a href="#SaveData-21"><span class="linenos">21</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData-22"><a href="#SaveData-22"><span class="linenos">22</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">new_value</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
-</span><span id="SaveData-23"><a href="#SaveData-23"><span class="linenos">23</span></a>        <span class="k">pass</span>
-</span><span id="SaveData-24"><a href="#SaveData-24"><span class="linenos">24</span></a>
-</span><span id="SaveData-25"><a href="#SaveData-25"><span class="linenos">25</span></a>    <span class="nd">@staticmethod</span>
-</span><span id="SaveData-26"><a href="#SaveData-26"><span class="linenos">26</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData-27"><a href="#SaveData-27"><span class="linenos">27</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
-</span><span id="SaveData-28"><a href="#SaveData-28"><span class="linenos">28</span></a>        <span class="k">pass</span>
-</span><span id="SaveData-29"><a href="#SaveData-29"><span class="linenos">29</span></a>
-</span><span id="SaveData-30"><a href="#SaveData-30"><span class="linenos">30</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData-31"><a href="#SaveData-31"><span class="linenos">31</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="SaveData-32"><a href="#SaveData-32"><span class="linenos">32</span></a>        <span class="k">pass</span>
-</span><span id="SaveData-33"><a href="#SaveData-33"><span class="linenos">33</span></a>
-</span><span id="SaveData-34"><a href="#SaveData-34"><span class="linenos">34</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData-35"><a href="#SaveData-35"><span class="linenos">35</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="SaveData-36"><a href="#SaveData-36"><span class="linenos">36</span></a>        <span class="k">pass</span>
-</span><span id="SaveData-37"><a href="#SaveData-37"><span class="linenos">37</span></a>
-</span><span id="SaveData-38"><a href="#SaveData-38"><span class="linenos">38</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData-39"><a href="#SaveData-39"><span class="linenos">39</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="SaveData-40"><a href="#SaveData-40"><span class="linenos">40</span></a>        <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData-40"><a href="#SaveData-40"><span class="linenos">40</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveData</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+</span><span id="SaveData-41"><a href="#SaveData-41"><span class="linenos">41</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData-42"><a href="#SaveData-42"><span class="linenos">42</span></a><span class="sd">    An interface to be implemented by a class that wishes to store and manage the serialisation of some data.</span>
+</span><span id="SaveData-43"><a href="#SaveData-43"><span class="linenos">43</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="SaveData-44"><a href="#SaveData-44"><span class="linenos">44</span></a>    <span class="n">file_suffix</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</span><span id="SaveData-45"><a href="#SaveData-45"><span class="linenos">45</span></a>
+</span><span id="SaveData-46"><a href="#SaveData-46"><span class="linenos">46</span></a>    <span class="nd">@staticmethod</span>
+</span><span id="SaveData-47"><a href="#SaveData-47"><span class="linenos">47</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData-48"><a href="#SaveData-48"><span class="linenos">48</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">new_value</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
+</span><span id="SaveData-49"><a href="#SaveData-49"><span class="linenos">49</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData-50"><a href="#SaveData-50"><span class="linenos">50</span></a><span class="sd">        This is used when there is no existing snapshot file to load from.</span>
+</span><span id="SaveData-51"><a href="#SaveData-51"><span class="linenos">51</span></a><span class="sd">        :return: A default-initialised instance of this class, with default-initialised data (e.g. an empty data</span>
+</span><span id="SaveData-52"><a href="#SaveData-52"><span class="linenos">52</span></a><span class="sd">        structure).</span>
+</span><span id="SaveData-53"><a href="#SaveData-53"><span class="linenos">53</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData-54"><a href="#SaveData-54"><span class="linenos">54</span></a>        <span class="k">pass</span>
+</span><span id="SaveData-55"><a href="#SaveData-55"><span class="linenos">55</span></a>
+</span><span id="SaveData-56"><a href="#SaveData-56"><span class="linenos">56</span></a>    <span class="nd">@staticmethod</span>
+</span><span id="SaveData-57"><a href="#SaveData-57"><span class="linenos">57</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData-58"><a href="#SaveData-58"><span class="linenos">58</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
+</span><span id="SaveData-59"><a href="#SaveData-59"><span class="linenos">59</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData-60"><a href="#SaveData-60"><span class="linenos">60</span></a><span class="sd">        This is used to load snapshot files.</span>
+</span><span id="SaveData-61"><a href="#SaveData-61"><span class="linenos">61</span></a><span class="sd">        :param file: Path to the file to load. Can be expected to have the suffix `file_suffix`</span>
+</span><span id="SaveData-62"><a href="#SaveData-62"><span class="linenos">62</span></a><span class="sd">        :return: An instance of this class, initialised with the data loaded from the given file.</span>
+</span><span id="SaveData-63"><a href="#SaveData-63"><span class="linenos">63</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData-64"><a href="#SaveData-64"><span class="linenos">64</span></a>        <span class="k">pass</span>
+</span><span id="SaveData-65"><a href="#SaveData-65"><span class="linenos">65</span></a>
+</span><span id="SaveData-66"><a href="#SaveData-66"><span class="linenos">66</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData-67"><a href="#SaveData-67"><span class="linenos">67</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="SaveData-68"><a href="#SaveData-68"><span class="linenos">68</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData-69"><a href="#SaveData-69"><span class="linenos">69</span></a><span class="sd">        Apply the given change to the data. This is used when changes are applied.</span>
+</span><span id="SaveData-70"><a href="#SaveData-70"><span class="linenos">70</span></a><span class="sd">        :param change: A trivially JSON-serialisable object that described a change to make to the data.</span>
+</span><span id="SaveData-71"><a href="#SaveData-71"><span class="linenos">71</span></a><span class="sd">        :return: The error, if one has occurred.</span>
+</span><span id="SaveData-72"><a href="#SaveData-72"><span class="linenos">72</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData-73"><a href="#SaveData-73"><span class="linenos">73</span></a>        <span class="k">pass</span>
+</span><span id="SaveData-74"><a href="#SaveData-74"><span class="linenos">74</span></a>
+</span><span id="SaveData-75"><a href="#SaveData-75"><span class="linenos">75</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData-76"><a href="#SaveData-76"><span class="linenos">76</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="SaveData-77"><a href="#SaveData-77"><span class="linenos">77</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData-78"><a href="#SaveData-78"><span class="linenos">78</span></a><span class="sd">        :return: The data currently stored by this object.</span>
+</span><span id="SaveData-79"><a href="#SaveData-79"><span class="linenos">79</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData-80"><a href="#SaveData-80"><span class="linenos">80</span></a>        <span class="k">pass</span>
+</span><span id="SaveData-81"><a href="#SaveData-81"><span class="linenos">81</span></a>
+</span><span id="SaveData-82"><a href="#SaveData-82"><span class="linenos">82</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData-83"><a href="#SaveData-83"><span class="linenos">83</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="SaveData-84"><a href="#SaveData-84"><span class="linenos">84</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData-85"><a href="#SaveData-85"><span class="linenos">85</span></a><span class="sd">        Save the data stored in this object to the given file. This is used for saving snapshots.</span>
+</span><span id="SaveData-86"><a href="#SaveData-86"><span class="linenos">86</span></a><span class="sd">        :param file: Path to the file to save to. Can be expected to the have the suffix `file_suffix`.</span>
+</span><span id="SaveData-87"><a href="#SaveData-87"><span class="linenos">87</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData-88"><a href="#SaveData-88"><span class="linenos">88</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Helper class that provides a standard way to create an ABC using
-inheritance.</p>
+            <div class="docstring"><p>An interface to be implemented by a class that wishes to store and manage the serialisation of some data.</p>
 </div>
 
 
@@ -302,14 +419,28 @@ inheritance.</p>
 
     </div>
     <a class="headerlink" href="#SaveData.new_value"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.new_value-20"><a href="#SaveData.new_value-20"><span class="linenos">20</span></a>    <span class="nd">@staticmethod</span>
-</span><span id="SaveData.new_value-21"><a href="#SaveData.new_value-21"><span class="linenos">21</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData.new_value-22"><a href="#SaveData.new_value-22"><span class="linenos">22</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">new_value</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
-</span><span id="SaveData.new_value-23"><a href="#SaveData.new_value-23"><span class="linenos">23</span></a>        <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.new_value-46"><a href="#SaveData.new_value-46"><span class="linenos">46</span></a>    <span class="nd">@staticmethod</span>
+</span><span id="SaveData.new_value-47"><a href="#SaveData.new_value-47"><span class="linenos">47</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData.new_value-48"><a href="#SaveData.new_value-48"><span class="linenos">48</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">new_value</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
+</span><span id="SaveData.new_value-49"><a href="#SaveData.new_value-49"><span class="linenos">49</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData.new_value-50"><a href="#SaveData.new_value-50"><span class="linenos">50</span></a><span class="sd">        This is used when there is no existing snapshot file to load from.</span>
+</span><span id="SaveData.new_value-51"><a href="#SaveData.new_value-51"><span class="linenos">51</span></a><span class="sd">        :return: A default-initialised instance of this class, with default-initialised data (e.g. an empty data</span>
+</span><span id="SaveData.new_value-52"><a href="#SaveData.new_value-52"><span class="linenos">52</span></a><span class="sd">        structure).</span>
+</span><span id="SaveData.new_value-53"><a href="#SaveData.new_value-53"><span class="linenos">53</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData.new_value-54"><a href="#SaveData.new_value-54"><span class="linenos">54</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>This is used when there is no existing snapshot file to load from.</p>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>A default-initialised instance of this class, with default-initialised data (e.g. an empty data
+  structure).</p>
+</blockquote>
+</div>
+
 
                             </div>
                             <div id="SaveData.load_from_file" class="classattr">
@@ -325,14 +456,33 @@ inheritance.</p>
 
     </div>
     <a class="headerlink" href="#SaveData.load_from_file"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.load_from_file-25"><a href="#SaveData.load_from_file-25"><span class="linenos">25</span></a>    <span class="nd">@staticmethod</span>
-</span><span id="SaveData.load_from_file-26"><a href="#SaveData.load_from_file-26"><span class="linenos">26</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData.load_from_file-27"><a href="#SaveData.load_from_file-27"><span class="linenos">27</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
-</span><span id="SaveData.load_from_file-28"><a href="#SaveData.load_from_file-28"><span class="linenos">28</span></a>        <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.load_from_file-56"><a href="#SaveData.load_from_file-56"><span class="linenos">56</span></a>    <span class="nd">@staticmethod</span>
+</span><span id="SaveData.load_from_file-57"><a href="#SaveData.load_from_file-57"><span class="linenos">57</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData.load_from_file-58"><a href="#SaveData.load_from_file-58"><span class="linenos">58</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;SaveData&#39;</span><span class="p">:</span>
+</span><span id="SaveData.load_from_file-59"><a href="#SaveData.load_from_file-59"><span class="linenos">59</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData.load_from_file-60"><a href="#SaveData.load_from_file-60"><span class="linenos">60</span></a><span class="sd">        This is used to load snapshot files.</span>
+</span><span id="SaveData.load_from_file-61"><a href="#SaveData.load_from_file-61"><span class="linenos">61</span></a><span class="sd">        :param file: Path to the file to load. Can be expected to have the suffix `file_suffix`</span>
+</span><span id="SaveData.load_from_file-62"><a href="#SaveData.load_from_file-62"><span class="linenos">62</span></a><span class="sd">        :return: An instance of this class, initialised with the data loaded from the given file.</span>
+</span><span id="SaveData.load_from_file-63"><a href="#SaveData.load_from_file-63"><span class="linenos">63</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData.load_from_file-64"><a href="#SaveData.load_from_file-64"><span class="linenos">64</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>This is used to load snapshot files.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>file</strong>:  Path to the file to load. Can be expected to have the suffix <code><a href="#SaveData.file_suffix">file_suffix</a></code></li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>An instance of this class, initialised with the data loaded from the given file.</p>
+</blockquote>
+</div>
+
 
                             </div>
                             <div id="SaveData.apply_change" class="classattr">
@@ -347,13 +497,32 @@ inheritance.</p>
 
     </div>
     <a class="headerlink" href="#SaveData.apply_change"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.apply_change-30"><a href="#SaveData.apply_change-30"><span class="linenos">30</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData.apply_change-31"><a href="#SaveData.apply_change-31"><span class="linenos">31</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="SaveData.apply_change-32"><a href="#SaveData.apply_change-32"><span class="linenos">32</span></a>        <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.apply_change-66"><a href="#SaveData.apply_change-66"><span class="linenos">66</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData.apply_change-67"><a href="#SaveData.apply_change-67"><span class="linenos">67</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="SaveData.apply_change-68"><a href="#SaveData.apply_change-68"><span class="linenos">68</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData.apply_change-69"><a href="#SaveData.apply_change-69"><span class="linenos">69</span></a><span class="sd">        Apply the given change to the data. This is used when changes are applied.</span>
+</span><span id="SaveData.apply_change-70"><a href="#SaveData.apply_change-70"><span class="linenos">70</span></a><span class="sd">        :param change: A trivially JSON-serialisable object that described a change to make to the data.</span>
+</span><span id="SaveData.apply_change-71"><a href="#SaveData.apply_change-71"><span class="linenos">71</span></a><span class="sd">        :return: The error, if one has occurred.</span>
+</span><span id="SaveData.apply_change-72"><a href="#SaveData.apply_change-72"><span class="linenos">72</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData.apply_change-73"><a href="#SaveData.apply_change-73"><span class="linenos">73</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Apply the given change to the data. This is used when changes are applied.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>change</strong>:  A trivially JSON-serialisable object that described a change to make to the data.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>The error, if one has occurred.</p>
+</blockquote>
+</div>
+
 
                             </div>
                             <div id="SaveData.get_data" class="classattr">
@@ -368,13 +537,22 @@ inheritance.</p>
 
     </div>
     <a class="headerlink" href="#SaveData.get_data"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.get_data-34"><a href="#SaveData.get_data-34"><span class="linenos">34</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData.get_data-35"><a href="#SaveData.get_data-35"><span class="linenos">35</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="SaveData.get_data-36"><a href="#SaveData.get_data-36"><span class="linenos">36</span></a>        <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.get_data-75"><a href="#SaveData.get_data-75"><span class="linenos">75</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData.get_data-76"><a href="#SaveData.get_data-76"><span class="linenos">76</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="SaveData.get_data-77"><a href="#SaveData.get_data-77"><span class="linenos">77</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData.get_data-78"><a href="#SaveData.get_data-78"><span class="linenos">78</span></a><span class="sd">        :return: The data currently stored by this object.</span>
+</span><span id="SaveData.get_data-79"><a href="#SaveData.get_data-79"><span class="linenos">79</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData.get_data-80"><a href="#SaveData.get_data-80"><span class="linenos">80</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>The data currently stored by this object.</p>
+</blockquote>
+</div>
+
 
                             </div>
                             <div id="SaveData.save_to_file" class="classattr">
@@ -389,13 +567,25 @@ inheritance.</p>
 
     </div>
     <a class="headerlink" href="#SaveData.save_to_file"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.save_to_file-38"><a href="#SaveData.save_to_file-38"><span class="linenos">38</span></a>    <span class="nd">@abstractmethod</span>
-</span><span id="SaveData.save_to_file-39"><a href="#SaveData.save_to_file-39"><span class="linenos">39</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="SaveData.save_to_file-40"><a href="#SaveData.save_to_file-40"><span class="linenos">40</span></a>        <span class="k">pass</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveData.save_to_file-82"><a href="#SaveData.save_to_file-82"><span class="linenos">82</span></a>    <span class="nd">@abstractmethod</span>
+</span><span id="SaveData.save_to_file-83"><a href="#SaveData.save_to_file-83"><span class="linenos">83</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="SaveData.save_to_file-84"><a href="#SaveData.save_to_file-84"><span class="linenos">84</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveData.save_to_file-85"><a href="#SaveData.save_to_file-85"><span class="linenos">85</span></a><span class="sd">        Save the data stored in this object to the given file. This is used for saving snapshots.</span>
+</span><span id="SaveData.save_to_file-86"><a href="#SaveData.save_to_file-86"><span class="linenos">86</span></a><span class="sd">        :param file: Path to the file to save to. Can be expected to the have the suffix `file_suffix`.</span>
+</span><span id="SaveData.save_to_file-87"><a href="#SaveData.save_to_file-87"><span class="linenos">87</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveData.save_to_file-88"><a href="#SaveData.save_to_file-88"><span class="linenos">88</span></a>        <span class="k">pass</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Save the data stored in this object to the given file. This is used for saving snapshots.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>file</strong>:  Path to the file to save to. Can be expected to the have the suffix <code><a href="#SaveData.file_suffix">file_suffix</a></code>.</li>
+</ul>
+</div>
+
 
                             </div>
                 </section>
@@ -410,99 +600,102 @@ inheritance.</p>
 
     </div>
     <a class="headerlink" href="#SaveDataManager"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveDataManager-46"><a href="#SaveDataManager-46"><span class="linenos"> 46</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveDataManager</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">]):</span>
-</span><span id="SaveDataManager-47"><a href="#SaveDataManager-47"><span class="linenos"> 47</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">],</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">changes_per_snapshot</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">):</span>
-</span><span id="SaveDataManager-48"><a href="#SaveDataManager-48"><span class="linenos"> 48</span></a>        <span class="c1"># store the class type; must be done first</span>
-</span><span id="SaveDataManager-49"><a href="#SaveDataManager-49"><span class="linenos"> 49</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span> <span class="o">=</span> <span class="bp">cls</span>
-</span><span id="SaveDataManager-50"><a href="#SaveDataManager-50"><span class="linenos"> 50</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">=</span> <span class="n">directory</span>
-</span><span id="SaveDataManager-51"><a href="#SaveDataManager-51"><span class="linenos"> 51</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span> <span class="o">=</span> <span class="n">changes_per_snapshot</span>
-</span><span id="SaveDataManager-52"><a href="#SaveDataManager-52"><span class="linenos"> 52</span></a>        <span class="c1"># find the latest save directory, if there is one</span>
-</span><span id="SaveDataManager-53"><a href="#SaveDataManager-53"><span class="linenos"> 53</span></a>        <span class="k">assert</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
-</span><span id="SaveDataManager-54"><a href="#SaveDataManager-54"><span class="linenos"> 54</span></a>        <span class="n">latest</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-</span><span id="SaveDataManager-55"><a href="#SaveDataManager-55"><span class="linenos"> 55</span></a>        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">directory</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
-</span><span id="SaveDataManager-56"><a href="#SaveDataManager-56"><span class="linenos"> 56</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">and</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span> <span class="o">&gt;</span> <span class="n">latest</span><span class="p">:</span>
-</span><span id="SaveDataManager-57"><a href="#SaveDataManager-57"><span class="linenos"> 57</span></a>                <span class="n">latest</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span>
-</span><span id="SaveDataManager-58"><a href="#SaveDataManager-58"><span class="linenos"> 58</span></a>        <span class="n">latest_dir</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="n">latest</span>
-</span><span id="SaveDataManager-59"><a href="#SaveDataManager-59"><span class="linenos"> 59</span></a>        <span class="c1"># load from the latest save directory if it exists, otherwise initialise a new one</span>
-</span><span id="SaveDataManager-60"><a href="#SaveDataManager-60"><span class="linenos"> 60</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">):</span>
-</span><span id="SaveDataManager-61"><a href="#SaveDataManager-61"><span class="linenos"> 61</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">latest_dir</span>
-</span><span id="SaveDataManager-62"><a href="#SaveDataManager-62"><span class="linenos"> 62</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_from_save_data</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">)</span>
-</span><span id="SaveDataManager-63"><a href="#SaveDataManager-63"><span class="linenos"> 63</span></a>            <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
-</span><span id="SaveDataManager-64"><a href="#SaveDataManager-64"><span class="linenos"> 64</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="SaveDataManager-65"><a href="#SaveDataManager-65"><span class="linenos"> 65</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">:</span> <span class="n">T_SaveData</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">new_value</span><span class="p">()</span>
-</span><span id="SaveDataManager-66"><a href="#SaveDataManager-66"><span class="linenos"> 66</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
-</span><span id="SaveDataManager-67"><a href="#SaveDataManager-67"><span class="linenos"> 67</span></a>
-</span><span id="SaveDataManager-68"><a href="#SaveDataManager-68"><span class="linenos"> 68</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="SaveDataManager-69"><a href="#SaveDataManager-69"><span class="linenos"> 69</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
-</span><span id="SaveDataManager-70"><a href="#SaveDataManager-70"><span class="linenos"> 70</span></a>
-</span><span id="SaveDataManager-71"><a href="#SaveDataManager-71"><span class="linenos"> 71</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="SaveDataManager-72"><a href="#SaveDataManager-72"><span class="linenos"> 72</span></a>        <span class="n">res</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
-</span><span id="SaveDataManager-73"><a href="#SaveDataManager-73"><span class="linenos"> 73</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">Error</span><span class="p">):</span>
-</span><span id="SaveDataManager-74"><a href="#SaveDataManager-74"><span class="linenos"> 74</span></a>            <span class="k">return</span> <span class="n">res</span>
-</span><span id="SaveDataManager-75"><a href="#SaveDataManager-75"><span class="linenos"> 75</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span>
-</span><span id="SaveDataManager-76"><a href="#SaveDataManager-76"><span class="linenos"> 76</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="SaveDataManager-77"><a href="#SaveDataManager-77"><span class="linenos"> 77</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">change</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="SaveDataManager-78"><a href="#SaveDataManager-78"><span class="linenos"> 78</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="SaveDataManager-79"><a href="#SaveDataManager-79"><span class="linenos"> 79</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span><span class="p">:</span>
-</span><span id="SaveDataManager-80"><a href="#SaveDataManager-80"><span class="linenos"> 80</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
-</span><span id="SaveDataManager-81"><a href="#SaveDataManager-81"><span class="linenos"> 81</span></a>        <span class="k">return</span> <span class="kc">None</span>
-</span><span id="SaveDataManager-82"><a href="#SaveDataManager-82"><span class="linenos"> 82</span></a>
-</span><span id="SaveDataManager-83"><a href="#SaveDataManager-83"><span class="linenos"> 83</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_start_from_new_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="SaveDataManager-84"><a href="#SaveDataManager-84"><span class="linenos"> 84</span></a>        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H-%M-%S&quot;</span><span class="p">)</span>
-</span><span id="SaveDataManager-85"><a href="#SaveDataManager-85"><span class="linenos"> 85</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">/</span> <span class="n">timestamp</span>
-</span><span id="SaveDataManager-86"><a href="#SaveDataManager-86"><span class="linenos"> 86</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="SaveDataManager-87"><a href="#SaveDataManager-87"><span class="linenos"> 87</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">))</span>
-</span><span id="SaveDataManager-88"><a href="#SaveDataManager-88"><span class="linenos"> 88</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="SaveDataManager-89"><a href="#SaveDataManager-89"><span class="linenos"> 89</span></a>        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
-</span><span id="SaveDataManager-90"><a href="#SaveDataManager-90"><span class="linenos"> 90</span></a>
-</span><span id="SaveDataManager-91"><a href="#SaveDataManager-91"><span class="linenos"> 91</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_snapshot_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
-</span><span id="SaveDataManager-92"><a href="#SaveDataManager-92"><span class="linenos"> 92</span></a>        <span class="k">return</span> <span class="n">directory</span> <span class="o">/</span> <span class="p">(</span><span class="s2">&quot;snapshot&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">file_suffix</span><span class="p">)</span>
-</span><span id="SaveDataManager-93"><a href="#SaveDataManager-93"><span class="linenos"> 93</span></a>
-</span><span id="SaveDataManager-94"><a href="#SaveDataManager-94"><span class="linenos"> 94</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_is_valid_save_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="SaveDataManager-95"><a href="#SaveDataManager-95"><span class="linenos"> 95</span></a>        <span class="k">return</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span>
-</span><span id="SaveDataManager-96"><a href="#SaveDataManager-96"><span class="linenos"> 96</span></a>
-</span><span id="SaveDataManager-97"><a href="#SaveDataManager-97"><span class="linenos"> 97</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_state_from_save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-</span><span id="SaveDataManager-98"><a href="#SaveDataManager-98"><span class="linenos"> 98</span></a>        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
-</span><span id="SaveDataManager-99"><a href="#SaveDataManager-99"><span class="linenos"> 99</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="n">directory</span><span class="p">))</span>
-</span><span id="SaveDataManager-100"><a href="#SaveDataManager-100"><span class="linenos">100</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span>
-</span><span id="SaveDataManager-101"><a href="#SaveDataManager-101"><span class="linenos">101</span></a>        <span class="n">change_count</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="SaveDataManager-102"><a href="#SaveDataManager-102"><span class="linenos">102</span></a>        <span class="k">if</span> <span class="n">log_file</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
-</span><span id="SaveDataManager-103"><a href="#SaveDataManager-103"><span class="linenos">103</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="SaveDataManager-104"><a href="#SaveDataManager-104"><span class="linenos">104</span></a>                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="SaveDataManager-105"><a href="#SaveDataManager-105"><span class="linenos">105</span></a>                    <span class="k">try</span><span class="p">:</span>
-</span><span id="SaveDataManager-106"><a href="#SaveDataManager-106"><span class="linenos">106</span></a>                        <span class="n">change</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
-</span><span id="SaveDataManager-107"><a href="#SaveDataManager-107"><span class="linenos">107</span></a>                        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">change</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-</span><span id="SaveDataManager-108"><a href="#SaveDataManager-108"><span class="linenos">108</span></a>                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="SaveDataManager-109"><a href="#SaveDataManager-109"><span class="linenos">109</span></a>                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing line: &#39;</span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">&#39; as JSON from log file &#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="SaveDataManager-110"><a href="#SaveDataManager-110"><span class="linenos">110</span></a>                    <span class="n">ret</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
-</span><span id="SaveDataManager-111"><a href="#SaveDataManager-111"><span class="linenos">111</span></a>                    <span class="n">change_count</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="SaveDataManager-112"><a href="#SaveDataManager-112"><span class="linenos">112</span></a>        <span class="k">return</span> <span class="n">ret</span><span class="p">,</span> <span class="n">change_count</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveDataManager-94"><a href="#SaveDataManager-94"><span class="linenos"> 94</span></a><span class="k">class</span><span class="w"> </span><span class="nc">SaveDataManager</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">]):</span>
+</span><span id="SaveDataManager-95"><a href="#SaveDataManager-95"><span class="linenos"> 95</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveDataManager-96"><a href="#SaveDataManager-96"><span class="linenos"> 96</span></a><span class="sd">    Object parametrised by a user-implemented class type derived from `SaveData`. Manages saving and loading of data</span>
+</span><span id="SaveDataManager-97"><a href="#SaveDataManager-97"><span class="linenos"> 97</span></a><span class="sd">    change-by-change between snapshots according to the methods implemented by the user&#39;s class.</span>
+</span><span id="SaveDataManager-98"><a href="#SaveDataManager-98"><span class="linenos"> 98</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="SaveDataManager-99"><a href="#SaveDataManager-99"><span class="linenos"> 99</span></a>
+</span><span id="SaveDataManager-100"><a href="#SaveDataManager-100"><span class="linenos">100</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">],</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">changes_per_snapshot</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">):</span>
+</span><span id="SaveDataManager-101"><a href="#SaveDataManager-101"><span class="linenos">101</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveDataManager-102"><a href="#SaveDataManager-102"><span class="linenos">102</span></a><span class="sd">        Constructor. Loads any existing data from the save directory `directory`.</span>
+</span><span id="SaveDataManager-103"><a href="#SaveDataManager-103"><span class="linenos">103</span></a>
+</span><span id="SaveDataManager-104"><a href="#SaveDataManager-104"><span class="linenos">104</span></a><span class="sd">        Each snapshot is stored in its own directory with the given `directory`, named with a timestamp:</span>
+</span><span id="SaveDataManager-105"><a href="#SaveDataManager-105"><span class="linenos">105</span></a><span class="sd">        YYYY-MM-DD_hh-mm-ss. Subsequent changes are stored as lines of a file `log.jsonl` saved in the same directory.</span>
+</span><span id="SaveDataManager-106"><a href="#SaveDataManager-106"><span class="linenos">106</span></a>
+</span><span id="SaveDataManager-107"><a href="#SaveDataManager-107"><span class="linenos">107</span></a><span class="sd">        :param cls: User-implemented class derived from `SaveData` used for interpretation of `Change` objects.</span>
+</span><span id="SaveDataManager-108"><a href="#SaveDataManager-108"><span class="linenos">108</span></a><span class="sd">        :param directory: The save directory from which to load and to which to save data.</span>
+</span><span id="SaveDataManager-109"><a href="#SaveDataManager-109"><span class="linenos">109</span></a><span class="sd">        :param changes_per_snapshot: The number of changes to save between snapshots. Does not affect previous saves.</span>
+</span><span id="SaveDataManager-110"><a href="#SaveDataManager-110"><span class="linenos">110</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveDataManager-111"><a href="#SaveDataManager-111"><span class="linenos">111</span></a>        <span class="c1"># store the class type; must be done first</span>
+</span><span id="SaveDataManager-112"><a href="#SaveDataManager-112"><span class="linenos">112</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span> <span class="o">=</span> <span class="bp">cls</span>
+</span><span id="SaveDataManager-113"><a href="#SaveDataManager-113"><span class="linenos">113</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">=</span> <span class="n">directory</span>
+</span><span id="SaveDataManager-114"><a href="#SaveDataManager-114"><span class="linenos">114</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span> <span class="o">=</span> <span class="n">changes_per_snapshot</span>
+</span><span id="SaveDataManager-115"><a href="#SaveDataManager-115"><span class="linenos">115</span></a>        <span class="c1"># find the latest save directory, if there is one</span>
+</span><span id="SaveDataManager-116"><a href="#SaveDataManager-116"><span class="linenos">116</span></a>        <span class="k">assert</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
+</span><span id="SaveDataManager-117"><a href="#SaveDataManager-117"><span class="linenos">117</span></a>        <span class="n">latest</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+</span><span id="SaveDataManager-118"><a href="#SaveDataManager-118"><span class="linenos">118</span></a>        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">directory</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+</span><span id="SaveDataManager-119"><a href="#SaveDataManager-119"><span class="linenos">119</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">and</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span> <span class="o">&gt;</span> <span class="n">latest</span><span class="p">:</span>
+</span><span id="SaveDataManager-120"><a href="#SaveDataManager-120"><span class="linenos">120</span></a>                <span class="n">latest</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span>
+</span><span id="SaveDataManager-121"><a href="#SaveDataManager-121"><span class="linenos">121</span></a>        <span class="n">latest_dir</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="n">latest</span>
+</span><span id="SaveDataManager-122"><a href="#SaveDataManager-122"><span class="linenos">122</span></a>        <span class="c1"># load from the latest save directory if it exists, otherwise initialise a new one</span>
+</span><span id="SaveDataManager-123"><a href="#SaveDataManager-123"><span class="linenos">123</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">):</span>
+</span><span id="SaveDataManager-124"><a href="#SaveDataManager-124"><span class="linenos">124</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">latest_dir</span>
+</span><span id="SaveDataManager-125"><a href="#SaveDataManager-125"><span class="linenos">125</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_from_save_data</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">)</span>
+</span><span id="SaveDataManager-126"><a href="#SaveDataManager-126"><span class="linenos">126</span></a>            <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
+</span><span id="SaveDataManager-127"><a href="#SaveDataManager-127"><span class="linenos">127</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="SaveDataManager-128"><a href="#SaveDataManager-128"><span class="linenos">128</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">:</span> <span class="n">T_SaveData</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">new_value</span><span class="p">()</span>
+</span><span id="SaveDataManager-129"><a href="#SaveDataManager-129"><span class="linenos">129</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
+</span><span id="SaveDataManager-130"><a href="#SaveDataManager-130"><span class="linenos">130</span></a>
+</span><span id="SaveDataManager-131"><a href="#SaveDataManager-131"><span class="linenos">131</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="SaveDataManager-132"><a href="#SaveDataManager-132"><span class="linenos">132</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveDataManager-133"><a href="#SaveDataManager-133"><span class="linenos">133</span></a><span class="sd">        :return: The data currently stored.</span>
+</span><span id="SaveDataManager-134"><a href="#SaveDataManager-134"><span class="linenos">134</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveDataManager-135"><a href="#SaveDataManager-135"><span class="linenos">135</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+</span><span id="SaveDataManager-136"><a href="#SaveDataManager-136"><span class="linenos">136</span></a>
+</span><span id="SaveDataManager-137"><a href="#SaveDataManager-137"><span class="linenos">137</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="SaveDataManager-138"><a href="#SaveDataManager-138"><span class="linenos">138</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveDataManager-139"><a href="#SaveDataManager-139"><span class="linenos">139</span></a><span class="sd">        Apply the given change to the data and save the change to log.jsonl. If at least `changes_per_snapshot` changes</span>
+</span><span id="SaveDataManager-140"><a href="#SaveDataManager-140"><span class="linenos">140</span></a><span class="sd">        have been logged, save a new snapshot.</span>
+</span><span id="SaveDataManager-141"><a href="#SaveDataManager-141"><span class="linenos">141</span></a><span class="sd">        :param change: The change to apply and save.</span>
+</span><span id="SaveDataManager-142"><a href="#SaveDataManager-142"><span class="linenos">142</span></a><span class="sd">        :return: The error if one occurs.</span>
+</span><span id="SaveDataManager-143"><a href="#SaveDataManager-143"><span class="linenos">143</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveDataManager-144"><a href="#SaveDataManager-144"><span class="linenos">144</span></a>        <span class="n">res</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
+</span><span id="SaveDataManager-145"><a href="#SaveDataManager-145"><span class="linenos">145</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">Error</span><span class="p">):</span>
+</span><span id="SaveDataManager-146"><a href="#SaveDataManager-146"><span class="linenos">146</span></a>            <span class="k">return</span> <span class="n">res</span>
+</span><span id="SaveDataManager-147"><a href="#SaveDataManager-147"><span class="linenos">147</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span>
+</span><span id="SaveDataManager-148"><a href="#SaveDataManager-148"><span class="linenos">148</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="SaveDataManager-149"><a href="#SaveDataManager-149"><span class="linenos">149</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">change</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="SaveDataManager-150"><a href="#SaveDataManager-150"><span class="linenos">150</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="SaveDataManager-151"><a href="#SaveDataManager-151"><span class="linenos">151</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span><span class="p">:</span>
+</span><span id="SaveDataManager-152"><a href="#SaveDataManager-152"><span class="linenos">152</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
+</span><span id="SaveDataManager-153"><a href="#SaveDataManager-153"><span class="linenos">153</span></a>        <span class="k">return</span> <span class="kc">None</span>
+</span><span id="SaveDataManager-154"><a href="#SaveDataManager-154"><span class="linenos">154</span></a>
+</span><span id="SaveDataManager-155"><a href="#SaveDataManager-155"><span class="linenos">155</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_start_from_new_snapshot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="SaveDataManager-156"><a href="#SaveDataManager-156"><span class="linenos">156</span></a>        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H-%M-%S&quot;</span><span class="p">)</span>
+</span><span id="SaveDataManager-157"><a href="#SaveDataManager-157"><span class="linenos">157</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">/</span> <span class="n">timestamp</span>
+</span><span id="SaveDataManager-158"><a href="#SaveDataManager-158"><span class="linenos">158</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="SaveDataManager-159"><a href="#SaveDataManager-159"><span class="linenos">159</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">))</span>
+</span><span id="SaveDataManager-160"><a href="#SaveDataManager-160"><span class="linenos">160</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="SaveDataManager-161"><a href="#SaveDataManager-161"><span class="linenos">161</span></a>        <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
+</span><span id="SaveDataManager-162"><a href="#SaveDataManager-162"><span class="linenos">162</span></a>
+</span><span id="SaveDataManager-163"><a href="#SaveDataManager-163"><span class="linenos">163</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_snapshot_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+</span><span id="SaveDataManager-164"><a href="#SaveDataManager-164"><span class="linenos">164</span></a>        <span class="k">return</span> <span class="n">directory</span> <span class="o">/</span> <span class="p">(</span><span class="s2">&quot;snapshot&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">file_suffix</span><span class="p">)</span>
+</span><span id="SaveDataManager-165"><a href="#SaveDataManager-165"><span class="linenos">165</span></a>
+</span><span id="SaveDataManager-166"><a href="#SaveDataManager-166"><span class="linenos">166</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_is_valid_save_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="SaveDataManager-167"><a href="#SaveDataManager-167"><span class="linenos">167</span></a>        <span class="k">return</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span>
+</span><span id="SaveDataManager-168"><a href="#SaveDataManager-168"><span class="linenos">168</span></a>
+</span><span id="SaveDataManager-169"><a href="#SaveDataManager-169"><span class="linenos">169</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_state_from_save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+</span><span id="SaveDataManager-170"><a href="#SaveDataManager-170"><span class="linenos">170</span></a>        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+</span><span id="SaveDataManager-171"><a href="#SaveDataManager-171"><span class="linenos">171</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_snapshot_file</span><span class="p">(</span><span class="n">directory</span><span class="p">))</span>
+</span><span id="SaveDataManager-172"><a href="#SaveDataManager-172"><span class="linenos">172</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span>
+</span><span id="SaveDataManager-173"><a href="#SaveDataManager-173"><span class="linenos">173</span></a>        <span class="n">change_count</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="SaveDataManager-174"><a href="#SaveDataManager-174"><span class="linenos">174</span></a>        <span class="k">if</span> <span class="n">log_file</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+</span><span id="SaveDataManager-175"><a href="#SaveDataManager-175"><span class="linenos">175</span></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="SaveDataManager-176"><a href="#SaveDataManager-176"><span class="linenos">176</span></a>                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="SaveDataManager-177"><a href="#SaveDataManager-177"><span class="linenos">177</span></a>                    <span class="k">try</span><span class="p">:</span>
+</span><span id="SaveDataManager-178"><a href="#SaveDataManager-178"><span class="linenos">178</span></a>                        <span class="n">change</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+</span><span id="SaveDataManager-179"><a href="#SaveDataManager-179"><span class="linenos">179</span></a>                        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">change</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+</span><span id="SaveDataManager-180"><a href="#SaveDataManager-180"><span class="linenos">180</span></a>                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="SaveDataManager-181"><a href="#SaveDataManager-181"><span class="linenos">181</span></a>                        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing line: &#39;</span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">&#39; as JSON from log file &#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="SaveDataManager-182"><a href="#SaveDataManager-182"><span class="linenos">182</span></a>                    <span class="n">ret</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
+</span><span id="SaveDataManager-183"><a href="#SaveDataManager-183"><span class="linenos">183</span></a>                    <span class="n">change_count</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="SaveDataManager-184"><a href="#SaveDataManager-184"><span class="linenos">184</span></a>        <span class="k">return</span> <span class="n">ret</span><span class="p">,</span> <span class="n">change_count</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Abstract base class for generic types.</p>
-
-<p>On Python 3.12 and newer, generic classes implicitly inherit from
-Generic when they declare a parameter list after the class's name::</p>
-
-<pre><code>class Mapping[KT, VT]:
-    def __getitem__(self, key: KT) -&gt; VT:
-        ...
-    # Etc.
-</code></pre>
-
-<p>On older versions of Python, however, generic classes have to
-explicitly inherit from Generic.</p>
-
-<p>After a class has been declared to be generic, it can then be used as
-follows::</p>
-
-<pre><code>def lookup_name[KT, VT](mapping: Mapping[KT, VT], key: KT, default: VT) -&gt; VT:
-    try:
-        return mapping[key]
-    except KeyError:
-        return default
-</code></pre>
+            <div class="docstring"><p>Object parametrised by a user-implemented class type derived from <code><a href="#SaveData">SaveData</a></code>. Manages saving and loading of data
+change-by-change between snapshots according to the methods implemented by the user's class.</p>
 </div>
 
 
@@ -516,30 +709,53 @@ follows::</p>
 
     </div>
     <a class="headerlink" href="#SaveDataManager.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveDataManager.__init__-47"><a href="#SaveDataManager.__init__-47"><span class="linenos">47</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">],</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">changes_per_snapshot</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">):</span>
-</span><span id="SaveDataManager.__init__-48"><a href="#SaveDataManager.__init__-48"><span class="linenos">48</span></a>        <span class="c1"># store the class type; must be done first</span>
-</span><span id="SaveDataManager.__init__-49"><a href="#SaveDataManager.__init__-49"><span class="linenos">49</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span> <span class="o">=</span> <span class="bp">cls</span>
-</span><span id="SaveDataManager.__init__-50"><a href="#SaveDataManager.__init__-50"><span class="linenos">50</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">=</span> <span class="n">directory</span>
-</span><span id="SaveDataManager.__init__-51"><a href="#SaveDataManager.__init__-51"><span class="linenos">51</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span> <span class="o">=</span> <span class="n">changes_per_snapshot</span>
-</span><span id="SaveDataManager.__init__-52"><a href="#SaveDataManager.__init__-52"><span class="linenos">52</span></a>        <span class="c1"># find the latest save directory, if there is one</span>
-</span><span id="SaveDataManager.__init__-53"><a href="#SaveDataManager.__init__-53"><span class="linenos">53</span></a>        <span class="k">assert</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
-</span><span id="SaveDataManager.__init__-54"><a href="#SaveDataManager.__init__-54"><span class="linenos">54</span></a>        <span class="n">latest</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-</span><span id="SaveDataManager.__init__-55"><a href="#SaveDataManager.__init__-55"><span class="linenos">55</span></a>        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">directory</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
-</span><span id="SaveDataManager.__init__-56"><a href="#SaveDataManager.__init__-56"><span class="linenos">56</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">and</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span> <span class="o">&gt;</span> <span class="n">latest</span><span class="p">:</span>
-</span><span id="SaveDataManager.__init__-57"><a href="#SaveDataManager.__init__-57"><span class="linenos">57</span></a>                <span class="n">latest</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span>
-</span><span id="SaveDataManager.__init__-58"><a href="#SaveDataManager.__init__-58"><span class="linenos">58</span></a>        <span class="n">latest_dir</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="n">latest</span>
-</span><span id="SaveDataManager.__init__-59"><a href="#SaveDataManager.__init__-59"><span class="linenos">59</span></a>        <span class="c1"># load from the latest save directory if it exists, otherwise initialise a new one</span>
-</span><span id="SaveDataManager.__init__-60"><a href="#SaveDataManager.__init__-60"><span class="linenos">60</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">):</span>
-</span><span id="SaveDataManager.__init__-61"><a href="#SaveDataManager.__init__-61"><span class="linenos">61</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">latest_dir</span>
-</span><span id="SaveDataManager.__init__-62"><a href="#SaveDataManager.__init__-62"><span class="linenos">62</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_from_save_data</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">)</span>
-</span><span id="SaveDataManager.__init__-63"><a href="#SaveDataManager.__init__-63"><span class="linenos">63</span></a>            <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
-</span><span id="SaveDataManager.__init__-64"><a href="#SaveDataManager.__init__-64"><span class="linenos">64</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="SaveDataManager.__init__-65"><a href="#SaveDataManager.__init__-65"><span class="linenos">65</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">:</span> <span class="n">T_SaveData</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">new_value</span><span class="p">()</span>
-</span><span id="SaveDataManager.__init__-66"><a href="#SaveDataManager.__init__-66"><span class="linenos">66</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveDataManager.__init__-100"><a href="#SaveDataManager.__init__-100"><span class="linenos">100</span></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">T_SaveData</span><span class="p">],</span> <span class="n">directory</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span> <span class="n">changes_per_snapshot</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">):</span>
+</span><span id="SaveDataManager.__init__-101"><a href="#SaveDataManager.__init__-101"><span class="linenos">101</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveDataManager.__init__-102"><a href="#SaveDataManager.__init__-102"><span class="linenos">102</span></a><span class="sd">        Constructor. Loads any existing data from the save directory `directory`.</span>
+</span><span id="SaveDataManager.__init__-103"><a href="#SaveDataManager.__init__-103"><span class="linenos">103</span></a>
+</span><span id="SaveDataManager.__init__-104"><a href="#SaveDataManager.__init__-104"><span class="linenos">104</span></a><span class="sd">        Each snapshot is stored in its own directory with the given `directory`, named with a timestamp:</span>
+</span><span id="SaveDataManager.__init__-105"><a href="#SaveDataManager.__init__-105"><span class="linenos">105</span></a><span class="sd">        YYYY-MM-DD_hh-mm-ss. Subsequent changes are stored as lines of a file `log.jsonl` saved in the same directory.</span>
+</span><span id="SaveDataManager.__init__-106"><a href="#SaveDataManager.__init__-106"><span class="linenos">106</span></a>
+</span><span id="SaveDataManager.__init__-107"><a href="#SaveDataManager.__init__-107"><span class="linenos">107</span></a><span class="sd">        :param cls: User-implemented class derived from `SaveData` used for interpretation of `Change` objects.</span>
+</span><span id="SaveDataManager.__init__-108"><a href="#SaveDataManager.__init__-108"><span class="linenos">108</span></a><span class="sd">        :param directory: The save directory from which to load and to which to save data.</span>
+</span><span id="SaveDataManager.__init__-109"><a href="#SaveDataManager.__init__-109"><span class="linenos">109</span></a><span class="sd">        :param changes_per_snapshot: The number of changes to save between snapshots. Does not affect previous saves.</span>
+</span><span id="SaveDataManager.__init__-110"><a href="#SaveDataManager.__init__-110"><span class="linenos">110</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveDataManager.__init__-111"><a href="#SaveDataManager.__init__-111"><span class="linenos">111</span></a>        <span class="c1"># store the class type; must be done first</span>
+</span><span id="SaveDataManager.__init__-112"><a href="#SaveDataManager.__init__-112"><span class="linenos">112</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span> <span class="o">=</span> <span class="bp">cls</span>
+</span><span id="SaveDataManager.__init__-113"><a href="#SaveDataManager.__init__-113"><span class="linenos">113</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_outer_directory</span> <span class="o">=</span> <span class="n">directory</span>
+</span><span id="SaveDataManager.__init__-114"><a href="#SaveDataManager.__init__-114"><span class="linenos">114</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span> <span class="o">=</span> <span class="n">changes_per_snapshot</span>
+</span><span id="SaveDataManager.__init__-115"><a href="#SaveDataManager.__init__-115"><span class="linenos">115</span></a>        <span class="c1"># find the latest save directory, if there is one</span>
+</span><span id="SaveDataManager.__init__-116"><a href="#SaveDataManager.__init__-116"><span class="linenos">116</span></a>        <span class="k">assert</span> <span class="n">directory</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
+</span><span id="SaveDataManager.__init__-117"><a href="#SaveDataManager.__init__-117"><span class="linenos">117</span></a>        <span class="n">latest</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+</span><span id="SaveDataManager.__init__-118"><a href="#SaveDataManager.__init__-118"><span class="linenos">118</span></a>        <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">directory</span><span class="o">.</span><span class="n">iterdir</span><span class="p">():</span>
+</span><span id="SaveDataManager.__init__-119"><a href="#SaveDataManager.__init__-119"><span class="linenos">119</span></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">and</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span> <span class="o">&gt;</span> <span class="n">latest</span><span class="p">:</span>
+</span><span id="SaveDataManager.__init__-120"><a href="#SaveDataManager.__init__-120"><span class="linenos">120</span></a>                <span class="n">latest</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">stem</span>
+</span><span id="SaveDataManager.__init__-121"><a href="#SaveDataManager.__init__-121"><span class="linenos">121</span></a>        <span class="n">latest_dir</span> <span class="o">=</span> <span class="n">directory</span> <span class="o">/</span> <span class="n">latest</span>
+</span><span id="SaveDataManager.__init__-122"><a href="#SaveDataManager.__init__-122"><span class="linenos">122</span></a>        <span class="c1"># load from the latest save directory if it exists, otherwise initialise a new one</span>
+</span><span id="SaveDataManager.__init__-123"><a href="#SaveDataManager.__init__-123"><span class="linenos">123</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_save_directory</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">):</span>
+</span><span id="SaveDataManager.__init__-124"><a href="#SaveDataManager.__init__-124"><span class="linenos">124</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="n">latest_dir</span>
+</span><span id="SaveDataManager.__init__-125"><a href="#SaveDataManager.__init__-125"><span class="linenos">125</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state_from_save_data</span><span class="p">(</span><span class="n">latest_dir</span><span class="p">)</span>
+</span><span id="SaveDataManager.__init__-126"><a href="#SaveDataManager.__init__-126"><span class="linenos">126</span></a>            <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">touch</span><span class="p">()</span>
+</span><span id="SaveDataManager.__init__-127"><a href="#SaveDataManager.__init__-127"><span class="linenos">127</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="SaveDataManager.__init__-128"><a href="#SaveDataManager.__init__-128"><span class="linenos">128</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="p">:</span> <span class="n">T_SaveData</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span><span class="o">.</span><span class="n">new_value</span><span class="p">()</span>
+</span><span id="SaveDataManager.__init__-129"><a href="#SaveDataManager.__init__-129"><span class="linenos">129</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Constructor. Loads any existing data from the save directory <code>directory</code>.</p>
+
+<p>Each snapshot is stored in its own directory with the given <code>directory</code>, named with a timestamp:
+YYYY-MM-DD_hh-mm-ss. Subsequent changes are stored as lines of a file <code>log.jsonl</code> saved in the same directory.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>cls</strong>:  User-implemented class derived from <code><a href="#SaveData">SaveData</a></code> used for interpretation of <code><a href="#Change">Change</a></code> objects.</li>
+<li><strong>directory</strong>:  The save directory from which to load and to which to save data.</li>
+<li><strong>changes_per_snapshot</strong>:  The number of changes to save between snapshots. Does not affect previous saves.</li>
+</ul>
+</div>
+
 
                             </div>
                             <div id="SaveDataManager.get_data" class="classattr">
@@ -553,12 +769,21 @@ follows::</p>
 
     </div>
     <a class="headerlink" href="#SaveDataManager.get_data"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveDataManager.get_data-68"><a href="#SaveDataManager.get_data-68"><span class="linenos">68</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="SaveDataManager.get_data-69"><a href="#SaveDataManager.get_data-69"><span class="linenos">69</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveDataManager.get_data-131"><a href="#SaveDataManager.get_data-131"><span class="linenos">131</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="SaveDataManager.get_data-132"><a href="#SaveDataManager.get_data-132"><span class="linenos">132</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveDataManager.get_data-133"><a href="#SaveDataManager.get_data-133"><span class="linenos">133</span></a><span class="sd">        :return: The data currently stored.</span>
+</span><span id="SaveDataManager.get_data-134"><a href="#SaveDataManager.get_data-134"><span class="linenos">134</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveDataManager.get_data-135"><a href="#SaveDataManager.get_data-135"><span class="linenos">135</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>The data currently stored.</p>
+</blockquote>
+</div>
+
 
                             </div>
                             <div id="SaveDataManager.apply_change" class="classattr">
@@ -572,21 +797,42 @@ follows::</p>
 
     </div>
     <a class="headerlink" href="#SaveDataManager.apply_change"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveDataManager.apply_change-71"><a href="#SaveDataManager.apply_change-71"><span class="linenos">71</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
-</span><span id="SaveDataManager.apply_change-72"><a href="#SaveDataManager.apply_change-72"><span class="linenos">72</span></a>        <span class="n">res</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
-</span><span id="SaveDataManager.apply_change-73"><a href="#SaveDataManager.apply_change-73"><span class="linenos">73</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">Error</span><span class="p">):</span>
-</span><span id="SaveDataManager.apply_change-74"><a href="#SaveDataManager.apply_change-74"><span class="linenos">74</span></a>            <span class="k">return</span> <span class="n">res</span>
-</span><span id="SaveDataManager.apply_change-75"><a href="#SaveDataManager.apply_change-75"><span class="linenos">75</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span>
-</span><span id="SaveDataManager.apply_change-76"><a href="#SaveDataManager.apply_change-76"><span class="linenos">76</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-</span><span id="SaveDataManager.apply_change-77"><a href="#SaveDataManager.apply_change-77"><span class="linenos">77</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">change</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="SaveDataManager.apply_change-78"><a href="#SaveDataManager.apply_change-78"><span class="linenos">78</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="SaveDataManager.apply_change-79"><a href="#SaveDataManager.apply_change-79"><span class="linenos">79</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span><span class="p">:</span>
-</span><span id="SaveDataManager.apply_change-80"><a href="#SaveDataManager.apply_change-80"><span class="linenos">80</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
-</span><span id="SaveDataManager.apply_change-81"><a href="#SaveDataManager.apply_change-81"><span class="linenos">81</span></a>        <span class="k">return</span> <span class="kc">None</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SaveDataManager.apply_change-137"><a href="#SaveDataManager.apply_change-137"><span class="linenos">137</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">apply_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">change</span><span class="p">:</span> <span class="n">Change</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span><span class="p">:</span>
+</span><span id="SaveDataManager.apply_change-138"><a href="#SaveDataManager.apply_change-138"><span class="linenos">138</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SaveDataManager.apply_change-139"><a href="#SaveDataManager.apply_change-139"><span class="linenos">139</span></a><span class="sd">        Apply the given change to the data and save the change to log.jsonl. If at least `changes_per_snapshot` changes</span>
+</span><span id="SaveDataManager.apply_change-140"><a href="#SaveDataManager.apply_change-140"><span class="linenos">140</span></a><span class="sd">        have been logged, save a new snapshot.</span>
+</span><span id="SaveDataManager.apply_change-141"><a href="#SaveDataManager.apply_change-141"><span class="linenos">141</span></a><span class="sd">        :param change: The change to apply and save.</span>
+</span><span id="SaveDataManager.apply_change-142"><a href="#SaveDataManager.apply_change-142"><span class="linenos">142</span></a><span class="sd">        :return: The error if one occurs.</span>
+</span><span id="SaveDataManager.apply_change-143"><a href="#SaveDataManager.apply_change-143"><span class="linenos">143</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="SaveDataManager.apply_change-144"><a href="#SaveDataManager.apply_change-144"><span class="linenos">144</span></a>        <span class="n">res</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_current_state</span><span class="o">.</span><span class="n">apply_change</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>
+</span><span id="SaveDataManager.apply_change-145"><a href="#SaveDataManager.apply_change-145"><span class="linenos">145</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">Error</span><span class="p">):</span>
+</span><span id="SaveDataManager.apply_change-146"><a href="#SaveDataManager.apply_change-146"><span class="linenos">146</span></a>            <span class="k">return</span> <span class="n">res</span>
+</span><span id="SaveDataManager.apply_change-147"><a href="#SaveDataManager.apply_change-147"><span class="linenos">147</span></a>        <span class="n">log_file</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_dir</span> <span class="o">/</span> <span class="s2">&quot;log.jsonl&quot;</span><span class="p">)</span>
+</span><span id="SaveDataManager.apply_change-148"><a href="#SaveDataManager.apply_change-148"><span class="linenos">148</span></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span><span id="SaveDataManager.apply_change-149"><a href="#SaveDataManager.apply_change-149"><span class="linenos">149</span></a>            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">change</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="SaveDataManager.apply_change-150"><a href="#SaveDataManager.apply_change-150"><span class="linenos">150</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="SaveDataManager.apply_change-151"><a href="#SaveDataManager.apply_change-151"><span class="linenos">151</span></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_change_count</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_changes_per_snapshot</span><span class="p">:</span>
+</span><span id="SaveDataManager.apply_change-152"><a href="#SaveDataManager.apply_change-152"><span class="linenos">152</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_start_from_new_snapshot</span><span class="p">()</span>
+</span><span id="SaveDataManager.apply_change-153"><a href="#SaveDataManager.apply_change-153"><span class="linenos">153</span></a>        <span class="k">return</span> <span class="kc">None</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Apply the given change to the data and save the change to log.jsonl. If at least <code>changes_per_snapshot</code> changes
+have been logged, save a new snapshot.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>change</strong>:  The change to apply and save.</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>The error if one occurs.</p>
+</blockquote>
+</div>
+
 
                             </div>
                 </section>
