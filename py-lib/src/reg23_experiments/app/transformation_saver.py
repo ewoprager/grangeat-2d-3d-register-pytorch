@@ -4,12 +4,12 @@ from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
 from reg23_experiments.app.state import AppState
 
-__all__ = ["SaveDataManager"]
+__all__ = ["TransformationSaver"]
 
 logger = logging.getLogger(__name__)
 
 
-class SaveDataManager:
+class TransformationSaver:
     def __init__(self, app_state: AppState):
         self._app_state = app_state
         self._transformation_save_manager = TransformationSaveManager(self._app_state.transformation_save_directory)

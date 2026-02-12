@@ -1,3 +1,26 @@
+"""
+A setup for saving data with versioning in a memory-efficient way.
+
+Can be applied to any desired data structure, but the serialising/deserialising of changes to the data must
+be implemented.
+
+The whole data structure is saved as 'snapshots' every N (default=32) changes. Between snapshots, only the changes that
+are made to the data are saved, specifically as lines in a jsonl log file.
+
+Any change to the data must be represented by a `Change` object, which is just a Python object that can be trivially
+serialised into JSON.
+
+The user must provide a class that implements `SaveData`, which has the custom code for using a `Change` object to apply
+the desired change to the data.
+
+The user can then instantiate a SaveDataManager, passing their `SaveData` class as the Generic parameter, and `cls`
+parameter. This object will automatically load existing save data if present, and manage all subsequent changes and
+saving.
+
+On loading of saved data (e.g. on program startup), the most recent snapshot is loaded, and all subsequent changes are
+applied in order such that the data is restored to the same state it was in when the program was last run.
+"""
+
 import json
 from typing import Generic, TypeVar, ClassVar, Any
 from abc import ABC, abstractmethod
@@ -14,28 +37,53 @@ type Change = dict[str, JsonSerializable]
 
 
 class SaveData(ABC):
+    """
+    An interface to be implemented by a class that wishes to store and manage the serialisation of some data.
+    """
     file_suffix: ClassVar[str]
 
     @staticmethod
     @abstractmethod
     def new_value() -> 'SaveData':
+        """
+        This is used when there is no existing snapshot file to load from.
+        :return: A default-initialised instance of this class, with default-initialised data (e.g. an empty data
+        structure).
+        """
         pass
 
     @staticmethod
     @abstractmethod
     def load_from_file(file: pathlib.Path) -> 'SaveData':
+        """
+        This is used to load snapshot files.
+        :param file: Path to the file to load. Can be expected to have the suffix `file_suffix`
+        :return: An instance of this class, initialised with the data loaded from the given file.
+        """
         pass
 
     @abstractmethod
     def apply_change(self, change: Change) -> None | Error:
+        """
+        Apply the given change to the data. This is used when changes are applied.
+        :param change: A trivially JSON-serialisable object that described a change to make to the data.
+        :return: The error, if one has occurred.
+        """
         pass
 
     @abstractmethod
     def get_data(self) -> Any:
+        """
+        :return: The data currently stored by this object.
+        """
         pass
 
     @abstractmethod
     def save_to_file(self, file: pathlib.Path) -> None:
+        """
+        Save the data stored in this object to the given file. This is used for saving snapshots.
+        :param file: Path to the file to save to. Can be expected to the have the suffix `file_suffix`.
+        """
         pass
 
 
@@ -43,7 +91,22 @@ T_SaveData = TypeVar("T_SaveData", bound=SaveData)
 
 
 class SaveDataManager(Generic[T_SaveData]):
+    """
+    Object parametrised by a user-implemented class type derived from `SaveData`. Manages saving and loading of data
+    change-by-change between snapshots according to the methods implemented by the user's class.
+    """
+
     def __init__(self, *, cls: type[T_SaveData], directory: pathlib.Path, changes_per_snapshot: int = 32):
+        """
+        Constructor. Loads any existing data from the save directory `directory`.
+
+        Each snapshot is stored in its own directory with the given `directory`, named with a timestamp:
+        YYYY-MM-DD_hh-mm-ss. Subsequent changes are stored as lines of a file `log.jsonl` saved in the same directory.
+
+        :param cls: User-implemented class derived from `SaveData` used for interpretation of `Change` objects.
+        :param directory: The save directory from which to load and to which to save data.
+        :param changes_per_snapshot: The number of changes to save between snapshots. Does not affect previous saves.
+        """
         # store the class type; must be done first
         self._cls = cls
         self._outer_directory = directory
@@ -65,9 +128,18 @@ class SaveDataManager(Generic[T_SaveData]):
             self._start_from_new_snapshot()
 
     def get_data(self) -> Any:
+        """
+        :return: The data currently stored.
+        """
         return self._current_state.get_data()
 
     def apply_change(self, change: Change) -> None | Error:
+        """
+        Apply the given change to the data and save the change to log.jsonl. If at least `changes_per_snapshot` changes
+        have been logged, save a new snapshot.
+        :param change: The change to apply and save.
+        :return: The error if one occurs.
+        """
         res: None | Error = self._current_state.apply_change(change)
         if isinstance(res, Error):
             return res

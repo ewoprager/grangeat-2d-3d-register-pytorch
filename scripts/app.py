@@ -28,7 +28,7 @@ from reg23_experiments.app.worker_manager import WorkerManager
 from reg23_experiments.data.structs import Transformation, SceneGeometry, Cropping
 from reg23_experiments.ops import geometry
 from reg23_experiments.ops.similarity_metric import ncc
-from reg23_experiments.app.save_data_manager import SaveDataManager
+from reg23_experiments.app.transformation_saver import TransformationSaver
 from reg23_experiments.io.image import read_dicom
 
 
@@ -248,7 +248,7 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
     image_2d_full_gui = Image2DFullGUI(app_state)
     moving_image_gui = MovingImageGUI(app_state)
     register_gui = RegisterGUI(app_state)
-    save_data_manager = SaveDataManager(app_state)
+    transformation_saver = TransformationSaver(app_state)
     electrodes_gui = ElectrodesGUI(app_state)
 
     value = data_manager().get("moving_image")
