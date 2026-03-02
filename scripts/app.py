@@ -20,7 +20,7 @@ from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
 from reg23_experiments.app.gui.fixed_image import FixedImageGUI, Image2DFullGUI
 from reg23_experiments.app.gui.moving_image import MovingImageGUI
 from reg23_experiments.app.gui.electrodes import ElectrodesGUI
-from reg23_experiments.app.gui.parameters import ParameterWidget
+from reg23_experiments.app.gui.parameters import ParametersWidget
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters, Context
 from reg23_experiments.app.gui.register import RegisterGUI
 from reg23_experiments.app.state import AppState
@@ -216,13 +216,13 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
     # parameters.op_algo_parameters.particle_count = 5
     # test = clone_has_traits(parameters)
 
-    parameters_widget = ParameterWidget(parameters)
-    viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
-
     app_state = AppState(parameters=parameters, dadg=data_manager(),
                          transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
                          electrode_save_directory=pathlib.Path("data/app_electrode_save_data"))
+
+    parameters_widget = ParametersWidget(app_state, parameters)
+    viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
+                                    tabify=True)
 
     # -----
     # The universal objective function

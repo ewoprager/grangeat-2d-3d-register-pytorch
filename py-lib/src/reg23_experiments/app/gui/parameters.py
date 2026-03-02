@@ -1,90 +1,41 @@
-import traitlets
 import logging
-from typing import Any
 
-from magicgui.widgets import Widget, FloatSpinBox, SpinBox, CheckBox, ComboBox, Container, Label
+from magicgui import widgets
 
-from reg23_experiments.experiments.parameters import NoParameters
+from reg23_experiments.app.gui.helpers import TraitletsWidget
+from reg23_experiments.experiments.parameters import Parameters
+from reg23_experiments.app.state import AppState
+from reg23_experiments.ops.data_manager import args_from_dadg
+from reg23_experiments.ops.geometry import get_crop_nonzero_drr, get_crop_full_depth_drr
+
+__all__ = ["ParametersWidget"]
 
 logger = logging.getLogger(__name__)
 
 
-class ParameterWidget(Container):
-    def __init__(self, params: traitlets.HasTraits):
-        super().__init__(widgets=[], layout='vertical', labels=True)
+class ParametersWidget(widgets.Container):
+    def __init__(self, app_state: AppState, parameters: Parameters):
+        super().__init__(widgets=[], layout='vertical', labels=False)
 
-        self._params = params
-        self._subwidgets: dict[str, Any] = {}
+        self._app_state = app_state
 
-        if isinstance(params, NoParameters):
-            self.labels = False
-            child = Label(value="n/a")
-            self.append(child)
-            return
+        self.append(widgets.Label(value="Values:"))
+        self.append(TraitletsWidget(parameters))
 
-        for name, trait in params.traits().items():
-            if not trait.metadata.get("ui", False):
-                continue
+        self.append(widgets.Label(value="Modifiers:"))
 
-            value = getattr(params, name)
+        self._crop_nonzero_drr_button = widgets.PushButton(label="Crop to nonzero drr")
+        self._crop_nonzero_drr_button.changed.connect(self._on_crop_nonzero_drr)
+        self.append(self._crop_nonzero_drr_button)
 
-            # Float
-            if isinstance(trait, traitlets.Float):
-                child = FloatSpinBox(name=name, value=value)
-                if trait.min is not None:
-                    child.min = trait.min
-                if trait.max is not None:
-                    child.max = trait.max
-                child.changed.connect(lambda v, n=name: setattr(params, n, v))
-                self.append(child)
-            # Int
-            elif isinstance(trait, traitlets.Int):
-                child = SpinBox(name=name, value=value)
-                if trait.min is not None:
-                    child.min = trait.min
-                if trait.max is not None:
-                    child.max = trait.max
-                child.changed.connect(lambda v, n=name: setattr(params, n, v))
-                self.append(child)
-            # Bool
-            elif isinstance(trait, traitlets.Bool):
-                child = CheckBox(name=name, value=value)
-                child.changed.connect(lambda s, n=name: setattr(params, n, bool(s)))
-                self.append(child)
-            # Enum
-            elif isinstance(trait, traitlets.Enum):
-                child = ComboBox(name=name, choices=trait.values, value=value)
-                child.changed.connect(lambda v, n=name: setattr(params, n, v))
-                self.append(child)
-            # Unicode; ToDo: Currently read-only
-            elif isinstance(trait, traitlets.Unicode):
-                child = Label(name=name, value=value)
-                self.append(child)
-            # Sub-config
-            elif isinstance(trait, traitlets.Instance) and isinstance(value, traitlets.HasTraits):
-                child = ParameterWidget(value)
-                child.name = name
-                self._subwidgets[name] = child
+        self._crop_full_depth_drr_button = widgets.PushButton(label="Crop to full depth drr")
+        self._crop_full_depth_drr_button.changed.connect(self._on_crop_full_depth_drr)
+        self.append(self._crop_full_depth_drr_button)
 
-                # callback for the instance changing
-                def replace_child(change, _name=name):
-                    old = self._subwidgets[_name]
-                    self.remove(_name)
-                    del old
+    def _on_crop_nonzero_drr(self, *args) -> None:
+        self._app_state.parameters.cropping = "fixed"
+        self._app_state.parameters.cropping_value = args_from_dadg(dadg=self._app_state.dadg)(get_crop_nonzero_drr)()
 
-                    new_child = ParameterWidget(change["new"])
-                    new_child.name = _name
-                    self.append(new_child)
-                    self._subwidgets[_name] = new_child
-
-                params.observe(replace_child, names=name)
-                self.append(child)
-            # Unsupported
-            else:
-                logger.warning(
-                    f"Unsupported trait class type '{trait.__class__.__name__}' encountered while building parameters "
-                    f"widget.")
-
-    @property
-    def params(self) -> traitlets.HasTraits:
-        return self._params
+    def _on_crop_full_depth_drr(self, *args) -> None:
+        self._app_state.parameters.cropping = "fixed"
+        self._app_state.parameters.cropping_value = args_from_dadg(dadg=self._app_state.dadg)(get_crop_full_depth_drr)()

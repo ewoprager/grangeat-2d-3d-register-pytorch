@@ -32,7 +32,7 @@ def dadg_updater(*, names_returned: list[str]) -> Callable[[Callable], Updater]:
     return decorator
 
 
-def args_from_dadg(*, names_left: list[str] | None = None):
+def args_from_dadg(*, names_left: list[str] | None = None, dadg: DirectedAcyclicDataGraph | None = None):
     """
     A decorator for indicating that a function's arguments should be read from the `DAG`. The named arguments of the
     function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be
@@ -68,6 +68,11 @@ def args_from_dadg(*, names_left: list[str] | None = None):
         fixed_image = data_manager().get("fixed_image")
         return fixed_image - moving_image
     ```
+
+    :param names_left: [optional] a list of arguments to leave in the function (i.e. not take automatically from the
+    dadg)
+    :param dadg: [optional] the dadg instance from which to take arguments. If not provided, the global singleton is
+    used.
     """
     if names_left is None:
         names_left = []
@@ -91,7 +96,7 @@ def args_from_dadg(*, names_left: list[str] | None = None):
                     return Error(f"Argument '{_name}' specified in `names_left` not provided to function.")
             # get appropriate args from the DAG
             arguments_to_get = [argument for argument in arguments if argument.name not in names_left]
-            from_dag = data_manager().get_with_args(arguments_to_get)
+            from_dag = (data_manager() if dadg is None else dadg).get_with_args(arguments_to_get)
             if isinstance(from_dag, Error):
                 return Error(f"Failed to get arguments to run function from dag: {from_dag.description}")
             # execute the function

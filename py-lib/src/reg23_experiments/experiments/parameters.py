@@ -42,8 +42,6 @@ class Parameters(HasTraits):
     truncation_percent: int = Int(min=0, max=100).tag(ui=True)
     cropping: str = Enum(values=[  #
         "None",  #
-        "nonzero_drr",  #
-        "full_depth_drr",  #
         "fixed"  #
     ]).tag(ui=True)
     cropping_value: Cropping | NoParameters = Instance(HasTraits, allow_none=False, default_value=NoParameters()).tag(
