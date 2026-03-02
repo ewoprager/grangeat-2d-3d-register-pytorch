@@ -21,14 +21,14 @@ class ElectrodesGUI:
             self._points_layer = viewer().add_points(ndim=2, size=4.0, name="CI electrodes")
         else:
             self._points_layer = viewer().add_points(tensor.numpy(), size=4.0, name="CI electrodes")
-            self._points_layer.text.values = [f"{i}" for i in range(tensor.size()[0])]
+            self._points_layer.text.values = [f"{i}" for i in range(1, tensor.size()[0] + 1)]
         self._app_state.dadg.set("electrode_points", tensor)
         self._points_layer.events.connect(self._on_layer_change)
 
     def _on_layer_change(self, event):
         if event.type == "data":
             tensor = torch.tensor(self._points_layer.data)
-            self._points_layer.text.values = [f"{i}" for i in range(tensor.size()[0])]
+            self._points_layer.text.values = [f"{i}" for i in range(1, tensor.size()[0] + 1)]
             self._app_state.dadg.set("electrode_points", tensor)
             res = self._save_manager.set(self._app_state.dadg.get("xray_path"), tensor)
             if isinstance(res, Error):

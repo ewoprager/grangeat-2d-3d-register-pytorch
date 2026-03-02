@@ -11,6 +11,7 @@ from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.app.state import AppState, WorkerState
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation
+from reg23_experiments.app.gui.helpers import FloatingWidget
 
 __all__ = ["RegisterGUI"]
 
