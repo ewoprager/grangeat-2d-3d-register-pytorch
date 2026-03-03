@@ -7,10 +7,53 @@ from reg23_experiments.io.helpers import deterministic_hash_string
 from reg23_experiments.ops import geometry
 from reg23_experiments.data.sinogram import DrrSpec
 from reg23_experiments.data.structs import Transformation, SceneGeometry
+from reg23_experiments.ops.image import gaussian_blur_2d
 
-__all__ = ["generate_drr_as_target"]
+__all__ = ["add_scatter", "add_poisson_noise", "apply_log_transformation", "make_drr_realistic",
+           "generate_drr_as_target"]
 
 logger = logging.getLogger(__name__)
+
+
+def add_scatter(image: torch.Tensor, sigma: float | tuple[float, float], alpha: float = 0.3):
+    """
+    image: (H, W), linear intensity (before log)
+    sigma: Gaussian std dev in pixels
+    alpha: scatter strength (SPR approx)
+    """
+    return image + alpha * gaussian_blur_2d(image, sigma=sigma)
+
+
+def add_poisson_noise(image: torch.Tensor, photon_count: float = 1e4) -> torch.Tensor:
+    """
+    :param image: (H, W), linear intensity (before log), positive
+    :param photon_count: scaling factor for photon count, controls noise level
+    :return: image with poisson noise
+    """
+    scaled = image * photon_count
+    noisy = torch.poisson(scaled)
+    noisy = noisy / photon_count
+    return noisy
+
+
+def apply_log_transformation(image: torch.Tensor, epsilon: float = 1.e-4) -> torch.Tensor:
+    return -(image + epsilon).log()
+
+
+def make_drr_realistic(drr: torch.Tensor, *, detector_spacing: torch.Tensor) -> torch.Tensor:
+    # simulate scatter
+    scatter_spread_mm = 30.0
+    scatter_sigmas = scatter_spread_mm / detector_spacing
+    scatter_sigmas = (scatter_sigmas[0].item(), scatter_sigmas[1].item())
+    drr = add_scatter(drr, sigma=scatter_sigmas)
+
+    # add poisson noise
+    drr = add_poisson_noise(drr)
+
+    # apply log transformation
+    drr = apply_log_transformation(drr)
+
+    return drr
 
 
 def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_data: torch.Tensor,
