@@ -40,18 +40,18 @@ def apply_log_transformation(image: torch.Tensor, epsilon: float = 1.e-4) -> tor
     return -(image + epsilon).log()
 
 
-def make_drr_realistic(drr: torch.Tensor, *, detector_spacing: torch.Tensor) -> torch.Tensor:
+def make_drr_realistic(drr: torch.Tensor, *,  #
+                       detector_spacing: torch.Tensor,  #
+                       scatter_spread_mm: float = 30.0,  #
+                       scatter_alpha: float = 0.3,  #
+                       poisson_photon_count: float = 1e4) -> torch.Tensor:
     # simulate scatter
-    scatter_spread_mm = 30.0
     scatter_sigmas = scatter_spread_mm / detector_spacing
     scatter_sigmas = (scatter_sigmas[0].item(), scatter_sigmas[1].item())
-    drr = add_scatter(drr, sigma=scatter_sigmas)
+    drr = add_scatter(drr, sigma=scatter_sigmas, alpha=scatter_alpha)
 
     # add poisson noise
-    drr = add_poisson_noise(drr)
-
-    # apply log transformation
-    drr = apply_log_transformation(drr)
+    drr = add_poisson_noise(drr, photon_count=poisson_photon_count)
 
     return drr
 
@@ -85,6 +85,13 @@ def generate_drr_as_target(cache_directory: str, ct_volume_path: str, volume_dat
     drr_image = geometry.generate_drr(volume_data, transformation=transformation, voxel_spacing=voxel_spacing,
                                       detector_spacing=detector_spacing, scene_geometry=scene_geometry,
                                       output_size=size)
+
+    drr_image = torch.exp(-drr_image)
+
+    drr_image = make_drr_realistic(drr_image, detector_spacing=detector_spacing)
+
+    # apply log transformation
+    drr_image = apply_log_transformation(drr_image)
 
     logger.info("DRR generated.")
 

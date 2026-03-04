@@ -157,7 +157,9 @@ class ElectrodeSaveManager:
         df: pd.DataFrame = self._save_data_manager.get_data()
         if df.empty:
             return None
-        rows_for_this_xray = df.loc[xray_path]
+        if not (df.index.get_level_values("xray_path") == xray_path).any():
+            return None
+        rows_for_this_xray = df.xs(xray_path, level="xray_path")
         if not len(rows_for_this_xray):
             return None
         return torch.tensor(rows_for_this_xray.sort_index().values)

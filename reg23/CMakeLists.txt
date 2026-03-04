@@ -22,6 +22,12 @@ file(GLOB SOURCES
      "src/backend/*.cpp"
 )
 
+if(NOT DEFINED Python3_EXECUTABLE OR Python3_EXECUTABLE STREQUAL "")
+    message(FATAL_ERROR "Python3_EXECUTABLE is empty or not defined")
+else()
+    message(STATUS "Python3_EXECUTABLE is '${Python3_EXECUTABLE}'")
+endif()
+
 if (CUDAToolkit_FOUND)
     file(GLOB CUDA_SOURCES
          RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -29,7 +35,6 @@ if (CUDAToolkit_FOUND)
          "src/backend/cuda/*.cu"
     )
 
-    message(STATUS "Python3_EXECUTABLE is '${Python3_EXECUTABLE}'")
 
     # Get the location of CUDA
     execute_process(COMMAND ${Python3_EXECUTABLE} -c "import torch; from torch.utils import cpp_extension; print(cpp_extension.CUDA_HOME)"

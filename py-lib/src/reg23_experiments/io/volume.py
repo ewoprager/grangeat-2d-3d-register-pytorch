@@ -41,6 +41,8 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
             data = data.permute(*reversed(range(data.ndim)))
             spacing = torch.tensor(img.header.get_zooms(), dtype=torch.float32)[0:3]
             if path.stem == "PhantomCT":
+                # ToDo: Double check this:
+                logger.warning("Applying super hacky adjustment; check it's correct!")
                 data -= 1000.0  # super hacky adjustment for one particular file which appears to be HU + 1000
             logger.warning("Don't know how to read ImageOrientationPatient from .nii files.")
         else:
@@ -80,28 +82,28 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
     raise Exception("Given path '{}' is not a file or directory.".format(str(path)))
 
 
-def load_volume(path: pathlib.Path, *, hu_cutoff: float = -800.0) -> Tuple[torch.Tensor, torch.Tensor]:
+def load_volume(path: pathlib.Path, *, hu_cutoff: float = -800.0, mu_water: float = 0.02) -> tuple[
+    torch.Tensor, torch.Tensor]:
     """
     Load a CT volume from a file or directory
 
     :param path: Path to a .nrrd file (a CT volume) or a directory containing multiple .dcm files (one for each slice
     of a CT volume)
     :param hu_cutoff: The cutoff lower bound in Hounsfield units to clamp to.
-    :type path: pathlib.Path
+    :param mu_water: The attenuation coefficient of water in [mm^-1]
     :return: (The ct volume, a tensor of size (3,): the spacing of the volume voxels)
-    :rtype: Tuple[torch.Tensor, torch.Tensor]
+    :rtype: tuple[torch.Tensor, torch.Tensor], (the CT volume of attenuation coefficient, voxel spacing in [mm])
     """
     loaded_volume = read_volume(path)
     sizes = loaded_volume.data.size()
     spacing = loaded_volume.spacing
     logger.info("CT data volume size and spacing = [{} x {} x {}]; [{} x {} x {}] mm"
                 "".format(sizes[0], sizes[1], sizes[2], spacing[0], spacing[1], spacing[2]))
-    image = loaded_volume.data.to(dtype=torch.float32)
-    image[image < hu_cutoff] = hu_cutoff
-    image -= image.min()
-    image /= image.max()
+    image_hu = loaded_volume.data.to(dtype=torch.float32)
+    image_hu[image_hu < hu_cutoff] = hu_cutoff
+    image_mu = mu_water * (1.0 + image_hu / 1000.0)
 
-    return image, spacing
+    return image_mu, spacing
 
 
 def load_cached_volume(cache_directory: str, sinogram_hash: str) -> Tuple[int, sinogram.Sinogram] | None:

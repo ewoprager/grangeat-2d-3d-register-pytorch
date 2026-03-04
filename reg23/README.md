@@ -100,3 +100,11 @@ C++ structures documented at the link above.
 
 - `CUDATexture2D`
 - `CUDATexture3D`
+
+
+### Development
+
+The `CMakeLists.txt` exists purely for generating a configuration that an IDE can use for code checking. The intention
+is that is matches `setup.py` in the configuration that it describes. To run it, make sure to set the following cmake
+options:
+- `-DPython3_EXECUTABLE=/full/path/to/project/.venv/bin/python`

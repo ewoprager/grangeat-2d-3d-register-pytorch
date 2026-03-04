@@ -7,6 +7,7 @@ os.environ["QT_API"] = "PyQt6"
 import torch
 import napari
 import pathlib
+from tqdm import tqdm
 
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.io.volume import load_volume
@@ -90,10 +91,8 @@ def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: in
         top_bottom_chop:max(top_bottom_chop + 1, untruncated_ct_volume.size()[0] - top_bottom_chop)]
     # mipmap the volume
     ct_volumes = [ct_volume]
-    level: int = 1
     while torch.tensor(ct_volumes[-1].size()).min() > 3:
-        ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[0], scale_factor=0.5 ** float(level)))
-        level += 1
+        ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[-1], scale_factor=0.5))
     return {"ct_volumes": ct_volumes}
 
 
