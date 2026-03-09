@@ -203,11 +203,12 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         # X-ray data
         image_2d_full, fixed_image_spacing, scene_geometry = gold_hip.load_xray("p19")
         image_2d_full = image_2d_full.to(device=data_manager().get("device"))
-        # ToDo: fixed image offset, transformation GT
+        # ToDo: transformation GT
         data_manager().set_multiple(  #
             source_distance=scene_geometry.source_distance,  #
             image_2d_full=image_2d_full,  #
             fixed_image_spacing=fixed_image_spacing,  #
+            source_offset=scene_geometry.fixed_image_offset  #
         )
 
     else:
