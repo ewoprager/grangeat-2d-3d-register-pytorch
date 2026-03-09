@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import Any, Sequence
+from typing import Any, Sequence, Literal
 
 os.environ["QT_API"] = "PyQt6"
 
@@ -127,7 +127,8 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
 #     return ncc(moving_image, fixed_image)
 
 
-def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
+def main(*, ct_path: str | None = None, xray_path: str | None = None,
+         external_dataset: Literal["gold_hip"] | None = None, cache_directory: str):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # -----
@@ -138,15 +139,7 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
     # -----
     # Updaters
     # -----
-    err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
     err = data_manager().add_updater("apply_truncation", apply_truncation)
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    err = data_manager().add_updater("set_target_image", set_target_image)
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -192,6 +185,40 @@ def main(*, ct_path: str, xray_path: str | None, cache_directory: str):
                                          translation=torch.zeros(3, device=device)),  #
         target_ap_distance=5.0,  #
     )
+
+    # -----
+    # External datasets
+    # -----
+    if external_dataset == "gold_hip":
+        from reg23_experiments.io.external_datasets import gold_hip
+        # CT data
+        untruncated_ct_volume, ct_spacing = gold_hip.load_ct()
+        untruncated_ct_volume = untruncated_ct_volume.to(device=data_manager().get("device"))
+        ct_spacing = ct_spacing.to(device=data_manager().get("device"))
+        data_manager().set_multiple(  #
+            untruncated_ct_volume=untruncated_ct_volume,  #
+            ct_spacing=ct_spacing,  #
+            ct_path=gold_hip.get_data_config().get_ct_path()  #
+        )
+        # X-ray data
+        image_2d_full, fixed_image_spacing, scene_geometry = gold_hip.load_xray("p19")
+        image_2d_full = image_2d_full.to(device=data_manager().get("device"))
+        # ToDo: fixed image offset, transformation GT
+        data_manager().set_multiple(  #
+            source_distance=scene_geometry.source_distance,  #
+            image_2d_full=image_2d_full,  #
+            fixed_image_spacing=fixed_image_spacing,  #
+        )
+
+    else:
+        err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+        err = data_manager().add_updater("set_target_image", set_target_image)
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
 
     # -----
     # Parameters
@@ -276,6 +303,9 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--ct-path", type=str,
                         help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
                              "process.")
+    parser.add_argument("--external-gold-hip", action="store_true",
+                        help="Load data from the external dataset '2D-3D registration gold-standard dataset for the "
+                             "hip joint based on uncertainty modeling'")
     parser.add_argument("-x", "--xray-path", type=str, default=None,
                         help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
                              "this is provided, the X-ray will by used instead of any DRR.")
@@ -294,7 +324,10 @@ if __name__ == "__main__":
         os.makedirs(args.cache_directory)
 
     try:
-        main(ct_path=args.ct_path, xray_path=args.xray_path, cache_directory=args.cache_directory)
+        if args.external_gold_hip:
+            main(external_dataset="gold_hip", cache_directory=args.cache_directory)
+        else:
+            main(ct_path=args.ct_path, xray_path=args.xray_path, cache_directory=args.cache_directory)
         if args.notify:
             pushover.send_notification(__file__, "Script finished.")
     except Exception as e:

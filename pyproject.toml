@@ -1,7 +1,7 @@
 [tool.uv.workspace]
 members = [
     "py-lib",
-    "reg23",
+    "reg23", "py-lib/src/reg23_experiments/io/external_datasets/gold_hip/playground",
 ]
 
 # these define which sources to install some particular packages from
