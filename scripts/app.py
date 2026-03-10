@@ -161,6 +161,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.error(f"Error adding updater: {err.description}")
         return
 
+    data_manager().observe("transformation_gt", "debug", lambda x: logger.warning(f"Hello! {x}"))
+
     # -----
     # Data nodes
     # -----
@@ -201,14 +203,19 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
             ct_path=gold_hip.get_data_config().get_ct_path()  #
         )
         # X-ray data
-        image_2d_full, fixed_image_spacing, scene_geometry = gold_hip.load_xray("p19")
-        image_2d_full = image_2d_full.to(device=data_manager().get("device"))
-        # ToDo: transformation GT
+        xray_data = gold_hip.load_xray("p19")
+        logger.info(f"ct spacing = {ct_spacing.cpu()}")
+        logger.info(f"ct size = {untruncated_ct_volume.size()}")
+        logger.info(
+            f"total = "
+            f"{ct_spacing.cpu() * torch.tensor(untruncated_ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
+        image_2d_full = xray_data["image"].to(device=data_manager().get("device"))
         data_manager().set_multiple(  #
-            source_distance=scene_geometry.source_distance,  #
+            source_distance=xray_data["scene_geometry"].source_distance,  #
             image_2d_full=image_2d_full,  #
-            fixed_image_spacing=fixed_image_spacing,  #
-            source_offset=scene_geometry.fixed_image_offset  #
+            fixed_image_spacing=xray_data["spacing"],  #
+            source_offset=xray_data["scene_geometry"].fixed_image_offset,  #
+            transformation_gt=xray_data["transformation"].to(device=data_manager().get("device"))  #
         )
 
     else:
