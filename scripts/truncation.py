@@ -62,7 +62,7 @@ class RegistrationData:
             top_bottom_chop = int(round(0.5 * fraction * float(volume.size()[0])))
             return volume[top_bottom_chop:max(top_bottom_chop + 1, volume.size()[0] - top_bottom_chop)]
 
-        ct_volume, self._ct_spacing = data.load_volume(pathlib.Path(ct_path), downsample_factor=downsample_factor)
+        ct_volume, self._ct_spacing = data.load_ct(pathlib.Path(ct_path), downsample_factor=downsample_factor)
         ct_volume = ct_volume.to(device=device, dtype=torch.float32)
         ct_volume = ct_volume - ct_volume.mean()  # !!! shifting the volume to zero-mean, so now considering real, not non-negative
         self._ct_volumes = [ct_volume] + [truncate(ct_volume, fraction) for fraction in truncation_fractions]

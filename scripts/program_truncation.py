@@ -20,7 +20,7 @@ from reg23_experiments.utils.console_logging import tqdm
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, args_from_dadg
 from reg23_experiments.data.structs import Error, Transformation, SceneGeometry, Cropping
-from reg23_experiments.io.volume import load_volume
+from reg23_experiments.io.volume import load_ct
 from reg23_experiments.io.image import load_cached_drr, read_dicom
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
@@ -53,7 +53,7 @@ def instance_output_directory(script_output_directory: str | pathlib.Path) -> pa
 @dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
 def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
-    ct_volume, ct_spacing = load_volume(pathlib.Path(ct_path))
+    ct_volume, ct_spacing = load_ct(pathlib.Path(ct_path))
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
     ct_spacing = ct_spacing.to(device=device)
 

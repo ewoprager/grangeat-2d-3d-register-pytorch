@@ -324,7 +324,7 @@ class RegistrationData:
     # -----
 
     def refresh_ct_path_dependent(self) -> None:
-        ct_volumes, ct_spacing = data.load_volume(pathlib.Path(self.ct_path), downsample_factor="mipmap")
+        ct_volumes, ct_spacing = data.load_ct(pathlib.Path(self.ct_path), downsample_factor="mipmap")
         ct_volumes = [ct_volume.to(device=self.device, dtype=torch.float32) for ct_volume in ct_volumes]
         ct_spacing = ct_spacing.to(device=self.device)
 
@@ -343,7 +343,7 @@ class RegistrationData:
             sinogram3d = None
             sinogram_hash = data.deterministic_hash_sinogram(self.ct_path, sinogram_type, downsampled_sinogram_size,
                                                              downsample_factor)
-            volume_spec = data.load_cached_volume(self._cache_directory, sinogram_hash)
+            volume_spec = data.load_cached_ct(self._cache_directory, sinogram_hash)
             if volume_spec is not None:
                 _, sinogram3d = volume_spec
             if sinogram3d is None:

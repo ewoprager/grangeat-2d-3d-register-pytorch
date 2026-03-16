@@ -7,7 +7,7 @@ import torch
 
 import reg23
 from reg23_experiments.data.structs import Error, Cropping
-from reg23_experiments.io.volume import load_volume, load_cached_volume
+from reg23_experiments.io.volume import load_ct, load_cached_ct
 from reg23_experiments.io.image import read_dicom, load_cached_drr
 from reg23_experiments.io.helpers import deterministic_hash_sinogram
 from reg23_experiments.ops import drr, pre_computed
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 @dadg_updater(names_returned=["ct_volumes", "ct_spacing"])
 def load_ct(ct_path: str, device) -> dict[str, Any]:
-    ct_volume, ct_spacing = load_volume(pathlib.Path(ct_path))
+    ct_volume, ct_spacing = load_ct(pathlib.Path(ct_path))
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
     ct_spacing = ct_spacing.to(device=device)
 
@@ -51,7 +51,7 @@ def refresh_vif(self) -> dict[str, Any] | Error:
         sinogram3d = None
         sinogram_hash = deterministic_hash_sinogram(self.ct_path, sinogram_type, downsampled_sinogram_size,
                                                     downsample_factor)
-        volume_spec = load_cached_volume(self._cache_directory, sinogram_hash)
+        volume_spec = load_cached_ct(self._cache_directory, sinogram_hash)
         if volume_spec is not None:
             _, sinogram3d = volume_spec
         if sinogram3d is None:
