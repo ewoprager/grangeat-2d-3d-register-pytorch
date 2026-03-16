@@ -52,6 +52,7 @@ def load_xray(view_id) -> dict[str, Any] | Error:
     pose_path = ARCHIVE_ROOT / get_data_config().get_optimized_pose_path(view_id)
     euler_3d_transform = sitk.ReadTransform(pose_path).GetInverse()
     source_distance: float = 968.1612
+    euler_3d_transform.SetCenter([0.0, 0.0, -source_distance]) # ToDo: Is this the key?
     translation = torch.tensor(euler_3d_transform.GetTranslation())
     translation[0] -= 0.5 * spacing[0] * torch.tensor(data.size()[0], dtype=torch.float64)
     translation[2] -= 0.5 * spacing[1] * torch.tensor(data.size()[1], dtype=torch.float64)
