@@ -37,7 +37,7 @@ from reg23_experiments.io.image import read_dicom
 @dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
 def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
-    ct_volume, ct_spacing = load_volume(pathlib.Path(ct_path))
+    ct_volume, ct_spacing = load_volume(pathlib.Path(ct_path), check_for_dcm_suffix_if_dir=False)
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
     ct_spacing = ct_spacing.to(device=device)
 
@@ -206,9 +206,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         xray_data = gold_hip.load_xray("p19")
         logger.info(f"ct spacing = {ct_spacing.cpu()}")
         logger.info(f"ct size = {untruncated_ct_volume.size()}")
-        logger.info(
-            f"total = "
-            f"{ct_spacing.cpu() * torch.tensor(untruncated_ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
+        logger.info(f"total = "
+                    f"{ct_spacing.cpu() * torch.tensor(untruncated_ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
         image_2d_full = xray_data["image"].to(device=data_manager().get("device"))
         data_manager().set_multiple(  #
             source_distance=xray_data["scene_geometry"].source_distance,  #

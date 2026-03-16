@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from reg23_experiments.data.structs import SceneGeometry, Transformation, LinearRange
 from reg23_experiments.data import sinogram
+from reg23_experiments.ops.volume import fit_line_3d, point_line_distance_3d
 
 __all__ = ["LoadedVolume", "read_volume", "load_volume", "load_cached_volume"]
 
@@ -25,7 +26,7 @@ class LoadedVolume(NamedTuple):
     spacing: torch.Tensor
 
 
-def read_volume(path: pathlib.Path) -> LoadedVolume:
+def read_volume(path: pathlib.Path, *, check_for_dcm_suffix_if_dir: bool = True) -> LoadedVolume:
     if path.is_file():
         logger.info("Loading CT data file '{}'...".format(str(path)))
         # Obtain a data tensor and a tensor of voxel spacing
@@ -55,23 +56,74 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
                             "".format(str(path), str(data.size())))
         return LoadedVolume(data, spacing)
     if path.is_dir():
-        logger.info("Loading CT DICOM data from directory '{}'...".format(str(path)))
-        files = [elem for elem in path.iterdir() if elem.is_file() and elem.suffix == ".dcm"]
+        logger.info(f"Loading CT DICOM data from directory '{str(path)}'")
+        files = [elem for elem in path.iterdir() if elem.is_file()]
+        if check_for_dcm_suffix_if_dir:
+            files = [elem for elem in files if elem.suffix == ".dcm"]
         if len(files) == 0:
-            raise Exception("Error: no DICOM (.dcm) files found in given directory '{}'.".format(str(path)))
-        logger.info("Reading {} DICOM files...".format(len(files)))
-        slices = [pydicom.dcmread(f) for f in tqdm(files)]
-        logger.info("Done.")
-        try:
-            # Sort by z-position
-            slices.sort(key=lambda ds: float(ds.ImagePositionPatient[2]))
-        except AttributeError:
-            # Fallback: sort by instance number
+            raise Exception("Error: no {}files found in given directory '{}'.".format(
+                "DICOM (.dcm) " if check_for_dcm_suffix_if_dir else "", str(path)))
+        slices = [pydicom.dcmread(f) for f in tqdm(files, desc=f"Reading DICOM files")]
+        # Filter so we only have slices for which there is "PixelData"
+        slices = [s for s in slices if "PixelData" in s]
+        # Filter again for slices for which we have "ImagePositionPatient". We will revert back to the original slices
+        # if the positioned slices are not evenly spaced.
+        positioned_slices = [s for s in slices if "ImagePositionPatient" in s]
+        # Extract the positions from the slices
+        slice_positions = torch.tensor([[s["ImagePositionPatient"][i] for i in range(3)] for s in positioned_slices])
+        # Fit a line to the slice position point cloud and remove outliers
+        line_point, line_direction = fit_line_3d(slice_positions)
+        point_line_distances = point_line_distance_3d(points=slice_positions, line_point=line_point,
+                                                      line_direction=line_direction)
+        median_distance = point_line_distances.median()
+        mad = (point_line_distances - median_distance).abs().median()
+        threshold_distance = median_distance + 3.0 * mad
+        outlier_indices = torch.nonzero(point_line_distances > threshold_distance).squeeze(1)
+        if len(outlier_indices) > 0:
+            logger.warning(f"Removing {len(outlier_indices)} slices as 'ImagePositionPatient' values were outliers.")
+            positioned_slices = [positioned_slices[i] for i in range(len(positioned_slices)) if
+                                 i not in outlier_indices]
+
+        # Sort slices by distance along the fitted line
+        def distance_of_slice(_slice) -> float:
+            position = torch.tensor([_slice["ImagePositionPatient"][i] for i in range(3)])
+            return torch.dot(position, line_direction).item()
+
+        positioned_slices.sort(key=distance_of_slice)
+        # Extract the spacings between each slice
+        slice_positions = torch.tensor([[s["ImagePositionPatient"][i] for i in range(3)] for s in positioned_slices])
+        slice_spacings = torch.linalg.vector_norm(slice_positions[1:, :] - slice_positions[:-1, :], dim=-1)
+        # Check for spacings of zero, and remove those slices
+        zero_spacings = torch.isclose(slice_spacings, torch.zeros(1), atol=1.0e-3)
+        zero_spacing_indices = zero_spacings.nonzero().squeeze(1)
+        if len(zero_spacing_indices) > 0:
+            logger.warning(f"Removing {len(zero_spacing_indices)} slices, as they have zero spacing.")
+            positioned_slices = [positioned_slices[i] for i in range(len(positioned_slices)) if
+                                 i not in zero_spacing_indices]
+            slice_positions = torch.tensor(
+                [[s["ImagePositionPatient"][i] for i in range(3)] for s in positioned_slices])
+            slice_spacings = torch.linalg.vector_norm(slice_positions[1:, :] - slice_positions[:-1, :], dim=-1)
+        # Set the slice spacing for the volume as a whole to the median spacing, and look for inconsistencies
+        slice_spacing = slice_spacings.median()
+        bad_spacings = ~torch.isclose(slice_spacings, slice_spacing, atol=1.0e-3)
+        bad_spacing_indices = bad_spacings.nonzero().squeeze(1)
+        if len(bad_spacing_indices) > 0:
+            logger.warning(
+                "Median slice spacing is {:.4f}; some slices deviate from this:".format(slice_spacing.item()))
+            for index in bad_spacing_indices:
+                logger.warning(
+                    "Spacing between slices {} and {} is {:.4f}".format(index, index + 1, slice_spacings[index].item()))
+            logger.warning(
+                "Slice positioning was inconsistent, so reverting to using all slices (regardless of whether "
+                "'ImagePositionPatient' is provided, and sorting instead by 'InstanceNumber'.")
             slices.sort(key=lambda ds: int(ds.InstanceNumber))
-            logger.warning("Sorting CT volume slices by InstanceNumber, as ImagePositionPatient not available")
+        else:
+            logger.info("No inconsistencies in slice spacing, so sticking to using only slices that have "
+                        "'ImagePositionPatient'.")
+            slices = positioned_slices
+
+        # Extract the in-plane spacing and assemble the spacing vector
         pixel_spacing = slices[0]["PixelSpacing"]
-        slice_spacing = (torch.tensor([slices[0]["ImagePositionPatient"][i] for i in range(3)]) - torch.tensor(
-            [slices[1]["ImagePositionPatient"][i] for i in range(3)])).norm()
         spacing = torch.tensor([pixel_spacing[1],  # column spacing (x-direction)
                                 pixel_spacing[0],  # row spacing (y-direction)
                                 slice_spacing  # slice spacing (z-direction)
@@ -82,8 +134,8 @@ def read_volume(path: pathlib.Path) -> LoadedVolume:
     raise Exception("Given path '{}' is not a file or directory.".format(str(path)))
 
 
-def load_volume(path: pathlib.Path, *, hu_cutoff: float = -800.0, mu_water: float = 0.02) -> tuple[
-    torch.Tensor, torch.Tensor]:
+def load_volume(path: pathlib.Path, *, hu_cutoff: float = -800.0, mu_water: float = 0.02,
+                check_for_dcm_suffix_if_dir: bool = True) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Load a CT volume from a file or directory
 
@@ -94,7 +146,7 @@ def load_volume(path: pathlib.Path, *, hu_cutoff: float = -800.0, mu_water: floa
     :return: (The ct volume, a tensor of size (3,): the spacing of the volume voxels)
     :rtype: tuple[torch.Tensor, torch.Tensor], (the CT volume of attenuation coefficient, voxel spacing in [mm])
     """
-    loaded_volume = read_volume(path)
+    loaded_volume = read_volume(path, check_for_dcm_suffix_if_dir=check_for_dcm_suffix_if_dir)
     sizes = loaded_volume.data.size()
     spacing = loaded_volume.spacing
     logger.info("CT data volume size and spacing = [{} x {} x {}]; [{} x {} x {}] mm"
