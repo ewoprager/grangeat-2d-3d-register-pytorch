@@ -7,15 +7,15 @@ import torch
 import nrrd
 
 import reg23
-from reg23_experiments.notification import logs_setup
-from reg23_experiments.registration.lib.structs import *
-from reg23_experiments.registration.lib.sinogram import *
-from reg23_experiments.registration import drr
-from reg23_experiments.registration.lib import geometry
-from reg23_experiments.registration import data
+from reg23_experiments.utils import logs_setup
+from reg23_experiments.data.structs import *
+from reg23_experiments.data.sinogram import *
+from reg23_experiments.ops import drr
+from reg23_experiments.ops import geometry
+from reg23_experiments.io import image, volume
 from reg23_experiments.registration import pre_computed
-from reg23_experiments.registration import objective_function
-from reg23_experiments.registration import script
+from reg23_experiments.ops import objective_function
+from reg23_experiments.experiments import script
 from reg23_experiments.registration.lib import plot
 
 

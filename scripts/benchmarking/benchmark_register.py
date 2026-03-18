@@ -62,7 +62,7 @@ class RegistrationInfo(NamedTuple):
 def get_registration_info(*, cache_directory: str, ct_path: str | pathlib.Path, downsample_factor: int,
                           transformation_ground_truth: Transformation) -> RegistrationInfo | None:
     device = torch.device("cuda")
-    ct_volume, ct_spacing = data.load_volume(pathlib.Path(ct_path), downsample_factor=downsample_factor)
+    ct_volume, ct_spacing = data.load_ct(pathlib.Path(ct_path), downsample_factor=downsample_factor)
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
     ct_spacing = ct_spacing.to(device=device)
     sinogram_size = int(math.ceil(pow(ct_volume.numel(), 1.0 / 3.0)))
@@ -70,7 +70,7 @@ def get_registration_info(*, cache_directory: str, ct_path: str | pathlib.Path, 
     def get_sinogram(sinogram_type: Type[sinogram.SinogramType]) -> sinogram.Sinogram | None:
         sinogram3d = None
         sinogram_hash = data.deterministic_hash_sinogram(ct_path, sinogram_type, sinogram_size, downsample_factor)
-        volume_spec = data.load_cached_volume(cache_directory, sinogram_hash)
+        volume_spec = data.load_cached_ct(cache_directory, sinogram_hash)
         if volume_spec is not None:
             _, sinogram3d = volume_spec
         if sinogram3d is None:

@@ -16,18 +16,18 @@ from magicgui import magicgui, widgets
 from PyQt6.QtWidgets import QDockWidget
 from scipy.signal import resample
 
-from reg23_experiments.notification import logs_setup
-from reg23_experiments.registration.lib.sinogram import SinogramType, SinogramClassic, SinogramHEALPix
-from reg23_experiments.registration.lib import geometry
-from reg23_experiments.registration.interface.lib.structs import Target, ViewParams, HyperParameters
-from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
-from reg23_experiments.registration.interface.registration_data import RegistrationData
-from reg23_experiments.registration.interface.transformations import TransformationWidget
-from reg23_experiments.registration.interface.view import ViewWidget
-from reg23_experiments.registration.interface.register import RegisterWidget
-from reg23_experiments.registration.interface.grangeat import GrangeatWidget
-from reg23_experiments.registration.interface.plot import PlotWidget
-from reg23_experiments.registration import objective_function
+from reg23_experiments.utils import logs_setup
+from reg23_experiments.data.sinogram import SinogramType, SinogramClassic, SinogramHEALPix
+from reg23_experiments.ops import geometry
+from reg23_experiments.ui.old.lib.structs import Target, ViewParams, HyperParameters
+from reg23_experiments.data.structs import Transformation, SceneGeometry
+from reg23_experiments.ui.old.registration_data import RegistrationData
+from reg23_experiments.ui.old.transformations import TransformationWidget
+from reg23_experiments.ui.old.view import ViewWidget
+from reg23_experiments.ui.old.register import RegisterWidget
+from reg23_experiments.ui.old.grangeat import GrangeatWidget
+from reg23_experiments.ui.old.plot import PlotWidget
+from reg23_experiments.ops import objective_function
 
 
 class Interface:

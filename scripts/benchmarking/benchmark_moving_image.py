@@ -30,7 +30,7 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     device = torch.device("cuda")
 
     # Load volumes with a number of downsample factors, and sinograms with a number of sizes
-    volume, volume_spacing = data.load_volume(pathlib.Path(ct_path), downsample_factor=downsample_factor)
+    volume, volume_spacing = data.load_ct(pathlib.Path(ct_path), downsample_factor=downsample_factor)
     volume = volume.to(device=device, dtype=torch.float32)
 
     sinogram3d_size: int = int(math.ceil(pow(volume.numel(), 1.0 / 3.0)))
@@ -39,11 +39,11 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     loaded_volume_info = None
     if load_cached:
         sinogram_hash = data.deterministic_hash_sinogram(ct_path, sinogram_type, sinogram3d_size, downsample_factor)
-        loaded_volume_info = data.load_cached_volume(cache_directory, sinogram_hash)
+        loaded_volume_info = data.load_cached_ct(cache_directory, sinogram_hash)
         if loaded_volume_info is None and max_sinogram3d_size is not None and sinogram3d_size > max_sinogram3d_size:
             sinogram3d_size = max_sinogram3d_size
             sinogram_hash = data.deterministic_hash_sinogram(ct_path, sinogram_type, sinogram3d_size, downsample_factor)
-            loaded_volume_info = data.load_cached_volume(cache_directory, sinogram_hash)
+            loaded_volume_info = data.load_cached_ct(cache_directory, sinogram_hash)
 
     if loaded_volume_info is not None:
         _, sinogram3d = loaded_volume_info

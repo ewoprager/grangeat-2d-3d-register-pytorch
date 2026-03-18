@@ -101,10 +101,19 @@ C++ structures documented at the link above.
 - `CUDATexture2D`
 - `CUDATexture3D`
 
-## MPS Development
+
+## Development
+
+The `CMakeLists.txt` exists purely for generating a configuration that an IDE can use for code checking. The intention
+is that is matches `setup.py` in the configuration that it describes. To run it, make sure to set the following cmake
+options:
+- `-DPython3_EXECUTABLE=/full/path/to/project/.venv/bin/python`
+
+
+### MPS
 
 For developing MPS implementations in Objective-C++ (.mm sources) and Metal (.metal sources), one can perfectly well use
-Clion. As of writing this, Xcode surprisingly does not provide any more functionality than Clion for Objective-C++ or 
+Clion. As of writing this, Xcode surprisingly does not provide any more functionality than Clion for Objective-C++ or
 Metal shader development.
 
 If you nevertheless want to use Xcode, create a subdirectory of `reg23/` called something like `reg23/build-xcode`,

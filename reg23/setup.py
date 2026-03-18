@@ -130,7 +130,7 @@ if use_mps:
 
 extra_link_args = []
 if debug:
-    extra_compile_args["cxx"].extend(["-g"])
+    extra_compile_args["cxx"].extend(["-g", "-DTORCH_USE_CUDA_DSA=1"])
     extra_compile_args["nvcc"].extend(["-g", "-G", "-DTORCH_USE_CUDA_DSA=1", "-DCUDA_LAUNCH_BLOCKING=1"])
     extra_link_args.extend(["-O0", "-g"])
     macros.append(("DEBUG", None))

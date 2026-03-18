@@ -5,9 +5,9 @@ import torch
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from reg23_experiments.notification import logs_setup
-from reg23_experiments.registration.lib.structs import LinearRange
-from reg23_experiments.registration.lib.sinogram import SinogramClassic, SinogramHEALPix, Sinogram3dGrid
+from reg23_experiments.utils import logs_setup
+from reg23_experiments.data.structs import LinearRange
+from reg23_experiments.data.sinogram import SinogramClassic, SinogramHEALPix, Sinogram3dGrid
 
 
 def spherical_to_cartesian(grid: Sinogram3dGrid) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:

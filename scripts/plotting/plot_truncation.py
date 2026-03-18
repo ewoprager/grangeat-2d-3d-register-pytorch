@@ -8,9 +8,10 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pathlib
 
-from notification import logs_setup
-from registration.lib.plot import fit_power_relationship, to_latex_scientific, torch_polyfit, Series, LinearFit, \
-    PowerFit, QuadraticFit
+from reg23_experiments.utils import logs_setup
+from reg23_experiments.analysis.helpers import to_latex_scientific
+from reg23_experiments.analysis.structs import Series, LinearFit, PowerFit, QuadraticFit
+from reg23_experiments.analysis.fit import fit_power_relationship, torch_polyfit
 
 
 class Analysis:
@@ -20,7 +21,9 @@ class Analysis:
         Series names: 'std', 'q1', 'median', 'q3'.
         :param xs: !!! Must be evenly spaced for analysis to be valid
         :param ys:
-        :param dependent_common_dim: the dimension along which the data corresponds to common values of the dependent variable (i.e. the dimension along which the means would be calculated for the mean at each value of the dependent variable)
+        :param dependent_common_dim: the dimension along which the data corresponds to common values of the dependent
+        variable (i.e. the dimension along which the means would be calculated for the mean at each value of the
+        dependent variable)
         """
         self._xs = xs
         self._ys = ys

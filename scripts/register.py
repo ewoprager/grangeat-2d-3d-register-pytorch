@@ -21,12 +21,13 @@ import reg23
 # from diffdrr.visualization import plot_drr
 # from diffdrr.pose import RigidTransform, make_matrix
 
-from reg23_experiments.notification import logs_setup
-from reg23_experiments.registration.lib.optimisation import mapping_transformation_to_parameters
-from reg23_experiments.registration.lib.structs import *
-from reg23_experiments.registration.lib.sinogram import *
-from reg23_experiments.registration import drr, data, script, objective_function
-from reg23_experiments.registration.lib import geometry, grangeat
+from reg23_experiments.utils import logs_setup
+from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters
+from reg23_experiments.data.structs import *
+from reg23_experiments.data.sinogram import *
+from reg23_experiments.ops import drr, script, objective_function
+from reg23_experiments.io import image, volume
+from reg23_experiments.ops import geometry, grangeat
 import reg23_experiments.registration.lib.plot as myplt
 
 

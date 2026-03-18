@@ -11,17 +11,17 @@ import numpy as np
 from sympy.abc import epsilon
 from tqdm import tqdm
 
-from reg23_experiments.notification import logs_setup
-from reg23_experiments.notification import pushover
-from reg23_experiments.registration.lib.structs import Transformation, SceneGeometry
-from reg23_experiments.registration.interface.lib.structs import Target, Cropping, HyperParameters
-from reg23_experiments.registration.lib.sinogram import SinogramClassic
-from reg23_experiments.registration.lib import geometry
-from reg23_experiments.registration import objective_function
-from reg23_experiments.registration.plot_data import LandscapePlotData
-from reg23_experiments.registration import data
-from reg23_experiments.registration import drr
-from reg23_experiments.registration.lib.optimisation import local_search, mapping_parameters_to_transformation, \
+from reg23_experiments.utils import logs_setup
+from reg23_experiments.utils import pushover
+from reg23_experiments.data.structs import Transformation, SceneGeometry
+from reg23_experiments.ui.old.lib.structs import Target, Cropping, HyperParameters
+from reg23_experiments.data.sinogram import SinogramClassic
+from reg23_experiments.ops import geometry
+from reg23_experiments.ops import objective_function
+from reg23_experiments.data.plot_data import LandscapePlotData
+from reg23_experiments.io import image, volume
+from reg23_experiments.ops import drr
+from reg23_experiments.ops.optimisation import local_search, mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
 
 import reg23
@@ -62,7 +62,7 @@ class RegistrationData:
             top_bottom_chop = int(round(0.5 * fraction * float(volume.size()[0])))
             return volume[top_bottom_chop:max(top_bottom_chop + 1, volume.size()[0] - top_bottom_chop)]
 
-        ct_volume, self._ct_spacing = data.load_volume(pathlib.Path(ct_path), downsample_factor=downsample_factor)
+        ct_volume, self._ct_spacing = data.load_ct(pathlib.Path(ct_path), downsample_factor=downsample_factor)
         ct_volume = ct_volume.to(device=device, dtype=torch.float32)
         ct_volume = ct_volume - ct_volume.mean()  # !!! shifting the volume to zero-mean, so now considering real, not non-negative
         self._ct_volumes = [ct_volume] + [truncate(ct_volume, fraction) for fraction in truncation_fractions]
