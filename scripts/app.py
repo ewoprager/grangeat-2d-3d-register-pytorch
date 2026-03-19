@@ -203,7 +203,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
             ct_path=gold_hip.get_data_config().get_ct_path()  #
         )
         # X-ray data
-        xray_data = gold_hip.load_xray("p19")
+        xray_data = gold_hip.load_xray("p19", untruncated_ct_volume.size(), ct_spacing)
         logger.info(f"ct spacing = {ct_spacing.cpu()}")
         logger.info(f"ct size = {untruncated_ct_volume.size()}")
         logger.info(f"total = "
