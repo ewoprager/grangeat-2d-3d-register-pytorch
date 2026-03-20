@@ -1,3 +1,4 @@
+import logging
 import pathlib
 
 import pandas as pd
@@ -8,20 +9,26 @@ from reg23_experiments.data.structs import Error, Transformation
 
 __all__ = ["TransformationSaveData", "TransformationSaveManager"]
 
+logger = logging.getLogger(__name__)
+
 
 class TransformationSaveData(SaveData):
     """
-    ToDo: The 'name' should be the index column.
     Stores a list of 6 d.o.f. transformations as rows of a pd.DataFrame, with the following columns:
-    Column name: 'name', 'x0', 'x1', 'x2', 'x3', 'x4', 'x5'
-    Type: str, float, float, float, float, float, float
+    Index column name: 'xray_sop_instance_uid', 'name'
+    Index column type: str, str
+    Column name: 'x0', 'x1', 'x2', 'x3', 'x4', 'x5'
+    Type: float, float, float, float, float, float
 
     Changes are expressed as dicts with the following keys:
         'action': The string determining the action type. Possible values:
             - 'set': Add or change a named transformation to/in the list; additional keys required:
+                - 'xray_sop_instance_uid': The str SOPInstanceUID of the X-ray associated with the transformation
                 - 'name': The string name for the transformation
                 - 'x0' ... 'x5': The float param values
             - 'remove': Remove a named transformation from the list; additional keys required:
+                - 'xray_sop_instance_uid': The str SOPInstanceUID of the X-ray associated with the transformation to
+                remove
                 - 'name': The name of the transformation to remove
     """
 
@@ -35,8 +42,9 @@ class TransformationSaveData(SaveData):
 
     @staticmethod
     def new_value() -> 'TransformationSaveData':
-        columns = ["name"] + [f"x{i}" for i in range(6)]
-        df = pd.DataFrame(columns=columns)
+        index = pd.MultiIndex.from_arrays([[], []], names=["xray_sop_instance_uid", "name"])
+        columns = [f"x{i}" for i in range(6)]
+        df = pd.DataFrame(index=index, columns=columns)
         return TransformationSaveData(df)
 
     @staticmethod
@@ -47,30 +55,55 @@ class TransformationSaveData(SaveData):
         if "action" not in change:
             return Error("Key 'action' not found in change.")
         if change["action"] == "set":
+            # get the uid
+            if "xray_sop_instance_uid" not in change:
+                return Error("Key 'xray_sop_instance_uid' not found in 'set' action change.")
+            uid = change["xray_sop_instance_uid"]
+            if not isinstance(uid, str):
+                return Error("'xray_sop_instance_uid' value in 'set' action change should be a `str`.")
+            # get the name
             if "name" not in change:
                 return Error("Key 'name' not found in 'set' action change.")
-            indices_matching = self._contents.index[self._contents['name'] == change["name"]].tolist()
-            if len(indices_matching) > 1:
-                return Error(f"Found multiple transformations in the save data with name '{change["name"]}'.")
+            name = change["name"]
+            if not isinstance(name, str):
+                return Error("'name' value in 'set' action change should be a `str`.")
+            # get the column values
             new_values = {}
             for i in range(6):
                 key = f"x{i}"
                 if key not in change:
                     return Error(f"Key '{key}' not found in 'set' action change.")
                 new_values[key] = change[key]
-            if len(indices_matching) == 1:
-                self._contents.loc[indices_matching[0], new_values.keys()] = new_values.values()
+            # check if the idx exists in the dataframe
+            idx = (uid, name)
+            if idx in self._contents.index:
+                # set the column values for the existing row
+                self._contents.loc[idx, new_values.keys()] = new_values.values()
             else:
-                new_values["name"] = change["name"]
-                self._contents = pd.concat([self._contents, pd.DataFrame([new_values])], ignore_index=True)
+                # construct and append a new row
+                new_row = pd.DataFrame([new_values],
+                                       index=pd.MultiIndex.from_tuples([idx], names=self._contents.index.names))
+                self._contents = pd.concat([self._contents, new_row])
             return None
         elif change["action"] == "remove":
+            # get the uid
+            if "xray_sop_instance_uid" not in change:
+                return Error("Key 'xray_sop_instance_uid' not found in 'remove' action change.")
+            uid = change["xray_sop_instance_uid"]
+            if not isinstance(uid, str):
+                return Error("'xray_sop_instance_uid' value in 'remove' action change should be a `str`.")
+            # get the name
             if "name" not in change:
                 return Error("Key 'name' not found in 'remove' action change.")
-            indices_matching = self._contents.index[self._contents['name'] == change["name"]].tolist()
-            if len(indices_matching) > 1:
-                return Error(f"Found multiple transformations in the save data with name '{change["name"]}'.")
-            self._contents = self._contents.drop(indices_matching[0])
+            name = change["name"]
+            if not isinstance(name, str):
+                return Error("'name' value in 'remove' action change should be a `str`.")
+            # check if the idx exists in the dataframe
+            idx = (uid, name)
+            if idx in self._contents.index:
+                self._contents = self._contents.drop(idx)
+            else:
+                logger.warning(f"Tried to remove non-existent transformation '{idx}' from save data.")
             return None
         else:
             return Error(f"Unrecognised action '{change["action"]}'.")
@@ -84,31 +117,36 @@ class TransformationSaveManager:
         self._save_data_manager = SaveDataManager[TransformationSaveData](cls=TransformationSaveData,
                                                                           save_directory=directory)
 
-    def get_names(self) -> list[str]:
+    def get_names(self, uid: str) -> list[str]:
         df: pd.DataFrame = self._save_data_manager.get_data()
         if df.empty:
             return []
-        return df["name"].tolist()
+        if uid in df.index.get_level_values("xray_sop_instance_uid"):
+            return df.xs(uid, level="xray_sop_instance_uid").index.tolist()
+        else:
+            return []
 
-    def get_as_dict(self, **tensor_kwargs) -> dict[str, Transformation]:
+    def get_as_dict(self, uid: str, **tensor_kwargs) -> dict[str, Transformation]:
         df: pd.DataFrame = self._save_data_manager.get_data()
+        df_for_xray = df.xs(uid, level="xray_sop_instance_uid")
         return {  #
-            row["name"]: Transformation.from_vector(torch.tensor([row[f"x{i}"] for i in range(6)], **tensor_kwargs))  #
-            for _, row in df.iterrows()  #
+            name: Transformation.from_vector(torch.tensor([row[f"x{i}"] for i in range(6)], **tensor_kwargs))  #
+            for name, row in df_for_xray.iterrows()  #
         }
 
-    def get_transformation(self, name: str, **tensor_kwargs) -> Transformation | Error:
+    def get_transformation(self, *, uid: str, name: str, **tensor_kwargs) -> Transformation | Error:
         df: pd.DataFrame = self._save_data_manager.get_data()
-        indices_matching = df.index[df['name'] == name].tolist()
-        if len(indices_matching) > 1:
-            return Error(f"Found multiple transformations in the save data with name '{name}'.")
+        idx = (uid, name)
+        if idx not in df.index:
+            return Error(f"No transformation saved at idx '{idx}'.")
         columns = [f"x{i}" for i in range(6)]
-        values = df.loc[indices_matching[0], columns].tolist()
+        values = df.loc[idx, columns].tolist()
         return Transformation.from_vector(torch.tensor(values, **tensor_kwargs))
 
-    def set(self, name: str, transformation: Transformation) -> None | Error:
+    def set(self, *, uid: str, name: str, transformation: Transformation) -> None | Error:
         change: dict[str, JsonSerializable] = {  #
             "action": "set",  #
+            "xray_sop_instance_uid": uid,  #
             "name": name,  #
         }
         t: torch.Tensor = transformation.vectorised()
@@ -116,9 +154,10 @@ class TransformationSaveManager:
             change[f"x{i}"] = float(t[i].item())
         return self._save_data_manager.apply_change(change)
 
-    def remove(self, name: str) -> None | Error:
+    def remove(self, *, uid: str, name: str) -> None | Error:
         change: dict[str, JsonSerializable] = {  #
             "action": "remove",  #
+            "xray_sop_instance_uid": uid,  #
             "name": name,  #
         }
         return self._save_data_manager.apply_change(change)

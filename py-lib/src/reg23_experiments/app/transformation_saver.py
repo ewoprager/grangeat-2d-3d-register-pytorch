@@ -20,7 +20,8 @@ class TransformationSaver:
                                 names=["button_delete_transformation_of_name"])
 
     def _update_saved_transformation_names(self) -> None:
-        self._app_state.saved_transformation_names = self._transformation_save_manager.get_names()
+        self._app_state.saved_transformation_names = self._transformation_save_manager.get_names(
+            self._app_state.dadg.get("xray_sop_instance_uid"))
 
     def _button_save_transformation(self, change) -> None:
         if not change.new:
@@ -29,23 +30,25 @@ class TransformationSaver:
         if not self._app_state.text_input_transformation_name:
             logger.warning("Cannot save transformation; no name given.")
             return
-        err = self._transformation_save_manager.set(self._app_state.text_input_transformation_name,
-                                                    self._app_state.dadg.get("current_transformation"))
+        uid = self._app_state.dadg.get("xray_sop_instance_uid")
+        name = self._app_state.text_input_transformation_name
+        err = self._transformation_save_manager.set(uid=uid, name=name,
+                                                    transformation=self._app_state.dadg.get("current_transformation"))
         if isinstance(err, Error):
-            logger.error(
-                f"Error saving transformation with name '{self._app_state.text_input_transformation_name}' to save "
-                f"manager: {err.description}")
+            logger.error(f"Error saving transformation '{uid}; {name}' to save "
+                         f"manager: {err.description}")
         self._update_saved_transformation_names()
         self._app_state.button_save_transformation = False
 
     def _button_load_transformation_of_name(self, change) -> None:
         if change.new is None:
             return
+        uid = self._app_state.dadg.get("xray_sop_instance_uid")
         name = self._app_state.button_load_transformation_of_name
         self._app_state.button_load_transformation_of_name = None
-        tr: Transformation | Error = self._transformation_save_manager.get_transformation(name)
+        tr: Transformation | Error = self._transformation_save_manager.get_transformation(uid=uid, name=name)
         if isinstance(tr, Error):
-            logger.error(f"Error loading transformation '{name}' from save manager: {tr.description}")
+            logger.error(f"Error loading transformation '{uid}; {name}' from save manager: {tr.description}")
             return
         device = self._app_state.dadg.get("current_transformation").rotation.device
         self._app_state.dadg.set("current_transformation", tr.to(device=device))
@@ -53,9 +56,10 @@ class TransformationSaver:
     def _button_delete_transformation_of_name(self, change) -> None:
         if change.new is None:
             return
+        uid = self._app_state.dadg.get("xray_sop_instance_uid")
         name = self._app_state.button_delete_transformation_of_name
         self._app_state.button_delete_transformation_of_name = None
-        err = self._transformation_save_manager.remove(name)
+        err = self._transformation_save_manager.remove(uid=uid, name=name)
         if isinstance(err, Error):
-            logger.error(f"Error deleting transformation '{name}' from save manager: {err.description}")
+            logger.error(f"Error deleting transformation '{uid}; {name}' from save manager: {err.description}")
         self._update_saved_transformation_names()

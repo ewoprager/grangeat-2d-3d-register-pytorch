@@ -175,8 +175,6 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.error(f"Error adding updater: {err.description}")
         return
 
-    data_manager().observe("transformation_gt", "debug", lambda x: logger.warning(f"Hello! {x}"))
-
     # -----
     # Data nodes
     # -----
