@@ -14,10 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class ElectrodesGUI:
-    def __init__(self, app_state: AppState):
+    def __init__(self, app_state: AppState, namespace: str | None = None):
         self._app_state = app_state
         self._save_manager = ElectrodeSaveManager(self._app_state.electrode_save_directory)
-        tensor = self._save_manager.get(self._app_state.dadg.get("xray_sop_instance_uid"))
+        self._uid_key = "xray_sop_instance_uid" if namespace is None else f"{namespace}__xray_sop_instance_uid"
+        tensor = self._save_manager.get(self._app_state.dadg.get(self._uid_key))
         if tensor is None:
             self._points_layer = viewer().add_points(ndim=2, size=4.0, name="CI electrodes")
         else:
@@ -31,6 +32,6 @@ class ElectrodesGUI:
             tensor = torch.tensor(self._points_layer.data)
             self._points_layer.text.values = [f"{i}" for i in range(1, tensor.size()[0] + 1)]
             self._app_state.dadg.set("electrode_points", tensor)
-            res = self._save_manager.set(self._app_state.dadg.get("xray_sop_instance_uid"), tensor)
+            res = self._save_manager.set(self._app_state.dadg.get(self._uid_key), tensor)
             if isinstance(res, Error):
                 logger.error(f"Error saving electrode point data: {res.description}")

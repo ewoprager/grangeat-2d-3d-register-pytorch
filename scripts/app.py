@@ -14,7 +14,8 @@ from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.io.volume import load_ct
 from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.data.structs import Error
-from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, args_from_dadg
+from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, args_from_dadg, \
+    capture_in_namespaces
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.ops import drr
@@ -34,9 +35,29 @@ from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
 from reg23_experiments.io.image import read_dicom
 
+namespace_captures: dict[str, str] = {  #
+    "image_2d_full": "a",  #
+    "fixed_image_spacing": "a",  #
+    "transformation_gt": "a",  #
+    "source_distance": "a",  #
+    "xray_path": "a",  #
+    "target_flipped": "a",  #
+    "moving_image": "a",  #
+    "fixed_image_size": "a",  #
+    "fixed_image_offset": "a",  #
+    "xray_sop_instance_uid": "a",  #
+    "fixed_image": "a",  #
+    "cropped_target": "a",  #
+    "mask": "a",  #
+    "translation_offset": "a",  #
+    "image_2d_scale_factor": "a",  #
+    "source_offset": "a",  #
+    "mask_transformation": "a",  #
+}
+
 
 @dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
-def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
+def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
     ct_volume, ct_spacing = load_ct(pathlib.Path(ct_path), check_for_dcm_suffix_if_dir=False)
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
@@ -50,8 +71,9 @@ def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequ
     return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing}
 
 
+@capture_in_namespaces(namespace_captures)
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
-def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
+def set_target_image(*, ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
                      new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
                      ap_transformation: Transformation, target_ap_distance: float, xray_path: str | None,
                      target_flipped: bool, device: torch.device) -> dict[str, Any]:
@@ -84,7 +106,7 @@ def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volu
 
 
 @dadg_updater(names_returned=["ct_volumes"])
-def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
+def apply_truncation(*, untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
     # truncate the volume
     truncation_fraction = 0.01 * float(truncation_percent)
     top_bottom_chop = int(round(0.5 * truncation_fraction * float(untruncated_ct_volume.size()[0])))
@@ -97,8 +119,9 @@ def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: in
     return {"ct_volumes": ct_volumes}
 
 
+@capture_in_namespaces(namespace_captures)
 @dadg_updater(names_returned=["moving_image"])
-def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
+def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
                 fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
                 downsample_level: int, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
                 image_2d_scale_factor: float, device) -> dict[str, Any]:
@@ -117,12 +140,13 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
                                                   output_size=fixed_image_size)}
 
 
+@capture_in_namespaces(namespace_captures)
 @dadg_updater(names_returned=["xray_sop_instance_uid"])
-def read_xray_uid(xray_path: str | None) -> dict[str, Any]:
+def read_xray_uid(*, xray_path: str | None) -> dict[str, Any]:
     if xray_path is None:
         uid = None
     else:
-        uid = pydicom.dcmread(xray_path)["SOPInstanceUID"].value
+        uid = str(pydicom.dcmread(xray_path)["SOPInstanceUID"].value)
     return {"xray_sop_instance_uid": uid}
 
 
@@ -153,16 +177,18 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_image_2d_scale_factor", updaters.refresh_image_2d_scale_factor)
+    err = data_manager().add_updater("refresh_image_2d_scale_factor",
+                                     capture_in_namespaces(namespace_captures)(updaters.refresh_image_2d_scale_factor))
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_hyperparameter_dependent", updaters.refresh_hyperparameter_dependent)
+    err = data_manager().add_updater("refresh_hyperparameter_dependent", capture_in_namespaces(namespace_captures)(
+        updaters.refresh_hyperparameter_dependent))
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_mask_transformation_dependent",
-                                     updaters.refresh_mask_transformation_dependent)
+    err = data_manager().add_updater("refresh_mask_transformation_dependent", capture_in_namespaces(namespace_captures)(
+        updaters.refresh_mask_transformation_dependent))
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -179,19 +205,19 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # Data nodes
     # -----
     data_manager().set_multiple(  #
-        source_distance=1000.0,  #
-        fixed_image_spacing=torch.tensor([0.2, 0.2]),  #
-        fixed_image_size=torch.Size([500, 500]),  #
+        a__source_distance=1000.0,  #
+        a__fixed_image_spacing=torch.tensor([0.2, 0.2]),  #
+        a__fixed_image_size=torch.Size([500, 500]),  #
         downsample_level=0,  #
         regenerate_drr=True,  #
         cache_directory=cache_directory,  #
         save_to_cache=True,  #
         new_drr_size=torch.Size([500, 500]),  #
         ct_path=ct_path,  #
-        xray_path=xray_path,  #
+        a__xray_path=xray_path,  #
         device=device,  #
-        source_offset=torch.zeros(2),  #
-        mask_transformation=None,  #
+        a__source_offset=torch.zeros(2),  #
+        a__mask_transformation=None,  #
         cropping=None,  #
         current_transformation=Transformation.zero(device=device),  #
         truncation_percent=0.0,  #
@@ -277,8 +303,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         # Setting the parameters
         context.dadg.set("current_transformation", t)
         # Getting the resulting moving and fixed images
-        moving_image = context.dadg.get("moving_image")
-        fixed_image = context.dadg.get("fixed_image")
+        moving_image = context.dadg.get("a__moving_image")
+        fixed_image = context.dadg.get("a__fixed_image")
         # Comparing, potentially weighting with a mask
         # if apply_mask:
         #     mask = data_manager().get("mask")
@@ -290,11 +316,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # GUI Modules
     # -----
-    fixed_image_gui = FixedImageGUI(app_state)
-    image_2d_full_gui = Image2DFullGUI(app_state)
-    moving_image_gui = MovingImageGUI(app_state)
+    fixed_image_gui = FixedImageGUI(app_state, namespace="a")
+    image_2d_full_gui = Image2DFullGUI(app_state, namespace="a")
+    moving_image_gui = MovingImageGUI(app_state, namespace="a")
     register_gui = RegisterGUI(app_state)
-    electrodes_gui = ElectrodesGUI(app_state)
+    electrodes_gui = ElectrodesGUI(app_state, namespace="a")
 
     # -----
     # Modules
@@ -302,7 +328,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     worker_manager = WorkerManager(app_state=app_state, objective_function=objective_function)
     transformation_saver = TransformationSaver(app_state)
 
-    value = data_manager().get("moving_image")
+    value = data_manager().get("a__moving_image")
     if isinstance(value, Error):
         logger.error(f"Couldn't get moving image: {value.description}.")
         return

@@ -46,15 +46,16 @@ class ViewParamWidget(widgets.Container):
 
 
 class MovingImageGUI:
-    def __init__(self, app_state: AppState):
+    def __init__(self, app_state: AppState, namespace: str | None = None):
         self._app_state = app_state
-        self._app_state.dadg.set_evaluation_laziness("moving_image", lazily_evaluated=False)
-        value = self._app_state.dadg.get("moving_image", soft=True)
+        moving_image_key = "moving_image" if namespace is None else f"{namespace}__moving_image"
+        self._app_state.dadg.set_evaluation_laziness(moving_image_key, lazily_evaluated=False)
+        value = self._app_state.dadg.get(moving_image_key, soft=True)
         if isinstance(value, Error):
-            raise RuntimeError(f"Error softly getting 'moving_image' from DAG: {value.description}.")
+            raise RuntimeError(f"Error softly getting '{moving_image_key}' from DAG: {value.description}.")
         initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
         self._layer = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
-                                         interpolation2d="linear", name="DRR")
+                                         interpolation2d="linear", name=f"DRR {namespace}")
         self._layer.mouse_drag_callbacks.append(self._mouse_drag)
         viewer().bind_key("Control", self._on_ctrl_down)
         self._key_states = {"Ctrl": False}
@@ -62,7 +63,7 @@ class MovingImageGUI:
         self._view_widget = ViewParamWidget(self.set_view_params)
         viewer().window.add_dock_widget(self._view_widget, name="View options", area="left",
                                         menu=viewer().window.window_menu)
-        self._app_state.dadg.observe("moving_image", "interface", self._set_callback)
+        self._app_state.dadg.observe(moving_image_key, "interface", self._set_callback)
 
     def _set_callback(self, new_value: torch.Tensor) -> None:
         self._layer.data = new_value.cpu().numpy()

@@ -1,13 +1,14 @@
 from typing import NamedTuple, Callable
+import traitlets
 
-from reg23_experiments.utils.reflection import FunctionArgument
+from reg23_experiments.utils.reflection import FunctionArgument, takes_positional_args
 
 __all__ = ["Dependency", "NoNodeDataType", "NoNodeData", "Updater"]
 
 
-class Dependency(NamedTuple):
-    depender: str
-    depended: str
+class Dependency(traitlets.HasTraits):
+    depender: str = traitlets.Unicode(allow_none=False)
+    depended: str = traitlets.Unicode(allow_none=False)
 
 
 class NoNodeDataType:
@@ -25,6 +26,9 @@ class Updater(NamedTuple):
 
     @staticmethod
     def build(*, function: Callable, returned: list[str]) -> 'Updater':
+        if takes_positional_args(function):
+            raise ValueError(f"An Updater cannot be constructed from a function that takes positional arguments. "
+                             f"Prepend arguments with `*` to ensure otherwise.")
         arguments = FunctionArgument.get_for_function(function)
         dependencies: list[Dependency] = []
         for depended in arguments:

@@ -3,12 +3,11 @@ import logging
 from typing import Any, Callable
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.utils.reflection import FunctionArgument
+from reg23_experiments.utils.reflection import FunctionArgument, takes_positional_args
 
 from ._data import Updater
 from ._dadg_standalone import StandaloneDADG, StandaloneDADGSingleton
 from ._directed_acyclic_data_graph import DirectedAcyclicDataGraph
-from ._helpers import takes_positional_args
 
 __all__ = ["dadg_updater", "args_from_dadg", "data_manager"]
 
@@ -41,13 +40,13 @@ def args_from_dadg(*, names_left: list[str] | None = None, dadg: DirectedAcyclic
     :param names_left: A list of the arguments to leave in the function's signature (i.e. to not get from the DAG)
 
     Example use with no `names_left`:
-    ```
+    ```python
     @args_from_dag()
     def subtract_moving_from_fixed(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
         return fixed_image - moving_image
     ```
     will be effectively be turned into:
-    ```
+    ```python
     from program import data_manager
     def subtract_moving_from_fixed() -> torch.Tensor:
         moving_image = data_manager().get("moving_image")
@@ -56,13 +55,13 @@ def args_from_dadg(*, names_left: list[str] | None = None, dadg: DirectedAcyclic
     ```
 
     Example use with some `names_left`:
-    ```
+    ```python
     @args_from_dag(names_left = ["moving_image"])
     def subtract_moving_from_fixed(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
         return fixed_image - moving_image
     ```
     will be effectively be turned into:
-    ```
+    ```python
     from program import data_manager
     def subtract_moving_from_fixed(moving_image: torch.Tensor) -> torch.Tensor:
         fixed_image = data_manager().get("fixed_image")
@@ -116,7 +115,7 @@ def data_manager() -> StandaloneDADG:
 
 
 @dadg_updater(names_returned=["similarity"])
-def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
+def try_updater(*, fixed_image: float, moving_image: float) -> dict[str, Any]:
     return {"similarity": fixed_image * moving_image}
 
 

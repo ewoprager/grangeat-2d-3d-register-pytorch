@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @dadg_updater(names_returned=["mask_transformation"])
-def mask_follows_transformation(current_transformation: Transformation) -> dict[str, Any]:
+def mask_follows_transformation(*, current_transformation: Transformation) -> dict[str, Any]:
     return {"mask_transformation": current_transformation}
 
 

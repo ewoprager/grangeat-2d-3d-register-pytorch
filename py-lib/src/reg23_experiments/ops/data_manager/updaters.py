@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 @dadg_updater(names_returned=["ct_volumes", "ct_spacing"])
-def load_ct(ct_path: str, device) -> dict[str, Any]:
+def load_ct(*, ct_path: str, device) -> dict[str, Any]:
     ct_volume, ct_spacing = load_ct(pathlib.Path(ct_path))
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
     ct_spacing = ct_spacing.to(device=device)
@@ -40,46 +40,47 @@ def load_ct(ct_path: str, device) -> dict[str, Any]:
     return {"ct_volumes": ct_volumes, "ct_spacing": ct_spacing}
 
 
-@dadg_updater(names_returned=["sinogram_size", "ct_sinograms"])
-def refresh_vif(self) -> dict[str, Any] | Error:
-    this_sinogram_size = int(
-        math.ceil(pow(self.ct_volumes[0].numel(), 1.0 / 3.0))) if self._sinogram_size is None else self._sinogram_size
-
-    def get_sinogram(sinogram_type: Type[SinogramType], downsample_level: int) -> Sinogram | None:
-        downsample_factor = int(2 ** downsample_level)
-        downsampled_sinogram_size = this_sinogram_size // downsample_factor
-        sinogram3d = None
-        sinogram_hash = deterministic_hash_sinogram(self.ct_path, sinogram_type, downsampled_sinogram_size,
-                                                    downsample_factor)
-        volume_spec = load_cached_ct(self._cache_directory, sinogram_hash)
-        if volume_spec is not None:
-            _, sinogram3d = volume_spec
-        if sinogram3d is None:
-            res = pre_computed.calculate_volume_sinogram(self._cache_directory, self.ct_volumes[downsample_level],
-                                                         voxel_spacing=self.ct_spacing_original * float(
-                                                             downsample_factor), ct_volume_path=self.ct_path,
-                                                         volume_downsample_factor=downsample_factor, save_to_cache=True,
-                                                         sinogram_size=downsampled_sinogram_size,
-                                                         sinogram_type=sinogram_type)
-            if res is None:
-                return None
-            sinogram3d, _ = res
-        return sinogram3d
-
-    sinogram3ds = {tp: [get_sinogram(tp, level) for level in range(len(self.ct_volumes))] for tp in
-                   self._sinogram_types}
-
-    for tp, sinogram_list in sinogram3ds.items():
-        for i, sinogram in enumerate(sinogram_list):
-            if sinogram is None:
-                return Error("Failed to create sinogram at level {} of type {}; not enough memory?"
-                             "".format(i, tp.__name__))
-
-    return {"sinogram_size": this_sinogram_size, "ct_sinograms": sinogram3ds}
+# @dadg_updater(names_returned=["sinogram_size", "ct_sinograms"])
+# def refresh_vif(* self) -> dict[str, Any] | Error:
+#     this_sinogram_size = int(
+#         math.ceil(pow(self.ct_volumes[0].numel(), 1.0 / 3.0))) if self._sinogram_size is None else self._sinogram_size
+#
+#     def get_sinogram(sinogram_type: Type[SinogramType], downsample_level: int) -> Sinogram | None:
+#         downsample_factor = int(2 ** downsample_level)
+#         downsampled_sinogram_size = this_sinogram_size // downsample_factor
+#         sinogram3d = None
+#         sinogram_hash = deterministic_hash_sinogram(self.ct_path, sinogram_type, downsampled_sinogram_size,
+#                                                     downsample_factor)
+#         volume_spec = load_cached_ct(self._cache_directory, sinogram_hash)
+#         if volume_spec is not None:
+#             _, sinogram3d = volume_spec
+#         if sinogram3d is None:
+#             res = pre_computed.calculate_volume_sinogram(self._cache_directory, self.ct_volumes[downsample_level],
+#                                                          voxel_spacing=self.ct_spacing_original * float(
+#                                                              downsample_factor), ct_volume_path=self.ct_path,
+#                                                          volume_downsample_factor=downsample_factor,
+#                                                          save_to_cache=True,
+#                                                          sinogram_size=downsampled_sinogram_size,
+#                                                          sinogram_type=sinogram_type)
+#             if res is None:
+#                 return None
+#             sinogram3d, _ = res
+#         return sinogram3d
+#
+#     sinogram3ds = {tp: [get_sinogram(tp, level) for level in range(len(self.ct_volumes))] for tp in
+#                    self._sinogram_types}
+#
+#     for tp, sinogram_list in sinogram3ds.items():
+#         for i, sinogram in enumerate(sinogram_list):
+#             if sinogram is None:
+#                 return Error("Failed to create sinogram at level {} of type {}; not enough memory?"
+#                              "".format(i, tp.__name__))
+#
+#     return {"sinogram_size": this_sinogram_size, "ct_sinograms": sinogram3ds}
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
-def load_target_image(target: Target, device) -> dict[str, Any]:
+def load_target_image(*, target: Target, device) -> dict[str, Any]:
     transformation_ground_truth = None
     # if self.target.xray_path is None:
     #     # Load /
@@ -101,7 +102,7 @@ def load_target_image(target: Target, device) -> dict[str, Any]:
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
-def set_synthetic_target_image(ct_path: str, ct_spacing: torch.Tensor, ct_volumes: list[torch.Tensor],
+def set_synthetic_target_image(*, ct_path: str, ct_spacing: torch.Tensor, ct_volumes: list[torch.Tensor],
                                new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool,
                                cache_directory: str) -> dict[str, Any]:
     # generate a DRR through the volume
@@ -121,14 +122,16 @@ def set_synthetic_target_image(ct_path: str, ct_spacing: torch.Tensor, ct_volume
 
 
 @dadg_updater(names_returned=["image_2d_scale_factor"])
-def refresh_image_2d_scale_factor(  #
-        fixed_image_spacing: torch.Tensor, downsample_level: int, ct_spacing: torch.Tensor) -> dict[str, Any]:
+def refresh_image_2d_scale_factor(*,  #
+                                  fixed_image_spacing: torch.Tensor, downsample_level: int, ct_spacing: torch.Tensor)\
+        -> \
+        dict[str, Any]:
     downsampled_ct_spacing = ct_spacing * 2.0 ** float(downsample_level)
     return {"image_2d_scale_factor": (fixed_image_spacing.mean() / downsampled_ct_spacing.mean()).item()}
 
 
 @dadg_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset", "fixed_image_size"])
-def refresh_hyperparameter_dependent(image_2d_full: torch.Tensor, fixed_image_spacing: torch.Tensor,
+def refresh_hyperparameter_dependent(*, image_2d_full: torch.Tensor, fixed_image_spacing: torch.Tensor,
                                      cropping: Cropping | None, source_offset: torch.Tensor,
                                      image_2d_scale_factor: float) -> dict[str, Any]:
     # Downsampling the image 2d
@@ -162,7 +165,7 @@ def refresh_hyperparameter_dependent(image_2d_full: torch.Tensor, fixed_image_sp
 
 
 @dadg_updater(names_returned=["sinogram2d_grid_unshifted", "sinogram2d_grid"])
-def refresh_hyperparameter_dependent_grangeat(cropped_target: torch.Tensor, fixed_image_offset: torch.Tensor,
+def refresh_hyperparameter_dependent_grangeat(*, cropped_target: torch.Tensor, fixed_image_offset: torch.Tensor,
                                               fixed_image_spacing: torch.Tensor, downsample_level: int, device) -> dict[
     str, Any]:
     cropped_target_size = cropped_target.size()
@@ -180,7 +183,7 @@ def refresh_hyperparameter_dependent_grangeat(cropped_target: torch.Tensor, fixe
 
 
 @dadg_updater(names_returned=["mask", "fixed_image"])
-def refresh_mask_transformation_dependent(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
+def refresh_mask_transformation_dependent(*, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
                                           cropped_target: torch.Tensor, mask_transformation: Transformation | None,
                                           fixed_image_spacing: torch.Tensor, fixed_image_offset: torch.Tensor,
                                           image_2d_scale_factor: float, source_distance: float, device) -> dict[
@@ -206,7 +209,7 @@ def refresh_mask_transformation_dependent(ct_volumes: list[torch.Tensor], ct_spa
 
 
 @dadg_updater(names_returned=["sinogram2d"])
-def refresh_mask_transformation_dependent_grangeat(fixed_image: torch.Tensor, source_distance: float,
+def refresh_mask_transformation_dependent_grangeat(*, fixed_image: torch.Tensor, source_distance: float,
                                                    fixed_image_spacing: torch.Tensor, image_2d_scale_factor: float,
                                                    sinogram2d_grid_unshifted: Sinogram2dGrid) -> dict[str, Any]:
     fixed_image_spacing_at_current_level = fixed_image_spacing / image_2d_scale_factor
