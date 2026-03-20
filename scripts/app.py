@@ -8,6 +8,7 @@ import torch
 import napari
 import pathlib
 from tqdm import tqdm
+import pydicom
 
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.io.volume import load_ct
@@ -116,6 +117,15 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
                                                   output_size=fixed_image_size)}
 
 
+@dadg_updater(names_returned=["xray_sop_instance_uid"])
+def read_xray_uid(xray_path: str | None) -> dict[str, Any]:
+    if xray_path is None:
+        uid = None
+    else:
+        uid = pydicom.dcmread(xray_path)["SOPInstanceUID"].value
+    return {"xray_sop_instance_uid": uid}
+
+
 # @args_from_dag(names_left=["transformation"])
 # def of(*, transformation: Transformation, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
 #        fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
@@ -157,6 +167,10 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.error(f"Error adding updater: {err.description}")
         return
     data_manager().add_updater("project_drr", project_drr)
+    if isinstance(err, Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    data_manager().add_updater("xray_uid", read_xray_uid)
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
