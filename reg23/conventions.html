@@ -128,8 +128,32 @@ Spherical coordinates</h2>
 <ul>
 <li><code>r</code> is the <b>signed</b> length of the vector (the signed shortest distance between the plane and the origin),</li>
 <li><code>theta</code> in (-pi/2, pi/2) is the angle of an initial rotation of the vector, left-hand-rule about the y-axis, taking the vector's initial position to be from the origin to the point <code>(r, 0, 0)</code>,</li>
-<li><code>phi</code> in (-pi/2, pi/2) is the angle of a second rotation of the vector, right-hand-rule about the z-axis. </li>
+<li><code>phi</code> in (-pi/2, pi/2) is the angle of a second rotation of the vector, right-hand-rule about the z-axis.</li>
 </ul>
+<h2><a class="anchor" id="autotoc_md8"></a>
+Transformations and spaces</h2>
+<p>In a 2D/3D radiographic image registration problem, we define 'world' space as a 3D space containing:</p>
+<ul>
+<li>the 2D fixed image, which exists on a 2D, finite plane</li>
+<li>the moving 3D volume, and</li>
+<li>the X-ray source, which is a single point.</li>
+</ul>
+<p>The <code>world</code> coordinate system:</p>
+<ul>
+<li>is Cartesian,</li>
+<li>is centred on the centre of the fixed image, in the plane of the fixed image,</li>
+<li>has axes in the following directions:<ul>
+<li>$x$ is to the right in the fixed image, as viewed from the X-ray source,</li>
+<li>$y$ is up in the fixed image, as viewed from the X-ray source, and</li>
+<li>$z$ points towards the X-ray source.</li>
+</ul>
+</li>
+<li>is, as a result, right-handed in chirality,</li>
+<li>has a scale 1mm in all directions.</li>
+</ul>
+<p>Assuming no offset between the X-ray source and the centre of the fixed image, the position of the X-ray source will be $$ (0, \, 0, \, \mathrm{source}\ \mathrm{distance}) $$ or, for a centre-offset of $(s_x, \, s_y)$: $$ (s_x, \, s_y, \, \mathrm{source}\ \mathrm{distance}) $$</p>
+<p>An affine transformation $T$ of the moving image is expressed using the <code>reg23_experiments.data.structs.Transformation</code> struct, which stores a 3D rotation in axis-angle form, and a 3D translation. This represents the transformation <b>of the CT volume</b> within world space, where a transformation of (0, 0, 0); (0, 0, 0) would leave the CT volume centred on the origin, with axes aligned to those of the world coordinate system.</p>
+<p>As such, mapping from the coordinate system of world space to that of the CT volume involves applying the <b>inverse</b> of the transformation to the coordinates. This is why all DRR projection functions take as an argument an '<b>inverse</b> homography matrix'. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->

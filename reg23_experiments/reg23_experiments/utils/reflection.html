@@ -34,9 +34,6 @@
                     <a class="class" href="#FunctionArgument">FunctionArgument</a>
                             <ul class="memberlist">
                         <li>
-                                <a class="function" href="#FunctionArgument.__init__">FunctionArgument</a>
-                        </li>
-                        <li>
                                 <a class="variable" href="#FunctionArgument.name">name</a>
                         </li>
                         <li>
@@ -50,6 +47,9 @@
                         </li>
                 </ul>
 
+            </li>
+            <li>
+                    <a class="function" href="#takes_positional_args">takes_positional_args</a>
             </li>
     </ul>
 
@@ -72,27 +72,38 @@
 
                         <label class="view-source-button" for="mod-reflection-view-source"><span>View Source</span></label>
 
-                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Callable</span>
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
-</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a>
-</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;FunctionArgument&quot;</span><span class="p">]</span>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">traitlets</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;FunctionArgument&quot;</span><span class="p">,</span> <span class="s2">&quot;takes_positional_args&quot;</span><span class="p">]</span>
 </span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
-</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="k">class</span><span class="w"> </span><span class="nc">FunctionArgument</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
-</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>    <span class="n">required</span><span class="p">:</span> <span class="nb">bool</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="n">annotation</span><span class="p">:</span> <span class="nb">type</span>
-</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>    <span class="nd">@staticmethod</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_for_function</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s1">&#39;FunctionArgument&#39;</span><span class="p">]:</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>        <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>            <span class="n">required</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span>  <span class="c1"># no default value</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>                        <span class="ow">and</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">))</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">):</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FunctionArgument</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="n">required</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="p">))</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="k">return</span> <span class="n">ret</span>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="k">class</span><span class="w"> </span><span class="nc">FunctionArgument</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Unicode</span><span class="p">(</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a>    <span class="n">required</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Bool</span><span class="p">(</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>    <span class="n">annotation</span><span class="p">:</span> <span class="nb">type</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Any</span><span class="p">()</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>    <span class="nd">@staticmethod</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_for_function</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s1">&#39;FunctionArgument&#39;</span><span class="p">]:</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>        <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>            <span class="n">required</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span>  <span class="c1"># no default value</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>                        <span class="ow">and</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">))</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">):</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FunctionArgument</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="n">required</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="p">))</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>        <span class="k">return</span> <span class="n">ret</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="k">def</span><span class="w"> </span><span class="nf">takes_positional_args</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>    <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>                          <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span>  <span class="c1"># *args</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>                          <span class="p">):</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>            <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>    <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -102,48 +113,34 @@
 <div class="attr class">
             
     <span class="def">class</span>
-    <span class="name">FunctionArgument</span><wbr>(<span class="base">typing.NamedTuple</span>):
+    <span class="name">FunctionArgument</span><wbr>(<span class="base">traitlets.traitlets.HasTraits</span>):
 
                 <label class="view-source-button" for="FunctionArgument-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#FunctionArgument"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="FunctionArgument-8"><a href="#FunctionArgument-8"><span class="linenos"> 8</span></a><span class="k">class</span><span class="w"> </span><span class="nc">FunctionArgument</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
-</span><span id="FunctionArgument-9"><a href="#FunctionArgument-9"><span class="linenos"> 9</span></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="FunctionArgument-10"><a href="#FunctionArgument-10"><span class="linenos">10</span></a>    <span class="n">required</span><span class="p">:</span> <span class="nb">bool</span>
-</span><span id="FunctionArgument-11"><a href="#FunctionArgument-11"><span class="linenos">11</span></a>    <span class="n">annotation</span><span class="p">:</span> <span class="nb">type</span>
-</span><span id="FunctionArgument-12"><a href="#FunctionArgument-12"><span class="linenos">12</span></a>
-</span><span id="FunctionArgument-13"><a href="#FunctionArgument-13"><span class="linenos">13</span></a>    <span class="nd">@staticmethod</span>
-</span><span id="FunctionArgument-14"><a href="#FunctionArgument-14"><span class="linenos">14</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_for_function</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s1">&#39;FunctionArgument&#39;</span><span class="p">]:</span>
-</span><span id="FunctionArgument-15"><a href="#FunctionArgument-15"><span class="linenos">15</span></a>        <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
-</span><span id="FunctionArgument-16"><a href="#FunctionArgument-16"><span class="linenos">16</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="FunctionArgument-17"><a href="#FunctionArgument-17"><span class="linenos">17</span></a>        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="FunctionArgument-18"><a href="#FunctionArgument-18"><span class="linenos">18</span></a>            <span class="n">required</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span>  <span class="c1"># no default value</span>
-</span><span id="FunctionArgument-19"><a href="#FunctionArgument-19"><span class="linenos">19</span></a>                        <span class="ow">and</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">))</span>
-</span><span id="FunctionArgument-20"><a href="#FunctionArgument-20"><span class="linenos">20</span></a>            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">):</span>
-</span><span id="FunctionArgument-21"><a href="#FunctionArgument-21"><span class="linenos">21</span></a>                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FunctionArgument</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="n">required</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="p">))</span>
-</span><span id="FunctionArgument-22"><a href="#FunctionArgument-22"><span class="linenos">22</span></a>        <span class="k">return</span> <span class="n">ret</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="FunctionArgument-9"><a href="#FunctionArgument-9"><span class="linenos"> 9</span></a><span class="k">class</span><span class="w"> </span><span class="nc">FunctionArgument</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
+</span><span id="FunctionArgument-10"><a href="#FunctionArgument-10"><span class="linenos">10</span></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Unicode</span><span class="p">(</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="FunctionArgument-11"><a href="#FunctionArgument-11"><span class="linenos">11</span></a>    <span class="n">required</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Bool</span><span class="p">(</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="FunctionArgument-12"><a href="#FunctionArgument-12"><span class="linenos">12</span></a>    <span class="n">annotation</span><span class="p">:</span> <span class="nb">type</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Any</span><span class="p">()</span>
+</span><span id="FunctionArgument-13"><a href="#FunctionArgument-13"><span class="linenos">13</span></a>
+</span><span id="FunctionArgument-14"><a href="#FunctionArgument-14"><span class="linenos">14</span></a>    <span class="nd">@staticmethod</span>
+</span><span id="FunctionArgument-15"><a href="#FunctionArgument-15"><span class="linenos">15</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_for_function</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s1">&#39;FunctionArgument&#39;</span><span class="p">]:</span>
+</span><span id="FunctionArgument-16"><a href="#FunctionArgument-16"><span class="linenos">16</span></a>        <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
+</span><span id="FunctionArgument-17"><a href="#FunctionArgument-17"><span class="linenos">17</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="FunctionArgument-18"><a href="#FunctionArgument-18"><span class="linenos">18</span></a>        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="FunctionArgument-19"><a href="#FunctionArgument-19"><span class="linenos">19</span></a>            <span class="n">required</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span>  <span class="c1"># no default value</span>
+</span><span id="FunctionArgument-20"><a href="#FunctionArgument-20"><span class="linenos">20</span></a>                        <span class="ow">and</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">))</span>
+</span><span id="FunctionArgument-21"><a href="#FunctionArgument-21"><span class="linenos">21</span></a>            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">):</span>
+</span><span id="FunctionArgument-22"><a href="#FunctionArgument-22"><span class="linenos">22</span></a>                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FunctionArgument</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="n">required</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="p">))</span>
+</span><span id="FunctionArgument-23"><a href="#FunctionArgument-23"><span class="linenos">23</span></a>        <span class="k">return</span> <span class="n">ret</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>FunctionArgument(name, required, annotation)</p>
+            <div class="docstring"><p>The base class for all classes that have descriptors.</p>
 </div>
 
 
-                            <div id="FunctionArgument.__init__" class="classattr">
-                                <div class="attr function">
-            
-        <span class="name">FunctionArgument</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">name</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">required</span><span class="p">:</span> <span class="nb">bool</span>, </span><span class="param"><span class="n">annotation</span><span class="p">:</span> <span class="nb">type</span></span>)</span>
-
-        
-    </div>
-    <a class="headerlink" href="#FunctionArgument.__init__"></a>
-    
-            <div class="docstring"><p>Create new instance of FunctionArgument(name, required, annotation)</p>
-</div>
-
-
-                            </div>
                             <div id="FunctionArgument.name" class="classattr">
                                 <div class="attr variable">
             <span class="name">name</span><span class="annotation">: str</span>
@@ -152,7 +149,7 @@
     </div>
     <a class="headerlink" href="#FunctionArgument.name"></a>
     
-            <div class="docstring"><p>Alias for field number 0</p>
+            <div class="docstring"><p>A trait for unicode strings.</p>
 </div>
 
 
@@ -165,7 +162,7 @@
     </div>
     <a class="headerlink" href="#FunctionArgument.required"></a>
     
-            <div class="docstring"><p>Alias for field number 1</p>
+            <div class="docstring"><p>A boolean (True, False) trait.</p>
 </div>
 
 
@@ -178,7 +175,7 @@
     </div>
     <a class="headerlink" href="#FunctionArgument.annotation"></a>
     
-            <div class="docstring"><p>Alias for field number 2</p>
+            <div class="docstring"><p>A trait which allows any value.</p>
 </div>
 
 
@@ -195,22 +192,47 @@
 
     </div>
     <a class="headerlink" href="#FunctionArgument.get_for_function"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="FunctionArgument.get_for_function-13"><a href="#FunctionArgument.get_for_function-13"><span class="linenos">13</span></a>    <span class="nd">@staticmethod</span>
-</span><span id="FunctionArgument.get_for_function-14"><a href="#FunctionArgument.get_for_function-14"><span class="linenos">14</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_for_function</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s1">&#39;FunctionArgument&#39;</span><span class="p">]:</span>
-</span><span id="FunctionArgument.get_for_function-15"><a href="#FunctionArgument.get_for_function-15"><span class="linenos">15</span></a>        <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
-</span><span id="FunctionArgument.get_for_function-16"><a href="#FunctionArgument.get_for_function-16"><span class="linenos">16</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="FunctionArgument.get_for_function-17"><a href="#FunctionArgument.get_for_function-17"><span class="linenos">17</span></a>        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="FunctionArgument.get_for_function-18"><a href="#FunctionArgument.get_for_function-18"><span class="linenos">18</span></a>            <span class="n">required</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span>  <span class="c1"># no default value</span>
-</span><span id="FunctionArgument.get_for_function-19"><a href="#FunctionArgument.get_for_function-19"><span class="linenos">19</span></a>                        <span class="ow">and</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">))</span>
-</span><span id="FunctionArgument.get_for_function-20"><a href="#FunctionArgument.get_for_function-20"><span class="linenos">20</span></a>            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">):</span>
-</span><span id="FunctionArgument.get_for_function-21"><a href="#FunctionArgument.get_for_function-21"><span class="linenos">21</span></a>                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FunctionArgument</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="n">required</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="p">))</span>
-</span><span id="FunctionArgument.get_for_function-22"><a href="#FunctionArgument.get_for_function-22"><span class="linenos">22</span></a>        <span class="k">return</span> <span class="n">ret</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="FunctionArgument.get_for_function-14"><a href="#FunctionArgument.get_for_function-14"><span class="linenos">14</span></a>    <span class="nd">@staticmethod</span>
+</span><span id="FunctionArgument.get_for_function-15"><a href="#FunctionArgument.get_for_function-15"><span class="linenos">15</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_for_function</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s1">&#39;FunctionArgument&#39;</span><span class="p">]:</span>
+</span><span id="FunctionArgument.get_for_function-16"><a href="#FunctionArgument.get_for_function-16"><span class="linenos">16</span></a>        <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
+</span><span id="FunctionArgument.get_for_function-17"><a href="#FunctionArgument.get_for_function-17"><span class="linenos">17</span></a>        <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="FunctionArgument.get_for_function-18"><a href="#FunctionArgument.get_for_function-18"><span class="linenos">18</span></a>        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="FunctionArgument.get_for_function-19"><a href="#FunctionArgument.get_for_function-19"><span class="linenos">19</span></a>            <span class="n">required</span> <span class="o">=</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span>  <span class="c1"># no default value</span>
+</span><span id="FunctionArgument.get_for_function-20"><a href="#FunctionArgument.get_for_function-20"><span class="linenos">20</span></a>                        <span class="ow">and</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">))</span>
+</span><span id="FunctionArgument.get_for_function-21"><a href="#FunctionArgument.get_for_function-21"><span class="linenos">21</span></a>            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">KEYWORD_ONLY</span><span class="p">):</span>
+</span><span id="FunctionArgument.get_for_function-22"><a href="#FunctionArgument.get_for_function-22"><span class="linenos">22</span></a>                <span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FunctionArgument</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="n">required</span><span class="p">,</span> <span class="n">annotation</span><span class="o">=</span><span class="n">param</span><span class="o">.</span><span class="n">annotation</span><span class="p">))</span>
+</span><span id="FunctionArgument.get_for_function-23"><a href="#FunctionArgument.get_for_function-23"><span class="linenos">23</span></a>        <span class="k">return</span> <span class="n">ret</span>
 </span></pre></div>
 
 
     
 
                             </div>
+                </section>
+                <section id="takes_positional_args">
+                            <input id="takes_positional_args-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">takes_positional_args</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
+
+                <label class="view-source-button" for="takes_positional_args-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#takes_positional_args"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="takes_positional_args-26"><a href="#takes_positional_args-26"><span class="linenos">26</span></a><span class="k">def</span><span class="w"> </span><span class="nf">takes_positional_args</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="takes_positional_args-27"><a href="#takes_positional_args-27"><span class="linenos">27</span></a>    <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">function</span><span class="p">)</span>
+</span><span id="takes_positional_args-28"><a href="#takes_positional_args-28"><span class="linenos">28</span></a>    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+</span><span id="takes_positional_args-29"><a href="#takes_positional_args-29"><span class="linenos">29</span></a>        <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">,</span>
+</span><span id="takes_positional_args-30"><a href="#takes_positional_args-30"><span class="linenos">30</span></a>                          <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">,</span>  <span class="c1"># *args</span>
+</span><span id="takes_positional_args-31"><a href="#takes_positional_args-31"><span class="linenos">31</span></a>                          <span class="p">):</span>
+</span><span id="takes_positional_args-32"><a href="#takes_positional_args-32"><span class="linenos">32</span></a>            <span class="k">return</span> <span class="kc">True</span>
+</span><span id="takes_positional_args-33"><a href="#takes_positional_args-33"><span class="linenos">33</span></a>    <span class="k">return</span> <span class="kc">False</span>
+</span></pre></div>
+
+
+    
+
                 </section>
     </main>
 <script>

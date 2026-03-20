@@ -36,6 +36,12 @@
             <li>
                     <a class="function" href="#downsample_trilinear_antialiased">downsample_trilinear_antialiased</a>
             </li>
+            <li>
+                    <a class="function" href="#fit_line_3d">fit_line_3d</a>
+            </li>
+            <li>
+                    <a class="function" href="#point_line_distance_3d">point_line_distance_3d</a>
+            </li>
     </ul>
 
 
@@ -61,7 +67,7 @@
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a>
 </span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">reg23_experiments.ops.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">gaussian_kernel_1d</span>
 </span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gaussian_blur_3d&quot;</span><span class="p">,</span> <span class="s2">&quot;downsample_trilinear_antialiased&quot;</span><span class="p">]</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gaussian_blur_3d&quot;</span><span class="p">,</span> <span class="s2">&quot;downsample_trilinear_antialiased&quot;</span><span class="p">,</span> <span class="s2">&quot;fit_line_3d&quot;</span><span class="p">,</span> <span class="s2">&quot;point_line_distance_3d&quot;</span><span class="p">]</span>
 </span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
 </span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="k">def</span><span class="w"> </span><span class="nf">gaussian_blur_3d</span><span class="p">(</span><span class="n">volume</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
@@ -104,6 +110,33 @@
 </span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>        <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;trilinear&#39;</span><span class="p">,</span>  <span class="c1">#</span>
 </span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="n">recompute_scale_factor</span><span class="o">=</span><span class="kc">True</span>  <span class="c1">#</span>
 </span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>    <span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="k">def</span><span class="w"> </span><span class="nf">fit_line_3d</span><span class="p">(</span><span class="n">points</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="sd">    Fit a straight line to a cloud of points in 3D space.</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a><span class="sd">    :param points: (N, 3), matrix of points in 3D</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a><span class="sd">    :return: (point on line, direction), both size (3,)</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>    <span class="n">centroid</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>    <span class="n">matrix</span> <span class="o">=</span> <span class="n">points</span> <span class="o">-</span> <span class="n">centroid</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>    <span class="k">return</span> <span class="n">centroid</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">matrix</span><span class="p">)[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a><span class="k">def</span><span class="w"> </span><span class="nf">point_line_distance_3d</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">line_point</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>                           <span class="n">line_direction</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a><span class="sd">    :param points: (N, 3)</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos">66</span></a><span class="sd">    :param line_point: (3,)</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos">67</span></a><span class="sd">    :param line_direction: (3,)</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos">68</span></a><span class="sd">    :return: tensor of size (N,)</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>    <span class="n">from_points</span> <span class="o">=</span> <span class="n">points</span> <span class="o">-</span> <span class="n">line_point</span>  <span class="c1"># size = (N, 3)</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>    <span class="n">dots</span> <span class="o">=</span> <span class="n">from_points</span> <span class="o">@</span> <span class="n">line_direction</span>  <span class="c1"># size = (N,)</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>    <span class="n">projected_points</span> <span class="o">=</span> <span class="n">dots</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">line_direction</span>  <span class="c1"># size = (N, 3)</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a>    <span class="n">line_offsets</span> <span class="o">=</span> <span class="n">from_points</span> <span class="o">-</span> <span class="n">projected_points</span>  <span class="c1"># size = (N, 3)</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">vector_norm</span><span class="p">(</span><span class="n">line_offsets</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># size = (N,)</span>
 </span></pre></div>
 
 
@@ -202,6 +235,91 @@ each direction. If one value is given, it is used in all directions.</li>
 
 <blockquote>
   <p>A downsampled copy of <code>volume</code> by the given scale factor. Gaussian blurring is used to prevent aliasing.</p>
+</blockquote>
+</div>
+
+
+                </section>
+                <section id="fit_line_3d">
+                            <input id="fit_line_3d-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">fit_line_3d</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">points</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span></span><span class="return-annotation">) -> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="fit_line_3d-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#fit_line_3d"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="fit_line_3d-51"><a href="#fit_line_3d-51"><span class="linenos">51</span></a><span class="k">def</span><span class="w"> </span><span class="nf">fit_line_3d</span><span class="p">(</span><span class="n">points</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+</span><span id="fit_line_3d-52"><a href="#fit_line_3d-52"><span class="linenos">52</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="fit_line_3d-53"><a href="#fit_line_3d-53"><span class="linenos">53</span></a><span class="sd">    Fit a straight line to a cloud of points in 3D space.</span>
+</span><span id="fit_line_3d-54"><a href="#fit_line_3d-54"><span class="linenos">54</span></a><span class="sd">    :param points: (N, 3), matrix of points in 3D</span>
+</span><span id="fit_line_3d-55"><a href="#fit_line_3d-55"><span class="linenos">55</span></a><span class="sd">    :return: (point on line, direction), both size (3,)</span>
+</span><span id="fit_line_3d-56"><a href="#fit_line_3d-56"><span class="linenos">56</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="fit_line_3d-57"><a href="#fit_line_3d-57"><span class="linenos">57</span></a>    <span class="n">centroid</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="fit_line_3d-58"><a href="#fit_line_3d-58"><span class="linenos">58</span></a>    <span class="n">matrix</span> <span class="o">=</span> <span class="n">points</span> <span class="o">-</span> <span class="n">centroid</span>
+</span><span id="fit_line_3d-59"><a href="#fit_line_3d-59"><span class="linenos">59</span></a>    <span class="k">return</span> <span class="n">centroid</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">matrix</span><span class="p">)[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Fit a straight line to a cloud of points in 3D space.</p>
+
+<h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>points</strong>:  (N, 3), matrix of points in 3D</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>(point on line, direction), both size (3,)</p>
+</blockquote>
+</div>
+
+
+                </section>
+                <section id="point_line_distance_3d">
+                            <input id="point_line_distance_3d-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">point_line_distance_3d</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">points</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>,</span><span class="param">	<span class="n">line_point</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>,</span><span class="param">	<span class="n">line_direction</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span></span><span class="return-annotation">) -> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>:</span></span>
+
+                <label class="view-source-button" for="point_line_distance_3d-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#point_line_distance_3d"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="point_line_distance_3d-62"><a href="#point_line_distance_3d-62"><span class="linenos">62</span></a><span class="k">def</span><span class="w"> </span><span class="nf">point_line_distance_3d</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">points</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">line_point</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+</span><span id="point_line_distance_3d-63"><a href="#point_line_distance_3d-63"><span class="linenos">63</span></a>                           <span class="n">line_direction</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+</span><span id="point_line_distance_3d-64"><a href="#point_line_distance_3d-64"><span class="linenos">64</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="point_line_distance_3d-65"><a href="#point_line_distance_3d-65"><span class="linenos">65</span></a>
+</span><span id="point_line_distance_3d-66"><a href="#point_line_distance_3d-66"><span class="linenos">66</span></a><span class="sd">    :param points: (N, 3)</span>
+</span><span id="point_line_distance_3d-67"><a href="#point_line_distance_3d-67"><span class="linenos">67</span></a><span class="sd">    :param line_point: (3,)</span>
+</span><span id="point_line_distance_3d-68"><a href="#point_line_distance_3d-68"><span class="linenos">68</span></a><span class="sd">    :param line_direction: (3,)</span>
+</span><span id="point_line_distance_3d-69"><a href="#point_line_distance_3d-69"><span class="linenos">69</span></a><span class="sd">    :return: tensor of size (N,)</span>
+</span><span id="point_line_distance_3d-70"><a href="#point_line_distance_3d-70"><span class="linenos">70</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="point_line_distance_3d-71"><a href="#point_line_distance_3d-71"><span class="linenos">71</span></a>    <span class="n">from_points</span> <span class="o">=</span> <span class="n">points</span> <span class="o">-</span> <span class="n">line_point</span>  <span class="c1"># size = (N, 3)</span>
+</span><span id="point_line_distance_3d-72"><a href="#point_line_distance_3d-72"><span class="linenos">72</span></a>    <span class="n">dots</span> <span class="o">=</span> <span class="n">from_points</span> <span class="o">@</span> <span class="n">line_direction</span>  <span class="c1"># size = (N,)</span>
+</span><span id="point_line_distance_3d-73"><a href="#point_line_distance_3d-73"><span class="linenos">73</span></a>    <span class="n">projected_points</span> <span class="o">=</span> <span class="n">dots</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">line_direction</span>  <span class="c1"># size = (N, 3)</span>
+</span><span id="point_line_distance_3d-74"><a href="#point_line_distance_3d-74"><span class="linenos">74</span></a>    <span class="n">line_offsets</span> <span class="o">=</span> <span class="n">from_points</span> <span class="o">-</span> <span class="n">projected_points</span>  <span class="c1"># size = (N, 3)</span>
+</span><span id="point_line_distance_3d-75"><a href="#point_line_distance_3d-75"><span class="linenos">75</span></a>    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">vector_norm</span><span class="p">(</span><span class="n">line_offsets</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># size = (N,)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>points</strong>:  (N, 3)</li>
+<li><strong>line_point</strong>:  (3,)</li>
+<li><strong>line_direction</strong>:  (3,)</li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>tensor of size (N,)</p>
 </blockquote>
 </div>
 
