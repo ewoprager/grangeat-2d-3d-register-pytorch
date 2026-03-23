@@ -20,8 +20,8 @@ from reg23_experiments.ops.optimisation import mapping_transformation_to_paramet
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.ops import drr
 from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
-from reg23_experiments.app.gui.fixed_image import FixedImageGUI, Image2DFullGUI
-from reg23_experiments.app.gui.moving_image import add_moving_image_layer
+from reg23_experiments.app.gui.image_layer_manager import add_image_layer
+from reg23_experiments.app.gui.moving_image_layer_manager import add_moving_image_layer
 from reg23_experiments.app.gui.electrodes import ElectrodesGUI
 from reg23_experiments.app.gui.parameters import ParametersWidget
 from reg23_experiments.app.gui.helpers import TraitletsWidget
@@ -320,9 +320,9 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # GUI Modules
     # -----
-    fixed_image_gui = FixedImageGUI(app_state, namespace="a")
-    image_2d_full_gui = Image2DFullGUI(app_state, namespace="a")
-    moving_image_layer = add_moving_image_layer(app_state, namespace="a")
+    fixed_image_layer = add_image_layer(app_state=app_state, dadg_key="a__fixed_image")
+    image_2d_full_layer = add_image_layer(app_state=app_state, dadg_key="a__image_2d_full")
+    moving_image_layer = add_moving_image_layer(app_state=app_state, namespace="a")
     register_gui = RegisterGUI(app_state)
     electrodes_gui = ElectrodesGUI(app_state, namespace="a")
 

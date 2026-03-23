@@ -16,17 +16,21 @@ __all__ = ["add_moving_image_layer"]
 logger = logging.getLogger(__name__)
 
 
-class _MovingImageManager:
+class _MovingImageLayerManager:
     def __init__(self, *, layer: napari.layers.Layer, app_state: AppState, dadg_key: str):
-        self._app_state = app_state
-        self._app_state.dadg.set_evaluation_laziness(dadg_key, lazily_evaluated=False)
         self._layer = weakref.ref(layer)
+        self._app_state = app_state
+        self._dadg_key = dadg_key
+        self._app_state.dadg.set_evaluation_laziness(self._dadg_key, lazily_evaluated=False)
         self._layer().mouse_drag_callbacks.append(self._mouse_drag)
         viewer().bind_key("Control", self._on_ctrl_down)
         self._key_states = {"Ctrl": False}
-        self._app_state.dadg.observe(dadg_key, "interface", self._set_callback)
+        self._app_state.dadg.observe(dadg_key, "moving_image_manager", self._observer_callback)
 
-    def _set_callback(self, new_value: torch.Tensor) -> None:
+    def __del__(self):
+        self._app_state.dadg.set_evaluation_laziness(self._dadg_key, lazily_evaluated=True)
+
+    def _observer_callback(self, new_value: torch.Tensor) -> None:
         self._layer().data = new_value.cpu().numpy()
 
     def _on_ctrl_down(self, _):
@@ -104,7 +108,7 @@ class _MovingImageManager:
                 pass
 
 
-def add_moving_image_layer(app_state: AppState, namespace: str | None = None) -> napari.layers.Layer:
+def add_moving_image_layer(*, app_state: AppState, namespace: str | None = None) -> napari.layers.Layer:
     moving_image_key = "moving_image" if namespace is None else f"{namespace}__moving_image"
     app_state.dadg.set_evaluation_laziness(moving_image_key, lazily_evaluated=False)
     value = app_state.dadg.get(moving_image_key, soft=True)
@@ -113,5 +117,5 @@ def add_moving_image_layer(app_state: AppState, namespace: str | None = None) ->
     initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
     layer = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
                                interpolation2d="linear", name=moving_image_key)
-    layer.my_plugin = _MovingImageManager(layer=layer, app_state=app_state, dadg_key=moving_image_key)
+    layer.my_plugin = _MovingImageLayerManager(layer=layer, app_state=app_state, dadg_key=moving_image_key)
     return layer
