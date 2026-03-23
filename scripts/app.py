@@ -7,35 +7,32 @@ os.environ["QT_API"] = "PyQt6"
 import torch
 import napari
 import pathlib
-from tqdm import tqdm
 import pydicom
 
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.io.volume import load_ct
 from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.data.structs import Error
-from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, args_from_dadg, \
-    capture_in_namespaces
+from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, capture_in_namespaces
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation, random_parameters_at_distance
 from reg23_experiments.ops import drr
 from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
-from reg23_experiments.app.gui.image_layer_manager import add_image_layer
-from reg23_experiments.app.gui.moving_image_layer_manager import add_moving_image_layer
-from reg23_experiments.app.gui.electrodes import ElectrodesGUI
+from reg23_experiments.app.gui.fixed_image_layer import add_fixed_image_layer
+from reg23_experiments.app.gui.moving_image_layer import add_moving_image_layer
+from reg23_experiments.app.gui.electrode_layer import add_electrode_layer
 from reg23_experiments.app.gui.parameters import ParametersWidget
 from reg23_experiments.app.gui.helpers import TraitletsWidget
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters, Context
 from reg23_experiments.app.gui.register import RegisterGUI
-from reg23_experiments.app.state import AppState
+from reg23_experiments.app.context import AppContext
 from reg23_experiments.app.worker_manager import WorkerManager
-from reg23_experiments.data.structs import Transformation, SceneGeometry, Cropping
+from reg23_experiments.data.structs import Transformation, SceneGeometry
 from reg23_experiments.ops import geometry
 from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
 from reg23_experiments.io.image import read_dicom
-from reg23_experiments.app.gui_settings import GUISettings
 
 namespace_captures: dict[str, str] = {  #
     "image_2d_full": "a",  #
@@ -289,14 +286,14 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # parameters.op_algo_parameters.particle_count = 5
     # test = clone_has_traits(parameters)
 
-    app_state = AppState(parameters=parameters, dadg=data_manager(),
-                         transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
-                         electrode_save_directory=pathlib.Path("data/app_electrode_save_data"))
+    app_context = AppContext(parameters=parameters, dadg=data_manager(),
+                             transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
+                             electrode_save_directory=pathlib.Path("data/app_electrode_save_data"))
 
-    parameters_widget = ParametersWidget(app_state, parameters)
+    parameters_widget = ParametersWidget(app_context)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
-    viewer().window.add_dock_widget(TraitletsWidget(app_state.gui_settings), name="GUI Settings", area="left",
+    viewer().window.add_dock_widget(TraitletsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
                                     menu=viewer().window.window_menu)
 
     # -----
@@ -320,17 +317,17 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # GUI Modules
     # -----
-    fixed_image_layer = add_image_layer(app_state=app_state, dadg_key="a__fixed_image")
-    image_2d_full_layer = add_image_layer(app_state=app_state, dadg_key="a__image_2d_full")
-    moving_image_layer = add_moving_image_layer(app_state=app_state, namespace="a")
-    register_gui = RegisterGUI(app_state)
-    electrodes_gui = ElectrodesGUI(app_state, namespace="a")
+    fixed_image_layer = add_fixed_image_layer(ctx=app_context, dadg_key="a__fixed_image")
+    image_2d_full_layer = add_fixed_image_layer(ctx=app_context, dadg_key="a__image_2d_full")
+    moving_image_layer = add_moving_image_layer(ctx=app_context, namespace="a")
+    register_gui = RegisterGUI(app_context)
+    electrode_layer = add_electrode_layer(ctx=app_context, namespace="a")
 
     # -----
     # Modules
     # -----
-    worker_manager = WorkerManager(app_state=app_state, objective_function=objective_function)
-    transformation_saver = TransformationSaver(app_state)
+    worker_manager = WorkerManager(ctx=app_context, objective_function=objective_function)
+    transformation_saver = TransformationSaver(app_context)
 
     value = data_manager().get("a__moving_image")
     if isinstance(value, Error):

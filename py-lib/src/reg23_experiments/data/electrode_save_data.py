@@ -134,6 +134,7 @@ class ElectrodeSaveData(SaveData):
 
 
 def compute_changes(uid: str, old_data: torch.Tensor, new_data: torch.Tensor, tol: float = 1e-8) -> list[Change]:
+    uid = str(uid)
     ret: list[Change] = []
     if old_data.size()[0] > new_data.size()[0]:
         # have lost some points
