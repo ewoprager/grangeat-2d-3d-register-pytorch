@@ -210,9 +210,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         downsample_level=0,  #
         regenerate_drr=True,  #
         cache_directory=cache_directory,  #
-        save_to_cache=True,  #
+        save_to_cache=True,  # a
         new_drr_size=torch.Size([500, 500]),  #
-        ct_path=ct_path,  #
         a__xray_path=xray_path,  #
         device=device,  #
         a__source_offset=torch.zeros(2),  #
@@ -224,6 +223,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                                          translation=torch.zeros(3, device=device)),  #
         target_ap_distance=5.0,  #
     )
+    if ct_path is not None:
+        data_manager().set("ct_path", ct_path)
 
     # -----
     # External datasets
@@ -268,7 +269,6 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # Parameters
     # -----
     parameters = Parameters(  #
-        ct_path=data_manager().get("ct_path"),  #
         downsample_level=0,  #
         truncation_percent=0,  #
         cropping="None",  #
@@ -346,7 +346,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--cache-directory", type=str, default="cache",
                         help="Set the directory where data that is expensive to calculate will be saved. The default "
                              "is 'cache'.")
-    parser.add_argument("-p", "--ct-path", type=str,
+    parser.add_argument("-p", "--ct-path", type=str, default=None,
                         help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
                              "process.")
     parser.add_argument("--external-gold-hip", action="store_true",

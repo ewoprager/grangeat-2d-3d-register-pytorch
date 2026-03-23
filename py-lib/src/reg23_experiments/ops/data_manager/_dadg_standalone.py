@@ -52,13 +52,14 @@ class StandaloneDADG(DirectedAcyclicDataGraph):
     callback later on with `data_manager().remove_callback(<variable name>, <callback name>)`.
     """
 
-    def __init__(self):
+    def __init__(self, *, panic_on_failed_eager_evaluation: bool = False):
         self.__nodes: dict[str, Node] = dict()
         self.__updaters: dict[str, Updater] = dict()
         self.__in_top_level_call: bool = True
         self.__children: weakref.WeakSet[
             ChildDirectedAcyclicDataGraph] = weakref.WeakSet()  # children add themselves, and will be automatically
         # removed on destruction
+        self.__panic_on_failed_eager_evaluation = panic_on_failed_eager_evaluation
 
     @staticmethod
     def __data_mutating(function):
@@ -76,8 +77,8 @@ class StandaloneDADG(DirectedAcyclicDataGraph):
             self.__in_top_level_call = False
             ret = function(self, *args, **kwargs)
             if this_is_top_level_call:
-                err = self.__clean_graph()
-                if isinstance(err, Error):
+                err = self.__clean_graph(quit_on_first_failure=self.__panic_on_failed_eager_evaluation)
+                if isinstance(err, Error) and self.__panic_on_failed_eager_evaluation:
                     return Error(f"Error cleaning graph after call to data mutating function: {err.description}.")
             self.__in_top_level_call = this_is_top_level_call
             return ret
@@ -375,13 +376,18 @@ class StandaloneDADG(DirectedAcyclicDataGraph):
             return Error(f"Node '{node_name}' still dirty after running updater '{node.updater}'.")
         return None
 
-    def __clean_graph(self) -> None | Error:
+    def __clean_graph(self, *, quit_on_first_failure: bool = False) -> None | Error:
+        errors: list[str] = []
         for node_name, node in self.__nodes.items():
             if node.lazily_evaluated:
                 continue
             err = self.__clean_node(node_name, soft=True)
             if isinstance(err, Error):
-                return Error(f"Graph clean failed on node '{node_name}': {err.description}.")
+                errors.append(f"Graph clean failed on node '{node_name}': {err.description}.")
+                if quit_on_first_failure:
+                    break
+        if errors:
+            return Error("\n".join(errors))
         return None
 
     def __eval_in_degrees(self) -> dict[str, int]:

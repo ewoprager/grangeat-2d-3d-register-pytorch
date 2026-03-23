@@ -1,7 +1,6 @@
-from traitlets import HasTraits, Instance, Float, Int, Bool, Unicode, validate, Enum, TraitError, List, Union, All
+from traitlets import HasTraits, Instance, Float, Int, Bool, Unicode, Enum, List, Union
 from typing import Literal
 
-import pathlib
 import torch
 
 from reg23_experiments.experiments.parameters import Parameters
@@ -29,6 +28,8 @@ class AppState(HasTraits):
 
     parameters: Parameters = Instance(Parameters, allow_none=False)
 
+    ct_path: str = Unicode(allow_none=False).tag(ui=True)
+
     button_evaluate_once: bool = Bool(default_value=False)
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)
 
@@ -42,15 +43,3 @@ class AppState(HasTraits):
     button_save_transformation: bool = Bool(default_value=False)
     button_load_transformation_of_name: str | None = Unicode(allow_none=True, default_value=None)
     button_delete_transformation_of_name: str | None = Unicode(allow_none=True, default_value=None)
-
-    @validate("transformation_save_directory")
-    def _validate_transformation_save_directory(self, proposal):
-        if not proposal["value"].is_dir():
-            raise TraitError("'transformation_save_directory' must be a valid directory")
-        return proposal["value"]
-
-    @validate("electrode_save_directory")
-    def _validate_electrode_save_directory(self, proposal):
-        if not proposal["value"].is_dir():
-            raise TraitError("'electrode_save_directory' must be a valid directory")
-        return proposal["value"]

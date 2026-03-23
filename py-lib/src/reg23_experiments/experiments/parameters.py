@@ -36,7 +36,6 @@ class LocalZnccParameters(HasTraits):
 
 
 class Parameters(HasTraits):
-    ct_path: str = Unicode(allow_none=False).tag(ui=True)
     target_flipped: bool = Bool(allow_none=False).tag(ui=True)
     downsample_level: int = Int(min=0).tag(ui=True)
     truncation_percent: int = Int(min=0, max=100).tag(ui=True)
