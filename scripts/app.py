@@ -21,9 +21,10 @@ from reg23_experiments.ops.optimisation import mapping_transformation_to_paramet
 from reg23_experiments.ops import drr
 from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
 from reg23_experiments.app.gui.fixed_image import FixedImageGUI, Image2DFullGUI
-from reg23_experiments.app.gui.moving_image import MovingImageGUI
+from reg23_experiments.app.gui.moving_image import add_moving_image_layer
 from reg23_experiments.app.gui.electrodes import ElectrodesGUI
 from reg23_experiments.app.gui.parameters import ParametersWidget
+from reg23_experiments.app.gui.helpers import TraitletsWidget
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters, Context
 from reg23_experiments.app.gui.register import RegisterGUI
 from reg23_experiments.app.state import AppState
@@ -34,6 +35,7 @@ from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
 from reg23_experiments.io.image import read_dicom
+from reg23_experiments.app.gui_settings import GUISettings
 
 namespace_captures: dict[str, str] = {  #
     "image_2d_full": "a",  #
@@ -294,6 +296,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     parameters_widget = ParametersWidget(app_state, parameters)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
+    viewer().window.add_dock_widget(TraitletsWidget(app_state.gui_settings), name="GUI Settings", area="left",
+                                    menu=viewer().window.window_menu)
 
     # -----
     # The universal objective function
@@ -318,7 +322,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     fixed_image_gui = FixedImageGUI(app_state, namespace="a")
     image_2d_full_gui = Image2DFullGUI(app_state, namespace="a")
-    moving_image_gui = MovingImageGUI(app_state, namespace="a")
+    moving_image_layer = add_moving_image_layer(app_state, namespace="a")
     register_gui = RegisterGUI(app_state)
     electrodes_gui = ElectrodesGUI(app_state, namespace="a")
 

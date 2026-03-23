@@ -1,75 +1,33 @@
 import logging
-from typing import NamedTuple, Callable
+import weakref
 
+import napari.layers
 import torch
 import numpy as np
 import scipy
-from magicgui import widgets
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.data.structs import Transformation
 from reg23_experiments.app.state import AppState
 
-__all__ = ["ViewParams", "ViewParamWidget", "MovingImageGUI"]
+__all__ = ["add_moving_image_layer"]
 
 logger = logging.getLogger(__name__)
 
 
-class ViewParams(NamedTuple):
-    rotation_sensitivity: float
-    translation_sensitivity: float
-
-
-class ViewParamWidget(widgets.Container):
-    def __init__(self, view_params_setter: Callable[[ViewParams], None]):
-        super().__init__()
-        self._view_params_setter = view_params_setter
-
-        self.append(widgets.Label(label=None, value="Mouse drag sensitivity"))
-
-        # Translation sensitivity
-        self._translation_sensitivity_slider = widgets.FloatSlider(value=0.06, min=0.005, max=0.5, step=0.005,
-                                                                   label="Translation")
-        self._translation_sensitivity_slider.changed.connect(self._update)
-        self.append(self._translation_sensitivity_slider)
-
-        # Rotation sensitivity
-        self._rotation_sensitivity_slider = widgets.FloatSlider(value=0.002, min=0.0005, max=0.05, step=0.0005,
-                                                                label="Rotation")
-        self._rotation_sensitivity_slider.changed.connect(self._update)
-        self.append(self._rotation_sensitivity_slider)
-
-    def _update(self, *args) -> None:
-        self._view_params_setter(ViewParams(translation_sensitivity=self._translation_sensitivity_slider.get_value(),
-                                            rotation_sensitivity=self._rotation_sensitivity_slider.get_value()))
-
-
-class MovingImageGUI:
-    def __init__(self, app_state: AppState, namespace: str | None = None):
+class _MovingImageManager:
+    def __init__(self, *, layer: napari.layers.Layer, app_state: AppState, dadg_key: str):
         self._app_state = app_state
-        moving_image_key = "moving_image" if namespace is None else f"{namespace}__moving_image"
-        self._app_state.dadg.set_evaluation_laziness(moving_image_key, lazily_evaluated=False)
-        value = self._app_state.dadg.get(moving_image_key, soft=True)
-        if isinstance(value, Error):
-            raise RuntimeError(f"Error softly getting '{moving_image_key}' from DAG: {value.description}.")
-        initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
-        self._layer = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
-                                         interpolation2d="linear", name=f"DRR {namespace}")
-        self._layer.mouse_drag_callbacks.append(self._mouse_drag)
+        self._app_state.dadg.set_evaluation_laziness(dadg_key, lazily_evaluated=False)
+        self._layer = weakref.ref(layer)
+        self._layer().mouse_drag_callbacks.append(self._mouse_drag)
         viewer().bind_key("Control", self._on_ctrl_down)
         self._key_states = {"Ctrl": False}
-        self._view_params = ViewParams(translation_sensitivity=0.06, rotation_sensitivity=0.002)
-        self._view_widget = ViewParamWidget(self.set_view_params)
-        viewer().window.add_dock_widget(self._view_widget, name="View options", area="left",
-                                        menu=viewer().window.window_menu)
-        self._app_state.dadg.observe(moving_image_key, "interface", self._set_callback)
+        self._app_state.dadg.observe(dadg_key, "interface", self._set_callback)
 
     def _set_callback(self, new_value: torch.Tensor) -> None:
-        self._layer.data = new_value.cpu().numpy()
-
-    def set_view_params(self, value: ViewParams) -> None:
-        self._view_params = value
+        self._layer().data = new_value.cpu().numpy()
 
     def _on_ctrl_down(self, _):
         self._key_states["Ctrl"] = True
@@ -88,7 +46,7 @@ class MovingImageGUI:
             while event.type == "mouse_move":
                 dragged = True
 
-                delta = self._view_params.rotation_sensitivity * (
+                delta = self._app_state.gui_settings.rotation_sensitivity * (
                         np.array([event.position[1], -event.position[0]]) - drag_start)
                 euler_angles = [delta[1], delta[0], 0.0]
                 rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
@@ -124,8 +82,8 @@ class MovingImageGUI:
             while event.type == "mouse_move":
                 dragged = True
 
-                delta = self._view_params.translation_sensitivity * (torch.tensor(event.position) - drag_start).flip(
-                    (0,))
+                delta = self._app_state.gui_settings.translation_sensitivity * (
+                        torch.tensor(event.position) - drag_start).flip((0,))
                 prev = self._app_state.dadg.get("current_transformation")
                 tr = prev.translation
                 tr[0:2] = (translation_start + delta).to(device=tr.device)
@@ -144,3 +102,16 @@ class MovingImageGUI:
             else:
                 # just clicked
                 pass
+
+
+def add_moving_image_layer(app_state: AppState, namespace: str | None = None) -> napari.layers.Layer:
+    moving_image_key = "moving_image" if namespace is None else f"{namespace}__moving_image"
+    app_state.dadg.set_evaluation_laziness(moving_image_key, lazily_evaluated=False)
+    value = app_state.dadg.get(moving_image_key, soft=True)
+    if isinstance(value, Error):
+        raise RuntimeError(f"Error softly getting '{moving_image_key}' from DADG: {value.description}.")
+    initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
+    layer = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
+                               interpolation2d="linear", name=moving_image_key)
+    layer.my_plugin = _MovingImageManager(layer=layer, app_state=app_state, dadg_key=moving_image_key)
+    return layer

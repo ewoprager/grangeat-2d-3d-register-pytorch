@@ -6,6 +6,7 @@ import torch
 
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.experiments.parameters import Parameters
+from reg23_experiments.app.gui_settings import GUISettings
 
 from ._gui_param_to_dag_node import respond_to_crop_change, respond_to_mask_change, respond_to_crop_value_change, \
     respond_to_crop_value_value_change
@@ -22,6 +23,8 @@ class WorkerState(HasTraits):
 
 
 class AppState(HasTraits):
+    gui_settings: GUISettings = Instance(GUISettings, allow_none=False, default_value=GUISettings())
+
     parameters: Parameters = Instance(Parameters, allow_none=False)
 
     dadg: DirectedAcyclicDataGraph = Instance(DirectedAcyclicDataGraph, allow_none=False)
