@@ -1,14 +1,47 @@
-from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe
+from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe, Dict
 from typing import Any
 
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
-from reg23_experiments.data.structs import Cropping
+from reg23_experiments.data.structs import Cropping, Error
 
-__all__ = ["NoParameters", "PsoParameters", "LocalZnccParameters", "LocalSearchParameters", "Parameters", "Context"]
+__all__ = ["NoParameters", "PsoParameters", "LocalZnccParameters", "LocalSearchParameters", "Parameters", "Context",
+           "XrayParameters"]
 
 
 class NoParameters(HasTraits):
     pass
+
+
+class XrayParameters(HasTraits):
+    target_flipped: bool = Bool(allow_none=False, default_value=False).tag(ui=True)
+    cropping: str = Enum(values=[  #
+        "None",  #
+        "fixed"  #
+    ], allow_none=False, default_value="None").tag(ui=True)
+    cropping_value: Cropping | NoParameters = Instance(HasTraits, allow_none=False, default_value=NoParameters()).tag(
+        ui=True)
+
+    def __init__(self, **kwargs):
+        self._cropping_cache: Cropping | None = None
+        super().__init__(**kwargs)
+        self._update_cropping_value()
+
+    @observe("cropping")
+    def _cropping_changed(self, _):
+        self._update_cropping_value()
+
+    def _update_cropping_value(self):
+        if self.cropping == "fixed":
+            if isinstance(self.cropping_value, Cropping):
+                return
+            if self._cropping_cache is None:
+                self._cropping_cache = Cropping()
+            self.cropping_value = self._cropping_cache
+        else:
+            if isinstance(self.cropping_value, NoParameters):
+                return
+            self._cropping_cache = self.cropping_value
+            self.cropping_value = NoParameters()
 
 
 class PsoParameters(HasTraits):
@@ -36,15 +69,8 @@ class LocalZnccParameters(HasTraits):
 
 
 class Parameters(HasTraits):
-    target_flipped: bool = Bool(allow_none=False).tag(ui=True)
     downsample_level: int = Int(min=0).tag(ui=True)
     truncation_percent: int = Int(min=0, max=100).tag(ui=True)
-    cropping: str = Enum(values=[  #
-        "None",  #
-        "fixed"  #
-    ]).tag(ui=True)
-    cropping_value: Cropping | NoParameters = Instance(HasTraits, allow_none=False, default_value=NoParameters()).tag(
-        ui=True)
     mask: str = Enum(values=[  #
         "None",  #
         "Every evaluation",  #
@@ -66,6 +92,10 @@ class Parameters(HasTraits):
     ], default=Undefined).tag(ui=True)
     op_algo_parameters: HasTraits = Instance(HasTraits, allow_none=False).tag(ui=True)
     iteration_count: int = Int(min=0).tag(ui=True)
+    xray_parameters: dict[str, XrayParameters] = Dict(  #
+        key_trait=Unicode(allow_none=False),  #
+        value_trait=Instance(XrayParameters, allow_none=False),  #
+        allow_none=False, default_value=dict({}))
 
     OP_ALGO_PARAM_CLASSES: dict[str, type] = {  #
         "pso": PsoParameters,  #
@@ -82,11 +112,9 @@ class Parameters(HasTraits):
     def __init__(self, **kwargs):
         self._op_algo_cache: dict[str, Any] = {}
         self._sim_metric_cache: dict[str, Any] = {}
-        self._cropping_cache: Cropping | None = None
         super().__init__(**kwargs)
         self._update_op_algo_params()
         self._update_sim_metric_params()
-        self._update_cropping_value()
 
     @observe("optimisation_algorithm")
     def _op_algo_changed(self, _):
@@ -95,10 +123,6 @@ class Parameters(HasTraits):
     @observe("sim_metric")
     def _sim_metric_changed(self, _):
         self._update_sim_metric_params()
-
-    @observe("cropping")
-    def _cropping_changed(self, _):
-        self._update_cropping_value()
 
     def _update_op_algo_params(self):
         desired_cls: type = Parameters.OP_ALGO_PARAM_CLASSES[self.optimisation_algorithm]
@@ -117,19 +141,6 @@ class Parameters(HasTraits):
             if self.sim_metric not in self._sim_metric_cache:
                 self._sim_metric_cache[self.sim_metric] = desired_cls()
             self.sim_metric_parameters = self._sim_metric_cache[self.sim_metric]
-
-    def _update_cropping_value(self):
-        if self.cropping == "fixed":
-            if isinstance(self.cropping_value, Cropping):
-                return
-            if self._cropping_cache is None:
-                self._cropping_cache = Cropping()
-            self.cropping_value = self._cropping_cache
-        else:
-            if isinstance(self.cropping_value, NoParameters):
-                return
-            self._cropping_cache = self.cropping_value
-            self.cropping_value = NoParameters()
 
 
 class Context(HasTraits):

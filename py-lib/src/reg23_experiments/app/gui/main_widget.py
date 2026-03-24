@@ -28,8 +28,15 @@ class MainWidget(widgets.Container):
             self._open_ct_dir_button  #
         ], layout="horizontal"))
 
+        self._open_xray_file_button = widgets.PushButton(label="Open X-ray file")
+        self._open_xray_file_button.changed.connect(self._on_open_xray_file)
+        self.append(self._open_xray_file_button)
+
     def _on_open_ct_file(self, *args) -> None:
         self._ctx.state.button_open_ct_file = True
 
     def _on_open_ct_dir(self, *args) -> None:
         self._ctx.state.button_open_ct_dir = True
+
+    def _on_open_xray_file(self, *args) -> None:
+        self._ctx.state.button_open_xray_file = True

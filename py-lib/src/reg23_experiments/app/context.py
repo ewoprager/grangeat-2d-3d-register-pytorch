@@ -2,6 +2,7 @@ import logging
 from traitlets import TraitError
 
 import pathlib
+from magicgui.widgets import request_values
 
 from reg23_experiments.app.state import AppState
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData
@@ -11,6 +12,7 @@ from reg23_experiments.data.transformation_save_data import TransformationSaveMa
 from reg23_experiments.app.cache_manager import CacheManager
 from reg23_experiments.data.structs import Error
 from reg23_experiments.app.gui.viewer_singleton import viewer
+from reg23_experiments.experiments.parameters import XrayParameters
 
 from ._gui_param_to_dag_node import respond_to_crop_change, respond_to_mask_change, respond_to_crop_value_change, \
     respond_to_crop_value_value_change
@@ -47,14 +49,15 @@ class AppContext:
         self._dadg.set("downsample_level", self._state.parameters.downsample_level)
         self._state.parameters.observe(self._update_dag_truncation_percent, names=["truncation_percent"])
         self._dadg.set("truncation_percent", self._state.parameters.truncation_percent)
-        self._state.parameters.observe(self._update_dag_target_flipped, names=["target_flipped"])
-        self._dadg.set("a__target_flipped", self._state.parameters.target_flipped)
+        # self._state.parameters.observe(self._update_dag_target_flipped, names=["target_flipped"])
+        # self._dadg.set("a__target_flipped", self._state.parameters.target_flipped)
         self._state.parameters.observe(lambda change: respond_to_mask_change(self.dadg, change), names=["mask"])
-        self._state.parameters.observe(lambda change: respond_to_crop_change(self.dadg, change), names=["cropping"])
-        self._state.parameters.observe(lambda change: respond_to_crop_value_change(self.dadg, change),
-                                       names=["cropping_value"])
+        # self._state.parameters.observe(lambda change: respond_to_crop_change(self.dadg, change), names=["cropping"])
+        # self._state.parameters.observe(lambda change: respond_to_crop_value_change(self.dadg, change),
+        #                                names=["cropping_value"])
         self._state.observe(self._button_open_ct_file, names=["button_open_ct_file"])
         self._state.observe(self._button_open_ct_dir, names=["button_open_ct_dir"])
+        self._state.observe(self._button_open_xray_file, names=["button_open_xray_file"])
 
     @property
     def state(self) -> AppState:
@@ -82,8 +85,8 @@ class AppContext:
     def _update_dag_truncation_percent(self, change) -> None:
         self.dadg.set("truncation_percent", change.new, check_equality=True)
 
-    def _update_dag_target_flipped(self, change) -> None:
-        self.dadg.set("a__target_flipped", change.new, check_equality=True)
+    # def _update_dag_target_flipped(self, change) -> None:
+    #     self.dadg.set("a__target_flipped", change.new, check_equality=True)
 
     def _button_open_ct_file(self, change) -> None:
         if not change.new:
@@ -112,3 +115,37 @@ class AppContext:
         except TraitError:
             logger.warning(f"CT path not valid: '{path}'")
             return
+
+    def _button_open_xray_file(self, change) -> None:
+        if not change.new:
+            return
+        self.state.button_open_xray_file = False
+
+        # Get the user to choose a file
+        from qtpy.QtWidgets import QFileDialog
+        file, _ = QFileDialog.getOpenFileName(viewer().window._qt_window, "Open a CT volume file")
+        logger.info(f"Opening X-ray image file '{file}'")
+        for _, ps in self._state.parameters.xray_parameters:
+            if ps.xray_path == file:
+                logger.warning(f"X-ray '{file}' is already open.")
+                return
+
+        # Get a valid, unique name for the X-ray from the user
+        prompt_string = "Enter a unique name for the X-ray"
+        name = pathlib.Path(file).stem[:6]
+        if name not in self._state.parameters.xray_parameters:
+            prompt_string += f"; leave empty for default value '{name}' generated from file path"
+        prompt_string += ":"
+        values = request_values(name={"annotation": str, "label": prompt_string})
+        if values["name"]:
+            name = values["name"]
+        while not name or name in self._state.parameters.xray_parameters:
+            values = request_values(name={"annotation": str, "label": prompt_string})
+            if values["name"]:
+                name = values["name"]
+
+        # Get the X-ray parameters
+        p = XrayParameters()
+        self.state.parameters.xray_parameters = {**self.state.parameters.xray_parameters, name: p}
+        self.dadg.set(f"{name}__xray_path", file)
+        self.dadg.set(f"{name}__target_flipped", p.target_flipped)

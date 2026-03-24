@@ -34,6 +34,8 @@ class AppState(HasTraits):
     button_open_ct_file: bool = Bool(default_value=False)
     button_open_ct_dir: bool = Bool(default_value=False)
 
+    button_open_xray_file: bool = Bool(default_value=False)
+
     button_evaluate_once: bool = Bool(default_value=False)
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)
 
