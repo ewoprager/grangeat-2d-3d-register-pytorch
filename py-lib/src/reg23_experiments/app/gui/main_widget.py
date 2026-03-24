@@ -32,6 +32,8 @@ class MainWidget(widgets.Container):
         self._open_xray_file_button.changed.connect(self._on_open_xray_file)
         self.append(self._open_xray_file_button)
 
+        self._ctx.state.parameters.observe(self._on_xray_parameters_change, names=["xray_parameters"])
+
     def _on_open_ct_file(self, *args) -> None:
         self._ctx.state.button_open_ct_file = True
 
@@ -40,3 +42,6 @@ class MainWidget(widgets.Container):
 
     def _on_open_xray_file(self, *args) -> None:
         self._ctx.state.button_open_xray_file = True
+
+    def _on_xray_parameters_change(self, change) -> None:
+        logger.info(f"X-ray parameters changed: {change["new"]}")

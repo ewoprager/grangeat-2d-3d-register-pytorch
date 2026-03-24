@@ -15,112 +15,130 @@ __all__ = ["TraitletsWidget", "FloatingWidget"]
 logger = logging.getLogger(__name__)
 
 
+def value_from_widget(widget: Widget) -> Any:
+    if isinstance(widget, TraitletsWidget):
+        return widget.value
+    if isinstance(widget, Container):
+        # ToDo: Currently only works with dicts
+        return {  #
+            element.name: value_from_widget(element)  #
+            for element in widget  #
+        }
+    return widget.value
+
+
 class TraitletsWidget(Container):
-    def __init__(self, params: traitlets.HasTraits, **widget_kwargs):
+    def __init__(self, hastraits: traitlets.HasTraits, **widget_kwargs):
         super().__init__(widgets=[], layout='vertical', labels=True, **widget_kwargs)
 
-        self._params = params
+        self._callback_loop_prevention: bool = False
+        self._hastraits = hastraits
 
-        if isinstance(params, NoParameters):
+        if isinstance(self._hastraits, NoParameters):
             self.labels = False
             child = Label(value="n/a")
             self.append(child)
             return
 
-        for name, trait in params.traits().items():
+        for name, trait in self._hastraits.traits().items():
             if not trait.metadata.get("ui", False):
                 continue
 
-            value = getattr(params, name)
-            child = TraitletsWidget._construct_child_widget(parent=self._params, name=name, trait_object=trait,
-                                                            value=value)
+            value = getattr(self._hastraits, name)
+            child = TraitletsWidget._construct_child_widget(name=name, trait=trait, value=value)
             if isinstance(child, Error):
                 logger.warning(f"Error constructing child widget: {child.description}")
                 continue
-            # set the value change callback appropriately
-            if isinstance(child, Container):
-                def replace_child(change, _name=name, _trait_object=trait):
-                    self.remove(_name)
-                    new_child = TraitletsWidget._construct_child_widget(parent=self._params, name=_name,
-                                                                        trait_object=_trait_object, value=change["new"])
-                    self.append(new_child)
 
-                self._params.observe(replace_child, names=name)
-            else:
-                child.changed.connect(lambda v, n=name: setattr(self._params, n, v))
+            # Any traits that aren't instances of HasTraits have their values read directly from the widget to update
+            # trait value
+            if not isinstance(trait, traitlets.Instance):
+                def update_hastraits_from_widget(new_value: Any, _name=name) -> None:
+                    if self._callback_loop_prevention:
+                        return
+                    self._callback_loop_prevention = True
+                    setattr(self._hastraits, _name, new_value)
+                    self._callback_loop_prevention = False
+
+                child.changed.connect(update_hastraits_from_widget)
+
+            # All traits have the widget either updated or re-built when the hastraits value changes
+            def update_widget_from_hastraits(change, _name=name, _trait=trait, widget=child) -> None:
+                if self._callback_loop_prevention:
+                    return
+                self._callback_loop_prevention = True
+                if isinstance(trait, traitlets.Instance) or isinstance(trait, traitlets.Dict):
+                    self.remove(_name)
+                    self.append(TraitletsWidget._construct_child_widget(name=_name, trait=_trait, value=change["new"]))
+                else:
+                    widget.value = change["new"]
+                self._callback_loop_prevention = False
+
+            self._hastraits.observe(update_widget_from_hastraits, names=[name])
+
+            # Dict traits have additional callbacks for the elements of the dict
+            if isinstance(trait, traitlets.Dict):
+                def update_dict_trait_from_widget(new_value: Any, _name=name, _widget=child) -> None:
+                    if self._callback_loop_prevention:
+                        return
+                    self._callback_loop_prevention = True
+                    setattr(self._hastraits, _name, value_from_widget(_widget))
+                    self._callback_loop_prevention = False
+
+                for element_widget in child:
+                    element_widget.changed.connect(update_dict_trait_from_widget)
 
             self.append(child)
 
     @property
-    def params(self) -> traitlets.HasTraits:
-        return self._params
+    def value(self) -> traitlets.HasTraits:
+        return self._hastraits
 
     @staticmethod
-    def _construct_child_widget(*, parent: traitlets.HasTraits, name: str, trait_object: traitlets.TraitType,
-                                value: Any) -> Widget | Error:
+    def _construct_child_widget(*, name: str, trait: traitlets.TraitType, value: Any) -> Widget | Error:
         # Float
-        if isinstance(trait_object, traitlets.Float):
-            child = FloatSpinBox(name=name, value=value)
-            if trait_object.min is not None:
-                child.min = trait_object.min
-            if trait_object.max is not None:
-                child.max = trait_object.max
-            return child
+        if isinstance(trait, traitlets.Float):
+            ret = FloatSpinBox(name=name, value=value)
+            if trait.min is not None:
+                ret.min = trait.min
+            if trait.max is not None:
+                ret.max = trait.max
+            return ret
         # Int
-        elif isinstance(trait_object, traitlets.Int):
-            child = SpinBox(name=name, value=value)
-            if trait_object.min is not None:
-                child.min = trait_object.min
-            if trait_object.max is not None:
-                child.max = trait_object.max
-            return child
+        elif isinstance(trait, traitlets.Int):
+            ret = SpinBox(name=name, value=value)
+            if trait.min is not None:
+                ret.min = trait.min
+            if trait.max is not None:
+                ret.max = trait.max
+            return ret
         # Bool
-        elif isinstance(trait_object, traitlets.Bool):
-            child = CheckBox(name=name, value=value)
-            return child
+        elif isinstance(trait, traitlets.Bool):
+            ret = CheckBox(name=name, value=value)
+            return ret
         # Enum
-        elif isinstance(trait_object, traitlets.Enum):
-            child = ComboBox(name=name, choices=trait_object.values, value=value)
-            return child
+        elif isinstance(trait, traitlets.Enum):
+            ret = ComboBox(name=name, choices=trait.values, value=value)
+            return ret
         # Unicode; ToDo: Currently read-only
-        elif isinstance(trait_object, traitlets.Unicode):
-            child = Label(name=name, value=value)
-            return child
+        elif isinstance(trait, traitlets.Unicode):
+            ret = Label(name=name, value=value)
+            return ret
         # Sub-config
-        elif isinstance(trait_object, traitlets.Instance) and isinstance(value, traitlets.HasTraits):
-            child = TraitletsWidget(value, name=name)
-            return child
+        elif isinstance(trait, traitlets.Instance) and isinstance(value, traitlets.HasTraits):
+            ret = TraitletsWidget(value, name=name)
+            return ret
         # Dict
-        elif isinstance(trait_object, traitlets.Dict):
-            child = Container()
-
-            def update_dict_from_widget(_parent=parent, _name=name, container_widget=child):
-                new_value = {  #
-                    w.name: w.value  #
-                    for w in container_widget  #
-                }
-                setattr(_parent, _name, new_value)
-
-            for key, _value in value.items():
-                widget = TraitletsWidget._construct_child_widget(parent=parent, name=key,
-                                                                 trait_object=trait_object._value_trait, value=_value)
-                if isinstance(child, Container):
-                    def update_widget_from_dict(change, _parent=parent, _name=name, _trait_object=trait_object):
-                        _parent.remove(_name)
-                        new_child = TraitletsWidget._construct_child_widget(parent=_parent, name=_name,
-                                                                            trait_object=_trait_object,
-                                                                            value=change["new"])
-                        _parent.append(new_child)
-
-                    parent.observe(update_widget_from_dict, names=name)
-                else:
-                    widget.changed.connect(lambda v: update_dict_from_widget())
-                child.append(widget)
-            return child
+        elif isinstance(trait, traitlets.Dict):
+            ret = Container(name=name)
+            for key, dict_value in value.items():
+                dict_value_widget = TraitletsWidget._construct_child_widget(name=key, trait=trait._value_trait,
+                                                                            value=dict_value)
+                ret.append(dict_value_widget)
+            return ret
         # Unsupported
-        return Error(
-            f"Unsupported trait class type '{trait_object.__class__.__name__}' encountered while building parameters "
-            f"widget.")
+        return Error(f"Unsupported trait class type '{trait.__class__.__name__}' encountered while building parameters "
+                     f"widget.")
 
 
 class FloatingWidget(QWidget):
