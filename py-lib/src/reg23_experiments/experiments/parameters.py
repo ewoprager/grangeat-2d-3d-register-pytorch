@@ -13,6 +13,7 @@ class NoParameters(HasTraits):
 
 
 class XrayParameters(HasTraits):
+    file_path: str = Unicode(allow_none=False).tag(ui=True)
     target_flipped: bool = Bool(allow_none=False, default_value=False).tag(ui=True)
     cropping: str = Enum(values=[  #
         "None",  #

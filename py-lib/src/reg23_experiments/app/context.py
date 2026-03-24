@@ -3,16 +3,20 @@ from traitlets import TraitError
 
 import pathlib
 from magicgui.widgets import request_values
+import torch
 
 from reg23_experiments.app.state import AppState
-from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData
+from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData, updaters, capture_in_namespaces
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
 from reg23_experiments.app.cache_manager import CacheManager
-from reg23_experiments.data.structs import Error
+from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.experiments.parameters import XrayParameters
+from reg23_experiments.app.gui.input_manager import InputManager
+
+from reg23_experiments.experiments.multi_xray_truncation_updaters import set_target_image, project_drr, read_xray_uid
 
 from ._gui_param_to_dag_node import respond_to_crop_change, respond_to_mask_change, respond_to_crop_value_change, \
     respond_to_crop_value_value_change
@@ -25,13 +29,14 @@ logger = logging.getLogger(__name__)
 class AppContext:
     def __init__(self, *, parameters: Parameters, dadg: DirectedAcyclicDataGraph,
                  electrode_save_directory: pathlib.Path, transformation_save_directory: pathlib.Path):
+        self._input_manager = InputManager()
         self._state = AppState(parameters=parameters)
         self._dadg = dadg
         self._cache_manager = CacheManager()
         self._electrode_save_manager = ElectrodeSaveManager(electrode_save_directory)
         self._transformation_save_manager = TransformationSaveManager(transformation_save_directory)
 
-        # load values from the cache
+        # load ct path from the cache
         if self.dadg.has_node("ct_path"):
             res = self.dadg.get("ct_path")
             if not isinstance(res, Error):
@@ -41,6 +46,12 @@ class AppContext:
             if last_ct_path is not None:
                 self._state.ct_path = str(last_ct_path)
                 self.dadg.set("ct_path", self._state.ct_path, check_equality=True)
+
+        # load X-ray paths from the cache
+        res = self._cache_manager.last_xray_paths
+        if res is not None:
+            for name, xray_path in res.items():
+                self._add_xray(name=name, file_path=str(xray_path))
 
         # set up observers such that parameters changed in the UI effect the DADG and cache correctly
         self._state.observe(self._ct_path_changed, names=["ct_path"])
@@ -58,6 +69,11 @@ class AppContext:
         self._state.observe(self._button_open_ct_file, names=["button_open_ct_file"])
         self._state.observe(self._button_open_ct_dir, names=["button_open_ct_dir"])
         self._state.observe(self._button_open_xray_file, names=["button_open_xray_file"])
+        self._state.parameters.observe(self._xray_parameters_changed, names=["xray_parameters"])
+
+    @property
+    def input_manager(self) -> InputManager:
+        return self._input_manager
 
     @property
     def state(self) -> AppState:
@@ -79,6 +95,12 @@ class AppContext:
         self.dadg.set("ct_path", NoNodeData if change.new is None else change.new, check_equality=True)
         self._cache_manager.last_ct_path = change.new
 
+    def _xray_parameters_changed(self, change) -> None:
+        self._cache_manager.last_xray_paths = {  #
+            key: value.file_path  #
+            for key, value in change["new"].items()  #
+        }
+
     def _update_dag_downsample_level(self, change) -> None:
         self.dadg.set("downsample_level", change.new, check_equality=True)
 
@@ -95,6 +117,8 @@ class AppContext:
 
         from qtpy.QtWidgets import QFileDialog
         file, _ = QFileDialog.getOpenFileName(viewer().window._qt_window, "Open a CT volume file")
+        if not file:
+            return
         logger.info(f"Opening CT volume file '{file}'")
         self._open_ct_path(file)
 
@@ -106,6 +130,8 @@ class AppContext:
         from qtpy.QtWidgets import QFileDialog
         dire = QFileDialog.getExistingDirectory(viewer().window._qt_window,
                                                 "Open a directory of DICOM files as slices of a CT volume")
+        if not dire:
+            return
         logger.info(f"Opening DICOM files in directory '{dire}' as slices of CT volume")
         self._open_ct_path(dire)
 
@@ -124,9 +150,11 @@ class AppContext:
         # Get the user to choose a file
         from qtpy.QtWidgets import QFileDialog
         file, _ = QFileDialog.getOpenFileName(viewer().window._qt_window, "Open a CT volume file")
+        if not file:
+            return
         logger.info(f"Opening X-ray image file '{file}'")
-        for _, ps in self._state.parameters.xray_parameters:
-            if ps.xray_path == file:
+        for _, ps in self._state.parameters.xray_parameters.items():
+            if ps.file_path == file:
                 logger.warning(f"X-ray '{file}' is already open.")
                 return
 
@@ -143,9 +171,49 @@ class AppContext:
             values = request_values(name={"annotation": str, "label": prompt_string})
             if values["name"]:
                 name = values["name"]
+        self._add_xray(name=name, file_path=file)
 
+    def _add_xray(self, *, name: str, file_path: str):
         # Get the X-ray parameters
-        p = XrayParameters()
+        p = XrayParameters(file_path=file_path)
         self.state.parameters.xray_parameters = {**self.state.parameters.xray_parameters, name: p}
-        self.dadg.set(f"{name}__xray_path", file)
+        self.dadg.set(f"{name}__xray_path", file_path)
         self.dadg.set(f"{name}__target_flipped", p.target_flipped)
+        self.dadg.set(f"{name}__source_offset", torch.zeros(2))
+        self.dadg.set(f"{name}__mask_transformation", None)
+        self.dadg.set(f"{name}__current_transformation", Transformation.zero(device=self.dadg.get("device")))
+        namespace_captures = {key: name for key in ["image_2d_full", "fixed_image_spacing", "transformation_gt",  #
+                                                    "source_distance", "xray_path", "target_flipped", "moving_image",
+                                                    "fixed_image_size", "fixed_image_offset", "xray_sop_instance_uid",
+                                                    "fixed_image", "cropped_target", "mask", "translation_offset",
+                                                    "image_2d_scale_factor", "source_offset", "mask_transformation",
+                                                    "current_transformation"]}
+        # add namespaced updaters
+        err = self.dadg.add_updater(f"{name}__refresh_image_2d_scale_factor",
+                                    capture_in_namespaces(namespace_captures)(updaters.refresh_image_2d_scale_factor))
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+        err = self.dadg.add_updater(f"{name}__refresh_hyperparameter_dependent",
+                                    capture_in_namespaces(namespace_captures)(
+                                        updaters.refresh_hyperparameter_dependent))
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+        err = self.dadg.add_updater(f"{name}__refresh_mask_transformation_dependent",
+                                    capture_in_namespaces(namespace_captures)(
+                                        updaters.refresh_mask_transformation_dependent))
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+        err = self.dadg.add_updater(f"{name}__project_drr", capture_in_namespaces(namespace_captures)(project_drr))
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+        err = self.dadg.add_updater(f"{name}__xray_uid", capture_in_namespaces(namespace_captures)(read_xray_uid))
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+        err = self.dadg.add_updater(f"{name}__set_target_image",
+                                    capture_in_namespaces(namespace_captures)(set_target_image))
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+
+        err = self.dadg.get(f"{name}__moving_image")
+        if isinstance(err, Error):
+            logger.error(f"Failed to get moving image '{name}': {err.description}")

@@ -1,3 +1,5 @@
+import logging
+
 import napari.layers
 import torch
 import weakref
@@ -7,6 +9,8 @@ from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.app.context import AppContext
 
 __all__ = ["add_fixed_image_layer"]
+
+logger = logging.getLogger(__name__)
 
 
 class _FixedImageLayerManager:
@@ -24,7 +28,10 @@ class _FixedImageLayerManager:
         self._layer().data = new_value.cpu().numpy()
 
 
-def add_fixed_image_layer(*, ctx: AppContext, dadg_key: str, colormap: str = "yellow") -> napari.layers.Layer:
+def add_fixed_image_layer(*, ctx: AppContext, dadg_key: str, colormap: str = "yellow") -> napari.layers.Layer | None:
+    if dadg_key in viewer().layers:
+        logger.warning(f"Layer '{dadg_key}' is already shown.")
+        return None
     value = ctx.dadg.get(dadg_key, soft=True)
     if isinstance(value, Error):
         raise RuntimeError(f"Error softly getting '{dadg_key}' from DADG: {value.description}.")

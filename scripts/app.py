@@ -1,22 +1,18 @@
 import argparse
 import os
-from typing import Any, Sequence, Literal
+from typing import Literal
 
 os.environ["QT_API"] = "PyQt6"
 
 import torch
 import napari
 import pathlib
-import pydicom
 
 from reg23_experiments.utils import logs_setup, pushover
-from reg23_experiments.io.volume import load_ct
-from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.data.structs import Error
-from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, capture_in_namespaces
-from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
-    mapping_parameters_to_transformation, random_parameters_at_distance
-from reg23_experiments.ops import drr
+from reg23_experiments.ops.data_manager import data_manager, updaters, capture_in_namespaces
+from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
+
 from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
 from reg23_experiments.app.gui.fixed_image_layer import add_fixed_image_layer
 from reg23_experiments.app.gui.moving_image_layer import add_moving_image_layer
@@ -27,13 +23,12 @@ from reg23_experiments.experiments.parameters import Parameters, PsoParameters, 
 from reg23_experiments.app.gui.register import RegisterGUI
 from reg23_experiments.app.context import AppContext
 from reg23_experiments.app.worker_manager import WorkerManager
-from reg23_experiments.data.structs import Transformation, SceneGeometry
-from reg23_experiments.ops import geometry
-from reg23_experiments.ops.volume import downsample_trilinear_antialiased
+from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
-from reg23_experiments.io.image import read_dicom
 from reg23_experiments.app.gui.main_widget import MainWidget
+from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, set_target_image, \
+    apply_truncation, project_drr, read_xray_uid
 
 namespace_captures: dict[str, str] = {  #
     "image_2d_full": "a",  #
@@ -54,100 +49,6 @@ namespace_captures: dict[str, str] = {  #
     "source_offset": "a",  #
     "mask_transformation": "a",  #
 }
-
-
-@dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
-def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
-    str, Any]:
-    ct_volume, ct_spacing = load_ct(pathlib.Path(ct_path), check_for_dcm_suffix_if_dir=False)
-    ct_volume = ct_volume.to(device=device, dtype=torch.float32)
-    ct_spacing = ct_spacing.to(device=device)
-
-    if ct_permutation is not None:
-        assert len(ct_permutation) == 3
-        ct_volume = ct_volume.permute(*ct_permutation)
-        ct_spacing = ct_spacing[torch.tensor(ct_permutation)]
-
-    return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing}
-
-
-@capture_in_namespaces(namespace_captures)
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
-def set_target_image(*, ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
-                     new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
-                     ap_transformation: Transformation, target_ap_distance: float, xray_path: str | None,
-                     target_flipped: bool, device: torch.device) -> dict[str, Any]:
-    if xray_path is None:
-        # generate a DRR through the volume
-        drr_spec = None
-        if not regenerate_drr:
-            drr_spec = load_cached_drr(cache_directory, ct_path)
-
-        if drr_spec is None:
-            tr = mapping_parameters_to_transformation(
-                random_parameters_at_distance(mapping_transformation_to_parameters(ap_transformation),
-                                              target_ap_distance))
-            drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
-                                                  save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
-
-        fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
-        del drr_spec
-    else:
-        image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(xray_path)
-        transformation_ground_truth = None
-
-    if target_flipped:
-        image_2d_full = image_2d_full.flip(dims=(1,))
-
-    image_2d_full = image_2d_full.to(device=device)
-
-    return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
-            "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
-
-
-@dadg_updater(names_returned=["ct_volumes"])
-def apply_truncation(*, untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
-    # truncate the volume
-    truncation_fraction = 0.01 * float(truncation_percent)
-    top_bottom_chop = int(round(0.5 * truncation_fraction * float(untruncated_ct_volume.size()[0])))
-    ct_volume = untruncated_ct_volume[
-        top_bottom_chop:max(top_bottom_chop + 1, untruncated_ct_volume.size()[0] - top_bottom_chop)]
-    # mipmap the volume
-    ct_volumes = [ct_volume]
-    while torch.tensor(ct_volumes[-1].size()).min() > 3:
-        ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[-1], scale_factor=0.5))
-    return {"ct_volumes": ct_volumes}
-
-
-@capture_in_namespaces(namespace_captures)
-@dadg_updater(names_returned=["moving_image"])
-def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
-                fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
-                downsample_level: int, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
-                image_2d_scale_factor: float, device) -> dict[str, Any]:
-    # Applying the translation offset
-    new_translation = current_transformation.translation + torch.cat(
-        (torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype),
-         translation_offset.to(device=current_transformation.device)))
-    transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
-        device=device)
-
-    return {"moving_image": geometry.generate_drr(ct_volumes[downsample_level], transformation=transformation,
-                                                  voxel_spacing=ct_spacing * 2.0 ** downsample_level,
-                                                  detector_spacing=fixed_image_spacing / image_2d_scale_factor,
-                                                  scene_geometry=SceneGeometry(source_distance=source_distance,
-                                                                               fixed_image_offset=fixed_image_offset),
-                                                  output_size=fixed_image_size)}
-
-
-@capture_in_namespaces(namespace_captures)
-@dadg_updater(names_returned=["xray_sop_instance_uid"])
-def read_xray_uid(*, xray_path: str | None) -> dict[str, Any]:
-    if xray_path is None:
-        uid = None
-    else:
-        uid = str(pydicom.dcmread(xray_path)["SOPInstanceUID"].value)
-    return {"xray_sop_instance_uid": uid}
 
 
 # @args_from_dag(names_left=["transformation"])
@@ -177,26 +78,27 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_image_2d_scale_factor",
+    err = data_manager().add_updater("a__refresh_image_2d_scale_factor",
                                      capture_in_namespaces(namespace_captures)(updaters.refresh_image_2d_scale_factor))
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_hyperparameter_dependent", capture_in_namespaces(namespace_captures)(
+    err = data_manager().add_updater("a__refresh_hyperparameter_dependent", capture_in_namespaces(namespace_captures)(
         updaters.refresh_hyperparameter_dependent))
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_mask_transformation_dependent", capture_in_namespaces(namespace_captures)(
-        updaters.refresh_mask_transformation_dependent))
+    err = data_manager().add_updater("a__refresh_mask_transformation_dependent",
+                                     capture_in_namespaces(namespace_captures)(
+                                         updaters.refresh_mask_transformation_dependent))
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    data_manager().add_updater("project_drr", project_drr)
+    err = data_manager().add_updater("a__project_drr", capture_in_namespaces(namespace_captures)(project_drr))
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    data_manager().add_updater("xray_uid", read_xray_uid)
+    err = data_manager().add_updater("a__xray_uid", capture_in_namespaces(namespace_captures)(read_xray_uid))
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -261,7 +163,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
             return
-        err = data_manager().add_updater("set_target_image", set_target_image)
+        err = data_manager().add_updater("a__set_target_image",
+                                         capture_in_namespaces(namespace_captures)(set_target_image))
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
             return

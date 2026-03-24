@@ -31,9 +31,12 @@ class _ElectrodeLayerManager:
                 logger.error(f"Error saving electrode point data: {res.description}")
 
 
-def add_electrode_layer(*, ctx: AppContext, namespace: str | None = None) -> napari.layers.Layer:
-    uid_dadg_key = "xray_sop_instance_uid" if namespace is None else f"{namespace}__xray_sop_instance_uid"
+def add_electrode_layer(*, ctx: AppContext, namespace: str | None = None) -> napari.layers.Layer | None:
     dadg_key = "electrode_points" if namespace is None else f"{namespace}__electrode_points"
+    if dadg_key in viewer().layers:
+        logger.warning(f"Layer '{dadg_key}' is already shown.")
+        return None
+    uid_dadg_key = "xray_sop_instance_uid" if namespace is None else f"{namespace}__xray_sop_instance_uid"
     tensor = ctx.electrode_save_manager.get(ctx.dadg.get(uid_dadg_key))
     if tensor is None:
         layer = viewer().add_points(ndim=2, size=4.0, name=dadg_key)
