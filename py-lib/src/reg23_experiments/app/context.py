@@ -1,3 +1,6 @@
+import logging
+from traitlets import TraitError
+
 import pathlib
 
 from reg23_experiments.app.state import AppState
@@ -7,11 +10,14 @@ from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
 from reg23_experiments.app.cache_manager import CacheManager
 from reg23_experiments.data.structs import Error
+from reg23_experiments.app.gui.viewer_singleton import viewer
 
 from ._gui_param_to_dag_node import respond_to_crop_change, respond_to_mask_change, respond_to_crop_value_change, \
     respond_to_crop_value_value_change
 
 __all__ = ["AppContext"]
+
+logger = logging.getLogger(__name__)
 
 
 class AppContext:
@@ -47,6 +53,8 @@ class AppContext:
         self._state.parameters.observe(lambda change: respond_to_crop_change(self.dadg, change), names=["cropping"])
         self._state.parameters.observe(lambda change: respond_to_crop_value_change(self.dadg, change),
                                        names=["cropping_value"])
+        self._state.observe(self._button_open_ct_file, names=["button_open_ct_file"])
+        self._state.observe(self._button_open_ct_dir, names=["button_open_ct_dir"])
 
     @property
     def state(self) -> AppState:
@@ -76,3 +84,31 @@ class AppContext:
 
     def _update_dag_target_flipped(self, change) -> None:
         self.dadg.set("a__target_flipped", change.new, check_equality=True)
+
+    def _button_open_ct_file(self, change) -> None:
+        if not change.new:
+            return
+        self.state.button_open_ct = False
+
+        from qtpy.QtWidgets import QFileDialog
+        file, _ = QFileDialog.getOpenFileName(viewer().window._qt_window, "Open a CT volume file")
+        logger.info(f"Opening CT volume file '{file}'")
+        self._open_ct_path(file)
+
+    def _button_open_ct_dir(self, change) -> None:
+        if not change.new:
+            return
+        self.state.button_open_ct = False
+
+        from qtpy.QtWidgets import QFileDialog
+        dire = QFileDialog.getExistingDirectory(viewer().window._qt_window,
+                                                "Open a directory of DICOM files as slices of a CT volume")
+        logger.info(f"Opening DICOM files in directory '{dire}' as slices of CT volume")
+        self._open_ct_path(dire)
+
+    def _open_ct_path(self, path: str) -> None:
+        try:
+            self._state.ct_path = path
+        except TraitError:
+            logger.warning(f"CT path not valid: '{path}'")
+            return

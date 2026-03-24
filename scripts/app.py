@@ -33,6 +33,7 @@ from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
 from reg23_experiments.io.image import read_dicom
+from reg23_experiments.app.gui.main_widget import MainWidget
 
 namespace_captures: dict[str, str] = {  #
     "image_2d_full": "a",  #
@@ -200,10 +201,6 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.error(f"Error adding updater: {err.description}")
         return
 
-    def debug(value):
-        logger.warning(f"Hello: value = {value}")
-    data_manager().observe("ct_path", "debug", debug)
-
     # -----
     # Data nodes
     # -----
@@ -299,6 +296,10 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                                     tabify=True)
     viewer().window.add_dock_widget(TraitletsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
                                     menu=viewer().window.window_menu)
+
+    main_widget = MainWidget(app_context)
+    viewer().window.add_dock_widget(main_widget, name="main", area="right", menu=viewer().window.window_menu,
+                                    tabify=True)
 
     # -----
     # The universal objective function
