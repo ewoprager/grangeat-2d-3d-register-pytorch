@@ -1,7 +1,7 @@
 import pathlib
 
 from reg23_experiments.app.state import AppState
-from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
+from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
@@ -36,7 +36,7 @@ class AppContext:
 
         # set up observers such that parameters changed in the UI effect the DADG and cache correctly
         self._state.observe(self._ct_path_changed, names=["ct_path"])
-        self._dadg.set("ct_path", self._state.ct_path)
+        self._dadg.set("ct_path", NoNodeData if self._state.ct_path is None else self._state.ct_path)
         self._state.parameters.observe(self._update_dag_downsample_level, names=["downsample_level"])
         self._dadg.set("downsample_level", self._state.parameters.downsample_level)
         self._state.parameters.observe(self._update_dag_truncation_percent, names=["truncation_percent"])
@@ -65,7 +65,7 @@ class AppContext:
         return self._transformation_save_manager
 
     def _ct_path_changed(self, change) -> None:
-        self.dadg.set("ct_path", change.new, check_equality=True)
+        self.dadg.set("ct_path", NoNodeData if change.new is None else change.new, check_equality=True)
         self._cache_manager.last_ct_path = change.new
 
     def _update_dag_downsample_level(self, change) -> None:

@@ -200,6 +200,10 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.error(f"Error adding updater: {err.description}")
         return
 
+    def debug(value):
+        logger.warning(f"Hello: value = {value}")
+    data_manager().observe("ct_path", "debug", debug)
+
     # -----
     # Data nodes
     # -----
@@ -329,10 +333,10 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     worker_manager = WorkerManager(ctx=app_context, objective_function=objective_function)
     transformation_saver = TransformationSaver(app_context)
 
-    value = data_manager().get("a__moving_image")
-    if isinstance(value, Error):
-        logger.error(f"Couldn't get moving image: {value.description}.")
-        return
+    # value = data_manager().get("a__moving_image")
+    # if isinstance(value, Error):
+    #     logger.error(f"Couldn't get moving image: {value.description}.")
+    #     return
 
     napari.run()
 
