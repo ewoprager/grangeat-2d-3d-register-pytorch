@@ -404,7 +404,7 @@ class ChildDADG(ChildDirectedAcyclicDataGraph):
             return Error(f"Node '{node_name}' still dirty after running updater '{node.updater}'.")
         return None
 
-    def __clean_graph(self) -> None | Error:
+    def __clean_graph(self, *, quit_on_first_failure: bool = False) -> None | Error:
         errors: list[str] = []
         for node_name, node in self.__nodes.items():
             if node.lazily_evaluated:
