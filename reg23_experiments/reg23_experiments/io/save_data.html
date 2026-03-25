@@ -34,9 +34,6 @@
                     <a class="variable" href="#Change">Change</a>
             </li>
             <li>
-                    <a class="variable" href="#JsonSerializable">JsonSerializable</a>
-            </li>
-            <li>
                     <a class="class" href="#SaveData">SaveData</a>
                             <ul class="memberlist">
                         <li>
@@ -154,10 +151,10 @@ applied in order such that the data is restored to the same state it was in when
 </span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
 </span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a>
 </span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">reg23_experiments.data.structs</span><span class="w"> </span><span class="kn">import</span> <span class="n">Error</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a>
-</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Change&quot;</span><span class="p">,</span> <span class="s2">&quot;JsonSerializable&quot;</span><span class="p">,</span> <span class="s2">&quot;SaveData&quot;</span><span class="p">,</span> <span class="s2">&quot;SaveDataManager&quot;</span><span class="p">,</span> <span class="s2">&quot;load_specific_save&quot;</span><span class="p">,</span> <span class="s2">&quot;load_latest_save&quot;</span><span class="p">]</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a>
-</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="nb">type</span> <span class="n">JsonSerializable</span> <span class="o">=</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">JsonSerializable</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">JsonSerializable</span><span class="p">]</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">reg23_experiments.io.serialize</span><span class="w"> </span><span class="kn">import</span> <span class="n">JsonSerializable</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Change&quot;</span><span class="p">,</span> <span class="s2">&quot;SaveData&quot;</span><span class="p">,</span> <span class="s2">&quot;SaveDataManager&quot;</span><span class="p">,</span> <span class="s2">&quot;load_specific_save&quot;</span><span class="p">,</span> <span class="s2">&quot;load_latest_save&quot;</span><span class="p">]</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a>
 </span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="nb">type</span> <span class="n">Change</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">JsonSerializable</span><span class="p">]</span>
 </span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>
 </span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a>
@@ -367,18 +364,6 @@ applied in order such that the data is restored to the same state it was in when
         
     </div>
     <a class="headerlink" href="#Change"></a>
-    
-    
-
-                </section>
-                <section id="JsonSerializable">
-                    <div class="attr variable">
-            <span class="def">type</span> <span class="name">JsonSerializable</span>        =
-<span class="default_value">None | bool | int | float | str | list[JsonSerializable] | dict[str, JsonSerializable]</span>
-
-        
-    </div>
-    <a class="headerlink" href="#JsonSerializable"></a>
     
     
 
