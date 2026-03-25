@@ -33,18 +33,13 @@ def deserialize_recursive(*, value: JsonSerializable, old_value: HasTraitsSerial
             return [deserialize_recursive(value=e, old_value=o, trait=element_trait) for e, o in zip(value, old_value)]
         return [deserialize_recursive(value=e, trait=element_trait) for e in value]
     if isinstance(value, dict):
-        value_trait = None
-        if trait is not None and isinstance(trait, traitlets.Dict):
-            value_trait = trait._value_trait
-        if isinstance(old_value, dict):
-            return {
-                k: deserialize_recursive(value=v, old_value=old_value[k] if k in old_value else None, trait=value_trait)
-                for k, v in value.items()}
+        hastraits_spec = None
         if isinstance(old_value, traitlets.HasTraits):
-            if trait is not None and (
-                    not isinstance(trait, traitlets.Instance) or not isinstance(old_value, trait.klass)):
-                logger.warning("Inconsistency found which deserializing.")
-            for k, t in old_value.traits().items():
+            hastraits_spec = old_value.traits()
+        elif isinstance(trait, traitlets.Instance) and issubclass(trait.klass, traitlets.HasTraits):
+            hastraits_spec = trait.klass._traits
+        if hastraits_spec is not None:
+            for k, t in hastraits_spec.items():
                 if k not in value:
                     continue
                 try:
@@ -54,9 +49,16 @@ def deserialize_recursive(*, value: JsonSerializable, old_value: HasTraitsSerial
                 n = deserialize_recursive(value=value[k], old_value=o, trait=t)
                 try:
                     setattr(old_value, k, n)
-                except traitlets.TraitError as e:
+                except Exception as e:
                     logger.warning(f"Invalid value found for key '{k}' while deserializing into HasTraits: '{e}'")
                     continue
             return old_value
+        value_trait = None
+        if trait is not None and isinstance(trait, traitlets.Dict):
+            value_trait = trait._value_trait
+        if isinstance(old_value, dict):
+            return {
+                k: deserialize_recursive(value=v, old_value=old_value[k] if k in old_value else None, trait=value_trait)
+                for k, v in value.items()}
         return {k: deserialize_recursive(value=v, trait=value_trait) for k, v in value.items()}
     return value
