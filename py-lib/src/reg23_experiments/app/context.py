@@ -59,7 +59,7 @@ class AppContext:
         # load params from the cache
         res: dict[str, Any] | None = self._cache_manager.last_params
         if res is not None:
-            self.state.parameters = deserialize_recursive(res, self.state.parameters)
+            self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters)
 
         for name, value in self._state.parameters.xray_parameters:
             self._add_xray(name=name, file_path=value.file_path)
