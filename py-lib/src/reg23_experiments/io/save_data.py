@@ -29,10 +29,10 @@ from datetime import datetime
 import pathlib
 
 from reg23_experiments.data.structs import Error
+from reg23_experiments.io.serialise import JsonSerializable
 
-__all__ = ["Change", "JsonSerializable", "SaveData", "SaveDataManager", "load_specific_save", "load_latest_save"]
+__all__ = ["Change", "SaveData", "SaveDataManager", "load_specific_save", "load_latest_save"]
 
-type JsonSerializable = None | bool | int | float | str | list[JsonSerializable] | dict[str, JsonSerializable]
 type Change = dict[str, JsonSerializable]
 
 

@@ -53,6 +53,11 @@ class AppContext:
             for name, xray_path in res.items():
                 self._add_xray(name=name, file_path=str(xray_path))
 
+        # load params from the cache
+        res = self._cache_manager.last_params
+        if res is not None:
+
+
         # set up observers such that parameters changed in the UI effect the DADG and cache correctly
         self._state.observe(self._ct_path_changed, names=["ct_path"])
         self._dadg.set("ct_path", NoNodeData if self._state.ct_path is None else self._state.ct_path)
