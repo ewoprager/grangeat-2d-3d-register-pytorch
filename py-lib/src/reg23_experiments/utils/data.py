@@ -1,8 +1,8 @@
 import traitlets
 import copy
-from typing import Any
+from typing import Any, Callable
 
-__all__ = ["clone_has_traits"]
+__all__ = ["clone_has_traits", "observe_all_traits_recursively"]
 
 
 def clone_has_traits(obj: Any) -> Any:
@@ -17,3 +17,19 @@ def clone_has_traits(obj: Any) -> Any:
         return cls(**kwargs)
     else:
         return copy.copy(obj)
+
+
+def observe_all_traits_recursively(callback: Callable, obj: traitlets.HasTraits) -> None:
+    obj.observe(callback)
+    for name, trait in obj.traits().items():
+        value = getattr(obj, name)
+        if isinstance(value, traitlets.HasTraits):
+            observe_all_traits_recursively(callback, value)
+        elif isinstance(value, list):
+            for e in value:
+                if isinstance(e, traitlets.HasTraits):
+                    observe_all_traits_recursively(callback, e)
+        elif isinstance(value, dict):
+            for v in value.values():
+                if isinstance(v, traitlets.HasTraits):
+                    observe_all_traits_recursively(callback, v)

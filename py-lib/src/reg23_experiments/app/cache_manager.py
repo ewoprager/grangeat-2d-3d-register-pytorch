@@ -14,6 +14,7 @@ class CacheManager:
     def __init__(self, app_name: str = "reg23 Experiments"):
         self._cache = pathlib.Path(user_cache_dir(app_name))
         self._cache.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Loading/saving cached data in '{str(self._cache)}'")
 
     @property
     def last_ct_path(self) -> pathlib.Path | None:

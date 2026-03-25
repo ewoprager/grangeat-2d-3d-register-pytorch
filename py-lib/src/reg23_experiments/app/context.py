@@ -1,5 +1,6 @@
 import logging
 from traitlets import TraitError
+from typing import Any
 
 import pathlib
 from magicgui.widgets import request_values
@@ -15,6 +16,8 @@ from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.app.gui.input_manager import InputManager
+from reg23_experiments.io.serialize import deserialize_recursive, serialize_recursive
+from reg23_experiments.utils.data import observe_all_traits_recursively
 
 from reg23_experiments.experiments.multi_xray_truncation_updaters import set_target_image, project_drr, read_xray_uid
 
@@ -48,15 +51,18 @@ class AppContext:
                 self.dadg.set("ct_path", self._state.ct_path, check_equality=True)
 
         # load X-ray paths from the cache
-        res = self._cache_manager.last_xray_paths
-        if res is not None:
-            for name, xray_path in res.items():
-                self._add_xray(name=name, file_path=str(xray_path))
+        # res: dict[str, pathlib.Path] | None = self._cache_manager.last_xray_paths
+        # if res is not None:
+        #     for name, xray_path in res.items():
+        #         self._add_xray(name=name, file_path=str(xray_path))
 
         # load params from the cache
-        res = self._cache_manager.last_params
+        res: dict[str, Any] | None = self._cache_manager.last_params
         if res is not None:
+            self.state.parameters = deserialize_recursive(res, self.state.parameters)
 
+        for name, value in self._state.parameters.xray_parameters:
+            self._add_xray(name=name, file_path=value.file_path)
 
         # set up observers such that parameters changed in the UI effect the DADG and cache correctly
         self._state.observe(self._ct_path_changed, names=["ct_path"])
@@ -75,6 +81,7 @@ class AppContext:
         self._state.observe(self._button_open_ct_dir, names=["button_open_ct_dir"])
         self._state.observe(self._button_open_xray_file, names=["button_open_xray_file"])
         self._state.parameters.observe(self._xray_parameters_changed, names=["xray_parameters"])
+        observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)
 
     @property
     def input_manager(self) -> InputManager:
@@ -222,3 +229,6 @@ class AppContext:
         err = self.dadg.get(f"{name}__moving_image")
         if isinstance(err, Error):
             logger.error(f"Failed to get moving image '{name}': {err.description}")
+
+    def _any_parameter_changed(self, change) -> None:
+        self._cache_manager.last_params = serialize_recursive(self.state.parameters)

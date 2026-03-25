@@ -29,7 +29,7 @@ from datetime import datetime
 import pathlib
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.io.serialise import JsonSerializable
+from reg23_experiments.io.serialize import JsonSerializable
 
 __all__ = ["Change", "SaveData", "SaveDataManager", "load_specific_save", "load_latest_save"]
 
