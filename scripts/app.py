@@ -20,13 +20,13 @@ from reg23_experiments.app.gui.electrode_layer import add_electrode_layer
 from reg23_experiments.app.gui.parameters import ParametersWidget
 from reg23_experiments.app.gui.helpers import TraitletsWidget
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters, Context
-from reg23_experiments.app.gui.register import RegisterGUI
+from reg23_experiments.app.gui.register_widget import RegisterWidget
 from reg23_experiments.app.context import AppContext
 from reg23_experiments.app.worker_manager import WorkerManager
 from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
-from reg23_experiments.app.gui.main_widget import MainWidget
+from reg23_experiments.app.gui.images_widget import ImagesWidget
 from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, set_target_image, \
     apply_truncation, project_drr, read_xray_uid
 
@@ -145,8 +145,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     viewer().window.add_dock_widget(TraitletsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
                                     menu=viewer().window.window_menu)
 
-    main_widget = MainWidget(app_context)
-    viewer().window.add_dock_widget(main_widget, name="main", area="right", menu=viewer().window.window_menu,
+    images_widget = ImagesWidget(app_context)
+    viewer().window.add_dock_widget(images_widget, name="Images", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
 
     # -----
@@ -170,7 +170,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # GUI Modules
     # -----
-    register_gui = RegisterGUI(app_context)
+    register_widget = RegisterWidget(app_context)
 
     # -----
     # Modules

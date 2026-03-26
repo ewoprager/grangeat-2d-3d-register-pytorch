@@ -13,15 +13,23 @@ from reg23_experiments.app.context import AppContext
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
     mapping_parameters_to_transformation
 
-__all__ = ["RegisterGUI"]
+__all__ = ["RegisterWidget"]
 
 logger = logging.getLogger(__name__)
 
 
-class RegisterGUI(widgets.Container):
+class RegisterWidget(widgets.Container):
     def __init__(self, ctx: AppContext):
         super().__init__(labels=True)
         self._ctx = ctx
+
+        # ----
+        # X-ray selection
+        # ----
+        self._xray_select = widgets.ComboBox(choices=self._get_xray_choices, label="X-ray")
+        self._ctx.state.parameters.observe(self._xray_params_changed, names=["xray_parameters"])
+        self._xray_select.changed.connect(self._xray_selection_changed)
+        self.append(self._xray_select)
 
         # -----
         # Evaluate once button and result
@@ -66,11 +74,17 @@ class RegisterGUI(widgets.Container):
         # ----
         # Transformations
         # ----
-        current_t: Transformation = self._ctx.dadg.get("current_transformation")
-        current_params: torch.Tensor = mapping_transformation_to_parameters(current_t)
+        if self._xray_selected:
+            current_t: Transformation = self._ctx.dadg.get(self._c_t_key)
+            current_params: torch.Tensor = mapping_transformation_to_parameters(current_t)
         # Float spin boxes for the current transformation in parameter space
         self._x_widgets = [  #
-            widgets.FloatSpinBox(value=current_params[i].item(), step=0.01, min=-1.0e6, max=1.0e6)  #
+            widgets.FloatSpinBox(  #
+                value=current_params[i].item() if self._xray_selected else 0.0,  #
+                step=0.01,  #
+                min=-1.0e6,  #
+                max=1.0e6  #
+            )  #
             for i in range(6)  #
         ]
         self.append(widgets.Container(widgets=self._x_widgets, layout="horizontal", labels=False, label="x"))
@@ -79,11 +93,21 @@ class RegisterGUI(widgets.Container):
         self._x_loop_preventer = False
         # Float spin boxes for the current transformation in native units
         self._rotation_widgets = [  #
-            widgets.FloatSpinBox(value=current_t.rotation[i].item(), step=0.001, min=-1.0e4, max=1.0e4)  #
+            widgets.FloatSpinBox(  #
+                value=current_t.rotation[i].item() if self._xray_selected else 0.0,  #
+                step=0.001,  #
+                min=-1.0e4,  #
+                max=1.0e4  #
+            )  #
             for i in range(3)  #
         ]
         self._translation_widgets = [  #
-            widgets.FloatSpinBox(value=current_t.translation[i].item(), step=0.1, min=-1.0e8, max=1.0e8)  #
+            widgets.FloatSpinBox(  #
+                value=current_t.translation[i].item() if self._xray_selected else 0.0,  #
+                step=0.1,  #
+                min=-1.0e8,  #
+                max=1.0e8  #
+            )  #
             for i in range(3)  #
         ]
         self.append(widgets.Container(widgets=self._rotation_widgets + self._translation_widgets, layout="horizontal",
@@ -92,8 +116,6 @@ class RegisterGUI(widgets.Container):
             self._rotation_widgets[i].changed.connect(self._update_current_transformation_from_t)
             self._translation_widgets[i].changed.connect(self._update_current_transformation_from_t)
         self._t_loop_preventer = False
-        # A callback to keep both x and t spin boxes updated
-        self._ctx.dadg.observe("current_transformation", "x_t_display", self._update_x_t_display)
 
         # -----
         # Saving and loading transformations
@@ -120,6 +142,28 @@ class RegisterGUI(widgets.Container):
         # add self as widget in dock to the right
         viewer().window.add_dock_widget(self, name="Register", area="right", menu=viewer().window.window_menu,
                                         tabify=True)
+
+    @property
+    def _xray_selected(self) -> bool:
+        return self._xray_select.value is not None
+
+    @property
+    def _c_t_key(self) -> str:
+        return f"{self._xray_select.value}__current_transformation"
+
+    def _get_xray_choices(self, *args) -> list[str]:
+        return list(self._ctx.state.parameters.xray_parameters.keys())
+
+    def _xray_params_changed(self, change) -> None:
+        self._xray_select.reset_choices()
+
+    def _xray_selection_changed(self, *args) -> None:
+        for key in self._xray_select.choices:
+            self._ctx.dadg.remove_observer(f"{key}__current_transformation", "x_t_display")
+        if not self._xray_selected:
+            return
+        self._ctx.dadg.observe(self._c_t_key, "x_t_display", self._update_x_t_display)
+        self._update_x_t_display(self._ctx.dadg.get(self._c_t_key))
 
     def _on_eval_once(self, *args) -> None:
         self._ctx.state.button_evaluate_once = True
@@ -190,22 +234,26 @@ class RegisterGUI(widgets.Container):
         if self._x_loop_preventer:
             return
         self._x_loop_preventer = True
+        if not self._xray_selected:
+            return
         params: list[float] = [widget.value for widget in self._x_widgets]
-        current_t: Transformation = self._ctx.dadg.get("current_transformation")
+        current_t: Transformation = self._ctx.dadg.get(self._c_t_key)
         new_params = torch.tensor(params, device=current_t.rotation.device, dtype=current_t.rotation.dtype)
-        self._ctx.dadg.set("current_transformation", mapping_parameters_to_transformation(new_params))
+        self._ctx.dadg.set(self._c_t_key, mapping_parameters_to_transformation(new_params))
         self._x_loop_preventer = False
 
     def _update_current_transformation_from_t(self, *args) -> None:
         if self._t_loop_preventer:
             return
         self._t_loop_preventer = True
-        current_t: Transformation = self._ctx.dadg.get("current_transformation")
+        if not self._xray_selected:
+            return
+        current_t: Transformation = self._ctx.dadg.get(self._c_t_key)
         rotation = torch.tensor([widget.value for widget in self._rotation_widgets], dtype=current_t.rotation.dtype,
                                 device=current_t.rotation.device)
         translation = torch.tensor([widget.value for widget in self._translation_widgets],
                                    dtype=current_t.rotation.dtype, device=current_t.rotation.device)
-        self._ctx.dadg.set("current_transformation", Transformation(rotation=rotation, translation=translation))
+        self._ctx.dadg.set(self._c_t_key, Transformation(rotation=rotation, translation=translation))
         self._t_loop_preventer = False
 
     def _update_x_t_display(self, current_transformation: Transformation) -> None:

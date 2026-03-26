@@ -10,23 +10,21 @@ from reg23_experiments.app.gui.moving_image_layer import add_moving_image_layer
 from reg23_experiments.app.gui.fixed_image_layer import add_fixed_image_layer
 from reg23_experiments.app.gui.electrode_layer import add_electrode_layer
 
-__all__ = ["MainWidget"]
+__all__ = ["ImagesWidget"]
 
 logger = logging.getLogger(__name__)
 
 
-class MainWidget(widgets.Container):
+class ImagesWidget(widgets.Container):
     def __init__(self, ctx: AppContext):
         super().__init__(labels=True)
         self._ctx = ctx
 
         self._ctx.state.parameters.observe(self._on_xray_parameters_change, names=["xray_parameters"])
-        self._xray_container = widgets.Container(label="X-rays", labels=True)
-        self.append(self._xray_container)
         self._on_xray_parameters_change()
 
     def _on_xray_parameters_change(self, *args) -> None:
-        self._xray_container.clear()
+        self.clear()
         for key, value in self._ctx.state.parameters.xray_parameters.items():
             # Image 2d full
             show_image_2d_full_button = widgets.PushButton(label="Show full 2d image")
@@ -40,7 +38,7 @@ class MainWidget(widgets.Container):
             # Electrode points
             show_electrodes_button = widgets.PushButton(label="Show electrodes")
             show_electrodes_button.changed.connect(lambda _, name=key: self._on_show_electrode_layer(name))
-            self._xray_container.append(widgets.Container(widgets=[  #
+            self.append(widgets.Container(widgets=[  #
                 show_image_2d_full_button,  #
                 show_fixed_image_button,  #
                 show_moving_image_button,  #

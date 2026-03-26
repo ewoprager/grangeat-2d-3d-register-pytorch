@@ -225,9 +225,9 @@ class AppContext:
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
 
-        err = self.dadg.get(f"{name}__moving_image")
-        if isinstance(err, Error):
-            logger.error(f"Failed to get moving image '{name}': {err.description}")
+        # err = self.dadg.get(f"{name}__moving_image")
+        # if isinstance(err, Error):
+        #     logger.error(f"Failed to get moving image '{name}': {err.description}")
 
     def _any_parameter_changed(self, change) -> None:
         self._cache_manager.last_params = serialize_recursive(self.state.parameters)
