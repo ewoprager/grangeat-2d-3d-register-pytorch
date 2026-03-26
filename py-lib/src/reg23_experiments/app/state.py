@@ -41,6 +41,7 @@ class AppState(HasTraits):
     button_run: bool = Bool(default_value=False)
     button_load_current_best: bool = Bool(default_value=False)
 
+    register_xray_choice: str | None = Unicode(allow_none=True, default_value=None)
     saved_transformation_names: list[str] = List(trait=Unicode(), default_value=[])
     text_input_transformation_name: str = Unicode(default_value="")
     button_save_transformation: bool = Bool(default_value=False)

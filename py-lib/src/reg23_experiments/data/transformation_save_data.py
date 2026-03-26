@@ -130,7 +130,7 @@ class TransformationSaveManager:
         df: pd.DataFrame = self._save_data_manager.get_data()
         df_for_xray = df.xs(uid, level="xray_sop_instance_uid")
         return {  #
-            name: Transformation.from_vector(torch.tensor([row[f"x{i}"] for i in range(6)], **tensor_kwargs))  #
+            str(name): Transformation.from_vector(torch.tensor([row[f"x{i}"] for i in range(6)], **tensor_kwargs))  #
             for name, row in df_for_xray.iterrows()  #
         }
 

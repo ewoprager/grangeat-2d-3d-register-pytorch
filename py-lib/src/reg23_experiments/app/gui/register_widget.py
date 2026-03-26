@@ -74,6 +74,8 @@ class RegisterWidget(widgets.Container):
         # ----
         # Transformations
         # ----
+        self._x_loop_preventer = False
+        self._t_loop_preventer = False
         if self._xray_selected:
             current_t: Transformation = self._ctx.dadg.get(self._c_t_key)
             current_params: torch.Tensor = mapping_transformation_to_parameters(current_t)
@@ -90,7 +92,6 @@ class RegisterWidget(widgets.Container):
         self.append(widgets.Container(widgets=self._x_widgets, layout="horizontal", labels=False, label="x"))
         for i in range(6):
             self._x_widgets[i].changed.connect(self._update_current_transformation_from_x)
-        self._x_loop_preventer = False
         # Float spin boxes for the current transformation in native units
         self._rotation_widgets = [  #
             widgets.FloatSpinBox(  #
@@ -115,14 +116,13 @@ class RegisterWidget(widgets.Container):
         for i in range(3):
             self._rotation_widgets[i].changed.connect(self._update_current_transformation_from_t)
             self._translation_widgets[i].changed.connect(self._update_current_transformation_from_t)
-        self._t_loop_preventer = False
 
         # -----
         # Saving and loading transformations
         # -----
-        self._saved_transformations_select = widgets.Select(choices=self._ctx.state.saved_transformation_names,
+        self._saved_transformations_select = widgets.Select(choices=self._get_saved_transformation_names,
                                                             label="Saved\nTrs.")
-        self._ctx.state.observe(self._update_saved_transformations_select, names=["saved_transformation_names"])
+        self._ctx.state.observe(self._saved_transformation_names_changed, names=["saved_transformation_names"])
         self.append(self._saved_transformations_select)
         self._transformation_name_input = widgets.LineEdit(value="")
         self._transformation_name_input.changed.connect(self._on_transformation_name_input)
@@ -138,6 +138,8 @@ class RegisterWidget(widgets.Container):
             self._load_transformation,  #
             self._delete_transformation,  #
         ], layout="horizontal"))
+
+        self._xray_selection_changed()
 
         # add self as widget in dock to the right
         viewer().window.add_dock_widget(self, name="Register", area="right", menu=viewer().window.window_menu,
@@ -158,6 +160,7 @@ class RegisterWidget(widgets.Container):
         self._xray_select.reset_choices()
 
     def _xray_selection_changed(self, *args) -> None:
+        self._ctx.state.register_xray_choice = self._xray_select.value
         for key in self._xray_select.choices:
             self._ctx.dadg.remove_observer(f"{key}__current_transformation", "x_t_display")
         if not self._xray_selected:
@@ -196,11 +199,11 @@ class RegisterWidget(widgets.Container):
     def _on_run(self, *args) -> None:
         self._ctx.state.button_run = True
 
-    def _update_saved_transformations_select(self, change) -> None:
-        # ToDo: manage persistence of selection?
-        # ToDo: For some reason the transformation choices disappear from the Select widget when the layers are
-        # re-ordered in the GUI, without this method being called.
-        self._saved_transformations_select.choices = change.new
+    def _get_saved_transformation_names(self, *args) -> list[str]:
+        return self._ctx.state.saved_transformation_names
+
+    def _saved_transformation_names_changed(self, change) -> None:
+        self._saved_transformations_select.reset_choices()
 
     def _on_transformation_name_input(self, *args) -> None:
         self._ctx.state.text_input_transformation_name = self._transformation_name_input.get_value()
