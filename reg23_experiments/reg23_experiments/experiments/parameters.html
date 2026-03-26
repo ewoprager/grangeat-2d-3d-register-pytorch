@@ -147,6 +147,9 @@
                         <li>
                                 <a class="variable" href="#Context.dadg">dadg</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#Context.namespace">namespace</a>
+                        </li>
                 </ul>
 
             </li>
@@ -361,6 +364,7 @@
 </span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Context</span><span class="p">(</span><span class="n">HasTraits</span><span class="p">):</span>
 </span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Parameters</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>    <span class="n">dadg</span><span class="p">:</span> <span class="n">DirectedAcyclicDataGraph</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">DirectedAcyclicDataGraph</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>    <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Unicode</span><span class="p">(</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -940,6 +944,7 @@ Deprecated ambiguous <code>trait</code>, <code><a href="#Parameters.traits">trai
             <div class="pdoc-code codehilite"><pre><span></span><span id="Context-168"><a href="#Context-168"><span class="linenos">168</span></a><span class="k">class</span><span class="w"> </span><span class="nc">Context</span><span class="p">(</span><span class="n">HasTraits</span><span class="p">):</span>
 </span><span id="Context-169"><a href="#Context-169"><span class="linenos">169</span></a>    <span class="n">parameters</span><span class="p">:</span> <span class="n">Parameters</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Parameters</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="Context-170"><a href="#Context-170"><span class="linenos">170</span></a>    <span class="n">dadg</span><span class="p">:</span> <span class="n">DirectedAcyclicDataGraph</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">DirectedAcyclicDataGraph</span><span class="p">,</span> <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="Context-171"><a href="#Context-171"><span class="linenos">171</span></a>    <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Unicode</span><span class="p">(</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -977,6 +982,19 @@ Deprecated ambiguous <code>trait</code>, <code><a href="#Parameters.traits">trai
 <p>The value can also be an instance of a subclass of the specified class.</p>
 
 <p>Subclasses can declare default classes by overriding the klass attribute</p>
+</div>
+
+
+                            </div>
+                            <div id="Context.namespace" class="classattr">
+                                <div class="attr variable">
+            <span class="name">namespace</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Context.namespace"></a>
+    
+            <div class="docstring"><p>A trait for unicode strings.</p>
 </div>
 
 
