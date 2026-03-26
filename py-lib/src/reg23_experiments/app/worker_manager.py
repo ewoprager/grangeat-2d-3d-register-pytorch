@@ -29,21 +29,36 @@ class WorkerManager:
         self._thread = None
         self._worker = None
 
+    @property
+    def _xray_selected(self) -> bool:
+        return self._ctx.state.register_xray_choice is not None
+
+    @property
+    def _c_t_key(self) -> str:
+        return f"{self._ctx.state.register_xray_choice}__current_transformation"
+
     def _button_evaluate_once(self, change) -> None:
         if not change.new:
             return
         self._ctx.state.button_evaluate_once = False
-
-        context = Context(parameters=self._ctx.state.parameters, dadg=self._ctx.dadg)
-        result = self._objective_function(context, mapping_transformation_to_parameters(
-            self._ctx.dadg.get("current_transformation")))
+        #
+        if not self._xray_selected:
+            logger.warning("Cannot evaluate objective function: no X-ray selected.")
+            return
+        context = Context(parameters=self._ctx.state.parameters, dadg=self._ctx.dadg,
+                          namespace=self._ctx.state.register_xray_choice)
+        result = self._objective_function(context,
+                                          mapping_transformation_to_parameters(self._ctx.dadg.get(self._c_t_key)))
         self._ctx.state.eval_once_result = "{:.4f}".format(result.item())
 
     def _button_run_one_iteration(self, change) -> None:
         if not change.new:
             return
         self._ctx.state.button_run_one_iteration = False
-
+        #
+        if not self._xray_selected:
+            logger.warning("Cannot run registration: no X-ray selected.")
+            return
         self._thread = QThread()
         self._worker = RegistrationWorker(ctx=self._ctx, objective_function=self._objective_function, max_iterations=1)
         self._worker.moveToThread(self._thread)
@@ -61,7 +76,10 @@ class WorkerManager:
         if not change.new:
             return
         self._ctx.state.button_run = False
-
+        #
+        if not self._xray_selected:
+            logger.warning("Cannot run registration: no X-ray selected.")
+            return
         self._thread = QThread()
         self._worker = RegistrationWorker(ctx=self._ctx, objective_function=self._objective_function)
         self._worker.moveToThread(self._thread)
@@ -83,9 +101,12 @@ class WorkerManager:
         if not change.new:
             return
         self._ctx.state.button_load_current_best = False
-
-        if self._ctx.state.worker_state is None:
-            logger.warning("Cannot load current best; no registration has been run.")
+        #
+        if not self._xray_selected:
+            logger.warning("Cannot load current best: no X-ray selected.")
             return
-        self._ctx.dadg.set("current_transformation",
+        if self._ctx.state.worker_state is None:
+            logger.warning("Cannot load current best: no registration has been run.")
+            return
+        self._ctx.dadg.set(self._c_t_key,
                            mapping_parameters_to_transformation(self._ctx.state.worker_state.current_best_x))

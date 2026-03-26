@@ -167,3 +167,4 @@ class Parameters(HasTraits):
 class Context(HasTraits):
     parameters: Parameters = Instance(Parameters, allow_none=False)
     dadg: DirectedAcyclicDataGraph = Instance(DirectedAcyclicDataGraph, allow_none=False)
+    namespace: str = Unicode(allow_none=True)

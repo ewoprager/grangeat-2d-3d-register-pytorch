@@ -155,10 +155,14 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
         t = mapping_parameters_to_transformation(x)
         # Setting the parameters
-        context.dadg.set("current_transformation", t)
+        context.dadg.set(
+            "current_transformation" if context.namespace is None else f"{context.namespace}__current_transformation",
+            t)
         # Getting the resulting moving and fixed images
-        moving_image = context.dadg.get("a__moving_image")
-        fixed_image = context.dadg.get("a__fixed_image")
+        moving_image = context.dadg.get(
+            "moving_image" if context.namespace is None else f"{context.namespace}__moving_image")
+        fixed_image = context.dadg.get(
+            "fixed_image" if context.namespace is None else f"{context.namespace}__fixed_image")
         # Comparing, potentially weighting with a mask
         # if apply_mask:
         #     mask = data_manager().get("mask")

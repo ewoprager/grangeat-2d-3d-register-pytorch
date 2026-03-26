@@ -25,13 +25,16 @@ logger = logging.getLogger(__name__)
 
 def new_optimisation_instance(ctx: AppContext, objective_function: Callable[[Context, torch.Tensor], torch.Tensor]) -> \
         tuple[Context, OptimisationInstance]:
-    context = Context(parameters=clone_has_traits(ctx.state.parameters), dadg=ChildDADG(ctx.dadg))
+    context = Context(parameters=clone_has_traits(ctx.state.parameters), dadg=ChildDADG(ctx.dadg),
+                      namespace=ctx.state.register_xray_choice)
     if context.parameters.optimisation_algorithm == "pso":
         oa_params = context.parameters.op_algo_parameters
         assert isinstance(oa_params, PsoParameters)
         return context, PsoInstance(  #
             particle_count=oa_params.particle_count,  #
-            starting_pos=mapping_transformation_to_parameters(ctx.dadg.get("current_transformation")),  #
+            starting_pos=mapping_transformation_to_parameters(ctx.dadg.get(
+                "current_transformation" if context.namespace is None else f"{context.namespace}__current_transformation")),
+            #
             starting_spread=oa_params.starting_spread,  #
             config=SwarmConfig(  #
                 objective_function=lambda x: objective_function(context, x),  #
