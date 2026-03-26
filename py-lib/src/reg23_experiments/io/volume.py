@@ -151,7 +151,7 @@ def load_ct(path: pathlib.Path, *, hu_cutoff: float = -800.0, mu_water: float = 
     data, spacing = read_volume(path, check_for_dcm_suffix_if_dir=check_for_dcm_suffix_if_dir)
     sizes = data.size()
     spacing = spacing
-    logger.info("CT data volume size and spacing = [{} x {} x {}]; [{} x {} x {}] mm"
+    logger.info("CT data volume size and spacing = [{} x {} x {}]; [{:.4f} x {:.4f} x {:.4f}] mm"
                 "".format(sizes[0], sizes[1], sizes[2], spacing[0], spacing[1], spacing[2]))
     if path.name == "PhantomCT.nii":
         # ToDo: Double check this:

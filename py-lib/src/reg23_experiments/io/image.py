@@ -79,21 +79,21 @@ def read_dicom(path: str) -> Tuple[torch.Tensor, torch.Tensor, SceneGeometry]:
     else:
         spacing_spread_ratio = 1.0
         logger.warning("'DistanceSourceToPatient' and 'DistanceSourceToDetector' not both available, assuming spacing "
-                       "spread ratio of {} from CT volume to detector array.".format(spacing_spread_ratio))
+                       "spread ratio of {:.4f} from CT volume to detector array.".format(spacing_spread_ratio))
 
     if "PixelSpacing" in dataset:
         spacing = torch.tensor([dataset["PixelSpacing"][1],  # column spacing (x-direction)
                                 dataset["PixelSpacing"][0]  # row spacing (y-direction)
                                 ])
-        logger.info("X-ray pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
+        logger.info("X-ray pixel spacing = [{:.4f} x {:.4f}] mm".format(spacing[0], spacing[1]))
         scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToPatient"].value)
-        logger.info("X-ray distance source-to-patient = {} mm".format(scene_geometry.source_distance))
+        logger.info("X-ray distance source-to-patient = {:.4f} mm".format(scene_geometry.source_distance))
     else:
         spacing = torch.tensor([dataset["ImagerPixelSpacing"][1],  # column spacing (x-direction)
                                 dataset["ImagerPixelSpacing"][0]  # row spacing (y-direction)
                                 ])
-        logger.info("X-ray imager pixel spacing = [{} x {}] mm".format(spacing[0], spacing[1]))
+        logger.info("X-ray imager pixel spacing = [{:.4f} x {:.4f}] mm".format(spacing[0], spacing[1]))
         scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToDetector"].value)
-        logger.info("X-ray distance source-to-detector = {} mm".format(scene_geometry.source_distance))
+        logger.info("X-ray distance source-to-detector = {:.4f} mm".format(scene_geometry.source_distance))
 
     return image, spacing, scene_geometry
