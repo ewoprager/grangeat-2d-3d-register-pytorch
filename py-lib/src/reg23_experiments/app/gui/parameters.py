@@ -27,7 +27,7 @@ class ParametersWidget(widgets.Container):
         # -----
         self.append(widgets.Label(value="Values:"))
         self._traitlets_widget = TraitletsWidget(self._ctx.state.parameters)
-        # self._traitlets_widget.native.setMaximumWidth(500)
+        self._traitlets_widget.expanded = True
         self.append(self._traitlets_widget)
 
         # -----
@@ -75,16 +75,25 @@ class ParametersWidget(widgets.Container):
         self._ctx.state.button_open_xray_file = True
 
     def _on_crop_nonzero_drr(self, *args) -> None:
-        self._ctx.state.parameters.cropping = "fixed"
-        self._ctx.state.parameters.cropping_value = args_from_dadg(dadg=self._ctx.dadg)(get_crop_nonzero_drr)()
+        for k, v in self._ctx.state.parameters.xray_parameters.items():
+            v.cropping = "fixed"
+            v.cropping_value = args_from_dadg(  #
+                dadg=self._ctx.dadg,  #
+                namespace_captures={e: k for e in AppContext.XRAY_SPECIFIC_DADG_KEYS}  #
+            )(get_crop_nonzero_drr)()
 
     def _on_crop_full_depth_drr(self, *args) -> None:
-        self._ctx.state.parameters.cropping = "fixed"
-        self._ctx.state.parameters.cropping_value = args_from_dadg(dadg=self._ctx.dadg)(get_crop_full_depth_drr)()
+        for k, v in self._ctx.state.parameters.xray_parameters.items():
+            v.cropping = "fixed"
+            v.cropping_value = args_from_dadg(  #
+                dadg=self._ctx.dadg,  #
+                namespace_captures={e: k for e in AppContext.XRAY_SPECIFIC_DADG_KEYS}  #
+            )(get_crop_full_depth_drr)()
 
     def _on_set_to_ground_truth(self, *args) -> None:
-        transformation_gt: Transformation | Error = self._ctx.dadg.get("transformation_gt")
-        if isinstance(transformation_gt, Error):
-            logger.warning("No ground truth transformation exists; can't set to it.")
-            return
-        self._ctx.dadg.set("current_transformation", transformation_gt.clone())
+        for k, v in self._ctx.state.parameters.xray_parameters.items():
+            transformation_gt: Transformation | Error = self._ctx.dadg.get(f"{k}__transformation_gt")
+            if isinstance(transformation_gt, Error):
+                logger.warning(f"No ground truth transformation exists for X-ray {k}; can't set to it.")
+                return
+            self._ctx.dadg.set(f"{k}__current_transformation", transformation_gt.clone())

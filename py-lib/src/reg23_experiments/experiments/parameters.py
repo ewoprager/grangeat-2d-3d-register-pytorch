@@ -106,7 +106,9 @@ class Parameters(HasTraits):
     xray_parameters: dict[str, XrayParameters] = Dict(  #
         key_trait=Unicode(allow_none=False),  #
         value_trait=Instance(XrayParameters, allow_none=False),  #
-        allow_none=False, default_value=dict({})).tag(ui=True)
+        allow_none=False,  #
+        default_value=dict({})  #
+    ).tag(ui=True)
 
     OP_ALGO_PARAM_CLASSES: dict[str, type] = {  #
         "pso": PsoParameters,  #

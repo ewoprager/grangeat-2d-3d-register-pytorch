@@ -123,8 +123,7 @@ def set_synthetic_target_image(*, ct_path: str, ct_spacing: torch.Tensor, ct_vol
 
 @dadg_updater(names_returned=["image_2d_scale_factor"])
 def refresh_image_2d_scale_factor(*,  #
-                                  fixed_image_spacing: torch.Tensor, downsample_level: int, ct_spacing: torch.Tensor)\
-        -> \
+                                  fixed_image_spacing: torch.Tensor, downsample_level: int, ct_spacing: torch.Tensor) -> \
         dict[str, Any]:
     downsampled_ct_spacing = ct_spacing * 2.0 ** float(downsample_level)
     return {"image_2d_scale_factor": (fixed_image_spacing.mean() / downsampled_ct_spacing.mean()).item()}

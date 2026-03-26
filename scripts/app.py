@@ -30,26 +30,6 @@ from reg23_experiments.app.gui.main_widget import MainWidget
 from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, set_target_image, \
     apply_truncation, project_drr, read_xray_uid
 
-namespace_captures: dict[str, str] = {  #
-    "image_2d_full": "a",  #
-    "fixed_image_spacing": "a",  #
-    "transformation_gt": "a",  #
-    "source_distance": "a",  #
-    "xray_path": "a",  #
-    "target_flipped": "a",  #
-    "moving_image": "a",  #
-    "fixed_image_size": "a",  #
-    "fixed_image_offset": "a",  #
-    "xray_sop_instance_uid": "a",  #
-    "fixed_image": "a",  #
-    "cropped_target": "a",  #
-    "mask": "a",  #
-    "translation_offset": "a",  #
-    "image_2d_scale_factor": "a",  #
-    "source_offset": "a",  #
-    "mask_transformation": "a",  #
-}
-
 
 # @args_from_dag(names_left=["transformation"])
 # def of(*, transformation: Transformation, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
@@ -78,47 +58,17 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("a__refresh_image_2d_scale_factor",
-                                     capture_in_namespaces(namespace_captures)(updaters.refresh_image_2d_scale_factor))
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    err = data_manager().add_updater("a__refresh_hyperparameter_dependent", capture_in_namespaces(namespace_captures)(
-        updaters.refresh_hyperparameter_dependent))
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    err = data_manager().add_updater("a__refresh_mask_transformation_dependent",
-                                     capture_in_namespaces(namespace_captures)(
-                                         updaters.refresh_mask_transformation_dependent))
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    err = data_manager().add_updater("a__project_drr", capture_in_namespaces(namespace_captures)(project_drr))
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    err = data_manager().add_updater("a__xray_uid", capture_in_namespaces(namespace_captures)(read_xray_uid))
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
 
     # -----
     # Data nodes
     # -----
     data_manager().set_multiple(  #
-        a__source_distance=1000.0,  #
-        a__fixed_image_spacing=torch.tensor([0.2, 0.2]),  #
-        a__fixed_image_size=torch.Size([500, 500]),  #
         downsample_level=0,  #
         regenerate_drr=True,  #
         cache_directory=cache_directory,  #
         save_to_cache=True,  # a
         new_drr_size=torch.Size([500, 500]),  #
-        a__xray_path=xray_path,  #
         device=device,  #
-        a__source_offset=torch.zeros(2),  #
-        a__mask_transformation=None,  #
         cropping=None,  #
         current_transformation=Transformation.zero(device=device),  #
         truncation_percent=0.0,  #
@@ -163,26 +113,21 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
             return
-        err = data_manager().add_updater("a__set_target_image",
-                                         capture_in_namespaces(namespace_captures)(set_target_image))
-        if isinstance(err, Error):
-            logger.error(f"Error adding updater: {err.description}")
-            return
 
     # -----
     # Parameters
     # -----
     parameters = Parameters(  #
+        ct_path=None,  #
         downsample_level=0,  #
         truncation_percent=0,  #
-        cropping="None",  #
         mask="None",  #
         sim_metric="zncc",  #
         sim_metric_parameters=NoParameters(),  #
-        optimisation_algorithm="pso",  #
-        op_algo_parameters=PsoParameters(),  #
         starting_distance=0.0,  #
         sample_count_per_distance=1,  #
+        optimisation_algorithm="pso",  #
+        op_algo_parameters=PsoParameters(),  #
         iteration_count=10,  #
     )
 
@@ -225,11 +170,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # GUI Modules
     # -----
-    fixed_image_layer = add_fixed_image_layer(ctx=app_context, dadg_key="a__fixed_image")
-    image_2d_full_layer = add_fixed_image_layer(ctx=app_context, dadg_key="a__image_2d_full")
-    moving_image_layer = add_moving_image_layer(ctx=app_context, namespace="a")
     register_gui = RegisterGUI(app_context)
-    electrode_layer = add_electrode_layer(ctx=app_context, namespace="a")
 
     # -----
     # Modules

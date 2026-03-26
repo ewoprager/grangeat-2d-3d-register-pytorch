@@ -12,7 +12,7 @@ from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
 from reg23_experiments.app.cache_manager import CacheManager
-from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.data.structs import Error, Transformation, Cropping
 from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.app.gui.input_manager import InputManager
@@ -30,6 +30,13 @@ logger = logging.getLogger(__name__)
 
 
 class AppContext:
+    XRAY_SPECIFIC_DADG_KEYS: list[str] = ["image_2d_full", "fixed_image_spacing", "transformation_gt",  #
+                                          "source_distance", "xray_path", "target_flipped", "moving_image",
+                                          "fixed_image_size", "fixed_image_offset", "xray_sop_instance_uid",
+                                          "fixed_image", "cropped_target", "mask", "translation_offset",
+                                          "image_2d_scale_factor", "source_offset", "mask_transformation",
+                                          "current_transformation", "cropping"]
+
     def __init__(self, *, parameters: Parameters, dadg: DirectedAcyclicDataGraph,
                  electrode_save_directory: pathlib.Path, transformation_save_directory: pathlib.Path):
         self._input_manager = InputManager()
@@ -44,29 +51,30 @@ class AppContext:
         if res is not None:
             self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters)
 
-        # load X-ray files according to the parameters
-        for name, value in self._state.parameters.xray_parameters.items():
-            self._add_xray(name=name, file_path=value.file_path)
-
-        # set up observers such that parameters changed in the UI effect the DADG and cache correctly
-        self._state.parameters.observe(self._ct_path_changed, names=["ct_path"])
         # load CT files according to the parameters
         self._dadg.set("ct_path",
                        NoNodeData if self._state.parameters.ct_path is None else self._state.parameters.ct_path)
+
+        # load X-ray files according to the parameters
+        for name, value in self._state.parameters.xray_parameters.items():
+            self._add_xray(name=name, params=value)
+
+        # observing widgets for the parameter values
+        self._state.parameters.observe(self._ct_path_changed, names=["ct_path"])
         self._state.parameters.observe(self._update_dag_downsample_level, names=["downsample_level"])
         self._dadg.set("downsample_level", self._state.parameters.downsample_level)
         self._state.parameters.observe(self._update_dag_truncation_percent, names=["truncation_percent"])
         self._dadg.set("truncation_percent", self._state.parameters.truncation_percent)
-        # self._state.parameters.observe(self._update_dag_target_flipped, names=["target_flipped"])
-        # self._dadg.set("a__target_flipped", self._state.parameters.target_flipped)
-        self._state.parameters.observe(lambda change: respond_to_mask_change(self.dadg, change), names=["mask"])
-        # self._state.parameters.observe(lambda change: respond_to_crop_change(self.dadg, change), names=["cropping"])
-        # self._state.parameters.observe(lambda change: respond_to_crop_value_change(self.dadg, change),
-        #                                names=["cropping_value"])
+        self._state.parameters.observe(lambda change: respond_to_mask_change(dadg=self.dadg, change=change),
+                                       names=["mask"])
+
+        # observing all the parameter widgets
+        observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)
+
+        # button observers
         self._state.observe(self._button_open_ct_file, names=["button_open_ct_file"])
         self._state.observe(self._button_open_ct_dir, names=["button_open_ct_dir"])
         self._state.observe(self._button_open_xray_file, names=["button_open_xray_file"])
-        observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)
 
     @property
     def input_manager(self) -> InputManager:
@@ -97,8 +105,9 @@ class AppContext:
     def _update_dag_truncation_percent(self, change) -> None:
         self.dadg.set("truncation_percent", change.new, check_equality=True)
 
-    # def _update_dag_target_flipped(self, change) -> None:
-    #     self.dadg.set("a__target_flipped", change.new, check_equality=True)
+    def _update_dag_target_flipped(self, change, *, namespace: str | None) -> None:
+        self.dadg.set("target_flipped" if namespace is None else f"{namespace}__target_flipped", change.new,
+                      check_equality=True)
 
     def _button_open_ct_file(self, change) -> None:
         if not change.new:
@@ -161,24 +170,36 @@ class AppContext:
             values = request_values(name={"annotation": str, "label": prompt_string})
             if values["name"]:
                 name = values["name"]
-        self._add_xray(name=name, file_path=file)
+        self._add_xray(name=name, params=XrayParameters(file_path=file))
 
-    def _add_xray(self, *, name: str, file_path: str):
-        # Get the X-ray parameters
-        p = XrayParameters(file_path=file_path)
-        self.state.parameters.xray_parameters = {**self.state.parameters.xray_parameters, name: p}
-        self.dadg.set(f"{name}__xray_path", file_path)
-        self.dadg.set(f"{name}__target_flipped", p.target_flipped)
+    def _add_xray(self, *, name: str, params: XrayParameters):
+        # Setting up appropriate observers
+        params.observe(
+            lambda change, namespace=name: respond_to_crop_change(dadg=self.dadg, change=change, namespace=namespace),
+            names=["cropping"])
+        params.observe(lambda change, namespace=name: respond_to_crop_value_change(dadg=self.dadg, change=change,
+                                                                                   namespace=namespace),
+                       names=["cropping_value"])
+        params.observe(lambda change, namespace=name: self._update_dag_target_flipped(change, namespace=namespace),
+                       names=["target_flipped"])
+        if isinstance(params.cropping_value, Cropping):
+            params.cropping_value.observe(
+                lambda change, namespace=name: respond_to_crop_value_value_change(dadg=self.dadg, change=change,
+                                                                                  namespace=namespace))
+
+        # Append it to the parameter state
+        self.state.parameters.xray_parameters = {**self.state.parameters.xray_parameters, name: params}
+
+        # Create appropriate DADG nodes
+        self.dadg.set(f"{name}__xray_path", params.file_path)
+        self.dadg.set(f"{name}__target_flipped", params.target_flipped)
         self.dadg.set(f"{name}__source_offset", torch.zeros(2))
         self.dadg.set(f"{name}__mask_transformation", None)
         self.dadg.set(f"{name}__current_transformation", Transformation.zero(device=self.dadg.get("device")))
-        namespace_captures = {key: name for key in ["image_2d_full", "fixed_image_spacing", "transformation_gt",  #
-                                                    "source_distance", "xray_path", "target_flipped", "moving_image",
-                                                    "fixed_image_size", "fixed_image_offset", "xray_sop_instance_uid",
-                                                    "fixed_image", "cropped_target", "mask", "translation_offset",
-                                                    "image_2d_scale_factor", "source_offset", "mask_transformation",
-                                                    "current_transformation"]}
-        # add namespaced updaters
+        self.dadg.set(f"{name}__cropping", params.cropping_value)
+
+        # add namespaced DADG updaters
+        namespace_captures = {key: name for key in AppContext.XRAY_SPECIFIC_DADG_KEYS}
         err = self.dadg.add_updater(f"{name}__refresh_image_2d_scale_factor",
                                     capture_in_namespaces(namespace_captures)(updaters.refresh_image_2d_scale_factor))
         if isinstance(err, Error):

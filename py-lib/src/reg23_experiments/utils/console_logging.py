@@ -3,7 +3,30 @@ import sys
 
 import tqdm as _tqdm
 
-__all__ = ["tqdm", "TqdmStreamHandler"]
+__all__ = ["ColourFormatter", "tqdm", "TqdmStreamHandler"]
+
+# ANSI escape codes
+WHITE = "\033[37m"
+RED = "\033[31m"
+RED_BACKGROUND = "\033[41m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+RESET = "\033[0m"
+
+
+class ColourFormatter(logging.Formatter):
+    COLORS = {  #
+        logging.DEBUG: WHITE,  #
+        logging.INFO: GREEN,  #
+        logging.WARNING: YELLOW,  #
+        logging.ERROR: RED,  #
+        logging.CRITICAL: RED_BACKGROUND,  #
+    }
+
+    def format(self, record):
+        color = self.COLORS.get(record.levelno, RESET)
+        record.levelname = f"{color}{record.levelname}{RESET}"
+        return super().format(record)
 
 
 def tqdm(*args, **kwargs):

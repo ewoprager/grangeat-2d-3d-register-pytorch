@@ -16,7 +16,7 @@ def mask_follows_transformation(*, current_transformation: Transformation) -> di
     return {"mask_transformation": current_transformation}
 
 
-def respond_to_mask_change(dadg: DirectedAcyclicDataGraph, change) -> None:
+def respond_to_mask_change(*, dadg: DirectedAcyclicDataGraph, change) -> None:
     if change.new == "None":
         dadg.remove_updater("mask_follows_transformation")
         dadg.set("mask_transformation", None, check_equality=True)
@@ -24,20 +24,25 @@ def respond_to_mask_change(dadg: DirectedAcyclicDataGraph, change) -> None:
         dadg.add_updater("mask_follows_transformation", mask_follows_transformation)
 
 
-def respond_to_crop_change(dadg: DirectedAcyclicDataGraph, change) -> None:
+def respond_to_crop_change(*, dadg: DirectedAcyclicDataGraph, change, namespace: str | None = None) -> None:
+    key = "cropping" if namespace is None else f"{namespace}__cropping"
     if change.new == "None":
-        dadg.set("cropping", None)
+        dadg.set(key, None)
     elif change.new == "fixed":
-        dadg.set("cropping", change.owner.cropping_value)
+        dadg.set(key, change.owner.cropping_value)
 
 
-def respond_to_crop_value_change(dadg: DirectedAcyclicDataGraph, change) -> None:
+def respond_to_crop_value_change(*, dadg: DirectedAcyclicDataGraph, change, namespace: str | None = None) -> None:
     if change.owner.cropping != "fixed":
         return
     assert isinstance(change.new, Cropping)
-    dadg.set("cropping", change.new)
-    change.new.observe(lambda _change: respond_to_crop_value_value_change(dadg, _change), names=traitlets.All)
+    key = "cropping" if namespace is None else f"{namespace}__cropping"
+    dadg.set(key, change.new)
+    change.new.observe(
+        lambda _change, _dadg=dadg, _namespace=namespace: respond_to_crop_value_value_change(dadg=_dadg, change=_change,
+                                                                                             namespace=_namespace))
 
 
-def respond_to_crop_value_value_change(dadg: DirectedAcyclicDataGraph, change) -> None:
-    dadg.set("cropping", change.owner)
+def respond_to_crop_value_value_change(*, dadg: DirectedAcyclicDataGraph, change, namespace: str | None = None) -> None:
+    key = "cropping" if namespace is None else f"{namespace}__cropping"
+    dadg.set(key, change.owner)

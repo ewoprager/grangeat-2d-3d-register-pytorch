@@ -29,7 +29,15 @@ def value_from_widget(widget: Widget) -> Any:
 
 class TraitletsWidget(Container):
     def __init__(self, hastraits: traitlets.HasTraits, **widget_kwargs):
-        super().__init__(widgets=[], layout='vertical', labels=True, **widget_kwargs)
+        super().__init__(widgets=[], layout="vertical", labels=False, **widget_kwargs)
+
+        self._expand_toggle = CheckBox(value=False, text="expand")
+        self._expand_toggle.changed.connect(self._expand_toggled)
+        self.append(self._expand_toggle)
+        self._inner_container = Container(widgets=[], layout="vertical", labels=True)
+        self.append(self._inner_container)
+
+        self._expand_toggled()
 
         self._callback_loop_prevention: bool = False
         self._hastraits = hastraits
@@ -37,7 +45,7 @@ class TraitletsWidget(Container):
         if isinstance(self._hastraits, NoParameters):
             self.labels = False
             child = Label(value="n/a")
-            self.append(child)
+            self._inner_container.append(child)
             return
 
         for name, trait in self._hastraits.traits().items():
@@ -67,9 +75,11 @@ class TraitletsWidget(Container):
                 if self._callback_loop_prevention:
                     return
                 self._callback_loop_prevention = True
-                if isinstance(trait, traitlets.Instance) or isinstance(trait, traitlets.Dict):
+                if isinstance(trait, traitlets.Instance) or isinstance(trait, traitlets.Dict) or isinstance(widget,
+                                                                                                            Container):
                     self.remove(_name)
-                    self.append(TraitletsWidget._construct_child_widget(name=_name, trait=_trait, value=change["new"]))
+                    self._inner_container.append(
+                        TraitletsWidget._construct_child_widget(name=_name, trait=_trait, value=change["new"]))
                 else:
                     widget.value = change["new"]
                 self._callback_loop_prevention = False
@@ -88,7 +98,19 @@ class TraitletsWidget(Container):
                 for element_widget in child:
                     element_widget.changed.connect(update_dict_trait_from_widget)
 
-            self.append(child)
+            self._inner_container.append(child)
+
+    # Forward all members of the inner container
+    def __getattr__(self, item):
+        return getattr(self._inner_container, item)
+
+    @property
+    def expanded(self) -> bool:
+        return self._expand_toggle.value
+
+    @expanded.setter
+    def expanded(self, value) -> None:
+        self._expand_toggle.value = value
 
     @property
     def value(self) -> traitlets.HasTraits:
@@ -140,6 +162,9 @@ class TraitletsWidget(Container):
         # Unsupported
         return Error(f"Unsupported trait class type '{trait.__class__.__name__}' encountered while building parameters "
                      f"widget.")
+
+    def _expand_toggled(self, *args) -> None:
+        self._inner_container.visible = self._expand_toggle.value
 
 
 class FloatingWidget(QWidget):
