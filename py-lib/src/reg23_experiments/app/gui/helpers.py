@@ -123,6 +123,7 @@ class TraitletsWidget(Container):
         # Unicode; ToDo: Currently read-only
         elif isinstance(trait, traitlets.Unicode):
             ret = Label(name=name, value=value)
+            ret.native.setWordWrap(True)
             return ret
         # Sub-config
         elif isinstance(trait, traitlets.Instance) and isinstance(value, traitlets.HasTraits):

@@ -1,8 +1,7 @@
-from traitlets import HasTraits, Instance, Float, Int, Bool, Unicode, Enum, List, Union, validate, TraitError
+from traitlets import HasTraits, Instance, Float, Int, Bool, Unicode, Enum, List, Union
 from typing import Literal
 
 import torch
-import pathlib
 
 from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.app.gui_settings import GUISettings
@@ -29,8 +28,6 @@ class AppState(HasTraits):
 
     parameters: Parameters = Instance(Parameters, allow_none=False)
 
-    ct_path: str | None = Unicode(allow_none=True, default_value=None).tag(ui=True)
-
     button_open_ct_file: bool = Bool(default_value=False)
     button_open_ct_dir: bool = Bool(default_value=False)
 
@@ -49,11 +46,3 @@ class AppState(HasTraits):
     button_save_transformation: bool = Bool(default_value=False)
     button_load_transformation_of_name: str | None = Unicode(allow_none=True, default_value=None)
     button_delete_transformation_of_name: str | None = Unicode(allow_none=True, default_value=None)
-
-    @validate("ct_path")
-    def _validate_ct_path(self, proposal):
-        if proposal["value"] is None:
-            return proposal["value"]
-        if not pathlib.Path(proposal["value"]).is_dir():
-            raise TraitError("Invalid CT path")
-        return proposal["value"]

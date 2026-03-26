@@ -39,34 +39,20 @@ class AppContext:
         self._electrode_save_manager = ElectrodeSaveManager(electrode_save_directory)
         self._transformation_save_manager = TransformationSaveManager(transformation_save_directory)
 
-        # load ct path from the cache
-        if self.dadg.has_node("ct_path"):
-            res = self.dadg.get("ct_path")
-            if not isinstance(res, Error):
-                self._state.ct_path = self.dadg.get("ct_path")
-        if not self._state.ct_path:
-            last_ct_path: pathlib.Path | None = self._cache_manager.last_ct_path
-            if last_ct_path is not None:
-                self._state.ct_path = str(last_ct_path)
-                self.dadg.set("ct_path", self._state.ct_path, check_equality=True)
-
-        # load X-ray paths from the cache
-        # res: dict[str, pathlib.Path] | None = self._cache_manager.last_xray_paths
-        # if res is not None:
-        #     for name, xray_path in res.items():
-        #         self._add_xray(name=name, file_path=str(xray_path))
-
         # load params from the cache
         res: dict[str, Any] | None = self._cache_manager.last_params
         if res is not None:
             self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters)
 
+        # load X-ray files according to the parameters
         for name, value in self._state.parameters.xray_parameters.items():
             self._add_xray(name=name, file_path=value.file_path)
 
         # set up observers such that parameters changed in the UI effect the DADG and cache correctly
-        self._state.observe(self._ct_path_changed, names=["ct_path"])
-        self._dadg.set("ct_path", NoNodeData if self._state.ct_path is None else self._state.ct_path)
+        self._state.parameters.observe(self._ct_path_changed, names=["ct_path"])
+        # load CT files according to the parameters
+        self._dadg.set("ct_path",
+                       NoNodeData if self._state.parameters.ct_path is None else self._state.parameters.ct_path)
         self._state.parameters.observe(self._update_dag_downsample_level, names=["downsample_level"])
         self._dadg.set("downsample_level", self._state.parameters.downsample_level)
         self._state.parameters.observe(self._update_dag_truncation_percent, names=["truncation_percent"])
@@ -80,7 +66,6 @@ class AppContext:
         self._state.observe(self._button_open_ct_file, names=["button_open_ct_file"])
         self._state.observe(self._button_open_ct_dir, names=["button_open_ct_dir"])
         self._state.observe(self._button_open_xray_file, names=["button_open_xray_file"])
-        self._state.parameters.observe(self._xray_parameters_changed, names=["xray_parameters"])
         observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)
 
     @property
@@ -105,13 +90,6 @@ class AppContext:
 
     def _ct_path_changed(self, change) -> None:
         self.dadg.set("ct_path", NoNodeData if change.new is None else change.new, check_equality=True)
-        self._cache_manager.last_ct_path = change.new
-
-    def _xray_parameters_changed(self, change) -> None:
-        self._cache_manager.last_xray_paths = {  #
-            key: value.file_path  #
-            for key, value in change["new"].items()  #
-        }
 
     def _update_dag_downsample_level(self, change) -> None:
         self.dadg.set("downsample_level", change.new, check_equality=True)
@@ -149,7 +127,7 @@ class AppContext:
 
     def _open_ct_path(self, path: str) -> None:
         try:
-            self._state.ct_path = path
+            self._state.parameters.ct_path = path
         except TraitError:
             logger.warning(f"CT path not valid: '{path}'")
             return

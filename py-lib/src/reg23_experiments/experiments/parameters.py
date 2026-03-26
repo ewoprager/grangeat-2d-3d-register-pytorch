@@ -1,5 +1,8 @@
-from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe, Dict
+from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe, Dict, validate, \
+    TraitError
 from typing import Any
+
+import pathlib
 
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.data.structs import Cropping, Error
@@ -30,6 +33,12 @@ class XrayParameters(HasTraits):
     @observe("cropping")
     def _cropping_changed(self, _):
         self._update_cropping_value()
+
+    @validate("file_path")
+    def _validate_file_path(self, proposal):
+        if not pathlib.Path(proposal["value"]).is_file():
+            raise TraitError("Invalid X-ray path")
+        return proposal["value"]
 
     def _update_cropping_value(self):
         if self.cropping == "fixed":
@@ -70,6 +79,7 @@ class LocalZnccParameters(HasTraits):
 
 
 class Parameters(HasTraits):
+    ct_path: str | None = Unicode(allow_none=True, default_value=None).tag(ui=True)
     downsample_level: int = Int(min=0).tag(ui=True)
     truncation_percent: int = Int(min=0, max=100).tag(ui=True)
     mask: str = Enum(values=[  #
@@ -116,6 +126,14 @@ class Parameters(HasTraits):
         super().__init__(**kwargs)
         self._update_op_algo_params()
         self._update_sim_metric_params()
+
+    @validate("ct_path")
+    def _validate_ct_path(self, proposal):
+        if proposal["value"] is None:
+            return proposal["value"]
+        if not pathlib.Path(proposal["value"]).exists():
+            raise TraitError("Invalid CT path")
+        return proposal["value"]
 
     @observe("optimisation_algorithm")
     def _op_algo_changed(self, _):
