@@ -61,7 +61,7 @@ class AppContext:
         if res is not None:
             self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters)
 
-        for name, value in self._state.parameters.xray_parameters:
+        for name, value in self._state.parameters.xray_parameters.items():
             self._add_xray(name=name, file_path=value.file_path)
 
         # set up observers such that parameters changed in the UI effect the DADG and cache correctly

@@ -39,6 +39,7 @@ def deserialize_recursive(*, value: JsonSerializable, old_value: HasTraitsSerial
         elif isinstance(trait, traitlets.Instance) and issubclass(trait.klass, traitlets.HasTraits):
             hastraits_spec = trait.klass._traits
         if hastraits_spec is not None:
+            new_dict = dict({})
             for k, t in hastraits_spec.items():
                 if k not in value:
                     continue
@@ -46,13 +47,19 @@ def deserialize_recursive(*, value: JsonSerializable, old_value: HasTraitsSerial
                     o = getattr(old_value, k)
                 except Exception:
                     o = None
-                n = deserialize_recursive(value=value[k], old_value=o, trait=t)
-                try:
-                    setattr(old_value, k, n)
-                except Exception as e:
-                    logger.warning(f"Invalid value found for key '{k}' while deserializing into HasTraits: '{e}'")
-                    continue
-            return old_value
+                new_dict[k] = deserialize_recursive(value=value[k], old_value=o, trait=t)
+
+            if isinstance(old_value, traitlets.HasTraits):
+                for k, v in new_dict.items():
+                    try:
+                        setattr(old_value, k, v)
+                    except Exception as e:
+                        logger.warning(f"Invalid value found for key '{k}' while deserializing into HasTraits: '{e}'")
+                        continue
+                return old_value
+            else:
+                return trait.klass(**new_dict)
+
         value_trait = None
         if trait is not None and isinstance(trait, traitlets.Dict):
             value_trait = trait._value_trait
