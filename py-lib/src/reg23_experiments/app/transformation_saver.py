@@ -34,7 +34,6 @@ class TransformationSaver:
         if not self._xray_selected:
             self._ctx.state.saved_transformation_names = []
             return
-
         self._ctx.state.saved_transformation_names = self._ctx.transformation_save_manager.get_names(
             self._ctx.dadg.get(self._uid_key))
 
@@ -64,13 +63,13 @@ class TransformationSaver:
     def _button_load_transformation_of_name(self, change) -> None:
         if change.new is None:
             return
+        name = change.new
         self._ctx.state.button_load_transformation_of_name = None
         #
         if not self._xray_selected:
             logger.warning("Cannot load transformation: no X-ray selected.")
             return
         uid = self._ctx.dadg.get(self._uid_key)
-        name = self._ctx.state.button_load_transformation_of_name
         tr: Transformation | Error = self._ctx.transformation_save_manager.get_transformation(uid=uid, name=name)
         if isinstance(tr, Error):
             logger.error(f"Error loading transformation '{uid}; {name}' from save manager: {tr.description}")
@@ -81,13 +80,13 @@ class TransformationSaver:
     def _button_delete_transformation_of_name(self, change) -> None:
         if change.new is None:
             return
+        name = change.new
         self._ctx.state.button_delete_transformation_of_name = None
         #
         if not self._xray_selected:
             logger.warning("Cannot delete transformation: no X-ray selected.")
             return
         uid = self._ctx.dadg.get(self._uid_key)
-        name = self._ctx.state.button_delete_transformation_of_name
         err = self._ctx.transformation_save_manager.remove(uid=uid, name=name)
         if isinstance(err, Error):
             logger.error(f"Error deleting transformation '{uid}; {name}' from save manager: {err.description}")
