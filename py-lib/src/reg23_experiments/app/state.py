@@ -1,4 +1,4 @@
-from traitlets import HasTraits, Instance, Float, Int, Bool, Unicode, Enum, List, Union
+from traitlets import HasTraits, Instance, Int, Bool, Unicode, Enum, List, Union
 from typing import Literal
 
 import torch

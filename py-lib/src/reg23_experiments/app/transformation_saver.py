@@ -9,6 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 class TransformationSaver:
+    """
+    No GUI / widgets
+
+    Reads from and writes to the state
+    """
     def __init__(self, ctx: AppContext):
         self._ctx = ctx
         self._update_saved_transformation_names()

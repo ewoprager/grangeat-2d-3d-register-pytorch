@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class WorkerManager:
+    """
+    No GUI / widgets
+
+    Reads from and write to the state and DADG
+    """
     def __init__(self, *, ctx: AppContext, objective_function: Callable[[Context, torch.Tensor], torch.Tensor]):
         self._ctx = ctx
         self._objective_function = objective_function

@@ -76,7 +76,7 @@ class ParametersWidget(widgets.Container):
 
     def _on_crop_nonzero_drr(self, *args) -> None:
         for k, v in self._ctx.state.parameters.xray_parameters.items():
-            v.cropping = "fixed"
+            v.cropping = "Fixed"
             v.cropping_value = args_from_dadg(  #
                 dadg=self._ctx.dadg,  #
                 namespace_captures={e: k for e in AppContext.XRAY_SPECIFIC_DADG_KEYS}  #
@@ -84,7 +84,7 @@ class ParametersWidget(widgets.Container):
 
     def _on_crop_full_depth_drr(self, *args) -> None:
         for k, v in self._ctx.state.parameters.xray_parameters.items():
-            v.cropping = "fixed"
+            v.cropping = "Fixed"
             v.cropping_value = args_from_dadg(  #
                 dadg=self._ctx.dadg,  #
                 namespace_captures={e: k for e in AppContext.XRAY_SPECIFIC_DADG_KEYS}  #

@@ -8,7 +8,6 @@ import napari
 from magicgui.widgets import Widget, FloatSpinBox, SpinBox, CheckBox, ComboBox, Container, Label
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.experiments.parameters import NoParameters
 
 __all__ = ["TraitletsWidget", "FloatingWidget"]
 
@@ -42,11 +41,11 @@ class TraitletsWidget(Container):
         self._callback_loop_prevention: bool = False
         self._hastraits = hastraits
 
-        if isinstance(self._hastraits, NoParameters):
-            self.labels = False
-            child = Label(value="n/a")
-            self._inner_container.append(child)
-            return
+        # if self._hastraits is None:
+        #     self.labels = False
+        #     child = Label(value="n/a")
+        #     self._inner_container.append(child)
+        #     return
 
         for name, trait in self._hastraits.traits().items():
             if not trait.metadata.get("ui", False):
@@ -77,7 +76,7 @@ class TraitletsWidget(Container):
                 self._callback_loop_prevention = True
                 if isinstance(trait, traitlets.Instance) or isinstance(trait, traitlets.Dict) or isinstance(widget,
                                                                                                             Container):
-                    self.remove(_name)
+                    self._inner_container.remove(_name)
                     self._inner_container.append(
                         TraitletsWidget._construct_child_widget(name=_name, trait=_trait, value=change["new"]))
                 else:
@@ -118,8 +117,20 @@ class TraitletsWidget(Container):
 
     @staticmethod
     def _construct_child_widget(*, name: str, trait: traitlets.TraitType, value: Any) -> Widget | Error:
+        if trait.allow_none and value is None:
+            ret = Label(name=name, value="n/a")
+            return ret
+        # Union
+        elif isinstance(trait, traitlets.Union):
+            for t in trait.trait_types:
+                try:
+                    t.validate(None, value)
+                except traitlets.TraitError:
+                    continue
+                return TraitletsWidget._construct_child_widget(name=name, trait=t, value=value)
+            return Error(f"`value` conformed to none of the `Union` trait's `trait_types`.")
         # Float
-        if isinstance(trait, traitlets.Float):
+        elif isinstance(trait, traitlets.Float):
             ret = FloatSpinBox(name=name, value=value)
             if trait.min is not None:
                 ret.min = trait.min

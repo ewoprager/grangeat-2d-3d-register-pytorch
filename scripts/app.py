@@ -10,16 +10,13 @@ import pathlib
 
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.data.structs import Error
-from reg23_experiments.ops.data_manager import data_manager, updaters, capture_in_namespaces
+from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 
 from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
-from reg23_experiments.app.gui.fixed_image_layer import add_fixed_image_layer
-from reg23_experiments.app.gui.moving_image_layer import add_moving_image_layer
-from reg23_experiments.app.gui.electrode_layer import add_electrode_layer
-from reg23_experiments.app.gui.parameters import ParametersWidget
+from reg23_experiments.app.gui.parameters_widget import ParametersWidget
 from reg23_experiments.app.gui.helpers import TraitletsWidget
-from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters, Context
+from reg23_experiments.experiments.parameters import Parameters, PsoParameters, Context
 from reg23_experiments.app.gui.register_widget import RegisterWidget
 from reg23_experiments.app.context import AppContext
 from reg23_experiments.app.worker_manager import WorkerManager
@@ -27,8 +24,8 @@ from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
 from reg23_experiments.app.gui.images_widget import ImagesWidget
-from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, set_target_image, \
-    apply_truncation, project_drr, read_xray_uid
+from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, apply_truncation
+from reg23_experiments.app.gui.file_manager import FileManager
 
 
 # @args_from_dag(names_left=["transformation"])
@@ -123,7 +120,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         truncation_percent=0,  #
         mask="None",  #
         sim_metric="zncc",  #
-        sim_metric_parameters=NoParameters(),  #
+        sim_metric_parameters=None,  #
         starting_distance=0.0,  #
         sample_count_per_distance=1,  #
         optimisation_algorithm="pso",  #
@@ -181,6 +178,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     worker_manager = WorkerManager(ctx=app_context, objective_function=objective_function)
     transformation_saver = TransformationSaver(app_context)
+    file_manager = FileManager(app_context.state)
 
     # value = data_manager().get("a__moving_image")
     # if isinstance(value, Error):
