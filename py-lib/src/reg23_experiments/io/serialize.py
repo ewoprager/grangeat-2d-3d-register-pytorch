@@ -5,13 +5,25 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["JsonSerializable", "HasTraitsSerializable", "serialize_recursive", "deserialize_recursive"]
 
+#: Any type that can be trivially serialized into JSON / YAML
 type JsonSerializable = None | bool | int | float | str | list[JsonSerializable] | dict[str, JsonSerializable]
 
 type HasTraitsSerializable = None | bool | int | float | str | traitlets.HasTraits | list[HasTraitsSerializable] | dict[
     str, HasTraitsSerializable]  # where all traits of a HasTraits must be HasTraitsSerializable
+"""Any type that can be converted to and from `JsonSerializable` with `serialize_recursive` and `deserialize_recursive`.
+This is any type that is/recursively contains trivially serializable types, or objects that derive from
+`traitlets.HasTraits`.
+"""
 
 
 def serialize_recursive(value: HasTraitsSerializable, *, trait: traitlets.TraitType | None = None) -> JsonSerializable:
+    """
+    Convert a `HasTraitsSerializable` into a `JsonSerializable`.
+    :param value: The value to serialize
+    :param trait: [Optional] A trait which the value should conform to. This allows serializing unions and HasTraits
+    objects.
+    :return: A copy of the given value that is trivially serializable into JSON / YAML.
+    """
     # Given a trait that allows None, and the value is None
     if trait is not None and trait.allow_none and value is None:
         return None
@@ -75,6 +87,17 @@ def serialize_recursive(value: HasTraitsSerializable, *, trait: traitlets.TraitT
 
 def deserialize_recursive(value: JsonSerializable, *, old_value: HasTraitsSerializable | None = None,
                           trait: traitlets.TraitType | None = None) -> HasTraitsSerializable:
+    """
+    Convert a `JsonSerializable` into a `HasTraitsSerializable`.
+    :param value: The value to convert
+    :param old_value: [Optional] An old version of this value that can be used for two things:
+        - Where values are missing from containers in `value`, values in `old_value` will be used,
+        - Where `old_value` contains `HasTraits` objects, these will be used to construct new `HasTraits` objects from
+        `value`, where otherwise a simple `dict` would be produced.
+    :param trait: [Optional] A trait that the output should conform to. This will override the use of `old_value`'s type
+    if `old_value` is also provided.
+    :return:
+    """
     # Given a trait that allows None, and the value is None
     if trait is not None and trait.allow_none and value is None:
         return None

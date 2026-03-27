@@ -38,7 +38,7 @@ class TraitletsWidget(Container):
 
         self._expand_toggled()
 
-        self._callback_loop_prevention: bool = False
+        self._callback_loop_prevention: set = set({})  # just a flag keyed by widget name
         self._hastraits = hastraits
 
         # if self._hastraits is None:
@@ -61,38 +61,38 @@ class TraitletsWidget(Container):
             # trait value
             if not isinstance(trait, traitlets.Instance):
                 def update_hastraits_from_widget(new_value: Any, _name=name) -> None:
-                    if self._callback_loop_prevention:
+                    if _name in self._callback_loop_prevention:
                         return
-                    self._callback_loop_prevention = True
+                    self._callback_loop_prevention.add(_name)
                     setattr(self._hastraits, _name, new_value)
-                    self._callback_loop_prevention = False
+                    self._callback_loop_prevention.remove(_name)
 
                 child.changed.connect(update_hastraits_from_widget)
 
             # All traits have the widget either updated or re-built when the hastraits value changes
             def update_widget_from_hastraits(change, _name=name, _trait=trait, widget=child) -> None:
-                if self._callback_loop_prevention:
+                if _name in self._callback_loop_prevention:
                     return
-                self._callback_loop_prevention = True
-                if isinstance(trait, traitlets.Instance) or isinstance(trait, traitlets.Dict) or isinstance(widget,
+                self._callback_loop_prevention.add(_name)
+                if isinstance(_trait, traitlets.Instance) or isinstance(_trait, traitlets.Dict) or isinstance(widget,
                                                                                                             Container):
                     self._inner_container.remove(_name)
                     self._inner_container.append(
                         TraitletsWidget._construct_child_widget(name=_name, trait=_trait, value=change["new"]))
                 else:
                     widget.value = change["new"]
-                self._callback_loop_prevention = False
+                self._callback_loop_prevention.remove(_name)
 
             self._hastraits.observe(update_widget_from_hastraits, names=[name])
 
             # Dict traits have additional callbacks for the elements of the dict
             if isinstance(trait, traitlets.Dict):
                 def update_dict_trait_from_widget(new_value: Any, _name=name, _widget=child) -> None:
-                    if self._callback_loop_prevention:
+                    if _name in self._callback_loop_prevention:
                         return
-                    self._callback_loop_prevention = True
+                    self._callback_loop_prevention.add(_name)
                     setattr(self._hastraits, _name, value_from_widget(_widget))
-                    self._callback_loop_prevention = False
+                    self._callback_loop_prevention.remove(_name)
 
                 for element_widget in child:
                     element_widget.changed.connect(update_dict_trait_from_widget)

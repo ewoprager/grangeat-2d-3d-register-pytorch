@@ -44,7 +44,7 @@ class XrayParameters(HasTraits):
             if self._cropping_cache is None:
                 self._cropping_cache = Cropping()
             self.cropping_value = self._cropping_cache
-        else:  # cropping is "None"
+        else:  # cropping == "None"
             if self.cropping_value is None:
                 return
             self._cropping_cache = self.cropping_value
