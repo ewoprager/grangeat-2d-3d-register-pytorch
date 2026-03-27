@@ -1,9 +1,8 @@
-from typing import Callable, Any
 import copy
 import functools
+from typing import Any, Callable
 
 from reg23_experiments.utils.reflection import takes_positional_args
-
 from ._data import Updater
 
 __all__ = ["capture_in_namespaces"]

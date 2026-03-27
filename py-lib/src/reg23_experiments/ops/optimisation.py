@@ -1,12 +1,12 @@
-from typing import Callable, NamedTuple
-import logging
 import copy
+import logging
+from typing import Callable, NamedTuple
 
-import torch
 import numpy as np
 import pyswarms
+import torch
 
-from reg23_experiments.data.structs import Transformation, GrowingTensor
+from reg23_experiments.data.structs import GrowingTensor, Transformation
 from reg23_experiments.ops.data_manager import args_from_dadg
 
 __all__ = ["mapping_transformation_to_parameters", "mapping_parameters_to_transformation", "local_search",

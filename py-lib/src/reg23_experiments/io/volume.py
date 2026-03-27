@@ -1,15 +1,15 @@
 import logging
 import pathlib
-from typing import NamedTuple, Tuple, Literal, Union
+from typing import Tuple
 
-import torch
+import nibabel
 import nrrd
 import pydicom
-import nibabel
+import torch
 from tqdm import tqdm
 
-from reg23_experiments.data.structs import SceneGeometry, Transformation, LinearRange
 from reg23_experiments.data import sinogram
+from reg23_experiments.data.structs import LinearRange, SceneGeometry, Transformation
 from reg23_experiments.ops.volume import fit_line_3d, point_line_distance_3d
 
 __all__ = ["read_nrrd", "read_nii", "read_dicom_directory_as_volume", "read_volume", "load_ct", "load_cached_ct"]

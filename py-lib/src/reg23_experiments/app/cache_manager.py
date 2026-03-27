@@ -1,9 +1,9 @@
 import logging
-from typing import Any
-from platformdirs import user_cache_dir
-import yaml
-
 import pathlib
+from typing import Any
+
+import yaml
+from platformdirs import user_cache_dir
 
 __all__ = ["CacheManager"]
 

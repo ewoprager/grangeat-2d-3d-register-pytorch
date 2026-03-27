@@ -4,8 +4,8 @@ import pathlib
 import pandas as pd
 import torch
 
-from reg23_experiments.io.save_data import SaveData, SaveDataManager, Change, JsonSerializable
 from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.io.save_data import Change, JsonSerializable, SaveData, SaveDataManager
 
 __all__ = ["TransformationSaveData", "TransformationSaveManager"]
 

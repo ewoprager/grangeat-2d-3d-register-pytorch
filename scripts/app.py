@@ -14,16 +14,16 @@ from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 
 from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
-from reg23_experiments.app.gui.parameters_widget import ParametersWidget
-from reg23_experiments.app.gui.helpers import TraitletsWidget
+from reg23_experiments.app.gui.widgets.parameters_widget import ParametersWidget
+from reg23_experiments.app.gui.widgets.hastraits_widget import HasTraitsWidget
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters, Context
-from reg23_experiments.app.gui.register_widget import RegisterWidget
+from reg23_experiments.app.gui.widgets.register_widget import RegisterWidget
 from reg23_experiments.app.context import AppContext
 from reg23_experiments.app.worker_manager import WorkerManager
 from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
-from reg23_experiments.app.gui.images_widget import ImagesWidget
+from reg23_experiments.app.gui.widgets.images_widget import ImagesWidget
 from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, apply_truncation
 from reg23_experiments.app.gui.file_manager import FileManager
 
@@ -139,7 +139,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     parameters_widget = ParametersWidget(app_context)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
-    viewer().window.add_dock_widget(TraitletsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
+    viewer().window.add_dock_widget(HasTraitsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
                                     menu=viewer().window.window_menu)
 
     images_widget = ImagesWidget(app_context)

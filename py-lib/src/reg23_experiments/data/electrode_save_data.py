@@ -1,11 +1,10 @@
 import pathlib
-from typing import Any
 
 import pandas as pd
 import torch
 
-from reg23_experiments.io.save_data import SaveData, SaveDataManager, Change, JsonSerializable
-from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.data.structs import Error
+from reg23_experiments.io.save_data import Change, SaveData, SaveDataManager
 
 
 class ElectrodeSaveData(SaveData):

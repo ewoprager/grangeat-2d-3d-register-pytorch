@@ -1,11 +1,11 @@
-from typing import NamedTuple, Tuple, Sequence, Union
-import traitlets
 from abc import ABC, abstractmethod
+from typing import NamedTuple, Sequence, Tuple, Union
 
-import torch
 import kornia
-import scipy
 import numpy
+import scipy
+import torch
+import traitlets
 
 __all__ = ["Error", "GrowingTensor", "LinearMapping", "LinearRange", "Transformation", "SceneGeometry", "Cropping",
            "Sinogram2dRange", "Sinogram2dGrid", "Sinogram3dGrid", "OptimisationInstance"]

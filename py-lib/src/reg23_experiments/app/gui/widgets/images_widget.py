@@ -1,14 +1,14 @@
-import os
 import logging
+import os
 
 os.environ["QT_API"] = "PyQt6"
 
 from magicgui import widgets
 
 from reg23_experiments.app.context import AppContext
-from reg23_experiments.app.gui.moving_image_layer import add_moving_image_layer
-from reg23_experiments.app.gui.fixed_image_layer import add_fixed_image_layer
-from reg23_experiments.app.gui.electrode_layer import add_electrode_layer
+from reg23_experiments.app.gui.layers.moving_image_layer import add_moving_image_layer
+from reg23_experiments.app.gui.layers.fixed_image_layer import add_fixed_image_layer
+from reg23_experiments.app.gui.layers.electrode_layer import add_electrode_layer
 
 __all__ = ["ImagesWidget"]
 

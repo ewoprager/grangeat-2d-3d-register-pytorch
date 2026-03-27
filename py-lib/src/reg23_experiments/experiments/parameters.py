@@ -5,7 +5,7 @@ from typing import Any, Literal
 import pathlib
 
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
-from reg23_experiments.data.structs import Cropping, Error
+from reg23_experiments.data.structs import Cropping
 
 __all__ = ["PsoParameters", "LocalZnccParameters", "LocalSearchParameters", "Parameters", "Context", "XrayParameters"]
 

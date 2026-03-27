@@ -1,10 +1,10 @@
-from traitlets import HasTraits, Instance, Int, Bool, Unicode, Enum, List, Union
 from typing import Literal
 
 import torch
+from traitlets import Bool, Enum, HasTraits, Instance, Int, List, Unicode, Union
 
-from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.app.gui_settings import GUISettings
+from reg23_experiments.experiments.parameters import Parameters
 
 __all__ = ["AppState", "WorkerState"]
 

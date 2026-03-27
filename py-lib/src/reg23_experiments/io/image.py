@@ -1,11 +1,11 @@
 import logging
 from typing import Tuple
 
-import torch
 import pydicom
+import torch
 
-from reg23_experiments.data.structs import SceneGeometry, LinearRange, Transformation
 from reg23_experiments.data import sinogram
+from reg23_experiments.data.structs import LinearRange, SceneGeometry, Transformation
 from reg23_experiments.io.helpers import deterministic_hash_string
 
 __all__ = ["read_dicom", "load_cached_drr"]

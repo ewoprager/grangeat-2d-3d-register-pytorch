@@ -2,13 +2,12 @@ import logging
 
 import torch
 
-from reg23_experiments.data.structs import Error, Cropping, Transformation
-from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.app.state import AppState
+from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr, read_xray_uid, set_target_image
+from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData, capture_in_namespaces, updaters
-from reg23_experiments.experiments.multi_xray_truncation_updaters import set_target_image, project_drr, read_xray_uid
-
-from ._gui_param_to_dag_node import respond_to_mask_change, cropping_changed, cropping_value_changed
+from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed, respond_to_mask_change
 
 __all__ = ["ParamDADGParityManager"]
 

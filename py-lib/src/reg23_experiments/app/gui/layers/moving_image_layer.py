@@ -2,14 +2,13 @@ import logging
 import weakref
 
 import napari.layers
-import torch
 import numpy as np
 import scipy
+import torch
 
-from reg23_experiments.data.structs import Error
-from reg23_experiments.app.gui.viewer_singleton import viewer
-from reg23_experiments.data.structs import Transformation
 from reg23_experiments.app.context import AppContext
+from reg23_experiments.app.gui.viewer_singleton import viewer
+from reg23_experiments.data.structs import Error, Transformation
 
 __all__ = ["add_moving_image_layer"]
 
@@ -52,8 +51,7 @@ class _MovingImageLayerManager:
                 rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
                 rot_combined = rot_euler * rotation_start
                 prev = self._ctx.dadg.get(
-                    "current_transformation" if self._namespace is None else f"{
-                    self._namespace}__current_transformation")
+                    "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation")
                 self._ctx.dadg.set(  #
                     "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation",
                     #
@@ -80,8 +78,7 @@ class _MovingImageLayerManager:
             drag_start = torch.tensor(event.position)
             # rotation_start = scipy.spatial.transform.Rotation.from_rotvec(transformation.rotation.cpu().numpy())
             translation_start = self._ctx.dadg.get(
-                "current_transformation" if self._namespace is None else f"{
-                self._namespace}__current_transformation").translation[
+                "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation").translation[
                 0:2].cpu()
             yield
             # on move
@@ -95,8 +92,7 @@ class _MovingImageLayerManager:
                 tr = prev.translation
                 tr[0:2] = (translation_start + delta).to(device=tr.device)
                 self._ctx.dadg.set(  #
-                    "current_transformation" if self._namespace is None else f"{
-                    self._namespace}__current_transformation",
+                    "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation",
                     #
                     Transformation(  #
                         translation=tr,  #

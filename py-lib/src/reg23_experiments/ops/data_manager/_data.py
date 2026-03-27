@@ -1,4 +1,5 @@
-from typing import NamedTuple, Callable
+from typing import Callable, NamedTuple
+
 import traitlets
 
 from reg23_experiments.utils.reflection import FunctionArgument, takes_positional_args

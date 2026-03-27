@@ -1,12 +1,12 @@
 import logging
+import pathlib
+
+from magicgui.widgets import request_values
 from traitlets import TraitError
 
-import pathlib
-from magicgui.widgets import request_values
-
 from reg23_experiments.app.gui.viewer_singleton import viewer
-from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.app.state import AppState
+from reg23_experiments.experiments.parameters import XrayParameters
 
 __all__ = ["FileManager"]
 

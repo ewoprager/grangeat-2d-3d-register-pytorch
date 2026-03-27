@@ -1,8 +1,8 @@
 import logging
 
 import numpy as np
-import torch
 import pandas as pd
+import torch
 
 __all__ = ["to_latex_scientific", "save_colourmap_for_latex", "get_axis_values_if_dataframe_rectangular_over_columns",
            "dataframe_rectangular_columns_to_tensor"]

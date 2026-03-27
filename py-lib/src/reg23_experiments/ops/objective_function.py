@@ -1,14 +1,13 @@
-from typing import Tuple, Callable
 import inspect
 import logging
+from typing import Callable, Tuple
 
-import torch
 import matplotlib.pyplot as plt
+import torch
 
-from reg23_experiments.data.structs import SceneGeometry, Transformation, Sinogram2dGrid
 from reg23_experiments.data.sinogram import Sinogram, SinogramClassic
-from reg23_experiments.ops import grangeat
-from reg23_experiments.ops import similarity_metric
+from reg23_experiments.data.structs import SceneGeometry, Sinogram2dGrid, Transformation
+from reg23_experiments.ops import grangeat, similarity_metric
 
 __all__ = ["ParametrisedSimilarityMetric", "evaluate", "evaluate_direct"]
 
@@ -64,8 +63,7 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
         plt.colorbar(mesh)
         if save:
             plt.savefig(
-                "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else
-                "data/temp/d_dr_R3_mu_resampled.pgf")
+                "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else "data/temp/d_dr_R3_mu_resampled.pgf")
 
     return similarity_metric.ncc(fixed_image, resampled), resampled
 

@@ -1,16 +1,16 @@
 import collections
 import functools
 import logging
-from typing import Any, Callable
 import weakref
-from traitlets.config import SingletonConfigurable
+from typing import Any, Callable
+
 import traitlets
+from traitlets.config import SingletonConfigurable
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
-
-from ._data import NoNodeData, Updater, Dependency
-from ._directed_acyclic_data_graph import Node, DirectedAcyclicDataGraph, ChildDirectedAcyclicDataGraph
+from ._data import Dependency, NoNodeData, Updater
+from ._directed_acyclic_data_graph import ChildDirectedAcyclicDataGraph, DirectedAcyclicDataGraph, Node
 
 logger = logging.getLogger(__name__)
 

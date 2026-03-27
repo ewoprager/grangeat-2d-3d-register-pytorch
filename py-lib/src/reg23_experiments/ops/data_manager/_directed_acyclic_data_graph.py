@@ -1,11 +1,11 @@
+import copy
 from abc import ABC, abstractmethod
 from typing import Any, Callable
+
 import traitlets
-import copy
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
-
 from ._data import NoNodeData, Updater
 
 __all__ = ["Node", "DirectedAcyclicDataGraph", "ChildDirectedAcyclicDataGraph"]

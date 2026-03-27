@@ -1,21 +1,18 @@
-import traitlets
 import logging
 from typing import Any
 
-from qtpy.QtWidgets import QWidget, QVBoxLayout
-from qtpy.QtCore import Qt
-import napari
-from magicgui.widgets import Widget, FloatSpinBox, SpinBox, CheckBox, ComboBox, Container, Label
+import traitlets
+from magicgui.widgets import CheckBox, ComboBox, Container, FloatSpinBox, Label, SpinBox, Widget
 
 from reg23_experiments.data.structs import Error
 
-__all__ = ["TraitletsWidget", "FloatingWidget"]
+__all__ = ["HasTraitsWidget"]
 
 logger = logging.getLogger(__name__)
 
 
 def value_from_widget(widget: Widget) -> Any:
-    if isinstance(widget, TraitletsWidget):
+    if isinstance(widget, HasTraitsWidget):
         return widget.value
     if isinstance(widget, Container):
         # ToDo: Currently only works with dicts
@@ -26,7 +23,7 @@ def value_from_widget(widget: Widget) -> Any:
     return widget.value
 
 
-class TraitletsWidget(Container):
+class HasTraitsWidget(Container):
     def __init__(self, hastraits: traitlets.HasTraits, **widget_kwargs):
         super().__init__(widgets=[], layout="vertical", labels=False, **widget_kwargs)
 
@@ -41,18 +38,12 @@ class TraitletsWidget(Container):
         self._callback_loop_prevention: set = set({})  # just a flag keyed by widget name
         self._hastraits = hastraits
 
-        # if self._hastraits is None:
-        #     self.labels = False
-        #     child = Label(value="n/a")
-        #     self._inner_container.append(child)
-        #     return
-
         for name, trait in self._hastraits.traits().items():
             if not trait.metadata.get("ui", False):
                 continue
 
             value = getattr(self._hastraits, name)
-            child = TraitletsWidget._construct_child_widget(name=name, trait=trait, value=value)
+            child = HasTraitsWidget._construct_child_widget(name=name, trait=trait, value=value)
             if isinstance(child, Error):
                 logger.warning(f"Error constructing child widget: {child.description}")
                 continue
@@ -75,10 +66,10 @@ class TraitletsWidget(Container):
                     return
                 self._callback_loop_prevention.add(_name)
                 if isinstance(_trait, traitlets.Instance) or isinstance(_trait, traitlets.Dict) or isinstance(widget,
-                                                                                                            Container):
+                                                                                                              Container):
                     self._inner_container.remove(_name)
                     self._inner_container.append(
-                        TraitletsWidget._construct_child_widget(name=_name, trait=_trait, value=change["new"]))
+                        HasTraitsWidget._construct_child_widget(name=_name, trait=_trait, value=change["new"]))
                 else:
                     widget.value = change["new"]
                 self._callback_loop_prevention.remove(_name)
@@ -127,7 +118,7 @@ class TraitletsWidget(Container):
                     t.validate(None, value)
                 except traitlets.TraitError:
                     continue
-                return TraitletsWidget._construct_child_widget(name=name, trait=t, value=value)
+                return HasTraitsWidget._construct_child_widget(name=name, trait=t, value=value)
             return Error(f"`value` conformed to none of the `Union` trait's `trait_types`.")
         # Float
         elif isinstance(trait, traitlets.Float):
@@ -160,13 +151,13 @@ class TraitletsWidget(Container):
             return ret
         # Sub-config
         elif isinstance(trait, traitlets.Instance) and isinstance(value, traitlets.HasTraits):
-            ret = TraitletsWidget(value, name=name)
+            ret = HasTraitsWidget(value, name=name)
             return ret
         # Dict
         elif isinstance(trait, traitlets.Dict):
             ret = Container(name=name)
             for key, dict_value in value.items():
-                dict_value_widget = TraitletsWidget._construct_child_widget(name=key, trait=trait._value_trait,
+                dict_value_widget = HasTraitsWidget._construct_child_widget(name=key, trait=trait._value_trait,
                                                                             value=dict_value)
                 ret.append(dict_value_widget)
             return ret
@@ -176,19 +167,3 @@ class TraitletsWidget(Container):
 
     def _expand_toggled(self, *args) -> None:
         self._inner_container.visible = self._expand_toggle.value
-
-
-class FloatingWidget(QWidget):
-    def __init__(self, title: str, widget: QWidget):
-        super().__init__(napari.Viewer().window._qt_window)
-
-        self.setWindowTitle(title)
-
-        layout = QVBoxLayout()
-        layout.addWidget(widget)
-        self.setLayout(layout)
-
-        # Optional: behave like a tool panel
-        self.setWindowFlags(Qt.Window |  # make it a real window
-                            Qt.Tool  # stays on top of parent, no taskbar entry
-                            )

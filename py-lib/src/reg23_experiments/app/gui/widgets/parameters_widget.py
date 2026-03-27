@@ -6,10 +6,11 @@ os.environ["QT_API"] = "PyQt6"
 from magicgui import widgets
 
 from reg23_experiments.data.structs import Transformation, Error
-from reg23_experiments.app.gui.helpers import TraitletsWidget
+from reg23_experiments.app.gui.widgets.hastraits_widget import HasTraitsWidget
 from reg23_experiments.app.context import AppContext
 from reg23_experiments.ops.data_manager import args_from_dadg
 from reg23_experiments.ops.geometry import get_crop_nonzero_drr, get_crop_full_depth_drr
+from reg23_experiments.app.param_dadg_parity_manager import ParamDADGParityManager
 
 __all__ = ["ParametersWidget"]
 
@@ -26,7 +27,7 @@ class ParametersWidget(widgets.Container):
         # Parameters struct
         # -----
         self.append(widgets.Label(value="Values:"))
-        self._traitlets_widget = TraitletsWidget(self._ctx.state.parameters)
+        self._traitlets_widget = HasTraitsWidget(self._ctx.state.parameters)
         self._traitlets_widget.expanded = True
         self.append(self._traitlets_widget)
 
@@ -79,7 +80,7 @@ class ParametersWidget(widgets.Container):
             v.cropping = "Fixed"
             v.cropping_value = args_from_dadg(  #
                 dadg=self._ctx.dadg,  #
-                namespace_captures={e: k for e in AppContext.XRAY_SPECIFIC_DADG_KEYS}  #
+                namespace_captures={e: k for e in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}  #
             )(get_crop_nonzero_drr)()
 
     def _on_crop_full_depth_drr(self, *args) -> None:
@@ -87,7 +88,7 @@ class ParametersWidget(widgets.Container):
             v.cropping = "Fixed"
             v.cropping_value = args_from_dadg(  #
                 dadg=self._ctx.dadg,  #
-                namespace_captures={e: k for e in AppContext.XRAY_SPECIFIC_DADG_KEYS}  #
+                namespace_captures={e: k for e in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}  #
             )(get_crop_full_depth_drr)()
 
     def _on_set_to_ground_truth(self, *args) -> None:

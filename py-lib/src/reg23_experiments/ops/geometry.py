@@ -1,11 +1,10 @@
 import copy
 
-import torch
 import pyvista as pv
-
-from reg23_experiments.data.structs import Sinogram2dGrid, Sinogram3dGrid, Transformation, SceneGeometry, Cropping
+import torch
 
 import reg23
+from reg23_experiments.data.structs import Cropping, SceneGeometry, Sinogram2dGrid, Sinogram3dGrid, Transformation
 
 __all__ = ["fixed_polar_to_moving_cartesian", "moving_cartesian_to_moving_spherical", "fixed_polar_to_moving_spherical",
            "ray_cuboid_distance", "generate_drr", "generate_drr_cuboid_mask", "generate_drr_python", "plane_integrals",

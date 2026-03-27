@@ -1,5 +1,5 @@
+from math import exp, floor, log, sqrt
 from typing import Callable
-from math import log, floor, sqrt, exp
 
 import torch
 from torch.distributions.multivariate_normal import MultivariateNormal

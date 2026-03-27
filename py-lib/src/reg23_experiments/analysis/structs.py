@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 from typing import NamedTuple, Optional
 
 import numpy as np
-import torch
 import scipy
+import torch
 
-from reg23_experiments.analysis.helpers import to_latex_scientific
 from reg23_experiments.analysis.fit import torch_polyfit
+from reg23_experiments.analysis.helpers import to_latex_scientific
 
 __all__ = ["Series", "DataFit", "LinearFit", "QuadraticFit", "PowerFit", "CustomFitPowerRatio"]
 

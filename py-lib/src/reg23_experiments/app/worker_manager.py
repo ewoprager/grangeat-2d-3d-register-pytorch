@@ -4,12 +4,12 @@ from typing import Callable
 import torch
 from PyQt6.QtCore import QThread
 
-from reg23_experiments.app.state import WorkerState
 from reg23_experiments.app.context import AppContext
-from reg23_experiments.experiments.parameters import Context
-from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
-    mapping_parameters_to_transformation
+from reg23_experiments.app.state import WorkerState
 from reg23_experiments.app.workers.registration_worker import RegistrationWorker
+from reg23_experiments.experiments.parameters import Context
+from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
+    mapping_transformation_to_parameters
 
 __all__ = ["WorkerManager"]
 
@@ -22,6 +22,7 @@ class WorkerManager:
 
     Reads from and write to the state and DADG
     """
+
     def __init__(self, *, ctx: AppContext, objective_function: Callable[[Context, torch.Tensor], torch.Tensor]):
         self._ctx = ctx
         self._objective_function = objective_function

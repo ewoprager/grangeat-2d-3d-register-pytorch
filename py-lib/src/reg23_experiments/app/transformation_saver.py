@@ -1,7 +1,7 @@
 import logging
 
-from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.app.context import AppContext
+from reg23_experiments.data.structs import Error, Transformation
 
 __all__ = ["TransformationSaver"]
 
@@ -14,6 +14,7 @@ class TransformationSaver:
 
     Reads from and writes to the state
     """
+
     def __init__(self, ctx: AppContext):
         self._ctx = ctx
         self._update_saved_transformation_names()

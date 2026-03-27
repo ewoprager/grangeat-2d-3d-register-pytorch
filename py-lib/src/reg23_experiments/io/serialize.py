@@ -1,4 +1,5 @@
 import logging
+
 import traitlets
 
 logger = logging.getLogger(__name__)

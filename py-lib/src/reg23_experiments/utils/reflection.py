@@ -1,5 +1,6 @@
-from typing import Callable
 import inspect
+from typing import Callable
+
 import traitlets
 
 __all__ = ["FunctionArgument", "takes_positional_args"]

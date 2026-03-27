@@ -1,7 +1,8 @@
+import logging
 import os
+
 import traitlets
 from traitlets.config import SingletonConfigurable
-import logging
 
 os.environ["QT_API"] = "PyQt6"
 

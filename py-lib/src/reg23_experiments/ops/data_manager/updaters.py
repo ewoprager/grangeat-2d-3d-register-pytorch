@@ -1,20 +1,15 @@
 import logging
-import math
 import pathlib
-from typing import Any, Type
+from typing import Any
 
 import torch
 
 import reg23
-from reg23_experiments.data.structs import Error, Cropping
-from reg23_experiments.io.volume import load_ct, load_cached_ct
-from reg23_experiments.io.image import read_dicom, load_cached_drr
-from reg23_experiments.io.helpers import deterministic_hash_sinogram
-from reg23_experiments.ops import drr, pre_computed
 from reg23_experiments.app.gui.old.lib.structs import Target
-from reg23_experiments.ops import grangeat
-from reg23_experiments.data.sinogram import Sinogram, SinogramType
-from reg23_experiments.data.structs import LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation
+from reg23_experiments.data.structs import Cropping, LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation
+from reg23_experiments.io.image import load_cached_drr, read_dicom
+from reg23_experiments.io.volume import load_ct
+from reg23_experiments.ops import drr, grangeat
 from reg23_experiments.ops.data_manager import dadg_updater
 from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 

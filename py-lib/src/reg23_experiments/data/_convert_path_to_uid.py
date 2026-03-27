@@ -1,9 +1,9 @@
 import json
+import pathlib
 import sys
 
-import pathlib
-import pydicom
 import pandas as pd
+import pydicom
 from tqdm import tqdm
 
 

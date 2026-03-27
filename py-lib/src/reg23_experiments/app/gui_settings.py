@@ -1,4 +1,4 @@
-from traitlets import HasTraits, Float
+from traitlets import Float, HasTraits
 
 __all__ = ["GUISettings"]
 

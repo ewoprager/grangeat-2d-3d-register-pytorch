@@ -1,6 +1,7 @@
-import traitlets
 import copy
 from typing import Any, Callable
+
+import traitlets
 
 __all__ = ["clone_has_traits", "observe_all_traits_recursively"]
 

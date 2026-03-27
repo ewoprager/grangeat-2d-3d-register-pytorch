@@ -4,9 +4,9 @@ import weakref
 import napari.layers
 import torch
 
-from reg23_experiments.data.structs import Error
 from reg23_experiments.app.context import AppContext
 from reg23_experiments.app.gui.viewer_singleton import viewer
+from reg23_experiments.data.structs import Error
 
 __all__ = ["add_electrode_layer"]
 

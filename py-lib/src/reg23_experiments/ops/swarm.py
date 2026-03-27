@@ -37,10 +37,10 @@ for i in range(iteration_count):
 """
 
 import logging
-import traitlets
 from typing import Callable
 
 import torch
+import traitlets
 
 __all__ = ["SwarmConfig", "Swarm"]
 
