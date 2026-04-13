@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["JsonSerializable", "HasTraitsSerializable", "serialize_recursive", "deserialize_recursive"]
 
-#: Any type that can be trivially serialized into JSON / YAML
 type JsonSerializable = None | bool | int | float | str | list[JsonSerializable] | dict[str, JsonSerializable]
+"""Any type that can be trivially serialized into JSON / YAML"""
 
 type HasTraitsSerializable = None | bool | int | float | str | traitlets.HasTraits | list[HasTraitsSerializable] | dict[
     str, HasTraitsSerializable]  # where all traits of a HasTraits must be HasTraitsSerializable
