@@ -1,30 +1,50 @@
 #include <metal_stdlib>
 using namespace metal;
 
-kernel void project_drr(texture3d<float, access::sample> volumeTex [[texture(0)]], sampler volumeSampler [[sampler(0)]],
-						constant float &sourceDistance [[buffer(0)]], constant float &lambdaStart [[buffer(1)]],
-						constant float &stepSize [[buffer(2)]], constant int &samplesPerRay [[buffer(3)]],
-						constant float4x4 &hmi [[buffer(4)]], constant float3 &mappingIntercept [[buffer(5)]],
-						constant float3 &mappingGradient [[buffer(6)]], constant float2 &detectorSpacing [[buffer(7)]],
-						constant uint2 &outputSize [[buffer(8)]], constant float2 &outputOffset [[buffer(9)]],
-						device float *out [[buffer(10)]], uint3 id [[thread_position_in_grid]]) {
-	if (id.x >= outputSize.x * outputSize.y) return;
+#include <metal_stdlib>
+using namespace metal;
 
-	uint i = id.x % outputSize.x;
-	uint j = id.x / outputSize.x;
-	float2 detectorPosition = detectorSpacing * (float2(uint2(i, j)) - 0.5 * float2(outputSize - 1)) + outputOffset;
-	float3 direction = float3(detectorPosition, -sourceDistance);
+struct ProjectDRRArgs {
+    float4x4   hmi;
+
+    float3     mappingIntercept;
+    float      _pad0;               // padding to 16
+
+    float3     mappingGradient;
+    float      _pad1;               // padding to 16
+
+    float2     detectorSpacing;
+    uint2      outputSize;
+    float2     outputOffset;
+
+    float      sourceDistance;
+    float      lambdaStart;
+    float      stepSize;
+    int        samplesPerRay;
+};
+
+kernel void project_drr(texture3d<float, access::sample> volumeTex [[texture(0)]],
+                        sampler volumeSampler [[sampler(0)]],
+						constant ProjectDRRArgs &args [[buffer(0)]],
+						device float *out [[buffer(1)]],
+						uint3 id [[thread_position_in_grid]]) {
+	if (id.x >= args.outputSize.x * args.outputSize.y) return;
+
+	uint i = id.x % args.outputSize.x;
+	uint j = id.x / args.outputSize.x;
+	float2 detectorPosition = args.detectorSpacing * (float2(uint2(i, j)) - 0.5 * float2(args.outputSize - 1)) + args.outputOffset;
+	float3 direction = float3(detectorPosition, -args.sourceDistance);
 	direction /= length(direction);
-	float3 delta = direction * stepSize;
-	delta = (hmi * float4(delta, 0.0)).xyz;
-	float3 start = float3(0.0, 0.0, sourceDistance) + lambdaStart * direction;
-	start = (hmi * float4(start, 1.0)).xyz;
+	float3 delta = direction * args.stepSize;
+	delta = (args.hmi * float4(delta, 0.0)).xyz;
+	float3 start = float3(0.0, 0.0, args.sourceDistance) + args.lambdaStart * direction;
+	start = (args.hmi * float4(start, 1.0)).xyz;
 
 	float3 samplePoint = start;
 	float sum = 0.0;
-	for (int k = 0; k < samplesPerRay; ++k) {
-		sum += volumeTex.sample(volumeSampler, mappingGradient * samplePoint + mappingIntercept).r;
+	for (int k = 0; k < args.samplesPerRay; ++k) {
+		sum += volumeTex.sample(volumeSampler, args.mappingGradient * samplePoint + args.mappingIntercept).r;
 		samplePoint += delta;
 	}
-	out[id.x] = stepSize * sum;
+	out[id.x] = args.stepSize * sum;
 }

@@ -11,11 +11,6 @@ uintptr_t MPSTexture3D::SamplerHandleAsInt() const { return reinterpret_cast<uin
 
 at::Tensor MPSTexture3D::SizeTensor() const { return at::tensor(backingTensor.sizes(), at::dtype(at::kInt)).flip({0}); }
 
-MPSTexture3D::MPSTexture3D(const at::Tensor &tensor, const std::string &addressModeX, const std::string &addressModeY,
-						   const std::string &addressModeZ)
-	: MPSTexture3D(MTLCreateSystemDefaultDevice(), torch::mps::get_command_buffer(), tensor,
-				   StringsToAddressModes<3>({{addressModeX, addressModeY, addressModeZ}})) {}
-
 MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuffer, const at::Tensor &tensor,
 						   Vec<TextureAddressMode, 3> addressModes) {
 	// tensor should be a 3-dimensional array of floats on the GPU
@@ -26,8 +21,10 @@ MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuf
 	backingTensor = tensor.contiguous();
 
 	id<MTLBuffer> buffer = getMTLBufferStorage(backingTensor);
-//	CFTypeRef bufRef = (__bridge CFTypeRef)buffer;
-//	if (bufRef) CFRetain(bufRef);
+	CFRetain((__bridge CFTypeRef)buffer);
+	[commandBuffer addCompletedHandler:^(id<MTLCommandBuffer>) {
+	  CFRelease((__bridge CFTypeRef)buffer);
+	}];
 
 	const Vec<int64_t, 3> size = Vec<int64_t, 3>::FromIntArrayRef(backingTensor.sizes()).Flipped();
 
@@ -45,6 +42,7 @@ MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuf
 	desc.storageMode = MTLStorageModePrivate;
 
 	textureHandle = [device newTextureWithDescriptor:desc];
+	CFRetain((__bridge CFTypeRef)textureHandle);
 
 	id<MTLBlitCommandEncoder> blitEncoder = [commandBuffer blitCommandEncoder];
 
@@ -73,15 +71,20 @@ MPSTexture3D::MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuf
 	if (!samplerHandle) {
 		throw std::runtime_error("Error creating sampler.");
 	}
-
-//	[commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> cb) {
-//	  if (bufRef) CFRelease(bufRef);
-//	}];
+	CFRetain((__bridge CFTypeRef)samplerHandle);
 }
 
 void MPSTexture3D::CleanUp() noexcept {
+	if (textureHandle) {
+		CFRelease((__bridge CFTypeRef)textureHandle);
+		textureHandle = nullptr;
+	}
+	if (samplerHandle) {
+		CFRelease((__bridge CFTypeRef)samplerHandle);
+		samplerHandle = nullptr;
+	}
 	// Clean-up of texture and sampler is done automatically, as id<MTLTexture> is a reference-counting pointer?
-	backingTensor.reset();
+	// backingTensor.reset();
 }
 
 } // namespace reg23

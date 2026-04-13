@@ -41,7 +41,8 @@ from reg23_experiments.app.gui.file_manager import FileManager
 
 def main(*, ct_path: str | None = None, xray_path: str | None = None,
          external_dataset: Literal["gold_hip"] | None = None, cache_directory: str):
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
+        "mps") if torch.mps.is_available() else torch.device("cpu")
 
     # -----
     # Viewer

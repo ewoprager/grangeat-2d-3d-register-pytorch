@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "Vec.h"
 
 namespace reg23 {

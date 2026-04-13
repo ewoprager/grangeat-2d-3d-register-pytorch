@@ -2,7 +2,6 @@ import torch
 
 from backend import reg23
 
-
 __all__ = ["radon2d", "radon2d_v2", "d_radon2d_dr", "radon3d", "radon3d_v2", "d_radon3d_dr", "d_radon3d_dr_v2",
            "resample_sinogram3d", "normalised_cross_correlation", "grid_sample3d", "project_drr",
            "project_drr_cuboid_mask"]
@@ -92,16 +91,14 @@ def grid_sample3d(input_: torch.Tensor, grid: torch.Tensor, address_mode_x: str 
 def project_drr(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,
                 source_distance: float, output_width: int, output_height: int, output_offset: torch.Tensor,
                 detector_spacing: torch.Tensor) -> torch.Tensor:
-    # ToDo: Add tensor type conversions to the c++, remove from this file
-    return torch.ops.reg23.project_drr.default(volume, voxel_spacing.to(dtype=torch.float64),
-                                               homography_matrix_inverse.to(dtype=torch.float64), source_distance,
-                                               output_width, output_height, output_offset.to(dtype=torch.float64),
-                                               detector_spacing.to(dtype=torch.float64))
+    return torch.ops.reg23.project_drr.default(volume, voxel_spacing, homography_matrix_inverse, source_distance,
+                                               output_width, output_height, output_offset, detector_spacing)
 
 
 def project_drr_backward(volume: torch.Tensor, voxel_spacing: torch.Tensor, homography_matrix_inverse: torch.Tensor,
                          source_distance: float, output_width: int, output_height: int, output_offset: torch.Tensor,
                          detector_spacing: torch.Tensor, d_loss_d_drr: torch.Tensor) -> torch.Tensor:
+    # ToDo: Add tensor type conversions to the c++, remove from this file
     return torch.ops.reg23.project_drr_backward.default(volume, voxel_spacing.to(dtype=torch.float64),
                                                         homography_matrix_inverse.to(dtype=torch.float64),
                                                         source_distance, output_width, output_height, output_offset,
@@ -113,6 +110,7 @@ def project_drr_cuboid_mask(volume_size: torch.Tensor, voxel_spacing: torch.Tens
                             homography_matrix_inverse: torch.Tensor, source_distance: float, output_width: int,
                             output_height: int, output_offset: torch.Tensor,
                             detector_spacing: torch.Tensor) -> torch.Tensor:
+    # ToDo: Add tensor type conversions to the c++, remove from this file
     return torch.ops.reg23.project_drr_cuboid_mask.default(volume_size, voxel_spacing.to(dtype=torch.float64),
                                                            homography_matrix_inverse.to(dtype=torch.float64),
                                                            source_distance, output_width, output_height, output_offset,
@@ -123,6 +121,7 @@ if torch.cuda.is_available():
     def project_drrs_batched(volume: torch.Tensor, voxel_spacing: torch.Tensor, inverse_h_matrices: torch.Tensor,
                              source_distance: float, output_width: int, output_height: int, output_offset: torch.Tensor,
                              detector_spacing: torch.Tensor) -> torch.Tensor:
+        # ToDo: Add tensor type conversions to the c++, remove from this file
         return torch.ops.reg23.project_drrs_batched.default(volume, voxel_spacing.to(dtype=torch.float64),
                                                             inverse_h_matrices.to(dtype=torch.float64), source_distance,
                                                             output_width, output_height,

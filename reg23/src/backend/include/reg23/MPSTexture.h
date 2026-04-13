@@ -7,9 +7,6 @@ namespace reg23 {
 
 class MPSTexture3D {
   public:
-	MPSTexture3D(const at::Tensor &tensor, const std::string &addressModeX, const std::string &addressModeY,
-				 const std::string &addressModeZ);
-
 	MPSTexture3D(id<MTLDevice> device, id<MTLCommandBuffer> commandBuffer, const at::Tensor &tensor,
 				 Vec<TextureAddressMode, 3> addressModes);
 
@@ -43,14 +40,18 @@ class MPSTexture3D {
 
 	// yes move
 	MPSTexture3D(MPSTexture3D &&other) noexcept
-		: backingTensor(std::move(other.backingTensor)), textureHandle(other.textureHandle) {
+		: backingTensor(std::move(other.backingTensor)), textureHandle(other.textureHandle),
+		  samplerHandle(other.samplerHandle) {
 		other.textureHandle = nullptr;
+		other.samplerHandle = nullptr;
 	}
 
 	MPSTexture3D &operator=(MPSTexture3D &&other) noexcept {
 		backingTensor = std::move(other.backingTensor);
 		textureHandle = other.textureHandle;
+		samplerHandle = other.samplerHandle;
 		other.textureHandle = nullptr;
+		other.samplerHandle = nullptr;
 		return *this;
 	}
 

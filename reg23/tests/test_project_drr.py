@@ -1,7 +1,8 @@
+import matplotlib.pyplot as plt
 import pytest
 import torch
 
-from reg23 import *
+from reg23 import project_drr, project_drr_cuboid_mask
 
 
 def test_project_drr():
@@ -106,9 +107,6 @@ def test_project_drr_cuboid_mask():
     assert zero[3:, 3:] == pytest.approx(offset[:-3, :-3], abs=0.001)
 
 
-import matplotlib.pyplot as plt
-
-
 def test_project_drr_autograd():
     display = False
 
@@ -160,70 +158,75 @@ def test_project_drr_autograd():
         plt.show()
 
 
-def skip_test_project_drrs_batched():
-    if not torch.cuda.is_available():
-        return
-    input_ = torch.rand((11, 12, 8))
-    voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
-    inv_hs = torch.stack([torch.eye(4), torch.eye(4), torch.eye(4)])
-    source_distance = 1000.0
-    output_size = torch.Size([3, 10, 15])
-    detector_spacing = torch.tensor([0.2, 0.25])
-    res_cuda = project_drrs_batched(input_.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance, output_size[1],
-                                    output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing.cuda())
-    assert res_cuda.size() == output_size
-    fig, axes = plt.subplots(1, 3)
-    axes[0].imshow(res_cuda[0].cpu().numpy())
-    axes[1].imshow(res_cuda[1].cpu().numpy())
-    axes[2].imshow(res_cuda[2].cpu().numpy())
-    plt.show()
+if torch.cuda.is_available():
+    from reg23 import project_drrs_batched
 
 
-def test_add_tensors_metal():
-    a = torch.tensor([1.0, 2.0, 3.0]).to('mps')
-    b = torch.tensor([4.0, 5.0, 6.0]).to('mps')
-    print(f"Input tensor a: {a}")
-    print(f"Input tensor b: {b}")
-    print(f"Input device: {a.device}")
+    def skip_test_project_drrs_batched():
+        if not torch.cuda.is_available():
+            return
+        input_ = torch.rand((11, 12, 8))
+        voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
+        inv_hs = torch.stack([torch.eye(4), torch.eye(4), torch.eye(4)])
+        source_distance = 1000.0
+        output_size = torch.Size([3, 10, 15])
+        detector_spacing = torch.tensor([0.2, 0.25])
+        res_cuda = project_drrs_batched(input_.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance,
+                                        output_size[1], output_size[0], torch.zeros(2, dtype=torch.float64),
+                                        detector_spacing.cuda())
+        assert res_cuda.size() == output_size
+        fig, axes = plt.subplots(1, 3)
+        axes[0].imshow(res_cuda[0].cpu().numpy())
+        axes[1].imshow(res_cuda[1].cpu().numpy())
+        axes[2].imshow(res_cuda[2].cpu().numpy())
+        plt.show()
 
-    result = torch.ops.reg23.add_tensors_metal.default(a, b)
-    print(f"Addition result: {result}")
-    print(f"Output device {result.device}")
-    assert result.device == torch.device('mps:0'), "Output tensor is (maybe?) not on the MPS device"
+if torch.mps.is_available():
+    def test_add_tensors_metal():
+        a = torch.tensor([1.0, 2.0, 3.0]).to('mps')
+        b = torch.tensor([4.0, 5.0, 6.0]).to('mps')
+        print(f"Input tensor a: {a}")
+        print(f"Input tensor b: {b}")
+        print(f"Input device: {a.device}")
+
+        result = torch.ops.reg23.add_tensors_metal.default(a, b)
+        print(f"Addition result: {result}")
+        print(f"Output device {result.device}")
+        assert result.device == torch.device('mps:0'), "Output tensor is (maybe?) not on the MPS device"
 
 
-def test_sample_test():
-    texture = torch.tensor([[[0.0, 1.0, 2.0], [2.0, 3.0, 4.0]], [[4.0, 5.0, 6.0], [6.0, 7.0, 8.0]]],
-                           device=torch.device('mps'), dtype=torch.float32)
-    # texture = 2.0 * torch.ones((64, 64, 64), device=torch.device('mps'), dtype=torch.float32)
-    print()
-    print("size =", texture.size())
-    print("a =", texture)
-    torch.mps.synchronize()
-    res = torch.ops.reg23.sample_test.default(texture)
-    print("result =", res)
+    def test_sample_test():
+        texture = torch.tensor([[[0.0, 1.0, 2.0], [2.0, 3.0, 4.0]], [[4.0, 5.0, 6.0], [6.0, 7.0, 8.0]]],
+                               device=torch.device('mps'), dtype=torch.float32)
+        # texture = 2.0 * torch.ones((64, 64, 64), device=torch.device('mps'), dtype=torch.float32)
+        print()
+        print("size =", texture.size())
+        print("a =", texture)
+        torch.mps.synchronize()
+        res = torch.ops.reg23.sample_test.default(texture)
+        print("result =", res)
 
 
-def test_project_drr_mps():
-    volume = torch.rand((11, 12, 8))
-    voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
-    h_matrix_inv = torch.eye(4)
-    source_distance = 1000.0
-    output_size = torch.Size([10, 15])
-    detector_spacing = torch.tensor([0.2, 0.25])
-    res_cpu = project_drr(volume, voxel_spacing, h_matrix_inv, source_distance, output_size[1], output_size[0],
+    def test_project_drr_mps():
+        volume = torch.rand((11, 12, 8))
+        voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
+        h_matrix_inv = torch.eye(4)
+        source_distance = 1000.0
+        output_size = torch.Size([10, 15])
+        detector_spacing = torch.tensor([0.2, 0.25])
+        res_cpu = project_drr(volume, voxel_spacing, h_matrix_inv, source_distance, output_size[1], output_size[0],
+                              torch.zeros(2, dtype=torch.float64), detector_spacing)
+        print()
+        print("cpu:", res_cpu)
+        fig, axes = plt.subplots(1, 2)
+        axes[0].imshow(res_cpu.cpu().numpy())
+        axes[0].set_title("cpu")
+
+        volume = volume.to(device=torch.device('mps'))
+        res = project_drr(volume, voxel_spacing, h_matrix_inv, source_distance, output_size[1], output_size[0],
                           torch.zeros(2, dtype=torch.float64), detector_spacing)
-    print()
-    print("cpu:", res_cpu)
-    fig, axes = plt.subplots(1, 2)
-    axes[0].imshow(res_cpu.cpu().numpy())
-    axes[0].set_title("cpu")
+        print("mps:", res)
+        axes[1].imshow(res.cpu().numpy())
+        axes[1].set_title("mps")
 
-    volume = volume.to(device=torch.device('mps'))
-    res = project_drr(volume, voxel_spacing, h_matrix_inv, source_distance, output_size[1], output_size[0],
-                      torch.zeros(2, dtype=torch.float64), detector_spacing)
-    print("mps:", res)
-    axes[1].imshow(res.cpu().numpy())
-    axes[1].set_title("mps")
-
-    plt.show()
+        plt.show()
