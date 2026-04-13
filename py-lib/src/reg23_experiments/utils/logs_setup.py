@@ -1,10 +1,9 @@
-from datetime import datetime
-import socket
-import sys
 import logging
 import logging.config
-
 import pathlib
+import socket
+import sys
+from datetime import datetime
 
 
 def setup_logger():

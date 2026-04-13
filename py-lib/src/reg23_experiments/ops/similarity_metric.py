@@ -1,5 +1,5 @@
-from typing import Tuple, Literal
 import logging
+from typing import Literal, Tuple
 
 import torch
 

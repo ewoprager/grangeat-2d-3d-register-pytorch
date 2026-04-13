@@ -1,15 +1,14 @@
 import collections
+import copy
 import functools
 import logging
-import copy
-from typing import Any, Callable
 import weakref
+from typing import Any, Callable
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
-
-from ._data import NoNodeData, Updater, Dependency
-from ._directed_acyclic_data_graph import Node, DirectedAcyclicDataGraph, ChildDirectedAcyclicDataGraph
+from ._data import Dependency, NoNodeData, Updater
+from ._directed_acyclic_data_graph import ChildDirectedAcyclicDataGraph, DirectedAcyclicDataGraph, Node
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ __all__ = ["ChildDADG"]
 
 
 class ChildDADG(ChildDirectedAcyclicDataGraph):
-    def __init__(self, parent: DirectedAcyclicDataGraph):
+    def __init__(self, parent: DirectedAcyclicDataGraph, *, panic_on_failed_eager_evaluation: bool = False):
         self.__parent = parent  # strong reference to parent, so parent stays alive as long as there are children
         # parent holds weak reference to this, which will automatically be removed from the WeakSet when this is
         # destroyed
@@ -29,6 +28,7 @@ class ChildDADG(ChildDirectedAcyclicDataGraph):
         self.__children: weakref.WeakSet[
             ChildDirectedAcyclicDataGraph] = weakref.WeakSet()  # children add themselves, and will be automatically
         # removed on destruction
+        self.__panic_on_failed_eager_evaluation = panic_on_failed_eager_evaluation
 
     def __str__(self) -> str:
         ret = "ChildDADG(\n"
@@ -54,8 +54,8 @@ class ChildDADG(ChildDirectedAcyclicDataGraph):
             self.__in_top_level_call = False
             ret = function(self, *args, **kwargs)
             if this_is_top_level_call:
-                err = self.__clean_graph()
-                if isinstance(err, Error):
+                err = self.__clean_graph(quit_on_first_failure=self.__panic_on_failed_eager_evaluation)
+                if isinstance(err, Error) and self.__panic_on_failed_eager_evaluation:
                     return Error(f"Error cleaning graph after call to data mutating function: {err.description}.")
             self.__in_top_level_call = this_is_top_level_call
             return ret
@@ -403,13 +403,18 @@ class ChildDADG(ChildDirectedAcyclicDataGraph):
             return Error(f"Node '{node_name}' still dirty after running updater '{node.updater}'.")
         return None
 
-    def __clean_graph(self) -> None | Error:
-        for node_name, node in self._nodes.items():
+    def __clean_graph(self, *, quit_on_first_failure: bool = False) -> None | Error:
+        errors: list[str] = []
+        for node_name, node in self.__nodes.items():
             if node.lazily_evaluated:
                 continue
             err = self.__clean_node(node_name, soft=True)
             if isinstance(err, Error):
-                return Error(f"Graph clean failed on node '{node_name}': {err.description}.")
+                errors.append(f"Graph clean failed on node '{node_name}': {err.description}.")
+                if quit_on_first_failure:
+                    break
+        if errors:
+            return Error("\n".join(errors))
         return None
 
     def __eval_in_degrees(self) -> dict[str, int]:

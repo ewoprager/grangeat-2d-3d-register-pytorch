@@ -1,43 +1,51 @@
-from typing import Any
-import traitlets
 import logging
+from typing import Any, Literal
 
 from reg23_experiments.data.structs import Cropping, Transformation
+from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, dadg_updater
 
-__all__ = ["mask_follows_transformation", "respond_to_mask_change", "respond_to_crop_change",
-           "respond_to_crop_value_change", "respond_to_crop_value_value_change"]
+__all__ = ["mask_follows_transformation", "respond_to_mask_change", "cropping_changed", "cropping_value_changed",
+           "cropping_value_value_changed"]
 
 logger = logging.getLogger(__name__)
 
 
 @dadg_updater(names_returned=["mask_transformation"])
-def mask_follows_transformation(current_transformation: Transformation) -> dict[str, Any]:
+def mask_follows_transformation(*, current_transformation: Transformation) -> dict[str, Any]:
     return {"mask_transformation": current_transformation}
 
 
-def respond_to_mask_change(dadg: DirectedAcyclicDataGraph, change) -> None:
-    if change.new == "None":
+def respond_to_mask_change(*, dadg: DirectedAcyclicDataGraph, new_value: str) -> None:
+    if new_value == "None":
         dadg.remove_updater("mask_follows_transformation")
         dadg.set("mask_transformation", None, check_equality=True)
     else:
         dadg.add_updater("mask_follows_transformation", mask_follows_transformation)
 
 
-def respond_to_crop_change(dadg: DirectedAcyclicDataGraph, change) -> None:
-    if change.new == "None":
-        dadg.set("cropping", None)
-    elif change.new == "fixed":
-        dadg.set("cropping", change.owner.cropping_value)
+def cropping_changed(*, dadg: DirectedAcyclicDataGraph, new_value: Literal["None", "Fixed"], owner: XrayParameters,
+                     namespace: str | None = None) -> None:
+    key = "cropping" if namespace is None else f"{namespace}__cropping"
+    if new_value == "None":
+        dadg.set(key, None)
+    elif new_value == "Fixed":
+        dadg.set(key, owner.cropping_value)
 
 
-def respond_to_crop_value_change(dadg: DirectedAcyclicDataGraph, change) -> None:
-    if change.owner.cropping != "fixed":
+def cropping_value_changed(*, dadg: DirectedAcyclicDataGraph, new_value: Cropping | None, owner: XrayParameters,
+                           namespace: str | None = None) -> None:
+    if owner.cropping != "Fixed":
         return
-    assert isinstance(change.new, Cropping)
-    dadg.set("cropping", change.new)
-    change.new.observe(lambda _change: respond_to_crop_value_value_change(dadg, _change), names=traitlets.All)
+    assert isinstance(new_value, Cropping)
+    key = "cropping" if namespace is None else f"{namespace}__cropping"
+    dadg.set(key, new_value)
+    new_value.observe(
+        lambda _change, _dadg=dadg, _namespace=namespace: cropping_value_value_changed(dadg=_dadg, owner=_change.owner,
+                                                                                       namespace=_namespace))
 
 
-def respond_to_crop_value_value_change(dadg: DirectedAcyclicDataGraph, change) -> None:
-    dadg.set("cropping", change.owner)
+def cropping_value_value_changed(*, dadg: DirectedAcyclicDataGraph, owner: Cropping,
+                                 namespace: str | None = None) -> None:
+    key = "cropping" if namespace is None else f"{namespace}__cropping"
+    dadg.set(key, owner)

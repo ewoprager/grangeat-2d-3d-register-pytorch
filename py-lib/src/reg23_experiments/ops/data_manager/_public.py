@@ -3,12 +3,10 @@ import logging
 from typing import Any, Callable
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.utils.reflection import FunctionArgument
-
-from ._data import Updater
+from reg23_experiments.utils.reflection import FunctionArgument, takes_positional_args
 from ._dadg_standalone import StandaloneDADG, StandaloneDADGSingleton
+from ._data import Updater
 from ._directed_acyclic_data_graph import DirectedAcyclicDataGraph
-from ._helpers import takes_positional_args
 
 __all__ = ["dadg_updater", "args_from_dadg", "data_manager"]
 
@@ -32,22 +30,27 @@ def dadg_updater(*, names_returned: list[str]) -> Callable[[Callable], Updater]:
     return decorator
 
 
-def args_from_dadg(*, names_left: list[str] | None = None, dadg: DirectedAcyclicDataGraph | None = None):
+def args_from_dadg(*, names_left: list[str] | None = None, dadg: DirectedAcyclicDataGraph | None = None,
+                   namespace_captures: dict[str, str] | None = None):
     """
     A decorator for indicating that a function's arguments should be read from the `DAG`. The named arguments of the
     function will be interpreted as nodes from which to read data from the `DAG`. The return value will not be
     modified/intercepted, but an `Error` may be returned instead in the case of a failure to get any argument from
     the `DAG`. Arguments that should be left alone can be listed in the decorator argument `names_left`.
-    :param names_left: A list of the arguments to leave in the function's signature (i.e. to not get from the DAG)
+    :param names_left: [Optional] A list of the arguments to leave in the function's signature (i.e. to not get from the
+    DAG)
+    :param dadg: [Optional] Specify a DADG from which to pull the arguments. Will use the singleton DADG if unspecified
+    :param namespace_captures: [Optional] A dict mapping variable names to the namespace they should be captured in. No
+    namespace capture will be applied to any variable listed in `names_left`.
 
     Example use with no `names_left`:
-    ```
+    ```python
     @args_from_dag()
     def subtract_moving_from_fixed(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
         return fixed_image - moving_image
     ```
     will be effectively be turned into:
-    ```
+    ```python
     from program import data_manager
     def subtract_moving_from_fixed() -> torch.Tensor:
         moving_image = data_manager().get("moving_image")
@@ -55,27 +58,24 @@ def args_from_dadg(*, names_left: list[str] | None = None, dadg: DirectedAcyclic
         return fixed_image - moving_image
     ```
 
-    Example use with some `names_left`:
-    ```
-    @args_from_dag(names_left = ["moving_image"])
+    Example use with some `names_left` and some namespace captures:
+    ```python
+    @args_from_dag(names_left = ["moving_image"], namespace_captures = {"fixed_image": "ab"})
     def subtract_moving_from_fixed(moving_image: torch.Tensor, fixed_image: torch.Tensor) -> torch.Tensor:
         return fixed_image - moving_image
     ```
     will be effectively be turned into:
-    ```
+    ```python
     from program import data_manager
     def subtract_moving_from_fixed(moving_image: torch.Tensor) -> torch.Tensor:
-        fixed_image = data_manager().get("fixed_image")
+        fixed_image = data_manager().get("ab__fixed_image")
         return fixed_image - moving_image
     ```
-
-    :param names_left: [optional] a list of arguments to leave in the function (i.e. not take automatically from the
-    dadg)
-    :param dadg: [optional] the dadg instance from which to take arguments. If not provided, the global singleton is
-    used.
     """
     if names_left is None:
         names_left = []
+    if namespace_captures is None:
+        namespace_captures = dict({})
 
     def decorator(function):
         if takes_positional_args(function):
@@ -94,11 +94,22 @@ def args_from_dadg(*, names_left: list[str] | None = None, dadg: DirectedAcyclic
             for _name in names_left:
                 if _name not in kwargs:
                     return Error(f"Argument '{_name}' specified in `names_left` not provided to function.")
-            # get appropriate args from the DAG
+            # filter out arguments listed in `names_left`
             arguments_to_get = [argument for argument in arguments if argument.name not in names_left]
+            # modify the names of arguments listed in `namespace_captures`
+            for i in range(len(arguments_to_get)):
+                if arguments_to_get[i].name in namespace_captures:
+                    arguments_to_get[
+                        i].name = f"{namespace_captures[arguments_to_get[i].name]}__{arguments_to_get[i].name}"
+            # get the args from the DAG
             from_dag = (data_manager() if dadg is None else dadg).get_with_args(arguments_to_get)
             if isinstance(from_dag, Error):
                 return Error(f"Failed to get arguments to run function from dag: {from_dag.description}")
+            # modify the names of namespaced variables back
+            for k, v in namespace_captures.items():
+                namespaced_name = f"{v}__{k}"
+                if namespaced_name in from_dag:
+                    from_dag[k] = from_dag.pop(namespaced_name)
             # execute the function
             return function(**from_dag, **kwargs)
 
@@ -116,7 +127,7 @@ def data_manager() -> StandaloneDADG:
 
 
 @dadg_updater(names_returned=["similarity"])
-def try_updater(fixed_image: float, moving_image: float) -> dict[str, Any]:
+def try_updater(*, fixed_image: float, moving_image: float) -> dict[str, Any]:
     return {"similarity": fixed_image * moving_image}
 
 

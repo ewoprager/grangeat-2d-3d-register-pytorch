@@ -1,13 +1,13 @@
-import time
-from typing import Type, Tuple
 import logging
+import time
+from typing import Tuple, Type
 
 import torch
 
+from reg23_experiments.data.sinogram import SinogramClassic, SinogramHEALPix, SinogramType, VolumeSpec
 from reg23_experiments.data.structs import LinearRange
-from reg23_experiments.data.sinogram import SinogramType, SinogramClassic, SinogramHEALPix, VolumeSpec
-from reg23_experiments.ops import grangeat
 from reg23_experiments.io.helpers import deterministic_hash_sinogram
+from reg23_experiments.ops import grangeat
 
 __all__ = ["calculate_volume_sinogram"]
 

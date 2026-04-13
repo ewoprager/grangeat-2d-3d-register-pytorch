@@ -84,14 +84,17 @@ uv sync --extra cuda
 # Scripts you can run
 
 Scripts are contained in the `scripts/` directory, and can be run with
+
 ```bash
 uv run <script name> <args...>
 ```
 
 To run any script directly with the python binary:
+
 ```bash
 python <script name> <args...>
 ```
+
 This is useful if you want to run with a debugger attached (e.g. if you have this as a run configuration in an IDE),
 but note that this will not check for correctly install packages, nor initialise the build of the extension if the
 source code has changed, as `uv` is not run here, so make sure to run `uv sync` beforehand if you have changed any
@@ -314,3 +317,9 @@ All the following IDE integration advice is based on CLion 2024.3.1.1.
 
 `reg23/CMakeLists.txt` exists exclusively to aid your IDE with syntax highlighting and error detection in the
 extension .cpp and .cu source files. Configure a CMake project in your IDE to make use of this.
+
+To help CLion follow the imports in python, right click on the following directories and select 'Mark Directory As' > '
+Project Sources and Headers':
+
+- `py-lib/src`
+- `reg23/src`

@@ -1,119 +1,31 @@
 import argparse
 import os
-from typing import Any, Sequence, Literal
+from typing import Literal
 
 os.environ["QT_API"] = "PyQt6"
 
 import torch
 import napari
 import pathlib
-from tqdm import tqdm
 
 from reg23_experiments.utils import logs_setup, pushover
-from reg23_experiments.io.volume import load_ct
-from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.data.structs import Error
-from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, args_from_dadg
-from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
-    mapping_parameters_to_transformation, random_parameters_at_distance
-from reg23_experiments.ops import drr
+from reg23_experiments.ops.data_manager import data_manager
+from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
+
 from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
-from reg23_experiments.app.gui.fixed_image import FixedImageGUI, Image2DFullGUI
-from reg23_experiments.app.gui.moving_image import MovingImageGUI
-from reg23_experiments.app.gui.electrodes import ElectrodesGUI
-from reg23_experiments.app.gui.parameters import ParametersWidget
-from reg23_experiments.experiments.parameters import Parameters, PsoParameters, NoParameters, Context
-from reg23_experiments.app.gui.register import RegisterGUI
-from reg23_experiments.app.state import AppState
+from reg23_experiments.app.gui.widgets.parameters_widget import ParametersWidget
+from reg23_experiments.app.gui.widgets.hastraits_widget import HasTraitsWidget
+from reg23_experiments.experiments.parameters import Parameters, PsoParameters, Context
+from reg23_experiments.app.gui.widgets.register_widget import RegisterWidget
+from reg23_experiments.app.context import AppContext
 from reg23_experiments.app.worker_manager import WorkerManager
-from reg23_experiments.data.structs import Transformation, SceneGeometry, Cropping
-from reg23_experiments.ops import geometry
-from reg23_experiments.ops.volume import downsample_trilinear_antialiased
+from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.app.transformation_saver import TransformationSaver
-from reg23_experiments.io.image import read_dicom
-
-
-@dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
-def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
-    str, Any]:
-    ct_volume, ct_spacing = load_ct(pathlib.Path(ct_path), check_for_dcm_suffix_if_dir=False)
-    ct_volume = ct_volume.to(device=device, dtype=torch.float32)
-    ct_spacing = ct_spacing.to(device=device)
-
-    if ct_permutation is not None:
-        assert len(ct_permutation) == 3
-        ct_volume = ct_volume.permute(*ct_permutation)
-        ct_spacing = ct_spacing[torch.tensor(ct_permutation)]
-
-    return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing}
-
-
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
-def set_target_image(ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
-                     new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
-                     ap_transformation: Transformation, target_ap_distance: float, xray_path: str | None,
-                     target_flipped: bool, device: torch.device) -> dict[str, Any]:
-    if xray_path is None:
-        # generate a DRR through the volume
-        drr_spec = None
-        if not regenerate_drr:
-            drr_spec = load_cached_drr(cache_directory, ct_path)
-
-        if drr_spec is None:
-            tr = mapping_parameters_to_transformation(
-                random_parameters_at_distance(mapping_transformation_to_parameters(ap_transformation),
-                                              target_ap_distance))
-            drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
-                                                  save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
-
-        fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
-        del drr_spec
-    else:
-        image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(xray_path)
-        transformation_ground_truth = None
-
-    if target_flipped:
-        image_2d_full = image_2d_full.flip(dims=(1,))
-
-    image_2d_full = image_2d_full.to(device=device)
-
-    return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
-            "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
-
-
-@dadg_updater(names_returned=["ct_volumes"])
-def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
-    # truncate the volume
-    truncation_fraction = 0.01 * float(truncation_percent)
-    top_bottom_chop = int(round(0.5 * truncation_fraction * float(untruncated_ct_volume.size()[0])))
-    ct_volume = untruncated_ct_volume[
-        top_bottom_chop:max(top_bottom_chop + 1, untruncated_ct_volume.size()[0] - top_bottom_chop)]
-    # mipmap the volume
-    ct_volumes = [ct_volume]
-    while torch.tensor(ct_volumes[-1].size()).min() > 3:
-        ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[-1], scale_factor=0.5))
-    return {"ct_volumes": ct_volumes}
-
-
-@dadg_updater(names_returned=["moving_image"])
-def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
-                fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
-                downsample_level: int, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
-                image_2d_scale_factor: float, device) -> dict[str, Any]:
-    # Applying the translation offset
-    new_translation = current_transformation.translation + torch.cat(
-        (torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype),
-         translation_offset.to(device=current_transformation.device)))
-    transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
-        device=device)
-
-    return {"moving_image": geometry.generate_drr(ct_volumes[downsample_level], transformation=transformation,
-                                                  voxel_spacing=ct_spacing * 2.0 ** downsample_level,
-                                                  detector_spacing=fixed_image_spacing / image_2d_scale_factor,
-                                                  scene_geometry=SceneGeometry(source_distance=source_distance,
-                                                                               fixed_image_offset=fixed_image_offset),
-                                                  output_size=fixed_image_size)}
+from reg23_experiments.app.gui.widgets.images_widget import ImagesWidget
+from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, apply_truncation
+from reg23_experiments.app.gui.file_manager import FileManager
 
 
 # @args_from_dag(names_left=["transformation"])
@@ -143,43 +55,17 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_image_2d_scale_factor", updaters.refresh_image_2d_scale_factor)
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    err = data_manager().add_updater("refresh_hyperparameter_dependent", updaters.refresh_hyperparameter_dependent)
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    err = data_manager().add_updater("refresh_mask_transformation_dependent",
-                                     updaters.refresh_mask_transformation_dependent)
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    data_manager().add_updater("project_drr", project_drr)
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-
-    data_manager().observe("transformation_gt", "debug", lambda x: logger.warning(f"Hello! {x}"))
 
     # -----
     # Data nodes
     # -----
     data_manager().set_multiple(  #
-        source_distance=1000.0,  #
-        fixed_image_spacing=torch.tensor([0.2, 0.2]),  #
-        fixed_image_size=torch.Size([500, 500]),  #
         downsample_level=0,  #
         regenerate_drr=True,  #
         cache_directory=cache_directory,  #
-        save_to_cache=True,  #
+        save_to_cache=True,  # a
         new_drr_size=torch.Size([500, 500]),  #
-        ct_path=ct_path,  #
-        xray_path=xray_path,  #
         device=device,  #
-        source_offset=torch.zeros(2),  #
-        mask_transformation=None,  #
         cropping=None,  #
         current_transformation=Transformation.zero(device=device),  #
         truncation_percent=0.0,  #
@@ -187,6 +73,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                                          translation=torch.zeros(3, device=device)),  #
         target_ap_distance=5.0,  #
     )
+    if ct_path is not None:
+        data_manager().set("ct_path", ct_path)
 
     # -----
     # External datasets
@@ -203,7 +91,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
             ct_path=gold_hip.get_data_config().get_ct_path()  #
         )
         # X-ray data
-        xray_data = gold_hip.load_xray("p19")
+        xray_data = gold_hip.load_xray("p19", untruncated_ct_volume.size(), ct_spacing)
         logger.info(f"ct spacing = {ct_spacing.cpu()}")
         logger.info(f"ct size = {untruncated_ct_volume.size()}")
         logger.info(f"total = "
@@ -222,26 +110,21 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
             return
-        err = data_manager().add_updater("set_target_image", set_target_image)
-        if isinstance(err, Error):
-            logger.error(f"Error adding updater: {err.description}")
-            return
 
     # -----
     # Parameters
     # -----
     parameters = Parameters(  #
-        ct_path=data_manager().get("ct_path"),  #
+        ct_path=None,  #
         downsample_level=0,  #
         truncation_percent=0,  #
-        cropping="None",  #
         mask="None",  #
         sim_metric="zncc",  #
-        sim_metric_parameters=NoParameters(),  #
-        optimisation_algorithm="pso",  #
-        op_algo_parameters=PsoParameters(),  #
+        sim_metric_parameters=None,  #
         starting_distance=0.0,  #
         sample_count_per_distance=1,  #
+        optimisation_algorithm="pso",  #
+        op_algo_parameters=PsoParameters(),  #
         iteration_count=10,  #
     )
 
@@ -249,12 +132,18 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # parameters.op_algo_parameters.particle_count = 5
     # test = clone_has_traits(parameters)
 
-    app_state = AppState(parameters=parameters, dadg=data_manager(),
-                         transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
-                         electrode_save_directory=pathlib.Path("data/app_electrode_save_data"))
+    app_context = AppContext(parameters=parameters, dadg=data_manager(),
+                             transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
+                             electrode_save_directory=pathlib.Path("data/app_electrode_save_data"))
 
-    parameters_widget = ParametersWidget(app_state, parameters)
+    parameters_widget = ParametersWidget(app_context)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
+                                    tabify=True)
+    viewer().window.add_dock_widget(HasTraitsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
+                                    menu=viewer().window.window_menu)
+
+    images_widget = ImagesWidget(app_context)
+    viewer().window.add_dock_widget(images_widget, name="Images", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
 
     # -----
@@ -263,10 +152,14 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
         t = mapping_parameters_to_transformation(x)
         # Setting the parameters
-        context.dadg.set("current_transformation", t)
+        context.dadg.set(
+            "current_transformation" if context.namespace is None else f"{context.namespace}__current_transformation",
+            t)
         # Getting the resulting moving and fixed images
-        moving_image = context.dadg.get("moving_image")
-        fixed_image = context.dadg.get("fixed_image")
+        moving_image = context.dadg.get(
+            "moving_image" if context.namespace is None else f"{context.namespace}__moving_image")
+        fixed_image = context.dadg.get(
+            "fixed_image" if context.namespace is None else f"{context.namespace}__fixed_image")
         # Comparing, potentially weighting with a mask
         # if apply_mask:
         #     mask = data_manager().get("mask")
@@ -278,22 +171,19 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # GUI Modules
     # -----
-    fixed_image_gui = FixedImageGUI(app_state)
-    image_2d_full_gui = Image2DFullGUI(app_state)
-    moving_image_gui = MovingImageGUI(app_state)
-    register_gui = RegisterGUI(app_state)
-    electrodes_gui = ElectrodesGUI(app_state)
+    register_widget = RegisterWidget(app_context)
 
     # -----
     # Modules
     # -----
-    worker_manager = WorkerManager(app_state=app_state, objective_function=objective_function)
-    transformation_saver = TransformationSaver(app_state)
+    worker_manager = WorkerManager(ctx=app_context, objective_function=objective_function)
+    transformation_saver = TransformationSaver(app_context)
+    file_manager = FileManager(app_context.state)
 
-    value = data_manager().get("moving_image")
-    if isinstance(value, Error):
-        logger.error(f"Couldn't get moving image: {value.description}.")
-        return
+    # value = data_manager().get("a__moving_image")
+    # if isinstance(value, Error):
+    #     logger.error(f"Couldn't get moving image: {value.description}.")
+    #     return
 
     napari.run()
 
@@ -307,7 +197,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--cache-directory", type=str, default="cache",
                         help="Set the directory where data that is expensive to calculate will be saved. The default "
                              "is 'cache'.")
-    parser.add_argument("-p", "--ct-path", type=str,
+    parser.add_argument("-p", "--ct-path", type=str, default=None,
                         help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
                              "process.")
     parser.add_argument("--external-gold-hip", action="store_true",

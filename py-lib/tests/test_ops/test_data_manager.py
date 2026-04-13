@@ -6,7 +6,7 @@ from reg23_experiments.ops.data_manager import StandaloneDADG, ChildDADG, dadg_u
 
 
 @dadg_updater(names_returned=["c"])
-def a_plus_b_equals_c(a: float, b: float) -> dict[str, Any]:
+def a_plus_b_equals_c(*, a: float, b: float) -> dict[str, Any]:
     return {"c": a + b}
 
 

@@ -1,7 +1,8 @@
-import requests
+import logging
 import os
 import socket
-import logging
+
+import requests
 
 logger = logging.getLogger(__name__)
 

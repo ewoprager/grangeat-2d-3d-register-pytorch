@@ -1,7 +1,7 @@
-import numpy as np
-import torch
-import pyvista as pv
 import matplotlib.pyplot as plt
+import numpy as np
+import pyvista as pv
+import torch
 
 from reg23_experiments.data.structs import Sinogram3dGrid
 

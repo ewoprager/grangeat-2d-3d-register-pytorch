@@ -22,17 +22,16 @@ applied in order such that the data is restored to the same state it was in when
 """
 
 import json
-from typing import Generic, TypeVar, ClassVar, Any
+import pathlib
 from abc import ABC, abstractmethod
 from datetime import datetime
-
-import pathlib
+from typing import Any, ClassVar, Generic, TypeVar
 
 from reg23_experiments.data.structs import Error
+from reg23_experiments.io.serialize import JsonSerializable
 
-__all__ = ["Change", "JsonSerializable", "SaveData", "SaveDataManager", "load_specific_save", "load_latest_save"]
+__all__ = ["Change", "SaveData", "SaveDataManager", "load_specific_save", "load_latest_save"]
 
-type JsonSerializable = None | bool | int | float | str | list[JsonSerializable] | dict[str, JsonSerializable]
 type Change = dict[str, JsonSerializable]
 
 

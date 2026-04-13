@@ -1,13 +1,11 @@
-from tqdm import tqdm
 import logging
 
 import torch
-import matplotlib.pyplot as plt
-
-from reg23_experiments.data.structs import *
-from reg23_experiments.ops import geometry
+from tqdm import tqdm
 
 import reg23
+from reg23_experiments.data.structs import *
+from reg23_experiments.ops import geometry
 
 __all__ = ["calculate_radon_volume", "calculate_fixed_image", "directly_calculate_radon_slice"]
 
@@ -19,8 +17,8 @@ def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Te
     assert output_grid.device_consistent()
     assert volume_data.device == output_grid.phi.device
     return reg23.d_radon3d_dr(volume_data, voxel_spacing, output_grid.phi.to(device=volume_data.device),
-        output_grid.theta.to(device=volume_data.device), output_grid.r.to(device=volume_data.device),
-        samples_per_direction)
+                              output_grid.theta.to(device=volume_data.device),
+                              output_grid.r.to(device=volume_data.device), samples_per_direction)
 
 
 def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, detector_spacing: torch.Tensor,
@@ -64,7 +62,7 @@ def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, de
     ##
 
     return fixed_scaling * reg23.d_radon2d_dr(g_tilde, detector_spacing, output_grid.phi, output_grid.r,
-        samples_per_line)
+                                              samples_per_line)
 
 
 def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, ph_matrix: torch.Tensor,
@@ -89,5 +87,6 @@ def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: 
         i = n % cols
         j = n // cols
         ret[j, i] = reg23.d_radon3d_dr_v2(volume_data, voxel_spacing, output_grid_sph_2d.phi[j, i].unsqueeze(0),
-            output_grid_sph_2d.theta[j, i].unsqueeze(0), output_grid_sph_2d.r[j, i].unsqueeze(0), 500)
+                                          output_grid_sph_2d.theta[j, i].unsqueeze(0),
+                                          output_grid_sph_2d.r[j, i].unsqueeze(0), 500)
     return ret
