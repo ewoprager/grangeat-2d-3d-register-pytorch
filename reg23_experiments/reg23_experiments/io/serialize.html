@@ -71,8 +71,8 @@
 </span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a>
 </span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;JsonSerializable&quot;</span><span class="p">,</span> <span class="s2">&quot;HasTraitsSerializable&quot;</span><span class="p">,</span> <span class="s2">&quot;serialize_recursive&quot;</span><span class="p">,</span> <span class="s2">&quot;deserialize_recursive&quot;</span><span class="p">]</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a>
-</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="c1">#: Any type that can be trivially serialized into JSON / YAML</span>
-</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="nb">type</span> <span class="n">JsonSerializable</span> <span class="o">=</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">JsonSerializable</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">JsonSerializable</span><span class="p">]</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="nb">type</span> <span class="n">JsonSerializable</span> <span class="o">=</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">JsonSerializable</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">JsonSerializable</span><span class="p">]</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="sd">&quot;&quot;&quot;Any type that can be trivially serialized into JSON / YAML&quot;&quot;&quot;</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="nb">type</span> <span class="n">HasTraitsSerializable</span> <span class="o">=</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">HasTraitsSerializable</span><span class="p">]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>    <span class="nb">str</span><span class="p">,</span> <span class="n">HasTraitsSerializable</span><span class="p">]</span>  <span class="c1"># where all traits of a HasTraits must be HasTraitsSerializable</span>
@@ -275,7 +275,9 @@
     </div>
     <a class="headerlink" href="#JsonSerializable"></a>
     
-    
+            <div class="docstring"><p>Any type that can be trivially serialized into JSON / YAML</p>
+</div>
+
 
                 </section>
                 <section id="HasTraitsSerializable">
