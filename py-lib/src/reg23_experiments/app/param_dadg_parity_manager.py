@@ -5,8 +5,9 @@ import torch
 from reg23_experiments.app.state import AppState
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr, read_xray_uid, set_target_image
+from reg23_experiments.experiments import updaters
 from reg23_experiments.experiments.parameters import XrayParameters
-from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData, capture_in_namespaces, updaters
+from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData, capture_in_namespaces
 from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed, respond_to_mask_change
 
 __all__ = ["ParamDADGParityManager"]
@@ -155,4 +156,5 @@ class ParamDADGParityManager:
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
 
-        # err = self.dadg.get(f"{name}__moving_image")  # if isinstance(err, Error):  #     logger.error(f"Failed to get moving image '{name}': {err.description}")
+        # err = self.dadg.get(f"{name}__moving_image")  # if isinstance(err, Error):  #     logger.error(f"Failed to
+        # get moving image '{name}': {err.description}")

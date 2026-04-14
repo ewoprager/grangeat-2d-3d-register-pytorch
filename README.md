@@ -18,24 +18,28 @@ developed as part of a PhD.
 
 ```text
 .
-├── reg23/                      # A Python package with custom C++/CUDA operators for PyTorch; see the README.md inside for more information.
-├── py-lib/                     # A python library with tools for research and experiments, used by the scripts in the scripts/ directory.
-│   ├── src/reg23_experiments/  # The source for the library
-│   ├── README.md               #
-│   ├── Conventions.md          # Contains details of Python coding conventions, regarding style and structure.
-│   └── pyproject.toml          # The project configuration file used by `uv` to setup the environment and dependencies of the reg23_experiments library
-├── scripts/                    # Some python scripts that use the `reg23_experiments` module to perform experiments.
-│   ├── benchmarking/           # Scripts specifically for measuring the speeds of different implementations of algorithms in the `reg23` package
-│   └── plotting                # Scripts used for plotting data that is generated and saved by other scripts.
-├── data/                       # Data saved from experiments
-├── figures/                    # Plots and images from experiments
-├── README.md                   #
-├── pyproject.toml              # The project configuration file used by `uv` to setup the environment and dependencies used by all Python scripts.
-├── uv.lock                     # A file managed by `uv` which saves the exact installed dependency versions to install.
-└── logging.conf                # A config file used for logging with the `logging` standard Python package.
+├── reg23/                       # A Python package with custom C++/CUDA operators for PyTorch; see the README.md inside for more information.
+├── py-lib/                      # A python library with tools for research and experiments, used by the scripts in the scripts/ directory.
+│   ├── src/reg23_experiments/   # The library source code.
+│   ├── README.md                # Some more detail about this library can be found here.
+│   ├── Conventions.md           # Contains details of Python coding conventions, regarding style and structure.
+│   └── pyproject.toml           # The project configuration file used by `uv` to setup the environment and dependencies of the reg23_experiments library
+├── scripts/                     # Some python scripts that use the `reg23_experiments` module to perform experiments.
+│   ├── benchmarking/            # Scripts specifically for measuring the speeds of different implementations of algorithms in the `reg23` package
+│   ├── plotting/                # Scripts used for plotting data that is generated and saved by other scripts.
+│   ├── app.py                   # The main script; see more details below.
+│   └── ...                      # Other scripts, many of which may be somewhat out-of-date.
+├── data/                        # Directory used for saving experimental data, or saved values between script runs.
+│   ├── app_electrode_save_data/ # Segmented positions in X-rays in the app are saved here.
+│   └── app_transformation_s.../ # Registered transformations between X-rays and CTs in the app are saved here.
+├── figures/                     # Plots and images from experiments.
+├── README.md                    # This file.
+├── pyproject.toml               # The project configuration file used by `uv` to setup the environment and dependencies used by all Python scripts.
+├── uv.lock                      # A file managed by `uv` which saves the exact installed dependency versions to install.
+└── logging.conf                 # A config file used for logging with the `logging` standard Python package.
 ```
 
-## Setup
+# Setup
 
 The (much slower) CPU implementations should work on all platforms.
 
@@ -47,8 +51,7 @@ Build cuda_12.6.r12.6/compiler.35059454_0
 ```
 
 The build can be done faster with Ninja installed. For Clion users: note that `setuptools` won't find the Ninja
-installation within
-Clion.
+installation within Clion.
 
 On Ubuntu this would be:
 
@@ -57,7 +60,8 @@ sudo apt install ninja-build
 ```
 
 Note: instructions here may be slightly outdated and not work on all platforms.
-The [build_test.yml](.github/workflows/build_test.yml) github workflow can generally be relied upon to be up-to-date,
+The [build_test.yml](.github/workflows/build_test.yml) GitHub
+workflow can generally be relied upon to be up-to-date,
 and to work.
 
 ### [`uv`](https://docs.astral.sh/uv/) is required
@@ -83,7 +87,118 @@ uv sync --extra cuda
 
 # Scripts you can run
 
-Scripts are contained in the `scripts/` directory, and can be run with
+## The app
+
+The main script is an interface based on `napari`:
+
+```bash
+uv run scripts/app.py
+```
+
+Most of the implementation of the app is contained in the `py-lib` library in
+the [app](py-lib/src/reg23_experiments/app) directory.
+
+The basic layout of the app is as follows:
+
+- The state of the app is stored in a single `traitlets.HasTraits` struct called `AppState`, implemented
+  in [state.py](py-lib/src/reg23_experiments/app/state.py).
+    - Within this is an instance of a further `traitlets.HasTraits` struct called `Parameters`, implemented
+      in [parameters.py](py-lib/src/reg23_experiments/experiments/parameters.py).
+    - This `Parameters` struct contains all experimental/registration configuration for the app.
+    - A serialised copy of this data is maintained eagerly in a cache file (at `platformdirs.user_cache_dir`).
+    - When the app is started, it deserializes this value to restore the `Parameters` config.
+    - The parameters can be configured in the interface within the `Params` tab on the right.
+        - This widget is implemented
+          in [parameters_widget.py](py-lib/src/reg23_experiments/app/gui/widgets/parameters_widget.py).
+        - The parameter configuration widget within is auto-generated via reflection from the `Parameters` class. This
+          is implemented in [hastraits_widget.py](py-lib/src/reg23_experiments/app/gui/widgets/hastraits_widget.py).
+- Additionally within the *'Params'* tab are buttons to open X-ray images and CT volumes.
+    - Only one CT volume may be loaded at a time; opening a CT volume while one is already loaded will replace the
+      loaded volume.
+    - Multiple X-ray images may be loaded simultaneously; opening an X-ray image will not affect previously-loaded
+      images.
+- The image data and derived images may be shown using the *'Images'* tab on the right.
+    - This widget is implemented is [images_widget.py](py-lib/src/reg23_experiments/app/gui/widgets/images_widget.py).
+    - The interface currently provides no way of rendering a CT volume other than as a DRR. As X-ray projection
+      geometry is required to parametrise the projection of a DRR, DRRs can only be viewed with a loaded X-ray, and
+      are available one per X-ray.
+    - This widget contains a repeated set of buttons for each X-ray that is loaded.
+    - Each button adds a different image layer to the `napari` image viewer.
+    - Once added the layers will appear in the layers interface on the left, and the rendering parameters can be
+      configured there.
+    - The behaviours of the images in these layers are implemented in objects that are stored as 'plugins' to the
+      `napari` layer objects. Their implementations are in the [layers](py-lib/src/reg23_experiments/app/gui/layers)
+      directory.
+- Registration of a loaded CT volume to a loaded X-ray image may be done via the *'Register'* tab on the right.
+    - This widget is implemented
+      is [register_widget.py](py-lib/src/reg23_experiments/app/gui/widgets/register_widget.py).
+    - The transformation parameters are shown in two forms:
+        - T: a 3-component rotation with units of Radians, and a 3-component translation with units of mm.
+        - x: a 6-component vector comprised of scaled versions of the 6 values above. The scaling coefficients are
+          chosen by hand to make the optimisation landscape more symmetrical.
+    - **The transformation parameters may be changed by changing the values in the above widgets, or by selecting a '
+      Moving Image' layer on the left (can be opened from the *'Images'* tab) and Left- or Right-click-dragging in the
+      image viewer with the Ctrl key held down.**
+    - Transformations for the selected X-ray can be saved and loaded. These are stored in a table in
+      the [app_transformation_save_data](data/app_transformation_save_data) directory.
+    - Objective function evaluation and registrations can be performed in this tab, but note that registration and
+      similarity measure configuration is stored in the `Parameters` in the app state, and so it configured in the *'
+      Params'* tab.
+- Points can be segmented in X-ray images, for example the electrodes of a cochlear implant:
+    - Click the *'Show electrodes'* button for an X-ray in the *'Images'* tab. This will add a `napari` 'Points' layer
+      to the layer list on the left.
+    - Click the *'Show full 2d image'* button for the same X-ray in the *'Images'* tab. This will add an 'Image' layer
+      showing the full resolution X-ray image.
+    - With the *'<X-ray name>__electrode_points'* layer selected in the layer list, points can be added by clicking the
+      *'Add points'* button, which appears as a '+' inside a circle, at the top of the *'layer controls'* panel, and
+      then clicking in the image viewer.
+    - The positions of the points are in the coordinate system of the full resolution image, so when segmenting features
+      in the X-ray, it is important to be using the 'full 2d image' layer not the 'fixed image' layer, which may be
+      scaled differently.
+    - The set of segmented points for the X-ray are saved eagerly to a table in
+      the [app_electrode_save_data](data/app_electrode_save_data) directory, and automatically loaded on start.
+
+### How are the images processed? Why does it lag when I show the moving image, but not when I open the CT file?
+
+All image processing is done within a directed acyclic graph framework, which is implemented in
+the [data_manager](py-lib/src/reg23_experiments/ops/data_manager) directory.
+
+The main ideas are as follows:
+
+- All parameters that are used in loading and processing the images are stored as nodes in a graph. For example these
+  might be:
+    - The file path of an X-ray DICOM image,
+    - The file path of a CT volume,
+    - The transformation at which to project a moving image,
+    - Whether or not the X-ray image should be flipped, etc...
+- Note that the above examples are not derived from other data, they are set by the user.
+- Further nodes are added to the graph that **are** derived from other data, along with the appropriate mappings between
+  the nodes. For example these might be:
+    - The X-ray image itself, which is mapped from the X-ray DICOM file path simply by a function that finds the file
+      and loads the contents into `torch.Tensor`,
+    - The CT volume itself, which is similarly mapped from the file path to the CT volume file or directory,
+    - The moving image, which is a projection through the CT volume according to the projection parameters given in the
+      metadata of the X-ray DICOM, etc...
+- As you can see, many mappings may be expensive to compute, so the number of times they must be run is minimised by
+  only evaluating nodes **lazily**.
+- When using the [data_manager](py-lib/src/reg23_experiments/ops/data_manager) in a script that doesn't contain an
+  interface, all nodes can be evaluated lazily.
+- When rendering an interface, the user will want to see images update live as parameters change, so such nodes are set
+  to evaluate eagerly in this case.
+- When opening a CT file/directory, with no related image layer on display, no nodes get updated, only a CT path is
+  loaded into one.
+- Opening an X-ray file will similarly not update further nodes.
+- If the moving image is then shown, this node will be evaluated, which will trigger loading of the X-ray file for its
+  metadata, loading of the whole CT volume, and then projection of the moving image through the CT volume, which will
+  cause a small amount of lag.
+- Mappings are created as functions decorated with `dadg_updater`, which can be found in [data_manager/__init
+  __.py](py-lib/src/reg23_experiments/ops/data_manager/__init__.py). The mapping implementations themselves can be found
+  in [updaters.py](py-lib/src/reg23_experiments/experiments/updaters.py)
+  and [multi_xray_truncation_updaters.py](py-lib/src/reg23_experiments/experiments/multi_xray_truncation_updaters.py).
+
+## Other scripts
+
+All scripts are contained in the `scripts/` directory, and can be run with
 
 ```bash
 uv run <script name> <args...>
@@ -100,98 +215,13 @@ but note that this will not check for correctly install packages, nor initialise
 source code has changed, as `uv` is not run here, so make sure to run `uv sync` beforehand if you have changed any
 dependencies or the extension.
 
-## A Qt-based interface using `napari`
+# The `reg23` PyTorch extension
 
-This can be run for interactive manipulation and registration of a CT or synthetic volume with an X-ray image or DRR:
+The extension is contained within the [reg23](reg23) directory, with its own [README.md](reg23/README.md).
 
-```bash
-uv run scripts/interface.py -h
-uv run scripts/interface.py --ct-path "/path/to/ct.nrrd or /path/to/dicom_directory" --xray-path "/path/to/x_ray.dcm"
-```
+It is used by the app and other scripts via the `py-lib` library. In particular, `project-drr` is very commonly used.
 
-![interface_2025-09-05.png](figures/readme/interface_2025-09-05.png)
-
-## Features
-
-### General controls
-
-- With the DRR selected in the 'layer list' window on the left, hold `control` and drag with the left and right mouse
-  buttons pressed to change the rotation and translation transformation parameters respectively. The sensitivity of this
-  is controlled in the 'View Options' window on the bottom left.
-- The numerical values of the transformation parameters can be changed, saved and loaded in the 'Transformations'
-  tab on the right.
-- A lot of useful information is printed to std out, including warnings and errors so keep an eye on this while
-  using the interface.
-- If you suspect the CT and X-ray images are flipped with respect to one another, the button 'Flip' in the 'Register'
-  tab
-  will flip the X-ray horizontally.
-
-### Grangeat's relation-based registration
-
-Grangeat's relation-based registration employs a new objective function that makes use of pre-computed Radon transforms
-of the X-ray image and CT volume. The new fixed image is the Radon transform of the X-ray, and is rendered in yellow
-below the X-ray itself. The new moving image is a resampling of the Radon transform of the CT volume, according to the
-current transformation, and is rendered in blue on top. The fixed and moving images are compared using the NCC, in the
-same way that the X-ray and DRR are compared in the standard DRR-based method.
-
-The current moving sinogram can be rendered according to the current transformation by clicking the
-'Regen moving sinogram' button in the 'Sinograms' tab. Ticking the 'continuous' box will cause it to update
-continuously.
-
-To use the Grangeat's relation-based objective function for registrations, choose the option 'grangeat' in the
-'Obj. func.' combo box in the 'Register' tab. To evaluate the chosen objective function once and display the result,
-click the button 'Evaluate once'.
-
-### Cropping
-
-The region of the X-ray with which the generated DRR will be compared (and corresponding images will be generated and
-compared using the Grangeat-method) can be adjusted using the sliders at the top of the 'Register' tab. The current
-cropping settings can be saved, renamed and loaded using the box below.
-
-### Masking
-
-A mask can be applied to the fixed image to account for the CT volume not spanning the whole of the patient's head. The
-mask is a function of the current transformation, but is not automatically updated continually. To regenerate the mask
-at the current transformation, click 'Regenerate mask' in the 'Register' tab.
-
-To have the fixed image rendered with the
-mask applied, tick the box 'Render fixed image with mask' in the 'View Options' window (by default located in the
-bottom left).
-
-The mask can be regenerated automatically every $N$ objective function evaluations. To set the value of $N$, use the
-spin box labelled 'Evals/regen. mask' in the 'Register' tab. If this is set to 0, the mask is never automatically
-regenerated.
-
-### Downsampling
-
-Upon loading of a CT volume and fixed image, they will be downsampled by every factor of 2 (generating mipmaps). The
-corresponding Radon transforms for the Grangeat method will also be calculated.
-
-Change the level of downsampling currently being used with the spin box labelled 'Downsample level' in the 'Register'
-tab.
-
-### Optimisation algorithms
-
-Two algorithms are currently available:
-
-- Particle swarm optimisation
-- Local search
-
-To choose the algorithm you want to use, select it in the combo box in the 'Register' tab. The parameters specific to
-the selected optimisation algorithm will be customisable below.
-
-To run a registration, click the 'Register' button in the 'Register' tab. This will run the registration in a second
-thread, which will allow the user to interact with the interface while the registration is running, but note that
-changing parameters that affect the optimisation, like the cropping, will crash the software. Unfortunately, it is not
-currently possible to terminate a registration prematurely without closing the whole application. Notable parameters
-that can safely be modified while a registration is running:
-
-- The view in the Napari image viewer, and any of the controls in the napari 'layer controls' and 'layer list' windows.
-- 'Render fixed image with mask'
-- 'Evals./regen. mask'
-- 'Evals./re-plot'
-
-# Other scripts
+## Other scripts (not maintained)
 
 ### Run Radon transform algorithms on CPU and GPU (CUDA) to compare performance:
 
@@ -227,89 +257,6 @@ or
 ```bash
 python registration/lib/dev_scripts/dev_sinogram.py --help 
 ```
-
-# The `reg23` extension
-
-The extension is contained within the [reg23](reg23) directory, with its own [README.md](reg23/README.md).
-
-## Experiments so far
-
-DRR (= g) generated at random transformation:
-
-![ground_truth_drr.png](figures/readme/ground_truth_drr.png)
-
-The associated fixed image (= 1/cos^2 alpha * d/ds R2\[cos gamma * g\])
-
-![dds_R2_gtilde_ground_truth.png](figures/readme/dds_R2_gtilde_ground_truth.png)
-
-The 3D Radon transform of the volume data (= R3\[mu\]), resampled according to the ground truth transformation (this
-should roughly
-match the above image):
-
-![ddr_R3_mu_resampled_ground_truth.png](figures/readme/ddr_R3_mu_resampled_ground_truth.png)
-
-A plot of the -ZNCC landscape over 2 dimensions (two angular components of transformation) between the fixed image and
-the resampled Radon-transformed volume, with the ground truth transformation at the centre:
-
-![landscape.png](figures/readme/landscape.png)
-
-Starting from a different random transformation, optimising the ZNCC between these images over the transformation using
-the basin-hopping algorithm:
-
-(specifically `scipy.optimize.basinhopping` with `T=1.0`, `minimizer_kwargs={"method": 'Nelder-Mead'}`)
-
-![rotation_params_against_iteration.png](figures/readme/rotation_params_against_iteration.png)
-![translation_params_against_iteration.png](figures/readme/translation_params_against_iteration.png)
-![loss_against_iteration.png](figures/readme/loss_against_iteration.png)
-
-The fixed image (= 1/cos^2 alpha * d/ds R2\[cos gamma * g\]) at the converged transformation:
-
-![ddr_R3_mu_resampled_converged.png](figures/readme/ddr_R3_mu_resampled_converged.png)
-
-DRR generated at the converged transformation:
-
-![converged_drr.png](figures/readme/converged_drr.png)
-
-Optimisation completed in 125.508 seconds, performing a total of 45,472 function evaluations.
-
-Here is a plot of the -ZNCC similarity between the fixed image and the resampled moving image against the distance in
-SE3 between the transformation and the ground truth transformation for 1000 random transformations:
-
-![loss_vs_distance.png](figures/readme/loss_vs_distance.png)
-
-[//]: # (# Resampling)
-
-[//]: # ()
-
-[//]: # (The 3D sinogram image is stored as a 3D grid of values, where the dimensions correspond to different values of phi,)
-
-[//]: # (theta and r. While this is very efficient for resampling, having the same number of value of phi for every value of)
-
-[//]: # (theta results in memory inefficiency and an extremely high densities of values near theta = +/- pi/2.)
-
-[//]: # ()
-
-[//]: # (Smoothing the sampling consistently over S^2 to eliminate the second of these effects demonstrates that the line of)
-
-[//]: # (discontinuity visible in the resampling of the sinogram is due to this effect:)
-
-[//]: # ()
-
-[//]: # (![dds_R2_gtilde_ground_truth_no_sample_smoothing.png]&#40;figures/dds_R2_gtilde_ground_truth_no_sample_smoothing.png&#41;)
-
-[//]: # (![ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png]&#40;figures/ddr_R3_mu_resampled_ground_truth_no_sample_smoothing.png&#41;)
-
-[//]: # (![ddr_R3_mu_resampled_ground_truth_sample_smoothing.png]&#40;figures/ddr_R3_mu_resampled_ground_truth_sample_smoothing.png&#41;)
-
-[//]: # ()
-
-[//]: # (Although there is no significant difference manifest in the resulting optimisation landscape:)
-
-[//]: # ()
-
-[//]: # (![landscape_no_sample_smoothing.png]&#40;figures/landscape_no_sample_smoothing.png&#41;)
-
-[//]: # (![landscape_sample_smoothing.png]&#40;figures/landscape_sample_smoothing.png&#41;)
 
 ## IDE integration
 

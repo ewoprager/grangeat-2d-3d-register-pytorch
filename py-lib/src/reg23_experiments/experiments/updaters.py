@@ -13,9 +13,9 @@ from reg23_experiments.ops import drr, grangeat
 from reg23_experiments.ops.data_manager import dadg_updater
 from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 
-__all__ = ["load_ct", "refresh_vif", "load_target_image", "set_synthetic_target_image",
-           "refresh_hyperparameter_dependent", "refresh_hyperparameter_dependent_grangeat",
-           "refresh_hyperparameter_dependent_grangeat", "refresh_mask_transformation_dependent_grangeat"]
+__all__ = ["load_ct", "load_target_image", "set_synthetic_target_image", "refresh_hyperparameter_dependent",
+           "refresh_hyperparameter_dependent_grangeat", "refresh_hyperparameter_dependent_grangeat",
+           "refresh_mask_transformation_dependent_grangeat"]  # , "refresh_vif"
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +118,8 @@ def set_synthetic_target_image(*, ct_path: str, ct_spacing: torch.Tensor, ct_vol
 
 @dadg_updater(names_returned=["image_2d_scale_factor"])
 def refresh_image_2d_scale_factor(*,  #
-                                  fixed_image_spacing: torch.Tensor, downsample_level: int, ct_spacing: torch.Tensor) -> \
+                                  fixed_image_spacing: torch.Tensor, downsample_level: int, ct_spacing: torch.Tensor)\
+        -> \
         dict[str, Any]:
     downsampled_ct_spacing = ct_spacing * 2.0 ** float(downsample_level)
     return {"image_2d_scale_factor": (fixed_image_spacing.mean() / downsampled_ct_spacing.mean()).item()}

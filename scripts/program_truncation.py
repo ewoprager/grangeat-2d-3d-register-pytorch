@@ -18,7 +18,8 @@ import traitlets
 
 from reg23_experiments.utils.console_logging import tqdm
 from reg23_experiments.utils import logs_setup, pushover
-from reg23_experiments.ops.data_manager import data_manager, dadg_updater, updaters, args_from_dadg
+from reg23_experiments.experiments import updaters
+from reg23_experiments.ops.data_manager import data_manager, dadg_updater, args_from_dadg
 from reg23_experiments.data.structs import Error, Transformation, SceneGeometry, Cropping
 from reg23_experiments.io.volume import load_ct
 from reg23_experiments.io.image import load_cached_drr, read_dicom

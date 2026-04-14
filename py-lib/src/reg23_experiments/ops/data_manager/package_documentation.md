@@ -80,7 +80,7 @@ use_ct_volume_again(data_manager().get("ct_volume_downsampled"))
 
 A walk through the above code:
 
-- The first call to `ata_manager()` constructs the singleton instance of the `StandaloneDADG`.
+- The first call to `data_manager()` constructs the singleton instance of the `StandaloneDADG`.
 - We set some values in the data manager using `data_manager().set_multiple(...)`. This just interprets each
   keyword argument as a new (name, value) pair to insert into the graph.
 - We define two instances of the `Updater` class using the `@dadg_updater` decorator, which transforms the decorated
