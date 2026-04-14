@@ -1,0 +1,25 @@
+services:
+  app:
+    user: "${USER_UID}:${USER_GID}"
+    image: reg23
+
+    # === GPU access (equivalent to --gpus all) ===
+#    deploy:
+#      resources:
+#        reservations:
+#          devices:
+#            - capabilities: [ gpu ]
+
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_QPA_PLATFORM=xcb
+      - XAUTHORITY=/tmp/.Xauthority
+
+    container_name: reg23-app
+    volumes:
+      - .:/workdir
+      - /tmp/.X11-unix:/tmp/.X11-uni
+      - $HOME/.Xauthority:/tmp/.Xauthority:ro
+
+    stdin_open: true
+    tty: true

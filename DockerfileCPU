@@ -1,0 +1,53 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /workdir
+
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    python3.12 \
+    python3.12-dev \
+    ninja-build \
+    build-essential \
+    ca-certificates \
+    qt6-base-dev \
+    libxkbcommon-x11-0 \
+    libxcb-cursor0 \
+    libxcb-xinerama0 \
+    libxcb-randr0 \
+    libxcb-icccm4 \
+    libxcb-keysyms1 \
+    libxcb-image0 \
+    libxcb-shape0 \
+    libxcb-sync1 \
+    libxcb-xfixes0 \
+    libxcb-render-util0 \
+    libxrender1 \
+    libxi6 \
+    libsm6 \
+    libice6 \
+    libgl1 \
+    && rm -rf /var/lib/apt/lists/*
+
+
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+RUN curl -LsSf https://astral.sh/uv/0.5.26/install.sh | sh
+
+ENV PATH="/root/.local/bin:${PATH}"
+
+RUN uv venv
+
+ENV PATH="workdir/.venv/bin:${PATH}"
+
+COPY pyproject.toml uv.lock* ./
+
+RUN uv sync --extra cpu
+
+COPY . .
+
+CMD ["uv", "run", "scripts/app.py"]

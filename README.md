@@ -85,6 +85,22 @@ or
 uv sync --extra cuda
 ```
 
+## Docker
+
+The Dockerfiles do not work yet.
+
+Docker dev notes:
+
+- I ran `xhost +local:docker`
+- I ran `xhost +SI:localuser:$(whoami)`
+- I ran `export USER_UID=$(id -u)` and `export USER_GID=$(id -g)`
+- I ran the following to allow me to run docker without `sudo`:
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
 # Scripts you can run
 
 ## The app

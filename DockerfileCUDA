@@ -1,0 +1,33 @@
+FROM nvidia/cuda:12.6.3-devel-ubuntu24.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FORCE_CUDA=1
+
+WORKDIR /workdir
+
+RUN apt-get update && apt-get install -y \
+    git \
+    python3 \
+    python3-pip \
+    build-essential \
+    ca-certificates
+
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+RUN pip install --no-cache-dir uv==0.5.26
+
+COPY pyproject.toml uv.lock* ./
+
+RUN uv sync --python-preference only-system --extra cuda
+
+COPY . .
+
+WORKDIR /workdir/reg23
+
+RUN uv pip install -e .[cuda]
+
+WORKDIR /workdir
+
+CMD ["uv", "run", "scripts/app.py"]

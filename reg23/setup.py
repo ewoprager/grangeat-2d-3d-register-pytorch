@@ -23,7 +23,8 @@ no_cuda: bool = ("--no-cuda" in sys.argv)
 if no_cuda:
     sys.argv.remove("--no-cuda")
 
-use_cuda: bool = (no_cuda == False) and torch.cuda.is_available() and (CUDA_HOME is not None)
+force_cuda = os.environ.get("FORCE_CUDA") == "1"
+use_cuda = force_cuda or (not no_cuda and torch.cuda.is_available() and CUDA_HOME is not None)
 if use_cuda:
     print("Building with CUDA")
 elif no_cuda:
