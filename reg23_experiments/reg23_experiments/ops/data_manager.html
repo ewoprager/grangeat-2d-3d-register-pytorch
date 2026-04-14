@@ -32,10 +32,6 @@
 </ul>
 
 
-            <h2>Submodules</h2>
-            <ul>
-                    <li><a href="data_manager/updaters.html">updaters</a></li>
-            </ul>
 
             <h2>API Documentation</h2>
                 <ul class="memberlist">
@@ -314,7 +310,7 @@ floating-point, which would be quite a restriction.</p>
 <p>A walk through the above code:</p>
 
 <ul>
-<li>The first call to <code>ata_manager()</code> constructs the singleton instance of the <code><a href="#StandaloneDADG">StandaloneDADG</a></code>.</li>
+<li>The first call to <code><a href="#data_manager">data_manager()</a></code> constructs the singleton instance of the <code><a href="#StandaloneDADG">StandaloneDADG</a></code>.</li>
 <li>We set some values in the data manager using <code>data_manager().set_multiple(...)</code>. This just interprets each
 keyword argument as a new (name, value) pair to insert into the graph.</li>
 <li>We define two instances of the <code><a href="#Updater">Updater</a></code> class using the <code>@dadg_updater</code> decorator, which transforms the decorated
@@ -352,7 +348,7 @@ since <code>"ct_volume_downsampled"</code> was last evaluated.</li>
 </span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._dadg_child</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChildDADG</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">._namespaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">capture_in_namespaces</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a>
-</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;updaters&quot;</span><span class="p">,</span> <span class="s2">&quot;dadg_updater&quot;</span><span class="p">,</span> <span class="s2">&quot;args_from_dadg&quot;</span><span class="p">,</span> <span class="s2">&quot;data_manager&quot;</span><span class="p">,</span> <span class="s2">&quot;StandaloneDADGSingleton&quot;</span><span class="p">,</span> <span class="s2">&quot;Updater&quot;</span><span class="p">,</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;dadg_updater&quot;</span><span class="p">,</span> <span class="s2">&quot;args_from_dadg&quot;</span><span class="p">,</span> <span class="s2">&quot;data_manager&quot;</span><span class="p">,</span> <span class="s2">&quot;StandaloneDADGSingleton&quot;</span><span class="p">,</span> <span class="s2">&quot;Updater&quot;</span><span class="p">,</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>           <span class="s2">&quot;DirectedAcyclicDataGraph&quot;</span><span class="p">,</span> <span class="s2">&quot;ChildDirectedAcyclicDataGraph&quot;</span><span class="p">,</span> <span class="s2">&quot;StandaloneDADG&quot;</span><span class="p">,</span> <span class="s2">&quot;ChildDADG&quot;</span><span class="p">,</span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>           <span class="s2">&quot;capture_in_namespaces&quot;</span><span class="p">,</span> <span class="s2">&quot;NoNodeData&quot;</span><span class="p">]</span>
 </span></pre></div>
