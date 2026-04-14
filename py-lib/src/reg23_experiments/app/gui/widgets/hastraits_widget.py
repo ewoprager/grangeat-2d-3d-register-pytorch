@@ -50,7 +50,7 @@ class HasTraitsWidget(Container):
 
             # Any traits that aren't instances of HasTraits have their values read directly from the widget to update
             # trait value
-            if not isinstance(trait, traitlets.Instance):
+            if not (isinstance(trait, traitlets.Instance) or isinstance(trait, traitlets.Union)):
                 def update_hastraits_from_widget(new_value: Any, _name=name) -> None:
                     if _name in self._callback_loop_prevention:
                         return

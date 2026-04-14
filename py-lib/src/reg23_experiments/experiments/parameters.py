@@ -112,10 +112,10 @@ class Parameters(HasTraits):
     optimisation_algorithm: Literal["pso", "local_search", "cmaes"] = Enum(values=[  #
         "pso",  #
         "local_search",  #
-        "cmaes",  #
+        # "cmaes",  #
     ], default=Undefined).tag(ui=True)
     op_algo_parameters: PsoParameters | LocalSearchParameters = Union(
-        trait_types=[Instance(PsoParameters, allow_none=False), Instance(PsoParameters, allow_none=False)]).tag(ui=True)
+        trait_types=[Instance(PsoParameters, allow_none=False), Instance(LocalSearchParameters, allow_none=False)]).tag(ui=True)
     iteration_count: int = Int(min=0).tag(ui=True)
     xray_parameters: dict[str, XrayParameters] = Dict(  #
         key_trait=Unicode(allow_none=False),  #
@@ -127,6 +127,7 @@ class Parameters(HasTraits):
     OP_ALGO_PARAM_CLASSES: dict[str, type] = {  #
         "pso": PsoParameters,  #
         "local_search": LocalSearchParameters,  #
+        # "cmaes": CmaesParameters, #
     }
 
     SIM_MET_PARAM_CLASSES: dict[str, type] = {  #
