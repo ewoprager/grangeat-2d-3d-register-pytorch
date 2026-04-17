@@ -51,7 +51,7 @@ public:
 	 * @brief Construct from a series of values
 	 */
 	__host__ __device__ /**/Vec(std::initializer_list<T> l) : Base() {
-		int i = 0;
+		std::size_t i = 0;
 		for (const T &e : l) {
 			(*this)[i] = e;
 			++i;
@@ -82,7 +82,7 @@ public:
 	__host__ __device__ static constexpr Vec FromIntArrayRef(const at::IntArrayRef &v) {
 		assert(v.size() == N);
 		Vec ret{};
-		int index = 0;
+		std::size_t index = 0;
 		for (int64_t e : v) {
 			ret[index++] = static_cast<T>(e);
 		}
@@ -113,7 +113,7 @@ public:
 		static_assert(std::is_same_v<std::remove_const_t<decltype(T::dimensionality)>, std::size_t>);
 		static_assert(T::dimensionality == N);
 		std::array<T, N> ret {};
-		for (int i=0; i<N; ++i) {
+		for (std::size_t i=0; i<N; ++i) {
 			ret[i] = T::Full(0);
 			ret[i][i] = typename T::ElementType{1};
 		}
@@ -179,7 +179,7 @@ public:
 	 */
 	__host__ __device__ [[nodiscard]] constexpr T Min() const {
 		T ret = (*this)[0];
-		for (int i=1; i<N; ++i) {
+		for (std::size_t i=1; i<N; ++i) {
 			if ((*this)[i] < ret) ret = (*this)[i];
 		}
 		return ret;
@@ -191,7 +191,7 @@ public:
 	 */
 	__host__ __device__ [[nodiscard]] constexpr T Max() const {
 		T ret = (*this)[0];
-		for (int i=1; i<N; ++i) {
+		for (std::size_t i=1; i<N; ++i) {
 			if ((*this)[i] > ret) ret = (*this)[i];
 		}
 		return ret;
@@ -204,7 +204,7 @@ public:
 	 */
 	__host__ __device__ [[nodiscard]] constexpr std::pair<T, T> MinMax() const {
 		std::pair<T, T> ret = {(*this)[0], (*this)[0]};
-		for (int i=1; i<N; ++i) {
+		for (std::size_t i=1; i<N; ++i) {
 			if ((*this)[i] < ret.first) ret.first = (*this)[i];
 			if ((*this)[i] > ret.second) ret.second = (*this)[i];
 		}
@@ -326,7 +326,7 @@ public:
 	 * @brief Element-wise addition of another Vec
 	 */
 	__host__ __device__ Vec &operator+=(const Vec &other) {
-		for (int i=0; i<N; i++) {
+		for (std::size_t i=0; i<N; i++) {
 			(*this)[i] += other[i];
 		}
 		return *this;
@@ -336,7 +336,7 @@ public:
 	 * @brief Element-wise addition of a scalar
 	 */
 	template <typename scalar_t> __host__ __device__ Vec &operator+=(const scalar_t &scalar) {
-		for (int i=0; i<N; i++) {
+		for (std::size_t i=0; i<N; i++) {
 			(*this)[i] += scalar;
 		}
 		return *this;
@@ -346,7 +346,7 @@ public:
 	 * @brief Element-wise subtraction of another Vec
 	 */
 	__host__ __device__ Vec &operator-=(const Vec &other) {
-		for (int i=0; i<N; i++) {
+		for (std::size_t i=0; i<N; i++) {
 			(*this)[i] -= other[i];
 		}
 		return *this;
@@ -356,7 +356,7 @@ public:
 	 * @brief Element-wise subtraction of a scalar
 	 */
 	template <typename scalar_t> __host__ __device__ Vec &operator-=(const scalar_t &scalar) {
-		for (int i=0; i<N; i++) {
+		for (std::size_t i=0; i<N; i++) {
 			(*this)[i] -= scalar;
 		}
 		return *this;
@@ -366,7 +366,7 @@ public:
 	 * @brief Element-wise multiplication by another Vec
 	 */
 	__host__ __device__ Vec &operator*=(const Vec &other) {
-		for (int i=0; i<N; i++) {
+		for (std::size_t i=0; i<N; i++) {
 			(*this)[i] *= other[i];
 		}
 		return *this;
@@ -376,7 +376,7 @@ public:
 	 * @brief Element-wise multiplication by a scalar
 	 */
 	template <typename scalar_t> __host__ __device__ Vec &operator*=(const scalar_t &scalar) {
-		for (int i=0; i<N; i++) {
+		for (std::size_t i=0; i<N; i++) {
 			(*this)[i] *= scalar;
 		}
 		return *this;
@@ -386,7 +386,7 @@ public:
 	 * @brief Element-wise division by another Vec
 	 */
 	__host__ __device__ Vec &operator/=(const Vec &other) {
-		for (int i=0; i<N; i++) {
+		for (std::size_t i=0; i<N; i++) {
 			(*this)[i] /= other[i];
 		}
 		return *this;
@@ -396,7 +396,7 @@ public:
 	 * @brief Element-wise division by a scalar
 	 */
 	template <typename scalar_t> __host__ __device__ Vec &operator/=(const scalar_t &scalar) {
-		for (int i=0; i<N; i++) {
+		for (std::size_t i=0; i<N; i++) {
 			(*this)[i] /= scalar;
 		}
 		return *this;
@@ -836,8 +836,8 @@ template <typename T, std::size_t... Ns> __host__ __device__ constexpr Vec<T, (N
 	Vec<T, (Ns + ...)> ret {};
 	std::size_t startIndex = 0;
 	([&] {
-		for (int i=0; i<Ns; ++i) {
-			ret[startIndex + i] = vec[i];
+		for (std::size_t i=0; i<Ns; ++i) {
+			ret[startIndex + i] = vecs[i];
 		}
 		startIndex += Ns;
 	}(), ...);
@@ -851,7 +851,7 @@ template <typename T, std::size_t... Ns> __host__ __device__ constexpr Vec<T, (N
 template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1> VecCat(
 	const Vec<T, N> &lhs, const T &rhs) {
 	Vec<T, N + 1> ret;
-	for (int i=0; i<N; ++i) {
+	for (std::size_t i=0; i<N; ++i) {
 		ret[i] = lhs[i];
 	}
 	ret[N] = rhs;
@@ -866,7 +866,7 @@ template <typename T, std::size_t N> __host__ __device__ constexpr Vec<T, N + 1>
 	const T &lhs, const Vec<T, N> &rhs) {
 	Vec<T, N + 1> ret;
 	ret[0] = lhs;
-	for (int i=0; i<N; ++i) {
+	for (std::size_t i=0; i<N; ++i) {
 		ret[1 + i] = rhs[i];
 	}
 	return ret;
