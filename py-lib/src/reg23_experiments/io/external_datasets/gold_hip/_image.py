@@ -51,43 +51,82 @@ def load_xray(view_id, ct_volume_size: torch.Size, ct_volume_spacing: torch.Tens
     image = sitk.ReadImage(str(xray_path))
     spacing = torch.tensor([0.2904, 0.2904])
     data = torch.tensor(sitk.GetArrayFromImage(image), dtype=torch.float32)[0]
-    # data = data.flip(dims=(1,))
+    # data = data.flip(dims=(2,))
     pose_path = ARCHIVE_ROOT / get_data_config().get_optimized_pose_path(view_id)
     euler_3d_transform = sitk.ReadTransform(pose_path)
     source_distance: float = 968.1612
 
     translation = torch.tensor(euler_3d_transform.GetTranslation())
+    translation[2] -= source_distance
+    # translation *= -1.0
     rotation_matrix = torch.tensor(euler_3d_transform.GetMatrix()).view(3, 3)
 
     p = torch.tensor([  #
         [1.0, 0.0, 0.0],  #
-        [0.0, -1.0, 0.0],  #
+        [0.0, 1.0, 0.0],  #
         [0.0, 0.0, -1.0]  #
     ])
-    translation = p @ translation
-    rotation_matrix = p @ rotation_matrix
+    offset_2d = 0.5 * spacing[0:2] * torch.tensor([data.size()[1], -data.size()[0]], dtype=torch.float64)
+    offset_3d = 0.5 * torch.tensor(ct_volume_size, dtype=translation.dtype).flip(dims=(0,)) * ct_volume_spacing.to(
+        device=translation.device)
+    offset_3d[2] *= -1.0
 
-    p = torch.tensor([  #
-        [1.0, 0.0, 0.0],  #
-        [0.0, 0.0, 1.0],  #
-        [0.0, 1.0, 0.0]  #
-    ])
-    rotation_matrix = (p @ rotation_matrix @ p.T).inverse()
-    #
-    # offset = 0.5 * torch.tensor(ct_volume_size, dtype=translation.dtype).flip(dims=(0,)) * ct_volume_spacing.to(
-    #     device=translation.device)
-    # logger.info(f"Offset = {rotation_matrix @ offset}")
-    # translation -= rotation_matrix @ offset
+    import itertools
+    # params:
+    dim_sd_shift: int = 0
+    sign_sd_shift: float = 1.0
+    do_permute_t: bool = True
+    sign_offset_2d: float = 1.0
+    sign_offset_3d: float = 1.0
+    do_offset_2d: bool = True
 
-    translation[2] -= source_distance
-    # translation = p @ translation
+    def shift_by_source_distance():
+        nonlocal translation, dim_sd_shift, sign_sd_shift, source_distance
+        translation[dim_sd_shift] += sign_sd_shift * source_distance
 
-    # apply a translation before the rotation
+    def permute_rot_mat():
+        nonlocal rotation_matrix, p
+        rotation_matrix = p @ rotation_matrix @ p
 
-    # apply a translation after the rotation
-    # translation[0] += 0.5 * spacing[0] * torch.tensor(data.size()[1], dtype=torch.float64)
-    # translation[1] -= 0.5 * spacing[1] * torch.tensor(data.size()[0], dtype=torch.float64)
+    def permute_t():
+        nonlocal do_permute_t, translation, p
+        if do_permute_t:
+            translation = p @ translation
 
+    def shift_offset_2d():
+        nonlocal translation, offset_2d, sign_offset_2d, do_offset_2d
+        if do_offset_2d:
+            translation[0:2] += sign_offset_2d * offset_2d
+
+    def shift_offset_3d():
+        nonlocal translation, offset_3d, sign_offset_3d
+        translation += sign_offset_3d * offset_3d
+
+    def invert_t():
+        nonlocal translation, rotation_matrix
+        translation = -(rotation_matrix @ translation)
+
+    func_perms = itertools.permutations(
+        [shift_by_source_distance, permute_rot_mat, permute_t, shift_offset_2d, shift_offset_3d, invert_t])
+    for (_dim_sd_shift, _sign_sd_shift, _do_permute_t, _sign_offset_2d, _sign_offset_3d, _do_offset_2d,
+         funcs) in itertools.product(
+            #
+            [0, 1, 2],  #
+            [-1.0, 1.0],  #
+            [False, True],  #
+            [-1.0, 1.0],  #
+            [-1.0, 1.0],  #
+            [False, True],  #
+            func_perms  #
+    ):
+        dim_sd_shift = _dim_sd_shift
+        sign_sd_shift = _sign_sd_shift
+        do_permute_t = _do_permute_t
+        sign_offset_2d = _sign_offset_2d
+        sign_offset_3d = _sign_offset_3d
+        do_offset_2d = _do_offset_2d
+        for func in funcs:
+            func()
 
     rotation = kornia.geometry.rotation_matrix_to_axis_angle(rotation_matrix)
 

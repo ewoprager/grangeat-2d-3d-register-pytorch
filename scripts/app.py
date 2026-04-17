@@ -112,6 +112,9 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         ct_volume, ct_spacing = gold_hip.load_ct()
         # X-ray data
         xray_data = gold_hip.load_xray("p19", ct_volume.size(), ct_spacing)
+        logger.info(f"GT = {xray_data["transformation"]}")
+        if False:
+            exit(0)
         if isinstance(xray_data, Error):
             logger.error(f"Failed to load gold_hip X-ray: {xray_data.description}")
             exit(1)
