@@ -77,8 +77,11 @@ class RegisterWidget(widgets.Container):
         self._x_loop_preventer = False
         self._t_loop_preventer = False
         if self._xray_selected:
-            current_t: Transformation = self._ctx.dadg.get(self._c_t_key)
-            current_params: torch.Tensor = mapping_transformation_to_parameters(current_t)
+            current_t: Transformation | Error = self._ctx.dadg.get(self._c_t_key)
+            if isinstance(current_t, Error):
+                logger.error(f"Error getting current transformation: {current_t.description}")
+            else:
+                current_params: torch.Tensor = mapping_transformation_to_parameters(current_t)
         # Float spin boxes for the current transformation in parameter space
         self._x_widgets = [  #
             widgets.FloatSpinBox(  #

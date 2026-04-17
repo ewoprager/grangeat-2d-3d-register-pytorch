@@ -16,7 +16,7 @@ from reg23_experiments.ops.optimisation import mapping_parameters_to_transformat
 from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
 from reg23_experiments.app.gui.widgets.parameters_widget import ParametersWidget
 from reg23_experiments.app.gui.widgets.hastraits_widget import HasTraitsWidget
-from reg23_experiments.experiments.parameters import Parameters, PsoParameters, Context
+from reg23_experiments.experiments.parameters import Parameters, PsoParameters, Context, XrayParameters
 from reg23_experiments.app.gui.widgets.register_widget import RegisterWidget
 from reg23_experiments.app.context import AppContext
 from reg23_experiments.app.worker_manager import WorkerManager
@@ -26,6 +26,7 @@ from reg23_experiments.app.transformation_saver import TransformationSaver
 from reg23_experiments.app.gui.widgets.images_widget import ImagesWidget
 from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, apply_truncation
 from reg23_experiments.app.gui.file_manager import FileManager
+from reg23_experiments.app import initialisation
 
 
 # @args_from_dag(names_left=["transformation"])
@@ -77,41 +78,6 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         data_manager().set("ct_path", ct_path)
 
     # -----
-    # External datasets
-    # -----
-    if external_dataset == "gold_hip":
-        from reg23_experiments.io.external_datasets import gold_hip
-        # CT data
-        untruncated_ct_volume, ct_spacing = gold_hip.load_ct()
-        untruncated_ct_volume = untruncated_ct_volume.to(device=data_manager().get("device"))
-        ct_spacing = ct_spacing.to(device=data_manager().get("device"))
-        data_manager().set_multiple(  #
-            untruncated_ct_volume=untruncated_ct_volume,  #
-            ct_spacing=ct_spacing,  #
-            ct_path=gold_hip.get_data_config().get_ct_path()  #
-        )
-        # X-ray data
-        xray_data = gold_hip.load_xray("p19", untruncated_ct_volume.size(), ct_spacing)
-        logger.info(f"ct spacing = {ct_spacing.cpu()}")
-        logger.info(f"ct size = {untruncated_ct_volume.size()}")
-        logger.info(f"total = "
-                    f"{ct_spacing.cpu() * torch.tensor(untruncated_ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
-        image_2d_full = xray_data["image"].to(device=data_manager().get("device"))
-        data_manager().set_multiple(  #
-            source_distance=xray_data["scene_geometry"].source_distance,  #
-            image_2d_full=image_2d_full,  #
-            fixed_image_spacing=xray_data["spacing"],  #
-            source_offset=xray_data["scene_geometry"].fixed_image_offset,  #
-            transformation_gt=xray_data["transformation"].to(device=data_manager().get("device"))  #
-        )
-
-    else:
-        err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
-        if isinstance(err, Error):
-            logger.error(f"Error adding updater: {err.description}")
-            return
-
-    # -----
     # Parameters
     # -----
     parameters = Parameters(  #
@@ -134,9 +100,51 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
 
     app_context = AppContext(parameters=parameters, dadg=data_manager(),
                              transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
-                             electrode_save_directory=pathlib.Path("data/app_electrode_save_data"))
+                             electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),
+                             cache=external_dataset is None)
 
-    parameters_widget = ParametersWidget(app_context)
+    # -----
+    # External datasets
+    # -----
+    if external_dataset == "gold_hip":
+        from reg23_experiments.io.external_datasets import gold_hip
+        # CT data
+        ct_volume, ct_spacing = gold_hip.load_ct()
+        # X-ray data
+        xray_data = gold_hip.load_xray("p19", ct_volume.size(), ct_spacing)
+        if isinstance(xray_data, Error):
+            logger.error(f"Failed to load gold_hip X-ray: {xray_data.description}")
+            exit(1)
+        # Init
+        res = initialisation.load_fixed_dataset(  #
+            app_context=app_context,  #
+            ct_volume=ct_volume,  #
+            ct_spacing=ct_spacing,  #
+            fixed_targets={  #
+                "gold_hip": initialisation.FixedTarget(  #
+                    source_distance=xray_data["scene_geometry"].source_distance,  #
+                    image_2d_full=xray_data["image"],  #
+                    fixed_image_spacing=xray_data["spacing"],  #
+                    transformation_gt=xray_data["transformation"]  #
+                )}  #
+        )
+        if isinstance(res, Error):
+            logger.error(f"Failed to set gold_hip CT dadg nodes: {res.description}")
+            exit(1)
+        logger.info(f"ct spacing = {ct_spacing.cpu()}")
+        logger.info(f"ct size = {ct_volume.size()}")
+        logger.info(f"total = "
+                    f"{ct_spacing.cpu() * torch.tensor(ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
+    else:
+        err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+
+    # -----
+    # Widgets
+    # -----
+    parameters_widget = ParametersWidget(app_context, external_dataset is None)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
     viewer().window.add_dock_widget(HasTraitsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
@@ -158,8 +166,14 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         # Getting the resulting moving and fixed images
         moving_image = context.dadg.get(
             "moving_image" if context.namespace is None else f"{context.namespace}__moving_image")
+        if isinstance(moving_image, Error):
+            logger.error(f"Error getting moving image for obj. func.: {moving_image.description}")
+            return torch.zeros(1, device=x.device)
         fixed_image = context.dadg.get(
             "fixed_image" if context.namespace is None else f"{context.namespace}__fixed_image")
+        if isinstance(fixed_image, Error):
+            logger.error(f"Error getting fixed image for obj. func.: {fixed_image.description}")
+            return torch.zeros(1, device=x.device)
         # Comparing, potentially weighting with a mask
         # if apply_mask:
         #     mask = data_manager().get("mask")

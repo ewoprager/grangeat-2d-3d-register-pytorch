@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class ParametersWidget(widgets.Container):
-    def __init__(self, ctx: AppContext):
+    def __init__(self, ctx: AppContext, can_load_more_images: bool = True):
         super().__init__(widgets=[], layout='vertical', labels=False)
 
         self._ctx = ctx
@@ -36,21 +36,22 @@ class ParametersWidget(widgets.Container):
         # -----
         self.append(widgets.Label(value="Modifiers:"))
 
-        # CT file opening
-        self._open_ct_file_button = widgets.PushButton(label="Open CT file")
-        self._open_ct_file_button.changed.connect(self._on_open_ct_file)
-        self._open_ct_dir_button = widgets.PushButton(label="Open CT directory")
-        self._open_ct_dir_button.changed.connect(self._on_open_ct_dir)
+        if can_load_more_images:
+            # CT file opening
+            self._open_ct_file_button = widgets.PushButton(label="Open CT file")
+            self._open_ct_file_button.changed.connect(self._on_open_ct_file)
+            self._open_ct_dir_button = widgets.PushButton(label="Open CT directory")
+            self._open_ct_dir_button.changed.connect(self._on_open_ct_dir)
 
-        self.append(widgets.Container(widgets=[  #
-            self._open_ct_file_button,  #
-            self._open_ct_dir_button  #
-        ], layout="horizontal"))
+            self.append(widgets.Container(widgets=[  #
+                self._open_ct_file_button,  #
+                self._open_ct_dir_button  #
+            ], layout="horizontal"))
 
-        # X-ray file opening
-        self._open_xray_file_button = widgets.PushButton(label="Open X-ray file")
-        self._open_xray_file_button.changed.connect(self._on_open_xray_file)
-        self.append(self._open_xray_file_button)
+            # X-ray file opening
+            self._open_xray_file_button = widgets.PushButton(label="Open X-ray file")
+            self._open_xray_file_button.changed.connect(self._on_open_xray_file)
+            self.append(self._open_xray_file_button)
 
         # Cropping
         self._crop_nonzero_drr_button = widgets.PushButton(label="Crop to nonzero drr")

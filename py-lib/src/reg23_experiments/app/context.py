@@ -32,19 +32,22 @@ class AppContext:
     """
 
     def __init__(self, *, parameters: Parameters, dadg: DirectedAcyclicDataGraph,
-                 electrode_save_directory: pathlib.Path, transformation_save_directory: pathlib.Path):
+                 electrode_save_directory: pathlib.Path, transformation_save_directory: pathlib.Path,
+                 cache: bool = True):
         self._input_manager = InputManager()
         self._state = AppState(parameters=parameters)
         self._dadg = dadg
-        self._cache_manager = CacheManager()
         self._electrode_save_manager = ElectrodeSaveManager(electrode_save_directory)
         self._transformation_save_manager = TransformationSaveManager(transformation_save_directory)
+        self._cache = cache
 
-        # load params from the cache
-        res: dict[str, Any] | None = self._cache_manager.last_params
-        if res is not None:
-            self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters,
-                                                          trait=self.state.traits()["parameters"])
+        if self._cache:
+            self._cache_manager = CacheManager()
+            # load params from the cache
+            res: dict[str, Any] | None = self._cache_manager.last_params
+            if res is not None:
+                self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters,
+                                                              trait=self.state.traits()["parameters"])
 
         self._param_dadg_parity_manager = ParamDADGParityManager(state=self._state, dadg=self._dadg)
 
@@ -72,5 +75,6 @@ class AppContext:
         return self._transformation_save_manager
 
     def _any_parameter_changed(self, change) -> None:
-        self._cache_manager.last_params = serialize_recursive(self.state.parameters,
-                                                              trait=self.state.traits()["parameters"])
+        if self._cache:
+            self._cache_manager.last_params = serialize_recursive(self.state.parameters,
+                                                                  trait=self.state.traits()["parameters"])
