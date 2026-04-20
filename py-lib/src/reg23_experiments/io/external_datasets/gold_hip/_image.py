@@ -51,13 +51,12 @@ class TransConvParams(traitlets.HasTraits):
     sign_offset_3d: float = traitlets.Float()
     flip_offset_3d2: bool = traitlets.Bool()
     do_permute_rm: bool = traitlets.Bool()
-    sign_sd_shift2: float = traitlets.Float()
 
     def __str__(self) -> str:
         return ("TransConvParams(dim_sd_shift={}, sign_sd_shift={:.1f}, do_permute_t={}, sign_offset_2d={:.1f}, "
-                "sign_offset_3d={:.1f}, flip_offset_3d2={}, do_permute_rm={}, sign_sd_shift2={})").format(  #
+                "sign_offset_3d={:.1f}, flip_offset_3d2={}, do_permute_rm={})").format(  #
             self.dim_sd_shift, self.sign_sd_shift, self.do_permute_t, self.sign_offset_2d, self.sign_offset_3d,
-            self.flip_offset_3d2, self.do_permute_rm, self.sign_sd_shift2)
+            self.flip_offset_3d2, self.do_permute_rm)
 
 
 class TransConvValues(traitlets.HasTraits):
@@ -71,11 +70,6 @@ class TransConvValues(traitlets.HasTraits):
 
 def shift_by_source_distance(v: TransConvValues, p: TransConvParams) -> TransConvValues:
     v.translation[p.dim_sd_shift] += p.sign_sd_shift * v.source_distance
-    return v
-
-
-def shift_by_source_distance2(v: TransConvValues, p: TransConvParams) -> TransConvValues:
-    v.translation[p.dim_sd_shift] += p.sign_sd_shift2 * v.source_distance
     return v
 
 
@@ -151,8 +145,7 @@ def load_xray(view_id, ct_volume_size: torch.Size, ct_volume_spacing: torch.Tens
         epsilon = 0.3
 
         import itertools
-        func_list = [shift_by_source_distance, shift_by_source_distance2, permute_rot_mat, permute_t, shift_offset_2d,
-                     shift_offset_3d, invert_t]
+        func_list = [shift_by_source_distance, permute_rot_mat, permute_t, shift_offset_2d, shift_offset_3d, invert_t]
         func_perms = itertools.permutations(func_list)
         values = [[0, 1, 2],  #
                   [-1.0, 1.0],  #
@@ -161,15 +154,13 @@ def load_xray(view_id, ct_volume_size: torch.Size, ct_volume_spacing: torch.Tens
                   [-1.0, 0.0, 1.0],  #
                   [False, True],  #
                   [False, True],  #
-                  [-1.0, 0.0, 1.0],  #
                   func_perms]
         total = math.prod([len(it) for it in values[:-1]]) * math.perm(len(func_list), len(func_list))
         for (dim_sd_shift, sign_sd_shift, do_permute_t, sign_offset_2d, sign_offset_3d, flip_offset_3d2, do_permute_rm,
-             sign_sd_shift2, funcs) in tqdm(itertools.product(*values), total=total):
+             funcs) in tqdm(itertools.product(*values), total=total):
             params = TransConvParams(dim_sd_shift=dim_sd_shift, sign_sd_shift=sign_sd_shift, do_permute_t=do_permute_t,
                                      sign_offset_2d=sign_offset_2d, sign_offset_3d=sign_offset_3d,
-                                     flip_offset_3d2=flip_offset_3d2, do_permute_rm=do_permute_rm,
-                                     sign_sd_shift2=sign_sd_shift2)
+                                     flip_offset_3d2=flip_offset_3d2, do_permute_rm=do_permute_rm)
             values = TransConvValues(rotation_matrix=rotation_matrix.clone(), p=p.clone(),
                                      translation=translation.clone(), source_distance=source_distance,
                                      offset_2d=offset_2d.clone(), offset_3d=offset_3d.clone())
