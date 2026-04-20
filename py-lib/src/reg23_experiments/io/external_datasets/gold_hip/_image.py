@@ -1,12 +1,18 @@
 import importlib.util
 import logging
 from typing import Any
+import traitlets
+import math
+from pprint import pprint
 
 import SimpleITK as sitk
 import kornia.geometry
 import numpy as np
 import torch
 import pathlib
+
+from pandas.core.window import doc
+from tqdm import tqdm
 
 from reg23_experiments.data.structs import Error, SceneGeometry, Transformation
 
@@ -37,6 +43,71 @@ def load_ct() -> tuple[torch.Tensor, torch.Tensor] | Error:
     return data, spacing
 
 
+class TransConvParams(traitlets.HasTraits):
+    dim_sd_shift: int = traitlets.Integer()
+    sign_sd_shift: float = traitlets.Float()
+    do_permute_t: bool = traitlets.Bool()
+    sign_offset_2d: float = traitlets.Float()
+    sign_offset_3d: float = traitlets.Float()
+    flip_offset_3d2: bool = traitlets.Bool()
+    do_permute_rm: bool = traitlets.Bool()
+    sign_sd_shift2: float = traitlets.Float()
+
+    def __str__(self) -> str:
+        return ("TransConvParams(dim_sd_shift={}, sign_sd_shift={:.1f}, do_permute_t={}, sign_offset_2d={:.1f}, "
+                "sign_offset_3d={:.1f}, flip_offset_3d2={}, do_permute_rm={}, sign_sd_shift2={})").format(  #
+            self.dim_sd_shift, self.sign_sd_shift, self.do_permute_t, self.sign_offset_2d, self.sign_offset_3d,
+            self.flip_offset_3d2, self.do_permute_rm, self.sign_sd_shift2)
+
+
+class TransConvValues(traitlets.HasTraits):
+    rotation_matrix: torch.Tensor = traitlets.Instance(torch.Tensor)
+    p: torch.Tensor = traitlets.Instance(torch.Tensor)
+    translation: torch.Tensor = traitlets.Instance(torch.Tensor)
+    source_distance: float = traitlets.Float()
+    offset_2d: torch.Tensor = traitlets.Instance(torch.Tensor)
+    offset_3d: torch.Tensor = traitlets.Instance(torch.Tensor)
+
+
+def shift_by_source_distance(v: TransConvValues, p: TransConvParams) -> TransConvValues:
+    v.translation[p.dim_sd_shift] += p.sign_sd_shift * v.source_distance
+    return v
+
+
+def shift_by_source_distance2(v: TransConvValues, p: TransConvParams) -> TransConvValues:
+    v.translation[p.dim_sd_shift] += p.sign_sd_shift2 * v.source_distance
+    return v
+
+
+def permute_rot_mat(v: TransConvValues, p: TransConvParams) -> TransConvValues:
+    if p.do_permute_rm:
+        v.rotation_matrix = v.p @ v.rotation_matrix @ v.p
+    return v
+
+
+def permute_t(v: TransConvValues, p: TransConvParams) -> TransConvValues:
+    if p.do_permute_t:
+        v.translation = v.p @ v.translation
+    return v
+
+
+def shift_offset_2d(v: TransConvValues, p: TransConvParams) -> TransConvValues:
+    v.translation[0:2] += p.sign_offset_2d * v.offset_2d
+    return v
+
+
+def shift_offset_3d(v: TransConvValues, p: TransConvParams) -> TransConvValues:
+    if p.flip_offset_3d2:
+        v.offset_3d[2] *= -1.0
+    v.translation += p.sign_offset_3d * v.offset_3d
+    return v
+
+
+def invert_t(v: TransConvValues, p: TransConvParams) -> TransConvValues:
+    v.translation = -(v.rotation_matrix @ v.translation)
+    return v
+
+
 def load_xray(view_id, ct_volume_size: torch.Size, ct_volume_spacing: torch.Tensor) -> dict[str, Any] | Error:
     """
 
@@ -57,7 +128,6 @@ def load_xray(view_id, ct_volume_size: torch.Size, ct_volume_spacing: torch.Tens
     source_distance: float = 968.1612
 
     translation = torch.tensor(euler_3d_transform.GetTranslation())
-    translation[2] -= source_distance
     # translation *= -1.0
     rotation_matrix = torch.tensor(euler_3d_transform.GetMatrix()).view(3, 3)
 
@@ -69,64 +139,80 @@ def load_xray(view_id, ct_volume_size: torch.Size, ct_volume_spacing: torch.Tens
     offset_2d = 0.5 * spacing[0:2] * torch.tensor([data.size()[1], -data.size()[0]], dtype=torch.float64)
     offset_3d = 0.5 * torch.tensor(ct_volume_size, dtype=translation.dtype).flip(dims=(0,)) * ct_volume_spacing.to(
         device=translation.device)
-    offset_3d[2] *= -1.0
+    # offset_3d[2] *= -1.0
 
-    import itertools
-    # params:
-    dim_sd_shift: int = 0
-    sign_sd_shift: float = 1.0
-    do_permute_t: bool = True
-    sign_offset_2d: float = 1.0
-    sign_offset_3d: float = 1.0
-    do_offset_2d: bool = True
+    if True:
+        desired_t = torch.tensor(
+            [76.36, -83.54, 178.00])  # Transformation(rotation=torch.tensor([-0.172, -2.091, -2.197]),
+        # translation=torch.tensor([76.36, -83.54, 178.00]))
 
-    def shift_by_source_distance():
-        nonlocal translation, dim_sd_shift, sign_sd_shift, source_distance
-        translation[dim_sd_shift] += sign_sd_shift * source_distance
+        min_dist = torch.inf
+        min_params: list[tuple[float, TransConvParams, list[str]]] = []
+        epsilon = 0.3
 
-    def permute_rot_mat():
-        nonlocal rotation_matrix, p
-        rotation_matrix = p @ rotation_matrix @ p
+        import itertools
+        func_list = [shift_by_source_distance, shift_by_source_distance2, permute_rot_mat, permute_t, shift_offset_2d,
+                     shift_offset_3d, invert_t]
+        func_perms = itertools.permutations(func_list)
+        values = [[0, 1, 2],  #
+                  [-1.0, 1.0],  #
+                  [False, True],  #
+                  [-1.0, 0.0, 1.0],  #
+                  [-1.0, 0.0, 1.0],  #
+                  [False, True],  #
+                  [False, True],  #
+                  [-1.0, 0.0, 1.0],  #
+                  func_perms]
+        total = math.prod([len(it) for it in values[:-1]]) * math.perm(len(func_list), len(func_list))
+        for (dim_sd_shift, sign_sd_shift, do_permute_t, sign_offset_2d, sign_offset_3d, flip_offset_3d2, do_permute_rm,
+             sign_sd_shift2, funcs) in tqdm(itertools.product(*values), total=total):
+            params = TransConvParams(dim_sd_shift=dim_sd_shift, sign_sd_shift=sign_sd_shift, do_permute_t=do_permute_t,
+                                     sign_offset_2d=sign_offset_2d, sign_offset_3d=sign_offset_3d,
+                                     flip_offset_3d2=flip_offset_3d2, do_permute_rm=do_permute_rm,
+                                     sign_sd_shift2=sign_sd_shift2)
+            values = TransConvValues(rotation_matrix=rotation_matrix.clone(), p=p.clone(),
+                                     translation=translation.clone(), source_distance=source_distance,
+                                     offset_2d=offset_2d.clone(), offset_3d=offset_3d.clone())
+            for func in funcs:
+                values = func(values, params)
 
-    def permute_t():
-        nonlocal do_permute_t, translation, p
-        if do_permute_t:
-            translation = p @ translation
-
-    def shift_offset_2d():
-        nonlocal translation, offset_2d, sign_offset_2d, do_offset_2d
-        if do_offset_2d:
-            translation[0:2] += sign_offset_2d * offset_2d
-
-    def shift_offset_3d():
-        nonlocal translation, offset_3d, sign_offset_3d
-        translation += sign_offset_3d * offset_3d
-
-    def invert_t():
-        nonlocal translation, rotation_matrix
-        translation = -(rotation_matrix @ translation)
-
-    func_perms = itertools.permutations(
-        [shift_by_source_distance, permute_rot_mat, permute_t, shift_offset_2d, shift_offset_3d, invert_t])
-    for (_dim_sd_shift, _sign_sd_shift, _do_permute_t, _sign_offset_2d, _sign_offset_3d, _do_offset_2d,
-         funcs) in itertools.product(
+            # tr = values.translation
+            # print("R=({:.2f}, {:.2f}, {:.2f}), T=({:.1f}, {:.1f}, {:.1f})".format(  #
+            #     rt[0].item(), rt[1].item(), rt[2].item(), tr[0].item(), tr[1].item(), tr[2].item(),
             #
-            [0, 1, 2],  #
-            [-1.0, 1.0],  #
-            [False, True],  #
-            [-1.0, 1.0],  #
-            [-1.0, 1.0],  #
-            [False, True],  #
-            func_perms  #
-    ):
-        dim_sd_shift = _dim_sd_shift
-        sign_sd_shift = _sign_sd_shift
-        do_permute_t = _do_permute_t
-        sign_offset_2d = _sign_offset_2d
-        sign_offset_3d = _sign_offset_3d
-        do_offset_2d = _do_offset_2d
-        for func in funcs:
-            func()
+            # ))
+
+            dist = torch.linalg.vector_norm(values.translation - desired_t)
+            if dist < 5.0:
+                func_names = [f.__name__ for f in funcs]
+                min_dist = dist
+                min_params = [(dist.item(), params, func_names)]
+                break
+            if dist < min_dist + epsilon:
+                func_names = [f.__name__ for f in funcs]
+                if dist < min_dist - epsilon:
+                    min_params = [(dist.item(), params, func_names)]
+                    min_dist = dist
+                else:
+                    min_params.append((dist.item(), params, func_names))
+
+        print("Min dist = {:.3f}".format(min_dist))
+        print("Minimum params:\n{}".format(pprint([(d, ps.trait_values(), l) for d, ps, l in min_params])))
+
+        exit(0)
+
+    # translation[2] -= source_distance
+
+    translation[2] -= source_distance
+    translation[0:2] += offset_2d
+    rotation_matrix = p @ rotation_matrix @ p
+    #
+    translation = -(rotation_matrix @ translation)
+    #
+    offset_3d[2] *= -1.0
+    translation -= offset_3d
+    #
+    # translation = p @ translation
 
     rotation = kornia.geometry.rotation_matrix_to_axis_angle(rotation_matrix)
 
