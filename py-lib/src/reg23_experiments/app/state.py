@@ -1,6 +1,7 @@
 from typing import Literal
 
 import torch
+from timm.loss import asymmetric_loss
 from traitlets import Bool, Enum, HasTraits, Instance, Int, List, Unicode, Union
 
 from reg23_experiments.app.gui_settings import GUISettings
@@ -32,6 +33,8 @@ class AppState(HasTraits):
     button_open_ct_dir: bool = Bool(default_value=False)
 
     button_open_xray_file: bool = Bool(default_value=False)
+    button_unload_xray_file: bool = Bool(default_value=False)
+    unload_xray_choice: str | None = Unicode(allow_none=True, default_value=None)
 
     button_evaluate_once: bool = Bool(default_value=False)
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)

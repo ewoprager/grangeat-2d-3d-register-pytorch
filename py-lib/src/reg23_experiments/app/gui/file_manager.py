@@ -26,6 +26,7 @@ class FileManager:
         self._state.observe(self._button_open_ct_file, names=["button_open_ct_file"])
         self._state.observe(self._button_open_ct_dir, names=["button_open_ct_dir"])
         self._state.observe(self._button_open_xray_file, names=["button_open_xray_file"])
+        self._state.observe(self._button_unload_xray_file, names=["button_unload_xray_file"])
 
     def _button_open_ct_file(self, change) -> None:
         if not change.new:
@@ -92,3 +93,21 @@ class FileManager:
         # Append it to the parameter state
         self._state.parameters.xray_parameters = {**self._state.parameters.xray_parameters,
                                                   name: XrayParameters(file_path=file)}
+
+    def _button_unload_xray_file(self, change) -> None:
+        if not change.new:
+            return
+        self._state.button_unload_xray_file = False
+
+        if self._state.unload_xray_choice is None:
+            logger.warning(f"Failed to unload X-ray; no X-ray selected.")
+            return
+
+        if self._state.unload_xray_choice not in self._state.parameters.xray_parameters:
+            logger.warning(f"Failed to unload X-ray '{self._state.unload_xray_choice}' as it doesn't exist.")
+            return
+
+        # Remove from the parameters in the state
+        # ToDo: Make this actually remove nodes from the DADG
+        self._state.parameters.xray_parameters = {k: v for k, v in self._state.parameters.xray_parameters.items() if
+                                                  k != self._state.unload_xray_choice}

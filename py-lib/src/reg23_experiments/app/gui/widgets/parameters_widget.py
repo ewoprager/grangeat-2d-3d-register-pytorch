@@ -53,6 +53,18 @@ class ParametersWidget(widgets.Container):
             self._open_xray_file_button.changed.connect(self._on_open_xray_file)
             self.append(self._open_xray_file_button)
 
+            # X-ray file unloading
+            self._unload_xray_file_button = widgets.PushButton(label="Unload X-ray file: ")
+            self._unload_xray_file_button.changed.connect(self._on_unload_xray_file)
+            self._unload_xray_select = widgets.ComboBox(choices=self._get_xray_choices)
+            self._ctx.state.parameters.observe(self._xray_params_changed, names=["xray_parameters"])
+            self._unload_xray_select.changed.connect(self._on_unload_xray_choice_changed)
+            self._on_unload_xray_choice_changed()
+            self.append(widgets.Container(widgets=[  #
+                self._unload_xray_file_button,  #
+                self._unload_xray_select  #
+            ], layout="horizontal"))
+
         # Cropping
         self._crop_nonzero_drr_button = widgets.PushButton(label="Crop to nonzero drr")
         self._crop_nonzero_drr_button.changed.connect(self._on_crop_nonzero_drr)
@@ -75,6 +87,18 @@ class ParametersWidget(widgets.Container):
 
     def _on_open_xray_file(self, *args) -> None:
         self._ctx.state.button_open_xray_file = True
+
+    def _on_unload_xray_file(self, *args) -> None:
+        self._ctx.state.button_unload_xray_file = True
+
+    def _get_xray_choices(self, *args) -> list[str]:
+        return list(self._ctx.state.parameters.xray_parameters.keys())
+
+    def _xray_params_changed(self, change) -> None:
+        self._unload_xray_select.reset_choices()
+
+    def _on_unload_xray_choice_changed(self, *args) -> None:
+        self._ctx.state.unload_xray_choice = self._unload_xray_select.value
 
     def _on_crop_nonzero_drr(self, *args) -> None:
         for k, v in self._ctx.state.parameters.xray_parameters.items():
