@@ -30,7 +30,7 @@ class FileManager:
     def _button_open_ct_file(self, change) -> None:
         if not change.new:
             return
-        self._state.button_open_ct = False
+        self._state.button_open_ct_file = False
 
         from qtpy.QtWidgets import QFileDialog
         file, _ = QFileDialog.getOpenFileName(viewer().window._qt_window, "Open a CT volume file")
@@ -42,7 +42,7 @@ class FileManager:
     def _button_open_ct_dir(self, change) -> None:
         if not change.new:
             return
-        self._state.button_open_ct = False
+        self._state.button_open_ct_dir = False
 
         from qtpy.QtWidgets import QFileDialog
         dire = QFileDialog.getExistingDirectory(viewer().window._qt_window,
@@ -66,7 +66,7 @@ class FileManager:
 
         # Get the user to choose a file
         from qtpy.QtWidgets import QFileDialog
-        file, _ = QFileDialog.getOpenFileName(viewer().window._qt_window, "Open a CT volume file")
+        file, _ = QFileDialog.getOpenFileName(viewer().window._qt_window, "Open an X-ray image file")
         if not file:
             return
         logger.info(f"Opening X-ray image file '{file}'")
