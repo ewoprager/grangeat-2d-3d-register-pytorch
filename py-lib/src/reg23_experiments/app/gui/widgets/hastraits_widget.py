@@ -5,6 +5,7 @@ import traitlets
 from magicgui.widgets import CheckBox, ComboBox, Container, FloatSpinBox, Label, SpinBox, Widget
 
 from reg23_experiments.data.structs import Error
+from reg23_experiments.app.gui.viewer_singleton import viewer
 
 __all__ = ["HasTraitsWidget"]
 
@@ -166,4 +167,10 @@ class HasTraitsWidget(Container):
                      f"widget.")
 
     def _expand_toggled(self, *args) -> None:
-        self._inner_container.visible = self._expand_toggle.value
+        if self._expand_toggle.value:
+            if self._inner_container not in self:
+                self.append(self._inner_container)
+        elif self._inner_container in self:
+            self.remove(self._inner_container)
+
+        # self._inner_container.visible = self._expand_toggle.value
