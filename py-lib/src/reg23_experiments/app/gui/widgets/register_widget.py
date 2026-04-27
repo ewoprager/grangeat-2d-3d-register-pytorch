@@ -7,7 +7,6 @@ from magicgui import widgets
 import torch
 
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.app.gui.viewer_singleton import viewer
 from reg23_experiments.app.state import WorkerState
 from reg23_experiments.app.context import AppContext
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
@@ -143,10 +142,6 @@ class RegisterWidget(widgets.Container):
         ], layout="horizontal"))
 
         self._xray_selection_changed()
-
-        # add self as widget in dock to the right
-        viewer().window.add_dock_widget(self, name="Register", area="right", menu=viewer().window.window_menu,
-                                        tabify=True)
 
     @property
     def _xray_selected(self) -> bool:

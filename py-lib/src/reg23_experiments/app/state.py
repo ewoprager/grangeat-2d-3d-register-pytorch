@@ -6,6 +6,7 @@ from traitlets import Bool, Enum, HasTraits, Instance, Int, List, Unicode, Union
 
 from reg23_experiments.app.gui_settings import GUISettings
 from reg23_experiments.experiments.parameters import Parameters
+from reg23_experiments.experiments.drr_params import DRRParams
 
 __all__ = ["AppState", "WorkerState"]
 
@@ -50,3 +51,7 @@ class AppState(HasTraits):
     button_save_transformation: bool = Bool(default_value=False)
     button_load_transformation_of_name: str | None = Unicode(allow_none=True, default_value=None)
     button_delete_transformation_of_name: str | None = Unicode(allow_none=True, default_value=None)
+
+    drr_params: DRRParams = Instance(DRRParams, allow_none=False, default_value=DRRParams())
+    drr_name_input: str = Unicode(allow_none=False, default_value="drr")
+    button_create_drr: bool = Bool(default_value=False)

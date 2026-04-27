@@ -18,6 +18,7 @@ from reg23_experiments.app.gui.widgets.parameters_widget import ParametersWidget
 from reg23_experiments.app.gui.widgets.hastraits_widget import HasTraitsWidget
 from reg23_experiments.experiments.parameters import Parameters, PsoParameters, Context, XrayParameters
 from reg23_experiments.app.gui.widgets.register_widget import RegisterWidget
+from reg23_experiments.app.gui.widgets.drr_widget import DRRWidget
 from reg23_experiments.app.context import AppContext
 from reg23_experiments.app.worker_manager import WorkerManager
 from reg23_experiments.data.structs import Transformation
@@ -152,10 +153,14 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                                     tabify=True)
     viewer().window.add_dock_widget(HasTraitsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
                                     menu=viewer().window.window_menu)
-
     images_widget = ImagesWidget(app_context)
     viewer().window.add_dock_widget(images_widget, name="Images", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
+    register_widget = RegisterWidget(app_context)
+    viewer().window.add_dock_widget(register_widget, name="Register", area="right", menu=viewer().window.window_menu,
+                                    tabify=True)
+    drr_widget = DRRWidget(app_context)
+    viewer().window.add_dock_widget(drr_widget, name="DRR", area="right", menu=viewer().window.window_menu, tabify=True)
 
     # -----
     # The universal objective function
@@ -184,11 +189,6 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         #         return -p_sim_met.func_weighted(moving_image, fixed_image, mask)
         # return -p_sim_met.func(moving_image, fixed_image)
         return -ncc(fixed_image, moving_image)  # ToDo: configured sim metric
-
-    # -----
-    # GUI Modules
-    # -----
-    register_widget = RegisterWidget(app_context)
 
     # -----
     # Modules

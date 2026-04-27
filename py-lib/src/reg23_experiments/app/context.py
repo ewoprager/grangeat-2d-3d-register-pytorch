@@ -12,6 +12,7 @@ from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.io.serialize import deserialize_recursive, serialize_recursive
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.utils.data import observe_all_traits_recursively
+from reg23_experiments.app.gui.drr_manager import DRRManager
 
 __all__ = ["AppContext"]
 
@@ -39,6 +40,7 @@ class AppContext:
         self._dadg = dadg
         self._electrode_save_manager = ElectrodeSaveManager(electrode_save_directory)
         self._transformation_save_manager = TransformationSaveManager(transformation_save_directory)
+        self._drr_manager = DRRManager(self._state)
         self._cache = cache
 
         if self._cache:
