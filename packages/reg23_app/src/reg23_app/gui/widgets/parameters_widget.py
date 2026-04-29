@@ -28,7 +28,6 @@ class ParametersWidget(widgets.Container):
         # -----
         self.append(widgets.Label(value="Values:"))
         self._traitlets_widget = HasTraitsWidget(self._ctx.state.parameters)
-        self._traitlets_widget.expanded = True
         self.append(self._traitlets_widget)
 
         # -----

@@ -11,6 +11,7 @@ from reg23_app.gui.viewer_singleton import viewer
 from reg23_app.state import AppState
 from reg23_experiments.data.structs import Error
 from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr
+from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.ops.data_manager import ChildDADG, DirectedAcyclicDataGraph
 
 __all__ = ["DRRManager"]
@@ -68,7 +69,6 @@ class DRRManager:
         ds = pydicom.Dataset()
         ds.PatientName = f"DRR_{self._state.drr_name_input}"
         ds.PatientID = "00000"
-        # Set creation date/time
         now = datetime.now()
         ds.ContentDate = now.strftime("%Y%m%d")
         ds.ContentTime = now.strftime("%H%M%S.%f")  # long format with micro seconds
@@ -96,3 +96,6 @@ class DRRManager:
 
         logger.info(f"Saving DRR '{self._state.drr_name_input}' to '{path}'.")
         ds.save_as(path, enforce_file_format=True)
+
+        self._state.parameters.xray_parameters = {**self._state.parameters.xray_parameters,
+                                                  self._state.drr_name_input: XrayParameters(file_path=str(path))}
