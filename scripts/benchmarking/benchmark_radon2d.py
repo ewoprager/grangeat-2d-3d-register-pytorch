@@ -1,14 +1,11 @@
-from typing import Tuple
-import time
 import argparse
+import time
+from typing import Tuple
 
-import matplotlib.cm
 import matplotlib.pyplot as plt
-import torch
 import pydicom
-
-import reg23
-
+import reg23_core
+import torch
 from notification import logs_setup
 
 TaskSummaryRadon2D = Tuple[str, torch.Tensor]
@@ -81,9 +78,9 @@ def main(path: str):
     image, spacing = read_dicom(path, 2)
 
     outputs: list[TaskSummaryRadon2D] = [
-        run_task(task_radon2d, plot_task_radon2d, reg23.radon2d, "RT2 V1", "cpu", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, reg23.radon2d, "RT2 V1", "cuda", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, reg23.radon2d_v2, "RT2 V2", "cuda", image, spacing)]
+        run_task(task_radon2d, plot_task_radon2d, reg23_core.radon2d, "RT2 V1", "cpu", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, reg23_core.radon2d, "RT2 V1", "cuda", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, reg23_core.radon2d_v2, "RT2 V2", "cuda", image, spacing)]
 
     logger.info("Calculating discrepancies...")
     found: bool = False
@@ -93,8 +90,8 @@ def main(path: str):
         if discrepancy > 1e-2:
             found = True
             logger.info(
-                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(
-                    outputs[i][0], outputs[i + 1][0], 100. * discrepancy))
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
+                                                                                     100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")
@@ -113,8 +110,8 @@ def benchmark_dRadon2dDR(path: str):
     image, spacing = read_dicom(path, 1)
 
     outputs: list[TaskSummaryRadon2D] = [
-        run_task(task_radon2d, plot_task_radon2d, reg23.d_radon2d_dr, "dRT2-dR V1", "cpu", image, spacing),
-        run_task(task_radon2d, plot_task_radon2d, reg23.d_radon2d_dr, "dRT2-dR V1", "cuda", image, spacing)]
+        run_task(task_radon2d, plot_task_radon2d, reg23_core.d_radon2d_dr, "dRT2-dR V1", "cpu", image, spacing),
+        run_task(task_radon2d, plot_task_radon2d, reg23_core.d_radon2d_dr, "dRT2-dR V1", "cuda", image, spacing)]
 
     logger.info("Calculating discrepancies...")
     found: bool = False
@@ -124,8 +121,8 @@ def benchmark_dRadon2dDR(path: str):
         if discrepancy > 1e-2:
             found = True
             logger.info(
-                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(
-                    outputs[i][0], outputs[i + 1][0], 100. * discrepancy))
+                "\tAverage discrepancy between outputs {} and {} is {:.3f} %".format(outputs[i][0], outputs[i + 1][0],
+                                                                                     100. * discrepancy))
     if not found:
         logger.info("\tNo discrepancies found.")
     logger.info("Done.")
@@ -144,9 +141,8 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
-    parser.add_argument(
-        "xray_dicom_path", type=str, help="The path to the DICOM file containing X-ray data to "
-                                          "process.")
+    parser.add_argument("xray_dicom_path", type=str, help="The path to the DICOM file containing X-ray data to "
+                                                          "process.")
     args = parser.parse_args()
 
     main(path=args.xray_dicom_path)

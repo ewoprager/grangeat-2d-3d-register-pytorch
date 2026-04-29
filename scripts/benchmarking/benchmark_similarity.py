@@ -1,14 +1,12 @@
-from typing import Tuple, NamedTuple
 import time
+from typing import Tuple
 
-import torch
 import matplotlib.pyplot as plt
 import numpy as np
-
-import reg23
-
-from notification import logs_setup
+import reg23_core
 import registration.objective_function as objective_function
+import torch
+from notification import logs_setup
 
 TaskSummarySimilarity = Tuple[str, torch.Tensor, float]
 
@@ -71,15 +69,16 @@ def main():
 
     outputs: list[TaskSummarySimilarity] = [  #
         run_task(task_similarity, plot_task_similarity, objective_function.ncc, "ZNCC python", "cpu", a, b),  #
-        run_task(task_similarity, plot_task_similarity, reg23.normalised_cross_correlation, "ZNCC C++", "cpu", a, b),  #
+        run_task(task_similarity, plot_task_similarity, reg23_core.normalised_cross_correlation, "ZNCC C++", "cpu", a,
+                 b),  #
         run_task(task_similarity, plot_task_similarity, zncc_torch, "PyTorch corrcoef", "cpu", a, b)  #
     ]
 
     if torch.cuda.is_available():
         outputs += [  #
             run_task(task_similarity, plot_task_similarity, objective_function.ncc, "ZNCC python", "cuda", a, b),  #
-            run_task(task_similarity, plot_task_similarity, reg23.normalised_cross_correlation, "ZNCC CUDA", "cuda", a,
-                     b),  #
+            run_task(task_similarity, plot_task_similarity, reg23_core.normalised_cross_correlation, "ZNCC CUDA",
+                     "cuda", a, b),  #
             run_task(task_similarity, plot_task_similarity, zncc_torch, "PyTorch corrcoef", "cuda", a, b)  #
 
         ]
@@ -117,15 +116,15 @@ def main():
 
     outputs_autograd: list[TaskSummarySimilarity] = [  #
         run_task(task_autograd, plot_task_autograd, objective_function.ncc, "ZNCC python", "cpu", a, b),  #
-        run_task(task_autograd, plot_task_autograd, reg23.autograd.normalised_cross_correlation, "ZNCC C++", "cpu", a,
-                 b),  #
+        run_task(task_autograd, plot_task_autograd, reg23_core.autograd.normalised_cross_correlation, "ZNCC C++", "cpu",
+                 a, b),  #
         run_task(task_autograd, plot_task_autograd, zncc_torch, "PyTorch corrcoef", "cpu", a, b)  #
     ]
 
     if torch.cuda.is_available():
         outputs_autograd += [  #
             run_task(task_autograd, plot_task_autograd, objective_function.ncc, "ZNCC python", "cuda", a, b),  #
-            run_task(task_autograd, plot_task_autograd, reg23.autograd.normalised_cross_correlation, "ZNCC CUDA",
+            run_task(task_autograd, plot_task_autograd, reg23_core.autograd.normalised_cross_correlation, "ZNCC CUDA",
                      "cuda", a, b),  #
             run_task(task_autograd, plot_task_autograd, zncc_torch, "PyTorch corrcoef", "cuda", a, b)  #
 

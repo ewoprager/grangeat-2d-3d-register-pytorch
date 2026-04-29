@@ -1,18 +1,21 @@
-import copy
-from typing import Tuple
-import time
-import os
 import argparse
-import logging.config
+import copy
+import os
+import time
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
-import nrrd
+import reg23_core
 import scipy
+import torch
 from tqdm import tqdm
 
-import reg23
+from reg23_experiments.data.structs import *
+from reg23_experiments.ops import drr, geometry, grangeat, objective_function, script
+from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters
+from reg23_experiments.utils import logs_setup
+
 
 # from diffdrr.drr import DRR
 # from diffdrr.data import read
@@ -20,15 +23,6 @@ import reg23
 # from torchio.data.image import ScalarImage
 # from diffdrr.visualization import plot_drr
 # from diffdrr.pose import RigidTransform, make_matrix
-
-from reg23_experiments.utils import logs_setup
-from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters
-from reg23_experiments.data.structs import *
-from reg23_experiments.data.sinogram import *
-from reg23_experiments.ops import drr, script, objective_function
-from reg23_experiments.io import image, volume
-from reg23_experiments.ops import geometry, grangeat
-import reg23_experiments.registration.lib.plot as myplt
 
 
 def main(*, path: str | None, cache_directory: str, load_cached: bool, regenerate_drr: bool, save_to_cache: bool,

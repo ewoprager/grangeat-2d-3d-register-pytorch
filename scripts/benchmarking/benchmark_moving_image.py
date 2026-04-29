@@ -1,26 +1,18 @@
 import argparse
 import gc
-import os
-import time
-import pickle
 import math
+import os
+import pathlib
+import time
 from typing import Type
 
-import pathlib
-import torch
-import numpy as np
 import matplotlib.pyplot as plt
-
+import reg23_core
+import torch
 from notification import logs_setup
-from registration.lib import geometry
-from registration import data
-from registration.lib import sinogram
-from registration import pre_computed
+from registration import data, plot_data, pre_computed
+from registration.lib import geometry, grangeat, sinogram
 from registration.lib.structs import *
-from registration.lib import grangeat
-from registration import plot_data
-
-import reg23
 
 
 def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_path: str | pathlib.Path,
@@ -116,8 +108,8 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     torch.cuda.synchronize()
     tic = time.time()
     for i in range(repeats):
-        drr = reg23.project_drr(volume, volume_spacing, h_matrix_invs[i], scene_geometry.source_distance, output_width,
-                                output_height, torch.zeros(2, dtype=torch.float64), detector_spacing)
+        drr = reg23_core.project_drr(volume, volume_spacing, h_matrix_invs[i], scene_geometry.source_distance,
+                                     output_width, output_height, torch.zeros(2, dtype=torch.float64), detector_spacing)
     torch.cuda.synchronize()
     toc = time.time()
     drr_evaluation_time: float = (toc - tic) / float(repeats)
@@ -154,13 +146,13 @@ def run_benchmark(cache_directory: str, ct_path: str | pathlib.Path, xray_dicom_
     torch.cuda.synchronize()
     tic = time.time()
     for i in range(repeats):
-        mask = reg23.project_drr_cuboid_mask(torch.tensor(volume.size(), device=device).flip(dims=(0,)),
-                                             voxel_spacing=volume_spacing.to(device=device),
-                                             homography_matrix_inverse=h_matrix_invs[i].to(device=device),
-                                             source_distance=scene_geometry.source_distance, output_width=output_width,
-                                             output_height=output_height,
-                                             output_offset=torch.zeros(2, dtype=torch.float64, device=device),
-                                             detector_spacing=detector_spacing.to(device=device))
+        mask = reg23_core.project_drr_cuboid_mask(torch.tensor(volume.size(), device=device).flip(dims=(0,)),
+                                                  voxel_spacing=volume_spacing.to(device=device),
+                                                  homography_matrix_inverse=h_matrix_invs[i].to(device=device),
+                                                  source_distance=scene_geometry.source_distance,
+                                                  output_width=output_width, output_height=output_height,
+                                                  output_offset=torch.zeros(2, dtype=torch.float64, device=device),
+                                                  detector_spacing=detector_spacing.to(device=device))
     torch.cuda.synchronize()
     toc = time.time()
     mask_evaluation_time: float = (toc - tic) / float(repeats)

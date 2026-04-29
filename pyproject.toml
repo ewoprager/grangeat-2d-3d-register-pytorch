@@ -1,10 +1,9 @@
 [tool.uv.workspace]
-members = [
-    "py-lib",
-    "reg23", "py-lib/src/reg23_experiments/io/external_datasets/gold_hip/playground",
-]
+members = ["packages/*"]
 
 # these define which sources to install some particular packages from
 [tool.uv.sources]
 # reg23 is installed from the current workspace
-reg23 = { workspace = true }
+reg23-core = { workspace = true }
+reg23-experiments = { workspace = true }
+reg23-app = { workspace = true }

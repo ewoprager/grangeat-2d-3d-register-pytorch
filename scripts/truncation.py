@@ -1,30 +1,21 @@
 import argparse
 import os
-from typing import Callable, Tuple, NamedTuple
-
 import pathlib
+from typing import Callable, NamedTuple, Tuple
+
+import matplotlib.pyplot as plt
+import reg23_core
 import torch
 import torchviz
-import matplotlib.pyplot as plt
-from matplotlib import cm
-import numpy as np
-from sympy.abc import epsilon
+from reg23_experiments.ui.old.lib.structs import Cropping, HyperParameters, Target
 from tqdm import tqdm
 
-from reg23_experiments.utils import logs_setup
-from reg23_experiments.utils import pushover
-from reg23_experiments.data.structs import Transformation, SceneGeometry
-from reg23_experiments.ui.old.lib.structs import Target, Cropping, HyperParameters
-from reg23_experiments.data.sinogram import SinogramClassic
-from reg23_experiments.ops import geometry
-from reg23_experiments.ops import objective_function
 from reg23_experiments.data.plot_data import LandscapePlotData
-from reg23_experiments.io import image, volume
-from reg23_experiments.ops import drr
+from reg23_experiments.data.structs import SceneGeometry, Transformation
+from reg23_experiments.ops import drr, geometry, objective_function
 from reg23_experiments.ops.optimisation import local_search, mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
-
-import reg23
+from reg23_experiments.utils import logs_setup, pushover
 
 
 class RegistrationData:
@@ -253,7 +244,7 @@ class RegistrationData:
         if self.mask_transformation is None:
             fixed_image = self.cropped_target
         else:
-            mask = reg23.project_drr_cuboid_mask(  #
+            mask = reg23_core.project_drr_cuboid_mask(  #
                 volume_size=torch.tensor(self.ct_volume_at_current_truncation.size(), device=self.device).flip(
                     dims=(0,)),  #
                 voxel_spacing=self.ct_spacing.to(device=self.device),  #
@@ -536,7 +527,7 @@ class GradTask:
 
     def run(self):
         def obj_func(tensor: torch.Tensor) -> torch.Tensor:
-            return reg23.normalised_cross_correlation(
+            return reg23_core.normalised_cross_correlation(
                 *self.registration_data.images_drr(mapping_parameters_to_transformation(tensor)))
 
         self.registration_data.transformation_gt = Transformation.random_gaussian(

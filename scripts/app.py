@@ -13,21 +13,21 @@ from reg23_experiments.data.structs import Error
 from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 
-from reg23_experiments.app.gui.viewer_singleton import init_viewer, viewer
-from reg23_experiments.app.gui.widgets.parameters_widget import ParametersWidget
-from reg23_experiments.app.gui.widgets.hastraits_widget import HasTraitsWidget
-from reg23_experiments.experiments.parameters import Parameters, PsoParameters, Context, XrayParameters
-from reg23_experiments.app.gui.widgets.register_widget import RegisterWidget
-from reg23_experiments.app.gui.widgets.drr_widget import DRRWidget
-from reg23_experiments.app.context import AppContext
-from reg23_experiments.app.worker_manager import WorkerManager
+from reg23_app.gui.viewer_singleton import init_viewer, viewer
+from reg23_app.gui.widgets.parameters_widget import ParametersWidget
+from reg23_app.gui.widgets.hastraits_widget import HasTraitsWidget
+from reg23_experiments.experiments.parameters import Parameters, PsoParameters, Context
+from reg23_app.gui.widgets.register_widget import RegisterWidget
+from reg23_app.gui.widgets.drr_widget import DRRWidget
+from reg23_app.context import AppContext
+from reg23_app.worker_manager import WorkerManager
 from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.similarity_metric import ncc
-from reg23_experiments.app.transformation_saver import TransformationSaver
-from reg23_experiments.app.gui.widgets.images_widget import ImagesWidget
+from reg23_app.transformation_saver import TransformationSaver
+from reg23_app.gui.widgets.images_widget import ImagesWidget
 from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, apply_truncation
-from reg23_experiments.app.gui.file_manager import FileManager
-from reg23_experiments.app import initialisation
+from reg23_app.gui.file_manager import FileManager
+from reg23_app import initialisation
 
 
 # @args_from_dag(names_left=["transformation"])

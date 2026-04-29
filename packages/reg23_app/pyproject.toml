@@ -1,0 +1,50 @@
+[project]
+name = "reg23-app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "napari[pyqt6, optional]>=0.6.6; sys_platform == 'darwin'",
+    "napari[all]>=0.6.6; sys_platform != 'darwin'",
+    "magicgui>=0.10.0",
+    "pyqt6>=6.8.0",
+    "tqdm==4.67.1",
+    "pyvista==0.44.2",
+    "pytest>=8.3.4",
+    "pyyaml>=6.0.2",
+    "platformdirs>=4.3.6",
+    "scipy>=1.15.1",
+    "numpy>=2.2.1",
+]
+
+# sets of optional dependencies (distinct from the normal dependencies above) are defined
+[project.optional-dependencies]
+cpu = [
+    "reg23-core[cpu]", # the option in the square brackets is a group of optional dependencies
+    "reg23-experiments[cpu]", # the option in the square brackets is a group of optional dependencies
+]
+cuda = [
+    "reg23-core[cuda]",
+    "reg23-experiments[cuda]",
+]
+
+[tool.uv]
+# the project is re-built when any of the following globbed files are modified
+cache-keys = [
+    { file = "pyproject.toml" },
+]
+# conflicts between optional dependencies are stated so that uv doesn't try to install them by default and complain
+conflicts = [
+    [
+        { extra = "cpu" },
+        { extra = "cuda" },
+    ],
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
