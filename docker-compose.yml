@@ -1,25 +1,30 @@
 services:
-  app:
-    user: "${USER_UID}:${USER_GID}"
-    image: reg23
-
-    # === GPU access (equivalent to --gpus all) ===
-#    deploy:
-#      resources:
-#        reservations:
-#          devices:
-#            - capabilities: [ gpu ]
-
+  reg23-app-cpu:
+    platform: linux/amd64
+    image: eprager/reg23-app:cpu
+    build:
+      context: .
+      dockerfile: docker/DockerfileCPU
+    profiles: [ "cpu" ]
     environment:
       - DISPLAY=${DISPLAY}
-      - QT_QPA_PLATFORM=xcb
-      - XAUTHORITY=/tmp/.Xauthority
-
-    container_name: reg23-app
     volumes:
-      - .:/workdir
-      - /tmp/.X11-unix:/tmp/.X11-uni
-      - $HOME/.Xauthority:/tmp/.Xauthority:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    network_mode: host
 
-    stdin_open: true
-    tty: true
+  reg23-app-cuda:
+    image: eprager/reg23-app:cuda
+    build:
+      context: .
+      dockerfile: docker/DockerfileCUDA
+    profiles: [ "cuda" ]
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    network_mode: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [ gpu ]

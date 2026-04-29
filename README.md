@@ -16,6 +16,8 @@ developed as part of a PhD.
 
 # Repo contents
 
+ToDo: update this
+
 ```text
 .
 ├── reg23/                       # A Python package with custom C++/CUDA operators for PyTorch; see the README.md inside for more information.
@@ -88,6 +90,12 @@ uv sync --extra cuda
 ## Docker
 
 The Dockerfiles do not work yet.
+
+Docker images are built for linux/amd64.
+Linux ARM64 is not supported due to upstream binary dependencies (e.g. triangle).
+On Apple Silicon Macs, run the app natively for best results.
+
+cmd: `docker compose --profile cpu up --build`
 
 Docker dev notes:
 

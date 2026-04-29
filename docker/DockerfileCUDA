@@ -1,0 +1,30 @@
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    libgl1 \
+    libxkbcommon-x11-0 \
+    libxcb-cursor0 \
+    libxrender1 \
+    libxext6 \
+    libxinerama1 \
+    libsm6 \
+    libice6 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY pyproject.toml .
+RUN pip3 install --upgrade pip \
+    && pip3 install .[all] \
+    && pip3 install torch torchvision torchaudio \
+        --index-url https://download.pytorch.org/whl/cu121
+
+COPY src ./src
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

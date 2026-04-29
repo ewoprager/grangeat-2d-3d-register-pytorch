@@ -12,14 +12,20 @@ dependencies = [
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
 [project.optional-dependencies]
 cpu = [
-    "torch==2.7.1+cpu; sys_platform != 'darwin'",
+    # Linux x86_64
+    "torch==2.7.1+cpu; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "torchvision==0.22.1+cpu; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    # Linux ARM64
+    "torch==2.7.1; sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "torchvision==0.22.1; sys_platform == 'linux' and platform_machine == 'aarch64'",
+    # macOS ARM64
     "torch==2.7.1; sys_platform == 'darwin'",
-    "torchvision==0.22.1+cpu; sys_platform != 'darwin'",
     "torchvision==0.22.1; sys_platform == 'darwin'",
 ]
 cuda = [
-    "torch==2.7.1+cu126",
-    "torchvision==0.22.1+cu126",
+    # Not compatible with macOS; only x86_64 archiectures
+    "torch==2.7.1+cu126; platform_machine == 'x86_64'",
+    "torchvision==0.22.1+cu126; platform_machine == 'x86_64'",
 ]
 
 [build-system]
