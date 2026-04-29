@@ -39,7 +39,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
 #endif
 }
 
-TORCH_LIBRARY(reg23, m) {
+TORCH_LIBRARY(reg23_core, m) {
 	// Note that "float" in the schema corresponds to the C++ `double` type and the Python `float` type.
 	// Note that "int" in the schema corresponds to the C++ `int64_t` type and the Python `int` type.
 	m.def("radon2d(Tensor img, Tensor spacing, Tensor phis, Tensor rs, int sc) -> Tensor");
@@ -65,7 +65,7 @@ TORCH_LIBRARY(reg23, m) {
 		  "Tensor outOff, Tensor outSpacing) -> Tensor");
 }
 
-TORCH_LIBRARY_IMPL(reg23, CPU, m) {
+TORCH_LIBRARY_IMPL(reg23_core, CPU, m) {
 	m.impl("radon2d", &Radon2D_CPU);
 	m.impl("radon2d_v2", &Radon2D_CPU); // doesn't have its own cpu version
 	m.impl("d_radon2d_dr", &DRadon2DDR_CPU);
@@ -82,7 +82,7 @@ TORCH_LIBRARY_IMPL(reg23, CPU, m) {
 }
 
 #ifdef USE_CUDA
-TORCH_LIBRARY_IMPL(reg23, CUDA, m) {
+TORCH_LIBRARY_IMPL(reg23_core, CUDA, m) {
 	m.impl("radon2d", &Radon2D_CUDA);
 	m.impl("radon2d_v2", &Radon2D_CUDA_V2);
 	m.impl("d_radon2d_dr", &DRadon2DDR_CUDA);

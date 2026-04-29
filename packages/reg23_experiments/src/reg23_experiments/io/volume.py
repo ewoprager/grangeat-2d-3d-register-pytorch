@@ -5,12 +5,11 @@ import nibabel
 import nrrd
 import pydicom
 import torch
-from tqdm import tqdm
 import traitlets
+from tqdm import tqdm
 
 from reg23_experiments.data import sinogram
 from reg23_experiments.data.structs import LinearRange, SceneGeometry, Transformation
-from reg23_experiments.ops.volume import fit_line_3d, point_line_distance_3d
 
 __all__ = ["read_nrrd", "read_nii", "read_dicom_series_from_directory", "find_dicom_series_in_directory",
            "read_volume_file", "load_ct", "load_cached_ct"]
@@ -43,7 +42,7 @@ class CTSliceDICOM(traitlets.HasTraits):
     series_number: int | None = traitlets.Int(allow_none=True)
     rescale_slope: float = traitlets.Float(allow_none=False)
     rescale_intercept: float = traitlets.Float(allow_none=False)
-    rescale_type: str = traitlets.Unicode(allow_none=False)
+    rescale_type: str | None = traitlets.Unicode(allow_none=True)
     pixel_spacing: list[float] = traitlets.List(trait=traitlets.Float(allow_none=False), minlen=2, maxlen=2,
                                                 allow_none=False)
     image_position_patient: list[float] = traitlets.List(trait=traitlets.Float(allow_none=False), minlen=3, maxlen=3,
@@ -57,6 +56,7 @@ class CTSliceDICOM(traitlets.HasTraits):
 def read_ct_slice_dicom(path: pathlib.Path) -> CTSliceDICOM | None:
     file_dataset = pydicom.dcmread(path)
     if "PixelData" not in file_dataset:
+        logger.warning(f"Field 'PixelData' not present in DICOM file '{str(path)}'.")
         return None
     if "SeriesNumber" in file_dataset:
         series_number = int(file_dataset["SeriesNumber"].value)
@@ -65,18 +65,21 @@ def read_ct_slice_dicom(path: pathlib.Path) -> CTSliceDICOM | None:
     if "RescaleSlope" in file_dataset:
         rescale_slope = float(file_dataset["RescaleSlope"].value)
     else:
+        logger.warning(f"Field 'RescaleSlope' not present in DICOM file '{str(path)}'.")
         return None
     if "RescaleIntercept" in file_dataset:
         rescale_intercept = float(file_dataset["RescaleIntercept"].value)
     else:
+        logger.warning(f"Field 'RescaleIntercept' not present in DICOM file '{str(path)}'.")
         return None
     if "RescaleType" in file_dataset:
         rescale_type = str(file_dataset["RescaleType"].value)
     else:
-        return None
+        rescale_type = None
     if "PixelSpacing" in file_dataset:
         pixel_spacing = [float(e) for e in file_dataset["PixelSpacing"].value]
     else:
+        logger.warning(f"Field 'PixelSpacing' not present in DICOM file '{str(path)}'.")
         return None
     if "ImagePositionPatient" in file_dataset:
         image_position_patient = [float(e) for e in file_dataset["ImagePositionPatient"].value]

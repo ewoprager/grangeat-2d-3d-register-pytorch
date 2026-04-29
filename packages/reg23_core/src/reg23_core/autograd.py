@@ -31,7 +31,8 @@ def project_drr_backward(ctx, d_loss_d_drr):
     return None, None, d_loss_d_hmi, None, None, None, None, None, None
 
 
-torch.library.register_autograd("reg23::project_drr", project_drr_backward, setup_context=project_drr_setup_context)
+torch.library.register_autograd("reg23_core::project_drr", project_drr_backward,
+                                setup_context=project_drr_setup_context)
 
 
 def normalised_cross_correlation_setup_context(ctx, inputs, output):
@@ -61,5 +62,5 @@ def normalised_cross_correlation_backward(ctx, d_loss_d_zncc, *args):
     return d_loss_d_zncc * d_zncc_d_a, None
 
 
-torch.library.register_autograd("reg23::normalised_cross_correlation", normalised_cross_correlation_backward,
+torch.library.register_autograd("reg23_core::normalised_cross_correlation", normalised_cross_correlation_backward,
                                 setup_context=normalised_cross_correlation_setup_context)

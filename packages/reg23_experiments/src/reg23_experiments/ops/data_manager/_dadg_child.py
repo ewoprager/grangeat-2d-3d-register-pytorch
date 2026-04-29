@@ -399,13 +399,14 @@ class ChildDADG(ChildDirectedAcyclicDataGraph):
         if isinstance(err, Error):
             return Error(f"Failed to clean dirty node '{node_name}'; error running updater '{node.updater}': "
                          f"{err.description}.")
+        node = self.__get_node_ensure_exists(node_name)  # re-get the node as the object may have changed when set
         if node.dirty and not soft:
             return Error(f"Node '{node_name}' still dirty after running updater '{node.updater}'.")
         return None
 
     def __clean_graph(self, *, quit_on_first_failure: bool = False) -> None | Error:
         errors: list[str] = []
-        for node_name, node in self.__nodes.items():
+        for node_name, node in self._nodes.items():
             if node.lazily_evaluated:
                 continue
             err = self.__clean_node(node_name, soft=True)
@@ -435,7 +436,7 @@ class ChildDADG(ChildDirectedAcyclicDataGraph):
                 in_degrees[dependent] -= 1
                 if in_degrees[dependent] == 0:
                     q.append(dependent)
-        return count == len(self.__nodes)
+        return count == len(self._nodes)
 
     def __send_children_copies(self, node_name: str) -> None:
         for child in self.__children:

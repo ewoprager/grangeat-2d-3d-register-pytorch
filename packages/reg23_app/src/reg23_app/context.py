@@ -7,7 +7,6 @@ from reg23_app.gui.drr_manager import DRRManager
 from reg23_app.gui.input_manager import InputManager
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_app.state import AppState
-
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
 from reg23_experiments.experiments.parameters import Parameters
@@ -41,7 +40,7 @@ class AppContext:
         self._dadg = dadg
         self._electrode_save_manager = ElectrodeSaveManager(electrode_save_directory)
         self._transformation_save_manager = TransformationSaveManager(transformation_save_directory)
-        self._drr_manager = DRRManager(self._state)
+        self._drr_manager = DRRManager(self._state, self._dadg)
         self._cache = cache
 
         if self._cache:

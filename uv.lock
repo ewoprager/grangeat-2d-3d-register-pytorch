@@ -3084,11 +3084,9 @@ dependencies = [
 
 [package.optional-dependencies]
 cpu = [
-    { name = "reg23-core", extra = ["cpu"], marker = "(extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra == 'extra-10-reg23-core-cpu' and extra != 'extra-17-reg23-experiments-cpu' and extra == 'extra-9-reg23-app-cpu') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-17-reg23-experiments-cpu' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (extra == 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cpu' and extra != 'extra-17-reg23-experiments-cuda' and extra == 'extra-9-reg23-app-cpu') or (extra == 'extra-17-reg23-experiments-cpu' and extra != 'extra-17-reg23-experiments-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
     { name = "reg23-experiments", extra = ["cpu"], marker = "(extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-9-reg23-app-cpu') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-9-reg23-app-cpu') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
 ]
 cuda = [
-    { name = "reg23-core", extra = ["cuda"], marker = "(extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra == 'extra-10-reg23-core-cuda' and extra == 'extra-9-reg23-app-cuda') or (extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
     { name = "reg23-experiments", extra = ["cuda"], marker = "(extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cuda' and extra == 'extra-9-reg23-app-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cuda' and extra == 'extra-9-reg23-app-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
 ]
 
@@ -3103,8 +3101,6 @@ requires-dist = [
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "pyvista", specifier = "==0.44.2" },
     { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "reg23-core", extras = ["cpu"], marker = "extra == 'cpu'", editable = "packages/reg23_core" },
-    { name = "reg23-core", extras = ["cuda"], marker = "extra == 'cuda'", editable = "packages/reg23_core" },
     { name = "reg23-experiments", extras = ["cpu"], marker = "extra == 'cpu'", editable = "packages/reg23_experiments" },
     { name = "reg23-experiments", extras = ["cuda"], marker = "extra == 'cuda'", editable = "packages/reg23_experiments" },
     { name = "scipy", specifier = ">=1.15.1" },
@@ -3281,6 +3277,10 @@ dependencies = [
     { name = "tifffile" },
     { name = "timm" },
     { name = "tinycss2" },
+    { name = "torch", version = "2.7.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-10-reg23-core-cpu') or (extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+    { name = "torch", version = "2.7.1", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra != 'extra-10-reg23-core-cuda')" },
+    { name = "torch", version = "2.7.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-10-reg23-core-cpu') or (extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+    { name = "torch", version = "2.7.1+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "extra == 'extra-10-reg23-core-cuda' or (extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
     { name = "torchio" },
     { name = "torchviz" },
     { name = "tornado" },
@@ -3457,6 +3457,7 @@ requires-dist = [
     { name = "tifffile", specifier = ">=2025.10.16" },
     { name = "timm", specifier = "==1.0.14" },
     { name = "tinycss2", specifier = "==1.4.0" },
+    { name = "torch" },
     { name = "torchio", specifier = "==0.20.13" },
     { name = "torchviz", specifier = ">=0.0.3" },
     { name = "tornado", specifier = "==6.4.2" },
