@@ -73,27 +73,24 @@ def read_dicom(path: str) -> Tuple[torch.Tensor, torch.Tensor, SceneGeometry]:
     # else:
     #     logger.info("No RescaleIntercept available for X-ray.")
 
-    if "DistanceSourceToPatient" in dataset and "DistanceSourceToDetector" in dataset:
-        spacing_spread_ratio = float(
-            dataset["DistanceSourceToDetector"].value / dataset["DistanceSourceToPatient"].value)
-    else:
-        spacing_spread_ratio = 1.0
-        logger.warning("'DistanceSourceToPatient' and 'DistanceSourceToDetector' not both available, assuming spacing "
-                       "spread ratio of {:.4f} from CT volume to detector array.".format(spacing_spread_ratio))
+    # spacing_spread_ratio = None
+    # if "DistanceSourceToPatient" in dataset and "DistanceSourceToDetector" in dataset:
+    #     spacing_spread_ratio = float(
+    #         dataset["DistanceSourceToDetector"].value / dataset["DistanceSourceToPatient"].value)
 
-    if "PixelSpacing" in dataset:
-        spacing = torch.tensor([dataset["PixelSpacing"][1],  # column spacing (x-direction)
-                                dataset["PixelSpacing"][0]  # row spacing (y-direction)
-                                ])
-        logger.info("X-ray pixel spacing = [{:.4f} x {:.4f}] mm".format(spacing[0], spacing[1]))
-        scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToPatient"].value)
-        logger.info("X-ray distance source-to-patient = {:.4f} mm".format(scene_geometry.source_distance))
-    else:
+    if "ImagerPixelSpacing" in dataset:
         spacing = torch.tensor([dataset["ImagerPixelSpacing"][1],  # column spacing (x-direction)
                                 dataset["ImagerPixelSpacing"][0]  # row spacing (y-direction)
                                 ])
         logger.info("X-ray imager pixel spacing = [{:.4f} x {:.4f}] mm".format(spacing[0], spacing[1]))
         scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToDetector"].value)
         logger.info("X-ray distance source-to-detector = {:.4f} mm".format(scene_geometry.source_distance))
+    else:
+        spacing = torch.tensor([dataset["PixelSpacing"][1],  # column spacing (x-direction)
+                                dataset["PixelSpacing"][0]  # row spacing (y-direction)
+                                ])
+        logger.info("X-ray pixel spacing = [{:.4f} x {:.4f}] mm".format(spacing[0], spacing[1]))
+        scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToPatient"].value)
+        logger.info("X-ray distance source-to-patient = {:.4f} mm".format(scene_geometry.source_distance))
 
     return image, spacing, scene_geometry
