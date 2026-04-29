@@ -162,6 +162,7 @@ dependencies = [
     "pyarrow>=23.0.0",
     "nvidia-ml-py>=13.590.48",
     "tifffile>=2025.10.16",
+    "torch",
 ]
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined

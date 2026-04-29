@@ -21,11 +21,9 @@ dependencies = [
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
 [project.optional-dependencies]
 cpu = [
-    "reg23-core[cpu]", # the option in the square brackets is a group of optional dependencies
     "reg23-experiments[cpu]", # the option in the square brackets is a group of optional dependencies
 ]
 cuda = [
-    "reg23-core[cuda]",
     "reg23-experiments[cuda]",
 ]
 
