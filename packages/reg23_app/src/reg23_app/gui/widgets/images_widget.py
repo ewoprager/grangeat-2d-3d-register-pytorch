@@ -32,7 +32,8 @@ class ImagesWidget(widgets.Container):
             self.append(widgets.Label(value="CT volume:"))
             # Slice view
             show_slice_view_button = widgets.PushButton(label="Show slice view")
-            show_slice_view_button.changed.connect(lambda _:)
+            show_slice_view_button.changed.connect(lambda _: self._on_show_slice_view_layer())
+            self.append(show_slice_view_button)
 
         if self._ctx.state.parameters.xray_parameters:
             self.append(widgets.Label(value="X-ray images:"))

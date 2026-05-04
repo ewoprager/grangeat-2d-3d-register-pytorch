@@ -20,15 +20,16 @@ class _MovingImageLayerManager:
         self._ctx = ctx
         self._layer = weakref.ref(layer)
         self._namespace = namespace
-        self._ctx.dadg.set_evaluation_laziness(
-            "moving_image" if self._namespace is None else f"{self._namespace}__moving_image", lazily_evaluated=False)
+        #
+        self._moving_image_key = "moving_image" if self._namespace is None else f"{self._namespace}__moving_image"
+        self._current_transformation_key = "current_transformation" if self._namespace is None else (
+            f"{self._namespace}__current_transformation")
+        self._ctx.dadg.set_evaluation_laziness(self._moving_image_key, lazily_evaluated=False)
         self._layer().mouse_drag_callbacks.append(self._mouse_drag)
-        self._ctx.dadg.observe("moving_image" if self._namespace is None else f"{self._namespace}__moving_image",
-                               "moving_image_manager", self._observer_callback)
+        self._ctx.dadg.observe(self._moving_image_key, "moving_image_manager", self._observer_callback)
 
     def __del__(self):
-        self._ctx.dadg.set_evaluation_laziness(
-            "moving_image" if self._namespace is None else f"{self._namespace}__moving_image", lazily_evaluated=True)
+        self._ctx.dadg.set_evaluation_laziness(self._moving_image_key, lazily_evaluated=True)
 
     def _observer_callback(self, new_value: torch.Tensor) -> None:
         self._layer().data = new_value.cpu().numpy()
@@ -38,8 +39,8 @@ class _MovingImageLayerManager:
             # mouse down
             dragged = False
             drag_start = np.array([event.position[1], -event.position[0]])
-            rotation_start = scipy.spatial.transform.Rotation.from_rotvec(rotvec=self._ctx.dadg.get(
-                "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation").rotation.cpu().numpy())
+            rotation_start = scipy.spatial.transform.Rotation.from_rotvec(
+                rotvec=self._ctx.dadg.get(self._current_transformation_key).rotation.cpu().numpy())
             yield
             # on move
             while event.type == "mouse_move":
@@ -50,11 +51,9 @@ class _MovingImageLayerManager:
                 euler_angles = [delta[1], delta[0], 0.0]
                 rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
                 rot_combined = rot_euler * rotation_start
-                prev = self._ctx.dadg.get(
-                    "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation")
+                prev = self._ctx.dadg.get(self._current_transformation_key)
                 self._ctx.dadg.set(  #
-                    "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation",
-                    #
+                    self._current_transformation_key,  #
                     Transformation(  #
                         rotation=torch.tensor(  #
                             rot_combined.as_rotvec(),  #
@@ -77,9 +76,7 @@ class _MovingImageLayerManager:
             dragged = False
             drag_start = torch.tensor(event.position)
             # rotation_start = scipy.spatial.transform.Rotation.from_rotvec(transformation.rotation.cpu().numpy())
-            translation_start = self._ctx.dadg.get(
-                "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation").translation[
-                0:2].cpu()
+            translation_start = self._ctx.dadg.get(self._current_transformation_key).translation[0:2].cpu()
             yield
             # on move
             while event.type == "mouse_move":
@@ -87,13 +84,11 @@ class _MovingImageLayerManager:
 
                 delta = self._ctx.state.gui_settings.translation_sensitivity * (
                         torch.tensor(event.position) - drag_start).flip((0,))
-                prev = self._ctx.dadg.get(
-                    "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation")
+                prev = self._ctx.dadg.get(self._current_transformation_key)
                 tr = prev.translation
                 tr[0:2] = (translation_start + delta).to(device=tr.device)
                 self._ctx.dadg.set(  #
-                    "current_transformation" if self._namespace is None else f"{self._namespace}__current_transformation",
-                    #
+                    self._current_transformation_key,  #
                     Transformation(  #
                         translation=tr,  #
                         rotation=prev.rotation  #
@@ -114,7 +109,6 @@ def add_moving_image_layer(*, ctx: AppContext, namespace: str | None = None) -> 
     if moving_image_key in viewer().layers:
         logger.warning(f"Layer '{moving_image_key}' is already shown.")
         return None
-    ctx.dadg.set_evaluation_laziness(moving_image_key, lazily_evaluated=False)
     value = ctx.dadg.get(moving_image_key, soft=True)
     if isinstance(value, Error):
         raise RuntimeError(f"Error softly getting '{moving_image_key}' from DADG: {value.description}.")

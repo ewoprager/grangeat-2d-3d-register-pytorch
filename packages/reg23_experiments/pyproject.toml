@@ -47,6 +47,9 @@ cuda = [
 docs = [
     "pdoc>=16.0.0",
 ]
+dev = [
+    "scipy-stubs>=1.17.1.4",
+]
 
 [tool.uv]
 # the project is re-built when any of the following globbed files are modified
