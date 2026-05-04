@@ -47,6 +47,7 @@ class CTSliceDICOM(traitlets.HasTraits):
                                                 allow_none=False)
     image_position_patient: list[float] = traitlets.List(trait=traitlets.Float(allow_none=False), minlen=3, maxlen=3,
                                                          allow_none=True)
+    uid: str = traitlets.Unicode(allow_none=False)
 
     def convert_to_output_tensor(self, dtype: torch.dtype, **tensor_kwargs) -> torch.Tensor:
         return torch.tensor(pydicom.pixels.pixel_array(self.file_dataset), dtype=dtype,
@@ -57,6 +58,15 @@ def read_ct_slice_dicom(path: pathlib.Path) -> CTSliceDICOM | None:
     file_dataset = pydicom.dcmread(path)
     if "PixelData" not in file_dataset:
         logger.warning(f"Field 'PixelData' not present in DICOM file '{str(path)}'.")
+        return None
+    if "StudyInstanceUID" in file_dataset:
+        if "SeriesInstanceUID" in file_dataset:
+            uid = file_dataset["StudyInstanceUID"].value + "/" + file_dataset["SeriesInstanceUID"].value
+        else:
+            logger.warning(f"Field 'SeriesInstanceUID' not present in DICOM file '{str(path)}'.")
+            return None
+    else:
+        logger.warning(f"Field 'StudyInstanceUID' not present in DICOM file '{str(path)}'.")
         return None
     if "SeriesNumber" in file_dataset:
         series_number = int(file_dataset["SeriesNumber"].value)
@@ -88,7 +98,7 @@ def read_ct_slice_dicom(path: pathlib.Path) -> CTSliceDICOM | None:
     try:
         return CTSliceDICOM(file_dataset=file_dataset, series_number=series_number, rescale_slope=rescale_slope,
                             rescale_intercept=rescale_intercept, rescale_type=rescale_type, pixel_spacing=pixel_spacing,
-                            image_position_patient=image_position_patient)
+                            image_position_patient=image_position_patient, uid=uid)
     except traitlets.TraitError as err:
         logger.error(f"Failed to read CT slice at path '{str(path)}': {err}")
         return None
@@ -117,14 +127,14 @@ def extract_groupings(points: torch.Tensor, *, max_cluster_radius: float) -> lis
 
 def read_dicom_series_from_directory(path: pathlib.Path, *, series_number: int | None,
                                      check_for_dcm_suffix: bool = True) -> tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor]:
+    torch.Tensor, torch.Tensor, torch.Tensor, str]:
     """
 
     :param path:
     :param series_number:
     :param check_for_dcm_suffix:
-    :return: tuple of tensors: (the volume data of size (P,Q,R), the voxel spacing of size (3,) and the CS origin of
-    size (3,))
+    :return: tuple: (the volume data of size (P,Q,R), the voxel spacing of size (3,) the CS origin of size (3,),
+    the UID of the series)
     """
     all_slice_paths = [elem for elem in path.iterdir() if elem.is_file()]
     if check_for_dcm_suffix:
@@ -202,7 +212,7 @@ def read_dicom_series_from_directory(path: pathlib.Path, *, series_number: int |
                             ])
     volume = torch.stack([s.convert_to_output_tensor(torch.float32) for s in slices])
     # logger.info("{}".format(slices[0]["ImageOrientationPatient"]))
-    return volume, spacing, torch.tensor(slices[0].image_position_patient)
+    return volume, spacing, torch.tensor(slices[0].image_position_patient), slices[0].uid
 
 
 def find_dicom_series_in_directory(path: pathlib.Path, check_for_dcm_suffix: bool = True) -> list[tuple[int, int]]:
@@ -257,7 +267,7 @@ def read_volume_file(path: pathlib.Path) -> tuple[torch.Tensor, torch.Tensor]:
 
 
 def load_ct(path: pathlib.Path, *, hu_cutoff: float = -1000.0, mu_water: float = 0.02, series_number: int | None = None,
-            check_for_dcm_suffix_if_dir: bool = True) -> tuple[torch.Tensor, torch.Tensor]:
+            check_for_dcm_suffix_if_dir: bool = True) -> tuple[torch.Tensor, torch.Tensor, str]:
     """
     Load a CT volume from a file or directory
 
@@ -269,10 +279,11 @@ def load_ct(path: pathlib.Path, *, hu_cutoff: float = -1000.0, mu_water: float =
     :param series_number: [Optional] The number of the DICOM series to load if the given path is a directory
     containing multiple series. If not given, longest series will be returned.
     :return: (The CT volume, a tensor of size (3,): the spacing of the volume voxels in order XYZ)
-    :rtype: tuple[torch.Tensor, torch.Tensor], (the CT volume of attenuation coefficient, voxel spacing in [mm])
+    :rtype: a tuple of (the CT volume of attenuation coefficient, voxel spacing in [mm], series UID)
     """
     if path.is_file():
         data, spacing = read_volume_file(path)
+        uid = str(path)
     else:
         assert path.is_dir()
         series: list[tuple[int, int]] = find_dicom_series_in_directory(path, check_for_dcm_suffix_if_dir)
@@ -281,8 +292,8 @@ def load_ct(path: pathlib.Path, *, hu_cutoff: float = -1000.0, mu_water: float =
                 series_number, length = max(series, key=lambda t: t[1])
                 logger.info(f"Multiple series found in DICOM directory '{str(path)}'; loading the longest series, which"
                             f"has {length} slices.")
-        data, spacing, _ = read_dicom_series_from_directory(path, series_number=series_number,
-                                                            check_for_dcm_suffix=check_for_dcm_suffix_if_dir)
+        data, spacing, _, uid = read_dicom_series_from_directory(path, series_number=series_number,
+                                                                 check_for_dcm_suffix=check_for_dcm_suffix_if_dir)
     sizes = data.size()
     spacing = spacing
     logger.info("CT data volume size and spacing = [{} x {} x {}]; [{:.3f} x {:.3f} x {:.3f}] mm"
@@ -295,7 +306,7 @@ def load_ct(path: pathlib.Path, *, hu_cutoff: float = -1000.0, mu_water: float =
     image_hu[image_hu < hu_cutoff] = hu_cutoff
     image_mu = mu_water * (1.0 + image_hu / 1000.0)
 
-    return image_mu, spacing
+    return image_mu, spacing, uid
 
 
 def load_cached_ct(cache_directory: str, sinogram_hash: str) -> tuple[int, sinogram.Sinogram] | None:

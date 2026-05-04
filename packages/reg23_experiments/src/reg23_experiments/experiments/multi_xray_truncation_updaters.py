@@ -5,7 +5,6 @@ os.environ["QT_API"] = "PyQt6"
 
 import torch
 import pathlib
-import pydicom
 
 from reg23_experiments.io.volume import load_ct
 from reg23_experiments.io.image import load_cached_drr
@@ -18,13 +17,13 @@ from reg23_experiments.ops import geometry
 from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.io.image import read_dicom
 
-__all__ = ["load_untruncated_ct", "set_target_image", "apply_truncation", "project_drr", "read_xray_uid"]
+__all__ = ["load_untruncated_ct", "set_target_image", "apply_truncation", "project_drr"]
 
 
-@dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
+@dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing", "ct_series_uid"])
 def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
-    ct_volume, ct_spacing = load_ct(pathlib.Path(ct_path), check_for_dcm_suffix_if_dir=False)
+    ct_volume, ct_spacing, uid = load_ct(pathlib.Path(ct_path), check_for_dcm_suffix_if_dir=False)
     ct_volume = ct_volume.to(device=device, dtype=torch.float32)
     ct_spacing = ct_spacing.to(device=device)
 
@@ -33,10 +32,11 @@ def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: S
         ct_volume = ct_volume.permute(*ct_permutation)
         ct_spacing = ct_spacing[torch.tensor(ct_permutation)]
 
-    return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing}
+    return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing, "ct_series_uid": uid}
 
 
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt",
+                              "xray_sop_instance_uid"])
 def set_target_image(*, ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
                      new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
                      ap_transformation: Transformation, target_ap_distance: float, xray_path: str | None,
@@ -56,8 +56,11 @@ def set_target_image(*, ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_v
 
         fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
         del drr_spec
+        uid = None
     else:
-        image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(xray_path)
+        dicom = read_dicom(xray_path)
+        image_2d_full, fixed_image_spacing, scene_geometry, uid = dicom["image"], dicom["spacing"], dicom[
+            "scene_geometry"], dicom["uid"]
         transformation_ground_truth = None
 
     if target_flipped:
@@ -66,7 +69,8 @@ def set_target_image(*, ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_v
     image_2d_full = image_2d_full.to(device=device)
 
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
-            "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
+            "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth,
+            "xray_sop_instance_uid": uid}
 
 
 @dadg_updater(names_returned=["ct_volumes"])
@@ -101,12 +105,3 @@ def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, cur
                                                   scene_geometry=SceneGeometry(source_distance=source_distance,
                                                                                fixed_image_offset=fixed_image_offset),
                                                   output_size=fixed_image_size)}
-
-
-@dadg_updater(names_returned=["xray_sop_instance_uid"])
-def read_xray_uid(*, xray_path: str | None) -> dict[str, Any]:
-    if xray_path is None:
-        uid = None
-    else:
-        uid = str(pydicom.dcmread(xray_path)["SOPInstanceUID"].value)
-    return {"xray_sop_instance_uid": uid}

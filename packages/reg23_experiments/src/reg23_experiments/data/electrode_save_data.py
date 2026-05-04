@@ -6,6 +6,7 @@ import torch
 from reg23_experiments.data.structs import Error
 from reg23_experiments.io.save_data import Change, SaveData, SaveDataManager
 
+__all__ = ["ElectrodeSaveData", "ElectrodeSaveManager"]
 
 class ElectrodeSaveData(SaveData):
     """

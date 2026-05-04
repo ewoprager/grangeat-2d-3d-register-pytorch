@@ -58,7 +58,7 @@ def main(*, ct_path: pathlib.Path, landmark_path: pathlib.Path, output_path: pat
     assert ct_path.is_dir()
     series = volume.find_dicom_series_in_directory(ct_path, check_for_dcm_suffix=False)
     logger.info(series)
-    ct_volume, ct_spacing, image_position_patient = volume.read_dicom_series_from_directory(ct_path, series_number=
+    ct_volume, ct_spacing, image_position_patient, _ = volume.read_dicom_series_from_directory(ct_path, series_number=
     max(series, key=lambda t: t[1])[0], check_for_dcm_suffix=False)
 
     logger.info(

@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple
+from typing import TypedDict
 
 import pydicom
 import torch
@@ -8,11 +8,18 @@ from reg23_experiments.data import sinogram
 from reg23_experiments.data.structs import LinearRange, SceneGeometry, Transformation
 from reg23_experiments.io.helpers import deterministic_hash_string
 
-__all__ = ["read_dicom", "load_cached_drr"]
+__all__ = ["XrayDICOM", "read_dicom", "load_cached_drr"]
 
 logger = logging.getLogger(__name__)
 
 torch.serialization.add_safe_globals([sinogram.DrrSpec, LinearRange, SceneGeometry, Transformation])
+
+
+class XrayDICOM(TypedDict):
+    image: torch.Tensor
+    spacing: torch.Tensor
+    scene_geometry: SceneGeometry
+    uid: str
 
 
 def load_cached_drr(cache_directory: str, ct_volume_path: str):
@@ -31,7 +38,7 @@ def load_cached_drr(cache_directory: str, ct_volume_path: str):
     return detector_spacing, scene_geometry, drr_image, transformation_ground_truth
 
 
-def read_dicom(path: str) -> Tuple[torch.Tensor, torch.Tensor, SceneGeometry]:
+def read_dicom(path: str) -> XrayDICOM:
     logger.info("Loading X-ray DICOM file {}...".format(path))
     dataset = pydicom.dcmread(path)
     image = torch.tensor(pydicom.pixels.pixel_array(dataset), dtype=torch.float32)
@@ -93,4 +100,6 @@ def read_dicom(path: str) -> Tuple[torch.Tensor, torch.Tensor, SceneGeometry]:
         scene_geometry = SceneGeometry(source_distance=dataset["DistanceSourceToPatient"].value)
         logger.info("X-ray distance source-to-patient = {:.4f} mm".format(scene_geometry.source_distance))
 
-    return image, spacing, scene_geometry
+    uid = dataset["SOPInstanceUID"].value
+
+    return XrayDICOM(image=image, spacing=spacing, scene_geometry=scene_geometry, uid=uid)
