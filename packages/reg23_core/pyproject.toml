@@ -4,13 +4,14 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "matplotlib>=3.10.0",
-    "pytest>=8.4.1",
-]
+dependencies = []
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
 [project.optional-dependencies]
+dev = [
+    "matplotlib>=3.10.0",
+    "pytest>=8.4.1",
+]
 cpu = [
     # Linux x86_64
     "torch==2.7.1+cpu; sys_platform == 'linux' and platform_machine == 'x86_64'",

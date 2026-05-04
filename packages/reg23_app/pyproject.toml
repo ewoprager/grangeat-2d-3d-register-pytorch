@@ -10,13 +10,6 @@ dependencies = [
     "napari[all]>=0.6.6; sys_platform == 'linux' and platform_machine == 'x86_64'",
     "magicgui>=0.10.0",
     "pyqt6>=6.8.0",
-    "tqdm==4.67.1",
-    #    "pyvista==0.44.2",
-    "pytest>=8.3.4",
-    "pyyaml>=6.0.2",
-    "platformdirs>=4.3.6",
-    "scipy>=1.15.1",
-    "numpy>=2.2.1",
 ]
 
 # copilot suggests this? to install a binary that just runs it?
@@ -25,6 +18,9 @@ dependencies = [
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
 [project.optional-dependencies]
+dev = [
+    "reg23-experiments[dev]"
+]
 cpu = [
     "reg23-experiments[cpu]", # the option in the square brackets is a group of optional dependencies
 ]
