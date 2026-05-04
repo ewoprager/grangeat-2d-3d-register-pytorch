@@ -1,6 +1,8 @@
 import logging
 import os
 
+from packages.reg23_experiments.src.reg23_experiments.experiments.parameters import Parameters
+
 os.environ["QT_API"] = "PyQt6"
 
 from magicgui import widgets
@@ -9,6 +11,7 @@ from reg23_app.context import AppContext
 from reg23_app.gui.layers.moving_image_layer import add_moving_image_layer
 from reg23_app.gui.layers.fixed_image_layer import add_fixed_image_layer
 from reg23_app.gui.layers.electrode_layer import add_electrode_layer
+from reg23_app.gui.layers.slice_view_layer import add_slice_view_layer
 
 __all__ = ["ImagesWidget"]
 
@@ -25,25 +28,33 @@ class ImagesWidget(widgets.Container):
 
     def _on_xray_parameters_change(self, *args) -> None:
         self.clear()
-        for key, value in self._ctx.state.parameters.xray_parameters.items():
-            # Image 2d full
-            show_image_2d_full_button = widgets.PushButton(label="Show full 2d image")
-            show_image_2d_full_button.changed.connect(lambda _, name=key: self._on_show_image_2d_full_layer(name))
-            # Fixed image
-            show_fixed_image_button = widgets.PushButton(label="Show fixed image")
-            show_fixed_image_button.changed.connect(lambda _, name=key: self._on_show_fixed_image_layer(name))
-            # Moving image
-            show_moving_image_button = widgets.PushButton(label="Show moving image")
-            show_moving_image_button.changed.connect(lambda _, name=key: self._on_show_moving_image_layer(name))
-            # Electrode points
-            show_electrodes_button = widgets.PushButton(label="Show electrodes")
-            show_electrodes_button.changed.connect(lambda _, name=key: self._on_show_electrode_layer(name))
-            self.append(widgets.Container(widgets=[  #
-                show_image_2d_full_button,  #
-                show_fixed_image_button,  #
-                show_moving_image_button,  #
-                show_electrodes_button  #
-            ], label=key))
+        if self._ctx.state.parameters.ct_path is not None:
+            self.append(widgets.Label(value="CT volume:"))
+            # Slice view
+            show_slice_view_button = widgets.PushButton(label="Show slice view")
+            show_slice_view_button.changed.connect(lambda _:)
+
+        if self._ctx.state.parameters.xray_parameters:
+            self.append(widgets.Label(value="X-ray images:"))
+            for key, value in self._ctx.state.parameters.xray_parameters.items():
+                # Image 2d full
+                show_image_2d_full_button = widgets.PushButton(label="Show full 2d image")
+                show_image_2d_full_button.changed.connect(lambda _, name=key: self._on_show_image_2d_full_layer(name))
+                # Fixed image
+                show_fixed_image_button = widgets.PushButton(label="Show fixed image")
+                show_fixed_image_button.changed.connect(lambda _, name=key: self._on_show_fixed_image_layer(name))
+                # Moving image
+                show_moving_image_button = widgets.PushButton(label="Show moving image")
+                show_moving_image_button.changed.connect(lambda _, name=key: self._on_show_moving_image_layer(name))
+                # Electrode points
+                show_electrodes_button = widgets.PushButton(label="Show electrodes")
+                show_electrodes_button.changed.connect(lambda _, name=key: self._on_show_electrode_layer(name))
+                self.append(widgets.Container(widgets=[  #
+                    show_image_2d_full_button,  #
+                    show_fixed_image_button,  #
+                    show_moving_image_button,  #
+                    show_electrodes_button  #
+                ], label=key))
 
     def _on_show_image_2d_full_layer(self, xray_name: str) -> None:
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__image_2d_full")
@@ -56,3 +67,6 @@ class ImagesWidget(widgets.Container):
 
     def _on_show_electrode_layer(self, xray_name: str) -> None:
         add_electrode_layer(ctx=self._ctx, namespace=xray_name)
+
+    def _on_show_slice_view_layer(self) -> None:
+        add_slice_view_layer(ctx=self._ctx)

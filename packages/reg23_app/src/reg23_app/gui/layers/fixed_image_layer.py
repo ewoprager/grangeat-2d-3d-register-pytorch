@@ -3,9 +3,9 @@ import weakref
 
 import napari.layers
 import torch
+
 from reg23_app.context import AppContext
 from reg23_app.gui.viewer_singleton import viewer
-
 from reg23_experiments.data.structs import Error
 
 __all__ = ["add_fixed_image_layer"]
