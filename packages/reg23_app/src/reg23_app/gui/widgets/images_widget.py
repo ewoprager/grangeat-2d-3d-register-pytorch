@@ -12,6 +12,7 @@ from reg23_app.gui.layers.moving_image_layer import add_moving_image_layer
 from reg23_app.gui.layers.fixed_image_layer import add_fixed_image_layer
 from reg23_app.gui.layers.electrode_layer import add_electrode_layer
 from reg23_app.gui.layers.slice_view_layer import add_slice_view_layer
+from reg23_app.gui.layers.ct_fiducial_layer import add_ct_fiducial_layer
 
 __all__ = ["ImagesWidget"]
 
@@ -29,14 +30,19 @@ class ImagesWidget(widgets.Container):
     def _on_xray_parameters_change(self, *args) -> None:
         self.clear()
         if self._ctx.state.parameters.ct_path is not None:
-            self.append(widgets.Label(value="CT volume:"))
             # Slice view
             show_slice_view_button = widgets.PushButton(label="Show slice view")
             show_slice_view_button.changed.connect(lambda _: self._on_show_slice_view_layer())
-            self.append(show_slice_view_button)
+            # Fiducial points
+            show_fiducials_button = widgets.PushButton(label="Show fiducials")
+            show_fiducials_button.changed.connect(lambda _: self._on_show_fiducials_layer())
+            self.append(widgets.Container(widgets=[  #
+                show_slice_view_button,  #
+                show_fiducials_button,  #
+            ], label="CT volume:"))
 
         if self._ctx.state.parameters.xray_parameters:
-            self.append(widgets.Label(value="X-ray images:"))
+            self.append(widgets.Label(label="X-ray images:"))
             for key, value in self._ctx.state.parameters.xray_parameters.items():
                 # Image 2d full
                 show_image_2d_full_button = widgets.PushButton(label="Show full 2d image")
@@ -71,3 +77,6 @@ class ImagesWidget(widgets.Container):
 
     def _on_show_slice_view_layer(self) -> None:
         add_slice_view_layer(ctx=self._ctx)
+
+    def _on_show_fiducials_layer(self) -> None:
+        add_ct_fiducial_layer(ctx=self._ctx)

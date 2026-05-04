@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class _ElectrodeLayerManager:
-    def __init__(self, *, ctx: AppContext, layer: napari.layers.Layer, dadg_key: str, xray_uid_dadg_key: str):
+    def __init__(self, *, ctx: AppContext, layer: napari.layers.Points, dadg_key: str, xray_uid_dadg_key: str):
         self._ctx = ctx
         self._layer = weakref.ref(layer)
         self._dadg_key = dadg_key
@@ -41,8 +41,7 @@ def add_electrode_layer(*, ctx: AppContext, namespace: str | None = None) -> nap
     if tensor is None:
         layer = viewer().add_points(ndim=2, size=4.0, name=dadg_key)
     else:
-        layer = viewer().add_points(tensor.numpy(), size=4.0,
-                                    name="electrodes" if namespace is None else f"{namespace} electrodes")
+        layer = viewer().add_points(tensor.numpy(), size=4.0, name=dadg_key)
         layer.text.values = [f"{i}" for i in range(1, tensor.size()[0] + 1)]
     ctx.dadg.set(dadg_key, tensor)
     layer.my_plugin = _ElectrodeLayerManager(ctx=ctx, layer=layer, dadg_key=dadg_key, xray_uid_dadg_key=uid_dadg_key)

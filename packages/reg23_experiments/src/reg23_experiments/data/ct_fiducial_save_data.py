@@ -165,16 +165,16 @@ class CTFiducialSaveManager:
     def __init__(self, directory: pathlib.Path):
         self._save_data_manager = SaveDataManager[CTFiducialSaveData](cls=CTFiducialSaveData, save_directory=directory)
 
-    def get(self, uid: str) -> torch.Tensor | None:
+    def get(self, uid: str) -> tuple[list[str], torch.Tensor] | None:
         df: pd.DataFrame = self._save_data_manager.get_data()
         if df.empty:
             return None
         if not (df.index.get_level_values("ct_series_uid") == uid).any():
             return None
-        rows_for_this_xray = df.xs(uid, level="ct_series_uid")
-        if not len(rows_for_this_xray):
+        rows_for_this_ct = df.xs(uid, level="ct_series_uid")
+        if not len(rows_for_this_ct):
             return None
-        return torch.tensor(rows_for_this_xray.sort_index().values)
+        return list(rows_for_this_ct.index.get_level_values("name")), torch.tensor(rows_for_this_ct.values)
 
     def set(self, uid: str, tensor: torch.Tensor) -> None | Error:
         old: torch.Tensor | None = self.get(uid)
@@ -184,3 +184,6 @@ class CTFiducialSaveManager:
             if isinstance(err, Error):
                 return err
         return None
+
+    def move(self, *, uid: str, name: str, value: torch.Tensor) -> None | Error:
+        logger.info(f"Moving point '{name}' to position '{value}' in CT '{uid}'.")

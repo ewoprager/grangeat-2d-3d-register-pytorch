@@ -7,8 +7,10 @@ from reg23_app.gui.drr_manager import DRRManager
 from reg23_app.gui.input_manager import InputManager
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_app.state import AppState
+from reg23_experiments.data import ct_fiducial_save_data
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
+from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.io.serialize import deserialize_recursive, serialize_recursive
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
@@ -34,12 +36,13 @@ class AppContext:
 
     def __init__(self, *, parameters: Parameters, dadg: DirectedAcyclicDataGraph,
                  electrode_save_directory: pathlib.Path, transformation_save_directory: pathlib.Path,
-                 cache: bool = True):
+                 ct_fiducial_save_directory: pathlib.Path, cache: bool = True):
         self._input_manager = InputManager()
         self._state = AppState(parameters=parameters)
         self._dadg = dadg
         self._electrode_save_manager = ElectrodeSaveManager(electrode_save_directory)
         self._transformation_save_manager = TransformationSaveManager(transformation_save_directory)
+        self._ct_fiducial_save_manager = CTFiducialSaveManager(ct_fiducial_save_directory)
         self._drr_manager = DRRManager(self._state, self._dadg)
         self._cache = cache
 
@@ -75,6 +78,10 @@ class AppContext:
     @property
     def transformation_save_manager(self) -> TransformationSaveManager:
         return self._transformation_save_manager
+
+    @property
+    def ct_fiducial_save_manager(self) -> CTFiducialSaveManager:
+        return self._ct_fiducial_save_manager
 
     def _any_parameter_changed(self, change) -> None:
         if self._cache:

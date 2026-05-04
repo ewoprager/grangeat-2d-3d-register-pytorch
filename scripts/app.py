@@ -102,6 +102,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     app_context = AppContext(parameters=parameters, dadg=data_manager(),
                              transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
                              electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),
+                             ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),
                              cache=external_dataset is None)
 
     # -----
