@@ -5,6 +5,7 @@ from typing import Any
 from reg23_app.cache_manager import CacheManager
 from reg23_app.gui.drr_manager import DRRManager
 from reg23_app.gui.input_manager import InputManager
+from reg23_app.gui.fiducials_manager import FiducialsManager
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_app.state import AppState
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
@@ -12,7 +13,6 @@ from reg23_experiments.data.transformation_save_data import TransformationSaveMa
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
 from reg23_experiments.experiments.parameters import Parameters
-from reg23_app.gui.fiducials_manager import FiducialsManager
 from reg23_experiments.io.serialize import deserialize_recursive, serialize_recursive
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.utils.data import observe_all_traits_recursively
@@ -47,6 +47,7 @@ class AppContext:
         self._ct_fiducial_save_manager = CTFiducialSaveManager(ct_fiducial_save_directory)
         self._xray_fiducial_save_manager = XRayFiducialSaveManager(xray_fiducial_save_directory)
         self._drr_manager = DRRManager(self._state, self._dadg)
+        self._fiducials_manager = FiducialsManager(self._state, self._dadg)
         self._cache = cache
 
         if self._cache:

@@ -5,12 +5,8 @@ os.environ["QT_API"] = "PyQt6"
 
 from magicgui import widgets
 
-from reg23_experiments.data.structs import Transformation, Error
-from reg23_app.gui.widgets.hastraits_widget import HasTraitsWidget
+from reg23_experiments.data.structs import Error
 from reg23_app.context import AppContext
-from reg23_experiments.ops.data_manager import args_from_dadg
-from reg23_experiments.ops.geometry import get_crop_nonzero_drr, get_crop_full_depth_drr
-from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 
 __all__ = ["FiducialsWidget"]
 
@@ -38,7 +34,7 @@ class FiducialsWidget(widgets.Container):
         ], layout="horizontal", labels=False))
 
     def _on_register(self, *args) -> None:
-        self._ctx.state.button_register = True
+        self._ctx.state.button_fiducial_register = True
 
     def _get_xray_choices(self, *args) -> list[str]:
         return list(self._ctx.state.parameters.xray_parameters.keys())

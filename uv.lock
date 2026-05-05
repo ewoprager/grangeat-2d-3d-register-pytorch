@@ -2596,13 +2596,11 @@ dev = [
     { name = "pytest" },
     { name = "pyvista" },
     { name = "reg23-core", extra = ["dev"] },
+    { name = "scipy-stubs" },
     { name = "torchviz" },
 ]
 
 [package.dev-dependencies]
-dev = [
-    { name = "scipy-stubs" },
-]
 docs = [
     { name = "pdoc" },
 ]
@@ -2628,6 +2626,7 @@ requires-dist = [
     { name = "reg23-core", extras = ["cuda"], marker = "extra == 'cuda'", editable = "packages/reg23_core" },
     { name = "reg23-core", extras = ["dev"], marker = "extra == 'dev'", editable = "packages/reg23_core" },
     { name = "scipy", specifier = "==1.15.1" },
+    { name = "scipy-stubs", marker = "extra == 'dev'", specifier = ">=1.17.1.4" },
     { name = "send2trash", specifier = "==1.8.3" },
     { name = "setuptools", specifier = "==75.8.0" },
     { name = "simpleitk", specifier = "==2.4.1" },
@@ -2638,7 +2637,6 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "scipy-stubs", specifier = ">=1.17.1.4" }]
 docs = [{ name = "pdoc", specifier = ">=16.0.0" }]
 
 [[package]]

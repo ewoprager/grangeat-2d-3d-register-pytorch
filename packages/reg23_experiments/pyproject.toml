@@ -22,7 +22,6 @@ dependencies = [
     "traitlets==5.14.3",
     "nvidia-ml-py>=13.590.48",
     "tifffile>=2025.10.16",
-    #    "torch",
     "pyarrow>=24.0.0",
 ]
 
@@ -35,6 +34,7 @@ dev = [
     "pytest>=8.3.4",
     "torchviz>=0.0.3",
     "pyvista>=0.48.0",
+    "scipy-stubs>=1.17.1.4",
 ]
 cpu = [
     "reg23-core[cpu]", # the option in the square brackets is a group of optional dependencies
@@ -46,9 +46,6 @@ cuda = [
 [dependency-groups]
 docs = [
     "pdoc>=16.0.0",
-]
-dev = [
-    "scipy-stubs>=1.17.1.4",
 ]
 
 [tool.uv]

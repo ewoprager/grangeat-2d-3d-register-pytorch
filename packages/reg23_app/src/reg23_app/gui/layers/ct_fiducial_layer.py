@@ -41,11 +41,25 @@ class _CTFiducialLayerManager:
             return
         if event.action == ActionType.ADDED:
             # Get a name for the new point
-            name: str | None = None
-            while not name:
-                values = request_values(name={"annotation": str, "label": "Enter a unique name for the point"})
-                if values["name"]:
-                    name = values["name"]
+            message_prefix: str | None = None
+            message_suffix: str = "Enter a unique name for the point"
+            while True:
+                prompt = message_suffix
+                if message_prefix is not None:
+                    prompt = message_prefix + ";\n" + prompt
+                values = request_values(name={"annotation": str, "label": prompt})
+                if not values:
+                    message_prefix = "No values provided."
+                    continue
+                name = values["name"]
+                if not name:
+                    message_prefix = "No name provided."
+                    continue
+                if name in layer.features["label"].values.tolist():
+                    message_prefix = f"Name '{name}' already in use."
+                    continue
+                break
+
             new_features = layer.features.copy()
             new_features.iloc[-1]["label"] = name
             layer.features = new_features
@@ -57,6 +71,8 @@ class _CTFiducialLayerManager:
             )
             if isinstance(res, Error):
                 logger.error(f"Error saving fiducial point data: {res.description}")
+            self._ctx.dadg.set("ct_fiducial_points",
+                               (layer.features["label"].values.tolist(), torch.tensor(layer.data)))
         elif event.action == ActionType.CHANGED:
             for index in event.data_indices:
                 res = self._ctx.ct_fiducial_save_manager.set(  #
@@ -66,6 +82,8 @@ class _CTFiducialLayerManager:
                 )
                 if isinstance(res, Error):
                     logger.error(f"Error saving fiducial point data: {res.description}")
+            self._ctx.dadg.set("ct_fiducial_points",
+                               (layer.features["label"].values.tolist(), torch.tensor(layer.data)))
         elif event.action == ActionType.REMOVING:
             for index in event.data_indices:
                 res = self._ctx.ct_fiducial_save_manager.remove(  #
@@ -74,6 +92,10 @@ class _CTFiducialLayerManager:
                 )
                 if isinstance(res, Error):
                     logger.error(f"Error saving fiducial point data: {res.description}")
+        elif event.action == ActionType.REMOVED:
+            layer.features = layer.features.head(layer.data.shape[0])
+            self._ctx.dadg.set("ct_fiducial_points",
+                               (layer.features["label"].values.tolist(), torch.tensor(layer.data)))
 
 
 def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
@@ -104,6 +126,6 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
             features=pd.DataFrame([{"label": name} for name in names]),  #
             text={"string": "{label}", "size": 16}  #
         )
-    # ctx.dadg.set(dadg_key, tensor)
+    ctx.dadg.set("ct_fiducial_points", (layer.features["label"].values.tolist(), torch.tensor(layer.data)))
     layer.my_plugin = _CTFiducialLayerManager(ctx=ctx, layer=layer)
     return layer

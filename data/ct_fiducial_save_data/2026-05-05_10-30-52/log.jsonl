@@ -15,3 +15,7 @@
 {"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 104.0, "y": 17.288442009950344, "z": 149.7190217147011}
 {"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_left", "x": 190.0, "y": 105.6763449586197, "z": 86.06351362781523}
 {"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_right", "x": 176.0, "y": 116.21802145708511, "z": 174.8568656725796}
+{"action": "remove", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "1"}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "pop", "x": 104.0, "y": 65.52661365657906, "z": 150.118072872016}
+{"action": "remove", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "pop"}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 104.0, "y": 17.792188850951547, "z": 149.7190217147011}
