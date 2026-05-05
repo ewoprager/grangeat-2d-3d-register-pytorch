@@ -8,8 +8,6 @@ import napari.layers
 from napari.layers.base import ActionType
 from napari.utils.events import Event
 import torch
-import numpy as np
-import pprint
 
 from reg23_app.context import AppContext
 from reg23_app.gui.viewer_singleton import viewer
@@ -37,6 +35,9 @@ class _CTFiducialLayerManager:
             return
         if isinstance(uid := self._ctx.dadg.get("ct_series_uid"), Error):
             logger.error(f"Failed to get CT UID on fiducial layer change: {uid.description}")
+            return
+        if not isinstance(uid, str):
+            logger.error(f"Expected UID to be a str, got: '{uid}'.")
             return
         if event.action == ActionType.ADDED:
             # Get a name for the new point
@@ -79,14 +80,20 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
     if "ct_fiducial_points" in viewer().layers:
         logger.warning(f"Layer 'ct_fiducial_points' is already shown.")
         return None
-    res = ctx.ct_fiducial_save_manager.get(ctx.dadg.get("ct_series_uid"))
+    if isinstance(uid := ctx.dadg.get("ct_series_uid"), Error):
+        logger.error(f"Failed to get CT UID for fiducial layer.")
+        return None
+    if not isinstance(uid, str):
+        logger.error(f"Expected UID to be a str, got: '{uid}'.")
+        return None
+    res = ctx.ct_fiducial_save_manager.get(uid)
     if res is None:
         layer = viewer().add_points(  #
             ndim=3,  #
             size=8.0,  #
             name="ct_fiducial_points",  #
             features=pd.DataFrame(columns=["label"]),  #
-            text={"string": "{label}", "size": 16, "color": "white"}  #
+            text={"string": "{label}", "size": 16}  #
         )
     else:
         names, tensor = res
@@ -95,7 +102,7 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
             size=8.0,  #
             name="ct_fiducial_points",  #
             features=pd.DataFrame([{"label": name} for name in names]),  #
-            text={"string": "{label}", "size": 16, "color": "white"}  #
+            text={"string": "{label}", "size": 16}  #
         )
     # ctx.dadg.set(dadg_key, tensor)
     layer.my_plugin = _CTFiducialLayerManager(ctx=ctx, layer=layer)

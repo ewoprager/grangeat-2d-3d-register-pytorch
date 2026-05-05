@@ -1,5 +1,4 @@
 import pathlib
-import logging
 
 import pandas as pd
 import torch
@@ -8,8 +7,6 @@ from reg23_experiments.data.structs import Error
 from reg23_experiments.io.save_data import Change, SaveData, SaveDataManager
 
 __all__ = ["CTFiducialSaveData", "CTFiducialSaveManager"]
-
-logger = logging.getLogger(__name__)
 
 
 class CTFiducialSaveData(SaveData):
@@ -108,7 +105,7 @@ class CTFiducialSaveData(SaveData):
             if idx in self._contents.index:
                 self._contents = self._contents.drop(idx)
             else:
-                logger.warning(f"Tried to remove non-existent fiducial '{idx}' from save data.")
+                return Error(f"Tried to remove non-existent fiducial '{idx}' from save data.")
             return None
         else:
             return Error(f"Unrecognised action '{change["action"]}'.")

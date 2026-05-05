@@ -8,6 +8,7 @@ from reg23_experiments.io.save_data import Change, SaveData, SaveDataManager
 
 __all__ = ["ElectrodeSaveData", "ElectrodeSaveManager"]
 
+
 class ElectrodeSaveData(SaveData):
     """
     Stores a list 2D electrode positions as rows of a pd.DataFrame with the following index columns:
@@ -133,6 +134,7 @@ class ElectrodeSaveData(SaveData):
         self._contents.to_parquet(file)
 
 
+"""
 def compute_changes(uid: str, old_data: torch.Tensor, new_data: torch.Tensor, tol: float = 1e-8) -> list[Change]:
     uid = str(uid)
     ret: list[Change] = []
@@ -166,6 +168,7 @@ def compute_changes(uid: str, old_data: torch.Tensor, new_data: torch.Tensor, to
                 "y": new_data[i, 1].item(),  #
             })
     return ret
+"""
 
 
 class ElectrodeSaveManager:
@@ -183,6 +186,47 @@ class ElectrodeSaveManager:
             return None
         return torch.tensor(rows_for_this_xray.sort_index().values)
 
+    def add(self, uid: str, tensor: torch.Tensor) -> None | Error:
+        change = {  #
+            "action": "add",  #
+            "xray_sop_instance_uid": uid,  #
+            "x": tensor[0].item(),  #
+            "y": tensor[1].item(),  #
+        }
+        return self._save_data_manager.apply_change(change)
+
+    def move(self, uid: str, index: int, tensor: torch.Tensor) -> None | Error:
+        change = {  #
+            "action": "move",  #
+            "xray_sop_instance_uid": uid,  #
+            "index": index,  #
+            "x": tensor[0].item(),  #
+            "y": tensor[1].item(),  #
+        }
+        return self._save_data_manager.apply_change(change)
+
+    def remove(self, uid: str, index: int) -> None | Error:
+        if (tensor := self.get(uid)) is None:
+            return None
+        for i in range(index, tensor.size()[0] - 1):
+            change = {  #
+                "action": "move",  #
+                "xray_sop_instance_uid": uid,  #
+                "index": i,  #
+                "x": tensor[i + 1, 0].item(),  #
+                "y": tensor[i + 1, 1].item(),  #
+            }
+            err = self._save_data_manager.apply_change(change)
+            if isinstance(err, Error):
+                return err
+        change = {  #
+            "action": "remove",  #
+            "xray_sop_instance_uid": uid,  #
+        }
+        return self._save_data_manager.apply_change(change)
+
+
+"""
     def set(self, uid: str, tensor: torch.Tensor) -> None | Error:
         old: torch.Tensor | None = self.get(uid)
         changes = compute_changes(uid, torch.empty((0, 2)) if old is None else old, tensor)
@@ -191,3 +235,4 @@ class ElectrodeSaveManager:
             if isinstance(err, Error):
                 return err
         return None
+"""

@@ -1,8 +1,6 @@
 import logging
 import os
 
-from packages.reg23_experiments.src.reg23_experiments.experiments.parameters import Parameters
-
 os.environ["QT_API"] = "PyQt6"
 
 from magicgui import widgets
