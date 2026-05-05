@@ -11,7 +11,7 @@ from reg23_app.context import AppContext
 from reg23_app.gui.layers.moving_image_layer import add_moving_image_layer
 from reg23_app.gui.layers.fixed_image_layer import add_fixed_image_layer
 from reg23_app.gui.layers.electrode_layer import add_electrode_layer
-from reg23_app.gui.layers.slice_view_layer import add_slice_view_layer
+from reg23_app.gui.layers.ct_layer import add_ct_layer
 from reg23_app.gui.layers.ct_fiducial_layer import add_ct_fiducial_layer
 
 __all__ = ["ImagesWidget"]
@@ -31,13 +31,13 @@ class ImagesWidget(widgets.Container):
         self.clear()
         if self._ctx.state.parameters.ct_path is not None:
             # Slice view
-            show_slice_view_button = widgets.PushButton(label="Show slice view")
-            show_slice_view_button.changed.connect(lambda _: self._on_show_slice_view_layer())
+            show_ct_button = widgets.PushButton(label="Show volume")
+            show_ct_button.changed.connect(lambda _: self._on_show_ct_layer())
             # Fiducial points
             show_fiducials_button = widgets.PushButton(label="Show fiducials")
             show_fiducials_button.changed.connect(lambda _: self._on_show_fiducials_layer())
             self.append(widgets.Container(widgets=[  #
-                show_slice_view_button,  #
+                show_ct_button,  #
                 show_fiducials_button,  #
             ], label="CT volume:"))
 
@@ -75,8 +75,8 @@ class ImagesWidget(widgets.Container):
     def _on_show_electrode_layer(self, xray_name: str) -> None:
         add_electrode_layer(ctx=self._ctx, namespace=xray_name)
 
-    def _on_show_slice_view_layer(self) -> None:
-        add_slice_view_layer(ctx=self._ctx)
+    def _on_show_ct_layer(self) -> None:
+        add_ct_layer(ctx=self._ctx)
 
     def _on_show_fiducials_layer(self) -> None:
         add_ct_fiducial_layer(ctx=self._ctx)

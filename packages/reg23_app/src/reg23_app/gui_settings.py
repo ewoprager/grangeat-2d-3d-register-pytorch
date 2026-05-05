@@ -9,4 +9,3 @@ class GUISettings(HasTraits):
     """
     rotation_sensitivity: float = Float(min=0.0005, max=0.05, default_value=0.002).tag(ui=True)
     translation_sensitivity: float = Float(min=0.005, max=0.5, default_value=0.06).tag(ui=True)
-    slice_index_sensitivity: float = Float(min=0.2, max=10.0, default_value=1.0).tag(ui=True)

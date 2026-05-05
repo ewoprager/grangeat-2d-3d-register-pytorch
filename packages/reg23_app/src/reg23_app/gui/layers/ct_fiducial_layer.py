@@ -31,43 +31,48 @@ class _CTFiducialLayerManager:
             logger.error("Failed to find layer for initialisation of CTFiducialLayerManager.")
 
     def _on_layer_change(self, event: Event):
+        if event.type != "data":
+            return
         if (layer := self._layer()) is None:
             return
-        if event.type == "data":
-            if False:
-                logger.info(f"action value: {event.action.value}")
-                logger.info(f"data indices: {event.data_indices}")
-                logger.info(f"index: {event.index}")
-                logger.info(f"vertex indices: {event.vertex_indices}")
-                return
-            if event.action == ActionType.ADDED:
-                name = None
-                while not name:
-                    values = request_values(name={"annotation": str, "label": "Enter a unique name for the point"})
-                    if values["name"]:
-                        name = values["name"]
-                new_features = layer.features.copy()
-                new_features.iloc[-1]["label"] = name
-                layer.features = new_features
-            elif event.action == ActionType.CHANGED:
-                for index in event.data_indices:
-                    self._ctx.ct_fiducial_save_manager.move(uid=self._ctx.dadg.get("ct_series_uid"),
-                                                            name=layer.features.at[index, "label"],
-                                                            value=torch.tensor(event.value[index]))
-
-            #
-
-            # tensor = torch.tensor(self._layer().data)
-
-            # self._layer().text.values = [f"{i}" for i in range(1, tensor.size()[0] + 1)]
-
-            # self._ctx.dadg.set(self._dadg_key, tensor)
-
-            # res = self._ctx.ct_fiducials_save_manager.set(self._ctx.dadg.get(self._xray_uid_dadg_key), tensor)
-
-            # if isinstance(res, Error):
-
-            #     logger.error(f"Error saving electrode point data: {res.description}")
+        if isinstance(uid := self._ctx.dadg.get("ct_series_uid"), Error):
+            logger.error(f"Failed to get CT UID on fiducial layer change: {uid.description}")
+            return
+        if event.action == ActionType.ADDED:
+            # Get a name for the new point
+            name: str | None = None
+            while not name:
+                values = request_values(name={"annotation": str, "label": "Enter a unique name for the point"})
+                if values["name"]:
+                    name = values["name"]
+            new_features = layer.features.copy()
+            new_features.iloc[-1]["label"] = name
+            layer.features = new_features
+            # Save the data
+            res = self._ctx.ct_fiducial_save_manager.set(  #
+                uid=uid,  #
+                name=name,  #
+                value=torch.tensor(event.value[-1])  #
+            )
+            if isinstance(res, Error):
+                logger.error(f"Error saving fiducial point data: {res.description}")
+        elif event.action == ActionType.CHANGED:
+            for index in event.data_indices:
+                res = self._ctx.ct_fiducial_save_manager.set(  #
+                    uid=uid,  #
+                    name=layer.features.at[int(index), "label"],  #
+                    value=torch.tensor(event.value[int(index)])  #
+                )
+                if isinstance(res, Error):
+                    logger.error(f"Error saving fiducial point data: {res.description}")
+        elif event.action == ActionType.REMOVING:
+            for index in event.data_indices:
+                res = self._ctx.ct_fiducial_save_manager.remove(  #
+                    uid=uid,  #
+                    name=layer.features.at[int(index), "label"]  #
+                )
+                if isinstance(res, Error):
+                    logger.error(f"Error saving fiducial point data: {res.description}")
 
 
 def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
@@ -77,7 +82,7 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
     res = ctx.ct_fiducial_save_manager.get(ctx.dadg.get("ct_series_uid"))
     if res is None:
         layer = viewer().add_points(  #
-            ndim=2,  #
+            ndim=3,  #
             size=8.0,  #
             name="ct_fiducial_points",  #
             features=pd.DataFrame(columns=["label"]),  #
