@@ -5,7 +5,8 @@ import pandas as pd
 import torch
 
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.io.save_data import Change, JsonSerializable, SaveData, SaveDataManager
+from reg23_experiments.io.save_data import Change, SaveData, SaveDataManager
+from reg23_experiments.io.serialize import JsonSerializable
 
 __all__ = ["TransformationSaveData", "TransformationSaveManager"]
 
@@ -74,16 +75,9 @@ class TransformationSaveData(SaveData):
                 if key not in change:
                     return Error(f"Key '{key}' not found in 'set' action change.")
                 new_values[key] = change[key]
-            # check if the idx exists in the dataframe
+            # update / insert into the dataframe
             idx = (uid, name)
-            if idx in self._contents.index:
-                # set the column values for the existing row
-                self._contents.loc[idx, new_values.keys()] = new_values.values()
-            else:
-                # construct and append a new row
-                new_row = pd.DataFrame([new_values],
-                                       index=pd.MultiIndex.from_tuples([idx], names=self._contents.index.names))
-                self._contents = pd.concat([self._contents, new_row])
+            self._contents.loc[idx, new_values.keys()] = new_values.values()
             return None
         elif change["action"] == "remove":
             # get the uid
