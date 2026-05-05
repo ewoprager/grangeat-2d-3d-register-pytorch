@@ -45,7 +45,7 @@ class ParametersWidget(widgets.Container):
             self.append(widgets.Container(widgets=[  #
                 self._open_ct_file_button,  #
                 self._open_ct_dir_button  #
-            ], layout="horizontal"))
+            ], layout="horizontal", labels=False))
 
             # X-ray file opening
             self._open_xray_file_button = widgets.PushButton(label="Open X-ray file")
@@ -62,7 +62,7 @@ class ParametersWidget(widgets.Container):
             self.append(widgets.Container(widgets=[  #
                 self._unload_xray_file_button,  #
                 self._unload_xray_select  #
-            ], layout="horizontal"))
+            ], layout="horizontal", labels=False))
 
         # Cropping
         self._crop_nonzero_drr_button = widgets.PushButton(label="Crop to nonzero drr")

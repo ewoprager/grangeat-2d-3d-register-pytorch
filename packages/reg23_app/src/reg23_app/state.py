@@ -54,3 +54,6 @@ class AppState(HasTraits):
     drr_params: DRRParams = Instance(DRRParams, allow_none=False, default_value=DRRParams())
     drr_name_input: str = Unicode(allow_none=False, default_value="drr")
     button_create_drr: bool = Bool(default_value=False)
+
+    button_fiducial_register: bool = Bool(default_value=False)
+    register_fiducial_xray_choice: str | None = Unicode(allow_none=True, default_value=None)

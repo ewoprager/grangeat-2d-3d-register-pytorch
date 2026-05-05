@@ -25,6 +25,7 @@ from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.similarity_metric import ncc
 from reg23_app.transformation_saver import TransformationSaver
 from reg23_app.gui.widgets.images_widget import ImagesWidget
+from reg23_app.gui.widgets.fiducials_widget import FiducialsWidget
 from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, apply_truncation
 from reg23_app.gui.file_manager import FileManager
 from reg23_app import initialisation
@@ -163,6 +164,9 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                                     tabify=True)
     drr_widget = DRRWidget(app_context)
     viewer().window.add_dock_widget(drr_widget, name="DRR", area="right", menu=viewer().window.window_menu, tabify=True)
+    fiducials_widget = FiducialsWidget(app_context)
+    viewer().window.add_dock_widget(fiducials_widget, name="Fiducials", area="right", menu=viewer().window.window_menu,
+                                    tabify=True)
 
     # -----
     # The universal objective function

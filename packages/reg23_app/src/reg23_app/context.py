@@ -12,6 +12,7 @@ from reg23_experiments.data.transformation_save_data import TransformationSaveMa
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
 from reg23_experiments.experiments.parameters import Parameters
+from reg23_app.gui.fiducials_manager import FiducialsManager
 from reg23_experiments.io.serialize import deserialize_recursive, serialize_recursive
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.utils.data import observe_all_traits_recursively
