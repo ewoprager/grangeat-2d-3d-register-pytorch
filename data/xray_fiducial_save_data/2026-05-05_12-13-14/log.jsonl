@@ -6,3 +6,10 @@
 {"action": "remove", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_left"}
 {"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_left", "x": 28.640583742797844, "y": 312.49324099287884}
 {"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_right", "x": -1.8755269537547292, "y": 648.1704586549624}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_left", "x": 6.947492360443562, "y": 63.35137329857562}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_right", "x": 21.10201486660634, "y": 324.4868260550944}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_right", "x": 2.120567275873384, "y": 130.67625591813646}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "back_left", "x": 84.32899833601135, "y": 67.06911561483702}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "back_right", "x": 96.1586296629842, "y": 171.84965402100863}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "back_right", "x": 96.1586296629842, "y": 160.97246067457704}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "back_left", "x": 85.03075274545856, "y": 64.26209797704823}

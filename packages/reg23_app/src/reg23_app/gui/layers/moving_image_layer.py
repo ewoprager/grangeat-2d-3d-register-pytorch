@@ -38,7 +38,7 @@ class _MovingImageLayerManager:
         if event.button == 1 and self._ctx.input_manager.ctrl_pressed:  # Ctrl-left click drag
             # mouse down
             dragged = False
-            drag_start = np.array([event.position[1], -event.position[0]])
+            drag_start = np.array([event.position[-1], -event.position[-2]])
             rotation_start = scipy.spatial.transform.Rotation.from_rotvec(
                 rotvec=self._ctx.dadg.get(self._current_transformation_key).rotation.cpu().numpy())
             yield
@@ -47,7 +47,7 @@ class _MovingImageLayerManager:
                 dragged = True
 
                 delta = self._ctx.state.gui_settings.rotation_sensitivity * (
-                        np.array([event.position[1], -event.position[0]]) - drag_start)
+                        np.array([event.position[-1], -event.position[-2]]) - drag_start)
                 euler_angles = [delta[1], delta[0], 0.0]
                 rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
                 rot_combined = rot_euler * rotation_start
@@ -74,7 +74,7 @@ class _MovingImageLayerManager:
         elif event.button == 2 and self._ctx.input_manager.ctrl_pressed:  # Ctrl-right click drag
             # mouse down
             dragged = False
-            drag_start = torch.tensor(event.position)
+            drag_start = torch.tensor(event.position[-2:])
             # rotation_start = scipy.spatial.transform.Rotation.from_rotvec(transformation.rotation.cpu().numpy())
             translation_start = self._ctx.dadg.get(self._current_transformation_key).translation[0:2].cpu()
             yield
@@ -83,7 +83,7 @@ class _MovingImageLayerManager:
                 dragged = True
 
                 delta = self._ctx.state.gui_settings.translation_sensitivity * (
-                        torch.tensor(event.position) - drag_start).flip((0,))
+                        torch.tensor(event.position[-2:]) - drag_start).flip((0,))
                 prev = self._ctx.dadg.get(self._current_transformation_key)
                 tr = prev.translation
                 tr[0:2] = (translation_start + delta).to(device=tr.device)

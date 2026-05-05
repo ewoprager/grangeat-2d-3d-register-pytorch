@@ -61,8 +61,8 @@ class FiducialsManager:
         permutation = torch.tensor([name_to_index_map[name] for name in ct_point_names])
         ct_point_vectors = ct_point_vectors[permutation.argsort()]
 
-        xray_point_vectors = np.array(xray_point_vectors)
-        ct_point_vectors = np.array(ct_point_vectors)
+        xray_point_vectors = xray_point_vectors.cpu().numpy()
+        ct_point_vectors = ct_point_vectors.cpu().numpy()
 
         source_distance: float | Error = self._dadg.get(f"{self._state.register_fiducial_xray_choice}__source_distance")
         if isinstance(source_distance, Error):
@@ -74,7 +74,7 @@ class FiducialsManager:
         def residuals(pose: np.ndarray) -> np.ndarray:
             homo_vectors = np.concat((ct_point_vectors, np.ones((ct_point_vectors.shape[0], 1))), axis=1)
             transformation = mapping_parameters_to_transformation(torch.tensor(pose))
-            transformed_points = (homo_vectors @ np.array(transformation.get_h()))[:, 0:3]
+            transformed_points = (homo_vectors @ transformation.get_h().cpu().numpy())[:, 0:3]
             from_source = transformed_points - source
             frac: torch.Tensor = np.einsum("ji,i->j", from_source, c_hat) / source_distance
             projected = np.expand_dims(frac, -1) * transformed_points[:, 0:2]
@@ -83,12 +83,11 @@ class FiducialsManager:
         current_transformation: Transformation | Error = self._dadg.get(
             f"{self._state.register_fiducial_xray_choice}__current_transformation")
         if isinstance(current_transformation, Error):
-            logger.warning(
-                f"Found no current transformation for X-ray '{self._state.register_fiducial_xray_choice}': "
-                f"{current_transformation.description}")
+            logger.warning(f"Found no current transformation for X-ray '{self._state.register_fiducial_xray_choice}': "
+                           f"{current_transformation.description}")
             initial_pose = np.zeros(6)
         else:
-            initial_pose = np.array(mapping_transformation_to_parameters(current_transformation))
+            initial_pose = mapping_transformation_to_parameters(current_transformation).cpu().numpy()
 
         result: sp.optimize.OptimizeResult = sp.optimize.least_squares(residuals, initial_pose, method="lm")
 
