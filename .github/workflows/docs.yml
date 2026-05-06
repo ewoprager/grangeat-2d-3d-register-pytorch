@@ -1,4 +1,4 @@
-name: Build and Deploy Docs
+name: "Build and deploy docs"
 
 on:
   push:
@@ -9,8 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: "Checkout repo"
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: "[ reg23-experiments Python Docs ] Install uv"
         uses: astral-sh/setup-uv@v5
@@ -23,15 +22,15 @@ jobs:
           uv venv .venv
           source .venv/bin/activate
 
-      - name: "[ reg23-experiments Python Docs ] Build package"
-        working-directory: py-lib
-        run: |
-          uv sync --extra cpu --group docs
+      - name: "[ reg23-experiments Python Docs ] Create a fresh lock file from the pyproject.tomls"
+        run: uv lock
+
+      - name: "[ reg23-experiments Python Docs ] Install dependencies for the reg23-experiments package; this will in turn install the reg23-core package"
+        working-directory: packages/reg23_experiments
+        run: uv sync --extra cpu --group docs
 
       - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
-        run: |
-          uv pip install -e py-lib[cpu]
-          uv run pdoc -o py-lib/docs py-lib/src/reg23_experiments \!reg23_experiments.app \!reg23_experiments.io.external_datasets
+        run: uv run pdoc -o packages/reg23_experiments/docs packages/reg23_experiments/src/reg23_experiments \!reg23_experiments.io.external_datasets
 
       - name: "[ reg23 C++ Docs ] Install dependencies"
         run: |
@@ -39,14 +38,14 @@ jobs:
           sudo apt-get install doxygen
 
       - name: "[ reg23 C++ Docs ] Build Doxygen HTML"
-        working-directory: reg23/Docs
+        working-directory: packages/reg23_core/Docs
         run: doxygen Doxyfile
 
       - name: "Stage combined docs for deployment"
         run: |
           mkdir -p site
-          cp -r reg23/Docs/build/html site/reg23
-          cp -r py-lib/docs/. site/reg23_experiments
+          cp -r packages/reg23_core/Docs/build/html site/reg23
+          cp -r packages/reg23_experiments/docs/. site/reg23_experiments
 
       - name: "Create landing page"
         run: |

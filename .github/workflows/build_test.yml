@@ -1,4 +1,4 @@
-name: Build PyTorch extension and run all tests
+name: "Build PyTorch extension and run all tests"
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       
-    - name: Install uv
+    - name: "Install uv"
       uses: astral-sh/setup-uv@v5
       with:
         version: "0.5.26"
@@ -27,7 +27,7 @@ jobs:
     #   with:
     #     python-version-file: "pyproject.toml"
 
-    - name: Set up virtual environment
+    - name: "Set up virtual environment"
       run: uv venv .venv
 
     # - name: Install dependencies from lockfile
@@ -40,13 +40,13 @@ jobs:
     #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
     #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Build the extension
-      working-directory: reg23
-      run: uv pip install -e .[cpu]
+    - name: "Create a fresh lock file from the pyproject.tomls"
+      run: uv lock
 
-    - name: Install dependencies
+    - name: "Install dependencies for the reg23-experiments package; this will in turn install the reg23-core package"
+      working-directory: packages/reg23_experiments
       run: uv sync --extra cpu
     
-    - name: Run the tests
+    - name: "Run the tests"
       run: .venv/bin/python -m pytest .
 
