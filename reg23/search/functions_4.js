@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['d_5fradon2d_5fdr_0',['d_radon2d_dr',['../namespacereg23_1_1ops.html#a1f59b74f1a0a9b01dce87602009ab3ee',1,'reg23::ops']]],
-  ['d_5fradon3d_5fdr_1',['d_radon3d_dr',['../namespacereg23_1_1ops.html#a4e0a7046aae0c7435b19c4522f6bfe11',1,'reg23::ops']]],
-  ['d_5fradon3d_5fdr_5fv2_2',['d_radon3d_dr_v2',['../namespacereg23_1_1ops.html#a64ea408a445386ed161e32e8a510f89d',1,'reg23::ops']]],
+  ['d_5fradon2d_5fdr_0',['d_radon2d_dr',['../namespacereg23__core_1_1ops.html#aedb7a1fdc0acf203bc2af8ac7051a2e0',1,'reg23_core::ops']]],
+  ['d_5fradon3d_5fdr_1',['d_radon3d_dr',['../namespacereg23__core_1_1ops.html#abf12f1db924ebed1de8bd6a9144b1781',1,'reg23_core::ops']]],
+  ['d_5fradon3d_5fdr_5fv2_2',['d_radon3d_dr_v2',['../namespacereg23__core_1_1ops.html#a9981b42da4f20f1064d4739c41144d41',1,'reg23_core::ops']]],
   ['dehomogenise_3',['DeHomogenise',['../classreg23_1_1Vec.html#a593bdad9c83e9a10b2ce3652262a061b',1,'reg23::Vec']]],
   ['dintegrateloopeddmappingparameter_4',['dintegrateloopeddmappingparameter',['../structreg23_1_1Radon2D.html#a7c50d62fe6c821109f35ab177449a560',1,'reg23::Radon2D::DIntegrateLoopedDMappingParameter()'],['../structreg23_1_1Radon3D.html#a1242c04f4665948c0629d39dbf626f3b',1,'reg23::Radon3D::DIntegrateLoopedDMappingParameter()']]],
   ['dradon2ddr_5fcpu_5',['DRadon2DDR_CPU',['../group__pytorch__functions.html#gafe0a581bb38e5ddeed2f237ca5e31c5c',1,'reg23']]],

@@ -216,7 +216,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a tensor matching <code>phiValues</code> in size containing <code>torch.float32</code>s: The derivatives with respect to plane-origin distance of the approximations (according to the <code>Radon2D_...</code> functions) of the line integrals through the given image at the given polar coordinate locations</dd></dl>
-<p>The polar coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">reg23/Conventions.md</a> </p>
+<p>The polar coordinates should be defined according to the convention stated in reg23/Conventions.md </p>
 
 </div>
 </div>
@@ -332,7 +332,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: The derivatives with respect to plane-origin distance of the approximations (according to the <code>Radon3D_...</code> functions) of the plane integrals through the given volume at the given spherical coordinate locations</dd></dl>
-<p>The spherical coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">reg23/Conventions.md</a> </p>
+<p>The spherical coordinates should be defined according to the convention stated in reg23/Conventions.md </p>
 
 </div>
 </div>
@@ -457,7 +457,8 @@ Functions</h2></td></tr>
 Address modes</h1>
 <ul>
 <li>"zero": sampling locations outside (-1, -1, -1) and (1, 1, 1) will be read as 0</li>
-<li>"wrap": sampling locations (x, y, z) outside (-1, -1, -1) and (1, 1, 1) will be read wrapped back according to ((x + 1) mod 2 - 1, (y + 1) mod 2 - 1, (z + 1) mod 2 - 1) </li>
+<li>"wrap": sampling locations (x, y, z) outside (-1, -1, -1) and (1, 1, 1) will be read wrapped back according to ((x</li>
+<li>1) mod 2 - 1, (y + 1) mod 2 - 1, (z + 1) mod 2 - 1) </li>
 </ul>
 
 </div>
@@ -1175,7 +1176,7 @@ a tuple: (ZNCC; sum of values in <code>a</code>; sum of values in <code>b</code>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a tensor matching <code>phiValues</code> in size containing <code>torch.float32</code>s: Approximations of the line integrals through the given image at the given polar coordinate locations</dd></dl>
-<p>The polar coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">reg23/Conventions.md</a> </p>
+<p>The polar coordinates should be defined according to the convention stated in reg23/Conventions.md </p>
 
 </div>
 </div>
@@ -1291,7 +1292,7 @@ a tuple: (ZNCC; sum of values in <code>a</code>; sum of values in <code>b</code>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a tensor of the same size as <code>phiValues</code> containing <code>torch.float32</code>s: Approximations of the plane integrals through the given volume at the given spherical coordinate locations</dd></dl>
-<p>The spherical coordinates should be defined according to the convention stated in <a class="el" href="Conventions_8md.html">reg23/Conventions.md</a> </p>
+<p>The spherical coordinates should be defined according to the convention stated in reg23/Conventions.md </p>
 
 </div>
 </div>

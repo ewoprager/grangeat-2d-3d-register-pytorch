@@ -16,8 +16,8 @@ var searchData=
   ['theta_5frange_5flow_13',['THETA_RANGE_LOW',['../classreg23_1_1SinogramClassic3D.html#ac056196594d0e495682ae73bbe0f420b',1,'reg23::SinogramClassic3D']]],
   ['tointarrayref_14',['ToIntArrayRef',['../classreg23_1_1Vec.html#a1f5b89951dd4a1dae6b0e25a261a3668',1,'reg23::Vec']]],
   ['tools_15',['General Tools',['../group__general__tools.html',1,'']]],
-  ['torch_5flibrary_16',['TORCH_LIBRARY',['../namespacereg23.html#abe8eb834b4b282865414924186f13035',1,'reg23']]],
-  ['torch_5flibrary_5fimpl_17',['TORCH_LIBRARY_IMPL',['../namespacereg23.html#ad3ef09e8acc66661516d454ab4c8266c',1,'reg23']]],
+  ['torch_5flibrary_16',['TORCH_LIBRARY',['../namespacereg23.html#aef92bc3d3ba269a8b6c2703cfc4b2993',1,'reg23']]],
+  ['torch_5flibrary_5fimpl_17',['TORCH_LIBRARY_IMPL',['../namespacereg23.html#aec0dd73dffa073e9377ce5ef24188e00',1,'reg23']]],
   ['totensor_18',['ToTensor',['../classreg23_1_1Vec.html#ac7321309edcb14fb5b1db21962ff0510',1,'reg23::Vec']]],
   ['transformations_20and_20spaces_19',['Transformations and spaces',['../conventions.html#autotoc_md8',1,'']]],
   ['types_20',['Texture-Related Types',['../group__textures.html',1,'']]]

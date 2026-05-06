@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['d_5fradon2d_5fdr_0',['d_radon2d_dr',['../namespacereg23_1_1ops.html#a1f59b74f1a0a9b01dce87602009ab3ee',1,'reg23::ops']]],
-  ['d_5fradon3d_5fdr_1',['d_radon3d_dr',['../namespacereg23_1_1ops.html#a4e0a7046aae0c7435b19c4522f6bfe11',1,'reg23::ops']]],
-  ['d_5fradon3d_5fdr_5fv2_2',['d_radon3d_dr_v2',['../namespacereg23_1_1ops.html#a64ea408a445386ed161e32e8a510f89d',1,'reg23::ops']]],
+  ['d_5fradon2d_5fdr_0',['d_radon2d_dr',['../namespacereg23__core_1_1ops.html#aedb7a1fdc0acf203bc2af8ac7051a2e0',1,'reg23_core::ops']]],
+  ['d_5fradon3d_5fdr_1',['d_radon3d_dr',['../namespacereg23__core_1_1ops.html#abf12f1db924ebed1de8bd6a9144b1781',1,'reg23_core::ops']]],
+  ['d_5fradon3d_5fdr_5fv2_2',['d_radon3d_dr_v2',['../namespacereg23__core_1_1ops.html#a9981b42da4f20f1064d4739c41144d41',1,'reg23_core::ops']]],
   ['data_20structures_3',['Data Structures',['../group__data__structures.html',1,'']]],
   ['dehomogenise_4',['DeHomogenise',['../classreg23_1_1Vec.html#a593bdad9c83e9a10b2ce3652262a061b',1,'reg23::Vec']]],
   ['detectorspacing_5',['detectorspacing',['../structreg23_1_1ProjectDRR_1_1CommonData.html#a68ee18cb8cb9467d643aab81e5e1b7cb',1,'reg23::ProjectDRR::CommonData::detectorSpacing'],['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a30d437715b25bdecac13e9f9ee6fbd0d',1,'reg23::ProjectDRRCuboidMask::CommonData::detectorSpacing']]],

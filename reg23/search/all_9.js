@@ -10,7 +10,7 @@ var searchData=
   ['gradient1_7',['gradient1',['../structreg23_1_1Linear2.html#af01b4f33b68d0ca31431f9c9dac74af3',1,'reg23::Linear2']]],
   ['gradient2_8',['gradient2',['../structreg23_1_1Linear2.html#aedd7315e9f6d19eb475e17105b93400b',1,'reg23::Linear2']]],
   ['grangeat_20based_202d_203d_20image_20registration_9',['Grangeat-based 2D/3D image registration',['../index.html',1,'']]],
-  ['grid_5fsample3d_10',['grid_sample3d',['../namespacereg23_1_1ops.html#a95c1192f6df46eaf3878b12df6647631',1,'reg23::ops']]],
+  ['grid_5fsample3d_10',['grid_sample3d',['../namespacereg23__core_1_1ops.html#a7b80c6d3d942e9b38c06e14432784899',1,'reg23_core::ops']]],
   ['gridsample3d_11',['GridSample3D',['../structreg23_1_1GridSample3D.html',1,'reg23']]],
   ['gridsample3d_2eh_12',['GridSample3D.h',['../GridSample3D_8h.html',1,'']]],
   ['gridsample3d_5fcpu_13',['GridSample3D_CPU',['../group__pytorch__functions.html#gab831176a9559fa7959a284c3341a1c10',1,'reg23']]],

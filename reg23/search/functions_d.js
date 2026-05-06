@@ -1,10 +1,10 @@
 var searchData=
 [
-  ['project_5fdrr_0',['project_drr',['../namespacereg23_1_1ops.html#a9678aefffbb38b7e26313dbfc6318c88',1,'reg23::ops']]],
-  ['project_5fdrr_5fbackward_1',['project_drr_backward',['../namespacereg23_1_1autograd.html#a8fc45a5011b092e4e06b6256689c6b6c',1,'reg23.autograd.project_drr_backward()'],['../namespacereg23_1_1ops.html#a7d0dc453d47043fba33390d9f777b86a',1,'reg23.ops.project_drr_backward(torch.Tensor volume, torch.Tensor voxel_spacing, torch.Tensor homography_matrix_inverse, float source_distance, int output_width, int output_height, torch.Tensor output_offset, torch.Tensor detector_spacing, torch.Tensor d_loss_d_drr)']]],
-  ['project_5fdrr_5fcuboid_5fmask_2',['project_drr_cuboid_mask',['../namespacereg23_1_1ops.html#a07bd2dc72c471ea838ad4d2c5c002889',1,'reg23::ops']]],
-  ['project_5fdrr_5fsetup_5fcontext_3',['project_drr_setup_context',['../namespacereg23_1_1autograd.html#ac5a782312a3a9cf55971ba22ea45f897',1,'reg23::autograd']]],
-  ['project_5fdrrs_5fbatched_4',['project_drrs_batched',['../namespacereg23_1_1ops.html#ad0dcbefa7127023d10481a740fe5d0a9',1,'reg23::ops']]],
+  ['project_5fdrr_0',['project_drr',['../namespacereg23__core_1_1ops.html#a4860c7533107b1bd18a57947b410b9b5',1,'reg23_core::ops']]],
+  ['project_5fdrr_5fbackward_1',['project_drr_backward',['../namespacereg23__core_1_1autograd.html#ae445d9c43c54ada0fe43f7ba3537ac20',1,'reg23_core.autograd.project_drr_backward()'],['../namespacereg23__core_1_1ops.html#a0527485db30570b69394e3cb36e30a02',1,'reg23_core.ops.project_drr_backward(torch.Tensor volume, torch.Tensor voxel_spacing, torch.Tensor homography_matrix_inverse, float source_distance, int output_width, int output_height, torch.Tensor output_offset, torch.Tensor detector_spacing, torch.Tensor d_loss_d_drr)']]],
+  ['project_5fdrr_5fcuboid_5fmask_2',['project_drr_cuboid_mask',['../namespacereg23__core_1_1ops.html#a559715523a36f5b433a24fb01179ad14',1,'reg23_core::ops']]],
+  ['project_5fdrr_5fsetup_5fcontext_3',['project_drr_setup_context',['../namespacereg23__core_1_1autograd.html#a926be9d133fe3effe1c05fc44a87ac83',1,'reg23_core::autograd']]],
+  ['project_5fdrrs_5fbatched_4',['project_drrs_batched',['../namespacereg23__core_1_1ops.html#aff938b66f6dded6b0ecfce8b35d6d9b9',1,'reg23_core::ops']]],
   ['projectdrr_5fbackward_5fcpu_5',['ProjectDRR_backward_CPU',['../group__pytorch__functions.html#gabb37d1247aefa70e9ede160d10b5fdc6',1,'reg23']]],
   ['projectdrr_5fbackward_5fcuda_6',['ProjectDRR_backward_CUDA',['../group__pytorch__functions.html#ga8ce9434ee55d1e217c27e1bad9bc61a1',1,'reg23']]],
   ['projectdrr_5fcpu_7',['ProjectDRR_CPU',['../group__pytorch__functions.html#gaf44a8ff8d993fef4bc2729267ac5efa9',1,'reg23']]],
