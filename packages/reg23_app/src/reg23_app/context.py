@@ -4,13 +4,13 @@ from typing import Any
 
 from reg23_app.cache_manager import CacheManager
 from reg23_app.gui.drr_manager import DRRManager
-from reg23_app.gui.input_manager import InputManager
 from reg23_app.gui.fiducials_manager import FiducialsManager
+from reg23_app.gui.input_manager import InputManager
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_app.state import AppState
+from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
-from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
 from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.io.serialize import deserialize_recursive, serialize_recursive
@@ -39,6 +39,7 @@ class AppContext:
                  electrode_save_directory: pathlib.Path, transformation_save_directory: pathlib.Path,
                  ct_fiducial_save_directory: pathlib.Path, xray_fiducial_save_directory: pathlib.Path,
                  cache: bool = True):
+        logger.debug("Initialising AppContext")
         self._input_manager = InputManager()
         self._state = AppState(parameters=parameters)
         self._dadg = dadg

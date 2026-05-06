@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pytest
 import torch
 
-from reg23 import grid_sample3d
+from reg23_core import grid_sample3d
 
 
 def test_grid_sample3d():

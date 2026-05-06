@@ -1,11 +1,10 @@
 import logging
 
-import torch
 import numpy as np
 import scipy as sp
+import torch
 
 from reg23_app.state import AppState
-
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
@@ -38,8 +37,32 @@ class FiducialsManager:
             logger.warning(f"Can't register fiducials as no X-ray is selected.")
             return
 
-        res: tuple[list[str], torch.Tensor] | Error = self._dadg.get(
-            f"{self._state.register_fiducial_xray_choice}__fiducial_points")
+        dadg_key_prefix = self._state.register_fiducial_xray_choice + "__"
+
+        image_2d_full: torch.Tensor | Error = self._dadg.get(dadg_key_prefix + "image_2d_full")
+        if isinstance(image_2d_full, Error):
+            logger.error(f"Could not find 'image_2d_full' for X-ray '{self._state.register_fiducial_xray_choice}': "
+                         f"{image_2d_full.description}")
+            return
+
+        fixed_image_spacing: torch.Tensor | Error = self._dadg.get(dadg_key_prefix + "fixed_image_spacing")
+        if isinstance(fixed_image_spacing, Error):
+            logger.error(
+                f"Could not find 'fixed_image_spacing' for X-ray '{self._state.register_fiducial_xray_choice}': "
+                f"{fixed_image_spacing.description}")
+            return
+
+        ct_volume: torch.Tensor | Error = self._dadg.get("untruncated_ct_volume")
+        if isinstance(ct_volume, Error):
+            logger.error(f"Could not find 'ct_volume': {ct_volume.description}")
+            return
+
+        ct_spacing: torch.Tensor | Error = self._dadg.get("ct_spacing")
+        if isinstance(ct_spacing, Error):
+            logger.error(f"Could not find 'ct_spacing': {ct_spacing.description}")
+            return
+
+        res: tuple[list[str], torch.Tensor] | Error = self._dadg.get(dadg_key_prefix + "fiducial_points")
         if isinstance(res, Error):
             logger.warning(f"Can't find fiducial points for X-ray '{self._state.register_fiducial_xray_choice}': "
                            f"{res.description}")
@@ -61,10 +84,15 @@ class FiducialsManager:
         permutation = torch.tensor([name_to_index_map[name] for name in ct_point_names])
         ct_point_vectors = ct_point_vectors[permutation.argsort()]
 
-        xray_point_vectors = xray_point_vectors.cpu().numpy()
-        ct_point_vectors = ct_point_vectors.cpu().numpy()
+        targets_2d = xray_point_vectors - 0.5 * fixed_image_spacing * torch.tensor(image_2d_full.size(),
+                                                                                   dtype=torch.float).flip(dims=(0,))
+        input_points_3d = ct_point_vectors - 0.5 * ct_spacing * torch.tensor(ct_volume.size(), dtype=torch.float).flip(
+            dims=(0,))
 
-        source_distance: float | Error = self._dadg.get(f"{self._state.register_fiducial_xray_choice}__source_distance")
+        targets_2d = targets_2d.cpu().numpy()
+        input_points_3d = input_points_3d.cpu().numpy()
+
+        source_distance: float | Error = self._dadg.get(dadg_key_prefix + "source_distance")
         if isinstance(source_distance, Error):
             logger.warning(f"Can't find source distance: {source_distance.description}")
             return
@@ -72,16 +100,15 @@ class FiducialsManager:
         c_hat = np.array([0.0, 0.0, -1.0])
 
         def residuals(pose: np.ndarray) -> np.ndarray:
-            homo_vectors = np.concat((ct_point_vectors, np.ones((ct_point_vectors.shape[0], 1))), axis=1)
+            homo_vectors = np.concat((input_points_3d, np.ones((input_points_3d.shape[0], 1))), axis=1)
             transformation = mapping_parameters_to_transformation(torch.tensor(pose))
             transformed_points = (homo_vectors @ transformation.get_h().cpu().numpy())[:, 0:3]
             from_source = transformed_points - source
             frac: torch.Tensor = np.einsum("ji,i->j", from_source, c_hat) / source_distance
             projected = np.expand_dims(frac, -1) * transformed_points[:, 0:2]
-            return (projected - xray_point_vectors).flatten()
+            return (projected - targets_2d).flatten()
 
-        current_transformation: Transformation | Error = self._dadg.get(
-            f"{self._state.register_fiducial_xray_choice}__current_transformation")
+        current_transformation: Transformation | Error = self._dadg.get(dadg_key_prefix + "current_transformation")
         if isinstance(current_transformation, Error):
             logger.warning(f"Found no current transformation for X-ray '{self._state.register_fiducial_xray_choice}': "
                            f"{current_transformation.description}")

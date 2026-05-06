@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from reg23 import *
+from reg23_core import *
 
 
 def test_project_drr():

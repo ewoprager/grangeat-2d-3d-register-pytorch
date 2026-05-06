@@ -5,9 +5,9 @@ import napari.layers
 import numpy as np
 import scipy
 import torch
+
 from reg23_app.context import AppContext
 from reg23_app.gui.viewer_singleton import viewer
-
 from reg23_experiments.data.structs import Error, Transformation
 
 __all__ = ["add_moving_image_layer"]
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class _MovingImageLayerManager:
     def __init__(self, *, ctx: AppContext, layer: napari.layers.Layer, namespace: str | None = None):
+        logger.debug(f"Initializing _MovingImageLayerManager in namespace {namespace}")
         self._ctx = ctx
         self._layer = weakref.ref(layer)
         self._namespace = namespace
@@ -105,6 +106,7 @@ class _MovingImageLayerManager:
 
 
 def add_moving_image_layer(*, ctx: AppContext, namespace: str | None = None) -> napari.layers.Layer | None:
+    logger.debug(f"Adding moving image layer in namespace {namespace}")
     moving_image_key = "moving_image" if namespace is None else f"{namespace}__moving_image"
     if moving_image_key in viewer().layers:
         logger.warning(f"Layer '{moving_image_key}' is already shown.")
@@ -113,6 +115,7 @@ def add_moving_image_layer(*, ctx: AppContext, namespace: str | None = None) -> 
     if isinstance(value, Error):
         raise RuntimeError(f"Error softly getting '{moving_image_key}' from DADG: {value.description}.")
     initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
+    logger.debug(f"Adding moving image layer '{moving_image_key}' to napari viewer")
     layer = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
                                interpolation2d="linear", name=moving_image_key)
     layer.my_plugin = _MovingImageLayerManager(ctx=ctx, layer=layer, namespace=namespace)

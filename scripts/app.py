@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 from typing import Literal
 
@@ -49,6 +50,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Viewer
     # -----
+    logger.debug("Initialising viewer")
     init_viewer(title="Program Test")
 
     # -----
@@ -151,6 +153,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Widgets
     # -----
+    logger.debug("Initialising widgets")
     parameters_widget = ParametersWidget(app_context, external_dataset is None)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
@@ -199,6 +202,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Modules
     # -----
+    logger.debug("Initialising modules")
     worker_manager = WorkerManager(ctx=app_context, objective_function=objective_function)
     transformation_saver = TransformationSaver(app_context)
     file_manager = FileManager(app_context.state)
@@ -208,12 +212,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     #     logger.error(f"Couldn't get moving image: {value.description}.")
     #     return
 
+    logger.debug("Running napari loop")
     napari.run()
 
 
 if __name__ == "__main__":
-    # set up logger
-    logger = logs_setup.setup_logger()
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
@@ -229,6 +232,8 @@ if __name__ == "__main__":
     parser.add_argument("-x", "--xray-path", type=str, default=None,
                         help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
                              "this is provided, the X-ray will by used instead of any DRR.")
+    parser.add_argument("-l", "--log-level", type=str, default=None,
+                        help=f"Set the log level; options: [{", ".join(logging._nameToLevel.keys())}]; default = INFO.")
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")
     # parser.add_argument(
@@ -238,6 +243,9 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
     # parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
     args = parser.parse_args()
+
+    # set up logger
+    logger = logs_setup.setup_logger(level=args.log_level)
 
     # create cache directory
     if not os.path.exists(args.cache_directory):

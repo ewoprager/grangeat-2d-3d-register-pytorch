@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 
 
-def setup_logger():
+def setup_logger(level: int | str | None = None):
     hostname = socket.gethostname()
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     script_full_path = pathlib.Path(sys.argv[0])
@@ -28,4 +28,6 @@ def setup_logger():
     # redirect warnings to logging
     logging.captureWarnings(True)
     logging.getLogger("py.warnings").setLevel(logging.WARNING)
+    if level is not None:
+        logging.getLogger("root").setLevel(level)
     return logging.getLogger("radonRegistration")

@@ -27,8 +27,10 @@ class ImagesWidget(widgets.Container):
         self._on_xray_parameters_change()
 
     def _on_xray_parameters_change(self, *args) -> None:
+        logger.debug("X-ray parameters changed; rebuilding ImagesWidget")
         self.clear()
         if self._ctx.state.parameters.ct_path is not None:
+            logger.debug("CT present; adding CT buttons to ImagesWidget")
             # Slice view
             show_ct_button = widgets.PushButton(label="Show volume")
             show_ct_button.changed.connect(lambda _: self._on_show_ct_layer())
@@ -41,8 +43,10 @@ class ImagesWidget(widgets.Container):
             ], label="CT volume:"))
 
         if self._ctx.state.parameters.xray_parameters:
+            logger.debug("X-rays present:")
             self.append(widgets.Label(label="X-ray images:"))
             for key, value in self._ctx.state.parameters.xray_parameters.items():
+                logger.debug(f"Adding buttons for X-ray '{key}' to ImagesWidget")
                 # Image 2d full
                 show_image_2d_full_button = widgets.PushButton(label="Show full 2d image")
                 show_image_2d_full_button.changed.connect(lambda _, name=key: self._on_show_image_2d_full_layer(name))
@@ -66,24 +70,31 @@ class ImagesWidget(widgets.Container):
                     show_xray_fiducials_button  #
                 ], label=key))
 
+    def _on_show_ct_layer(self) -> None:
+        logger.debug(f"Show ct clicked")
+        add_ct_layer(ctx=self._ctx)
+
+    def _on_show_ct_fiducials_layer(self) -> None:
+        logger.debug(f"Show ct_fiducials clicked")
+        add_ct_fiducial_layer(ctx=self._ctx)
+
     def _on_show_image_2d_full_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show image_2d_full for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__image_2d_full",
                               spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
     def _on_show_fixed_image_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show fixed_image for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__fixed_image")
 
     def _on_show_moving_image_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show moving_image for '{xray_name}' clicked")
         add_moving_image_layer(ctx=self._ctx, namespace=xray_name)
 
     def _on_show_electrode_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show electrodes for '{xray_name}' clicked")
         add_electrode_layer(ctx=self._ctx, namespace=xray_name)
 
-    def _on_show_ct_layer(self) -> None:
-        add_ct_layer(ctx=self._ctx)
-
-    def _on_show_ct_fiducials_layer(self) -> None:
-        add_ct_fiducial_layer(ctx=self._ctx)
-
     def _on_show_xray_fiducials_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show xray_fiducials for '{xray_name}' clicked")
         add_xray_fiducial_layer(ctx=self._ctx, namespace=xray_name)
