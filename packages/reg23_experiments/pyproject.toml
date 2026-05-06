@@ -23,6 +23,10 @@ dependencies = [
     "nvidia-ml-py>=13.590.48",
     "tifffile>=2025.10.16",
     "pyarrow>=24.0.0",
+    "matplotlib==3.10.0",
+    "pyvista>=0.48.0",
+    "requests>=2.32.3",
+    "graphviz>=0.21",
 ]
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
@@ -35,11 +39,8 @@ cuda = [
 ]
 dev = [
     "reg23-core[dev]",
-    "graphviz>=0.21",
-    "matplotlib==3.10.0",
     "pytest>=8.3.4",
     "torchviz>=0.0.3",
-    "pyvista>=0.48.0",
     "scipy-stubs>=1.17.1.4",
 ]
 
