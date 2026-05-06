@@ -10,24 +10,24 @@ The documentation for this extension is available here:
 
 ```text
 .
-├── src/                    # 
-│   ├── backend/            #
-│   │   ├── include/reg23/  # Header files shared by all operator implementations
-│   │   ├── cpu/            # C++ source files used for CPU implementations of operators
-│   │   ├── cuda/           # CUDA source files used for CUDA implementations of operators
-│   │   └── main.cpp        # Declares all bindings for operators of all implementations
-│   └── reg23/              #
-│       ├── ops.py          # Thin wrappers for all PyTorch extension functions
-│       ├── structs.py      # Wrapper classes for C++ structures that were given python bindings
-│       └── autograd.py     # Implementations of backward passes using `torch.library.register_autograd`
-├── tests/                  # Pytest test functions
-├── Docs/                   # Doxygen stuff for generation of the documentation linked below.
-├── README.md               #
-├── mainpage.md             # The main page used for the documentation webpage.
-├── Conventions.md          # Contains details of C++ coding conventions, regarding style and structure.
-├── pyproject.toml          # The project configuration file used by `uv` to setup the environment and dependencies of the reg23 library
-├── setup.py                # A script used by `setuptools` to build the package.
-└── CMakeLists.txt          # Cmake is not used for building, but this file allows IDEs to find headers and process files properly for useful autocompletion and syntax checking.
+├── src/                         # 
+│   ├── backend/                 #
+│   │   ├── include/reg23_core/  # Header files shared by all operator implementations
+│   │   ├── cpu/                 # C++ source files used for CPU implementations of operators
+│   │   ├── cuda/                # CUDA source files used for CUDA implementations of operators
+│   │   └── main.cpp             # Declares all bindings for operators of all implementations
+│   └── reg23_core/              #
+│       ├── ops.py               # Thin wrappers for all PyTorch extension functions
+│       ├── structs.py           # Wrapper classes for C++ structures that were given python bindings
+│       └── autograd.py          # Implementations of backward passes using `torch.library.register_autograd`
+├── tests/                       # Pytest test functions
+├── Docs/                        # Doxygen stuff for generation of the documentation linked below.
+├── README.md                    #
+├── mainpage.md                  # The main page used for the documentation webpage.
+├── Conventions.md               # Contains details of C++ coding conventions, regarding style and structure.
+├── pyproject.toml               # The project configuration file used by `uv` to setup the environment and dependencies of the reg23 library
+├── setup.py                     # A script used by `setuptools` to build the package.
+└── CMakeLists.txt               # Cmake is not used for building, but this file allows IDEs to find headers and process files properly for useful autocompletion and syntax checking.
 ```
 
 ## Build

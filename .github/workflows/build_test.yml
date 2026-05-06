@@ -45,7 +45,7 @@ jobs:
 
     - name: "Install dependencies for the reg23-experiments package; this will in turn install the reg23-core package"
       working-directory: packages/reg23_experiments
-      run: uv sync --extra cpu
+      run: uv sync --extra cpu --extra dev
     
     - name: "Run the tests"
       run: .venv/bin/python -m pytest .

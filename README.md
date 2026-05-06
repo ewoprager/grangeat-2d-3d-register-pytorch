@@ -20,25 +20,28 @@ ToDo: update this
 
 ```text
 .
-├── reg23/                       # A Python package with custom C++/CUDA operators for PyTorch; see the README.md inside for more information.
-├── py-lib/                      # A python library with tools for research and experiments, used by the scripts in the scripts/ directory.
-│   ├── src/reg23_experiments/   # The library source code.
-│   ├── README.md                # Some more detail about this library can be found here.
-│   ├── Conventions.md           # Contains details of Python coding conventions, regarding style and structure.
-│   └── pyproject.toml           # The project configuration file used by `uv` to setup the environment and dependencies of the reg23_experiments library
-├── scripts/                     # Some python scripts that use the `reg23_experiments` module to perform experiments.
-│   ├── benchmarking/            # Scripts specifically for measuring the speeds of different implementations of algorithms in the `reg23` package
-│   ├── plotting/                # Scripts used for plotting data that is generated and saved by other scripts.
-│   ├── app.py                   # The main script; see more details below.
-│   └── ...                      # Other scripts, many of which may be somewhat out-of-date.
-├── data/                        # Directory used for saving experimental data, or saved values between script runs.
-│   ├── app_electrode_save_data/ # Segmented positions in X-rays in the app are saved here.
-│   └── app_transformation_s.../ # Registered transformations between X-rays and CTs in the app are saved here.
-├── figures/                     # Plots and images from experiments.
-├── README.md                    # This file.
-├── pyproject.toml               # The project configuration file used by `uv` to setup the environment and dependencies used by all Python scripts.
-├── uv.lock                      # A file managed by `uv` which saves the exact installed dependency versions to install.
-└── logging.conf                 # A config file used for logging with the `logging` standard Python package.
+├── packages/
+│   ├── reg23_core/                 # A Python package with custom C++/CUDA operators for PyTorch; see the README.md inside for more information.
+│   ├── reg23_experiments/          # A python library with tools for research and experiments, used by the scripts in the scripts/ directory.
+│   │   ├── src/reg23_experiments/  # The library source code.
+│   │   ├── tests/                  # Tests for this package
+│   │   ├── README.md               # Some more detail about this library can be found here.
+│   │   ├── Conventions.md          # Contains details of Python coding conventions, regarding style and structure.
+│   │   └── pyproject.toml          # The project configuration file used by `uv` to setup the environment and dependencies of the reg23-experiments package
+│   └── reg23_app/                  # A package that implements a napari-based GUI app with a variety of tools relating to image registration
+├── scripts/                        # Some python scripts that use the `reg23_experiments` module to perform experiments.
+│   ├── benchmarking/               # Scripts specifically for measuring the speeds of different implementations of algorithms in the `reg23` package
+│   ├── plotting/                   # Scripts used for plotting data that is generated and saved by other scripts.
+│   ├── app.py                      # The main script; see more details below.
+│   └── ...                         # Other scripts, many of which may be somewhat out-of-date.
+├── data/                           # Directory used for saving experimental data, or saved values between script runs.
+│   ├── app_electrode_save_data/    # Segmented positions in X-rays in the app are saved here.
+│   └── app_transformation_s.../    # Registered transformations between X-rays and CTs in the app are saved here.
+├── figures/                        # Plots and images from experiments.
+├── README.md                       # This file.
+├── pyproject.toml                  # The project configuration file used by `uv` to setup the environment and dependencies used by all Python scripts.
+├── uv.lock                         # A file managed by `uv` which saves the exact installed dependency versions to install.
+└── logging.conf                    # A config file used for logging with the `logging` standard Python package.
 ```
 
 # Setup
@@ -81,7 +84,7 @@ Install all dependencies with:
 uv sync --extra cpu
 ```
 
-or
+or, if you have an NVIDIA GPU:
 
 ```bash
 uv sync --extra cuda

@@ -27,6 +27,12 @@ dependencies = [
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
 [project.optional-dependencies]
+cpu = [
+    "reg23-core[cpu]", # the option in the square brackets is a group of optional dependencies
+]
+cuda = [
+    "reg23-core[cuda]",
+]
 dev = [
     "reg23-core[dev]",
     "graphviz>=0.21",
@@ -35,12 +41,6 @@ dev = [
     "torchviz>=0.0.3",
     "pyvista>=0.48.0",
     "scipy-stubs>=1.17.1.4",
-]
-cpu = [
-    "reg23-core[cpu]", # the option in the square brackets is a group of optional dependencies
-]
-cuda = [
-    "reg23-core[cuda]",
 ]
 
 [dependency-groups]

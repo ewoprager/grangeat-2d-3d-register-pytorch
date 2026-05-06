@@ -8,10 +8,6 @@ dependencies = []
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
 [project.optional-dependencies]
-dev = [
-    "matplotlib>=3.10.0",
-    "pytest>=8.4.1",
-]
 cpu = [
     # Linux x86_64
     "torch==2.7.1+cpu; sys_platform == 'linux' and platform_machine == 'x86_64'",
@@ -27,6 +23,10 @@ cuda = [
     # Not compatible with macOS; only x86_64 archiectures
     "torch==2.7.1+cu126; platform_machine == 'x86_64'",
     "torchvision==0.22.1+cu126; platform_machine == 'x86_64'",
+]
+dev = [
+    "matplotlib>=3.10.0",
+    "pytest>=8.4.1",
 ]
 
 [build-system]

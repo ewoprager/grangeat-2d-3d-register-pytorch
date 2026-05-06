@@ -18,14 +18,14 @@ dependencies = [
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
 [project.optional-dependencies]
-dev = [
-    "reg23-experiments[dev]"
-]
 cpu = [
     "reg23-experiments[cpu]", # the option in the square brackets is a group of optional dependencies
 ]
 cuda = [
     "reg23-experiments[cuda]",
+]
+dev = [
+    "reg23-experiments[dev]"
 ]
 
 [tool.uv]
