@@ -6,7 +6,8 @@ import numpy
 import scipy
 import torch
 import traitlets
-from jaxtyping import Float64
+from beartype import beartype as typechecker
+from jaxtyping import Float32, Float64, jaxtyped
 
 __all__ = ["Error", "GrowingTensor", "LinearMapping", "LinearRange", "Transformation", "SceneGeometry", "Cropping",
            "Sinogram2dRange", "Sinogram2dGrid", "Sinogram3dGrid", "OptimisationInstance"]
@@ -88,6 +89,7 @@ class Transformation(NamedTuple):
         r_inverse_t = torch.einsum('kl,...l->...k', r_inverse, self.translation.unsqueeze(0))[0]
         return Transformation(-self.rotation, -r_inverse_t)
 
+    @jaxtyped(typechecker=typechecker)
     def get_h(self, device: torch.device) -> Float64[torch.Tensor, "4 4"]:
         """
         :param device: The device to put the returned tensor on
@@ -164,14 +166,17 @@ class Transformation(NamedTuple):
 
 class SceneGeometry(NamedTuple):
     source_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array
-    fixed_image_offset: torch.Tensor = torch.zeros(
-        2)  # size (2,): (x, y) [mm]; offset of the fixed image relative to the source
+    fixed_image_offset: Float64[torch.Tensor, "2"] = torch.zeros(2,
+                                                                 dtype=torch.float64)  # size (2,): (x, y) [mm]; offset of the fixed image relative to the source
 
-    def source_position(self, *, device=torch.device('cpu')):
-        return torch.tensor([0., 0., self.source_distance], device=device)
+    @jaxtyped(typechecker=typechecker)
+    def source_position(self, device: torch.device) -> Float64[torch.Tensor, "3"]:
+        return torch.tensor([0., 0., self.source_distance], device=device, dtype=torch.float64)
 
     @classmethod
-    def projection_matrix(cls, source_position: torch.Tensor, central_ray: torch.Tensor | None = None) -> torch.Tensor:
+    @jaxtyped(typechecker=typechecker)
+    def projection_matrix(cls, source_position: Float64[torch.Tensor, "3"],
+                          central_ray: Float64[torch.Tensor, "3"] | None = None) -> Float64[torch.Tensor, "4 4"]:
         """
         Generate the projection matrix for the given source position
 
@@ -184,7 +189,7 @@ class SceneGeometry(NamedTuple):
         device = source_position.device
 
         if central_ray is None:
-            central_ray = torch.tensor([0., 0., - source_position[2]], device=device)
+            central_ray: Float64[torch.Tensor, "3"] = torch.tensor([0., 0., - source_position[2]], device=device)
 
         assert central_ray.device == device
         assert source_position.size() == torch.Size([3])
@@ -246,11 +251,11 @@ class Sinogram2dRange(NamedTuple):
 
 
 class Sinogram2dGrid(NamedTuple):
-    phi: torch.Tensor
-    r: torch.Tensor
+    phi: Float32[torch.Tensor, "*_"]
+    r: Float32[torch.Tensor, "*_"]
 
-    def to(self, **kwargs) -> 'Sinogram2dGrid':
-        return Sinogram2dGrid(self.phi.to(**kwargs), self.r.to(**kwargs))
+    def to(self, *, device: torch.device) -> 'Sinogram2dGrid':
+        return Sinogram2dGrid(self.phi.to(device=device), self.r.to(device=device))
 
     def device_consistent(self) -> bool:
         return self.phi.device == self.r.device
@@ -260,6 +265,7 @@ class Sinogram2dGrid(NamedTuple):
 
     def shifted(self, offset: torch.Tensor) -> 'Sinogram2dGrid':
         assert offset.size() == torch.Size([2])
+        assert self.device_consistent()
         cp = self.phi.cos()
         sp = self.phi.sin()
         unit = torch.stack((cp, sp), dim=-1)
@@ -280,12 +286,12 @@ class Sinogram2dGrid(NamedTuple):
 
 
 class Sinogram3dGrid(NamedTuple):
-    phi: torch.Tensor
-    theta: torch.Tensor
-    r: torch.Tensor
+    phi: Float32[torch.Tensor, "*_"]
+    theta: Float32[torch.Tensor, "*_"]
+    r: Float32[torch.Tensor, "*_"]
 
-    def to(self, **kwargs) -> 'Sinogram3dGrid':
-        return Sinogram3dGrid(self.phi.to(**kwargs), self.theta.to(**kwargs), self.r.to(**kwargs))
+    def to(self, *, device: torch.device) -> 'Sinogram3dGrid':
+        return Sinogram3dGrid(self.phi.to(device=device), self.theta.to(device=device), self.r.to(device=device))
 
     def device_consistent(self) -> bool:
         return self.phi.device == self.theta.device and self.theta.device == self.r.device

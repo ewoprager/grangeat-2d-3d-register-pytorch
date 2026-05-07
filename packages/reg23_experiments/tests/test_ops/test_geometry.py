@@ -1,7 +1,7 @@
 import pytest
-import reg23_core
 import torch
 
+import reg23_core
 from reg23_experiments.data.structs import SceneGeometry, Sinogram2dGrid, Sinogram3dGrid, Transformation
 from reg23_experiments.ops.geometry import fixed_polar_to_moving_cartesian, generate_drr, generate_drr_cuboid_mask, \
     generate_drr_python, moving_cartesian_to_moving_spherical, plane_integrals, ray_cuboid_distance
@@ -21,7 +21,7 @@ def test_fixed_polar_to_moving_cartesian():
     transformation = Transformation(rotation=torch.zeros(3, device=device), translation=torch.zeros(3, device=device))
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device))
     ret = fixed_polar_to_moving_cartesian(input_grid, ph_matrix=ph_matrix)
     assert isinstance(ret, torch.Tensor)
     assert ret.device == input_grid.phi.device
@@ -34,7 +34,7 @@ def test_fixed_polar_to_moving_cartesian():
                                     translation=torch.tensor([b * sin_alpha * cos_alpha, 0., b * sin_alpha.square()]))
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device))
     ret = fixed_polar_to_moving_cartesian(input_grid, ph_matrix=ph_matrix)
     assert ret[0, 0].item() == pytest.approx(0., abs=1e-4)
     assert ret[0, 1].item() == pytest.approx(0., abs=1e-4)
@@ -45,7 +45,7 @@ def test_fixed_polar_to_moving_cartesian():
     transformation = Transformation(rotation=torch.zeros(3, device=device), translation=torch.zeros(3, device=device))
     source_position = scene_geometry.source_position(device=device)
     p_matrix = SceneGeometry.projection_matrix(source_position=source_position)
-    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device)).to(dtype=torch.float32)
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device=device))
     ret_a = fixed_polar_to_moving_cartesian(input_grid, ph_matrix=ph_matrix)
     input_grid = Sinogram2dGrid(phi=torch.tensor([angle + torch.pi], device=device), r=a)
     ret_b = fixed_polar_to_moving_cartesian(input_grid, ph_matrix=ph_matrix)

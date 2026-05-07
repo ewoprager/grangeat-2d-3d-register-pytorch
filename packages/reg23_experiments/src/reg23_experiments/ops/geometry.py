@@ -1,9 +1,11 @@
 import copy
 
 import pyvista as pv
-import reg23_core
 import torch
+from beartype import beartype as typechecker
+from jaxtyping import Float, Float32, jaxtyped
 
+import reg23_core
 from reg23_experiments.data.structs import Cropping, SceneGeometry, Sinogram2dGrid, Sinogram3dGrid, Transformation
 
 __all__ = ["fixed_polar_to_moving_cartesian", "moving_cartesian_to_moving_spherical", "fixed_polar_to_moving_spherical",
@@ -11,12 +13,14 @@ __all__ = ["fixed_polar_to_moving_cartesian", "moving_cartesian_to_moving_spheri
            "get_crop_nonzero_drr", "get_crop_full_depth_drr"]
 
 
-def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, ph_matrix: torch.Tensor) -> torch.Tensor:
+@jaxtyped(typechecker=typechecker)
+def fixed_polar_to_moving_cartesian(input_grid: Sinogram2dGrid, *, ph_matrix: Float[torch.Tensor, "4 4"]) -> Float32[
+    torch.Tensor, "*_"]:
     device = input_grid.phi.device
     assert ph_matrix.device == device
     intermediates = torch.stack(
         (torch.cos(input_grid.phi), torch.sin(input_grid.phi), torch.zeros_like(input_grid.phi), -input_grid.r), dim=-1)
-    n_tildes = torch.einsum('ij,...j->...i', ph_matrix.t(), intermediates)
+    n_tildes = torch.einsum('ij,...j->...i', ph_matrix.t().to(dtype=input_grid.phi.dtype), intermediates)
     ns = n_tildes[..., 0:3]
     n_sqmags = torch.einsum('...i,...i->...', ns, ns) + 1e-12
     return -n_tildes[..., 3].unsqueeze(-1) * ns / n_sqmags.unsqueeze(-1)
