@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['detectorspacing_0',['detectorspacing',['../structreg23_1_1ProjectDRR_1_1CommonData.html#a68ee18cb8cb9467d643aab81e5e1b7cb',1,'reg23::ProjectDRR::CommonData::detectorSpacing'],['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a30d437715b25bdecac13e9f9ee6fbd0d',1,'reg23::ProjectDRRCuboidMask::CommonData::detectorSpacing']]],
-  ['dimensionality_1',['dimensionality',['../classreg23_1_1Texture.html#a140ce47d5266c4e997daf8dfc25a3103',1,'reg23::Texture::DIMENSIONALITY'],['../classreg23_1_1Vec.html#a553a7d2533d441c99d839d34dcd6ab05',1,'reg23::Vec::dimensionality']]]
+  ['cuboidabove_0',['cuboidAbove',['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a6008cd3bcecc2e9176c42ffd086ef2eb',1,'reg23::ProjectDRRCuboidMask::CommonData']]],
+  ['cuboidbelow_1',['cuboidBelow',['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#ac2190f89b7d5c700ca5cdf17c7829588',1,'reg23::ProjectDRRCuboidMask::CommonData']]],
+  ['cuboidin_2',['cuboidIn',['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a6849ed2fcd518fd836c1db8acb7f520d',1,'reg23::ProjectDRRCuboidMask::CommonData']]]
 ];
