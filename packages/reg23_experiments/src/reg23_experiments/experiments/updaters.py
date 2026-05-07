@@ -2,10 +2,11 @@ import logging
 import pathlib
 from typing import Any
 
-import reg23_core
 import torch
 
+import reg23_core
 from reg23_app.gui.old.lib.structs import Target
+from reg23_core import TensorPolicy
 from reg23_experiments.data.structs import Cropping, LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation
 from reg23_experiments.io.image import load_cached_drr, read_dicom
 from reg23_experiments.io.volume import load_ct
@@ -21,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 @dadg_updater(names_returned=["ct_volumes", "ct_spacing"])
-def load_ct(*, ct_path: str, device) -> dict[str, Any]:
+def load_ct(*, ct_path: str, image_tensor_policy: TensorPolicy, param_tensor_policy: TensorPolicy) -> dict[str, Any]:
     ct_volume, ct_spacing, _ = load_ct(pathlib.Path(ct_path))
-    ct_volume = ct_volume.to(device=device, dtype=torch.float32)
-    ct_spacing = ct_spacing.to(device=device)
+    ct_volume = ct_volume.to(**image_tensor_policy.as_kwargs)
+    ct_spacing = ct_spacing.to(**param_tensor_policy.as_kwargs)
 
     ct_volumes = [ct_volume]
     level: int = 1
@@ -75,14 +76,14 @@ def load_ct(*, ct_path: str, device) -> dict[str, Any]:
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
-def load_target_image(*, target: Target, device) -> dict[str, Any]:
+def load_target_image(*, target: Target, image_tensor_policy: TensorPolicy) -> dict[str, Any]:
     transformation_ground_truth = None
     # if self.target.xray_path is None:
     #     # Load /
     # else:
     #     Load the given X-ray
     image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(target.xray_path)
-    image_2d_full = image_2d_full.to(device=device)
+    image_2d_full = image_2d_full.to(**image_tensor_policy.as_kwargs)
 
     if target.flipped:
         logger.info("Flipping target image horizontally.")
@@ -121,6 +122,7 @@ def refresh_image_2d_scale_factor(*,  #
                                   fixed_image_spacing: torch.Tensor, downsample_level: int, ct_spacing: torch.Tensor)\
         -> \
         dict[str, Any]:
+    assert TensorPolicy.from_tensor(ct_spacing) == TensorPolicy.from_tensor(fixed_image_spacing)
     downsampled_ct_spacing = ct_spacing * 2.0 ** float(downsample_level)
     return {"image_2d_scale_factor": (fixed_image_spacing.mean() / downsampled_ct_spacing.mean()).item()}
 
@@ -129,6 +131,9 @@ def refresh_image_2d_scale_factor(*,  #
 def refresh_hyperparameter_dependent(*, image_2d_full: torch.Tensor, fixed_image_spacing: torch.Tensor,
                                      cropping: Cropping | None, source_offset: torch.Tensor,
                                      image_2d_scale_factor: float) -> dict[str, Any]:
+    param_tensor_policy = TensorPolicy.from_tensor(fixed_image_spacing)
+    assert TensorPolicy.from_tensor(source_offset) == param_tensor_policy
+
     # Downsampling the image 2d
     scaled_image_2d = torch.nn.functional.interpolate(  #
         image_2d_full.unsqueeze(0).unsqueeze(0),  #
@@ -140,12 +145,12 @@ def refresh_hyperparameter_dependent(*, image_2d_full: torch.Tensor, fixed_image
     # Cropping for the fixed image
     if cropping is None:
         cropped_target = scaled_image_2d
-        offset_from_cropping = torch.zeros(2, dtype=torch.float64)
+        offset_from_cropping = torch.zeros(2, **param_tensor_policy.as_kwargs)
     else:
         cropped_target = cropping.apply(scaled_image_2d)
         offset_from_cropping = (fixed_image_spacing  #
                                 * cropping.get_fractional_centre_offset()  #
-                                * torch.tensor(image_2d_full.size(), dtype=torch.float64).flip(dims=(0,)))
+                                * torch.tensor(image_2d_full.size(), **param_tensor_policy.as_kwargs).flip(dims=(0,)))
 
     # The fixed image is offset to adjust for the cropping, and according to the source offset
     # This isn't affected by downsample level
@@ -161,16 +166,22 @@ def refresh_hyperparameter_dependent(*, image_2d_full: torch.Tensor, fixed_image
 
 @dadg_updater(names_returned=["sinogram2d_grid_unshifted", "sinogram2d_grid"])
 def refresh_hyperparameter_dependent_grangeat(*, cropped_target: torch.Tensor, fixed_image_offset: torch.Tensor,
-                                              fixed_image_spacing: torch.Tensor, downsample_level: int, device) -> dict[
+                                              fixed_image_spacing: torch.Tensor, downsample_level: int) -> dict[
     str, Any]:
+    image_tensor_policy = TensorPolicy.from_tensor(cropped_target)
+    param_tensor_policy = TensorPolicy.from_tensor(fixed_image_spacing)
+    assert TensorPolicy.from_tensor(fixed_image_offset) == param_tensor_policy
+
     cropped_target_size = cropped_target.size()
     sinogram2d_counts = max(cropped_target_size[0], cropped_target_size[1])
     fixed_image_spacing_at_current_level = fixed_image_spacing * 2.0 ** downsample_level
     image_diag: float = (fixed_image_spacing_at_current_level.flip(dims=(0,)) *  #
-                         torch.tensor(cropped_target_size, dtype=torch.float32)).square().sum().sqrt().item()
+                         torch.tensor(cropped_target_size,
+                                      **param_tensor_policy.as_kwargs)).square().sum().sqrt().item()
     sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * image_diag, .5 * image_diag))
-    sinogram2d_grid_unshifted = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=device)
+    sinogram2d_grid_unshifted = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts,
+                                                                 **image_tensor_policy.as_kwargs)
 
     sinogram2d_grid = sinogram2d_grid_unshifted.shifted(-fixed_image_offset)
 
@@ -183,20 +194,25 @@ def refresh_mask_transformation_dependent(*, ct_volumes: list[torch.Tensor], ct_
                                           fixed_image_spacing: torch.Tensor, fixed_image_offset: torch.Tensor,
                                           image_2d_scale_factor: float, source_distance: float, device) -> dict[
     str, Any]:
+    image_tensor_policy = TensorPolicy.from_tensor(ct_volumes[0])
+    assert TensorPolicy.from_tensor(cropped_target) == image_tensor_policy
+    param_tensor_policy = TensorPolicy.from_tensor(ct_spacing)
+    assert TensorPolicy.from_tensor(fixed_image_spacing) == param_tensor_policy
+    assert TensorPolicy.from_tensor(fixed_image_offset) == param_tensor_policy
     if mask_transformation is None:
         mask = torch.ones_like(cropped_target)
         fixed_image = cropped_target
     else:
         fixed_image_spacing_at_current_level = fixed_image_spacing / image_2d_scale_factor
         mask = reg23_core.project_drr_cuboid_mask(  #
-            volume_size=torch.tensor(ct_volumes[0].size(), device=device).flip(dims=(0,)),  #
-            voxel_spacing=ct_spacing.to(device=device),  #
-            homography_matrix_inverse=mask_transformation.inverse().get_h().to(device=device),  #
+            volume_size=torch.tensor(ct_volumes[0].size(), param_tensor_policy).flip(dims=(0,)),  #
+            voxel_spacing=ct_spacing,  #
+            homography_matrix_inverse=mask_transformation.inverse().get_h(param_tensor_policy),  #
             source_distance=source_distance,  #
             output_width=cropped_target.size()[1],  #
             output_height=cropped_target.size()[0],  #
-            output_offset=fixed_image_offset.to(device=device, dtype=torch.float64),  #
-            detector_spacing=fixed_image_spacing_at_current_level.to(device=device)  #
+            output_offset=fixed_image_offset,  #
+            detector_spacing=fixed_image_spacing_at_current_level  #
         )
         fixed_image = mask * cropped_target
 

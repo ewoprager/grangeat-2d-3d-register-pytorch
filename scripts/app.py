@@ -3,6 +3,8 @@ import logging
 import os
 from typing import Literal
 
+from reg23_core import TensorPolicy
+
 os.environ["QT_API"] = "PyQt6"
 
 import torch
@@ -45,13 +47,15 @@ from reg23_app import initialisation
 
 def main(*, ct_path: str | None = None, xray_path: str | None = None,
          external_dataset: Literal["gold_hip"] | None = None, cache_directory: str):
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    image_device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    image_tensor_policy = TensorPolicy(device=image_device, dtype=torch.float32)
+    param_tensor_policy = TensorPolicy(device=image_device, dtype=torch.float64)
 
     # -----
     # Viewer
     # -----
     logger.debug("Initialising viewer")
-    init_viewer(title="Program Test")
+    init_viewer(title="reg23-app")
 
     # -----
     # Updaters
@@ -70,12 +74,14 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         cache_directory=cache_directory,  #
         save_to_cache=True,  # a
         new_drr_size=torch.Size([500, 500]),  #
-        device=device,  #
+        image_tensor_policy=image_tensor_policy,  #
+        param_tensor_policy=param_tensor_policy,  #
         cropping=None,  #
-        current_transformation=Transformation.zero(device=device),  #
+        current_transformation=Transformation.zero(**param_tensor_policy.as_kwargs),  #
         truncation_percent=0.0,  #
-        ap_transformation=Transformation(rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], device=device),
-                                         translation=torch.zeros(3, device=device)),  #
+        ap_transformation=Transformation(
+            rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], **param_tensor_policy.as_kwargs),
+            translation=torch.zeros(3, **param_tensor_policy.as_kwargs)),  #
         target_ap_distance=5.0,  #
     )
     if ct_path is not None:
@@ -102,7 +108,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # parameters.op_algo_parameters.particle_count = 5
     # test = clone_has_traits(parameters)
 
-    app_context = AppContext(parameters=parameters, dadg=data_manager(),
+    app_context = AppContext(parameters=parameters, dadg=data_manager(), image_tensor_policy=image_tensor_policy,
+                             param_tensor_policy=param_tensor_policy,
                              transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
                              electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),
                              ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),

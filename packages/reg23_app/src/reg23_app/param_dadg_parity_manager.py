@@ -1,8 +1,9 @@
 import logging
 
 import torch
-from reg23_app.state import AppState
 
+from reg23_app.state import AppState
+from reg23_core import TensorPolicy
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments import updaters
 from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr, set_target_image
@@ -32,9 +33,10 @@ class ParamDADGParityManager:
                                           "image_2d_scale_factor", "source_offset", "mask_transformation",
                                           "current_transformation", "cropping"]
 
-    def __init__(self, *, state: AppState, dadg: DirectedAcyclicDataGraph):
+    def __init__(self, *, state: AppState, dadg: DirectedAcyclicDataGraph, param_tensor_policy: TensorPolicy):
         self._state = state
         self._dadg = dadg
+        self._param_tensor_policy = param_tensor_policy
 
         # `ct_path` should be the same in the DADG and the state; the only necessary driving direction is state -> DADG
         self._state.parameters.observe(lambda change: self._ct_path_changed(change.new), names=["ct_path"])
@@ -120,9 +122,9 @@ class ParamDADGParityManager:
 
         # Create namespaced DADG nodes
         self._dadg.set(f"{name}__xray_path", params.file_path)
-        self._dadg.set(f"{name}__source_offset", torch.zeros(2))
+        self._dadg.set(f"{name}__source_offset", torch.zeros(2, **self._param_tensor_policy.as_kwargs))
         self._dadg.set(f"{name}__mask_transformation", None)
-        self._dadg.set(f"{name}__current_transformation", Transformation.zero(device=self._dadg.get("device")))
+        self._dadg.set(f"{name}__current_transformation", Transformation.zero(**self._param_tensor_policy.as_kwargs))
 
         # Add namespaced DADG updaters
         namespace_captures = {key: name for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}

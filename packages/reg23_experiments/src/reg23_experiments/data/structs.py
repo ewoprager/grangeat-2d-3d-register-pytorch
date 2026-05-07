@@ -7,6 +7,8 @@ import scipy
 import torch
 import traitlets
 
+from reg23_core import TensorPolicy
+
 __all__ = ["Error", "GrowingTensor", "LinearMapping", "LinearRange", "Transformation", "SceneGeometry", "Cropping",
            "Sinogram2dRange", "Sinogram2dGrid", "Sinogram3dGrid", "OptimisationInstance"]
 
@@ -87,16 +89,16 @@ class Transformation(NamedTuple):
         r_inverse_t = torch.einsum('kl,...l->...k', r_inverse, self.translation.unsqueeze(0))[0]
         return Transformation(-self.rotation, -r_inverse_t)
 
-    def get_h(self, *, device=torch.device('cpu')) -> torch.Tensor:
+    def get_h(self, policy: TensorPolicy) -> torch.Tensor:
         """
-        :param device:
+        :param policy: The tensor policy that returned tensor must adhere to
         :return: [(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation.
         Stored column-major.
         """
-        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device,
-                                                                                                        dtype=torch.float32)
-        rt = torch.hstack([r, self.translation.to(device=device).t().unsqueeze(-1)])
-        return torch.vstack([rt, torch.tensor([0., 0., 0., 1.], device=device).unsqueeze(0)])
+        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(
+            **policy.as_kwargs)
+        rt = torch.hstack([r, self.translation.to(**policy.as_kwargs).t().unsqueeze(-1)])
+        return torch.vstack([rt, torch.tensor([0., 0., 0., 1.], **policy.as_kwargs).unsqueeze(0)])
 
     def vectorised(self) -> torch.Tensor:
         return torch.cat((self.rotation, self.translation), dim=0)
@@ -138,14 +140,14 @@ class Transformation(NamedTuple):
         return "Transformation(rot = {}, trans = {})".format(str(self.rotation), str(self.translation))
 
     @classmethod
-    def zero(cls, *, device=torch.device('cpu')) -> 'Transformation':
-        return Transformation(torch.zeros(3, device=device), torch.zeros(3, device=device))
+    def zero(cls, **tensor_kwargs) -> 'Transformation':
+        return Transformation(torch.zeros(3, **tensor_kwargs), torch.zeros(3, **tensor_kwargs))
 
     @classmethod
-    def random_uniform(cls, *, device=torch.device('cpu')) -> 'Transformation':
-        return Transformation(rotation=torch.pi * (-1. + 2. * torch.rand(3, device=device)),
-                              translation=25. * (-1. + 2. * torch.rand(3, device=device)) + Transformation.zero(
-                                  device=device).translation)
+    def random_uniform(cls, **tensor_kwargs) -> 'Transformation':
+        return Transformation(rotation=torch.pi * (-1. + 2. * torch.rand(3, **tensor_kwargs)),
+                              translation=25. * (-1. + 2. * torch.rand(3, **tensor_kwargs)) + Transformation.zero(
+                                  **tensor_kwargs).translation)
 
     @classmethod
     def random_gaussian(cls, *, rotation_mean: torch.Tensor, rotation_std: Union[torch.Tensor, float],
@@ -269,12 +271,12 @@ class Sinogram2dGrid(NamedTuple):
         return Sinogram2dGrid(self.phi, self.r - delta)
 
     @classmethod
-    def linear_from_range(cls, sinogram_range: Sinogram2dRange, counts: int | Tuple[int, int] | torch.Size, *,
-                          device=torch.device("cpu")) -> 'Sinogram2dGrid':
+    def linear_from_range(cls, sinogram_range: Sinogram2dRange, counts: int | Tuple[int, int] | torch.Size,
+                          **tensor_kwargs) -> 'Sinogram2dGrid':
         if isinstance(counts, int):
             counts = (counts, counts)
-        phis = torch.linspace(sinogram_range.phi.low, sinogram_range.phi.high, counts[0], device=device)
-        rs = torch.linspace(sinogram_range.r.low, sinogram_range.r.high, counts[1], device=device)
+        phis = torch.linspace(sinogram_range.phi.low, sinogram_range.phi.high, counts[0], **tensor_kwargs)
+        rs = torch.linspace(sinogram_range.r.low, sinogram_range.r.high, counts[1], **tensor_kwargs)
         phis, rs = torch.meshgrid(phis, rs)
         return Sinogram2dGrid(phis, rs)
 
@@ -318,7 +320,15 @@ class Sinogram3dGrid(NamedTuple):
 
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
-    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None  # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count  # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,  # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #  # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #  # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #  # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #  # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,  # thetas, rs)
+    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None
+    # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count
+    # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,
+    # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #
+    # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #
+    # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #
+    # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #
+    # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,
+    # thetas, rs)
 
 
 class OptimisationInstance(ABC):
