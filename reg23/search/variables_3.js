@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['detectorspacing_0',['detectorspacing',['../structreg23_1_1ProjectDRR_1_1CommonData.html#a68ee18cb8cb9467d643aab81e5e1b7cb',1,'reg23::ProjectDRR::CommonData::detectorSpacing'],['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a30d437715b25bdecac13e9f9ee6fbd0d',1,'reg23::ProjectDRRCuboidMask::CommonData::detectorSpacing']]],
-  ['device_1',['device',['../classreg23__core_1_1helpers_1_1TensorPolicy.html#a2c83a893df68f6961b5d08c78c7d6039',1,'reg23_core::helpers::TensorPolicy']]],
-  ['dimensionality_2',['dimensionality',['../classreg23_1_1Vec.html#a553a7d2533d441c99d839d34dcd6ab05',1,'reg23::Vec::dimensionality'],['../classreg23_1_1Texture.html#a140ce47d5266c4e997daf8dfc25a3103',1,'reg23::Texture::DIMENSIONALITY']]],
-  ['dtype_3',['dtype',['../classreg23__core_1_1helpers_1_1TensorPolicy.html#a86449bdff685c1d5954f2b3610e1103d',1,'reg23_core::helpers::TensorPolicy']]]
+  ['faceoutunitnormals_0',['faceOutUnitNormals',['../structreg23_1_1ProjectDRRCuboidMask_1_1Cuboid.html#abf49d5fa3e5d1df19c62056d5187b132',1,'reg23::ProjectDRRCuboidMask::Cuboid']]],
+  ['facepoints_1',['facePoints',['../structreg23_1_1ProjectDRRCuboidMask_1_1Cuboid.html#a6e5f29bf47eabdc07100c51a1022ac38',1,'reg23::ProjectDRRCuboidMask::Cuboid']]],
+  ['flatoutput_2',['flatoutput',['../structreg23_1_1GridSample3D_1_1CommonData.html#a4386ad5d892045325a1f9c69bee7fe0c',1,'reg23::GridSample3D::CommonData::flatOutput'],['../structreg23_1_1ProjectDRRCuboidMask_1_1CommonData.html#a1368a55e94a344dd744a125a22cec652',1,'reg23::ProjectDRRCuboidMask::CommonData::flatOutput'],['../structreg23_1_1Radon2D_1_1CommonData.html#a817711c1742690f093acda26b5de83f7',1,'reg23::Radon2D::CommonData::flatOutput'],['../structreg23_1_1Radon3D_1_1CommonData.html#adf3523452f8d23b9dfd7e0ca4cea5753',1,'reg23::Radon3D::CommonData::flatOutput'],['../structreg23_1_1ResampleSinogram3D_1_1CommonData.html#aae447978331997b36a4bf0547cd6e57c',1,'reg23::ResampleSinogram3D::CommonData::flatOutput']]]
 ];
