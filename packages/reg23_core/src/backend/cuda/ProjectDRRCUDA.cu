@@ -14,6 +14,7 @@ __global__ void Kernel_ProjectDRR_CUDA(Texture3DCUDA volume, double sourceDistan
 									   Vec<double, 2> outputOffset, float *arrayOut) {
 	const int64_t threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	if (threadIndex >= outputSize.X() * outputSize.Y()) return;
+	if (outputSize.X() == 0) return;
 	const uint64_t i = threadIndex % outputSize.X();
 	const uint64_t j = threadIndex / outputSize.X();
 	const Vec<double, 2> detectorPosition = detectorSpacing * (Vec<uint64_t, 2>{i, j}.StaticCast<double>() -
@@ -65,6 +66,7 @@ __global__ void Kernel_ProjectDRRsBatched_CUDA(Texture3DCUDA volume, double sour
 	const uint64_t outputNumel = outputSize.X() * outputSize.Y();
 	const int64_t threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	if (threadIndex >= outputNumel * batchCount) return;
+	if (outputSize.X() == 0) return;
 	const uint64_t batchIndex = threadIndex / outputNumel;
 	const uint64_t pixelIndex = threadIndex % outputNumel;
 	const uint64_t i = pixelIndex % outputSize.X();
@@ -169,6 +171,7 @@ __global__ void Kernel_ProjectDRR_backward_CUDA(Texture3DCUDA volume, double sou
 												double *blockSumsArray) {
 	extern __shared__ double buffer[];
 
+	if (outputSize.X() == 0) return;
 	const int64_t threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	const long bufferStart = threadIdx.x * 16;
 	if (threadIndex >= outputSize.X() * outputSize.Y()) {

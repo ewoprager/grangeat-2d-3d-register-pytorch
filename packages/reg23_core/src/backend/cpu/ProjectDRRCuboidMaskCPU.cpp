@@ -23,7 +23,7 @@ at::Tensor ProjectDRRCuboidMask_CPU(const at::Tensor &volumeSize, const at::Tens
 				                                       static_cast<float>(j) - 0.5f * static_cast<float>(
 					                                       outputHeight - 1)} + common.outputOffset;
 			Vec<float, 3> direction = VecCat(detectorPosition, -static_cast<float>(sourceDistance));
-			direction /= direction.Length();
+			direction /= direction.Length() + 1.e-8f;
 			direction = MatMul(common.homographyMatrixInverse, VecCat(direction, 0.f)).XYZ();
 
 			const float distanceAboveBelow = //

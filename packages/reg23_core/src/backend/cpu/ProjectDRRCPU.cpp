@@ -25,7 +25,7 @@ at::Tensor ProjectDRR_CPU(const at::Tensor &volume, const at::Tensor &voxelSpaci
 				                                        static_cast<double>(j) - 0.5 * static_cast<double>(
 					                                        outputHeight - 1)} + common.outputOffset;
 			Vec<double, 3> direction = VecCat(detectorPosition, -sourceDistance);
-			direction /= direction.Length();
+			direction /= direction.Length() + 1.e-8f;
 			Vec<double, 3> delta = direction * common.stepSize;
 			delta = MatMul(common.homographyMatrixInverse, VecCat(delta, 0.0)).XYZ();
 			Vec<double, 3> start = Vec<double, 3>{0.0, 0.0, sourceDistance} + common.lambdaStart * direction;
@@ -66,7 +66,7 @@ at::Tensor ProjectDRR_backward_CPU(const at::Tensor &volume, const at::Tensor &v
 				                                        static_cast<double>(j) - 0.5 * static_cast<double>(
 					                                        outputHeight - 1)} + common.outputOffset;
 			Vec<double, 3> direction = VecCat(detectorPosition, -sourceDistance);
-			direction /= direction.Length();
+			direction /= direction.Length() + 1.e-8f;
 			const Vec<double, 4> delta = VecCat(direction * common.stepSize, 0.0);
 			const Vec<double, 4> start = VecCat(
 				Vec<double, 3>{0.0, 0.0, sourceDistance} + common.lambdaStart * direction, 1.0);

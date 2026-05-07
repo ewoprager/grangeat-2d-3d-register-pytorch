@@ -32,7 +32,7 @@ std::tuple<at::Tensor, double, double, double, double, double> NormalisedCrossCo
 	const double denominatorLeft = sqrt(nF * sums[2] - sums[0] * sums[0]);
 	const double denominatorRight = sqrt(nF * sums[3] - sums[1] * sums[1]);
 
-	const at::Tensor zncc = torch::tensor(numerator / (denominatorLeft * denominatorRight + 1e-10), a.options());
+	const at::Tensor zncc = torch::tensor(numerator / (denominatorLeft * denominatorRight + 1e-8), a.options());
 
 	return {zncc, sums[0], sums[1], numerator, denominatorLeft, denominatorRight};
 }

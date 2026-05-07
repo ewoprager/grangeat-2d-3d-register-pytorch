@@ -14,6 +14,7 @@ __global__ void Kernel_ProjectDRRCuboidMask_CUDA(float sourceDistance, Cuboid cu
 												 float *arrayOut) {
 	const int64_t threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 	if (threadIndex >= outputSize.X() * outputSize.Y()) return;
+	if (outputSize.X() == 0) return;
 	const uint64_t i = threadIndex % outputSize.X();
 	const uint64_t j = threadIndex / outputSize.X();
 	const Vec<float, 2> detectorPosition = detectorSpacing * (Vec<uint64_t, 2>{i, j}.StaticCast<float>() -
