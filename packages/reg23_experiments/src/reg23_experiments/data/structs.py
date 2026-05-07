@@ -6,8 +6,7 @@ import numpy
 import scipy
 import torch
 import traitlets
-
-from reg23_core import TensorPolicy
+from jaxtyping import Float64
 
 __all__ = ["Error", "GrowingTensor", "LinearMapping", "LinearRange", "Transformation", "SceneGeometry", "Cropping",
            "Sinogram2dRange", "Sinogram2dGrid", "Sinogram3dGrid", "OptimisationInstance"]
@@ -81,24 +80,23 @@ class LinearRange:
 
 
 class Transformation(NamedTuple):
-    rotation: torch.Tensor
-    translation: torch.Tensor
+    rotation: Float64[torch.Tensor, "3"]
+    translation: Float64[torch.Tensor, "3"]
 
     def inverse(self) -> 'Transformation':
         r_inverse = kornia.geometry.conversions.axis_angle_to_rotation_matrix(-self.rotation.unsqueeze(0))[0]
         r_inverse_t = torch.einsum('kl,...l->...k', r_inverse, self.translation.unsqueeze(0))[0]
         return Transformation(-self.rotation, -r_inverse_t)
 
-    def get_h(self, policy: TensorPolicy) -> torch.Tensor:
+    def get_h(self, device: torch.device) -> Float64[torch.Tensor, "4 4"]:
         """
-        :param policy: The tensor policy that returned tensor must adhere to
+        :param device: The device to put the returned tensor on
         :return: [(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation.
         Stored column-major.
         """
-        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(
-            **policy.as_kwargs)
-        rt = torch.hstack([r, self.translation.to(**policy.as_kwargs).t().unsqueeze(-1)])
-        return torch.vstack([rt, torch.tensor([0., 0., 0., 1.], **policy.as_kwargs).unsqueeze(0)])
+        r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device)
+        rt = torch.hstack([r, self.translation.to(device=device).t().unsqueeze(-1)])
+        return torch.vstack([rt, torch.tensor([0., 0., 0., 1.], device=device, dtype=torch.float64).unsqueeze(0)])
 
     def vectorised(self) -> torch.Tensor:
         return torch.cat((self.rotation, self.translation), dim=0)
@@ -320,15 +318,7 @@ class Sinogram3dGrid(NamedTuple):
 
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
-    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None
-    # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count
-    # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,
-    # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #
-    # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #
-    # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #
-    # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #
-    # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,
-    # thetas, rs)
+    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None  # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count  # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,  # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #  # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #  # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #  # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #  # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,  # thetas, rs)
 
 
 class OptimisationInstance(ABC):

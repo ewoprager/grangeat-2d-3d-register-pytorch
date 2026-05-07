@@ -5,7 +5,6 @@ import scipy as sp
 import torch
 
 from reg23_app.state import AppState
-from reg23_core import TensorPolicy
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
@@ -39,8 +38,6 @@ class FiducialsManager:
             return
 
         dadg_key_prefix = self._state.register_fiducial_xray_choice + "__"
-
-        cpu_tensor_policy = TensorPolicy(device=torch.device("cpu"), dtype=torch.float64)
 
         image_2d_full: torch.Tensor | Error = self._dadg.get(dadg_key_prefix + "image_2d_full")
         if isinstance(image_2d_full, Error):
@@ -78,8 +75,11 @@ class FiducialsManager:
             return
         ct_point_names, ct_point_vectors = res
 
-        fixed_image_spacing, ct_spacing, xray_point_vectors, ct_point_vectors = cpu_tensor_policy.apply(
-            fixed_image_spacing, ct_spacing, xray_point_vectors, ct_point_vectors)
+        # move params to the CPU for processing
+        fixed_image_spacing = fixed_image_spacing.to(device=torch.device("cpu"))
+        ct_spacing = ct_spacing.to(device=torch.device("cpu"))
+        xray_point_vectors = xray_point_vectors.to(device=torch.device("cpu"))
+        ct_point_vectors = ct_point_vectors.to(device=torch.device("cpu"))
 
         if names_not_in_both := set(xray_point_names) ^ set(ct_point_names):
             logger.warning(
@@ -87,16 +87,11 @@ class FiducialsManager:
 
         # rearrange ct_point_vectors so that its order corresponds to that of xray_point_vectors
         name_to_index_map = {name: index for index, name in enumerate(xray_point_names)}
-        permutation = torch.tensor([name_to_index_map[name] for name in ct_point_names],
-                                   device=cpu_tensor_policy.device)
+        permutation = torch.tensor([name_to_index_map[name] for name in ct_point_names])
         ct_point_vectors = ct_point_vectors[permutation.argsort()]
 
-        targets_2d = xray_point_vectors - 0.5 * fixed_image_spacing * torch.tensor(image_2d_full.size(),
-                                                                                   **cpu_tensor_policy.as_kwargs).flip(
-            dims=(0,))
-        input_points_3d = ct_point_vectors - 0.5 * ct_spacing * torch.tensor(ct_volume.size(),
-                                                                             **cpu_tensor_policy.as_kwargs).flip(
-            dims=(0,))
+        targets_2d = xray_point_vectors - 0.5 * fixed_image_spacing * torch.tensor(image_2d_full.size()).flip(dims=(0,))
+        input_points_3d = ct_point_vectors - 0.5 * ct_spacing * torch.tensor(ct_volume.size()).flip(dims=(0,))
 
         targets_2d = targets_2d.numpy()
         input_points_3d = input_points_3d.numpy()
@@ -111,7 +106,7 @@ class FiducialsManager:
         def residuals(pose: np.ndarray) -> np.ndarray:
             homo_vectors = np.concat((input_points_3d, np.ones((input_points_3d.shape[0], 1))), axis=1)
             transformation = mapping_parameters_to_transformation(torch.tensor(pose))
-            transformed_points = (homo_vectors @ transformation.get_h(cpu_tensor_policy).numpy())[:, 0:3]
+            transformed_points = (homo_vectors @ transformation.get_h(device=torch.device("cpu")).numpy())[:, 0:3]
             from_source = transformed_points - source
             frac: torch.Tensor = np.einsum("ji,i->j", from_source, c_hat) / source_distance
             projected = np.expand_dims(frac, -1) * transformed_points[:, 0:2]

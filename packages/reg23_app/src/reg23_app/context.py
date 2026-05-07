@@ -8,7 +8,6 @@ from reg23_app.gui.fiducials_manager import FiducialsManager
 from reg23_app.gui.input_manager import InputManager
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_app.state import AppState
-from reg23_core import TensorPolicy
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
@@ -36,16 +35,14 @@ class AppContext:
     changes of the state to the cache manager for eagerly saving to the cache.
     """
 
-    def __init__(self, *, parameters: Parameters, dadg: DirectedAcyclicDataGraph, image_tensor_policy: TensorPolicy,
-                 param_tensor_policy: TensorPolicy, electrode_save_directory: pathlib.Path,
-                 transformation_save_directory: pathlib.Path, ct_fiducial_save_directory: pathlib.Path,
-                 xray_fiducial_save_directory: pathlib.Path, cache: bool = True):
+    def __init__(self, *, parameters: Parameters, dadg: DirectedAcyclicDataGraph,
+                 electrode_save_directory: pathlib.Path, transformation_save_directory: pathlib.Path,
+                 ct_fiducial_save_directory: pathlib.Path, xray_fiducial_save_directory: pathlib.Path,
+                 cache: bool = True):
         logger.debug("Initialising AppContext")
         self._input_manager = InputManager()
         self._state = AppState(parameters=parameters)
         self._dadg = dadg
-        self._image_tensor_policy = image_tensor_policy
-        self._param_tensor_policy = param_tensor_policy
         self._electrode_save_manager = ElectrodeSaveManager(electrode_save_directory)
         self._transformation_save_manager = TransformationSaveManager(transformation_save_directory)
         self._ct_fiducial_save_manager = CTFiducialSaveManager(ct_fiducial_save_directory)
@@ -62,8 +59,7 @@ class AppContext:
                 self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters,
                                                               trait=self.state.traits()["parameters"])
 
-        self._param_dadg_parity_manager = ParamDADGParityManager(state=self._state, dadg=self._dadg,
-                                                                 param_tensor_policy=self._param_tensor_policy)
+        self._param_dadg_parity_manager = ParamDADGParityManager(state=self._state, dadg=self._dadg)
 
         # observing all the parameter widgets
         observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)
@@ -79,10 +75,6 @@ class AppContext:
     @property
     def dadg(self) -> DirectedAcyclicDataGraph:
         return self._dadg
-
-    @property
-    def tensor_policy(self) -> TensorPolicy:
-        return self._tensor_policy
 
     @property
     def electrode_save_manager(self) -> ElectrodeSaveManager:

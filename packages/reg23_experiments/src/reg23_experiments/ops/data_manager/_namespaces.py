@@ -1,14 +1,16 @@
 import copy
 import functools
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar
 
 from reg23_experiments.utils.reflection import takes_positional_args
 from ._data import Updater
 
 __all__ = ["capture_in_namespaces"]
 
+T = TypeVar("T", Callable, Updater)
 
-def capture_in_namespaces(namespace_captures: dict[str, str]) -> Callable[[Callable | Updater], Callable | Updater]:
+
+def capture_in_namespaces(namespace_captures: dict[str, str]) -> Callable[[T], T]:
     """
     A decorator that adds namespaces to all input and output variables for functions or Updaters to be used with a DADG.
 
@@ -36,7 +38,7 @@ def capture_in_namespaces(namespace_captures: dict[str, str]) -> Callable[[Calla
     ```
     """
 
-    def decorator(function_or_updater: Callable | Updater) -> Callable | Updater:
+    def decorator(function_or_updater: T) -> T:
         if isinstance(function_or_updater, Updater):
             # Decorating an updater, so return a modified updater
             updater = function_or_updater

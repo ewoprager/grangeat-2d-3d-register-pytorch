@@ -27,6 +27,7 @@ dependencies = [
     "pyvista>=0.48.0",
     "requests>=2.32.3",
     "graphviz>=0.21",
+    "jaxtyping>=0.3.9",
 ]
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined

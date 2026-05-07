@@ -3,7 +3,6 @@ import logging
 import torch
 
 from reg23_app.state import AppState
-from reg23_core import TensorPolicy
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments import updaters
 from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr, set_target_image
@@ -33,10 +32,9 @@ class ParamDADGParityManager:
                                           "image_2d_scale_factor", "source_offset", "mask_transformation",
                                           "current_transformation", "cropping"]
 
-    def __init__(self, *, state: AppState, dadg: DirectedAcyclicDataGraph, param_tensor_policy: TensorPolicy):
+    def __init__(self, *, state: AppState, dadg: DirectedAcyclicDataGraph):
         self._state = state
         self._dadg = dadg
-        self._param_tensor_policy = param_tensor_policy
 
         # `ct_path` should be the same in the DADG and the state; the only necessary driving direction is state -> DADG
         self._state.parameters.observe(lambda change: self._ct_path_changed(change.new), names=["ct_path"])
@@ -88,6 +86,11 @@ class ParamDADGParityManager:
         self._current_xrays = list(new_value.keys())
 
     def _load_new_xray(self, *, name: str, params: XrayParameters):
+        # Get the device
+        device: torch.device | Error = self._dadg.get("device")
+        if isinstance(device, Error):
+            raise RuntimeError(f"Need device to load new X-ray: {device.description}")
+
         # Set up appropriate observers
         # for `cropping`
         params.observe(  #
@@ -122,9 +125,9 @@ class ParamDADGParityManager:
 
         # Create namespaced DADG nodes
         self._dadg.set(f"{name}__xray_path", params.file_path)
-        self._dadg.set(f"{name}__source_offset", torch.zeros(2, **self._param_tensor_policy.as_kwargs))
+        self._dadg.set(f"{name}__source_offset", torch.zeros(2, device=device))
         self._dadg.set(f"{name}__mask_transformation", None)
-        self._dadg.set(f"{name}__current_transformation", Transformation.zero(**self._param_tensor_policy.as_kwargs))
+        self._dadg.set(f"{name}__current_transformation", Transformation.zero(device=device))
 
         # Add namespaced DADG updaters
         namespace_captures = {key: name for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}
@@ -154,5 +157,4 @@ class ParamDADGParityManager:
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
 
-        # err = self.dadg.get(f"{name}__moving_image")  # if isinstance(err, Error):  #     logger.error(f"Failed to
-        # get moving image '{name}': {err.description}")
+        # err = self.dadg.get(f"{name}__moving_image")  # if isinstance(err, Error):  #     logger.error(f"Failed to  # get moving image '{name}': {err.description}")
