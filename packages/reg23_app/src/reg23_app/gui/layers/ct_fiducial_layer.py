@@ -2,16 +2,15 @@ import logging
 import weakref
 from typing import Callable
 
-import pandas as pd
-from magicgui.widgets import request_values
 import napari.layers
+import pandas as pd
+import torch
+from magicgui.widgets import request_values
 from napari.layers.base import ActionType
 from napari.utils.events import Event
-import torch
 
 from reg23_app.context import AppContext
 from reg23_app.gui.viewer_singleton import viewer
-
 from reg23_experiments.data.structs import Error
 
 __all__ = ["add_ct_fiducial_layer"]
@@ -108,7 +107,7 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
     if not isinstance(uid, str):
         logger.error(f"Expected UID to be a str, got: '{uid}'.")
         return None
-    res = ctx.ct_fiducial_save_manager.get(uid)
+    res = ctx.ct_fiducial_save_manager.get(uid)  # ToDo: Move the management of the data to fiducials_manager.py
     if res is None:
         layer = viewer().add_points(  #
             ndim=3,  #

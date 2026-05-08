@@ -10,7 +10,6 @@ from napari.utils.events import Event
 
 from reg23_app.context import AppContext
 from reg23_app.gui.viewer_singleton import viewer
-
 from reg23_experiments.data.structs import Error
 
 __all__ = ["add_electrode_layer"]
@@ -84,7 +83,7 @@ def add_electrode_layer(*, ctx: AppContext, namespace: str | None = None) -> nap
     if not isinstance(uid, str):
         logger.error(f"Expected UID to be a str, got: '{uid}'.")
         return None
-    tensor = ctx.electrode_save_manager.get(uid)
+    tensor = ctx.electrode_save_manager.get(uid)  # ToDo: Move the management of the data to a manager class
     if tensor is None:
         layer = viewer().add_points(  #
             ndim=2,  #
