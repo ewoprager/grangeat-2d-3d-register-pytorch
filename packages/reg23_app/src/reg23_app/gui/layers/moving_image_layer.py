@@ -26,8 +26,8 @@ class _MovingImageLayerManager:
         self._current_transformation_key = "current_transformation" if self._namespace is None else (
             f"{self._namespace}__current_transformation")
         self._ctx.dadg.set_evaluation_laziness(self._moving_image_key, lazily_evaluated=False)
-        self._layer().mouse_drag_callbacks.append(self._mouse_drag)
         self._ctx.dadg.observe(self._moving_image_key, "moving_image_manager", self._observer_callback)
+        layer.mouse_drag_callbacks.append(self._mouse_drag)
 
     def __del__(self):
         self._ctx.dadg.set_evaluation_laziness(self._moving_image_key, lazily_evaluated=True)
