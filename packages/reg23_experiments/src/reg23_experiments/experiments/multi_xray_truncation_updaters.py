@@ -17,7 +17,9 @@ from reg23_experiments.ops import geometry
 from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.io.image import read_dicom
 
-__all__ = ["load_untruncated_ct", "set_target_image", "apply_truncation", "project_drr"]
+# ToDo: jax type the updaters?
+
+__all__ = ["load_untruncated_ct", "set_target_image", "apply_truncation", "project_drr", "project_fiducials"]
 
 
 @dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing", "ct_series_uid"])
@@ -94,8 +96,8 @@ def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, cur
                 image_2d_scale_factor: float, device) -> dict[str, Any]:
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(
-        (torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype),
-         translation_offset.to(device=current_transformation.device)))
+        (translation_offset.to(device=current_transformation.device),
+         torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype)))
     transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
         device=device)
 
@@ -105,3 +107,28 @@ def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, cur
                                                   scene_geometry=SceneGeometry(source_distance=source_distance,
                                                                                fixed_image_offset=fixed_image_offset),
                                                   output_size=fixed_image_size)}
+
+
+@dadg_updater(names_returned=["projected_fiducials"])
+def project_fiducials(*, current_transformation: Transformation, ct_volumes: list[torch.Tensor],
+                      ct_spacing: torch.Tensor, fixed_image_size: torch.Size, fixed_image_offset: torch.Tensor,
+                      translation_offset: torch.Tensor, fixed_image_spacing: torch.Tensor,
+                      ct_fiducial_points: tuple[list[str], torch.Tensor], source_distance: float) -> dict[str, Any]:
+    device = torch.device("cpu")
+    # Applying the translation offset
+    new_translation = current_transformation.translation + torch.cat(
+        (translation_offset.to(device=current_transformation.device),
+         torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype)))
+    transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
+        device=device)
+    input_points_3d = ct_fiducial_points[1] - 0.5 * ct_spacing * torch.tensor(ct_volumes[0].size(),
+                                                                              dtype=torch.float64).flip(dims=(0,))
+    homo_vectors = torch.cat((input_points_3d.cpu(), torch.ones((input_points_3d.size()[0], 1), dtype=torch.float64)),
+                             dim=1)
+    transformed_points = (homo_vectors @ transformation.get_h(device=device))[:, 0:3]
+    from_source = transformed_points - torch.tensor([[0.0, 0.0, source_distance]], dtype=torch.float64)
+    frac = torch.einsum("ji,i->j", from_source, torch.tensor([0.0, 0.0, -1.0], dtype=torch.float64)) / source_distance
+    projected = frac.unsqueeze(-1) * transformed_points[:, 0:2]
+    output_points_2d = projected + 0.5 * fixed_image_spacing * torch.tensor(fixed_image_size, dtype=torch.float64).flip(
+        dims=(0,))
+    return {"projected_fiducials": output_points_2d}

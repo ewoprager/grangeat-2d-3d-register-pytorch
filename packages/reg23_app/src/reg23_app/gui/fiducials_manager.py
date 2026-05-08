@@ -108,7 +108,7 @@ class FiducialsManager:
             transformation = mapping_parameters_to_transformation(torch.tensor(pose))
             transformed_points = (homo_vectors @ transformation.get_h(device=torch.device("cpu")).numpy())[:, 0:3]
             from_source = transformed_points - source
-            frac: torch.Tensor = np.einsum("ji,i->j", from_source, c_hat) / source_distance
+            frac = np.einsum("ji,i->j", from_source, c_hat) / source_distance
             projected = np.expand_dims(frac, -1) * transformed_points[:, 0:2]
             return (projected - targets_2d).flatten()
 
@@ -124,5 +124,7 @@ class FiducialsManager:
 
         if result.success:
             logger.info(f"Optimisation succeeded; x = {result.x}, loss = {result.fun}")
+            self._dadg.set(dadg_key_prefix + "current_transformation",
+                           mapping_parameters_to_transformation(torch.tensor(result.x, device=image_2d_full.device)))
         else:
             logger.info(f"Optimisation failed; status = {result.status}; {result.message}")

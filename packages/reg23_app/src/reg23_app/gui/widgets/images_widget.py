@@ -12,6 +12,7 @@ from reg23_app.gui.layers.electrode_layer import add_electrode_layer
 from reg23_app.gui.layers.ct_layer import add_ct_layer
 from reg23_app.gui.layers.ct_fiducial_layer import add_ct_fiducial_layer
 from reg23_app.gui.layers.xray_fiducial_layer import add_xray_fiducial_layer
+from reg23_app.gui.layers.projected_fiducials_layer import add_projected_fiducials_layer
 
 __all__ = ["ImagesWidget"]
 
@@ -62,12 +63,18 @@ class ImagesWidget(widgets.Container):
                 # Fiducial points
                 show_xray_fiducials_button = widgets.PushButton(label="Show fiducials")
                 show_xray_fiducials_button.changed.connect(lambda _, name=key: self._on_show_xray_fiducials_layer(name))
+                # Projected fiducial points
+                show_projected_fiducials_button = widgets.PushButton(label="Show projected fiducials")
+                show_projected_fiducials_button.changed.connect(
+                    lambda _, name=key: self._on_show_projected_fiducials_layer(name))
+                # appending
                 self.append(widgets.Container(widgets=[  #
                     show_image_2d_full_button,  #
                     show_fixed_image_button,  #
                     show_moving_image_button,  #
                     show_electrodes_button,  #
-                    show_xray_fiducials_button  #
+                    show_xray_fiducials_button,  #
+                    show_projected_fiducials_button  #
                 ], label=key))
 
     def _on_show_ct_layer(self) -> None:
@@ -98,3 +105,7 @@ class ImagesWidget(widgets.Container):
     def _on_show_xray_fiducials_layer(self, xray_name: str) -> None:
         logger.debug(f"Show xray_fiducials for '{xray_name}' clicked")
         add_xray_fiducial_layer(ctx=self._ctx, namespace=xray_name)
+
+    def _on_show_projected_fiducials_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show projected_fiducials for '{xray_name}' clicked")
+        add_projected_fiducials_layer(ctx=self._ctx, namespace=xray_name)

@@ -1,35 +1,32 @@
 import argparse
-import os
-from typing import Any, Callable, Literal, Sequence
-from datetime import datetime
-import types
-import pprint
-import itertools
 import copy
-import traitlets
-
+import itertools
+import os
 import pathlib
+import pprint
+import types
+from datetime import datetime
+from typing import Any, Callable, Literal, Sequence
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import torch
-import torchviz
-import matplotlib.pyplot as plt
 import traitlets
 
-from reg23_experiments.utils.console_logging import tqdm
-from reg23_experiments.utils import logs_setup, pushover
-from reg23_experiments.experiments import updaters
-from reg23_experiments.ops.data_manager import data_manager, dadg_updater, args_from_dadg
-from reg23_experiments.data.structs import Error, Transformation, SceneGeometry, Cropping
-from reg23_experiments.io.volume import load_ct
-from reg23_experiments.io.image import load_cached_drr, read_dicom
-from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
-    mapping_parameters_to_transformation, random_parameters_at_distance
-from reg23_experiments.ops import drr, geometry, similarity_metric, swarm as pso
-from reg23_experiments.ops.objective_function import ParametrisedSimilarityMetric
-from reg23_experiments.ops.volume import downsample_trilinear_antialiased
-from reg23_experiments.io.save_data import load_latest_save
+from reg23_experiments.data.structs import Error, SceneGeometry, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
+from reg23_experiments.experiments import updaters
+from reg23_experiments.io.image import load_cached_drr, read_dicom
+from reg23_experiments.io.save_data import load_latest_save
+from reg23_experiments.io.volume import load_ct
+from reg23_experiments.ops import drr, geometry, similarity_metric, swarm as pso
+from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
+from reg23_experiments.ops.objective_function import ParametrisedSimilarityMetric
+from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
+    mapping_transformation_to_parameters, random_parameters_at_distance
+from reg23_experiments.ops.volume import downsample_trilinear_antialiased
+from reg23_experiments.utils import logs_setup, pushover
+from reg23_experiments.utils.console_logging import tqdm
 
 
 def configs_to_dict(*vargs) -> dict[str, Any]:
@@ -120,8 +117,8 @@ def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, curren
                 image_2d_scale_factor: float, device) -> dict[str, Any]:
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(
-        (torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype),
-         translation_offset.to(device=current_transformation.device)))
+        (translation_offset.to(device=current_transformation.device),
+         torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype)))
     transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
         device=device)
 

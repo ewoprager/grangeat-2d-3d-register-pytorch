@@ -5,7 +5,8 @@ import torch
 from reg23_app.state import AppState
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments import updaters
-from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr, set_target_image
+from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr, project_fiducials, \
+    set_target_image
 from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData, capture_in_namespaces
 from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed, respond_to_mask_change
@@ -30,7 +31,7 @@ class ParamDADGParityManager:
                                           "fixed_image_size", "fixed_image_offset", "xray_sop_instance_uid",
                                           "fixed_image", "cropped_target", "mask", "translation_offset",
                                           "image_2d_scale_factor", "source_offset", "mask_transformation",
-                                          "current_transformation", "cropping"]
+                                          "current_transformation", "cropping", "projected_fiducials"]
 
     def __init__(self, *, state: AppState, dadg: DirectedAcyclicDataGraph):
         self._state = state
@@ -154,6 +155,11 @@ class ParamDADGParityManager:
 
         err = self._dadg.add_updater(f"{name}__set_target_image",
                                      capture_in_namespaces(namespace_captures)(set_target_image))
+        if isinstance(err, Error):
+            logger.error(f"Error adding updater: {err.description}")
+
+        err = self._dadg.add_updater(f"{name}__project_fiducials",
+                                     capture_in_namespaces(namespace_captures)(project_fiducials))
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
 
