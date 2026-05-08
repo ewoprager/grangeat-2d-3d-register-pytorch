@@ -23,10 +23,7 @@ class _ElectrodeLayerManager:
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         self._dadg_key = dadg_key
         self._xray_uid_dadg_key = xray_uid_dadg_key
-        if (layer := self._layer()) is not None:
-            layer.events.connect(self._on_layer_change)
-        else:
-            logger.error("Failed to find layer for initialisation of ElectrodeLayerManager.")
+        layer.events.connect(self._on_layer_change)
 
     def _on_layer_change(self, event: Event):
         if event.type != "data":
@@ -83,7 +80,10 @@ def add_electrode_layer(*, ctx: AppContext, namespace: str | None = None) -> nap
     if not isinstance(uid, str):
         logger.error(f"Expected UID to be a str, got: '{uid}'.")
         return None
-    tensor = ctx.electrode_save_manager.get(uid)  # ToDo: Move the management of the data to a manager class
+    tensor: torch.Tensor | None | Error = ctx.dadg.get(dadg_key)
+    if isinstance(tensor, Error):
+        logger.error(f"Failed to get electrode point data for layer: {tensor.description}.")
+        return None
     if tensor is None:
         layer = viewer().add_points(  #
             ndim=2,  #
@@ -100,6 +100,5 @@ def add_electrode_layer(*, ctx: AppContext, namespace: str | None = None) -> nap
             features=pd.DataFrame([{"label": f"{i}"} for i in range(1, tensor.size()[0] + 1)]),  #
             text={"string": "{label}", "size": 16}  #
         )
-    ctx.dadg.set(dadg_key, tensor)
     layer.my_plugin = _ElectrodeLayerManager(ctx=ctx, layer=layer, dadg_key=dadg_key, xray_uid_dadg_key=uid_dadg_key)
     return layer

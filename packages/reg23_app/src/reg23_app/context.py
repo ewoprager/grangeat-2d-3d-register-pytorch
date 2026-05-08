@@ -59,7 +59,10 @@ class AppContext:
                 self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters,
                                                               trait=self.state.traits()["parameters"])
 
-        self._param_dadg_parity_manager = ParamDADGParityManager(state=self._state, dadg=self._dadg)
+        self._param_dadg_parity_manager = ParamDADGParityManager(  #
+            state=self._state, dadg=self._dadg, electrode_save_manager=self._electrode_save_manager,
+            ct_fiducial_save_manager=self._ct_fiducial_save_manager,
+            xray_fiducial_save_manager=self._xray_fiducial_save_manager)
 
         # observing all the parameter widgets
         observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)

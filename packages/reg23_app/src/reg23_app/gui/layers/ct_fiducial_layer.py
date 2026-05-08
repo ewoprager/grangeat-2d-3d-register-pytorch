@@ -22,10 +22,7 @@ class _CTFiducialLayerManager:
     def __init__(self, *, ctx: AppContext, layer: napari.layers.Points):
         self._ctx = ctx
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
-        if (layer := self._layer()) is not None:
-            layer.events.connect(self._on_layer_change)
-        else:
-            logger.error("Failed to find layer for initialisation of CTFiducialLayerManager.")
+        layer.events.connect(self._on_layer_change)
 
     def _on_layer_change(self, event: Event):
         if event.type != "data":
@@ -107,7 +104,10 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
     if not isinstance(uid, str):
         logger.error(f"Expected UID to be a str, got: '{uid}'.")
         return None
-    res = ctx.ct_fiducial_save_manager.get(uid)  # ToDo: Move the management of the data to fiducials_manager.py
+    res: tuple[list[str], torch.Tensor] | None | Error = ctx.dadg.get("ct_fiducial_points")
+    if isinstance(res, Error):
+        logger.error(f"Failed to get CT fiducial point data for layer: {res.description}")
+        return None
     if res is None:
         layer = viewer().add_points(  #
             ndim=3,  #
@@ -125,6 +125,5 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
             features=pd.DataFrame([{"label": name} for name in names]),  #
             text={"string": "{label}", "size": 16}  #
         )
-    ctx.dadg.set("ct_fiducial_points", (layer.features["label"].values.tolist(), torch.tensor(layer.data)))
     layer.my_plugin = _CTFiducialLayerManager(ctx=ctx, layer=layer)
     return layer

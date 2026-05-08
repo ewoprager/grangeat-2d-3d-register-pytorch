@@ -35,7 +35,6 @@ class _ProjectedFiducialsLayerManager:
 
     def _observer_callback(self, new_value: torch.Tensor) -> None:
         if (layer := self._layer()) is not None:
-            logger.info(f"{new_value}")
             layer.data = new_value.cpu().numpy()
         else:
             logger.warning(f"No layer to display projected_fiducials.")

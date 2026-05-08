@@ -7,11 +7,7 @@ import torch
 import pathlib
 
 from reg23_experiments.io.volume import load_ct
-from reg23_experiments.io.image import load_cached_drr
 from reg23_experiments.ops.data_manager import dadg_updater
-from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
-    mapping_parameters_to_transformation, random_parameters_at_distance
-from reg23_experiments.ops import drr
 from reg23_experiments.data.structs import Transformation, SceneGeometry
 from reg23_experiments.ops import geometry
 from reg23_experiments.ops.volume import downsample_trilinear_antialiased
@@ -39,31 +35,29 @@ def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: S
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt",
                               "xray_sop_instance_uid"])
-def set_target_image(*, ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor,
-                     new_drr_size: torch.Size, regenerate_drr: bool, save_to_cache: bool, cache_directory: str,
-                     ap_transformation: Transformation, target_ap_distance: float, xray_path: str | None,
-                     target_flipped: bool, device: torch.device) -> dict[str, Any]:
-    if xray_path is None:
-        # generate a DRR through the volume
-        drr_spec = None
-        if not regenerate_drr:
-            drr_spec = load_cached_drr(cache_directory, ct_path)
+def set_target_image(*, xray_path: str, target_flipped: bool, device: torch.device) -> dict[str, Any]:
+    # if xray_path is None:
+    #     # generate a DRR through the volume
+    #     drr_spec = None
+    #     if not regenerate_drr:
+    #         drr_spec = load_cached_drr(cache_directory, ct_path)
+    #
+    #     if drr_spec is None:
+    #         tr = mapping_parameters_to_transformation(
+    #             random_parameters_at_distance(mapping_transformation_to_parameters(ap_transformation),
+    #                                           target_ap_distance))
+    #         drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
+    #                                               save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
+    #
+    #     fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
+    #     del drr_spec
+    #     uid = None
+    # else:
 
-        if drr_spec is None:
-            tr = mapping_parameters_to_transformation(
-                random_parameters_at_distance(mapping_transformation_to_parameters(ap_transformation),
-                                              target_ap_distance))
-            drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
-                                                  save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
-
-        fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
-        del drr_spec
-        uid = None
-    else:
-        dicom = read_dicom(xray_path)
-        image_2d_full, fixed_image_spacing, scene_geometry, uid = dicom["image"], dicom["spacing"], dicom[
-            "scene_geometry"], dicom["uid"]
-        transformation_ground_truth = None
+    dicom = read_dicom(xray_path)
+    image_2d_full, fixed_image_spacing, scene_geometry, uid = dicom["image"], dicom["spacing"], dicom["scene_geometry"], \
+    dicom["uid"]
+    transformation_ground_truth = None
 
     if target_flipped:
         image_2d_full = image_2d_full.flip(dims=(1,))

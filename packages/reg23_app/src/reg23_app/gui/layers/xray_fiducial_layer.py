@@ -2,16 +2,15 @@ import logging
 import weakref
 from typing import Callable
 
-import pandas as pd
-from magicgui.widgets import request_values
 import napari.layers
+import pandas as pd
+import torch
+from magicgui.widgets import request_values
 from napari.layers.base import ActionType
 from napari.utils.events import Event
-import torch
 
 from reg23_app.context import AppContext
 from reg23_app.gui.viewer_singleton import viewer
-
 from reg23_experiments.data.structs import Error
 
 __all__ = ["add_xray_fiducial_layer"]
@@ -25,10 +24,7 @@ class _XRayFiducialLayerManager:
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         self._dadg_key = dadg_key
         self._xray_uid_dadg_key = xray_uid_dadg_key
-        if (layer := self._layer()) is not None:
-            layer.events.connect(self._on_layer_change)
-        else:
-            logger.error("Failed to find layer for initialisation of XrayFiducialLayerManager.")
+        layer.events.connect(self._on_layer_change)
 
     def _on_layer_change(self, event: Event):
         if event.type != "data":
@@ -109,7 +105,10 @@ def add_xray_fiducial_layer(*, ctx: AppContext, namespace: str | None = None) ->
     if not isinstance(uid, str):
         logger.error(f"Expected UID to be a str, got: '{uid}'.")
         return None
-    res = ctx.xray_fiducial_save_manager.get(uid)
+    res: tuple[list[str], torch.Tensor] | None | Error = ctx.dadg.get(dadg_key)
+    if isinstance(res, Error):
+        logger.error(f"Error getting fiducial point data for layer: {res.description}")
+        return None
     if res is None:
         layer = viewer().add_points(  #
             ndim=2,  #
@@ -127,6 +126,5 @@ def add_xray_fiducial_layer(*, ctx: AppContext, namespace: str | None = None) ->
             features=pd.DataFrame([{"label": name} for name in names]),  #
             text={"string": "{label}", "size": 16}  #
         )
-    ctx.dadg.set(dadg_key, (layer.features["label"].values.tolist(), torch.tensor(layer.data)))
     layer.my_plugin = _XRayFiducialLayerManager(ctx=ctx, layer=layer, dadg_key=dadg_key, xray_uid_dadg_key=uid_dadg_key)
     return layer
