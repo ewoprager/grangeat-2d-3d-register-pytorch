@@ -103,7 +103,7 @@ class FiducialsManager:
         source = np.array([0.0, 0.0, source_distance])
         c_hat = np.array([0.0, 0.0, -1.0])
 
-        # ToDo: switch to using the updater
+        # ToDo: switch to using the updater, and get the translation working
 
         def residuals(pose: np.ndarray) -> np.ndarray:
             homo_vectors = np.concat((input_points_3d, np.ones((input_points_3d.shape[0], 1))), axis=1)
