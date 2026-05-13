@@ -3,6 +3,7 @@ import pathlib
 from typing import Any
 
 import torch
+from jaxtyping import Float32, Float64
 
 import reg23_core
 from reg23_app.gui.old.lib.structs import Target
@@ -117,18 +118,18 @@ def set_synthetic_target_image(*, ct_path: str, ct_spacing: torch.Tensor, ct_vol
 
 
 @dadg_updater(names_returned=["image_2d_scale_factor"])
-def refresh_image_2d_scale_factor(*,  #
-                                  fixed_image_spacing: torch.Tensor, downsample_level: int, ct_spacing: torch.Tensor) -> \
-        dict[str, Any]:
+def refresh_image_2d_scale_factor(*, fixed_image_spacing: Float64[torch.Tensor, "2"], downsample_level: int,
+                                  ct_spacing: Float64[torch.Tensor, "3"]) -> dict[str, Any]:
     assert ct_spacing.device == fixed_image_spacing.device
     downsampled_ct_spacing = ct_spacing * 2.0 ** float(downsample_level)
     return {"image_2d_scale_factor": (fixed_image_spacing.mean() / downsampled_ct_spacing.mean()).item()}
 
 
 @dadg_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset", "fixed_image_size"])
-def refresh_hyperparameter_dependent(*, image_2d_full: torch.Tensor, fixed_image_spacing: torch.Tensor,
-                                     cropping: Cropping | None, source_offset: torch.Tensor,
-                                     image_2d_scale_factor: float) -> dict[str, Any]:
+def refresh_hyperparameter_dependent(*, image_2d_full: Float32[torch.Tensor, "n m"],
+                                     fixed_image_spacing: Float64[torch.Tensor, "2"], cropping: Cropping | None,
+                                     source_offset: Float64[torch.Tensor, "2"], image_2d_scale_factor: float) -> dict[
+    str, Any]:
     device = image_2d_full.device
     assert source_offset.device == device
     assert fixed_image_spacing.device == device
@@ -186,11 +187,12 @@ def refresh_hyperparameter_dependent_grangeat(*, cropped_target: torch.Tensor, f
 
 
 @dadg_updater(names_returned=["mask", "fixed_image"])
-def refresh_mask_transformation_dependent(*, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
-                                          cropped_target: torch.Tensor, mask_transformation: Transformation | None,
-                                          fixed_image_spacing: torch.Tensor, fixed_image_offset: torch.Tensor,
-                                          image_2d_scale_factor: float, source_distance: float, device) -> dict[
-    str, Any]:
+def refresh_mask_transformation_dependent(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Tensor, "3"],
+                                          cropped_target: Float32[torch.Tensor, "n m"],
+                                          mask_transformation: Transformation | None,
+                                          fixed_image_spacing: Float64[torch.Tensor, "2"],
+                                          fixed_image_offset: Float64[torch.Tensor, "2"], image_2d_scale_factor: float,
+                                          source_distance: float, device) -> dict[str, Any]:
     device = ct_volumes[0].device
     assert ct_spacing.device == device
     assert cropped_target.device == device

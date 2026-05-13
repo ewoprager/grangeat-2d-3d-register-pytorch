@@ -17,3 +17,16 @@
 {"action": "set", "xray_sop_instance_uid": "12345.20260429.152509.802197", "name": "back right", "x": 151.23984677683245, "y": 147.55944046152774}
 {"action": "set", "xray_sop_instance_uid": "12345.20260429.152509.802197", "name": "front left", "x": 39.62022715684157, "y": 62.386281239304694}
 {"action": "set", "xray_sop_instance_uid": "12345.20260429.152509.802197", "name": "front right", "x": 48.56535346785132, "y": 149.11511460257287}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "nose", "x": 31.492598362727165, "y": 100.1242679554071}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "back_left", "x": 160.89802689015485, "y": 98.25922554188853}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "nose", "x": 99.84471799309034, "y": 32.487877326409006}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_left", "x": 130.41074509591633, "y": 0.3672211784503929}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_right", "x": 62.95753239190342, "y": 5.781545179933602}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "back_right", "x": 63.950824601556526, "y": 84.74732202919822}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "back_right", "x": 140.99670869519903, "y": 113.92278549112905}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "back_left", "x": 64.30741484628685, "y": 86.07917768884938}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "back_right", "x": 160.54143664542454, "y": 96.92736988223734}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_right", "x": 132.292967454702, "y": 24.420102992513876}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_left", "x": 62.752780236249976, "y": 5.213246209721262}
+{"action": "set", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "front_right", "x": 129.86995493906656, "y": 0.5627489924111302}
+{"action": "remove", "xray_sop_instance_uid": "12345.20260505.121436.106945", "name": "nose"}

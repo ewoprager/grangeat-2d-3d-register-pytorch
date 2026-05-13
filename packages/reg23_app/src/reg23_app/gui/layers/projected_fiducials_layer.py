@@ -4,8 +4,10 @@ from typing import Callable
 
 import napari.layers
 import numpy as np
+import pandas as pd
 import scipy
 import torch
+from jaxtyping import Float64
 
 from reg23_app.context import AppContext
 from reg23_app.gui.viewer_singleton import viewer
@@ -23,7 +25,8 @@ class _ProjectedFiducialsLayerManager:
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         self._namespace = namespace
         #
-        self._projected_fiducials_key = "projected_fiducials" if self._namespace is None else f"{self._namespace}__projected_fiducials"
+        self._projected_fiducials_key = "projected_fiducials" if self._namespace is None else (
+            f"{self._namespace}__projected_fiducials")
         self._current_transformation_key = "current_transformation" if self._namespace is None else (
             f"{self._namespace}__current_transformation")
         self._ctx.dadg.set_evaluation_laziness(self._projected_fiducials_key, lazily_evaluated=False)
@@ -33,9 +36,10 @@ class _ProjectedFiducialsLayerManager:
     def __del__(self):
         self._ctx.dadg.set_evaluation_laziness(self._projected_fiducials_key, lazily_evaluated=True)
 
-    def _observer_callback(self, new_value: torch.Tensor) -> None:
+    def _observer_callback(self, new_value: tuple[list[str], Float64[torch.Tensor, "3"]]) -> None:
         if (layer := self._layer()) is not None:
-            layer.data = new_value.cpu().numpy()
+            layer.features = pd.DataFrame([{"label": name} for name in new_value[0]])
+            layer.data = new_value[1].flip(dims=(1,)).cpu().numpy()
         else:
             logger.warning(f"No layer to display projected_fiducials.")
 
@@ -115,15 +119,17 @@ def add_projected_fiducials_layer(*, ctx: AppContext, namespace: str | None = No
     if projected_fiducials_key in viewer().layers:
         logger.warning(f"Layer '{projected_fiducials_key}' is already shown.")
         return None
-    value = ctx.dadg.get(projected_fiducials_key, soft=True)
-    if isinstance(value, Error):
-        raise RuntimeError(f"Error softly getting '{projected_fiducials_key}' from DADG: {value.description}.")
-    initial_points = value if isinstance(value, torch.Tensor) else torch.empty((0, 2))
+    res: tuple[list[str], torch.Tensor] | Error = ctx.dadg.get(projected_fiducials_key, soft=True)
+    if isinstance(res, Error):
+        raise RuntimeError(f"Error softly getting '{projected_fiducials_key}' from DADG: {res.description}.")
+    initial_points = res[1].flip(dims=(1,))
     logger.debug(f"Adding projected fiducials layer '{projected_fiducials_key}' to napari viewer")
     layer = viewer().add_points(  #
         initial_points.cpu().numpy(),  #
         ndim=2,  #
-        name=projected_fiducials_key  #
+        name=projected_fiducials_key,  #
+        features=pd.DataFrame([{"label": name} for name in res[0]]),  #
+        text={"string": "{label}", "size": 16}  #
     )
     layer.my_plugin = _ProjectedFiducialsLayerManager(ctx=ctx, layer=layer, namespace=namespace)
     return layer

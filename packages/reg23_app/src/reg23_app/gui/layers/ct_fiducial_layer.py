@@ -63,23 +63,23 @@ class _CTFiducialLayerManager:
             res = self._ctx.ct_fiducial_save_manager.set(  #
                 uid=uid,  #
                 name=name,  #
-                value=torch.tensor(event.value[-1])  #
+                value=torch.tensor(event.value[-1]).flip(dims=(0,))  #
             )
             if isinstance(res, Error):
                 logger.error(f"Error saving fiducial point data: {res.description}")
             self._ctx.dadg.set("ct_fiducial_points",
-                               (layer.features["label"].values.tolist(), torch.tensor(layer.data)))
+                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
         elif event.action == ActionType.CHANGED:
             for index in event.data_indices:
                 res = self._ctx.ct_fiducial_save_manager.set(  #
                     uid=uid,  #
                     name=layer.features.at[int(index), "label"],  #
-                    value=torch.tensor(event.value[int(index)])  #
+                    value=torch.tensor(event.value[int(index)]).flip(dims=(0,))  #
                 )
                 if isinstance(res, Error):
                     logger.error(f"Error saving fiducial point data: {res.description}")
             self._ctx.dadg.set("ct_fiducial_points",
-                               (layer.features["label"].values.tolist(), torch.tensor(layer.data)))
+                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
         elif event.action == ActionType.REMOVING:
             for index in event.data_indices:
                 res = self._ctx.ct_fiducial_save_manager.remove(  #
@@ -91,7 +91,7 @@ class _CTFiducialLayerManager:
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
             self._ctx.dadg.set("ct_fiducial_points",
-                               (layer.features["label"].values.tolist(), torch.tensor(layer.data)))
+                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
 
 
 def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
@@ -119,7 +119,7 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
     else:
         names, tensor = res
         layer = viewer().add_points(  #
-            tensor.numpy(),  #
+            tensor.flip(dims=(1,)).numpy(),  #
             size=8.0,  #
             name="ct_fiducial_points",  #
             features=pd.DataFrame([{"label": name} for name in names]),  #

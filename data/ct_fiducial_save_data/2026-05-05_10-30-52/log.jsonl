@@ -23,3 +23,10 @@
 {"action": "set", "ct_series_uid": "1.2.276.0.7230010.3.1.4.8323329.15212.1612124747.510049/1.2.276.0.7230010.3.1.4.8323329.15212.1612124747.510507", "name": "front right", "x": 6.5997314453125, "y": 57.89939831412233, "z": 131.22486198055344}
 {"action": "set", "ct_series_uid": "1.2.276.0.7230010.3.1.4.8323329.15212.1612124747.510049/1.2.276.0.7230010.3.1.4.8323329.15212.1612124747.510507", "name": "back left", "x": 83.3966064453125, "y": 125.57122344958718, "z": 50.329806646204645}
 {"action": "set", "ct_series_uid": "1.2.276.0.7230010.3.1.4.8323329.15212.1612124747.510049/1.2.276.0.7230010.3.1.4.8323329.15212.1612124747.510507", "name": "back right", "x": 83.3966064453125, "y": 126.34906052010976, "z": 134.33621026264376}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "nose", "x": 0.0, "y": 40.87337241700114, "z": 118.51652701017674}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_left", "x": 104.0, "y": 24.475074090446824, "z": 83.04282415747662}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 104.0, "y": 18.82599034156111, "z": 149.7190217147011}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_right", "x": 176.0, "y": 116.21802145708511, "z": 174.33996492727482}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_left", "x": 190.0, "y": 105.6763449586197, "z": 86.58041437312}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_left", "x": 190.0, "y": 105.88323609461338, "z": 86.52869158912159}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "poop", "x": 189.09069461305796, "y": 107.81204644296119, "z": 87.0}
