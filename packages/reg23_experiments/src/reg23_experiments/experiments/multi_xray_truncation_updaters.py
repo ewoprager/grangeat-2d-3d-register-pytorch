@@ -35,8 +35,8 @@ def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: S
             "ct_series_uid": uid}
 
 
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "transformation_gt",
-                              "xray_sop_instance_uid"])
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "image_2d_full_size",
+                              "transformation_gt", "xray_sop_instance_uid"])
 def set_target_image(*, xray_path: str, target_flipped: bool, device: torch.device) -> dict[str, Any]:
     # if xray_path is None:
     #     # generate a DRR through the volume
@@ -69,7 +69,7 @@ def set_target_image(*, xray_path: str, target_flipped: bool, device: torch.devi
 
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
             "image_2d_full_spacing": image_2d_full_spacing, "transformation_gt": transformation_ground_truth,
-            "xray_sop_instance_uid": uid}
+            "xray_sop_instance_uid": uid, "image_2d_full_size": image_2d_full.size()}
 
 
 @dadg_updater(names_returned=["ct_volumes"])

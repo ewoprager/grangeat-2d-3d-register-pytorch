@@ -36,7 +36,8 @@ class ParamDADGParityManager:
                                           "xray_sop_instance_uid", "fixed_image", "cropped_target", "mask",
                                           "translation_offset", "image_2d_scale_factor", "source_offset",
                                           "mask_transformation", "current_transformation", "cropping",
-                                          "electrode_points", "fiducial_points", "projected_fiducials"]
+                                          "electrode_points", "layer_fiducial_points", "fiducial_names",
+                                          "fiducial_points", "projected_fiducials"]
 
     def __init__(self, *, state: AppState, dadg: DirectedAcyclicDataGraph, electrode_save_manager: ElectrodeSaveManager,
                  ct_fiducial_save_manager: CTFiducialSaveManager,

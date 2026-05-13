@@ -7,7 +7,7 @@ from jaxtyping import Float64
 
 from reg23_experiments.ops.data_manager import dadg_updater
 
-__all__ = ["ct_fiducial_world_to_layer"]
+__all__ = ["transform_layer_ct_fiducials", "ct_fiducial_world_to_layer", "transform_layer_fiducials"]
 
 logger = logging.getLogger(__name__)
 
@@ -35,5 +35,7 @@ def ct_fiducial_world_to_layer(*, ct_fiducial_points: torch.Tensor, ct_spacing: 
 
 @dadg_updater(names_returned=["fiducial_points"])
 def transform_layer_fiducials(*, layer_fiducial_points: np.ndarray, fiducial_names: list[str],
-                              ct_fiducial_names: list[str]) -> dict[str, Any]:
+                              ct_fiducial_names: list[str], image_2d_full_spacing: torch.Tensor,
+                              image_2d_full_size: torch.Size) -> dict[str, Any]:
+    offset = 0.5 * image_2d_full_spacing * torch.tensor(image_2d_full_size, dtype=torch.float64).flip(dims=(0,))
     return {"fiducial_points"}
