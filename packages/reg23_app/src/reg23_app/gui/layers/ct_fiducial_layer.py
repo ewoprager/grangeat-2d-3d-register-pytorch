@@ -3,7 +3,6 @@ import weakref
 from typing import Callable
 
 import napari.layers
-import numpy as np
 import pandas as pd
 import torch
 from magicgui.widgets import request_values
@@ -60,39 +59,27 @@ class _CTFiducialLayerManager:
             new_features = layer.features.copy()
             new_features.iloc[-1]["label"] = name
             layer.features = new_features
-
-            if len(layer.features["label"].values) != layer.data.shape[0]:
-                raise Exception("Inconsistent lengths in ct_fiducial_points tuple")
-            self._ctx.dadg.set("ct_fiducial_names", layer.features["label"].values.tolist())
-            self._ctx.dadg.set("layer_ct_fiducial_points", layer.data)
-
-            world_points: torch.Tensor | Error = self._ctx.dadg.get("ct_fiducial_points")
-            if isinstance(world_points, Error):
-                logger.error(f"Error getting transformed fiducial point data: {world_points.description}")
             # Save the data
             res = self._ctx.ct_fiducial_save_manager.set(  #
                 uid=uid,  #
                 name=name,  #
-                value=world_points[-1]  #
+                value=torch.tensor(event.value[-1]).flip(dims=(0,))  #
             )
             if isinstance(res, Error):
                 logger.error(f"Error saving fiducial point data: {res.description}")
+            self._ctx.dadg.set("ct_fiducial_points",
+                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
         elif event.action == ActionType.CHANGED:
-            if len(layer.features["label"].values) != layer.data.shape[0]:
-                raise Exception("Inconsistent lengths in ct_fiducial_points tuple")
-            self._ctx.dadg.set("layer_ct_fiducial_points", layer.data)
-            world_points: torch.Tensor | Error = self._ctx.dadg.get("ct_fiducial_points")
-            if isinstance(world_points, Error):
-                logger.error(f"Error getting transformed fiducial point data: {world_points.description}")
             for index in event.data_indices:
                 res = self._ctx.ct_fiducial_save_manager.set(  #
                     uid=uid,  #
                     name=layer.features.at[int(index), "label"],  #
-                    value=world_points[int(index)]  #
+                    value=torch.tensor(event.value[int(index)]).flip(dims=(0,))  #
                 )
                 if isinstance(res, Error):
                     logger.error(f"Error saving fiducial point data: {res.description}")
-
+            self._ctx.dadg.set("ct_fiducial_points",
+                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
         elif event.action == ActionType.REMOVING:
             for index in event.data_indices:
                 res = self._ctx.ct_fiducial_save_manager.remove(  #
@@ -103,10 +90,8 @@ class _CTFiducialLayerManager:
                     logger.error(f"Error saving fiducial point data: {res.description}")
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
-            if len(layer.features["label"].values) != layer.data.shape[0]:
-                raise Exception("Inconsistent lengths in ct_fiducial_points tuple")
-            self._ctx.dadg.set("ct_fiducial_names", layer.features["label"].values.tolist())
-            self._ctx.dadg.set("layer_ct_fiducial_points", layer.data)
+            self._ctx.dadg.set("ct_fiducial_points",
+                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
 
 
 def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
@@ -119,15 +104,11 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
     if not isinstance(uid, str):
         logger.error(f"Expected UID to be a str, got: '{uid}'.")
         return None
-    points: np.ndarray | None | Error = ctx.dadg.get("layer_ct_fiducial_points")
-    if isinstance(points, Error):
-        logger.error(f"Failed to get CT fiducial point data for layer: {points.description}")
+    res: tuple[list[str], torch.Tensor] | None | Error = ctx.dadg.get("ct_fiducial_points")
+    if isinstance(res, Error):
+        logger.error(f"Failed to get CT fiducial point data for layer: {res.description}")
         return None
-    names: list[str] | Error = ctx.dadg.get("ct_fiducial_names")
-    if isinstance(names, Error):
-        logger.error(f"Failed to get CT fiducial point names for layer: {names.description}")
-        return None
-    if points is None:
+    if res is None:
         layer = viewer().add_points(  #
             ndim=3,  #
             size=8.0,  #
@@ -136,10 +117,9 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
             text={"string": "{label}", "size": 16}  #
         )
     else:
-        if len(names) != points.shape[0]:
-            raise Exception("Inconsistent lengths between ct_fiducial_points and name list")
+        names, tensor = res
         layer = viewer().add_points(  #
-            points,  #
+            tensor.flip(dims=(1,)).numpy(),  #
             size=8.0,  #
             name="ct_fiducial_points",  #
             features=pd.DataFrame([{"label": name} for name in names]),  #

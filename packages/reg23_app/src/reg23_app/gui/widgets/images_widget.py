@@ -88,16 +88,15 @@ class ImagesWidget(widgets.Container):
     def _on_show_image_2d_full_layer(self, xray_name: str) -> None:
         logger.debug(f"Show image_2d_full for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__image_2d_full",
-                              spacing_dadg_key=f"{xray_name}__image_2d_full_spacing")
+                              spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
     def _on_show_fixed_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show fixed_image for '{xray_name}' clicked")
-        add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__fixed_image",
-                              spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+        add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__fixed_image")
 
     def _on_show_moving_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show moving_image for '{xray_name}' clicked")
-        add_moving_image_layer(ctx=self._ctx, namespace=xray_name, spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+        add_moving_image_layer(ctx=self._ctx, namespace=xray_name)
 
     def _on_show_electrode_layer(self, xray_name: str) -> None:
         logger.debug(f"Show electrodes for '{xray_name}' clicked")

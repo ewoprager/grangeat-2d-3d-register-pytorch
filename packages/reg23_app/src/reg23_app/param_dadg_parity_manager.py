@@ -2,7 +2,6 @@ import logging
 
 import torch
 
-from reg23_app.gui.updaters import ct_fiducial_world_to_layer
 from reg23_app.state import AppState
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
@@ -30,13 +29,13 @@ class ParamDADGParityManager:
     DADG.
     """
 
-    XRAY_SPECIFIC_DADG_KEYS: list[str] = ["image_2d_full", "image_2d_full_spacing", "fixed_image_spacing",
-                                          "transformation_gt", "source_distance", "xray_path", "target_flipped",
-                                          "moving_image", "fixed_image_size", "fixed_image_offset",
-                                          "xray_sop_instance_uid", "fixed_image", "cropped_target", "mask",
-                                          "translation_offset", "image_2d_scale_factor", "source_offset",
-                                          "mask_transformation", "current_transformation", "cropping",
-                                          "electrode_points", "fiducial_points", "projected_fiducials"]
+    XRAY_SPECIFIC_DADG_KEYS: list[str] = ["image_2d_full", "fixed_image_spacing", "transformation_gt",  #
+                                          "source_distance", "xray_path", "target_flipped", "moving_image",
+                                          "fixed_image_size", "fixed_image_offset", "xray_sop_instance_uid",
+                                          "fixed_image", "cropped_target", "mask", "translation_offset",
+                                          "image_2d_scale_factor", "source_offset", "mask_transformation",
+                                          "current_transformation", "cropping", "electrode_points", "fiducial_points",
+                                          "projected_fiducials"]
 
     def __init__(self, *, state: AppState, dadg: DirectedAcyclicDataGraph, electrode_save_manager: ElectrodeSaveManager,
                  ct_fiducial_save_manager: CTFiducialSaveManager,
@@ -96,16 +95,7 @@ class ParamDADGParityManager:
                        check_equality=True)
 
     def _ct_series_uid_changed(self, new_value: str) -> None:
-        res = self._ct_fiducial_save_manager.get(new_value)
-        if res is None:
-            res = ([], None)
-        names, points = res
-        ct_spacing: torch.Tensor | Error = self._dadg.get("ct_spacing")
-        ct_size: torch.Size | Error = self._dadg.get("untruncated_ct_size")
-        self._dadg.set("ct_fiducial_names", names)
-        self._dadg.set("layer_ct_fiducial_points",
-                       ct_fiducial_world_to_layer(ct_fiducial_points=points, ct_spacing=ct_spacing,
-                                                  untruncated_ct_size=ct_size))
+        self._dadg.set("ct_fiducial_points", self._ct_fiducial_save_manager.get(new_value))
 
     def _xray_parameters_changed(self, new_value: dict[str, XrayParameters]) -> None:
         for key, value in new_value.items():
