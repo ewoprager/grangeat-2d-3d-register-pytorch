@@ -19,7 +19,7 @@ from reg23_experiments.io.image import read_dicom
 __all__ = ["load_untruncated_ct", "set_target_image", "apply_truncation", "project_drr", "project_fiducials"]
 
 
-@dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing", "ct_series_uid"])
+@dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing", "ct_series_uid", "untruncated_ct_size"])
 def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
     ct_volume, ct_spacing, uid = load_ct(pathlib.Path(ct_path), check_for_dcm_suffix_if_dir=False)
@@ -31,10 +31,11 @@ def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: S
         ct_volume = ct_volume.permute(*ct_permutation)
         ct_spacing = ct_spacing[torch.tensor(ct_permutation)]
 
-    return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing, "ct_series_uid": uid}
+    return {"untruncated_ct_volume": ct_volume, "untruncated_ct_size": ct_volume.size(), "ct_spacing": ct_spacing,
+            "ct_series_uid": uid}
 
 
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt",
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "transformation_gt",
                               "xray_sop_instance_uid"])
 def set_target_image(*, xray_path: str, target_flipped: bool, device: torch.device) -> dict[str, Any]:
     # if xray_path is None:
@@ -56,18 +57,18 @@ def set_target_image(*, xray_path: str, target_flipped: bool, device: torch.devi
     # else:
 
     dicom = read_dicom(xray_path)
-    image_2d_full, fixed_image_spacing, scene_geometry, uid = (dicom["image"], dicom["spacing"],
-                                                               dicom["scene_geometry"], dicom["uid"])
+    image_2d_full, image_2d_full_spacing, scene_geometry, uid = (dicom["image"], dicom["spacing"],
+                                                                 dicom["scene_geometry"], dicom["uid"])
     transformation_ground_truth = None
 
     if target_flipped:
         image_2d_full = image_2d_full.flip(dims=(1,))
 
     image_2d_full = image_2d_full.to(device=device)
-    fixed_image_spacing = fixed_image_spacing.to(device=device)
+    image_2d_full_spacing = image_2d_full_spacing.to(device=device)
 
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
-            "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth,
+            "image_2d_full_spacing": image_2d_full_spacing, "transformation_gt": transformation_ground_truth,
             "xray_sop_instance_uid": uid}
 
 
@@ -90,8 +91,8 @@ def apply_truncation(*, untruncated_ct_volume: Float32[torch.Tensor, "p q r"], t
 def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Tensor, "3"],
                 current_transformation: Transformation, fixed_image_size: torch.Size, source_distance: float,
                 fixed_image_spacing: Float64[torch.Tensor, "2"], downsample_level: int,
-                translation_offset: torch.Tensor, fixed_image_offset: Float64[torch.Tensor, "2"],
-                image_2d_scale_factor: float, device) -> dict[str, Any]:
+                translation_offset: torch.Tensor, fixed_image_offset: Float64[torch.Tensor, "2"], device) -> dict[
+    str, Any]:
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(
         (translation_offset.to(device=current_transformation.device),
@@ -101,7 +102,7 @@ def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Ten
 
     return {"moving_image": geometry.generate_drr(ct_volumes[downsample_level], transformation=transformation,
                                                   voxel_spacing=ct_spacing * 2.0 ** downsample_level,
-                                                  detector_spacing=fixed_image_spacing / image_2d_scale_factor,
+                                                  detector_spacing=fixed_image_spacing,
                                                   scene_geometry=SceneGeometry(source_distance=source_distance,
                                                                                fixed_image_offset=fixed_image_offset),
                                                   output_size=fixed_image_size)}
@@ -109,11 +110,11 @@ def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Ten
 
 @dadg_updater(names_returned=["projected_fiducials"])
 def project_fiducials(*, current_transformation: Transformation, untruncated_ct_volume: Float32[torch.Tensor, "p q r"],
-                      ct_spacing: Float64[torch.Tensor, "3"], fixed_image_size: torch.Size,
-                      fixed_image_offset: Float64[torch.Tensor, "2"], translation_offset: Float64[torch.Tensor, "2"],
-                      fixed_image_spacing: Float64[torch.Tensor, "2"], image_2d_scale_factor: float,
+                      ct_spacing: Float64[torch.Tensor, "3"], fixed_image_offset: Float64[torch.Tensor, "2"],
+                      translation_offset: Float64[torch.Tensor, "2"],
                       ct_fiducial_points: tuple[list[str], Float64[torch.Tensor, "3"]], source_distance: float) -> dict[
     str, Any]:
+    # ToDo: Incorporate fixed image offset
     device = torch.device("cpu")
     current_transformation = current_transformation.to(device=device)
     # Applying the translation offset
@@ -127,6 +128,4 @@ def project_fiducials(*, current_transformation: Transformation, untruncated_ct_
     from_source = transformed_points - torch.tensor([[0.0, 0.0, -source_distance]], dtype=torch.float64)
     frac = torch.einsum("ji,i->j", from_source, torch.tensor([0.0, 0.0, 1.0], dtype=torch.float64)) / source_distance
     projected = frac.unsqueeze(-1) * transformed_points[:, 0:2]
-    output_points_2d = projected / (fixed_image_spacing / image_2d_scale_factor).to(device=device) + 0.5 * torch.tensor(
-        fixed_image_size, dtype=torch.float64).flip(dims=(0,))
-    return {"projected_fiducials": (ct_fiducial_points[0], output_points_2d)}
+    return {"projected_fiducials": (ct_fiducial_points[0], projected)}
