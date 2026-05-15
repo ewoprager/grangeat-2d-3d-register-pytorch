@@ -29,13 +29,13 @@ class ParamDADGParityManager:
     DADG.
     """
 
-    XRAY_SPECIFIC_DADG_KEYS: list[str] = ["image_2d_full", "fixed_image_spacing", "transformation_gt",  #
-                                          "source_distance", "xray_path", "target_flipped", "moving_image",
-                                          "fixed_image_size", "fixed_image_offset", "xray_sop_instance_uid",
-                                          "fixed_image", "cropped_target", "mask", "translation_offset",
-                                          "image_2d_scale_factor", "source_offset", "mask_transformation",
-                                          "current_transformation", "cropping", "electrode_points", "fiducial_points",
-                                          "projected_fiducials"]
+    XRAY_SPECIFIC_DADG_KEYS: list[str] = ["image_2d_full", "image_2d_full_spacing", "fixed_image_spacing",
+                                          "transformation_gt", "source_distance", "xray_path", "target_flipped",
+                                          "moving_image", "fixed_image_size", "fixed_image_offset",
+                                          "xray_sop_instance_uid", "fixed_image", "cropped_target", "mask",
+                                          "translation_offset", "image_2d_scale_factor", "source_offset",
+                                          "mask_transformation", "current_transformation", "cropping",
+                                          "electrode_points", "fiducial_points", "projected_fiducials"]
 
     def __init__(self, *, state: AppState, dadg: DirectedAcyclicDataGraph, electrode_save_manager: ElectrodeSaveManager,
                  ct_fiducial_save_manager: CTFiducialSaveManager,

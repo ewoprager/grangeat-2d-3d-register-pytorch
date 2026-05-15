@@ -34,7 +34,7 @@ def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: S
     return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing, "ct_series_uid": uid}
 
 
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt",
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "transformation_gt",
                               "xray_sop_instance_uid"])
 def set_target_image(*, xray_path: str, target_flipped: bool, device: torch.device) -> dict[str, Any]:
     # if xray_path is None:
@@ -50,24 +50,24 @@ def set_target_image(*, xray_path: str, target_flipped: bool, device: torch.devi
     #         drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
     #                                               save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
     #
-    #     fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
+    #     image_2d_full_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
     #     del drr_spec
     #     uid = None
     # else:
 
     dicom = read_dicom(xray_path)
-    image_2d_full, fixed_image_spacing, scene_geometry, uid = (dicom["image"], dicom["spacing"],
-                                                               dicom["scene_geometry"], dicom["uid"])
+    image_2d_full, image_2d_full_spacing, scene_geometry, uid = (dicom["image"], dicom["spacing"],
+                                                                 dicom["scene_geometry"], dicom["uid"])
     transformation_ground_truth = None
 
     if target_flipped:
         image_2d_full = image_2d_full.flip(dims=(1,))
 
     image_2d_full = image_2d_full.to(device=device)
-    fixed_image_spacing = fixed_image_spacing.to(device=device)
+    image_2d_full_spacing = image_2d_full_spacing.to(device=device)
 
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
-            "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth,
+            "image_2d_full_spacing": image_2d_full_spacing, "transformation_gt": transformation_ground_truth,
             "xray_sop_instance_uid": uid}
 
 
@@ -91,7 +91,7 @@ def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Ten
                 current_transformation: Transformation, fixed_image_size: torch.Size, source_distance: float,
                 fixed_image_spacing: Float64[torch.Tensor, "2"], downsample_level: int,
                 translation_offset: torch.Tensor, fixed_image_offset: Float64[torch.Tensor, "2"],
-                image_2d_scale_factor: float, device) -> dict[str, Any]:
+                device: torch.device) -> dict[str, Any]:
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(
         (translation_offset.to(device=current_transformation.device),
@@ -101,7 +101,7 @@ def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Ten
 
     return {"moving_image": geometry.generate_drr(ct_volumes[downsample_level], transformation=transformation,
                                                   voxel_spacing=ct_spacing * 2.0 ** downsample_level,
-                                                  detector_spacing=fixed_image_spacing / image_2d_scale_factor,
+                                                  detector_spacing=fixed_image_spacing,
                                                   scene_geometry=SceneGeometry(source_distance=source_distance,
                                                                                fixed_image_offset=fixed_image_offset),
                                                   output_size=fixed_image_size)}
@@ -111,7 +111,7 @@ def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Ten
 def project_fiducials(*, current_transformation: Transformation, untruncated_ct_volume: Float32[torch.Tensor, "p q r"],
                       ct_spacing: Float64[torch.Tensor, "3"], fixed_image_size: torch.Size,
                       fixed_image_offset: Float64[torch.Tensor, "2"], translation_offset: Float64[torch.Tensor, "2"],
-                      fixed_image_spacing: Float64[torch.Tensor, "2"], image_2d_scale_factor: float,
+                      fixed_image_spacing: Float64[torch.Tensor, "2"],
                       ct_fiducial_points: tuple[list[str], Float64[torch.Tensor, "3"]], source_distance: float) -> dict[
     str, Any]:
     device = torch.device("cpu")
@@ -127,6 +127,7 @@ def project_fiducials(*, current_transformation: Transformation, untruncated_ct_
     from_source = transformed_points - torch.tensor([[0.0, 0.0, -source_distance]], dtype=torch.float64)
     frac = torch.einsum("ji,i->j", from_source, torch.tensor([0.0, 0.0, 1.0], dtype=torch.float64)) / source_distance
     projected = frac.unsqueeze(-1) * transformed_points[:, 0:2]
-    output_points_2d = projected / (fixed_image_spacing / image_2d_scale_factor).to(device=device) + 0.5 * torch.tensor(
-        fixed_image_size, dtype=torch.float64).flip(dims=(0,))
+    output_points_2d = projected + 0.5 * fixed_image_spacing.to(device=device) * torch.tensor(fixed_image_size,
+                                                                                              dtype=torch.float64).flip(
+        dims=(0,))
     return {"projected_fiducials": (ct_fiducial_points[0], output_points_2d)}

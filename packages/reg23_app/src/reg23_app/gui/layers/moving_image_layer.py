@@ -16,24 +16,31 @@ logger = logging.getLogger(__name__)
 
 
 class _MovingImageLayerManager:
-    def __init__(self, *, ctx: AppContext, layer: napari.layers.Layer, namespace: str | None = None):
+    def __init__(self, *, ctx: AppContext, layer: napari.layers.Layer, namespace: str | None, spacing_dadg_key: str):
         logger.debug(f"Initializing _MovingImageLayerManager in namespace {namespace}")
         self._ctx = ctx
         self._layer = weakref.ref(layer)
         self._namespace = namespace
+        self._spacing_dadg_key = spacing_dadg_key
         #
         self._moving_image_key = "moving_image" if self._namespace is None else f"{self._namespace}__moving_image"
         self._current_transformation_key = "current_transformation" if self._namespace is None else (
             f"{self._namespace}__current_transformation")
-        self._ctx.dadg.set_evaluation_laziness(self._moving_image_key, lazily_evaluated=False)
         self._ctx.dadg.observe(self._moving_image_key, "moving_image_manager", self._observer_callback)
+        self._ctx.dadg.set_evaluation_laziness(self._moving_image_key, lazily_evaluated=False)
+        self._ctx.dadg.observe(self._spacing_dadg_key, "spacing_manager", self._spacing_observer_callback)
+        self._ctx.dadg.set_evaluation_laziness(self._spacing_dadg_key, lazily_evaluated=False)
         layer.mouse_drag_callbacks.append(self._mouse_drag)
 
     def __del__(self):
         self._ctx.dadg.set_evaluation_laziness(self._moving_image_key, lazily_evaluated=True)
+        self._ctx.dadg.set_evaluation_laziness(self._spacing_dadg_key, lazily_evaluated=True)
 
     def _observer_callback(self, new_value: torch.Tensor) -> None:
         self._layer().data = new_value.cpu().numpy()
+
+    def _spacing_observer_callback(self, new_value: torch.Tensor) -> None:
+        self._layer().scale = new_value.flip(dims=(0,)).cpu().numpy()
 
     def _mouse_drag(self, layer, event):
         if event.button == 1 and self._ctx.input_manager.ctrl_pressed:  # Ctrl-left click drag
@@ -105,18 +112,24 @@ class _MovingImageLayerManager:
                 pass
 
 
-def add_moving_image_layer(*, ctx: AppContext, namespace: str | None = None) -> napari.layers.Layer | None:
+def add_moving_image_layer(*, ctx: AppContext, namespace: str | None = None,
+                           spacing_dadg_key: str) -> napari.layers.Layer | None:
     logger.debug(f"Adding moving image layer in namespace {namespace}")
     moving_image_key = "moving_image" if namespace is None else f"{namespace}__moving_image"
     if moving_image_key in viewer().layers:
         logger.warning(f"Layer '{moving_image_key}' is already shown.")
         return None
-    value = ctx.dadg.get(moving_image_key, soft=True)
+    value: torch.Tensor | Error = ctx.dadg.get(moving_image_key, soft=True)
     if isinstance(value, Error):
         raise RuntimeError(f"Error softly getting '{moving_image_key}' from DADG: {value.description}.")
     initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
     logger.debug(f"Adding moving image layer '{moving_image_key}' to napari viewer")
-    layer = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
-                               interpolation2d="linear", name=moving_image_key)
-    layer.my_plugin = _MovingImageLayerManager(ctx=ctx, layer=layer, namespace=namespace)
+    layer: napari.layers.Layer = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
+                                                    interpolation2d="linear", name=moving_image_key)
+    spacing: torch.Tensor | Error = ctx.dadg.get(spacing_dadg_key, soft=True)
+    if isinstance(spacing, Error):
+        raise RuntimeError(f"Error softly getting '{spacing_dadg_key}' from DADG: {spacing.description}.")
+    layer.scale = spacing.flip(dims=(0,)).cpu().numpy()
+    layer.my_plugin = _MovingImageLayerManager(ctx=ctx, layer=layer, namespace=namespace,
+                                               spacing_dadg_key=spacing_dadg_key)
     return layer
