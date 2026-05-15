@@ -1,11 +1,11 @@
-from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe, Dict, validate, \
-    TraitError, Union
+import pathlib
 from typing import Any, Literal
 
-import pathlib
+from traitlets import (Bool, Dict, Enum, Float, HasTraits, Instance, Int, TraitError, Undefined, Unicode, Union,
+                       observe, validate)
 
-from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.data.structs import Cropping
+from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 
 __all__ = ["PsoParameters", "LocalZnccParameters", "LocalSearchParameters", "Parameters", "Context", "XrayParameters"]
 
@@ -115,7 +115,8 @@ class Parameters(HasTraits):
         # "cmaes",  #
     ], default=Undefined).tag(ui=True)
     op_algo_parameters: PsoParameters | LocalSearchParameters = Union(
-        trait_types=[Instance(PsoParameters, allow_none=False), Instance(LocalSearchParameters, allow_none=False)]).tag(ui=True)
+        trait_types=[Instance(PsoParameters, allow_none=False), Instance(LocalSearchParameters, allow_none=False)]).tag(
+        ui=True)
     iteration_count: int = Int(min=0).tag(ui=True)
     xray_parameters: dict[str, XrayParameters] = Dict(  #
         key_trait=Unicode(allow_none=False),  #

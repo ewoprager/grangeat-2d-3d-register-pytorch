@@ -7,6 +7,7 @@ import torch
 from reg23_app.state import AppState
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
+from reg23_experiments.ops.fiducials import refine_spherical_fiducial_2d
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
 
@@ -27,6 +28,7 @@ class FiducialsManager:
         self._dadg = dadg
 
         self._state.observe(self._button_fiducial_register, names=["button_fiducial_register"])
+        self._state.observe(self._button_xray_fiducial_refine, names=["button_refine_xray_fiducials"])
 
     def _button_fiducial_register(self, change) -> None:
         if not change.new:
@@ -102,3 +104,41 @@ class FiducialsManager:
                            mapping_parameters_to_transformation(torch.tensor(result.x, device=image_2d_full.device)))
         else:
             logger.info(f"Optimisation failed; status = {result.status}; {result.message}")
+
+    def _button_xray_fiducial_refine(self, change) -> None:
+        if not change.new:
+            return
+        self._state.button_refine_xray_fiducials = False
+
+        logger.info(f"Refining fiducials for X-ray '{self._state.register_fiducial_xray_choice}'")
+
+        dadg_key_prefix = self._state.register_fiducial_xray_choice + "__"
+
+        image_2d_full: torch.Tensor | Error = self._dadg.get(dadg_key_prefix + "image_2d_full")
+        if isinstance(image_2d_full, Error):
+            logger.error(
+                f"Couldn't get '{dadg_key_prefix}image_2d_full' for fiducial refinement: {image_2d_full.description}")
+            return
+
+        image_2d_full_spacing: torch.Tensor | Error = self._dadg.get(dadg_key_prefix + "image_2d_full_spacing")
+        if isinstance(image_2d_full_spacing, Error):
+            logger.error(f"Couldn't get '{dadg_key_prefix}image_2d_full_spacing' for fiducial refinement: "
+                         f"{image_2d_full_spacing.description}")
+            return
+
+        res: tuple[list[str], torch.Tensor] | Error = self._dadg.get(dadg_key_prefix + "fiducial_points")
+        if isinstance(res, Error):
+            logger.warning(f"Can't find fiducial points for X-ray '{self._state.register_fiducial_xray_choice}': "
+                           f"{res.description}")
+            return
+        xray_point_names, xray_point_vectors = res
+
+        for name, point in zip(xray_point_names, xray_point_vectors):
+            refined = refine_spherical_fiducial_2d(  #
+                image=image_2d_full,  #
+                spacing=image_2d_full_spacing,  #
+                position=point,  #
+                radius=0.5 * self._state.assumed_fiducial_diameter,  #
+            )
+            logger.info(
+                f"Refined point '{name}' from ({point[0]:.2f}, {point[1]:.2f}) to ({refined[0]:.2f}, {refined[1]:.2f})")

@@ -1,13 +1,13 @@
 import argparse
 import pathlib
-import nrrd
 from typing import Callable
 
+import nrrd
 import torch
 
-from reg23_experiments.utils import logs_setup
 from reg23_experiments.data.structs import Error
 from reg23_experiments.io import stradview, volume
+from reg23_experiments.utils import logs_setup
 
 type MarkerFunction = Callable[[torch.Tensor], torch.Tensor]
 
@@ -21,7 +21,7 @@ def marker_function(coordinates: torch.Tensor) -> torch.Tensor:
     value = 30000.0
     radius = 2.5
     dist = torch.linalg.vector_norm(coordinates, dim=-1)
-    return value * torch.exp(-(dist / radius).square())
+    return value * (dist < radius)
 
 
 def construct_marker_image(*, size: torch.Size, spacing: torch.Tensor, origin: torch.Tensor,

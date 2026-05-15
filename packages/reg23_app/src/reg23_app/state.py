@@ -1,9 +1,9 @@
 from typing import Literal
 
 import torch
-from reg23_app.gui_settings import GUISettings
-from traitlets import Bool, Enum, HasTraits, Instance, Int, List, Unicode, Union
+from traitlets import Bool, Enum, Float, HasTraits, Instance, Int, List, Unicode, Union
 
+from reg23_app.gui_settings import GUISettings
 from reg23_experiments.experiments.drr_params import DRRParams
 from reg23_experiments.experiments.parameters import Parameters
 
@@ -55,5 +55,7 @@ class AppState(HasTraits):
     drr_name_input: str = Unicode(allow_none=False, default_value="drr")
     button_create_drr: bool = Bool(default_value=False)
 
-    button_fiducial_register: bool = Bool(default_value=False)
     register_fiducial_xray_choice: str | None = Unicode(allow_none=True, default_value=None)
+    button_fiducial_register: bool = Bool(default_value=False)
+    button_refine_xray_fiducials: bool = Bool(default_value=False)
+    assumed_fiducial_diameter: float = Float(default_value=5.0, min=0.0)

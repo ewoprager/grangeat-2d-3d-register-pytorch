@@ -120,9 +120,18 @@ def deserialize_recursive(value: JsonSerializable, *, old_value: HasTraitsSerial
             return None
         value_trait = trait._value_trait
         if isinstance(old_value, dict):
-            return {k: deserialize_recursive(v, old_value=old_value[k] if k in old_value else None, trait=value_trait)
+            try:
+                return {
+                    k: deserialize_recursive(v, old_value=old_value[k] if k in old_value else None, trait=value_trait)
                     for k, v in value.items()}
-        return {k: deserialize_recursive(v, trait=value_trait) for k, v in value.items()}
+            except traitlets.TraitError as e:
+                logger.warning(f"Failed to deserialize: {e}")
+                return None
+        try:
+            return {k: deserialize_recursive(v, trait=value_trait) for k, v in value.items()}
+        except traitlets.TraitError as e:
+            logger.warning(f"Failed to deserialize: {e}")
+            return None
     # Given a trait, and it's an `Instance` of `HasTraits`
     if isinstance(trait, traitlets.Instance):
         if not issubclass(trait.klass, traitlets.HasTraits):
