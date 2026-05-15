@@ -69,50 +69,22 @@ class FiducialsManager:
             return
         xray_point_names, xray_point_vectors = res
 
-        res: tuple[list[str], torch.Tensor] | Error = self._dadg.get("ct_fiducial_points")
-        if isinstance(res, Error):
-            logger.warning(f"Can't find fiducial points for CT: {res.description}")
-            return
-        ct_point_names, ct_point_vectors = res
+        device: torch.device | Error = self._dadg.get("device")
+        if isinstance(device, Error):
+            raise Exception("Failed to get device from DADG")
 
-        # move params to the CPU for processing
-        fixed_image_spacing = fixed_image_spacing.to(device=torch.device("cpu"))
-        ct_spacing = ct_spacing.to(device=torch.device("cpu"))
-        xray_point_vectors = xray_point_vectors.to(device=torch.device("cpu"))
-        ct_point_vectors = ct_point_vectors.to(device=torch.device("cpu"))
-
-        if names_not_in_both := set(xray_point_names) ^ set(ct_point_names):
-            logger.warning(
-                f"The following points did not have counterparts in the other image:\n{list(names_not_in_both)}")
-
-        # rearrange ct_point_vectors so that its order corresponds to that of xray_point_vectors
-        name_to_index_map = {name: index for index, name in enumerate(xray_point_names)}
-        permutation = torch.tensor([name_to_index_map[name] for name in ct_point_names])
-        ct_point_vectors = ct_point_vectors[permutation.argsort()]
-
-        targets_2d = xray_point_vectors - 0.5 * fixed_image_spacing * torch.tensor(image_2d_full.size()).flip(dims=(0,))
-        input_points_3d = ct_point_vectors - 0.5 * ct_spacing * torch.tensor(ct_volume.size()).flip(dims=(0,))
-
-        targets_2d = targets_2d.numpy()
-        input_points_3d = input_points_3d.numpy()
-
-        source_distance: float | Error = self._dadg.get(dadg_key_prefix + "source_distance")
-        if isinstance(source_distance, Error):
-            logger.warning(f"Can't find source distance: {source_distance.description}")
-            return
-        source = np.array([0.0, 0.0, source_distance])
-        c_hat = np.array([0.0, 0.0, -1.0])
-
-        # ToDo: switch to using the updater, and get the translation working
-
+        # ToDo: Speed this up
         def residuals(pose: np.ndarray) -> np.ndarray:
-            homo_vectors = np.concat((input_points_3d, np.ones((input_points_3d.shape[0], 1))), axis=1)
-            transformation = mapping_parameters_to_transformation(torch.tensor(pose))
-            transformed_points = (homo_vectors @ transformation.get_h(device=torch.device("cpu")).numpy())[:, 0:3]
-            from_source = transformed_points - source
-            frac = np.einsum("ji,i->j", from_source, c_hat) / source_distance
-            projected = np.expand_dims(frac, -1) * transformed_points[:, 0:2]
-            return (projected - targets_2d).flatten()
+            self._dadg.set(dadg_key_prefix + "current_transformation",
+                           mapping_parameters_to_transformation(torch.tensor(pose, device=device)))
+            res = self._dadg.get(dadg_key_prefix + "projected_fiducials")
+            if isinstance(res, Error):
+                raise Exception(f"Failed to get projected fiducials during optimisation: {res.description}")
+            projected_names, projected_points = res
+            projected_name_to_index = {name: index for index, name in enumerate(projected_names)}
+            projected_points = projected_points[
+                torch.tensor([projected_name_to_index[name] for name in xray_point_names])]
+            return (projected_points - xray_point_vectors).flatten().numpy()
 
         current_transformation: Transformation | Error = self._dadg.get(dadg_key_prefix + "current_transformation")
         if isinstance(current_transformation, Error):
