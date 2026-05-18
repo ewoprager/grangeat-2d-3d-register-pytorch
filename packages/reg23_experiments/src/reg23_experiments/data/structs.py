@@ -167,7 +167,8 @@ class Transformation(NamedTuple):
 class SceneGeometry(NamedTuple):
     source_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array
     fixed_image_offset: Float64[torch.Tensor, "2"] = torch.zeros(2,
-                                                                 dtype=torch.float64)  # size (2,): (x, y) [mm]; offset of the fixed image relative to the source
+                                                                 dtype=torch.float64)  # size (2,): (x,
+    # y) [mm]; offset of the fixed image relative to the source
 
     @jaxtyped(typechecker=typechecker)
     def source_position(self, device: torch.device) -> Float64[torch.Tensor, "3"]:
@@ -218,8 +219,8 @@ class Cropping(traitlets.HasTraits):
     left: float = traitlets.Float(default_value=0.0, min=0.0, max=1.0).tag(ui=True)
     bottom: float = traitlets.Float(default_value=1.0, min=0.0, max=1.0).tag(ui=True)
 
-    def get_fractional_centre_offset(self) -> torch.Tensor:
-        return 0.5 * torch.tensor([self.left + self.right, self.top + self.bottom]) - 0.5
+    def get_fractional_centre_offset(self, **tensor_kwargs) -> torch.Tensor:
+        return 0.5 * torch.tensor([self.left + self.right, self.top + self.bottom], **tensor_kwargs) - 0.5
 
     def apply(self, tensor: torch.Tensor) -> torch.Tensor:
         i0 = int(round(self.left * float(tensor.size(1))))
@@ -324,7 +325,15 @@ class Sinogram3dGrid(NamedTuple):
 
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
-    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None  # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count  # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,  # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #  # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #  # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #  # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #  # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,  # thetas, rs)
+    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None
+    # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count
+    # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,
+    # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #
+    # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #
+    # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #
+    # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #
+    # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,
+    # thetas, rs)
 
 
 class OptimisationInstance(ABC):

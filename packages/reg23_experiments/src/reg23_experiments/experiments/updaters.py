@@ -151,7 +151,7 @@ def refresh_hyperparameter_dependent(*, image_2d_full: Float32[torch.Tensor, "n 
     else:
         cropped_target = cropping.apply(scaled_image_2d)
         offset_from_cropping = (image_2d_full_spacing  #
-                                * cropping.get_fractional_centre_offset()  #
+                                * cropping.get_fractional_centre_offset(device=device)  #
                                 * torch.tensor(image_2d_full.size(), device=device).flip(dims=(0,)))
 
     # The fixed image is offset to adjust for the cropping, and according to the source offset

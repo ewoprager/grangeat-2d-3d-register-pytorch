@@ -5,7 +5,6 @@ from typing import Callable
 import napari.layers
 import pandas as pd
 import torch
-from napari.layers.base import ActionType
 from napari.utils.events import Event
 
 from reg23_app.context import AppContext
@@ -36,36 +35,12 @@ class _ElectrodeLayerManager:
         if not isinstance(uid, str):
             logger.error(f"Expected UID to be a str, got: '{uid}'.")
             return
-        if event.action == ActionType.ADDED:
-            tensor = torch.tensor(layer.data)
-            layer.features = pd.DataFrame([{"label": f"{i}"} for i in range(1, tensor.size()[0] + 1)])
-            self._ctx.dadg.set(self._dadg_key, tensor)
-            res = self._ctx.electrode_save_manager.add(uid, tensor[-1])
-            if isinstance(res, Error):
-                logger.error(f"Error saving electrode point data: {res.description}")
-        elif event.action == ActionType.CHANGED:
-            tensor = torch.tensor(layer.data)
-            self._ctx.dadg.set(self._dadg_key, tensor)
-            for index in event.data_indices:
-                res = self._ctx.electrode_save_manager.move(  #
-                    uid=uid,  #
-                    index=int(index),  #
-                    tensor=tensor[int(index)]  #
-                )
-                if isinstance(res, Error):
-                    logger.error(f"Error saving electrode point data: {res.description}")
-        elif event.action == ActionType.REMOVING:
-            for index in event.data_indices:
-                res = self._ctx.electrode_save_manager.remove(  #
-                    uid=uid,  #
-                    index=int(index)  #
-                )
-                if isinstance(res, Error):
-                    logger.error(f"Error saving electrode point data: {res.description}")
-        elif event.action == ActionType.REMOVED:
-            tensor = torch.tensor(layer.data)
-            layer.features = pd.DataFrame([{"label": f"{i}"} for i in range(1, tensor.size()[0] + 1)])
-            self._ctx.dadg.set(self._dadg_key, tensor)
+        tensor = torch.tensor(layer.data)
+        layer.features = pd.DataFrame([{"label": f"{i}"} for i in range(1, tensor.size()[0] + 1)])
+        self._ctx.dadg.set(self._dadg_key, tensor)
+        res = self._ctx.electrode_save_manager.set(uid, tensor)
+        if isinstance(res, Error):
+            logger.error(f"Error saving electrode point data: {res.description}")
 
 
 def add_electrode_layer(*, ctx: AppContext, namespace: str | None = None) -> napari.layers.Layer | None:

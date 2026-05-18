@@ -24,6 +24,13 @@ class _CTFiducialLayerManager:
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         layer.events.connect(self._on_layer_change)
 
+    def _update_dadg_from_layer(self) -> None:
+        if (layer := self._layer()) is None:
+            return
+        names = layer.features["label"].values.tolist()
+        points = torch.tensor(layer.data).flip(dims=(1,))
+        self._ctx.dadg.set("ct_fiducial_points", (names, points))
+
     def _on_layer_change(self, event: Event):
         if event.type != "data":
             return
@@ -67,8 +74,7 @@ class _CTFiducialLayerManager:
             )
             if isinstance(res, Error):
                 logger.error(f"Error saving fiducial point data: {res.description}")
-            self._ctx.dadg.set("ct_fiducial_points",
-                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
+            self._update_dadg_from_layer()
         elif event.action == ActionType.CHANGED:
             for index in event.data_indices:
                 res = self._ctx.ct_fiducial_save_manager.set(  #
@@ -78,8 +84,7 @@ class _CTFiducialLayerManager:
                 )
                 if isinstance(res, Error):
                     logger.error(f"Error saving fiducial point data: {res.description}")
-            self._ctx.dadg.set("ct_fiducial_points",
-                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
+            self._update_dadg_from_layer()
         elif event.action == ActionType.REMOVING:
             for index in event.data_indices:
                 res = self._ctx.ct_fiducial_save_manager.remove(  #
@@ -90,8 +95,7 @@ class _CTFiducialLayerManager:
                     logger.error(f"Error saving fiducial point data: {res.description}")
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
-            self._ctx.dadg.set("ct_fiducial_points",
-                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
+            self._update_dadg_from_layer()
 
 
 def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
