@@ -18,26 +18,37 @@ class FiducialsWidget(widgets.Container):
 
         self._ctx = ctx
 
+        # Fiducial parameters
+        self._fiducial_diameter_box = widgets.FloatSpinBox(label="Assumed fiducial diameter", min=0.0)
+        self._fiducial_diameter_box.changed.connect(self._on_diameter)
+        self.append(self._fiducial_diameter_box)
+
         # -----
-        # Register
+        # CT
         # -----
+        self._refine_ct_fiducials_button = widgets.PushButton(label="Auto-refine CT fiducial seg.")
+        self._refine_ct_fiducials_button.changed.connect(self._on_refine_ct_fiducials)
+        self.append(self._refine_ct_fiducials_button)
+
+        # -----
+        # X-ray specific
+        # -----
+        # X-ray selection
         self._xray_select = widgets.ComboBox(choices=self._get_xray_choices, label="X-ray")
         self._ctx.state.parameters.observe(self._xray_params_changed, names=["xray_parameters"])
         self._xray_select.changed.connect(self._on_xray_choice_changed)
         self._on_xray_choice_changed()
         self.append(self._xray_select)
 
+        # Refine segmentation
+        self._refine_xray_fiducials_button = widgets.PushButton(label="Auto-refine X-ray fiducial seg.")
+        self._refine_xray_fiducials_button.changed.connect(self._on_refine_xray_fiducials)
+        self.append(self._refine_xray_fiducials_button)
+
+        # Register using fiducials
         self._register_button = widgets.PushButton(label="Register using fiducials")
         self._register_button.changed.connect(self._on_register)
         self.append(self._register_button)
-
-        self._refine_fiducials_button = widgets.PushButton(label="Auto-refine segmentation")
-        self._refine_fiducials_button.changed.connect(self._on_refine)
-        self.append(self._refine_fiducials_button)
-
-        self._fiducial_diameter_box = widgets.FloatSpinBox(label="Assumed fiducial diameter", min=0.0)
-        self._fiducial_diameter_box.changed.connect(self._on_diameter)
-        self.append(self._fiducial_diameter_box)
 
     def _on_register(self, *args) -> None:
         self._ctx.state.button_fiducial_register = True
@@ -51,7 +62,10 @@ class FiducialsWidget(widgets.Container):
     def _on_xray_choice_changed(self, *args) -> None:
         self._ctx.state.register_fiducial_xray_choice = self._xray_select.value
 
-    def _on_refine(self, *args) -> None:
+    def _on_refine_ct_fiducials(self, *args) -> None:
+        self._ctx.state.button_refine_ct_fiducials = True
+
+    def _on_refine_xray_fiducials(self, *args) -> None:
         self._ctx.state.button_refine_xray_fiducials = True
 
     def _on_diameter(self, *args) -> None:

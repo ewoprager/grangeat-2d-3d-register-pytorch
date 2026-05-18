@@ -5,7 +5,7 @@ from jaxtyping import Float32, Float64
 
 from reg23_experiments.ops.optimisation import local_search
 
-__all__ = ["refine_spherical_fiducial_2d"]
+__all__ = ["refine_spherical_fiducial_2d", "refine_spherical_fiducial_3d"]
 
 logger = logging.getLogger(__name__)
 

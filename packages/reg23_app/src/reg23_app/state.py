@@ -57,5 +57,6 @@ class AppState(HasTraits):
 
     register_fiducial_xray_choice: str | None = Unicode(allow_none=True, default_value=None)
     button_fiducial_register: bool = Bool(default_value=False)
+    button_refine_ct_fiducials: bool = Bool(default_value=False)
     button_refine_xray_fiducials: bool = Bool(default_value=False)
     assumed_fiducial_diameter: float = Float(default_value=5.0, min=0.0)
