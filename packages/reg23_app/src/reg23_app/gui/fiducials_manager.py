@@ -112,7 +112,7 @@ class FiducialsManager:
             return
         self._state.button_refine_ct_fiducials = False
 
-        logger.info(f"Refining fiducials for CT")
+        logger.info(f"Refining fiducial segmentation for CT")
 
         untruncated_ct_volume: torch.Tensor | Error = self._dadg.get("untruncated_ct_volume")
         if isinstance(untruncated_ct_volume, Error):
@@ -131,23 +131,24 @@ class FiducialsManager:
             return
         ct_point_names, ct_point_vectors = res
 
-        for name, point in zip(ct_point_names, ct_point_vectors):
-            refined = refine_spherical_fiducial_3d(  #
+        new_ct_point_vectors = torch.empty_like(ct_point_vectors)
+        for i, point in enumerate(ct_point_vectors):
+            new_ct_point_vectors[i] = refine_spherical_fiducial_3d(  #
                 volume=untruncated_ct_volume,  #
                 spacing=ct_spacing,  #
                 position=point,  #
                 radius=0.5 * self._state.assumed_fiducial_diameter,  #
             )
-            logger.info(
-                f"Refined point '{name}' from ({point[0]:.2f}, {point[1]:.2f}, {point[2]:.2f}) to ({refined[0]:.2f}, "
-                f"{refined[1]:.2f}, {refined[2]:.2f})")
+        self._dadg.set("ct_fiducial_points", (ct_point_names, new_ct_point_vectors))
+
+        logger.info("CT fiducial segmentation refined.")
 
     def _button_xray_fiducial_refine(self, change) -> None:
         if not change.new:
             return
         self._state.button_refine_xray_fiducials = False
 
-        logger.info(f"Refining fiducials for X-ray '{self._state.register_fiducial_xray_choice}'")
+        logger.info(f"Refining fiducial segmentation for X-ray '{self._state.register_fiducial_xray_choice}'")
 
         dadg_key_prefix = self._state.register_fiducial_xray_choice + "__"
 
@@ -170,12 +171,14 @@ class FiducialsManager:
             return
         xray_point_names, xray_point_vectors = res
 
-        for name, point in zip(xray_point_names, xray_point_vectors):
-            refined = refine_spherical_fiducial_2d(  #
+        new_xray_point_vectors = torch.empty_like(xray_point_vectors)
+        for i, point in enumerate(xray_point_vectors):
+            new_xray_point_vectors[i] = refine_spherical_fiducial_2d(  #
                 image=image_2d_full,  #
                 spacing=image_2d_full_spacing,  #
                 position=point,  #
                 radius=0.5 * self._state.assumed_fiducial_diameter,  #
             )
-            logger.info(
-                f"Refined point '{name}' from ({point[0]:.2f}, {point[1]:.2f}) to ({refined[0]:.2f}, {refined[1]:.2f})")
+        self._dadg.set(dadg_key_prefix + "fiducial_points", (xray_point_names, new_xray_point_vectors))
+
+        logger.info("X-ray fiducial segmentation refined.")

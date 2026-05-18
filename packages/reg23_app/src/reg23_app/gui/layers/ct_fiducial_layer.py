@@ -23,15 +23,34 @@ class _CTFiducialLayerManager:
         self._ctx = ctx
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         layer.events.connect(self._on_layer_change)
+        self._ctx.dadg.observe("ct_fiducial_points", "layer", self._update_layer_from_dadg)
+        self._callback_loop_prevention: bool = False
+
+    def _update_layer_from_dadg(self, new_value: tuple[list[str], torch.Tensor]) -> None:
+        if self._callback_loop_prevention:
+            return
+        if (layer := self._layer()) is None:
+            return
+        new_names, new_points = new_value
+        self._callback_loop_prevention = True
+        layer.features = pd.DataFrame([{"label": name} for name in new_names])
+        layer.data = new_points.flip(dims=(1,)).numpy()
+        self._callback_loop_prevention = False
 
     def _update_dadg_from_layer(self) -> None:
+        if self._callback_loop_prevention:
+            return
         if (layer := self._layer()) is None:
             return
         names = layer.features["label"].values.tolist()
         points = torch.tensor(layer.data).flip(dims=(1,))
+        self._callback_loop_prevention = True
         self._ctx.dadg.set("ct_fiducial_points", (names, points))
+        self._callback_loop_prevention = False
 
     def _on_layer_change(self, event: Event):
+        if self._callback_loop_prevention:
+            return
         if event.type != "data":
             return
         if (layer := self._layer()) is None:
@@ -69,6 +88,7 @@ class _CTFiducialLayerManager:
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
         # Save the data
+        # ToDo: Move this to the ParamDADGParityManager or similar so that fiducial refinement gets saved
         res = self._ctx.ct_fiducial_save_manager.set(  #
             uid=uid,  #
             names=layer.features["label"].values.tolist(),  #
