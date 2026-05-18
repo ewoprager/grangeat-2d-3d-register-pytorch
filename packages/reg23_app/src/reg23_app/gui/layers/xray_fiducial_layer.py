@@ -26,6 +26,13 @@ class _XRayFiducialLayerManager:
         self._xray_uid_dadg_key = xray_uid_dadg_key
         layer.events.connect(self._on_layer_change)
 
+    def _update_dadg_from_layer(self) -> None:
+        if (layer := self._layer()) is None:
+            return
+        names = layer.features["label"].values.tolist()
+        points = torch.tensor(layer.data).flip(dims=(1,))
+        self._ctx.dadg.set(self._dadg_key, (names, points))
+
     def _on_layer_change(self, event: Event):
         if event.type != "data":
             return
@@ -61,39 +68,17 @@ class _XRayFiducialLayerManager:
             new_features = layer.features.copy()
             new_features.iloc[-1]["label"] = name
             layer.features = new_features
-            # Save the data
-            res = self._ctx.xray_fiducial_save_manager.set(  #
-                uid=uid,  #
-                name=name,  #
-                value=torch.tensor(event.value[-1]).flip(dims=(0,))  #
-            )
-            if isinstance(res, Error):
-                logger.error(f"Error saving fiducial point data: {res.description}")
-            self._ctx.dadg.set(self._dadg_key,
-                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
-        elif event.action == ActionType.CHANGED:
-            for index in event.data_indices:
-                res = self._ctx.xray_fiducial_save_manager.set(  #
-                    uid=uid,  #
-                    name=layer.features.at[int(index), "label"],  #
-                    value=torch.tensor(event.value[int(index)]).flip(dims=(0,))  #
-                )
-                if isinstance(res, Error):
-                    logger.error(f"Error saving fiducial point data: {res.description}")
-            self._ctx.dadg.set(self._dadg_key,
-                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
-        elif event.action == ActionType.REMOVING:
-            for index in event.data_indices:
-                res = self._ctx.xray_fiducial_save_manager.remove(  #
-                    uid=uid,  #
-                    name=layer.features.at[int(index), "label"]  #
-                )
-                if isinstance(res, Error):
-                    logger.error(f"Error saving fiducial point data: {res.description}")
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
-            self._ctx.dadg.set(self._dadg_key,
-                               (layer.features["label"].values.tolist(), torch.tensor(layer.data).flip(dims=(1,))))
+        # Save the data
+        res = self._ctx.xray_fiducial_save_manager.set(  #
+            uid=uid,  #
+            names=layer.features["label"].tolist(),  #
+            points=torch.tensor(layer.data).flip(dims=(1,))  #
+        )
+        if isinstance(res, Error):
+            logger.error(f"Error saving fiducial point data: {res.description}")
+        self._update_dadg_from_layer()
 
 
 def add_xray_fiducial_layer(*, ctx: AppContext, namespace: str | None = None) -> napari.layers.Layer | None:
