@@ -114,6 +114,55 @@ class CTFiducialSaveData(SaveData):
         self._contents.to_parquet(file)
 
 
+def compute_changes(uid: str, old_data: tuple[list[str], torch.Tensor], new_data: tuple[list[str], torch.Tensor],
+                    tol: float = 1e-8) -> list[Change]:
+    assert len(old_data[0]) == old_data[1].size()[0]
+    assert len(new_data[0]) == new_data[1].size()[0]
+    assert len(old_data[1].size()) == 2
+    assert old_data[1].size()[1] == 3
+    assert len(new_data[1].size()) == 2
+    assert new_data[1].size()[1] == 3
+    uid = str(uid)
+    ret: list[Change] = []
+    old_set = set(old_data[0])
+    new_set = set(new_data[0])
+
+    # Points that have been removed
+    for old_name in old_set - new_set:
+        ret.append({  #
+            "action": "remove",  #
+            "ct_series_uid": uid,  #
+            "name": old_name,  #
+        })
+
+    # New points
+    for new_name in new_set - old_set:
+        index = new_data[0].index(new_name)
+        ret.append({  #
+            "action": "set",  #
+            "ct_series_uid": uid,  #
+            "name": new_name,  #
+            "x": new_data[1][index, 0].item(),  #
+            "y": new_data[1][index, 1].item(),  #
+            "z": new_data[1][index, 2].item(),  #
+        })
+
+    # Existing points that have moved
+    for name in old_set & new_set:
+        old_index = old_data[0].index(name)
+        new_index = new_data[0].index(name)
+        if (new_data[1][new_index] - old_data[1][old_index]).abs().max() > tol:
+            ret.append({  #
+                "action": "set",  #
+                "ct_series_uid": uid,  #
+                "name": name,  #
+                "x": new_data[1][new_index, 0].item(),  #
+                "y": new_data[1][new_index, 1].item(),  #
+                "z": new_data[1][new_index, 2].item(),  #
+            })
+    return ret
+
+
 class CTFiducialSaveManager:
     def __init__(self, directory: pathlib.Path):
         self._save_data_manager = SaveDataManager[CTFiducialSaveData](cls=CTFiducialSaveData, save_directory=directory)
@@ -130,29 +179,15 @@ class CTFiducialSaveManager:
         return list(rows_for_this_ct.index.get_level_values("name")), torch.tensor(
             rows_for_this_ct.values.astype(float))
 
-    def set(self, *, uid: str, name: str, value: torch.Tensor) -> None | Error:
-        if value.size() != torch.Size([3]):
-            return Error(f"Value should be tensor of size (3,); got '{value}'.")
-        change = {  #
-            "action": "set",  #
-            "ct_series_uid": uid,  #
-            "name": name,  #
-            "x": value[0].item(),  #
-            "y": value[1].item(),  #
-            "z": value[2].item(),  #
-        }
-        err = self._save_data_manager.apply_change(change)
-        if isinstance(err, Error):
-            return err
-        return None
-
-    def remove(self, *, uid: str, name: str) -> None | Error:
-        change = {  #
-            "action": "remove",  #
-            "ct_series_uid": uid,  #
-            "name": name  #
-        }
-        err = self._save_data_manager.apply_change(change)
-        if isinstance(err, Error):
-            return err
+    def set(self, *, uid: str, names: list[str], points: torch.Tensor) -> None | Error:
+        if len(points.size()) != 2 or points.size()[1] != 3:
+            return Error(f"Value should be tensor of size (N,3); got '{points.size()}'.")
+        if len(names) != points.size()[0]:
+            return Error(f"Names and points should have the same length; got {len(names)} and {points.size()[0]}.")
+        old: tuple[list[str], torch.Tensor] | None = self.get(uid)
+        changes = compute_changes(uid, ([], torch.empty((0, 3))) if old is None else old, (names, points))
+        for change in changes:
+            err = self._save_data_manager.apply_change(change)
+            if isinstance(err, Error):
+                return err
         return None

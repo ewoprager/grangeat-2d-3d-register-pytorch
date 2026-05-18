@@ -112,6 +112,10 @@ def compute_changes(uid: str, old_data: tuple[list[str], torch.Tensor], new_data
                     tol: float = 1e-8) -> list[Change]:
     assert len(old_data[0]) == old_data[1].size()[0]
     assert len(new_data[0]) == new_data[1].size()[0]
+    assert len(old_data[1].size()) == 2
+    assert old_data[1].size()[1] == 2
+    assert len(new_data[1].size()) == 2
+    assert new_data[1].size()[1] == 2
     uid = str(uid)
     ret: list[Change] = []
     old_set = set(old_data[0])

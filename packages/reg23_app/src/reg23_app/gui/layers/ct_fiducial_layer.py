@@ -66,36 +66,17 @@ class _CTFiducialLayerManager:
             new_features = layer.features.copy()
             new_features.iloc[-1]["label"] = name
             layer.features = new_features
-            # Save the data
-            res = self._ctx.ct_fiducial_save_manager.set(  #
-                uid=uid,  #
-                name=name,  #
-                value=torch.tensor(event.value[-1]).flip(dims=(0,))  #
-            )
-            if isinstance(res, Error):
-                logger.error(f"Error saving fiducial point data: {res.description}")
-            self._update_dadg_from_layer()
-        elif event.action == ActionType.CHANGED:
-            for index in event.data_indices:
-                res = self._ctx.ct_fiducial_save_manager.set(  #
-                    uid=uid,  #
-                    name=layer.features.at[int(index), "label"],  #
-                    value=torch.tensor(event.value[int(index)]).flip(dims=(0,))  #
-                )
-                if isinstance(res, Error):
-                    logger.error(f"Error saving fiducial point data: {res.description}")
-            self._update_dadg_from_layer()
-        elif event.action == ActionType.REMOVING:
-            for index in event.data_indices:
-                res = self._ctx.ct_fiducial_save_manager.remove(  #
-                    uid=uid,  #
-                    name=layer.features.at[int(index), "label"]  #
-                )
-                if isinstance(res, Error):
-                    logger.error(f"Error saving fiducial point data: {res.description}")
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
-            self._update_dadg_from_layer()
+        # Save the data
+        res = self._ctx.ct_fiducial_save_manager.set(  #
+            uid=uid,  #
+            names=layer.features["label"].values.tolist(),  #
+            points=torch.tensor(layer.data).flip(dims=(1,))  #
+        )
+        if isinstance(res, Error):
+            logger.error(f"Error saving fiducial point data: {res.description}")
+        self._update_dadg_from_layer()
 
 
 def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
