@@ -10,3 +10,5 @@
 {"action": "remove", "xray_sop_instance_uid": "12345.20260515.144653.196316", "name": "back_right"}
 {"action": "set", "xray_sop_instance_uid": "12345.20260515.144653.196316", "name": "back_right", "x": 153.85737752221277, "y": 86.81559986215338}
 {"action": "set", "xray_sop_instance_uid": "12345.20260515.144653.196316", "name": "back_right", "x": 159.93911396363498, "y": 96.54637816842892}
+{"action": "set", "xray_sop_instance_uid": "12345.20260515.144653.196316", "name": "poop", "x": 143.79871173256976, "y": 67.67712384225396}
+{"action": "remove", "xray_sop_instance_uid": "12345.20260515.144653.196316", "name": "poop"}

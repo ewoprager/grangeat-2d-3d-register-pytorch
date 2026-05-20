@@ -5,11 +5,11 @@ from typing import Callable
 import napari.layers
 import pandas as pd
 import torch
-from magicgui.widgets import request_values
 from napari.layers.base import ActionType
 from napari.utils.events import Event
 
 from reg23_app.context import AppContext
+from reg23_app.gui.floating import get_string_required
 from reg23_app.gui.viewer_singleton import viewer
 from reg23_experiments.data.structs import Error
 
@@ -65,25 +65,12 @@ class _XRayFiducialLayerManager:
             return
         if event.action == ActionType.ADDED:
             # Get a name for the new point
-            message_prefix: str | None = None
-            message_suffix: str = "Enter a unique name for the point"
-            while True:
-                prompt = message_suffix
-                if message_prefix is not None:
-                    prompt = message_prefix + ";\n" + prompt
-                values = request_values(name={"annotation": str, "label": prompt})
-                if not values:
-                    message_prefix = "No values provided."
-                    continue
-                name = values["name"]
-                if not name:
-                    message_prefix = "No name provided."
-                    continue
-                if name in layer.features["label"].values.tolist():
-                    message_prefix = f"Name '{name}' already in use."
-                    continue
-                break
+            def validator(_name: str) -> None | Error:
+                if _name in layer.features["label"].values.tolist():
+                    return Error(f"Name '{_name}' already in use.")
+                return None
 
+            name = get_string_required(message="Enter a unique name for the point", validator=validator)
             new_features = layer.features.copy()
             new_features.iloc[-1]["label"] = name
             layer.features = new_features
