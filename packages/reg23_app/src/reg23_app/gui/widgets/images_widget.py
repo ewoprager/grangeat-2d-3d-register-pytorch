@@ -83,7 +83,7 @@ class ImagesWidget(widgets.Container):
 
     def _on_show_ct_fiducials_layer(self) -> None:
         logger.debug(f"Show ct_fiducials clicked")
-        add_ct_fiducial_layer(ctx=self._ctx)
+        add_ct_fiducial_layer(dadg=self._ctx.dadg)
 
     def _on_show_image_2d_full_layer(self, xray_name: str) -> None:
         logger.debug(f"Show image_2d_full for '{xray_name}' clicked")
@@ -105,7 +105,7 @@ class ImagesWidget(widgets.Container):
 
     def _on_show_xray_fiducials_layer(self, xray_name: str) -> None:
         logger.debug(f"Show xray_fiducials for '{xray_name}' clicked")
-        add_xray_fiducial_layer(ctx=self._ctx, namespace=xray_name)
+        add_xray_fiducial_layer(dadg=self._ctx.dadg, namespace=xray_name)
 
     def _on_show_projected_fiducials_layer(self, xray_name: str) -> None:
         logger.debug(f"Show projected_fiducials for '{xray_name}' clicked")

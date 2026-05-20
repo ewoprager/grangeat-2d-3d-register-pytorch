@@ -8,10 +8,10 @@ import torch
 from napari.layers.base import ActionType
 from napari.utils.events import Event
 
-from reg23_app.context import AppContext
 from reg23_app.gui.floating import get_string_required
 from reg23_app.gui.viewer_singleton import viewer
 from reg23_experiments.data.structs import Error
+from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 
 __all__ = ["add_xray_fiducial_layer"]
 
@@ -19,13 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 class _XRayFiducialLayerManager:
-    def __init__(self, *, ctx: AppContext, layer: napari.layers.Points, dadg_key: str, xray_uid_dadg_key: str):
-        self._ctx = ctx
+    def __init__(self, *, dadg: DirectedAcyclicDataGraph, layer: napari.layers.Points, dadg_key: str,
+                 xray_uid_dadg_key: str):
+        self._dadg = dadg
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         self._dadg_key = dadg_key
         self._xray_uid_dadg_key = xray_uid_dadg_key
         layer.events.connect(self._on_layer_change)
-        self._ctx.dadg.observe(self._dadg_key, "layer", self._update_layer_from_dadg)
+        self._dadg.observe(self._dadg_key, "layer", self._update_layer_from_dadg)
         self._callback_loop_prevention: bool = False
 
     def _update_layer_from_dadg(self, new_value: tuple[list[str], torch.Tensor]) -> None:
@@ -47,7 +48,7 @@ class _XRayFiducialLayerManager:
         names = layer.features["label"].values.tolist()
         points = torch.tensor(layer.data).flip(dims=(1,))
         self._callback_loop_prevention = True
-        self._ctx.dadg.set(self._dadg_key, (names, points))
+        self._dadg.set(self._dadg_key, (names, points))
         self._callback_loop_prevention = False
 
     def _on_layer_change(self, event: Event):
@@ -56,12 +57,6 @@ class _XRayFiducialLayerManager:
         if event.type != "data":
             return
         if (layer := self._layer()) is None:
-            return
-        if isinstance(uid := self._ctx.dadg.get(self._xray_uid_dadg_key), Error):
-            logger.error(f"Failed to get X-ray UID on fiducial layer change: {uid.description}")
-            return
-        if not isinstance(uid, str):
-            logger.error(f"Expected UID to be a str, got: '{uid}'.")
             return
         if event.action == ActionType.ADDED:
             # Get a name for the new point
@@ -76,31 +71,24 @@ class _XRayFiducialLayerManager:
             layer.features = new_features
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
-        # Save the data
-        # ToDo: Move this to the ParamDADGParityManager or similar so that fiducial refinement gets saved
-        res = self._ctx.xray_fiducial_save_manager.set(  #
-            uid=uid,  #
-            names=layer.features["label"].tolist(),  #
-            points=torch.tensor(layer.data).flip(dims=(1,))  #
-        )
-        if isinstance(res, Error):
-            logger.error(f"Error saving fiducial point data: {res.description}")
+
         self._update_dadg_from_layer()
 
 
-def add_xray_fiducial_layer(*, ctx: AppContext, namespace: str | None = None) -> napari.layers.Layer | None:
+def add_xray_fiducial_layer(*, dadg: DirectedAcyclicDataGraph,
+                            namespace: str | None = None) -> napari.layers.Layer | None:
     dadg_key = "fiducial_points" if namespace is None else f"{namespace}__fiducial_points"
     if dadg_key in viewer().layers:
         logger.warning(f"Layer '{dadg_key}' is already shown.")
         return None
     uid_dadg_key = "xray_sop_instance_uid" if namespace is None else f"{namespace}__xray_sop_instance_uid"
-    if isinstance(uid := ctx.dadg.get(uid_dadg_key), Error):
+    if isinstance(uid := dadg.get(uid_dadg_key), Error):
         logger.error(f"Failed to get X-ray UID for electrode layer.")
         return None
     if not isinstance(uid, str):
         logger.error(f"Expected UID to be a str, got: '{uid}'.")
         return None
-    res: tuple[list[str], torch.Tensor] | None | Error = ctx.dadg.get(dadg_key)
+    res: tuple[list[str], torch.Tensor] | None | Error = dadg.get(dadg_key)
     if isinstance(res, Error):
         logger.error(f"Error getting fiducial point data for layer: {res.description}")
         return None
@@ -121,5 +109,6 @@ def add_xray_fiducial_layer(*, ctx: AppContext, namespace: str | None = None) ->
             features=pd.DataFrame([{"label": name} for name in names]),  #
             text={"string": "{label}", "size": 16}  #
         )
-    layer.my_plugin = _XRayFiducialLayerManager(ctx=ctx, layer=layer, dadg_key=dadg_key, xray_uid_dadg_key=uid_dadg_key)
+    layer.my_plugin = _XRayFiducialLayerManager(dadg=dadg, layer=layer, dadg_key=dadg_key,
+                                                xray_uid_dadg_key=uid_dadg_key)
     return layer

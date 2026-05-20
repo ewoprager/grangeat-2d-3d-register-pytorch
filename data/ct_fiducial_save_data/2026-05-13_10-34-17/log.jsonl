@@ -22,3 +22,11 @@
 {"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_right", "x": 175.0096000416624, "y": 116.4855957027368, "z": 175.93216126444966}
 {"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_left", "x": 82.2692353121963, "y": 25.105868475491345, "z": 103.87637704211585}
 {"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_left", "x": 80.14787937242558, "y": 23.277113354999333, "z": 103.87637704211585}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 159.0080219781817, "y": 32.690166351869564, "z": 101.15026516824278}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 150.25547037904443, "y": 17.685792181919993, "z": 101.15026516824278}
+{"action": "remove", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right"}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 103.65452692654912, "y": 46.271334872575295, "z": 101.0}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 149.91801395056038, "y": 17.512951046838566, "z": 101.0}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_left", "x": 87.03027301414497, "y": 106.14455586048459, "z": 187.70343887529265}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_left", "x": 80.87891677211367, "y": 25.01610160908196, "z": 104.56634842748693}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_left", "x": 86.79181655570689, "y": 106.26666562607838, "z": 187.314887840415}

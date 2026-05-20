@@ -8,10 +8,10 @@ import torch
 from napari.layers.base import ActionType
 from napari.utils.events import Event
 
-from reg23_app.context import AppContext
 from reg23_app.gui.floating import get_string_required
 from reg23_app.gui.viewer_singleton import viewer
 from reg23_experiments.data.structs import Error
+from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 
 __all__ = ["add_ct_fiducial_layer"]
 
@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 class _CTFiducialLayerManager:
-    def __init__(self, *, ctx: AppContext, layer: napari.layers.Points):
-        self._ctx = ctx
+    def __init__(self, *, dadg: DirectedAcyclicDataGraph, layer: napari.layers.Points):
+        self._dadg = dadg
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         layer.events.connect(self._on_layer_change)
-        self._ctx.dadg.observe("ct_fiducial_points", "layer", self._update_layer_from_dadg)
+        self._dadg.observe("ct_fiducial_points", "layer", self._update_layer_from_dadg)
         self._callback_loop_prevention: bool = False
 
     def _update_layer_from_dadg(self, new_value: tuple[list[str], torch.Tensor]) -> None:
@@ -45,7 +45,7 @@ class _CTFiducialLayerManager:
         names = layer.features["label"].values.tolist()
         points = torch.tensor(layer.data).flip(dims=(1,))
         self._callback_loop_prevention = True
-        self._ctx.dadg.set("ct_fiducial_points", (names, points))
+        self._dadg.set("ct_fiducial_points", (names, points))
         self._callback_loop_prevention = False
 
     def _on_layer_change(self, event: Event):
@@ -54,12 +54,6 @@ class _CTFiducialLayerManager:
         if event.type != "data":
             return
         if (layer := self._layer()) is None:
-            return
-        if isinstance(uid := self._ctx.dadg.get("ct_series_uid"), Error):
-            logger.error(f"Failed to get CT UID on fiducial layer change: {uid.description}")
-            return
-        if not isinstance(uid, str):
-            logger.error(f"Expected UID to be a str, got: '{uid}'.")
             return
         if event.action == ActionType.ADDED:
             # Get a name for the new point
@@ -74,32 +68,25 @@ class _CTFiducialLayerManager:
             layer.features = new_features
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
-        # Save the data
-        # ToDo: Move this to the ParamDADGParityManager or similar so that fiducial refinement gets saved
-        res = self._ctx.ct_fiducial_save_manager.set(  #
-            uid=uid,  #
-            names=layer.features["label"].values.tolist(),  #
-            points=torch.tensor(layer.data).flip(dims=(1,))  #
-        )
-        if isinstance(res, Error):
-            logger.error(f"Error saving fiducial point data: {res.description}")
+
         self._update_dadg_from_layer()
 
 
-def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
+def add_ct_fiducial_layer(*, dadg: DirectedAcyclicDataGraph) -> napari.layers.Layer | None:
     if "ct_fiducial_points" in viewer().layers:
         logger.warning(f"Layer 'ct_fiducial_points' is already shown.")
         return None
-    if isinstance(uid := ctx.dadg.get("ct_series_uid"), Error):
+    if isinstance(uid := dadg.get("ct_series_uid"), Error):
         logger.error(f"Failed to get CT UID for fiducial layer.")
         return None
     if not isinstance(uid, str):
         logger.error(f"Expected UID to be a str, got: '{uid}'.")
         return None
-    res: tuple[list[str], torch.Tensor] | None | Error = ctx.dadg.get("ct_fiducial_points")
+    res: tuple[list[str], torch.Tensor] | None | Error = dadg.get("ct_fiducial_points")
     if isinstance(res, Error):
         logger.error(f"Failed to get CT fiducial point data for layer: {res.description}")
         return None
+    # ToDo: Move initialisation to the layer manager?
     if res is None:
         layer = viewer().add_points(  #
             ndim=3,  #
@@ -117,5 +104,5 @@ def add_ct_fiducial_layer(*, ctx: AppContext) -> napari.layers.Layer | None:
             features=pd.DataFrame([{"label": name} for name in names]),  #
             text={"string": "{label}", "size": 16}  #
         )
-    layer.my_plugin = _CTFiducialLayerManager(ctx=ctx, layer=layer)
+    layer.my_plugin = _CTFiducialLayerManager(dadg=dadg, layer=layer)
     return layer

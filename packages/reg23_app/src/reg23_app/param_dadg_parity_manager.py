@@ -81,6 +81,9 @@ class ParamDADGParityManager:
         if not isinstance(ct_uid := self._dadg.get("ct_series_uid"), Error):
             self._ct_series_uid_changed(ct_uid)
 
+        # eagerly save the ct fiducial points to the save manager
+        self._dadg.observe("ct_fiducial_points", "saver", self._ct_fiducial_points_changed)
+
     def _ct_path_changed(self, new_value: str) -> None:
         self._dadg.set("ct_path", NoNodeData if new_value is None else new_value, check_equality=True)
 
@@ -94,8 +97,32 @@ class ParamDADGParityManager:
         self._dadg.set("target_flipped" if namespace is None else f"{namespace}__target_flipped", new_value,
                        check_equality=True)
 
+    def _xray_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor], *, namespace: str) -> None:
+        if isinstance(uid := self._dadg.get(f"{namespace}__xray_sop_instance_uid"), Error):
+            logger.error(f"Failed to get X-ray '{namespace}' UID on fiducial change: {uid.description}")
+            return
+        err = self._xray_fiducial_save_manager.set(  #
+            uid=uid,  #
+            names=new_value[0],  #
+            points=new_value[1]  #
+        )
+        if isinstance(err, Error):
+            logger.error(f"Error saving X-ray '{namespace}' fiducial point data: {err.description}")
+
     def _ct_series_uid_changed(self, new_value: str) -> None:
         self._dadg.set("ct_fiducial_points", self._ct_fiducial_save_manager.get(new_value))
+
+    def _ct_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor]) -> None:
+        if isinstance(uid := self._dadg.get("ct_series_uid"), Error):
+            logger.error(f"Failed to get CT UID on fiducial change: {uid.description}")
+            return
+        err = self._ct_fiducial_save_manager.set(  #
+            uid=uid,  #
+            names=new_value[0],  #
+            points=new_value[1]  #
+        )
+        if isinstance(err, Error):
+            logger.error(f"Error saving CT fiducial point data: {err.description}")
 
     def _xray_parameters_changed(self, new_value: dict[str, XrayParameters]) -> None:
         for key, value in new_value.items():
@@ -140,6 +167,10 @@ class ParamDADGParityManager:
             names=["target_flipped"]  #
         )
         self._target_flipped_changed(params.target_flipped, namespace=name)
+
+        # for eagerly saving the `fiducial_points`
+        self._dadg.observe(f"{name}__fiducial_points", "saver",
+                           lambda new_value, _name=name: self._xray_fiducial_points_changed(new_value, namespace=_name))
 
         # Add namespaced DADG updaters
         namespace_captures = {key: name for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}
