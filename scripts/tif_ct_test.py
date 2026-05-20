@@ -1,10 +1,11 @@
-import sys
+import configparser
 import pathlib
-import logging
+import sys
 
 import tifffile
 
 from reg23_experiments.utils import logs_setup
+
 
 def tiff_tag_to_python(tag):
     value = tag.value
@@ -29,12 +30,26 @@ def main():
     d = pathlib.Path(sys.argv[1])
     assert d.is_dir()
 
+    config_paths = [f for f in d.iterdir() if f.is_file() and f.suffix == ".xtekVolume"]
+    if len(config_paths) != 1:
+        logger.error(f"Found {len(config_paths)} config files.")
+        return
+    config = configparser.ConfigParser()
+    config.read(config_paths[0])
+    for section in config.sections():
+        print(f"Section '{section}':")
+    print(list(e for e in config["Volume"]))
+    print(config["XTekCT"]["voxelsizex"])
+    print(config["XTekCT"]["voxelsx"])
+
     tif_paths = [f for f in d.iterdir() if f.is_file() and (f.suffix == ".tif" or f.suffix == ".tiff")]
     with tifffile.TiffFile(tif_paths[0]) as first_file_object:
         logger.info(f"Found {len(first_file_object.pages)} pages in first .tif file '{str(tif_paths[0])}':")
         for page in first_file_object.pages:
+            logger.info(f"{"; ".join([tag.name for tag in page.tags._dict.values()])}")
             logger.info(f"\tshape = {page.shape}, dtype = {page.dtype}, axes = {page.axes}, XResolution = "
-                        f"{tiff_tag_to_python(page.tags["XResolution"])}, dtype = {page.tags["XResolution"].dtype}, YResolution = "
+                        f"{tiff_tag_to_python(page.tags["XResolution"])}, dtype = {page.tags["XResolution"].dtype}, "
+                        f"YResolution = "
                         f"{page.tags["YResolution"].value}, dtype = {page.tags["YResolution"].dtype}, ImageWidth = "
                         f"{page.tags["ImageWidth"].value}, "
                         f"dtype = {page.tags["ImageWidth"].dtype}")

@@ -1,9 +1,11 @@
+import configparser
 import logging
 import pathlib
 
 import nibabel
 import nrrd
 import pydicom
+import tifffile
 import torch
 import traitlets
 from tqdm import tqdm
@@ -35,6 +37,61 @@ def read_nii(path: pathlib.Path) -> tuple[torch.Tensor, torch.Tensor]:
     data = data.permute(*reversed(range(data.ndim)))
     spacing = torch.tensor(img.header.get_zooms(), dtype=torch.float32)[0:3]
     return data, spacing
+
+
+def read_xtek_tif_dir(path: pathlib.Path) -> tuple[torch.Tensor, torch.Tensor] | None:
+    if not path.is_dir():
+        logger.error(f"Path '{path}' is not a directory.")
+        return None
+    config_paths = [f for f in path.iterdir() if f.is_file() and f.suffix == ".xtekVolume"]
+    if len(config_paths) != 1:
+        logger.error(f"Found {len(config_paths)} config files in CT directory '{path}'.")
+        return None
+    config = configparser.ConfigParser()
+    config.read(config_paths[0])
+    section = "XTekCT"
+    if section not in config:
+        logger.error(f"Expected section 'XTekCT' in config file '{config_paths[0]}', but not found.")
+        return None
+    if "voxelsizex" not in config[section]:
+        logger.error(
+            f"Expected key 'voxelsizex' in section '{section}' in config file '{config_paths[0]}', but not found.")
+        return None
+    if "voxelsizey" not in config[section]:
+        logger.error(
+            f"Expected key 'voxelsizey' in section '{section}' in config file '{config_paths[0]}', but not found.")
+        return None
+    if "voxelsizez" not in config[section]:
+        logger.error(
+            f"Expected key 'voxelsizez' in section '{section}' in config file '{config_paths[0]}', but not found.")
+        return None
+    if "voxelsx" not in config[section]:
+        logger.error(
+            f"Expected key 'voxelsx' in section '{section}' in config file '{config_paths[0]}', but not found.")
+        return None
+    if "voxelsy" not in config[section]:
+        logger.error(
+            f"Expected key 'voxelsy' in section '{section}' in config file '{config_paths[0]}', but not found.")
+        return None
+    if "voxelsz" not in config[section]:
+        logger.error(
+            f"Expected key 'voxelsz' in section '{section}' in config file '{config_paths[0]}', but not found.")
+        return None
+    volume = torch.empty(
+        (int(config[section]["voxelsz"]), int(config[section]["voxelsy"]), int(config[section]["voxelsx"])),
+        dtype=torch.int16)
+    tif_paths = sorted([f for f in path.iterdir() if f.is_file() and (f.suffix == ".tif" or f.suffix == ".tiff")])
+    if len(tif_paths) != volume.size()[0]:
+        logger.error(
+            f"Config specified {volume.size()[0]} voxels in Z-direction, but found {len(tif_paths)} image files")
+        return None
+    for i, slice_path in tqdm(enumerate(tif_paths), desc="Reading .tif files", total=len(tif_paths)):
+        volume[i] = torch.from_numpy(tifffile.imread(slice_path))
+    return volume, torch.tensor([  #
+        float(config[section]["voxelsizex"]),  #
+        float(config[section]["voxelsizey"]),  #
+        float(config[section]["voxelsizez"])  #
+    ])
 
 
 class CTSliceDICOM(traitlets.HasTraits):
@@ -224,12 +281,14 @@ def find_dicom_series_in_directory(path: pathlib.Path, check_for_dcm_suffix: boo
     all_slice_paths = [elem for elem in path.iterdir() if elem.is_file()]
     if check_for_dcm_suffix:
         all_slice_paths = [elem for elem in all_slice_paths if elem.suffix == ".dcm"]
+    else:
+        all_slice_paths = [elem for elem in all_slice_paths if (elem.suffix == ".dcm" or elem.suffix == "")]
     if len(all_slice_paths) == 0:
         raise Exception(
             "Error: no {}slices found in given directory '{}'.".format("DICOM (.dcm) " if check_for_dcm_suffix else "",
                                                                        str(path)))
     all_slices: list[CTSliceDICOM] = [  #
-        s for slice_path in tqdm(all_slice_paths, desc=f"Reading DICOM files")  #
+        s for slice_path in tqdm(all_slice_paths, desc="Reading DICOM files")  #
         if (s := read_ct_slice_dicom(slice_path)) is not None  #
     ]
     # Group by series number
@@ -286,14 +345,19 @@ def load_ct(path: pathlib.Path, *, hu_cutoff: float = -1000.0, mu_water: float =
         uid = str(path)
     else:
         assert path.is_dir()
-        series: list[tuple[int, int]] = find_dicom_series_in_directory(path, check_for_dcm_suffix_if_dir)
-        if series_number is None:
-            if len(series) > 1:
-                series_number, length = max(series, key=lambda t: t[1])
-                logger.info(f"Multiple series found in DICOM directory '{str(path)}'; loading the longest series, which"
-                            f"has {length} slices.")
-        data, spacing, _, uid = read_dicom_series_from_directory(path, series_number=series_number,
-                                                                 check_for_dcm_suffix=check_for_dcm_suffix_if_dir)
+        try:
+            series: list[tuple[int, int]] = find_dicom_series_in_directory(path, check_for_dcm_suffix_if_dir)
+            if series_number is None:
+                if len(series) > 1:
+                    series_number, length = max(series, key=lambda t: t[1])
+                    logger.info(
+                        f"Multiple series found in DICOM directory '{str(path)}'; loading the longest series, which"
+                        f"has {length} slices.")
+            data, spacing, _, uid = read_dicom_series_from_directory(path, series_number=series_number,
+                                                                     check_for_dcm_suffix=check_for_dcm_suffix_if_dir)
+        except Exception:
+            data, spacing = read_xtek_tif_dir(path)
+            uid = str(path)
     sizes = data.size()
     spacing = spacing
     logger.info("CT data volume size and spacing = [{} x {} x {}]; [{:.3f} x {:.3f} x {:.3f}] mm"
