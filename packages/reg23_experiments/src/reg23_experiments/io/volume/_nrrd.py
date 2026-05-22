@@ -29,6 +29,10 @@ class NrrdVolumeLoader(VolumeLoader):
             return Error(f".nrrd files cannot contain multiple series.")
         data, header = nrrd.read(str(path))
         data = torch.tensor(data)
+        if len(data.size()) > 3:
+            data = data.squeeze()
+        if len(data.size()) != 3:
+            return Error(f"Expected CT volume data to be 3 dimensional; found image of size {data.size()}.")
         directions = torch.tensor(header['space directions'], dtype=torch.float64)
         spacing = directions.norm(dim=1).flip(dims=(0,))
         return Volume(raw_data=data, spacing=spacing, uid=str(path))

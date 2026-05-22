@@ -26,12 +26,16 @@ class _CTFiducialLayerManager:
         self._dadg.observe("ct_fiducial_points", "layer", self._update_layer_from_dadg)
         self._callback_loop_prevention: bool = False
 
-    def _update_layer_from_dadg(self, new_value: tuple[list[str], torch.Tensor]) -> None:
+    def _update_layer_from_dadg(self, new_value: tuple[list[str], torch.Tensor] | None) -> None:
         if self._callback_loop_prevention:
             return
         if (layer := self._layer()) is None:
             return
-        new_names, new_points = new_value
+        if new_value is None:
+            new_names = []
+            new_points = torch.empty((0, 3))
+        else:
+            new_names, new_points = new_value
         self._callback_loop_prevention = True
         layer.features = pd.DataFrame([{"label": name} for name in new_names])
         layer.data = new_points.flip(dims=(1,)).numpy()

@@ -119,8 +119,10 @@ def project_fiducials(*, current_transformation: Transformation, untruncated_ct_
                       ct_spacing: Float64[torch.Tensor, "3"], fixed_image_size: torch.Size,
                       fixed_image_offset: Float64[torch.Tensor, "2"], translation_offset: Float64[torch.Tensor, "2"],
                       fixed_image_spacing: Float64[torch.Tensor, "2"],
-                      ct_fiducial_points: tuple[list[str], Float64[torch.Tensor, "3"]], source_distance: float) -> dict[
-    str, Any]:
+                      ct_fiducial_points: tuple[list[str], Float64[torch.Tensor, "3"]] | None,
+                      source_distance: float) -> dict[str, Any]:
+    if ct_fiducial_points is None:
+        return {"projected_fiducials": ([], torch.empty((0, 2)))}
     device = torch.device("cpu")
     current_transformation = current_transformation.to(device=device)
     # Applying the translation offset

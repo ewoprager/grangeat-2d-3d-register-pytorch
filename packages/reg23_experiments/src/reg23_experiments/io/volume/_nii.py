@@ -30,7 +30,11 @@ class NiiVolumeLoader(VolumeLoader):
         img = nibabel.load(str(path))
         if not isinstance(img, nibabel.Nifti1Image):
             return Error(f"Unsupported filetype for {str(path)}: {img.__class__.__name__}")
-        data = torch.tensor(img.get_data())
+        data = torch.tensor(img.get_fdata())
+        if len(data.size()) > 3:
+            data = data.squeeze()
+        if len(data.size()) != 3:
+            return Error(f"Expected CT volume data to be 3 dimensional; found image of size {data.size()}.")
         data = data.permute(*reversed(range(data.ndim)))
         spacing = torch.tensor(img.header.get_zooms(), dtype=torch.float64)[0:3]
         return Volume(raw_data=data, spacing=spacing, uid=str(path))
