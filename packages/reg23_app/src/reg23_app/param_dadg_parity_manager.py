@@ -110,9 +110,11 @@ class ParamDADGParityManager:
             logger.error(f"Error saving X-ray '{namespace}' fiducial point data: {err.description}")
 
     def _ct_series_uid_changed(self, new_value: str) -> None:
-        self._dadg.set("ct_fiducial_points", self._ct_fiducial_save_manager.get(new_value))
+        self._dadg.set("ct_fiducial_points", self._ct_fiducial_save_manager.get(
+            new_value))  # ToDo:  ct_fiducial_points: tuple[list[str], torch.Tensor] -> tuple[list[str],
+        # torch.Tensor] | None
 
-    def _ct_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor]) -> None:
+    def _ct_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor] | None) -> None:
         if isinstance(uid := self._dadg.get("ct_series_uid"), Error):
             logger.error(f"Failed to get CT UID on fiducial change: {uid.description}")
             return

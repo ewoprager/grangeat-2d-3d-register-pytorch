@@ -7,9 +7,9 @@ from jaxtyping import Float32, Float64
 
 import reg23_core
 from reg23_app.gui.old.lib.structs import Target
-from reg23_experiments.data.structs import Cropping, Transformation
+from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.io.image import load_cached_drr, read_dicom
-from reg23_experiments.io.volume import load_ct
+from reg23_experiments.io.volume import Volume, load_one_ct_series
 from reg23_experiments.ops import drr
 from reg23_experiments.ops.data_manager import dadg_updater
 from reg23_experiments.ops.volume import downsample_trilinear_antialiased
@@ -21,9 +21,9 @@ __all__ = ["load_ct", "load_target_image", "set_synthetic_target_image",
 logger = logging.getLogger(__name__)
 
 
-@dadg_updater(names_returned=["ct_volumes", "ct_spacing"])
+@dadg_updater(names_returned=["ct_volumes", "ct_spacing", "ct_series_uid"])
 def load_ct(*, ct_path: str, device: torch.device) -> dict[str, Any]:
-    ct_volume, ct_spacing, _ = load_ct(pathlib.Path(ct_path))
+    res: Volume | Error = load_one_ct_series(pathlib.Path(ct_path))
     ct_volume = ct_volume.to(device=device)
     ct_spacing = ct_spacing.to(device=device)
 
