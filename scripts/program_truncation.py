@@ -18,8 +18,9 @@ from reg23_experiments.data.transformation_save_data import TransformationSaveDa
 from reg23_experiments.experiments import updaters
 from reg23_experiments.io.image import load_cached_drr, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
-from reg23_experiments.io.volume import load_ct
+from reg23_experiments.io.volume import Volume, load_one_ct_series
 from reg23_experiments.ops import drr, geometry, similarity_metric, swarm as pso
+from reg23_experiments.ops.ct import convert_ct_to_mu
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.objective_function import ParametrisedSimilarityMetric
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
@@ -51,10 +52,14 @@ def instance_output_directory(script_output_directory: str | pathlib.Path) -> pa
 @dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
 def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
-    ct_volume, ct_spacing = load_ct(pathlib.Path(ct_path))
-    ct_volume = ct_volume.to(device=device, dtype=torch.float32)
-    ct_spacing = ct_spacing.to(device=device)
-
+    volume: Volume | Error = load_one_ct_series(pathlib.Path(ct_path))
+    if isinstance(volume, Error):
+        raise Exception(f"Failed to open CT from path '{ct_path}': {volume.description}")
+    ct_volume = convert_ct_to_mu(volume, dtype=torch.float32)
+    if isinstance(ct_volume, Error):
+        raise Exception(f"Failed to convert CT from path '{ct_path}' to mu: {ct_volume.description}")
+    ct_volume = ct_volume.to(device=device)
+    ct_spacing = volume.spacing.to(device=device)
     if ct_permutation is not None:
         assert len(ct_permutation) == 3
         ct_volume = ct_volume.permute(*ct_permutation)
