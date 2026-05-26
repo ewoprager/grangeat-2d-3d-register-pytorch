@@ -116,11 +116,6 @@ def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spac
     output_device = position.device
     position = position.cpu()
 
-    # marker_volume = 4.0 * torch.pi * radius * radius * radius / 3.0
-    # voxel_volume = spacing.prod()
-    # min_voxels_per_marker = int((0.9 * marker_volume / voxel_volume).floor().item())
-    # sorted_intensities, _ = volume.flatten().sort()
-    # estimated_marker_intensity = sorted_intensities[-min_voxels_per_marker:].median()
     border_thickness = spacing.max()
     sq_inner_rad = (radius - border_thickness) * (radius - border_thickness)
     sq_outer_rad = (radius + border_thickness) * (radius + border_thickness)
@@ -162,7 +157,7 @@ def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spac
         loss.backward()
         with torch.no_grad():
             x -= lr * x.grad
-    return x.detach()
+    return x.detach().to(device=output_device)
 
     # return local_search(  #  #     starting_position=position,  #  #     initial_step_size=torch.full((3,),
     # 0.25 * radius, dtype=torch.float64),  #  #     objective_function=objective  #  # ).to(device=output_device)

@@ -16,8 +16,6 @@ developed as part of a PhD.
 
 # Repo contents
 
-ToDo: update this
-
 ```text
 .
 ├── packages/
@@ -35,8 +33,10 @@ ToDo: update this
 │   ├── app.py                      # The main script; see more details below.
 │   └── ...                         # Other scripts, many of which may be somewhat out-of-date.
 ├── data/                           # Directory used for saving experimental data, or saved values between script runs.
-│   ├── app_electrode_save_data/    # Segmented positions in X-rays in the app are saved here.
-│   └── app_transformation_s.../    # Registered transformations between X-rays and CTs in the app are saved here.
+│   ├── app_electrode_save_data/    # Segmented positions of electrodes in X-rays are saved here.
+│   ├── app_transformation_save.../ # Registered transformations between X-rays and CTs in the app are saved here.
+│   ├── ct_fiducial_save_data/      # Segmented positions of fiducial markers in CT scans are saved here.
+│   └── xray_fiducial_save_data/    # Segmented positions of fiducial markers in X-rays are saved here.
 ├── figures/                        # Plots and images from experiments.
 ├── README.md                       # This file.
 ├── pyproject.toml                  # The project configuration file used by `uv` to setup the environment and dependencies used by all Python scripts.
@@ -184,6 +184,20 @@ The basic layout of the app is as follows:
       scaled differently.
     - The set of segmented points for the X-ray are saved eagerly to a table in
       the [app_electrode_save_data](data/app_electrode_save_data) directory, and automatically loaded on start.
+- 2D and 3D images can be registered using spherical steel ball bearing fiducial markers:
+    - Click both the *'Show fiducials'* and *'Show full 2d image'* buttons for an X-ray in the *'Images'* tab. This will
+      add such layers to the viewer.
+    - With the fiducials layer selected, add a point on each fiducial you can see in the X-ray, and give it a unique
+      name when prompted.
+    - Hide these layer, and click the *'Show fiducials'* and *'Show CT view'* buttons for the CT in the *'Images'* tab.
+      This will add such layers to the viewer.
+    - The scroll bar at the bottom will allow you to scroll through the layers of the CT scan. Do so, and segment the
+      corresponding fiducial markers in the CT scan in the *'CT fiducials'* layer.
+    - In the *'Fiducials'* tab, set the diameter of the steel ball bearings used as markers, and click the *'refine
+      fiducial segmentation'* buttons to automatically centre your segmented points on the markers.
+    - Click the *'Register using fiducials'* button to automatically set the registration transformation of the X-ray
+      according to the fiducials.
+    - The result can be viewed by showing the *'Moving image'* and/or *'Projected fiducials'* layers for the X-ray.
 
 ### How are the images processed? Why does it lag when I show the moving image, but not when I open the CT file?
 
