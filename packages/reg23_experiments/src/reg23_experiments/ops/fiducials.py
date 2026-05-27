@@ -83,10 +83,11 @@ def refine_spherical_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing
     position = position.cpu()
 
     def objective(pos: torch.Tensor) -> torch.Tensor:
-        i0: int = max(0, int(((pos[0] - radius) / spacing[0]).floor().item()))
-        i1: int = min(image.size()[1] - 1, int(((pos[0] + radius) / spacing[0]).ceil().item()))
-        j0: int = max(0, int(((pos[1] - radius) / spacing[1]).floor().item()))
-        j1: int = min(image.size()[0] - 1, int(((pos[1] + radius) / spacing[1]).ceil().item()))
+        pos_nograd = pos.detach()
+        i0: int = max(0, int(((pos_nograd[0] - radius) / spacing[0]).floor().item()))
+        i1: int = min(image.size()[1] - 1, int(((pos_nograd[0] + radius) / spacing[0]).ceil().item()))
+        j0: int = max(0, int(((pos_nograd[1] - radius) / spacing[1]).floor().item()))
+        j1: int = min(image.size()[0] - 1, int(((pos_nograd[1] + radius) / spacing[1]).ceil().item()))
         if i1 <= i0 or j1 <= j0:
             return torch.tensor(1.0)
         i1 += 1
@@ -100,11 +101,23 @@ def refine_spherical_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing
         image_patch = image[j0:j1, i0:i1][patch_mask].to(dtype=torch.float64)
         return -torch.corrcoef(torch.stack((patch, image_patch)))[0, 1]
 
-    return local_search(  #
-        starting_position=position,  #
-        initial_step_size=spacing,  #
-        objective_function=objective  #
-    ).to(device=output_device)
+    if False:
+        return local_search(  #
+            starting_position=position,  #
+            initial_step_size=spacing,  #
+            objective_function=objective  #
+        ).to(device=output_device)
+
+    x = position.clone().detach().requires_grad_(True)
+    lr = 0.1
+    for _ in range(200):
+        if x.grad is not None:
+            x.grad.zero_()
+        loss = objective(x)
+        loss.backward()
+        with torch.no_grad():
+            x -= lr * x.grad
+    return x.detach().to(device=output_device)
 
 
 @jaxtyped(typechecker=typechecker)
@@ -148,6 +161,13 @@ def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spac
         vol_grad_patch = volume_gradients[k0:k1, j0:j1, i0:i1, :][patch_mask].flatten().to(dtype=torch.float64)
         return -(unit_directions * vol_grad_patch).mean()
 
+    if False:
+        return local_search(  #
+            starting_position=position,  #
+            initial_step_size=torch.full((3,), 0.25 * radius, dtype=torch.float64),  #
+            objective_function=objective  #
+        ).to(device=output_device)
+
     x = position.clone().detach().requires_grad_(True)
     lr = 10.0
     for _ in range(200):
@@ -158,6 +178,3 @@ def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spac
         with torch.no_grad():
             x -= lr * x.grad
     return x.detach().to(device=output_device)
-
-    # return local_search(  #  #     starting_position=position,  #  #     initial_step_size=torch.full((3,),
-    # 0.25 * radius, dtype=torch.float64),  #  #     objective_function=objective  #  # ).to(device=output_device)
