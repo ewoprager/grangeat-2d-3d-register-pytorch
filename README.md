@@ -256,11 +256,13 @@ but note that this will not check for correctly install packages, nor initialise
 source code has changed, as `uv` is not run here, so make sure to run `uv sync` beforehand if you have changed any
 dependencies or the extension.
 
-# The `reg23` PyTorch extension
+# The `reg23-core` PyTorch extension
 
-The extension is contained within the [reg23](reg23) directory, with its own [README.md](reg23/README.md).
+The extension is contained within the [reg23-core](packages/reg23_core) package, with its
+own [README.md](packages/reg23_core/README.md).
 
-It is used by the app and other scripts via the `py-lib` library. In particular, `project-drr` is very commonly used.
+It is used by the app (in [reg23-app](packages/reg23_app)) and in underlying functionality in
+the [reg23_experiments](packages/reg23_experiments) package. In particular, `project_drr` is very commonly used.
 
 ## Other scripts (not maintained)
 
@@ -309,5 +311,6 @@ extension .cpp and .cu source files. Configure a CMake project in your IDE to ma
 To help CLion follow the imports in python, right click on the following directories and select 'Mark Directory As' > '
 Project Sources and Headers':
 
-- `py-lib/src`
-- `reg23/src`
+- `packages/reg23_core/src`
+- `packages/reg23_experiments/src`
+- `packages/reg23_app/src`

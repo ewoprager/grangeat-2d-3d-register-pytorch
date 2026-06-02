@@ -97,15 +97,23 @@ class ParamDADGParityManager:
         self._dadg.set("target_flipped" if namespace is None else f"{namespace}__target_flipped", new_value,
                        check_equality=True)
 
-    def _xray_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor], *, namespace: str) -> None:
+    def _xray_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor] | None, *,
+                                      namespace: str) -> None:
         if isinstance(uid := self._dadg.get(f"{namespace}__xray_sop_instance_uid"), Error):
             logger.error(f"Failed to get X-ray '{namespace}' UID on fiducial change: {uid.description}")
             return
-        err = self._xray_fiducial_save_manager.set(  #
-            uid=uid,  #
-            names=new_value[0],  #
-            points=new_value[1]  #
-        )
+        if new_value is None:
+            err = self._xray_fiducial_save_manager.set(  #
+                uid=uid,  #
+                names=[],  #
+                points=torch.empty((0, 2))  #
+            )
+        else:
+            err = self._xray_fiducial_save_manager.set(  #
+                uid=uid,  #
+                names=new_value[0],  #
+                points=new_value[1]  #
+            )
         if isinstance(err, Error):
             logger.error(f"Error saving X-ray '{namespace}' fiducial point data: {err.description}")
 
