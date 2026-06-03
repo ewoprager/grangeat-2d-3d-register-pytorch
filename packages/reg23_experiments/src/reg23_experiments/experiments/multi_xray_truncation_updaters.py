@@ -8,6 +8,7 @@ import pathlib
 from jaxtyping import Float32, Float64
 
 from reg23_experiments.data.structs import Error
+from reg23_experiments.data.segmentation import NamedPoints3D, NamedPoints2D
 from reg23_experiments.io.volume import load_one_ct_series, Volume
 from reg23_experiments.ops.ct import convert_ct_to_mu
 from reg23_experiments.ops.data_manager import dadg_updater
@@ -118,25 +119,22 @@ def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Ten
 def project_fiducials(*, current_transformation: Transformation, untruncated_ct_volume: Float32[torch.Tensor, "p q r"],
                       ct_spacing: Float64[torch.Tensor, "3"], fixed_image_size: torch.Size,
                       fixed_image_offset: Float64[torch.Tensor, "2"], translation_offset: Float64[torch.Tensor, "2"],
-                      fixed_image_spacing: Float64[torch.Tensor, "2"],
-                      ct_fiducial_points: tuple[list[str], Float64[torch.Tensor, "3"]] | None,
+                      fixed_image_spacing: Float64[torch.Tensor, "2"], ct_fiducial_points: NamedPoints3D,
                       source_distance: float) -> dict[str, Any]:
-    if ct_fiducial_points is None:
-        return {"projected_fiducials": ([], torch.empty((0, 2)))}
     device = torch.device("cpu")
     current_transformation = current_transformation.to(device=device)
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(
         (translation_offset.to(device=device), torch.tensor([0.0], dtype=current_transformation.translation.dtype)))
     transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation)
-    input_points_3d = ct_fiducial_points[1].to(device=device) - 0.5 * ct_spacing.to(device=device) * torch.tensor(
+    input_vectors = ct_fiducial_points.data.to(device=device) - 0.5 * ct_spacing.to(device=device) * torch.tensor(
         untruncated_ct_volume.size(), dtype=torch.float64).flip(dims=(0,))
-    homo_vectors = torch.cat((input_points_3d, torch.ones((input_points_3d.size()[0], 1), dtype=torch.float64)), dim=1)
-    transformed_points = torch.einsum("ji,ki->kj", transformation.get_h(device=device), homo_vectors)[:, 0:3]
-    from_source = transformed_points - torch.tensor([[0.0, 0.0, -source_distance]], dtype=torch.float64)
+    homo_vectors = torch.cat((input_vectors, torch.ones((input_vectors.size()[0], 1), dtype=torch.float64)), dim=1)
+    transformed_vectors = torch.einsum("ji,ki->kj", transformation.get_h(device=device), homo_vectors)[:, 0:3]
+    from_source = transformed_vectors - torch.tensor([[0.0, 0.0, -source_distance]], dtype=torch.float64)
     frac = torch.einsum("ji,i->j", from_source, torch.tensor([0.0, 0.0, 1.0], dtype=torch.float64)) / source_distance
-    projected = frac.unsqueeze(-1) * transformed_points[:, 0:2]
+    projected = frac.unsqueeze(-1) * transformed_vectors[:, 0:2]
     output_points_2d = projected + 0.5 * fixed_image_spacing.to(device=device) * torch.tensor(fixed_image_size,
                                                                                               dtype=torch.float64).flip(
         dims=(0,))
-    return {"projected_fiducials": (ct_fiducial_points[0], output_points_2d)}
+    return {"projected_fiducials": NamedPoints2D(names=ct_fiducial_points.names, data=output_points_2d)}

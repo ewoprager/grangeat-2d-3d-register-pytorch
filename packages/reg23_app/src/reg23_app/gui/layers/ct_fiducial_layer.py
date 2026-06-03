@@ -5,11 +5,13 @@ from typing import Callable
 import napari.layers
 import pandas as pd
 import torch
+import traitlets
 from napari.layers.base import ActionType
 from napari.utils.events import Event
 
 from reg23_app.gui.floating import get_string_required
 from reg23_app.gui.viewer_singleton import viewer
+from reg23_experiments.data.segmentation import NamedPoints3D
 from reg23_experiments.data.structs import Error
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 
@@ -26,19 +28,14 @@ class _CTFiducialLayerManager:
         self._dadg.observe("ct_fiducial_points", "layer", self._update_layer_from_dadg)
         self._callback_loop_prevention: bool = False
 
-    def _update_layer_from_dadg(self, new_value: tuple[list[str], torch.Tensor] | None) -> None:
+    def _update_layer_from_dadg(self, new_value: NamedPoints3D) -> None:
         if self._callback_loop_prevention:
             return
         if (layer := self._layer()) is None:
             return
-        if new_value is None:
-            new_names = []
-            new_points = torch.empty((0, 3))
-        else:
-            new_names, new_points = new_value
         self._callback_loop_prevention = True
-        layer.features = pd.DataFrame([{"label": name} for name in new_names])
-        layer.data = new_points.flip(dims=(1,)).numpy()
+        layer.features = pd.DataFrame([{"label": name} for name in new_value.names])
+        layer.data = new_value.data.flip(dims=(1,)).numpy()
         self._callback_loop_prevention = False
 
     def _update_dadg_from_layer(self) -> None:
@@ -47,9 +44,16 @@ class _CTFiducialLayerManager:
         if (layer := self._layer()) is None:
             return
         names = layer.features["label"].values.tolist()
-        points = torch.tensor(layer.data).flip(dims=(1,))
+        data = torch.tensor(layer.data).flip(dims=(1,))
+        try:
+            fiducial_points = NamedPoints3D(names=names, data=data)
+        except traitlets.TraitError as e:
+            logger.error(f"Error converting fiducial point data from layer: {e}")
+            return
         self._callback_loop_prevention = True
-        self._dadg.set("ct_fiducial_points", (names, points))
+        err = self._dadg.set("ct_fiducial_points", fiducial_points)
+        if isinstance(err, Error):
+            logger.error(f"Error processing CT fiducial point data: {err.description}")
         self._callback_loop_prevention = False
 
     def _on_layer_change(self, event: Event):
@@ -86,27 +90,17 @@ def add_ct_fiducial_layer(*, dadg: DirectedAcyclicDataGraph) -> napari.layers.La
     if not isinstance(uid, str):
         logger.error(f"Expected UID to be a str, got: '{uid}'.")
         return None
-    res: tuple[list[str], torch.Tensor] | None | Error = dadg.get("ct_fiducial_points")
-    if isinstance(res, Error):
-        logger.error(f"Failed to get CT fiducial point data for layer: {res.description}")
+    fiducial_points: NamedPoints3D | Error = dadg.get("ct_fiducial_points")
+    if isinstance(fiducial_points, Error):
+        logger.error(f"Failed to get CT fiducial point data for layer: {fiducial_points.description}")
         return None
     # ToDo: Move initialisation to the layer manager?
-    if res is None:
-        layer = viewer().add_points(  #
-            ndim=3,  #
-            size=8.0,  #
-            name="ct_fiducial_points",  #
-            features=pd.DataFrame(columns=["label"]),  #
-            text={"string": "{label}", "size": 16}  #
-        )
-    else:
-        names, tensor = res
-        layer = viewer().add_points(  #
-            tensor.flip(dims=(1,)).numpy(),  #
-            size=8.0,  #
-            name="ct_fiducial_points",  #
-            features=pd.DataFrame([{"label": name} for name in names]),  #
-            text={"string": "{label}", "size": 16}  #
-        )
+    layer = viewer().add_points(  #
+        fiducial_points.data.flip(dims=(1,)).numpy(),  #
+        size=8.0,  #
+        name="ct_fiducial_points",  #
+        features=pd.DataFrame([{"label": name} for name in fiducial_points.names]),  #
+        text={"string": "{label}", "size": 16}  #
+    )
     layer.my_plugin = _CTFiducialLayerManager(dadg=dadg, layer=layer)
     return layer

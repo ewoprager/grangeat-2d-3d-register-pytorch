@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 import scipy
 import torch
-from jaxtyping import Float64
 
 from reg23_app.context import AppContext
 from reg23_app.gui.viewer_singleton import viewer
+from reg23_experiments.data.segmentation import NamedPoints2D
 from reg23_experiments.data.structs import Error, Transformation
 
 __all__ = ["add_projected_fiducials_layer"]
@@ -36,10 +36,10 @@ class _ProjectedFiducialsLayerManager:
     def __del__(self):
         self._ctx.dadg.set_evaluation_laziness(self._projected_fiducials_key, lazily_evaluated=True)
 
-    def _observer_callback(self, new_value: tuple[list[str], Float64[torch.Tensor, "3"]]) -> None:
+    def _observer_callback(self, new_value: NamedPoints2D) -> None:
         if (layer := self._layer()) is not None:
-            layer.features = pd.DataFrame([{"label": name} for name in new_value[0]])
-            layer.data = new_value[1].flip(dims=(1,)).cpu().numpy()
+            layer.features = pd.DataFrame([{"label": name} for name in new_value.names])
+            layer.data = new_value.data.flip(dims=(1,)).cpu().numpy()
         else:
             logger.warning(f"No layer to display projected_fiducials.")
 
@@ -119,16 +119,16 @@ def add_projected_fiducials_layer(*, ctx: AppContext, namespace: str | None = No
     if projected_fiducials_key in viewer().layers:
         logger.warning(f"Layer '{projected_fiducials_key}' is already shown.")
         return None
-    res: tuple[list[str], torch.Tensor] | Error = ctx.dadg.get(projected_fiducials_key, soft=True)
-    if isinstance(res, Error):
-        raise RuntimeError(f"Error softly getting '{projected_fiducials_key}' from DADG: {res.description}.")
-    initial_points = res[1].flip(dims=(1,))
+    points: NamedPoints2D | Error = ctx.dadg.get(projected_fiducials_key, soft=True)
+    if isinstance(points, Error):
+        raise RuntimeError(f"Error softly getting '{projected_fiducials_key}' from DADG: {points.description}.")
+    initial_points = points.data.flip(dims=(1,))
     logger.debug(f"Adding projected fiducials layer '{projected_fiducials_key}' to napari viewer")
     layer = viewer().add_points(  #
         initial_points.cpu().numpy(),  #
         ndim=2,  #
         name=projected_fiducials_key,  #
-        features=pd.DataFrame([{"label": name} for name in res[0]]),  #
+        features=pd.DataFrame([{"label": name} for name in points.names]),  #
         text={"string": "{label}", "size": 16}  #
     )
     layer.my_plugin = _ProjectedFiducialsLayerManager(ctx=ctx, layer=layer, namespace=namespace)

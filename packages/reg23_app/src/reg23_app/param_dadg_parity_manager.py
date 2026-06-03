@@ -5,7 +5,7 @@ import torch
 from reg23_app.state import AppState
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
-from reg23_experiments.data.segmentation import NamedPoints2D, OrderedPoints2D
+from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints2D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
 from reg23_experiments.experiments import updaters
@@ -124,19 +124,19 @@ class ParamDADGParityManager:
             logger.error(f"Error saving X-ray '{namespace}' fiducial point data: {err.description}")
 
     def _ct_series_uid_changed(self, new_value: str) -> None:
-        self._dadg.set("ct_fiducial_points", self._ct_fiducial_save_manager.get(new_value))
+        loaded: tuple[list[str], torch.Tensor] | None = self._ct_fiducial_save_manager.get(new_value)
+        self._dadg.set("ct_fiducial_points",
+                       NamedPoints3D() if loaded is None else NamedPoints3D(names=loaded[0], data=loaded[1]))
 
-    def _ct_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor] | None) -> None:
+    def _ct_fiducial_points_changed(self, new_value: NamedPoints3D) -> None:
         uid: str | Error = self._dadg.get("ct_series_uid")
         if isinstance(uid, Error):
             logger.error(f"Failed to get CT UID on fiducial change: {uid.description}")
             return
-        if new_value is None:
-            new_value: tuple[list[str], torch.Tensor] = ([], torch.empty((0, 3)))
         err = self._ct_fiducial_save_manager.set(  #
             uid=uid,  #
-            names=new_value[0],  #
-            points=new_value[1]  #
+            names=new_value.names,  #
+            points=new_value.data  #
         )
         if isinstance(err, Error):
             logger.error(f"Error saving CT fiducial point data: {err.description}")

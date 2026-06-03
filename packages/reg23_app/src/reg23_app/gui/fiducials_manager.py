@@ -3,10 +3,9 @@ import logging
 import numpy as np
 import scipy as sp
 import torch
-from jaxtyping import Float64
 
 from reg23_app.state import AppState
-from reg23_experiments.data.segmentation import NamedPoints2D
+from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.ops.fiducials import refine_spherical_fiducial_2d, refine_spherical_fiducial_3d
@@ -73,6 +72,10 @@ class FiducialsManager:
                            f"{xray_fiducial_points.description}")
             return
 
+        if len(xray_fiducial_points.names) < 3:
+            logger.warning(f"Cannot register using fiducials with fewer than 3 markers.")
+            return
+
         device: torch.device | Error = self._dadg.get("device")
         if isinstance(device, Error):
             raise Exception("Failed to get device from DADG")
@@ -81,14 +84,14 @@ class FiducialsManager:
         def residuals(pose: np.ndarray) -> np.ndarray:
             self._dadg.set(dadg_key_prefix + "current_transformation",
                            mapping_parameters_to_transformation(torch.tensor(pose, device=device)))
-            res: tuple[list[str], torch.Tensor] | Error = self._dadg.get(dadg_key_prefix + "projected_fiducials")
-            if isinstance(res, Error):
-                raise Exception(f"Failed to get projected fiducials during optimisation: {res.description}")
-            projected_names, projected_points = res
-            projected_name_to_index = {name: index for index, name in enumerate(projected_names)}
-            projected_points = projected_points[
+            projected_points: NamedPoints2D | Error = self._dadg.get(dadg_key_prefix + "projected_fiducials")
+            if isinstance(projected_points, Error):
+                raise Exception(
+                    f"Failed to get projected fiducials during optimisation: {projected_points.description}")
+            projected_name_to_index = {name: index for index, name in enumerate(projected_points.names)}
+            ordered = projected_points.data[
                 torch.tensor([projected_name_to_index[name] for name in xray_fiducial_points.names])]
-            return (projected_points - xray_fiducial_points.data).flatten().numpy()
+            return (ordered - xray_fiducial_points.data).flatten().numpy()
 
         current_transformation: Transformation | Error = self._dadg.get(dadg_key_prefix + "current_transformation")
         if isinstance(current_transformation, Error):
@@ -125,24 +128,20 @@ class FiducialsManager:
             logger.error(f"Couldn't get 'ct_spacing' for fiducial refinement: {ct_spacing.description}")
             return
 
-        res: tuple[list[str], Float64[torch.Tensor, "n 3"]] | None | Error = self._dadg.get("ct_fiducial_points")
-        if isinstance(res, Error):
-            logger.error(f"Couldn't get 'ct_fiducial_points' for fiducial refinement: {res.description}")
+        fiducial_points: NamedPoints3D | Error = self._dadg.get("ct_fiducial_points")
+        if isinstance(fiducial_points, Error):
+            logger.error(f"Couldn't get 'ct_fiducial_points' for fiducial refinement: {fiducial_points.description}")
             return
-        if res is None:
-            logger.error(f"No 'ct_fiducial_points' stored for CT")
-            return
-        ct_point_names, ct_point_vectors = res
 
-        new_ct_point_vectors = torch.empty_like(ct_point_vectors)
-        for i, point in enumerate(ct_point_vectors):
-            new_ct_point_vectors[i] = refine_spherical_fiducial_3d(  #
+        new_data = torch.empty_like(fiducial_points.data)
+        for i, point in enumerate(fiducial_points.data):
+            new_data[i] = refine_spherical_fiducial_3d(  #
                 volume=untruncated_ct_volume,  #
                 spacing=ct_spacing,  #
                 position=point,  #
                 radius=0.5 * self._state.assumed_fiducial_diameter,  #
             )
-        self._dadg.set("ct_fiducial_points", (ct_point_names, new_ct_point_vectors))
+        self._dadg.set("ct_fiducial_points", NamedPoints3D(names=fiducial_points.names, data=new_data))
 
         logger.info("CT fiducial segmentation refined.")
 
