@@ -54,6 +54,18 @@
                 </ul>
 
             </li>
+            <li>
+                    <a class="class" href="#NamedPoints3D">NamedPoints3D</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="variable" href="#NamedPoints3D.names">names</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#NamedPoints3D.data">data</a>
+                        </li>
+                </ul>
+
+            </li>
     </ul>
 
 
@@ -79,7 +91,7 @@
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="kn">import</span><span class="w"> </span><span class="nn">traitlets</span>
 </span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">jaxtyping</span><span class="w"> </span><span class="kn">import</span> <span class="n">Float64</span>
 </span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;OrderedPoints2D&quot;</span><span class="p">,</span> <span class="s2">&quot;NamedPoints2D&quot;</span><span class="p">]</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;OrderedPoints2D&quot;</span><span class="p">,</span> <span class="s2">&quot;NamedPoints2D&quot;</span><span class="p">,</span> <span class="s2">&quot;NamedPoints3D&quot;</span><span class="p">]</span>
 </span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
 </span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="k">class</span><span class="w"> </span><span class="nc">OrderedPoints2D</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
@@ -121,6 +133,25 @@
 </span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>        <span class="k">if</span> <span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
 </span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>            <span class="k">raise</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">TraitError</span><span class="p">(</span><span class="s2">&quot;NamedPoints2D must contain a tensor of size (N, 2)&quot;</span><span class="p">)</span>
 </span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="k">return</span> <span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="k">class</span><span class="w"> </span><span class="nc">NamedPoints3D</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a>    <span class="n">names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">List</span><span class="p">(</span><span class="n">trait</span><span class="o">=</span><span class="n">traitlets</span><span class="o">.</span><span class="n">Unicode</span><span class="p">(</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>    <span class="n">data</span><span class="p">:</span> <span class="n">Float64</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="s2">&quot;n 3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Instance</span><span class="p">(</span>  <span class="c1">#</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>        <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>  <span class="c1">#</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>        <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1">#</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>        <span class="n">default_value</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>  <span class="c1">#</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>    <span class="p">)</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>    <span class="nd">@traitlets</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proposal</span><span class="p">):</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>        <span class="k">if</span> <span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">:</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>            <span class="k">raise</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">TraitError</span><span class="p">(</span><span class="s2">&quot;NamedPoints3D must contain a tensor of torch.float64s&quot;</span><span class="p">)</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">())</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>            <span class="k">raise</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">TraitError</span><span class="p">(</span><span class="s2">&quot;NamedPoints3D must contain a tensor of size (N, 3)&quot;</span><span class="p">)</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos">63</span></a>        <span class="k">if</span> <span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos">64</span></a>            <span class="k">raise</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">TraitError</span><span class="p">(</span><span class="s2">&quot;NamedPoints3D must contain a tensor of size (N, 3)&quot;</span><span class="p">)</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos">65</span></a>        <span class="k">return</span> <span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
 </span></pre></div>
 
 
@@ -254,6 +285,72 @@
         
     </div>
     <a class="headerlink" href="#NamedPoints2D.data"></a>
+    
+            <div class="docstring"><p>A trait whose value must be an instance of a specified class.</p>
+
+<p>The value can also be an instance of a subclass of the specified class.</p>
+
+<p>Subclasses can declare default classes by overriding the klass attribute</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="NamedPoints3D">
+                            <input id="NamedPoints3D-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">NamedPoints3D</span><wbr>(<span class="base">traitlets.traitlets.HasTraits</span>):
+
+                <label class="view-source-button" for="NamedPoints3D-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#NamedPoints3D"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="NamedPoints3D-50"><a href="#NamedPoints3D-50"><span class="linenos">50</span></a><span class="k">class</span><span class="w"> </span><span class="nc">NamedPoints3D</span><span class="p">(</span><span class="n">traitlets</span><span class="o">.</span><span class="n">HasTraits</span><span class="p">):</span>
+</span><span id="NamedPoints3D-51"><a href="#NamedPoints3D-51"><span class="linenos">51</span></a>    <span class="n">names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">List</span><span class="p">(</span><span class="n">trait</span><span class="o">=</span><span class="n">traitlets</span><span class="o">.</span><span class="n">Unicode</span><span class="p">(</span><span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+</span><span id="NamedPoints3D-52"><a href="#NamedPoints3D-52"><span class="linenos">52</span></a>    <span class="n">data</span><span class="p">:</span> <span class="n">Float64</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="s2">&quot;n 3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">Instance</span><span class="p">(</span>  <span class="c1">#</span>
+</span><span id="NamedPoints3D-53"><a href="#NamedPoints3D-53"><span class="linenos">53</span></a>        <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>  <span class="c1">#</span>
+</span><span id="NamedPoints3D-54"><a href="#NamedPoints3D-54"><span class="linenos">54</span></a>        <span class="n">allow_none</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1">#</span>
+</span><span id="NamedPoints3D-55"><a href="#NamedPoints3D-55"><span class="linenos">55</span></a>        <span class="n">default_value</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>  <span class="c1">#</span>
+</span><span id="NamedPoints3D-56"><a href="#NamedPoints3D-56"><span class="linenos">56</span></a>    <span class="p">)</span>
+</span><span id="NamedPoints3D-57"><a href="#NamedPoints3D-57"><span class="linenos">57</span></a>
+</span><span id="NamedPoints3D-58"><a href="#NamedPoints3D-58"><span class="linenos">58</span></a>    <span class="nd">@traitlets</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+</span><span id="NamedPoints3D-59"><a href="#NamedPoints3D-59"><span class="linenos">59</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proposal</span><span class="p">):</span>
+</span><span id="NamedPoints3D-60"><a href="#NamedPoints3D-60"><span class="linenos">60</span></a>        <span class="k">if</span> <span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">:</span>
+</span><span id="NamedPoints3D-61"><a href="#NamedPoints3D-61"><span class="linenos">61</span></a>            <span class="k">raise</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">TraitError</span><span class="p">(</span><span class="s2">&quot;NamedPoints3D must contain a tensor of torch.float64s&quot;</span><span class="p">)</span>
+</span><span id="NamedPoints3D-62"><a href="#NamedPoints3D-62"><span class="linenos">62</span></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">())</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+</span><span id="NamedPoints3D-63"><a href="#NamedPoints3D-63"><span class="linenos">63</span></a>            <span class="k">raise</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">TraitError</span><span class="p">(</span><span class="s2">&quot;NamedPoints3D must contain a tensor of size (N, 3)&quot;</span><span class="p">)</span>
+</span><span id="NamedPoints3D-64"><a href="#NamedPoints3D-64"><span class="linenos">64</span></a>        <span class="k">if</span> <span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+</span><span id="NamedPoints3D-65"><a href="#NamedPoints3D-65"><span class="linenos">65</span></a>            <span class="k">raise</span> <span class="n">traitlets</span><span class="o">.</span><span class="n">TraitError</span><span class="p">(</span><span class="s2">&quot;NamedPoints3D must contain a tensor of size (N, 3)&quot;</span><span class="p">)</span>
+</span><span id="NamedPoints3D-66"><a href="#NamedPoints3D-66"><span class="linenos">66</span></a>        <span class="k">return</span> <span class="n">proposal</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>The base class for all classes that have descriptors.</p>
+</div>
+
+
+                            <div id="NamedPoints3D.names" class="classattr">
+                                <div class="attr variable">
+            <span class="name">names</span><span class="annotation">: list[str]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#NamedPoints3D.names"></a>
+    
+            <div class="docstring"><p>An instance of a Python list.</p>
+</div>
+
+
+                            </div>
+                            <div id="NamedPoints3D.data" class="classattr">
+                                <div class="attr variable">
+            <span class="name">data</span><span class="annotation">: jaxtyping.Float64[Tensor, &#39;n 3&#39;]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#NamedPoints3D.data"></a>
     
             <div class="docstring"><p>A trait whose value must be an instance of a specified class.</p>
 
