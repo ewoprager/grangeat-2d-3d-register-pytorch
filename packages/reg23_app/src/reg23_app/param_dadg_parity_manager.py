@@ -5,7 +5,7 @@ import torch
 from reg23_app.state import AppState
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
-from reg23_experiments.data.segmentation import OrderedPoints2D
+from reg23_experiments.data.segmentation import NamedPoints2D, OrderedPoints2D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
 from reg23_experiments.experiments import updaters
@@ -110,18 +110,15 @@ class ParamDADGParityManager:
         if isinstance(err, Error):
             logger.error(f"Error saving X-ray '{namespace}' electrode point data: {err.description}")
 
-    def _xray_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor] | None, *,
-                                      namespace: str) -> None:
+    def _xray_fiducial_points_changed(self, new_value: NamedPoints2D, *, namespace: str) -> None:
         uid: str | Error = self._dadg.get(f"{namespace}__xray_sop_instance_uid")
         if isinstance(uid, Error):
             logger.error(f"Failed to get X-ray '{namespace}' UID on fiducial change: {uid.description}")
             return
-        if new_value is None:
-            new_value: tuple[list[str], torch.Tensor] = ([], torch.empty((0, 2)))
         err = self._xray_fiducial_save_manager.set(  #
             uid=uid,  #
-            names=new_value[0],  #
-            points=new_value[1]  #
+            names=new_value.names,  #
+            points=new_value.data  #
         )
         if isinstance(err, Error):
             logger.error(f"Error saving X-ray '{namespace}' fiducial point data: {err.description}")
@@ -242,4 +239,8 @@ class ParamDADGParityManager:
                        if (data := self._electrode_save_manager.get(uid)) is None  #
                        else OrderedPoints2D(data=data)  #
                        )
-        self._dadg.set(f"{name}__fiducial_points", self._xray_fiducial_save_manager.get(uid))
+        self._dadg.set(f"{name}__fiducial_points",  #
+                       NamedPoints2D()  #
+                       if (res := self._xray_fiducial_save_manager.get(uid)) is None  #
+                       else NamedPoints2D(names=res[0], data=res[1])  #
+                       )

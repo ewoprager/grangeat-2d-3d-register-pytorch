@@ -84,6 +84,7 @@ def load_target_image(*, target: Target, device: torch.device) -> dict[str, Any]
     #     Load the given X-ray
     image_2d_full, image_2d_full_spacing, scene_geometry = read_dicom(target.xray_path)
     image_2d_full = image_2d_full.to(device=device)
+    image_2d_full_spacing = image_2d_full_spacing.to(device=device, dtype=torch.float64)
 
     if target.flipped:
         logger.info("Flipping target image horizontally.")
@@ -112,6 +113,8 @@ def set_synthetic_target_image(*, ct_path: str, ct_spacing: torch.Tensor, ct_vol
 
     image_2d_full_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
     del drr_spec
+
+    image_2d_full_spacing = image_2d_full_spacing.to(dtype=torch.float64)
 
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
             "image_2d_full_spacing": image_2d_full_spacing, "transformation_gt": transformation_ground_truth}

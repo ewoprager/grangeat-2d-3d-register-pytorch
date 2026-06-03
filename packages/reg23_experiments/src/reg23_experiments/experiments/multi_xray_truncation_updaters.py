@@ -71,7 +71,7 @@ def set_target_image(*, xray_path: str, target_flipped: bool, device: torch.devi
         image_2d_full = image_2d_full.flip(dims=(1,))
 
     image_2d_full = image_2d_full.to(device=device)
-    image_2d_full_spacing = image_2d_full_spacing.to(device=device)
+    image_2d_full_spacing = image_2d_full_spacing.to(device=device, dtype=torch.float64)
 
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
             "image_2d_full_spacing": image_2d_full_spacing, "transformation_gt": transformation_ground_truth,

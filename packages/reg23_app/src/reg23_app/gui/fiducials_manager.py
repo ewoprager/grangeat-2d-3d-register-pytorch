@@ -6,6 +6,7 @@ import torch
 from jaxtyping import Float64
 
 from reg23_app.state import AppState
+from reg23_experiments.data.segmentation import NamedPoints2D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.ops.fiducials import refine_spherical_fiducial_2d, refine_spherical_fiducial_3d
@@ -66,12 +67,11 @@ class FiducialsManager:
             logger.error(f"Could not find 'ct_spacing': {ct_spacing.description}")
             return
 
-        res: tuple[list[str], torch.Tensor] | Error = self._dadg.get(dadg_key_prefix + "fiducial_points")
-        if isinstance(res, Error):
+        xray_fiducial_points: NamedPoints2D | Error = self._dadg.get(dadg_key_prefix + "fiducial_points")
+        if isinstance(xray_fiducial_points, Error):
             logger.warning(f"Can't find fiducial points for X-ray '{self._state.register_fiducial_xray_choice}': "
-                           f"{res.description}")
+                           f"{xray_fiducial_points.description}")
             return
-        xray_point_names, xray_point_vectors = res
 
         device: torch.device | Error = self._dadg.get("device")
         if isinstance(device, Error):
@@ -87,8 +87,8 @@ class FiducialsManager:
             projected_names, projected_points = res
             projected_name_to_index = {name: index for index, name in enumerate(projected_names)}
             projected_points = projected_points[
-                torch.tensor([projected_name_to_index[name] for name in xray_point_names])]
-            return (projected_points - xray_point_vectors).flatten().numpy()
+                torch.tensor([projected_name_to_index[name] for name in xray_fiducial_points.names])]
+            return (projected_points - xray_fiducial_points.data).flatten().numpy()
 
         current_transformation: Transformation | Error = self._dadg.get(dadg_key_prefix + "current_transformation")
         if isinstance(current_transformation, Error):
@@ -167,21 +167,20 @@ class FiducialsManager:
                          f"{image_2d_full_spacing.description}")
             return
 
-        res: tuple[list[str], torch.Tensor] | Error = self._dadg.get(dadg_key_prefix + "fiducial_points")
-        if isinstance(res, Error):
+        fiducial_points: NamedPoints2D | Error = self._dadg.get(dadg_key_prefix + "fiducial_points")
+        if isinstance(fiducial_points, Error):
             logger.warning(f"Can't find fiducial points for X-ray '{self._state.register_fiducial_xray_choice}': "
-                           f"{res.description}")
+                           f"{fiducial_points.description}")
             return
-        xray_point_names, xray_point_vectors = res
 
-        new_xray_point_vectors = torch.empty_like(xray_point_vectors)
-        for i, point in enumerate(xray_point_vectors):
-            new_xray_point_vectors[i] = refine_spherical_fiducial_2d(  #
+        new_data = torch.empty_like(fiducial_points.data)
+        for i, point in enumerate(fiducial_points.data):
+            new_data[i] = refine_spherical_fiducial_2d(  #
                 image=image_2d_full,  #
                 spacing=image_2d_full_spacing,  #
                 position=point,  #
                 radius=0.5 * self._state.assumed_fiducial_diameter,  #
             )
-        self._dadg.set(dadg_key_prefix + "fiducial_points", (xray_point_names, new_xray_point_vectors))
+        self._dadg.set(dadg_key_prefix + "fiducial_points", NamedPoints2D(names=fiducial_points.names, data=new_data))
 
         logger.info("X-ray fiducial segmentation refined.")

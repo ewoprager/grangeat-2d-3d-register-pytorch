@@ -5,11 +5,13 @@ from typing import Callable
 import napari.layers
 import pandas as pd
 import torch
+import traitlets
 from napari.layers.base import ActionType
 from napari.utils.events import Event
 
 from reg23_app.gui.floating import get_string_required
 from reg23_app.gui.viewer_singleton import viewer
+from reg23_experiments.data.segmentation import NamedPoints2D
 from reg23_experiments.data.structs import Error
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 
@@ -29,15 +31,14 @@ class _XRayFiducialLayerManager:
         self._dadg.observe(self._dadg_key, "layer", self._update_layer_from_dadg)
         self._callback_loop_prevention: bool = False
 
-    def _update_layer_from_dadg(self, new_value: tuple[list[str], torch.Tensor]) -> None:
+    def _update_layer_from_dadg(self, new_value: NamedPoints2D) -> None:
         if self._callback_loop_prevention:
             return
         if (layer := self._layer()) is None:
             return
-        new_names, new_points = new_value
         self._callback_loop_prevention = True
-        layer.features = pd.DataFrame([{"label": name} for name in new_names])
-        layer.data = new_points.flip(dims=(1,)).numpy()
+        layer.features = pd.DataFrame([{"label": name} for name in new_value.names])
+        layer.data = new_value.data.flip(dims=(1,)).numpy()
         self._callback_loop_prevention = False
 
     def _update_dadg_from_layer(self) -> None:
@@ -46,9 +47,14 @@ class _XRayFiducialLayerManager:
         if (layer := self._layer()) is None:
             return
         names = layer.features["label"].values.tolist()
-        points = torch.tensor(layer.data).flip(dims=(1,))
+        data = torch.tensor(layer.data).flip(dims=(1,))
+        try:
+            fiducial_points = NamedPoints2D(names=names, data=data)
+        except traitlets.TraitError as e:
+            logger.error(f"Error converting fiducial point data from layer: {e}")
+            return
         self._callback_loop_prevention = True
-        err = self._dadg.set(self._dadg_key, (names, points))
+        err = self._dadg.set(self._dadg_key, fiducial_points)
         if isinstance(err, Error):
             logger.error(f"Error processing X-ray fiducial point data: {err.description}")
         self._callback_loop_prevention = False
@@ -84,33 +90,21 @@ def add_xray_fiducial_layer(*, dadg: DirectedAcyclicDataGraph,
         logger.warning(f"Layer '{dadg_key}' is already shown.")
         return None
     uid_dadg_key = "xray_sop_instance_uid" if namespace is None else f"{namespace}__xray_sop_instance_uid"
-    if isinstance(uid := dadg.get(uid_dadg_key), Error):
+    uid: str | Error = dadg.get(uid_dadg_key)
+    if isinstance(uid, Error):
         logger.error(f"Failed to get X-ray UID for electrode layer.")
         return None
-    if not isinstance(uid, str):
-        logger.error(f"Expected UID to be a str, got: '{uid}'.")
-        return None
-    res: tuple[list[str], torch.Tensor] | None | Error = dadg.get(dadg_key)
+    res: NamedPoints2D | Error = dadg.get(dadg_key)
     if isinstance(res, Error):
         logger.error(f"Error getting fiducial point data for layer: {res.description}")
         return None
-    if res is None:
-        layer = viewer().add_points(  #
-            ndim=2,  #
-            size=8.0,  #
-            name=dadg_key,  #
-            features=pd.DataFrame(columns=["label"]),  #
-            text={"string": "{label}", "size": 16}  #
-        )
-    else:
-        names, tensor = res
-        layer = viewer().add_points(  #
-            tensor.flip(dims=(1,)).numpy(),  #
-            size=8.0,  #
-            name=dadg_key,  #
-            features=pd.DataFrame([{"label": name} for name in names]),  #
-            text={"string": "{label}", "size": 16}  #
-        )
+    layer = viewer().add_points(  #
+        res.data.flip(dims=(1,)).numpy(),  #
+        size=8.0,  #
+        name=dadg_key,  #
+        features=pd.DataFrame([{"label": name} for name in res.names]),  #
+        text={"string": "{label}", "size": 16}  #
+    )
     layer.my_plugin = _XRayFiducialLayerManager(dadg=dadg, layer=layer, dadg_key=dadg_key,
                                                 xray_uid_dadg_key=uid_dadg_key)
     return layer
