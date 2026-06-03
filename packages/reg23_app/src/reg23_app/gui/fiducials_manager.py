@@ -125,7 +125,7 @@ class FiducialsManager:
             logger.error(f"Couldn't get 'ct_spacing' for fiducial refinement: {ct_spacing.description}")
             return
 
-        res: tuple[list[str], Float64[torch.Tensor, "3"]] | None | Error = self._dadg.get("ct_fiducial_points")
+        res: tuple[list[str], Float64[torch.Tensor, "n 3"]] | None | Error = self._dadg.get("ct_fiducial_points")
         if isinstance(res, Error):
             logger.error(f"Couldn't get 'ct_fiducial_points' for fiducial refinement: {res.description}")
             return

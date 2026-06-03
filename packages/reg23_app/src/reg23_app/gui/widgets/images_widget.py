@@ -101,7 +101,7 @@ class ImagesWidget(widgets.Container):
 
     def _on_show_electrode_layer(self, xray_name: str) -> None:
         logger.debug(f"Show electrodes for '{xray_name}' clicked")
-        add_electrode_layer(ctx=self._ctx, namespace=xray_name)
+        add_electrode_layer(dadg=self._ctx.dadg, namespace=xray_name)
 
     def _on_show_xray_fiducials_layer(self, xray_name: str) -> None:
         logger.debug(f"Show xray_fiducials for '{xray_name}' clicked")

@@ -48,7 +48,9 @@ class _XRayFiducialLayerManager:
         names = layer.features["label"].values.tolist()
         points = torch.tensor(layer.data).flip(dims=(1,))
         self._callback_loop_prevention = True
-        self._dadg.set(self._dadg_key, (names, points))
+        err = self._dadg.set(self._dadg_key, (names, points))
+        if isinstance(err, Error):
+            logger.error(f"Error processing X-ray fiducial point data: {err.description}")
         self._callback_loop_prevention = False
 
     def _on_layer_change(self, event: Event):

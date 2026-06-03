@@ -5,6 +5,7 @@ import torch
 from reg23_app.state import AppState
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
+from reg23_experiments.data.segmentation import OrderedPoints2D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
 from reg23_experiments.experiments import updaters
@@ -97,23 +98,31 @@ class ParamDADGParityManager:
         self._dadg.set("target_flipped" if namespace is None else f"{namespace}__target_flipped", new_value,
                        check_equality=True)
 
+    def _xray_electrode_points_changed(self, new_value: OrderedPoints2D, *, namespace: str) -> None:
+        uid: str | Error = self._dadg.get(f"{namespace}__xray_sop_instance_uid")
+        if isinstance(uid, Error):
+            logger.error(f"Failed to get X-ray '{namespace}' UID on electrode change: {uid.description}")
+            return
+        err = self._electrode_save_manager.set(  #
+            uid=uid,  #
+            tensor=new_value.data  #
+        )
+        if isinstance(err, Error):
+            logger.error(f"Error saving X-ray '{namespace}' electrode point data: {err.description}")
+
     def _xray_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor] | None, *,
                                       namespace: str) -> None:
-        if isinstance(uid := self._dadg.get(f"{namespace}__xray_sop_instance_uid"), Error):
+        uid: str | Error = self._dadg.get(f"{namespace}__xray_sop_instance_uid")
+        if isinstance(uid, Error):
             logger.error(f"Failed to get X-ray '{namespace}' UID on fiducial change: {uid.description}")
             return
         if new_value is None:
-            err = self._xray_fiducial_save_manager.set(  #
-                uid=uid,  #
-                names=[],  #
-                points=torch.empty((0, 2))  #
-            )
-        else:
-            err = self._xray_fiducial_save_manager.set(  #
-                uid=uid,  #
-                names=new_value[0],  #
-                points=new_value[1]  #
-            )
+            new_value: tuple[list[str], torch.Tensor] = ([], torch.empty((0, 2)))
+        err = self._xray_fiducial_save_manager.set(  #
+            uid=uid,  #
+            names=new_value[0],  #
+            points=new_value[1]  #
+        )
         if isinstance(err, Error):
             logger.error(f"Error saving X-ray '{namespace}' fiducial point data: {err.description}")
 
@@ -121,11 +130,12 @@ class ParamDADGParityManager:
         self._dadg.set("ct_fiducial_points", self._ct_fiducial_save_manager.get(new_value))
 
     def _ct_fiducial_points_changed(self, new_value: tuple[list[str], torch.Tensor] | None) -> None:
-        if isinstance(uid := self._dadg.get("ct_series_uid"), Error):
+        uid: str | Error = self._dadg.get("ct_series_uid")
+        if isinstance(uid, Error):
             logger.error(f"Failed to get CT UID on fiducial change: {uid.description}")
             return
         if new_value is None:
-            new_value = ([], torch.empty((0, 3)))
+            new_value: tuple[list[str], torch.Tensor] = ([], torch.empty((0, 3)))
         err = self._ct_fiducial_save_manager.set(  #
             uid=uid,  #
             names=new_value[0],  #
@@ -178,6 +188,10 @@ class ParamDADGParityManager:
         )
         self._target_flipped_changed(params.target_flipped, namespace=name)
 
+        # for eagerly saving the `electrode_points`
+        self._dadg.observe(f"{name}__electrode_points", "saver",
+                           lambda new_value, _name=name: self._xray_electrode_points_changed(new_value,
+                                                                                             namespace=_name))
         # for eagerly saving the `fiducial_points`
         self._dadg.observe(f"{name}__fiducial_points", "saver",
                            lambda new_value, _name=name: self._xray_fiducial_points_changed(new_value, namespace=_name))
@@ -223,5 +237,9 @@ class ParamDADGParityManager:
         if isinstance(uid, Error):
             logger.error(f"Error getting uid of X-ray '{name}': {uid.description}")
             return
-        self._dadg.set(f"{name}__electrode_points", self._electrode_save_manager.get(uid))
+        self._dadg.set(f"{name}__electrode_points",  #
+                       OrderedPoints2D()  #
+                       if (data := self._electrode_save_manager.get(uid)) is None  #
+                       else OrderedPoints2D(data=data)  #
+                       )
         self._dadg.set(f"{name}__fiducial_points", self._xray_fiducial_save_manager.get(uid))
