@@ -15,10 +15,16 @@ class Volume(traitlets.HasTraits):
 
 
 class OneSeries(traitlets.HasTraits):
+    """
+    Only contains data; either simple values, or other `HasTraits` instances that themselves just contain data.
+    """
     file_type: str = traitlets.Unicode(allow_none=False)
 
 
 class SeriesDescription(traitlets.HasTraits):
+    """
+    Only contains data; either simple values, or other `HasTraits` instances that themselves just contain data.
+    """
     file_type: str = traitlets.Unicode(allow_none=False)
     uid: str = traitlets.Unicode(allow_none=False)
     slice_count: int = traitlets.Int(allow_none=False)

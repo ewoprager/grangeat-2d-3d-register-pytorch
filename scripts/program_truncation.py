@@ -18,7 +18,8 @@ from reg23_experiments.data.transformation_save_data import TransformationSaveDa
 from reg23_experiments.experiments import updaters
 from reg23_experiments.io.image import load_cached_drr, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
-from reg23_experiments.io.volume import Volume, load_one_ct_series
+from reg23_experiments.io.serialize import serialize_recursive
+from reg23_experiments.io.volume import OneSeries, SeriesDescription, Volume, find_ct_series, load_ct_series
 from reg23_experiments.ops import drr, geometry, similarity_metric, swarm as pso
 from reg23_experiments.ops.ct import convert_ct_to_mu
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
@@ -49,28 +50,50 @@ def instance_output_directory(script_output_directory: str | pathlib.Path) -> pa
     return ret
 
 
-@dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing"])
-def load_untruncated_ct(ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
-    str, Any]:
-    volume: Volume | Error = load_one_ct_series(pathlib.Path(ct_path))
-    if isinstance(volume, Error):
-        raise Exception(f"Failed to open CT from path '{ct_path}': {volume.description}")
-    ct_volume = convert_ct_to_mu(volume, dtype=torch.float32)
-    if isinstance(ct_volume, Error):
-        raise Exception(f"Failed to convert CT from path '{ct_path}' to mu: {ct_volume.description}")
-    ct_volume = ct_volume.to(device=device)
-    ct_spacing = volume.spacing.to(device=device)
-    if ct_permutation is not None:
-        assert len(ct_permutation) == 3
-        ct_volume = ct_volume.permute(*ct_permutation)
-        ct_spacing = ct_spacing[torch.tensor(ct_permutation)]
+def get_string_required(prompt: str, predicate: Callable[[str], None | Error]) -> str:
+    prefix = ""
+    while True:
+        ret = input(prefix + prompt)
+        err = predicate(ret)
+        if isinstance(err, Error):
+            prefix = err.description + ";\n"
+        else:
+            return ret
 
-    return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing}
+
+def load_untruncated_ct(ct_path: pathlib.Path, device: torch.device, ct_permutation: Sequence[int] | None = None) -> \
+        tuple[torch.Tensor, torch.Tensor, str] | Error:
+    series: dict[str, SeriesDescription | OneSeries] = find_ct_series(ct_path)
+    if not series:
+        return Error(f"No CT series found at path '{str(ct_path)}'.")
+    if len(series) == 1:
+        key = next(iter(series))
+    else:
+        key = get_string_required(  #
+            f"Multiple CT series available at path '{str(ct_path)}'; please choose one:\n"
+            f"{"\n".join(f"{k}:\n\t{pprint.pformat(serialize_recursive(v))}\n" for k, v in series.items())}",  #
+            lambda k: None if k in series else Error(f"String '{k}' does not name a series.")  #
+        )
+    volume: Volume | Error = load_ct_series(ct_path, key)
+    if isinstance(volume, Error):
+        return Error(f"Failed to open CT from path '{str(ct_path)}': {volume.description}")
+    tensor: torch.Tensor | Error = convert_ct_to_mu(volume, dtype=torch.float32)
+    if isinstance(tensor, Error):
+        return Error(f"Failed to convert CT from path '{str(ct_path)}' to mu: {tensor.description}")
+    tensor = tensor.to(device=device)
+    spacing = volume.spacing.to(device=device)
+    if ct_permutation is not None:
+        if len(ct_permutation) != 3:
+            return Error("Length of ct_permutation must be 3.")
+        tensor = tensor.permute(*ct_permutation)
+        spacing = spacing[torch.tensor(ct_permutation)]
+
+    return tensor, spacing, volume.uid
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
 def set_synthetic_target_image(  #
-        ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor, new_drr_size: torch.Size,
+        *, ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor, new_drr_size: torch.Size,
         regenerate_drr: bool, save_to_cache: bool, cache_directory: str, ap_transformation: Transformation,
         target_ap_distance: float) -> dict[str, Any]:
     # generate a DRR through the volume
@@ -92,7 +115,7 @@ def set_synthetic_target_image(  #
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing"])
-def set_xray_target_image(xray_path: str, device: torch.device) -> dict[str, Any]:
+def set_xray_target_image(*, xray_path: str, device: torch.device) -> dict[str, Any]:
     image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(xray_path)
     image_2d_full = image_2d_full.to(device=device)
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
@@ -100,7 +123,7 @@ def set_xray_target_image(xray_path: str, device: torch.device) -> dict[str, Any
 
 
 @dadg_updater(names_returned=["ct_volumes"])
-def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
+def apply_truncation(*, untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
     # truncate the volume
     truncation_fraction = 0.01 * float(truncation_percent)
     top_bottom_chop = int(round(0.5 * truncation_fraction * float(untruncated_ct_volume.size()[0])))
@@ -116,7 +139,7 @@ def apply_truncation(untruncated_ct_volume: torch.Tensor, truncation_percent: in
 
 
 @dadg_updater(names_returned=["moving_image"])
-def project_drr(ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
+def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
                 fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
                 downsample_level: int, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
                 image_2d_scale_factor: float, device) -> dict[str, Any]:
@@ -409,37 +432,38 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    err = data_manager().set_multiple(  #
-        device=device,  #
-        ct_path=ct_path,  #
-        cache_directory=cache_directory,  #
-        save_to_cache=False,  #
-        truncation_percent=0,  #
-        cropping=None,  #
-        source_offset=torch.zeros(2),  #
-        downsample_level=2,  #
-        ap_transformation=Transformation(rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], device=device),
-                                         translation=torch.zeros(3, device=device)),  #
-        target_ap_distance=5.0,  #
-        current_transformation=Transformation.random_uniform(device=device),  #
-        mask_transformation=None  #
-    )
-    if isinstance(err, Error):
+    untruncated_ct_volume, ct_spacing, ct_series_uid = load_untruncated_ct(pathlib.Path(ct_path), device)
+
+    if isinstance(err := data_manager().set_multiple(  #
+            device=device,  #
+            untruncated_ct_volume=untruncated_ct_volume,  #
+            ct_spacing=ct_spacing,  #
+            ct_series_uid=ct_series_uid,  #
+            cache_directory=cache_directory,  #
+            save_to_cache=False,  #
+            truncation_percent=0,  #
+            cropping=None,  #
+            source_offset=torch.zeros(2),  #
+            downsample_level=2,  #
+            ap_transformation=Transformation(rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], device=device),
+                                             translation=torch.zeros(3, device=device)),  #
+            target_ap_distance=5.0,  #
+            current_transformation=Transformation.random_uniform(device=device),  #
+            mask_transformation=None  #
+    ), Error):
         logger.error(f"Error setting initial data values: {err.description}")
         return
 
     if xray_path is None:
-        err = data_manager().set_multiple(  #
-            regenerate_drr=True,  #
-            new_drr_size=torch.Size([1000, 1000]),  #
-            target_ap_distance=5.0,  #
-        )
-        if isinstance(err, Error):
+        if isinstance(err := data_manager().set_multiple(  #
+                regenerate_drr=True,  #
+                new_drr_size=torch.Size([1000, 1000]),  #
+                target_ap_distance=5.0,  #
+        ), Error):
             logger.error(f"Error setting initial data values: {err.description}")
             return
 
-        err = data_manager().add_updater("set_target_image", set_synthetic_target_image)
-        if isinstance(err, Error):
+        if isinstance(err := data_manager().add_updater("set_target_image", set_synthetic_target_image), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
     else:
@@ -448,51 +472,39 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
             raise RuntimeError(f"Failed to load saved transformation: {res.description}")
         _, saved_transformations, _ = res
         df: pd.DataFrame = saved_transformations.get_data()
-        indices_matching = df.index[df['name'] == "cimp001 aligned"].tolist()
-        if len(indices_matching) > 1:
+        df = df.xs("cimp001 aligned", level="name")
+        if len(df) > 1:
             raise RuntimeError(f"Found multiple transformations in the save data with name '{"cimp001 aligned"}'.")
         columns = [f"x{i}" for i in range(6)]
-        values = df.loc[indices_matching[0], columns].tolist()
+        values = df[columns].tolist()
 
-        err = data_manager().set_multiple(  #
-            xray_path=xray_path,  #
-            transformation_gt=Transformation.from_vector(torch.tensor(values, device=device)),  #
-        )
-        if isinstance(err, Error):
+        if isinstance(err := data_manager().set_multiple(  #
+                xray_path=xray_path,  #
+                transformation_gt=Transformation.from_vector(torch.tensor(values, device=device)),  #
+        ), Error):
             logger.error(f"Error setting initial data values: {err.description}")
             return
 
-        err = data_manager().add_updater("set_target_image", set_xray_target_image)
-        if isinstance(err, Error):
+        if isinstance(err := data_manager().add_updater("set_target_image", set_xray_target_image), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
 
-    if isinstance(err, Error):
-        logger.error(f"Error setting initial data values: {err.description}")
-        return
-    err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
-    if isinstance(err, Error):
+    if isinstance(err := data_manager().add_updater("apply_truncation", apply_truncation), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("apply_truncation", apply_truncation)
-    if isinstance(err, Error):
+    if isinstance(err := data_manager().add_updater(  #
+            "refresh_image_2d_scale_factor", updaters.refresh_image_2d_scale_factor), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_image_2d_scale_factor", updaters.refresh_image_2d_scale_factor)
-    if isinstance(err, Error):
+    if isinstance(err := data_manager().add_updater("refresh_hyperparameter_dependent",
+                                                    updaters.refresh_hyperparameter_dependent), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_hyperparameter_dependent", updaters.refresh_hyperparameter_dependent)
-    if isinstance(err, Error):
+    if isinstance(err := data_manager().add_updater("refresh_mask_transformation_dependent",
+                                                    updaters.refresh_mask_transformation_dependent), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("refresh_mask_transformation_dependent",
-                                     updaters.refresh_mask_transformation_dependent)
-    if isinstance(err, Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    err = data_manager().add_updater("project_drr", project_drr)
-    if isinstance(err, Error):
+    if isinstance(err := data_manager().add_updater("project_drr", project_drr), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
 
@@ -503,20 +515,26 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
         plt.ion()  # figures are non-blocking
         plt.show()
         fig, axes = plt.subplots(1, 4)
-        image_2d_full = data_manager().get("image_2d_full")
+        image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
+        if isinstance(image_2d_full, Error):
+            raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
         axes[0].imshow(image_2d_full.cpu().numpy())
         axes[0].set_title("original target")
         data_manager().set("cropping", args_from_dadg()(geometry.get_crop_full_depth_drr)())
-        fixed_image = data_manager().get("fixed_image")
+        fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
         if isinstance(fixed_image, Error):
             raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
         axes[1].imshow(fixed_image.cpu().numpy())
         axes[1].set_title("fixed image")
-        moving_image = data_manager().get("moving_image")
+        moving_image: torch.Tensor | Error = data_manager().get("moving_image")
+        if isinstance(moving_image, Error):
+            raise RuntimeError(f"Error getting moving image: {moving_image.description}")
         axes[2].imshow(moving_image.cpu().numpy())
         axes[2].set_title("moving image at G.T.")
         data_manager().set("mask_transformation", data_manager().get("current_transformation"))
-        mask = data_manager().get("mask")
+        mask: torch.Tensor | Error = data_manager().get("mask")
+        if isinstance(mask, Error):
+            raise RuntimeError(f"Error getting mask: {mask.description}")
         axes[3].imshow(mask.cpu().numpy())
         axes[3].set_title("mask at G.T.")
         logger.info(f"ZNCC at G.T. with masking = "
@@ -526,7 +544,8 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
 
     constants = {  #
         # ExperimentConfig
-        "ct_path": data_manager().get("ct_path"),  #
+        "ct_path": ct_path,  #
+        "ct_series_uid": data_manager().get("ct_series_uid"),  #
         "downsample_level": 1,  #
         # - varying "truncation_percent": 15,  #
         # - varying - "cropping": "None",  #
@@ -541,7 +560,7 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
     }
 
     if show:
-        t = data_manager().get("transformation_gt")
+        t: Transformation | Error = data_manager().get("transformation_gt")
         if t is None:
             t = data_manager().get("ap_transformation")
         starting_params = mapping_transformation_to_parameters(t)
@@ -553,8 +572,8 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
 
         def objective_function(parameters: torch.Tensor) -> torch.Tensor:
             data_manager().set("current_transformation", mapping_parameters_to_transformation(parameters))
-            _moving_image = data_manager().get("moving_image")
-            _fixed_image = data_manager().get("fixed_image")
+            _moving_image: torch.Tensor | Error = data_manager().get("moving_image")
+            _fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
             return -similarity_metric.ncc(_moving_image, _fixed_image)
 
         res = run_reg(  #

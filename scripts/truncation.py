@@ -1,17 +1,16 @@
 import argparse
 import os
 import pathlib
-from typing import Callable, NamedTuple, Tuple
+from typing import Callable, NamedTuple
 
 import matplotlib.pyplot as plt
-import reg23_core
 import torch
 import torchviz
-from reg23_experiments.ui.old.lib.structs import Cropping, HyperParameters, Target
 from tqdm import tqdm
 
+import reg23_core
 from reg23_experiments.data.plot_data import LandscapePlotData
-from reg23_experiments.data.structs import SceneGeometry, Transformation
+from reg23_experiments.data.structs import Cropping, SceneGeometry, Transformation
 from reg23_experiments.ops import drr, geometry, objective_function
 from reg23_experiments.ops.optimisation import local_search, mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
@@ -55,7 +54,8 @@ class RegistrationData:
 
         ct_volume, self._ct_spacing = data.load_ct(pathlib.Path(ct_path), downsample_factor=downsample_factor)
         ct_volume = ct_volume.to(device=device, dtype=torch.float32)
-        ct_volume = ct_volume - ct_volume.mean()  # !!! shifting the volume to zero-mean, so now considering real, not non-negative
+        ct_volume = ct_volume - ct_volume.mean()  # !!! shifting the volume to zero-mean, so now considering real,
+        # not non-negative
         self._ct_volumes = [ct_volume] + [truncate(ct_volume, fraction) for fraction in truncation_fractions]
         self._ct_spacing = self._ct_spacing.to(device=device)
 
@@ -293,9 +293,11 @@ class RegistrationData:
     def images_drr(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:
         return self.generate_drr(transformation), self.fixed_image
 
-    # def images_grangeat_classic(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:  #     return self.registration_data.sinogram2d, self.resample_sinogram3d(transformation)
+    # def images_grangeat_classic(self, transformation: Transformation) -> Tuple[torch.Tensor, torch.Tensor]:  #
+    # return self.registration_data.sinogram2d, self.resample_sinogram3d(transformation)
 
-    # def objective_function_grangeat_healpix(self, transformation: Transformation) -> torch.Tensor:  #     return -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation, 1))
+    # def objective_function_grangeat_healpix(self, transformation: Transformation) -> torch.Tensor:  #     return
+    # -objective_function.zncc(self.registration_data.sinogram2d, self.resample_sinogram3d(transformation, 1))
 
     @staticmethod
     def sim_metric_ncc(xs: torch.Tensor, ys: torch.Tensor) -> torch.Tensor:
@@ -620,8 +622,10 @@ if __name__ == "__main__":
                         help="Set the directory where data that is expensive to calculate will be saved. The default "
                              "is 'cache'.")
     parser.add_argument("-p", "--ct-path", type=str,
-                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to process. If not "
-                             "provided, some simple synthetic data will be used instead - note that in this case, data will not be "
+                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
+                             "process. If not "
+                             "provided, some simple synthetic data will be used instead - note that in this case, "
+                             "data will not be "
                              "saved to the cache.")
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")

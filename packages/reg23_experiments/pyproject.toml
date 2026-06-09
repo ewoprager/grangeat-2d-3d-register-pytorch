@@ -29,6 +29,8 @@ dependencies = [
     "graphviz>=0.21",
     "jaxtyping>=0.3.9",
     "beartype>=0.22.9",
+    "pylibjpeg>=2.1.0",
+    "pylibjpeg-libjpeg>=2.4.0",
 ]
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
