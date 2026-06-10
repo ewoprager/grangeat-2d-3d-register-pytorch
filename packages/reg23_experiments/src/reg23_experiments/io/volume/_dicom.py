@@ -79,8 +79,8 @@ class _Slice(traitlets.HasTraits):
     rescale_type: str | None = traitlets.Unicode(allow_none=True)
     pixel_spacing: list[float] = traitlets.List(trait=traitlets.Float(allow_none=False), minlen=2, maxlen=2,
                                                 allow_none=False)
-    image_position_patient: list[float] = traitlets.List(trait=traitlets.Float(allow_none=False), minlen=3, maxlen=3,
-                                                         allow_none=True)
+    image_position_patient: list[float] | None = traitlets.List(trait=traitlets.Float(allow_none=False), minlen=3,
+                                                                maxlen=3, allow_none=True)
     series_metadata: _SeriesMetadata = traitlets.Instance(_SeriesMetadata, allow_none=False)
 
     def convert_to_output_tensor(self, dtype: torch.dtype, **tensor_kwargs) -> torch.Tensor:
@@ -237,9 +237,28 @@ class DICOMVolumeLoader(VolumeLoader):
         volume = torch.stack([s.convert_to_output_tensor(torch.float32) for s in slices])
         # logger.info("{}".format(slices[0]["ImageOrientationPatient"]))
         # return volume, spacing, torch.tensor(slices[0].image_position_patient), slices[0].uid
-        return Volume(uid=str(path) if series is None else series, raw_data=volume,
-                      rescale_slope=slices[0].rescale_slope, rescale_intercept=slices[0].rescale_intercept,
-                      rescale_type=slices[0].rescale_type, spacing=spacing)
+        series_uid = str(path) if series is None else series
+
+        if slices[0].image_position_patient is None:
+            logger.info(f"No ImagePositionPatient found for series '{series_uid}' at path '{str(path)}'.")
+            ipp = None
+        else:
+            if (l := len(slices[0].image_position_patient)) == 3:
+                ipp = torch.tensor(slices[0].image_position_patient, dtype=torch.float64)
+            else:
+                logger.info(f"ImagePositionPatient for series '{series_uid}' at path '{str(path)}' is invalid length; "
+                            f"expected 3, got {l}.")
+                ipp = None
+
+        return Volume(  #
+            uid=series_uid,  #
+            raw_data=volume,  #
+            rescale_slope=slices[0].rescale_slope,  #
+            rescale_intercept=slices[0].rescale_intercept,  #
+            rescale_type=slices[0].rescale_type,  #
+            spacing=spacing,  #
+            image_position_patient=ipp  #
+        )
 
     @staticmethod
     def _get_slice_paths(path: pathlib.Path) -> list[pathlib.Path]:

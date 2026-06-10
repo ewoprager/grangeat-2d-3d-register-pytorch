@@ -18,8 +18,8 @@ from reg23_experiments.data.transformation_save_data import TransformationSaveDa
 from reg23_experiments.experiments import updaters
 from reg23_experiments.io.image import load_cached_drr, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
-from reg23_experiments.io.serialize import serialize_recursive
-from reg23_experiments.io.volume import OneSeries, SeriesDescription, Volume, find_ct_series, load_ct_series
+from reg23_experiments.io.volume import OneSeries, SeriesDescription, Volume, find_ct_series, \
+    get_input_ct_series_choice, load_ct_series
 from reg23_experiments.ops import drr, geometry, similarity_metric, swarm as pso
 from reg23_experiments.ops.ct import convert_ct_to_mu
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
@@ -50,17 +50,6 @@ def instance_output_directory(script_output_directory: str | pathlib.Path) -> pa
     return ret
 
 
-def get_string_required(prompt: str, predicate: Callable[[str], None | Error]) -> str:
-    prefix = ""
-    while True:
-        ret = input(prefix + prompt)
-        err = predicate(ret)
-        if isinstance(err, Error):
-            prefix = err.description + ";\n"
-        else:
-            return ret
-
-
 def load_untruncated_ct(ct_path: pathlib.Path, device: torch.device, ct_permutation: Sequence[int] | None = None) -> \
         tuple[torch.Tensor, torch.Tensor, str] | Error:
     series: dict[str, SeriesDescription | OneSeries] = find_ct_series(ct_path)
@@ -69,11 +58,7 @@ def load_untruncated_ct(ct_path: pathlib.Path, device: torch.device, ct_permutat
     if len(series) == 1:
         key = next(iter(series))
     else:
-        key = get_string_required(  #
-            f"Multiple CT series available at path '{str(ct_path)}'; please choose one:\n"
-            f"{"\n".join(f"{k}:\n\t{pprint.pformat(serialize_recursive(v))}\n" for k, v in series.items())}",  #
-            lambda k: None if k in series else Error(f"String '{k}' does not name a series.")  #
-        )
+        key = get_input_ct_series_choice(series)
     volume: Volume | Error = load_ct_series(ct_path, key)
     if isinstance(volume, Error):
         return Error(f"Failed to open CT from path '{str(ct_path)}': {volume.description}")
@@ -81,7 +66,7 @@ def load_untruncated_ct(ct_path: pathlib.Path, device: torch.device, ct_permutat
     if isinstance(tensor, Error):
         return Error(f"Failed to convert CT from path '{str(ct_path)}' to mu: {tensor.description}")
     tensor = tensor.to(device=device)
-    spacing = volume.spacing.to(device=device)
+    spacing = volume.spacing.to(device=device, dtype=torch.float64)
     if ct_permutation is not None:
         if len(ct_permutation) != 3:
             return Error("Length of ct_permutation must be 3.")

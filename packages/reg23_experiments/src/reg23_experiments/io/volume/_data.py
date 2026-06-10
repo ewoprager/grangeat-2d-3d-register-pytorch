@@ -12,6 +12,8 @@ class Volume(traitlets.HasTraits):
     rescale_intercept: float = traitlets.Float(allow_none=False, default_value=0.0)
     rescale_type: str | None = traitlets.Unicode(allow_none=True, default_value=None)
     spacing: Float64[torch.Tensor, "3"] = traitlets.Instance(torch.Tensor, allow_none=False)
+    image_position_patient: Float64[torch.Tensor, "3"] | None = traitlets.Instance(torch.Tensor, allow_none=True,
+                                                                                   default_value=None)
 
 
 class OneSeries(traitlets.HasTraits):

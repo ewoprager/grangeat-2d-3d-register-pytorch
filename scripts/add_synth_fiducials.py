@@ -6,7 +6,10 @@ import nrrd
 import torch
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.io import stradview, volume
+from reg23_experiments.io import stradview
+from reg23_experiments.io.volume import OneSeries, SeriesDescription, Volume, find_ct_series, \
+    get_input_ct_series_choice, load_ct_series
+from reg23_experiments.ops.ct import convert_ct_to_mu
 from reg23_experiments.utils import logs_setup
 
 type MarkerFunction = Callable[[torch.Tensor], torch.Tensor]
@@ -54,13 +57,28 @@ def construct_marker_image(*, size: torch.Size, spacing: torch.Tensor, origin: t
     return ret
 
 
-def main(*, ct_path: pathlib.Path, landmark_path: pathlib.Path, output_path: pathlib.Path | None):
-    assert ct_path.is_dir()
-    series = volume.find_dicom_series_in_directory(ct_path, check_for_dcm_suffix=False)
-    logger.info(series)
-    ct_volume, ct_spacing, image_position_patient, _ = volume.read_dicom_series_from_directory(ct_path, series_number=
-    max(series, key=lambda t: t[1])[0], check_for_dcm_suffix=False)
+def main(*, ct_path: pathlib.Path, landmark_path: pathlib.Path, output_path: pathlib.Path | None) -> None | Error:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    series: dict[str, SeriesDescription | OneSeries] = find_ct_series(ct_path)
+    if not series:
+        return Error(f"No CT series found at path '{str(ct_path)}'.")
+    if len(series) == 1:
+        key = next(iter(series))
+    else:
+        key = get_input_ct_series_choice(series)
+    volume: Volume | Error = load_ct_series(ct_path, key)
+    if isinstance(volume, Error):
+        return Error(f"Failed to open CT from path '{str(ct_path)}': {volume.description}")
+    if volume.image_position_patient is None:
+        logger.warning(f"No ImagePositionPatient found for given CT series. Assuming (0, 0, 0).")
+        volume.image_position_patient = torch.zeros(3, dtype=torch.float64)
+    tensor: torch.Tensor | Error = convert_ct_to_mu(volume, dtype=torch.float32)
+    if isinstance(tensor, Error):
+        return Error(f"Failed to convert CT from path '{str(ct_path)}' to mu: {tensor.description}")
+    ct_volume = tensor.to(device=device)
+    ct_spacing = volume.spacing.to(device=device, dtype=torch.float64)
+    image_position_patient = volume.image_position_patient.to(device=device, dtype=torch.float64)
     logger.info(
         "CT volume loaded, size=[{} x {} x {}]; spacing=({:.3f}, {:.3f}, {:.3f}); image position patient=({:.3f}, "
         "{:.3f}, {:.3f})".format(  #
@@ -113,5 +131,10 @@ if __name__ == "__main__":
                          help="Give a path at which to save the modified CT data.")
     _args = _parser.parse_args()
 
-    main(ct_path=pathlib.Path(_args.ct_path), landmark_path=pathlib.Path(_args.landmark_path),
-         output_path=None if _args.output_path is None else pathlib.Path(_args.output_path))
+    if isinstance(err := main(  #
+            ct_path=pathlib.Path(_args.ct_path),  #
+            landmark_path=pathlib.Path(_args.landmark_path),  #
+            output_path=None if _args.output_path is None else pathlib.Path(_args.output_path)  #
+    ), Error):
+        logger.error(err.description)
+        exit(1)
