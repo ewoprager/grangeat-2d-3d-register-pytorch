@@ -1,5 +1,6 @@
 import logging
 import weakref
+from typing import Callable
 
 import napari.layers
 import numpy as np
@@ -16,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 class _MovingImageLayerManager:
-    def __init__(self, *, ctx: AppContext, layer: napari.layers.Layer, namespace: str | None, spacing_dadg_key: str):
+    def __init__(self, *, ctx: AppContext, layer: napari.layers.Image, namespace: str | None, spacing_dadg_key: str):
         logger.debug(f"Initializing _MovingImageLayerManager in namespace {namespace}")
         self._ctx = ctx
-        self._layer = weakref.ref(layer)
+        self._layer: Callable[[], napari.layers.Image | None] = weakref.ref(layer)
         self._namespace = namespace
         self._spacing_dadg_key = spacing_dadg_key
         #
@@ -37,10 +38,14 @@ class _MovingImageLayerManager:
         self._ctx.dadg.set_evaluation_laziness(self._spacing_dadg_key, lazily_evaluated=True)
 
     def _observer_callback(self, new_value: torch.Tensor) -> None:
-        self._layer().data = new_value.cpu().numpy()
+        if (layer := self._layer()) is None:
+            return
+        layer.data = new_value.cpu().numpy()
 
     def _spacing_observer_callback(self, new_value: torch.Tensor) -> None:
-        self._layer().scale = new_value.flip(dims=(0,)).cpu().numpy()
+        if (layer := self._layer()) is None:
+            return
+        layer.scale = new_value.flip(dims=(0,)).cpu().numpy()
 
     def _mouse_drag(self, layer, event):
         if event.button == 1 and self._ctx.input_manager.ctrl_pressed:  # Ctrl-left click drag

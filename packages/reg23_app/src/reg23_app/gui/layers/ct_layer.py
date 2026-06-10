@@ -1,5 +1,6 @@
 import logging
 import weakref
+from typing import Callable
 
 import napari.layers
 import torch
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 class _CTLayerManager:
     def __init__(self, *, ctx: AppContext, layer: napari.layers.Image):
         self._ctx = ctx
-        self._layer = weakref.ref(layer)
+        self._layer: Callable[[], napari.layers.Image | None] = weakref.ref(layer)
 
         self._ctx.dadg.observe("untruncated_ct_volume", "ct_layer", self._observer_callback)
         self._ctx.dadg.set_evaluation_laziness("untruncated_ct_volume", lazily_evaluated=False)
@@ -28,10 +29,14 @@ class _CTLayerManager:
         self._ctx.dadg.set_evaluation_laziness("ct_spacing", lazily_evaluated=True)
 
     def _observer_callback(self, new_value: torch.Tensor) -> None:
-        self._layer().data = new_value.cpu().numpy()
+        if (layer := self._layer()) is None:
+            return
+        layer.data = new_value.cpu().numpy()
 
     def _spacing_callback(self, new_value: torch.Tensor) -> None:
-        self._layer().scale = new_value.flip(dims=(0,)).cpu().numpy()
+        if (layer := self._layer()) is None:
+            return
+        layer.scale = new_value.flip(dims=(0,)).cpu().numpy()
 
 
 def add_ct_layer(*, ctx: AppContext) -> napari.layers.Image | None:
@@ -47,6 +52,7 @@ def add_ct_layer(*, ctx: AppContext) -> napari.layers.Image | None:
         raise RuntimeError(f"Error softly getting 'ct_spacing' from DADG: {spacing.description}.")
     initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((200, 500, 500))
     layer: napari.layers.Image = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
-                                                    interpolation2d="linear", name=name, scale=spacing.flip(dims=(0,)).cpu().numpy())
+                                                    interpolation2d="linear", name=name,
+                                                    scale=spacing.flip(dims=(0,)).cpu().numpy())
     layer.my_plugin = _CTLayerManager(ctx=ctx, layer=layer)
     return layer

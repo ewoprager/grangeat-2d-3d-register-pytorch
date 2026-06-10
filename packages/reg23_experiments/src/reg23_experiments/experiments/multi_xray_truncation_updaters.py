@@ -32,7 +32,7 @@ def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: S
     if isinstance(ct_volume, Error):
         raise Exception(f"Failed to convert CT from path '{ct_path}' to mu: {ct_volume.description}")
     ct_volume = ct_volume.to(device=device)
-    ct_spacing = volume.spacing.to(device=device)
+    ct_spacing = volume.spacing.to(device=device, dtype=torch.float64)
 
     if ct_permutation is not None:
         assert len(ct_permutation) == 3

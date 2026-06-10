@@ -95,11 +95,15 @@ def add_ct_fiducial_layer(*, dadg: DirectedAcyclicDataGraph) -> napari.layers.La
         logger.error(f"Failed to get CT fiducial point data for layer: {fiducial_points.description}")
         return None
     # ToDo: Move initialisation to the layer manager?
+    if fiducial_points.names:
+        features = pd.DataFrame([{"label": name} for name in fiducial_points.names])
+    else:
+        features = pd.DataFrame(columns=["label"])
     layer = viewer().add_points(  #
         fiducial_points.data.flip(dims=(1,)).numpy(),  #
         size=8.0,  #
         name="ct_fiducial_points",  #
-        features=pd.DataFrame([{"label": name} for name in fiducial_points.names]),  #
+        features=features,  #
         text={"string": "{label}", "size": 16}  #
     )
     layer.my_plugin = _CTFiducialLayerManager(dadg=dadg, layer=layer)

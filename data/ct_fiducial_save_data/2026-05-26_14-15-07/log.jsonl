@@ -1,0 +1,32 @@
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_left", "x": 87.14856536996018, "y": 108.0241634988331, "z": 187.38272172483735}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 149.74444824622685, "y": 19.48024040210499, "z": 100.74350568583759}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_left", "x": 87.14851336863921, "y": 108.02390463482129, "z": 187.38272840721703}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 149.7444557646888, "y": 19.479984410484306, "z": 100.74352459272335}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_right", "x": 174.8188091577377, "y": 118.73252813639537, "z": 175.79510206828385}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_left", "x": 80.47532060864256, "y": 25.209756887867975, "z": 104.29666624863113}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_right", "x": 174.89376004806266, "y": 116.64532885311472, "z": 175.73572456386583}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_left", "x": 86.76925069060103, "y": 106.21595388872026, "z": 187.45155895488242}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_right", "x": 149.77217870372522, "y": 17.789231632118597, "z": 100.89095576493808}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_left", "x": 81.97804129624431, "y": 24.988709407719796, "z": 104.3838169932842}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_right", "x": 176.09709724495497, "y": 117.5117316348772, "z": 175.73572456386583}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_left", "x": 82.7896415615379, "y": 25.890487480268238, "z": 104.3838169932842}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "front_left", "x": 81.97804129624438, "y": 24.9887094077198, "z": 104.3838169932842}
+{"action": "set", "ct_series_uid": "/home/eprager/Documents/Datasets/3D_printed_head_CT/44290013_synth_fid.nrrd", "name": "back_right", "x": 174.8937600480628, "y": 116.64532885311472, "z": 175.73572456386583}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "chin", "x": 92.51442398545024, "y": 60.26501728647482, "z": 11.90020751953125}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "cheek", "x": 160.90958482261306, "y": 84.98784174917253, "z": 26.6004638671875}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "jaw", "x": 180.9673402575341, "y": 126.31422353170683, "z": 49.70086669921875}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "under ear", "x": 58.70072025451658, "y": 159.10596594641214, "z": 70.001220703125}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "eyebrow", "x": 76.21981723808969, "y": 37.396382750246254, "z": 176.403076171875}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "forhead", "x": 142.45922879647242, "y": 44.19911353290267, "z": 206.50360107421875}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "forhead", "x": 142.0100367266974, "y": 45.396959052302705, "z": 206.50360107421875}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "forhead", "x": 141.9301161704327, "y": 45.87648238989078, "z": 206.50360107421875}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "top right", "x": 183.52685269115602, "y": 115.08127051855877, "z": 213.50372314453125}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "top left", "x": 54.53682692242687, "y": 140.32596725077653, "z": 219.10382080078125}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "top", "x": 109.5218513117779, "y": 113.69799946473861, "z": 245.0042724609375}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "jaw", "x": 180.73168389864443, "y": 128.00697142562467, "z": 49.67075988554542}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "cheek", "x": 162.55455068144232, "y": 83.73497278949637, "z": 26.46736124468248}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "chin", "x": 89.52747901493548, "y": 60.59436505650418, "z": 12.205121524978438}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "under ear", "x": 58.70198921902165, "y": 159.05063082871047, "z": 69.2006854957725}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "eyebrow", "x": 75.99567752668726, "y": 37.189780872413436, "z": 175.8351571656036}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "chin", "x": 92.56180058797693, "y": 60.42819150927568, "z": 12.444785636737887}
+{"action": "set", "ct_series_uid": "1.3.12.2.1107.5.1.4.95722.30000026060904203837700035783", "name": "jaw", "x": 180.87366322983277, "y": 126.38378787571287, "z": 50.40970357400048}

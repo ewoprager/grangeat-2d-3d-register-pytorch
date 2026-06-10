@@ -1,5 +1,6 @@
 import logging
 import weakref
+from typing import Callable
 
 import napari.layers
 import torch
@@ -14,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class _FixedImageLayerManager:
-    def __init__(self, *, ctx: AppContext, layer: napari.layers.Layer, dadg_key: str, spacing_dadg_key: str):
+    def __init__(self, *, ctx: AppContext, layer: napari.layers.Image, dadg_key: str, spacing_dadg_key: str):
         self._ctx = ctx
-        self._layer = weakref.ref(layer)
+        self._layer: Callable[[], napari.layers.Image | None] = weakref.ref(layer)
         self._dadg_key = dadg_key
         self._spacing_dadg_key = spacing_dadg_key
         self._ctx.dadg.observe(self._dadg_key, "image_manager", self._observer_callback)
@@ -29,10 +30,14 @@ class _FixedImageLayerManager:
         self._ctx.dadg.set_evaluation_laziness(self._spacing_dadg_key, lazily_evaluated=True)
 
     def _observer_callback(self, new_value: torch.Tensor) -> None:
-        self._layer().data = new_value.cpu().numpy()
+        if (layer := self._layer()) is None:
+            return
+        layer.data = new_value.cpu().numpy()
 
     def _spacing_observer_callback(self, new_value: torch.Tensor) -> None:
-        self._layer().scale = new_value.flip(dims=(0,)).cpu().numpy()
+        if (layer := self._layer()) is None:
+            return
+        layer.scale = new_value.flip(dims=(0,)).cpu().numpy()
 
 
 def add_fixed_image_layer(*, ctx: AppContext, dadg_key: str, spacing_dadg_key: str,

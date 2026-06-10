@@ -98,11 +98,15 @@ def add_xray_fiducial_layer(*, dadg: DirectedAcyclicDataGraph,
     if isinstance(res, Error):
         logger.error(f"Error getting fiducial point data for layer: {res.description}")
         return None
+    if res.names:
+        features = pd.DataFrame([{"label": name} for name in res.names])
+    else:
+        features = pd.DataFrame(columns=["label"])
     layer = viewer().add_points(  #
         res.data.flip(dims=(1,)).numpy(),  #
         size=8.0,  #
         name=dadg_key,  #
-        features=pd.DataFrame([{"label": name} for name in res.names]),  #
+        features=features,  #
         text={"string": "{label}", "size": 16}  #
     )
     layer.my_plugin = _XRayFiducialLayerManager(dadg=dadg, layer=layer, dadg_key=dadg_key,
