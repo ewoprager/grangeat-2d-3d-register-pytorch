@@ -7,8 +7,9 @@ import matplotlib
 matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
 import numpy as np
+import nrrd
 import torch
-from matplotlib.patches import Circle
+from matplotlib.patches import Ellipse
 from matplotlib.widgets import Slider
 
 from reg23_experiments.data.structs import Error
@@ -32,13 +33,16 @@ class VolumeViewer:
         """
         self.volume = volume
 
+        slice_rad = max(self.volume.shape[1], self.volume.shape[2])
+
         self.fig, self.ax = plt.subplots()
 
         self.slice_idx = volume.shape[0] // 2
 
         self._vmin = np.min(volume)
         self._vmax = np.max(volume)
-        self._radius = 40.0
+        self._x_radius = 40.0
+        self._y_radius = 40.0
 
         slider_specs: dict[str, SliderSpec] = {  #
             "Slice": SliderSpec(vmin=0, vmax=volume.shape[0] - 1,
@@ -47,8 +51,16 @@ class VolumeViewer:
                                callback=self._update),  #
             "VMax": SliderSpec(vmin=self._vmin, vmax=self._vmax, slider_kwargs={"valinit": self._vmax},
                                callback=self._update),  #
-            "Radius": SliderSpec(vmin=0.1, vmax=200.0, slider_kwargs={"valinit": self._radius}, callback=self._update),
-            #
+            "XRadius": SliderSpec(vmin=20, vmax=slice_rad, slider_kwargs={"valinit": self._x_radius},
+                                  callback=self._update),  #
+            "YRadius": SliderSpec(vmin=20, vmax=slice_rad, slider_kwargs={"valinit": self._y_radius},
+                                  callback=self._update),  #
+            "DirX": SliderSpec(vmin=-20.0, vmax=20.0, slider_kwargs={"valinit": 0.0}, callback=self._update),  #
+            "DirY": SliderSpec(vmin=-20.0, vmax=20.0, slider_kwargs={"valinit": 0.0}, callback=self._update),  #
+            "CentreX": SliderSpec(vmin=-slice_rad, vmax=slice_rad, slider_kwargs={"valinit": 0.0},
+                                  callback=self._update),  #
+            "CentreY": SliderSpec(vmin=-slice_rad, vmax=slice_rad, slider_kwargs={"valinit": 0.0},
+                                  callback=self._update),  #
         }
 
         plt.subplots_adjust(bottom=0.1 + 0.05 * len(slider_specs))
@@ -69,16 +81,21 @@ class VolumeViewer:
             self._sliders[k].on_changed(v.callback)
 
         self._centre_offset = np.zeros(2)
-        self._direction = np.array([1.0, 2.0, 10.0])
+        self._direction = np.array([0.0, 0.0, 1.0])
         self._direction /= np.linalg.norm(self._direction)
-        self._circle = Circle((0.0, 0.0), self._radius, fill=False, edgecolor="red", linewidth=2)
-        self._update_circle()
-        self.ax.add_patch(self._circle)
+        self._ellipse = Ellipse((0.0, 0.0), self._x_radius, self._y_radius, fill=False, edgecolor="red", linewidth=2)
+        self._update_ellipse()
+        self.ax.add_patch(self._ellipse)
 
-    def _update_circle(self):
-        centre = (float(self.slice_idx) - 0.5 * float(self.volume.shape[0])) * self._direction[0:2]
-        self._circle.set_center((self.volume.shape[2] // 2 + centre[0], self.volume.shape[1] // 2 + centre[1]))
-        self._circle.set_radius(self._sliders["Radius"].val)
+    def _update_ellipse(self):
+        self._centre_offset = np.array([self._sliders["CentreX"].val, self._sliders["CentreY"].val])
+        self._direction = np.array([self._sliders["DirX"].val, self._sliders["DirY"].val, 10.0])
+        self._direction /= np.linalg.norm(self._direction)
+        centre = (float(self.slice_idx) - 0.5 * float(self.volume.shape[0])) * self._direction[
+            0:2] + self._centre_offset
+        self._ellipse.set_center((self.volume.shape[2] // 2 + centre[0], self.volume.shape[1] // 2 + centre[1]))
+        self._ellipse.set_width(self._sliders["XRadius"].val)
+        self._ellipse.set_height(self._sliders["YRadius"].val)
         self.fig.canvas.draw_idle()
 
     def _update(self, _):
@@ -95,9 +112,21 @@ class VolumeViewer:
                           f"vmax={self._vmax:.2f}")
 
         # Put any future processing here using vmin/vmax
-        self._update_circle()
+        self._update_ellipse()
 
         self.fig.canvas.draw_idle()
+
+    def apply_crop(self) -> np.ndarray:
+        ret = self.volume.copy()
+        for i in range(len(ret)):
+            centre = (float(self.slice_idx) - 0.5 * float(self.volume.shape[0])) * self._direction[
+                0:2] + self._centre_offset
+            ys, xs = np.indices(self.volume.shape[1:3])
+            xs = (xs - self.volume.shape[2] // 2 + centre[0]) / self._x_radius
+            ys = (ys - self.volume.shape[1] // 2 + centre[1]) / self._y_radius
+            mask = xs * xs + ys * ys > 1.0
+            ret[i][mask] = 0.0
+        return ret
 
     def show(self):
         plt.show()
@@ -136,6 +165,24 @@ def main(*, ct_path: pathlib.Path, output_path: pathlib.Path) -> None | Error:
     viewer = VolumeViewer(ct_volume.numpy())
 
     viewer.show()
+
+    output = viewer.apply_crop()
+
+    logger.info(f"Saving volume of size {output.shape}...")
+
+    header = {  #
+        "space": "left-posterior-superior",  #
+        "dimension": 3,  #
+        "space directions": [  #
+            [0.0, 0.0, ct_spacing[2].item()],  # Z axis
+            [0.0, ct_spacing[1].item(), 0.0],  # Y axis
+            [ct_spacing[0].item(), 0.0, 0.0],  # X axis
+        ],  #
+        "space origin": image_position_patient.tolist(),  #
+        "encoding": "raw"  #
+    }
+    nrrd.write(str(output_path), output, header=header)
+    logger.info(f"Output saved to '{str(output_path)}'.")
 
 
 if __name__ == "__main__":

@@ -35,4 +35,8 @@ class NrrdVolumeLoader(VolumeLoader):
             return Error(f"Expected CT volume data to be 3 dimensional; found image of size {data.size()}.")
         directions = torch.tensor(header['space directions'], dtype=torch.float64)
         spacing = directions.norm(dim=1).flip(dims=(0,))
-        return Volume(raw_data=data, spacing=spacing, uid=str(path))
+        if "space origin" in header:
+            image_position_patient = torch.tensor(header['space origin'], dtype=torch.float64)
+        else:
+            image_position_patient = None
+        return Volume(raw_data=data, spacing=spacing, uid=str(path), image_position_patient=image_position_patient)

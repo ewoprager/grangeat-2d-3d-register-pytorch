@@ -35,9 +35,12 @@ def find_ct_series(path: pathlib.Path) -> dict[str, SeriesDescription | OneSerie
 
 def load_ct_series(path: pathlib.Path, key: str) -> Volume | Error:
     for loader in _registry:
-        if key not in loader.series_available(path):
-            continue
-        return loader.load(path, key)
+        available = loader.series_available(path)
+        if isinstance(available, OneSeries):
+            if key == available.file_type:
+                return loader.load(path, None)
+        elif key in available:
+            return loader.load(path, key)
     return Error(f"Couldn't find loader for series '{key}' at path '{str(path)}'.")
 
 
