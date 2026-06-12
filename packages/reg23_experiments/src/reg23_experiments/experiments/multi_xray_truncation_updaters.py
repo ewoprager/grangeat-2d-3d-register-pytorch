@@ -4,13 +4,13 @@ from typing import Any, Sequence
 os.environ["QT_API"] = "PyQt6"
 
 import torch
-import pathlib
 from jaxtyping import Float32, Float64
+import SimpleITK as sitk
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.data.segmentation import NamedPoints3D, NamedPoints2D
-from reg23_experiments.io.volume import load_one_ct_series, Volume
-from reg23_experiments.ops.ct import convert_ct_to_mu
+from reg23_experiments.io.sitk import load_one_ct_series
+from reg23_experiments.ops.ct import convert_ct_to_mu_sitk
 from reg23_experiments.ops.data_manager import dadg_updater
 from reg23_experiments.data.structs import Transformation, SceneGeometry
 from reg23_experiments.ops import geometry
@@ -25,21 +25,22 @@ __all__ = ["load_untruncated_ct", "set_target_image", "apply_truncation", "proje
 @dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing", "ct_series_uid"])
 def load_untruncated_ct(*, ct_path: str, device: torch.device, ct_permutation: Sequence[int] | None = None) -> dict[
     str, Any]:
-    volume: Volume | Error = load_one_ct_series(pathlib.Path(ct_path))
-    if isinstance(volume, Error):
-        raise Exception(f"Failed to open CT from path '{ct_path}': {volume.description}")
-    ct_volume = convert_ct_to_mu(volume, dtype=torch.float32)
+    res: tuple[str, sitk.Image] | Error = load_one_ct_series(ct_path)
+    if isinstance(res, Error):
+        raise Exception(f"Failed to open CT from path '{ct_path}': {res.description}")
+    uid, volume = res
+    ct_volume = convert_ct_to_mu_sitk(volume, dtype=torch.float32)
     if isinstance(ct_volume, Error):
         raise Exception(f"Failed to convert CT from path '{ct_path}' to mu: {ct_volume.description}")
     ct_volume = ct_volume.to(device=device)
-    ct_spacing = volume.spacing.to(device=device, dtype=torch.float64)
+    ct_spacing = torch.tensor(volume.GetSpacing(), device=device, dtype=torch.float64)
 
     if ct_permutation is not None:
         assert len(ct_permutation) == 3
         ct_volume = ct_volume.permute(*ct_permutation)
         ct_spacing = ct_spacing[torch.tensor(ct_permutation)]
 
-    return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing, "ct_series_uid": volume.uid}
+    return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing, "ct_series_uid": uid}
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "transformation_gt",

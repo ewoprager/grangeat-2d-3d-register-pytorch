@@ -9,7 +9,8 @@ from pydicom.uid import generate_uid
 
 from reg23_experiments.data.structs import Error
 
-__all__ = ["DCMSeriesInfo", "find_ct_series", "load_ct_series", "load_image_file", "save_ct_series"]
+__all__ = ["DCMSeriesInfo", "find_ct_series", "load_ct_series", "load_image_file", "save_ct_series",
+           "load_one_ct_series"]
 
 
 class DCMSeriesInfo(traitlets.HasTraits):
@@ -50,6 +51,29 @@ def load_ct_series(path: str | pathlib.Path, series_uid: str) -> sitk.Image | Er
         return reader.Execute()
     except Exception as e:
         return Error(f"Failed to load CT series '{series_uid}' from path '{str(path)}': {str(e)}")
+
+
+def load_one_ct_series(path: str | pathlib.Path) -> tuple[str, sitk.Image] | Error:
+    """
+    Loads the given file, or chooses the CT series with the most slices found in the given directory.
+    :param path: File or directory to attempt to load a CT series from
+    :return: tuple (CT series UID (or path if not present), image), or Error if encountered.
+    """
+    path = pathlib.Path(path)
+    if path.is_file():
+        if isinstance(img := load_image_file(path), Error):
+            return img
+        return str(path), img
+    elif path.is_dir():
+        series: dict[str, DCMSeriesInfo] | Error = find_ct_series(path)
+        if isinstance(series, Error):
+            return series
+        chosen_uid: str = max(series.items(), key=lambda t: t[1].slice_count)[0]
+        if isinstance(img := load_ct_series(path, chosen_uid), Error):
+            return img
+        return chosen_uid, img
+    else:
+        return Error(f"Path '{str(path)}' is neither a file nor directory.")
 
 
 def load_image_file(path: str | pathlib.Path) -> sitk.Image | Error:
@@ -93,28 +117,3 @@ def save_ct_series(  #
 
         new_ds.save_as(path / f"slice_{i:04d}.dcm")
     return None
-
-
-if False:
-    def load_ct_volume(path: pathlib.Path, series_uid: str | None = None) -> sitk.Image | Error:
-        if path.is_dir():
-            series_uids: list[str] = find_ct_series(path)
-            if not series_uids:
-                return Error(f"No DICOM series found in directory '{str(path)}'.")
-            if series_uid is None:
-                if len(series_uids) > 1:
-                    return Error(
-                        f"Multiple DICOM series found in directory '{str(path)}': {", ".join(series_uids)}; please "
-                        f"specify one.")
-                return load_ct_series(path, series_uids[0])
-            else:
-                if series_uid in series_uids:
-                    return load_ct_series(path, series_uid)
-                else:
-                    return Error(f"DICOM series '{series_uid}' not found in directory '{str(path)}'.")
-        elif path.is_file():
-            if series_uid is not None:
-                return Error(f"Path '{str(path)}' is a file, cannot specify series UID.")
-            return load_image_file(path)
-        else:
-            return Error(f"Path '{str(path)}' is neither a file nor directory.")
