@@ -72,10 +72,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         new_drr_size=torch.Size([500, 500]),  #
         device=device,  #
         cropping=None,  #
-        current_transformation=Transformation.zero(device=device),  #
+        current_transformation=Transformation.zero(device),  #
         truncation_percent=0.0,  #
-        ap_transformation=Transformation(rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], device=device),
-            translation=torch.zeros(3, device=device)),  #
+        ap_transformation=Transformation(
+            rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
+            translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
         target_ap_distance=5.0,  #
     )
     if ct_path is not None:
