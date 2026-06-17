@@ -16,7 +16,7 @@ import traitlets
 from reg23_experiments.data.structs import Error, SceneGeometry, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.experiments import updaters
-from reg23_experiments.io.image import load_cached_drr, read_dicom
+from reg23_experiments.io.image import XrayDICOM, load_cached_drr, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.io.volume import OneSeries, SeriesDescription, Volume, find_ct_series, \
     get_input_ct_series_choice, load_ct_series
@@ -99,12 +99,31 @@ def set_synthetic_target_image(  #
             "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
 
 
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing"])
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "xray_sop_instance_uid"])
 def set_xray_target_image(*, xray_path: str, device: torch.device) -> dict[str, Any]:
-    image_2d_full, fixed_image_spacing, scene_geometry = read_dicom(xray_path)
-    image_2d_full = image_2d_full.to(device=device)
-    return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
-            "fixed_image_spacing": fixed_image_spacing}
+    dicom: XrayDICOM = read_dicom(xray_path)
+    image_2d_full = dicom["image"].to(device=device, dtype=torch.float32)
+    fixed_image_spacing = dicom["spacing"].to(device=device, dtype=torch.float64)
+    return {  #
+        "source_distance": dicom["scene_geometry"].source_distance,  ##
+        "image_2d_full": image_2d_full,  #
+        "fixed_image_spacing": fixed_image_spacing,  #
+        "xray_sop_instance_uid": dicom["uid"]  #
+    }
+
+
+@dadg_updater(names_returned=["transformation_gt"])
+def load_ground_truth(*, saved_transformations: pd.DataFrame, xray_sop_instance_uid: str, device: torch.device) -> dict[
+    str, Any]:
+    idx = (xray_sop_instance_uid, "gold_standard")
+    if idx not in saved_transformations:
+        return {"transformation_gt": None}
+    row = saved_transformations.loc[idx]
+    return {  #
+        "transformation_gt": Transformation.from_vector(  #
+            torch.tensor([row[f"x{i}"] for i in range(6)], device=device, dtype=torch.float64)  #
+        )  #
+    }
 
 
 @dadg_updater(names_returned=["ct_volumes"])
@@ -417,8 +436,23 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # -----
+    # Load the CT data, prompting the user to choose a series if multiple are found
     untruncated_ct_volume, ct_spacing, ct_series_uid = load_untruncated_ct(pathlib.Path(ct_path), device)
 
+    # -----
+    # Load all saved transformations; these are searched through for ground truth alignments
+    res: tuple[pathlib.Path, TransformationSaveData, int] | Error = load_latest_save(  #
+        TransformationSaveData,  #
+        save_directory=pathlib.Path("data/app_transformation_save_data")  #
+    )
+    if isinstance(res, Error):
+        raise RuntimeError(f"Failed to load saved transformation: {res.description}")
+    _, transformation_save_data, _ = res
+    saved_transformations: pd.DataFrame = transformation_save_data.get_data()
+
+    # -----
+    # Initialise the DADG
     if isinstance(err := data_manager().set_multiple(  #
             device=device,  #
             untruncated_ct_volume=untruncated_ct_volume,  #
@@ -434,12 +468,17 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
                                              translation=torch.zeros(3, device=device)),  #
             target_ap_distance=5.0,  #
             current_transformation=Transformation.random_uniform(device=device),  #
-            mask_transformation=None  #
+            mask_transformation=None,  #
+            saved_transformations=saved_transformations  #
     ), Error):
         logger.error(f"Error setting initial data values: {err.description}")
         return
 
+    # -----
+    # Initialise the fixed target image
     if xray_path is None:
+        # -----
+        # Use a DRR
         if isinstance(err := data_manager().set_multiple(  #
                 regenerate_drr=True,  #
                 new_drr_size=torch.Size([1000, 1000]),  #
@@ -452,21 +491,9 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
             logger.error(f"Error adding updater: {err.description}")
             return
     else:
-        res = load_latest_save(TransformationSaveData, save_directory=pathlib.Path("data/app_transformation_save_data"))
-        if isinstance(res, Error):
-            raise RuntimeError(f"Failed to load saved transformation: {res.description}")
-        _, saved_transformations, _ = res
-        df: pd.DataFrame = saved_transformations.get_data()
-        df = df.xs("cimp001 aligned", level="name")
-        if len(df) > 1:
-            raise RuntimeError(f"Found multiple transformations in the save data with name '{"cimp001 aligned"}'.")
-        columns = [f"x{i}" for i in range(6)]
-        values = df[columns].tolist()
-
-        if isinstance(err := data_manager().set_multiple(  #
-                xray_path=xray_path,  #
-                transformation_gt=Transformation.from_vector(torch.tensor(values, device=device)),  #
-        ), Error):
+        # -----
+        # Use an X-ray image
+        if isinstance(err := data_manager().set("xray_path", xray_path), Error):
             logger.error(f"Error setting initial data values: {err.description}")
             return
 
@@ -474,6 +501,12 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
             logger.error(f"Error adding updater: {err.description}")
             return
 
+        if isinstance(err := data_manager().add_updater("set_ground_truth", load_ground_truth), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+
+    # -----
+    # Add updaters to the DADG
     if isinstance(err := data_manager().add_updater("apply_truncation", apply_truncation), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -492,11 +525,14 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
     if isinstance(err := data_manager().add_updater("project_drr", project_drr), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-
+    # -----
+    # Set the current transformation to the ground truth if it exists
     if data_manager().get("transformation_gt") is not None:
         data_manager().set("current_transformation", data_manager().get("transformation_gt"))
 
     if show:
+        # -----
+        # Display images for debugging
         plt.ion()  # figures are non-blocking
         plt.show()
         fig, axes = plt.subplots(1, 4)
@@ -527,6 +563,8 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
         plt.draw()
         plt.pause(0.1)
 
+    # -----
+    # Values that remain constant for the experiments
     constants = {  #
         # ExperimentConfig
         "ct_path": ct_path,  #
@@ -545,6 +583,8 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
     }
 
     if show:
+        # -----
+        # Run extra registration and display images for debugging
         t: Transformation | Error = data_manager().get("transformation_gt")
         if t is None:
             t = data_manager().get("ap_transformation")
@@ -581,6 +621,8 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
         "Varying truncation and cropping and masking; finished off the previous dataset: 2026-02-03_16-49-22; just "
         "the last two dataframes.")
 
+    # -----
+    # Run experiments, setting the parameters to vary
     run_experiments(params_to_vary={  #
         "truncation_percent": [45],  #
         "cropping": ["full_depth_drr"],  #
@@ -613,7 +655,7 @@ if __name__ == "__main__":
     # parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
     parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
     parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
-    parser.add_argument("-d", "--data-output-dir", type=str, default="data/temp/program_truncation",
+    parser.add_argument("-d", "--data-output-dir", type=str, default="experimental_results/program_truncation",
                         help="Directory in which to save output data.")
     args = parser.parse_args()
 

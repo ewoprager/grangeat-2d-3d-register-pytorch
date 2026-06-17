@@ -16,3 +16,4 @@ data/register_plot_data/
 **/.cache/
 **/*.log
 **/.zed/
+experimental_results/

@@ -65,7 +65,7 @@ class SaveData(ABC):
     def apply_change(self, change: Change) -> None | Error:
         """
         Apply the given change to the data. This is used when changes are applied.
-        :param change: A trivially JSON-serialisable object that described a change to make to the data.
+        :param change: A trivially JSON-serializable object that described a change to make to the data.
         :return: The error, if one has occurred.
         """
         pass
