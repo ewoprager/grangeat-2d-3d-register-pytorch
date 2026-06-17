@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 import traitlets
+from jaxtyping import Float64
 
 from reg23_experiments.data.structs import Error, SceneGeometry, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
@@ -76,7 +77,7 @@ def load_untruncated_ct(ct_path: pathlib.Path, device: torch.device, ct_permutat
     return tensor, spacing, volume.uid
 
 
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "transformation_gt"])
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "transformation_gt"])
 def set_synthetic_target_image(  #
         *, ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor, new_drr_size: torch.Size,
         regenerate_drr: bool, save_to_cache: bool, cache_directory: str, ap_transformation: Transformation,
@@ -92,22 +93,22 @@ def set_synthetic_target_image(  #
         drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
                                               save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
 
-    fixed_image_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
+    image_2d_full_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
     del drr_spec
 
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
-            "fixed_image_spacing": fixed_image_spacing, "transformation_gt": transformation_ground_truth}
+            "image_2d_full_spacing": image_2d_full_spacing, "transformation_gt": transformation_ground_truth}
 
 
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "fixed_image_spacing", "xray_sop_instance_uid"])
+@dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "xray_sop_instance_uid"])
 def set_xray_target_image(*, xray_path: str, device: torch.device) -> dict[str, Any]:
     dicom: XrayDICOM = read_dicom(xray_path)
     image_2d_full = dicom["image"].to(device=device, dtype=torch.float32)
-    fixed_image_spacing = dicom["spacing"].to(device=device, dtype=torch.float64)
+    image_2d_full_spacing = dicom["spacing"].to(device=device, dtype=torch.float64)
     return {  #
         "source_distance": dicom["scene_geometry"].source_distance,  ##
         "image_2d_full": image_2d_full,  #
-        "fixed_image_spacing": fixed_image_spacing,  #
+        "image_2d_full_spacing": image_2d_full_spacing,  #
         "xray_sop_instance_uid": dicom["uid"]  #
     }
 
@@ -143,10 +144,11 @@ def apply_truncation(*, untruncated_ct_volume: torch.Tensor, truncation_percent:
 
 
 @dadg_updater(names_returned=["moving_image"])
-def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor, current_transformation: Transformation,
-                fixed_image_size: torch.Size, source_distance: float, fixed_image_spacing: torch.Tensor,
-                downsample_level: int, translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor,
-                image_2d_scale_factor: float, device) -> dict[str, Any]:
+def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Tensor, "3"],
+                current_transformation: Transformation, fixed_image_size: torch.Size, source_distance: float,
+                fixed_image_spacing: Float64[torch.Tensor, "2"], downsample_level: int,
+                translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor, image_2d_scale_factor: float,
+                device) -> dict[str, Any]:
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(
         (translation_offset.to(device=current_transformation.device),
@@ -168,10 +170,17 @@ class RegConfig(traitlets.HasTraits):
     iteration_count: int = traitlets.Int(default_value=traitlets.Undefined)
 
 
-def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConfig, device: torch.device,
-            plot: Literal["no", "yes", "mask"] = "no", tqdm_position: int = 0) -> torch.Tensor:
+def run_reg(  #
+        *,  #
+        obj_fun: Callable,  #
+        starting_params: torch.Tensor,  #
+        config: RegConfig,  #
+        device: torch.device,  #
+        plot: Literal["no", "yes", "mask"] = "no",  #
+        tqdm_position: int = 0  #
+) -> torch.Tensor:
     """
-
+    Run a PSO from the given starting params and return a tensor containing the params and O.F. value at each iteration.
     :param obj_fun:
     :param starting_params:
     :param config:
@@ -200,6 +209,8 @@ def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConf
         plt.draw()
         plt.pause(0.1)
 
+    # -----
+    # Initialise a particle swarm optimisation, with tqdm
     pso_config = pso.SwarmConfig(objective_function=obj_fun)
     dimensionality = starting_params.numel()
     # initialise the return tensor
@@ -213,7 +224,8 @@ def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConf
     ret[0, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
     ret[0, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
     tqdm_iterator.update()
-
+    # -----
+    # The optimisation loop
     for it in range(1, config.iteration_count):
         swarm.iterate()
         ret[it, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
@@ -249,6 +261,7 @@ def run_reg(*, obj_fun: Callable, starting_params: torch.Tensor, config: RegConf
 
 class ExperimentConfig(traitlets.HasTraits):
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
+    xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
     truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
     cropping: str = traitlets.Enum(values=["None", "nonzero_drr", "full_depth_drr"], default_value=traitlets.Undefined)
@@ -267,8 +280,13 @@ class ExperimentConfig(traitlets.HasTraits):
     sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
 
 
-def string_to_sim_met(config_string: str, *, kernel_size: int = 8, llambda: float = 1.0, gradient_method: Literal[
-    "sobel", "central_difference"] = "sobel") -> ParametrisedSimilarityMetric:
+def string_to_sim_met(  #
+        config_string: str,  #
+        *,  #
+        kernel_size: int = 8,  #
+        llambda: float = 1.0,  #
+        gradient_method: Literal["sobel", "central_difference"] = "sobel"  #
+) -> ParametrisedSimilarityMetric:
     if config_string == "zncc":
         return ParametrisedSimilarityMetric(similarity_metric.ncc)
     elif config_string == "local_zncc":
@@ -280,10 +298,16 @@ def string_to_sim_met(config_string: str, *, kernel_size: int = 8, llambda: floa
     raise ValueError(f"Unknown similarity metric '{config_string}'.")
 
 
-def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, device: torch.device,
-                   tqdm_position: int = 0) -> torch.Tensor | None:
+def run_experiment(  #
+        *,  #
+        reg_config: RegConfig,  #
+        exp_config: ExperimentConfig,  #
+        device: torch.device,  #
+        tqdm_position: int = 0  #
+) -> torch.Tensor | None:
     """
-
+    Run multiple (`sample_count_per_distance`) registrations according to the given parameters, and return the average
+    distance from ground truth at each iteration.
     :param reg_config:
     :param exp_config:
     :param device:
@@ -293,19 +317,20 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     unnecessary, in which case `None`.
     """
     data_manager().set("ct_path", exp_config.ct_path, check_equality=True)
+    data_manager().set("xray_path", exp_config.xray_path, check_equality=True)
     data_manager().set("downsample_level", exp_config.downsample_level, check_equality=True)
     data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
     # -----
     # Configuring according to desired cropping technique
     if exp_config.cropping == "None":
-        apply_cropping = None
-        data_manager().set("cropping", None, check_equality=True)
+        cropping = None
     elif exp_config.cropping == "nonzero_drr":
-        apply_cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)
+        cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
     elif exp_config.cropping == "full_depth_drr":
-        apply_cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)
+        cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)()
     else:
         raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
+    data_manager().set("cropping", cropping, check_equality=True)
     # -----
     # Configuring according to desired similarity metric
     p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
@@ -328,23 +353,20 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
         raise ValueError(f"Unknown mask technique '{exp_config.mask}'.")
 
     # -----
-    # Defining the objective function accordingly
+    # Defining the objective function
     def objective_function(parameters: torch.Tensor) -> torch.Tensor:
-        t = mapping_parameters_to_transformation(parameters)
+        t: Transformation = mapping_parameters_to_transformation(parameters)
         # Setting the parameters
         data_manager().set("current_transformation", t)
-        if apply_cropping is not None:
-            data_manager().set("cropping", apply_cropping())
         if apply_mask:
             data_manager().set("mask_transformation", t)
         # Getting the resulting moving and fixed images
-        moving_image = data_manager().get("moving_image")
-        fixed_image = data_manager().get("fixed_image")
+        moving_image: torch.Tensor | Error = data_manager().get("moving_image")
+        fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
         # Comparing, potentially weighting with a mask
-        if apply_mask:
-            mask = data_manager().get("mask")
-            if weight_with_mask:
-                return -p_sim_met.func_weighted(moving_image, fixed_image, mask)
+        if apply_mask and weight_with_mask:
+            mask: torch.Tensor | Error = data_manager().get("mask")
+            return -p_sim_met.func_weighted(moving_image, fixed_image, mask)
         return -p_sim_met.func(moving_image, fixed_image)
 
     # -----
@@ -352,15 +374,19 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     dimensionality = 6
     distance_samples = torch.empty([int(exp_config.sample_count_per_distance), int(reg_config.iteration_count)],
                                    dtype=torch.float32, device=device)  # size = (sample count, iteration count)
-    ground_truth = mapping_transformation_to_parameters(data_manager().get("transformation_gt"))
+    transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
+    if isinstance(transformation_gt, Error):
+        raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
+    if transformation_gt is None:
+        raise Exception(f"No ground truth transformation available.")
+    ground_truth = mapping_transformation_to_parameters(transformation_gt)
     for i in tqdm(  #
             range(int(exp_config.sample_count_per_distance)),  #
             desc="Repeated samples",  #
             position=tqdm_position,  #
             leave=None  #
     ):
-        starting_params = random_parameters_at_distance(
-            mapping_transformation_to_parameters(data_manager().get("transformation_gt")), exp_config.starting_distance)
+        starting_params = random_parameters_at_distance(ground_truth, exp_config.starting_distance)
         res = run_reg(  #
             obj_fun=objective_function,  #
             config=reg_config,  #
@@ -373,9 +399,17 @@ def run_experiment(*, reg_config: RegConfig, exp_config: ExperimentConfig, devic
     return distance_samples.mean(dim=0)  # size = (iteration count,)
 
 
-def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants: dict[str, Any],
-                    output_directory: pathlib.Path, device: torch.device, tqdm_position: int = 0) -> None:
+def run_experiments(  #
+        *,  #
+        params_to_vary: dict[str, list | torch.Tensor],  #
+        constants: dict[str, Any],  #
+        output_directory: pathlib.Path,  #
+        device: torch.device,  #
+        tqdm_position: int = 0  #
+) -> None:
     assert output_directory.is_dir()
+    # -----
+    # Determine the total number of experiments being run
     each_range_length = []
     for name, values in params_to_vary.items():
         if isinstance(values, torch.Tensor):
@@ -385,16 +419,26 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
     for l in each_range_length:
         total *= l
     logger.info(f"Running experiments with the following constant parameters:\n{pprint.pformat(constants)}")
-    tqdm_iterator = tqdm(itertools.product(*(range(l) for l in each_range_length)), desc="Experiments", total=total,
-                         position=tqdm_position, leave=None)
+    # -----
+    # Iterate through the Cartesian product of the sets of parameters values, and run an experiment for each
+    tqdm_iterator = tqdm(  #
+        itertools.product(*(range(l) for l in each_range_length)),  #
+        desc="Experiments",  #
+        total=total,  #
+        position=tqdm_position,  #
+        leave=None  #
+    )
     for indices in tqdm_iterator:
+        # -----
+        # Unpack the parameters for this iteration
         instance_specific = {  #
             name: values[index]  #
             for index, (name, values) in zip(indices, params_to_vary.items())  #
         }  # config specific to this instance
         tqdm_iterator.set_postfix(**instance_specific)  # displaying this
         instance_all = instance_specific | constants  # all the config for this instance
-        # Separating the config into registration and experiment configs
+        # -----
+        # Separate the config into registration and experiment configs
         exp_config_by_name = copy.deepcopy(instance_all)
         try:
             reg_config = RegConfig(  #
@@ -410,7 +454,8 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
             logger.error(f"Error constructing experiment configuration at indices {indices}: {e}\nParameters:\n"
                          f"{pprint.pformat(instance_all)}")
             continue
-        # Running the experiment
+        # -----
+        # Run the experiment
         try:
             res = run_experiment(reg_config=reg_config, exp_config=exp_config, device=device,
                                  tqdm_position=tqdm_position + 1)
@@ -423,7 +468,8 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
                 f"Experiment at indices {indices}; configuration: \n{pprint.pformat(instance_specific)}\nwas deemed "
                 f"trivial / unnecessary.")
             continue
-        # Getting the rows for the DataFrame and saving
+        # -----
+        # Get the rows for the DataFrame and save
         df = pd.DataFrame([  #
             instance_all | {"iteration": iteration, "distance": res[iteration].item()}  #
             for iteration in range(len(res))  #
@@ -431,8 +477,14 @@ def run_experiments(*, params_to_vary: dict[str, list | torch.Tensor], constants
         df.to_parquet(output_directory / f"data_{"_".join([str(i) for i in indices])}.parquet")
 
 
-def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_output_dir: str | pathlib.Path,
-         show: bool = False):
+def main(  #
+        *,  #
+        cache_directory: str,  #
+        ct_path: str,  #
+        xray_path: pathlib.Path | Literal["drr", "hardcoded"],  #
+        data_output_dir: str | pathlib.Path,  #
+        show: bool = False  #
+):
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -462,10 +514,11 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
             save_to_cache=False,  #
             truncation_percent=0,  #
             cropping=None,  #
-            source_offset=torch.zeros(2),  #
+            source_offset=torch.zeros(2, dtype=torch.float64, device=device),  #
             downsample_level=2,  #
-            ap_transformation=Transformation(rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], device=device),
-                                             translation=torch.zeros(3, device=device)),  #
+            ap_transformation=Transformation(
+                rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
+                translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
             target_ap_distance=5.0,  #
             current_transformation=Transformation.random_uniform(device=device),  #
             mask_transformation=None,  #
@@ -476,10 +529,11 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
 
     # -----
     # Initialise the fixed target image
-    if xray_path is None:
+    if xray_path == "drr":
         # -----
         # Use a DRR
         if isinstance(err := data_manager().set_multiple(  #
+                xray_path=None,  #
                 regenerate_drr=True,  #
                 new_drr_size=torch.Size([1000, 1000]),  #
                 target_ap_distance=5.0,  #
@@ -490,7 +544,7 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
         if isinstance(err := data_manager().add_updater("set_target_image", set_synthetic_target_image), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
-    else:
+    elif xray_path == "hardcoded":
         # -----
         # Use an X-ray image
         if isinstance(err := data_manager().set("xray_path", xray_path), Error):
@@ -504,6 +558,10 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
         if isinstance(err := data_manager().add_updater("set_ground_truth", load_ground_truth), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
+    else:
+        assert isinstance(xray_path, pathlib.Path)
+        if not xray_path.is_file():
+            raise Exception(f"X-ray file '{str(xray_path)}' not found.")  # ToDo...
 
     # -----
     # Add updaters to the DADG
@@ -525,10 +583,6 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
     if isinstance(err := data_manager().add_updater("project_drr", project_drr), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    # -----
-    # Set the current transformation to the ground truth if it exists
-    if data_manager().get("transformation_gt") is not None:
-        data_manager().set("current_transformation", data_manager().get("transformation_gt"))
 
     if show:
         # -----
@@ -536,6 +590,11 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
         plt.ion()  # figures are non-blocking
         plt.show()
         fig, axes = plt.subplots(1, 4)
+        data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000")
+        # -----
+        # Set the current transformation to the ground truth if it exists
+        if data_manager().get("transformation_gt") is not None:
+            data_manager().set("current_transformation", data_manager().get("transformation_gt"))
         image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
         if isinstance(image_2d_full, Error):
             raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
@@ -568,11 +627,12 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
     constants = {  #
         # ExperimentConfig
         "ct_path": ct_path,  #
+        # - varying "xray_path", #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
         "downsample_level": 1,  #
-        # - varying "truncation_percent": 15,  #
-        # - varying - "cropping": "None",  #
-        # - varying - "mask": "None",  #
+        "truncation_percent": 0,  #
+        "cropping": "None",  #
+        "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 1.0,  #
         "sample_count_per_distance": 10,  #
@@ -585,9 +645,11 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
     if show:
         # -----
         # Run extra registration and display images for debugging
-        t: Transformation | Error = data_manager().get("transformation_gt")
+        t: Transformation | None | Error = data_manager().get("transformation_gt")
         if t is None:
-            t = data_manager().get("ap_transformation")
+            t: Transformation | Error = data_manager().get("ap_transformation")
+        if isinstance(t, Error):
+            raise Exception(f"Failed to get an example transformation: {t.description}")
         starting_params = mapping_transformation_to_parameters(t)
 
         # starting_params = random_parameters_at_distance(mapping_transformation_to_parameters(t), 15.0)
@@ -596,12 +658,13 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
         # data_manager().set("truncation_percent", 30)
 
         def objective_function(parameters: torch.Tensor) -> torch.Tensor:
-            data_manager().set("current_transformation", mapping_parameters_to_transformation(parameters))
+            data_manager().set("current_transformation",
+                               mapping_parameters_to_transformation(parameters.to(dtype=torch.float64)))
             _moving_image: torch.Tensor | Error = data_manager().get("moving_image")
             _fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
             return -similarity_metric.ncc(_moving_image, _fixed_image)
 
-        res = run_reg(  #
+        res: torch.Tensor = run_reg(  #
             obj_fun=objective_function,  #
             starting_params=starting_params, config=RegConfig(  #
                 particle_count=constants["particle_count"],  #
@@ -618,16 +681,15 @@ def main(*, cache_directory: str, ct_path: str, xray_path: str | None, data_outp
     instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
 
     (instance_output_dir / "notes.txt").write_text(  #
-        "Varying truncation and cropping and masking; finished off the previous dataset: 2026-02-03_16-49-22; just "
-        "the last two dataframes.")
+        "Varying X-ray path only, just a test.")
 
     # -----
     # Run experiments, setting the parameters to vary
     run_experiments(params_to_vary={  #
-        "truncation_percent": [45],  #
-        "cropping": ["full_depth_drr"],  #
-        "mask": ["Every evaluation",  #
-                 "Every evaluation weighting zncc"],  #
+        "xray_path": [  #
+            "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000",  #
+            "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_005",  #
+        ],  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 
@@ -659,12 +721,17 @@ if __name__ == "__main__":
                         help="Directory in which to save output data.")
     args = parser.parse_args()
 
+    if args.xray_path == "drr" or args.xray_path == "hardcoded":
+        xray = args.xray_path
+    else:
+        xray = pathlib.Path(args.xray_path)
+
     # create cache directory
     if not os.path.exists(args.cache_directory):
         os.makedirs(args.cache_directory)
 
     try:
-        main(cache_directory=args.cache_directory, ct_path=args.ct_path, xray_path=args.xray_path,
+        main(cache_directory=args.cache_directory, ct_path=args.ct_path, xray_path=xray,
              data_output_dir=args.data_output_dir, show=args.show)
         if args.notify:
             pushover.send_notification(__file__, "Script finished.")

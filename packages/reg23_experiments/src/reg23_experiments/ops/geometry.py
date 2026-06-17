@@ -186,7 +186,6 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
     assert len(output_size) == 2
     assert voxel_spacing.size() == torch.Size([3])
     assert detector_spacing.size() == torch.Size([2])
-    assert transformation.device_consistent()
     assert transformation.translation.device == device
     assert voxel_spacing.device == device
     img_width: int = output_size[1]
@@ -199,13 +198,12 @@ def generate_drr(volume_data: torch.Tensor, *, transformation: Transformation, v
 
 def generate_drr_cuboid_mask(volume_data: torch.Tensor, *, transformation: Transformation, voxel_spacing: torch.Tensor,
                              detector_spacing: torch.Tensor, scene_geometry: SceneGeometry,
-                             output_size: torch.Size) -> (torch.Tensor):
+                             output_size: torch.Size) -> torch.Tensor:
     device = volume_data.device
     assert len(output_size) == 2
     assert voxel_spacing.size() == torch.Size([3])
     assert detector_spacing.size() == torch.Size([2])
     assert detector_spacing.device == device
-    assert transformation.device_consistent()
     assert transformation.translation.device == device
     assert voxel_spacing.device == device
     img_width: int = output_size[1]
@@ -225,7 +223,6 @@ def generate_drr_python(volume_data: torch.Tensor, *, transformation: Transforma
     assert len(output_size) == 2
     assert voxel_spacing.size() == torch.Size([3])
     assert detector_spacing.size() == torch.Size([2])
-    assert transformation.device_consistent()
     assert transformation.translation.device == device
     assert voxel_spacing.device == device
     img_width: int = output_size[1]
@@ -371,28 +368,30 @@ def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float,
 
 def get_crop_full_depth_drr(*, image_2d_full: torch.Tensor, source_distance: float,
                             current_transformation: Transformation, ct_volumes: list[torch.Tensor],
-                            ct_spacing: torch.Tensor, fixed_image_spacing: torch.Tensor) -> Cropping:
+                            ct_spacing: torch.Tensor, fixed_image_spacing: torch.Tensor,
+                            device: torch.device) -> Cropping:
     def project(vector: torch.Tensor) -> torch.Tensor:
         """
         :param vector: (3,) tensor
         :return: (2,) tensor
         """
-        p_matrix = SceneGeometry.projection_matrix(source_position=torch.tensor([0.0, 0.0, source_distance]))
-        ph_matrix = torch.matmul(p_matrix, current_transformation.get_h().to(dtype=torch.float32))
-        ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1]))))
+        p_matrix = SceneGeometry.projection_matrix(
+            source_position=torch.tensor([0.0, 0.0, source_distance], dtype=torch.float64))
+        ph_matrix = torch.matmul(p_matrix, current_transformation.get_h(torch.device("cpu")).to(dtype=torch.float64))
+        ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1], dtype=torch.float64))))
         return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
 
     volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), dtype=torch.float32).flip(
         dims=(0,)) * ct_spacing.cpu()
     volume_vertices = [  #
-        torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
-        torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
-        torch.tensor([1.0, -1.0, 1.0]) * volume_half_diag,  #
-        torch.tensor([-1.0, -1.0, 1.0]) * volume_half_diag,  #
-        torch.tensor([1.0, 1.0, -1.0]) * volume_half_diag,  #
-        torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
-        torch.tensor([1.0, -1.0, -1.0]) * volume_half_diag,  #
-        torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
+        torch.tensor([1.0, 1.0, 1.0], dtype=torch.float64) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, 1.0], dtype=torch.float64) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, 1.0], dtype=torch.float64) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, 1.0], dtype=torch.float64) * volume_half_diag,  #
+        torch.tensor([1.0, 1.0, -1.0], dtype=torch.float64) * volume_half_diag,  #
+        torch.tensor([-1.0, 1.0, -1.0], dtype=torch.float64) * volume_half_diag,  #
+        torch.tensor([1.0, -1.0, -1.0], dtype=torch.float64) * volume_half_diag,  #
+        torch.tensor([-1.0, -1.0, -1.0], dtype=torch.float64) * volume_half_diag,  #
     ]  # size = (8, 3)
     projected_vertices = torch.stack(
         [project(vertex) for vertex in volume_vertices])  # [mm], origin centered on detector; size = (8, 2)
@@ -415,7 +414,7 @@ def get_crop_full_depth_drr(*, image_2d_full: torch.Tensor, source_distance: flo
     right = on_right[:, 0].min()  # [mm]; size = (,)
     # get the size of the image in mm
     image_size: torch.Tensor = torch.tensor(  #
-        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * fixed_image_spacing  # [mm]
+        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * fixed_image_spacing.cpu()  # [mm]
     # convert from [mm] centred on origin to fractions through image in rightward and downward directions
     right = right / image_size[1] + 0.5
     top = top / image_size[0] + 0.5

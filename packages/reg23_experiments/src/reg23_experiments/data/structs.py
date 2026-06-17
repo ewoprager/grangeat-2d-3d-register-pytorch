@@ -15,13 +15,17 @@ __all__ = ["Error", "GrowingTensor", "LinearMapping", "LinearRange", "Transforma
 
 class Error:
     def __init__(self, description: str):
-        self.description = description
+        self._description = description
+
+    @property
+    def description(self) -> str:
+        return self._description
 
     def __str__(self) -> str:
-        return f"{self.description}"
+        return f"{self._description}"
 
     def __repr__(self) -> str:
-        return f"Error(description='{self.description}')"
+        return f"Error(description='{self._description}')"
 
 
 class GrowingTensor:
@@ -80,14 +84,25 @@ class LinearRange:
         return LinearRange(-1., 1.)
 
 
-class Transformation(NamedTuple):
-    rotation: Float64[torch.Tensor, "3"]
-    translation: Float64[torch.Tensor, "3"]
+class Transformation:
+    @jaxtyped(typechecker=typechecker)
+    def __init__(self, *, rotation: Float64[torch.Tensor, "3"], translation: Float64[torch.Tensor, "3"]):
+        assert rotation.device == translation.device
+        self._rotation = rotation
+        self._translation = translation
+
+    @property
+    def rotation(self) -> Float64[torch.Tensor, "3"]:
+        return self._rotation
+
+    @property
+    def translation(self) -> Float64[torch.Tensor, "3"]:
+        return self._translation
 
     def inverse(self) -> 'Transformation':
         r_inverse = kornia.geometry.conversions.axis_angle_to_rotation_matrix(-self.rotation.unsqueeze(0))[0]
         r_inverse_t = torch.einsum('kl,...l->...k', r_inverse, self.translation.unsqueeze(0))[0]
-        return Transformation(-self.rotation, -r_inverse_t)
+        return Transformation(rotation=-self.rotation, translation=-r_inverse_t)
 
     @jaxtyped(typechecker=typechecker)
     def get_h(self, device: torch.device) -> Float64[torch.Tensor, "4 4"]:
@@ -100,36 +115,32 @@ class Transformation(NamedTuple):
         rt = torch.hstack([r, self.translation.to(device=device).t().unsqueeze(-1)])
         return torch.vstack([rt, torch.tensor([0., 0., 0., 1.], device=device, dtype=torch.float64).unsqueeze(0)])
 
-    def vectorised(self) -> torch.Tensor:
+    def vectorised(self) -> Float64[torch.Tensor, "6"]:
         return torch.cat((self.rotation, self.translation), dim=0)
 
     @staticmethod
-    def from_vector(vector: torch.Tensor) -> 'Transformation':
-        assert vector.size() == torch.Size([6])
+    @jaxtyped(typechecker=typechecker)
+    def from_vector(vector: Float64[torch.Tensor, "6"]) -> 'Transformation':
         return Transformation(rotation=vector[0:3], translation=vector[3:6])
 
     @property
     def device(self):
-        assert self.device_consistent()
-        return self.translation.device
+        return self.rotation.device
 
     def to(self, **kwargs) -> 'Transformation':
-        return Transformation(self.rotation.to(**kwargs), self.translation.to(**kwargs))
+        return Transformation(rotation=self.rotation.to(**kwargs), translation=self.translation.to(**kwargs))
 
     def clone(self) -> 'Transformation':
-        return Transformation(self.rotation.clone(), self.translation.clone())
-
-    def device_consistent(self) -> bool:
-        return self.rotation.device == self.translation.device
+        return Transformation(rotation=self.rotation.clone(), translation=self.translation.clone())
 
     def distance(self, other: 'Transformation') -> float:
         device = self.translation.device
         r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
-            self.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float32)
+            self.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float64)
         r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
-            other.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float32)
+            other.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float64)
         return (((self.translation - other.translation) / 100.).square().sum() + torch.tensor(
-            numpy.array([numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))]),
+            numpy.array([numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))]), dtype=torch.float64,
             device=device).square().sum()).sqrt().item()
 
     def is_close(self, other: 'Transformation') -> bool:
@@ -140,14 +151,17 @@ class Transformation(NamedTuple):
         return "Transformation(rot = {}, trans = {})".format(str(self.rotation), str(self.translation))
 
     @classmethod
-    def zero(cls, **tensor_kwargs) -> 'Transformation':
-        return Transformation(torch.zeros(3, **tensor_kwargs), torch.zeros(3, **tensor_kwargs))
+    def zero(cls, device: torch.device = torch.device("cpu")) -> 'Transformation':
+        return Transformation(rotation=torch.zeros(3, dtype=torch.float64, device=device),
+                              translation=torch.zeros(3, dtype=torch.float64, device=device))
 
     @classmethod
-    def random_uniform(cls, **tensor_kwargs) -> 'Transformation':
-        return Transformation(rotation=torch.pi * (-1. + 2. * torch.rand(3, **tensor_kwargs)),
-                              translation=25. * (-1. + 2. * torch.rand(3, **tensor_kwargs)) + Transformation.zero(
-                                  **tensor_kwargs).translation)
+    def random_uniform(cls, device: torch.device = torch.device("cpu")) -> 'Transformation':
+        return Transformation(  #
+            rotation=torch.pi * (-1. + 2. * torch.rand(3, dtype=torch.float64, device=device)),  #
+            translation=25. * (-1. + 2. * torch.rand(3, dtype=torch.float64, device=device)) + Transformation.zero(
+                device).translation  #
+        )
 
     @classmethod
     def random_gaussian(cls, *, rotation_mean: torch.Tensor, rotation_std: Union[torch.Tensor, float],
@@ -166,8 +180,8 @@ class Transformation(NamedTuple):
 
 class SceneGeometry(NamedTuple):
     source_distance: float  # [mm]; distance in the positive z-direction from the centre of the detector array
-    fixed_image_offset: Float64[torch.Tensor, "2"] = torch.zeros(2,
-                                                                 dtype=torch.float64)  # size (2,): (x,
+    fixed_image_offset: Float64[torch.Tensor, "2"] = torch.zeros(2, dtype=torch.float64)  # size (2,): (x,
+
     # y) [mm]; offset of the fixed image relative to the source
 
     @jaxtyped(typechecker=typechecker)

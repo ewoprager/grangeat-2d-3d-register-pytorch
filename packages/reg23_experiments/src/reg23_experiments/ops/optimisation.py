@@ -5,6 +5,7 @@ from typing import Callable, NamedTuple
 import numpy as np
 import pyswarms
 import torch
+from jaxtyping import Float64
 
 from reg23_experiments.data.structs import GrowingTensor, Transformation
 from reg23_experiments.ops.data_manager import args_from_dadg
@@ -15,17 +16,19 @@ __all__ = ["mapping_transformation_to_parameters", "mapping_parameters_to_transf
 logger = logging.getLogger(__name__)
 
 
-def mapping_transformation_to_parameters(transformation: Transformation) -> torch.Tensor:
+def mapping_transformation_to_parameters(transformation: Transformation) -> Float64[torch.Tensor, "6"]:
     ret = transformation.vectorised()
     return ret * torch.tensor([32.0, 32.0, 32.0, 1.0, 1.0, 0.05], device=ret.device, dtype=ret.dtype)
 
 
-def mapping_parameters_to_transformation(params: torch.Tensor) -> Transformation:
+def mapping_parameters_to_transformation(params: Float64[torch.Tensor, "6"]) -> Transformation:
     return Transformation.from_vector(
-        params * torch.tensor([0.03125, 0.03125, 0.03125, 1.0, 1.0, 20.0], device=params.device, dtype=params.dtype))
+        params.to(dtype=torch.float64) * torch.tensor([0.03125, 0.03125, 0.03125, 1.0, 1.0, 20.0], device=params.device,
+                                                      dtype=torch.float64))
 
 
-def random_parameters_at_distance(from_parameters: torch.Tensor, distance: float | torch.Tensor) -> torch.Tensor:
+def random_parameters_at_distance(from_parameters: Float64[torch.Tensor, "6"],
+                                  distance: float | Float64[torch.Tensor, "6"]) -> Float64[torch.Tensor, "6"]:
     u_hat = torch.nn.functional.normalize(torch.randn_like(from_parameters), dim=0)
     return from_parameters + distance * u_hat
 
