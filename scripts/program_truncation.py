@@ -12,11 +12,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 import traitlets
-from jaxtyping import Float64
 
-from reg23_experiments.data.structs import Error, SceneGeometry, Transformation
+from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
-from reg23_experiments.experiments import updaters
+from reg23_experiments.experiments import multi_xray_truncation_updaters, updaters
 from reg23_experiments.io.image import XrayDICOM, load_cached_drr, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.io.volume import OneSeries, SeriesDescription, Volume, find_ct_series, \
@@ -117,9 +116,10 @@ def set_xray_target_image(*, xray_path: str, device: torch.device) -> dict[str, 
 def load_ground_truth(*, saved_transformations: pd.DataFrame, xray_sop_instance_uid: str, device: torch.device) -> dict[
     str, Any]:
     idx = (xray_sop_instance_uid, "gold_standard")
-    if idx not in saved_transformations:
+    try:
+        row = saved_transformations.loc[idx]
+    except KeyError:
         return {"transformation_gt": None}
-    row = saved_transformations.loc[idx]
     return {  #
         "transformation_gt": Transformation.from_vector(  #
             torch.tensor([row[f"x{i}"] for i in range(6)], device=device, dtype=torch.float64)  #
@@ -141,27 +141,6 @@ def apply_truncation(*, untruncated_ct_volume: torch.Tensor, truncation_percent:
         ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[0], scale_factor=0.5 ** float(level)))
         level += 1
     return {"ct_volumes": ct_volumes}
-
-
-@dadg_updater(names_returned=["moving_image"])
-def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Tensor, "3"],
-                current_transformation: Transformation, fixed_image_size: torch.Size, source_distance: float,
-                fixed_image_spacing: Float64[torch.Tensor, "2"], downsample_level: int,
-                translation_offset: torch.Tensor, fixed_image_offset: torch.Tensor, image_2d_scale_factor: float,
-                device) -> dict[str, Any]:
-    # Applying the translation offset
-    new_translation = current_transformation.translation + torch.cat(
-        (translation_offset.to(device=current_transformation.device),
-         torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype)))
-    transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
-        device=device)
-
-    return {"moving_image": geometry.generate_drr(ct_volumes[downsample_level], transformation=transformation,
-                                                  voxel_spacing=ct_spacing * 2.0 ** downsample_level,
-                                                  detector_spacing=fixed_image_spacing / image_2d_scale_factor,
-                                                  scene_geometry=SceneGeometry(source_distance=source_distance,
-                                                                               fixed_image_offset=fixed_image_offset),
-                                                  output_size=fixed_image_size)}
 
 
 class RegConfig(traitlets.HasTraits):
@@ -490,7 +469,10 @@ def main(  #
 
     # -----
     # Load the CT data, prompting the user to choose a series if multiple are found
-    untruncated_ct_volume, ct_spacing, ct_series_uid = load_untruncated_ct(pathlib.Path(ct_path), device)
+    res = load_untruncated_ct(pathlib.Path(ct_path), device)
+    if isinstance(res, Error):
+        raise Exception(f"Failed to load CT: {res.description}")
+    untruncated_ct_volume, ct_spacing, ct_series_uid = res
 
     # -----
     # Load all saved transformations; these are searched through for ground truth alignments
@@ -515,7 +497,7 @@ def main(  #
             truncation_percent=0,  #
             cropping=None,  #
             source_offset=torch.zeros(2, dtype=torch.float64, device=device),  #
-            downsample_level=2,  #
+            downsample_level=0,  #
             ap_transformation=Transformation(
                 rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
                 translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
@@ -580,7 +562,7 @@ def main(  #
                                                     updaters.refresh_mask_transformation_dependent), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    if isinstance(err := data_manager().add_updater("project_drr", project_drr), Error):
+    if isinstance(err := data_manager().add_updater("project_drr", multi_xray_truncation_updaters.project_drr), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
 
@@ -595,12 +577,13 @@ def main(  #
         # Set the current transformation to the ground truth if it exists
         if data_manager().get("transformation_gt") is not None:
             data_manager().set("current_transformation", data_manager().get("transformation_gt"))
+            logger.info("Ground truth loaded")
         image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
         if isinstance(image_2d_full, Error):
             raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
         axes[0].imshow(image_2d_full.cpu().numpy())
         axes[0].set_title("original target")
-        data_manager().set("cropping", args_from_dadg()(geometry.get_crop_full_depth_drr)())
+        # data_manager().set("cropping", args_from_dadg()(geometry.get_crop_full_depth_drr)())
         fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
         if isinstance(fixed_image, Error):
             raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
@@ -629,13 +612,13 @@ def main(  #
         "ct_path": ct_path,  #
         # - varying "xray_path", #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
-        "downsample_level": 1,  #
+        "downsample_level": 2,  #
         "truncation_percent": 0,  #
         "cropping": "None",  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 1.0,  #
-        "sample_count_per_distance": 10,  #
+        "sample_count_per_distance": 1,  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -678,6 +661,29 @@ def main(  #
         plt.show()  # return
         return
 
+    hardcoded_xray_paths: list[str] = [  #
+        "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000",  #
+        "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_005",  #
+    ]
+
+    # -----
+    # Check that all X-rays exist and have ground truth transformations available
+    for path in hardcoded_xray_paths:
+        if not pathlib.Path(path).is_file():
+            logger.error(f"X-ray file '{path}' doesn't exist.")
+            return
+        try:
+            dicom: XrayDICOM = read_dicom(path)
+        except Exception as e:
+            logger.error(f"Failed to read X-ray file: {e}")
+            return
+        idx = (dicom["uid"], "gold_standard")
+        try:
+            saved_transformations.loc[idx]
+        except KeyError:
+            logger.error(f"No ground truth saved for X-ray '{path}' with UID '{dicom["uid"]}'.")
+            return
+
     instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
 
     (instance_output_dir / "notes.txt").write_text(  #
@@ -686,10 +692,7 @@ def main(  #
     # -----
     # Run experiments, setting the parameters to vary
     run_experiments(params_to_vary={  #
-        "xray_path": [  #
-            "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000",  #
-            "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_005",  #
-        ],  #
+        "xray_path": hardcoded_xray_paths,  #
     }, output_directory=instance_output_dir, constants=constants, device=device)
 
 

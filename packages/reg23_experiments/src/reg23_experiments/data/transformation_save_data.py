@@ -120,22 +120,24 @@ class TransformationSaveManager:
         else:
             return []
 
-    def get_as_dict(self, uid: str, **tensor_kwargs) -> dict[str, Transformation]:
+    def get_as_dict(self, uid: str, *, device: torch.device = torch.device("cpu")) -> dict[str, Transformation]:
         df: pd.DataFrame = self._save_data_manager.get_data()
         df_for_xray = df.xs(uid, level="xray_sop_instance_uid")
         return {  #
-            str(name): Transformation.from_vector(torch.tensor([row[f"x{i}"] for i in range(6)], **tensor_kwargs))  #
+            str(name): Transformation.from_vector(
+                torch.tensor([row[f"x{i}"] for i in range(6)], dtype=torch.float64, device=device))  #
             for name, row in df_for_xray.iterrows()  #
         }
 
-    def get_transformation(self, *, uid: str, name: str, **tensor_kwargs) -> Transformation | Error:
+    def get_transformation(self, *, uid: str, name: str,
+                           device: torch.device = torch.device("cpu")) -> Transformation | Error:
         df: pd.DataFrame = self._save_data_manager.get_data()
         idx = (uid, name)
         if idx not in df.index:
             return Error(f"No transformation saved at idx '{idx}'.")
         columns = [f"x{i}" for i in range(6)]
         values = df.loc[idx, columns].tolist()
-        return Transformation.from_vector(torch.tensor(values, **tensor_kwargs))
+        return Transformation.from_vector(torch.tensor(values, dtype=torch.float64, device=device))
 
     def set(self, *, uid: str, name: str, transformation: Transformation) -> None | Error:
         change: dict[str, JsonSerializable] = {  #

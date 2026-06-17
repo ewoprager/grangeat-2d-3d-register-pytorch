@@ -22,7 +22,7 @@ class _FixedImageLayerManager:
         self._spacing_dadg_key = spacing_dadg_key
         self._ctx.dadg.observe(self._dadg_key, "image_manager", self._observer_callback)
         self._ctx.dadg.set_evaluation_laziness(self._dadg_key, lazily_evaluated=False)
-        self._ctx.dadg.observe(self._spacing_dadg_key, "spacing_manager", self._spacing_observer_callback)
+        self._ctx.dadg.observe(self._spacing_dadg_key, "fixed_spacing_manager", self._spacing_observer_callback)
         self._ctx.dadg.set_evaluation_laziness(self._spacing_dadg_key, lazily_evaluated=False)
 
     def __del__(self):

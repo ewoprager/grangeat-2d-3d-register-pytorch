@@ -29,7 +29,7 @@ class _MovingImageLayerManager:
             f"{self._namespace}__current_transformation")
         self._ctx.dadg.observe(self._moving_image_key, "moving_image_manager", self._observer_callback)
         self._ctx.dadg.set_evaluation_laziness(self._moving_image_key, lazily_evaluated=False)
-        self._ctx.dadg.observe(self._spacing_dadg_key, "spacing_manager", self._spacing_observer_callback)
+        self._ctx.dadg.observe(self._spacing_dadg_key, "moving_spacing_manager", self._spacing_observer_callback)
         self._ctx.dadg.set_evaluation_laziness(self._spacing_dadg_key, lazily_evaluated=False)
         layer.mouse_drag_callbacks.append(self._mouse_drag)
 
@@ -129,7 +129,7 @@ def add_moving_image_layer(*, ctx: AppContext, namespace: str | None = None,
         raise RuntimeError(f"Error softly getting '{moving_image_key}' from DADG: {value.description}.")
     initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
     logger.debug(f"Adding moving image layer '{moving_image_key}' to napari viewer")
-    layer: napari.layers.Layer = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
+    layer: napari.layers.Image = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
                                                     interpolation2d="linear", name=moving_image_key)
     spacing: torch.Tensor | Error = ctx.dadg.get(spacing_dadg_key, soft=True)
     if isinstance(spacing, Error):
