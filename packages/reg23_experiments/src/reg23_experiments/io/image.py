@@ -1,4 +1,5 @@
 import logging
+import pathlib
 from typing import TypedDict
 
 import pydicom
@@ -22,27 +23,28 @@ class XrayDICOM(TypedDict):
     uid: str
 
 
-def load_cached_drr(cache_directory: str, ct_volume_path: str):
-    file: str = cache_directory + "/drr_spec_{}.pt".format(deterministic_hash_string(ct_volume_path))
+def load_cached_drr(cache_directory: str | pathlib.Path, ct_volume_path: str):
+    cache_directory = pathlib.Path(cache_directory)
+    file: pathlib.Path = cache_directory / f"drr_spec_{deterministic_hash_string(ct_volume_path)}.pt"
     try:
         drr_spec = torch.load(file)
     except FileNotFoundError:
-        logger.warning("No cache file '{}' found.".format(file))
+        logger.warning(f"No cache file '{str(file)}' found.")
         return None
     assert drr_spec.ct_volume_path == ct_volume_path
     detector_spacing = drr_spec.detector_spacing
     scene_geometry = drr_spec.scene_geometry
     drr_image = drr_spec.image
     transformation_ground_truth = drr_spec.transformation
-    logger.info("Loaded cached drr spec from '{}'".format(file))
+    logger.info(f"Loaded cached drr spec from '{str(file)}'")
     return detector_spacing, scene_geometry, drr_image, transformation_ground_truth
 
 
-def read_dicom(path: str) -> XrayDICOM:
-    logger.info("Loading X-ray DICOM file {}...".format(path))
+def read_dicom(path: str | pathlib.Path) -> XrayDICOM:
+    logger.info(f"Loading X-ray DICOM file {str(path)}...")
     dataset = pydicom.dcmread(path)
     image = torch.tensor(pydicom.pixels.pixel_array(dataset), dtype=torch.float32)
-    logger.info("X-ray image size = [{} x {}]".format(image.size()[0], image.size()[1]))
+    logger.info(f"X-ray image size = [{image.size()[0]} x {image.size()[1]}]")
 
     # if "PixelIntensityRelationship" in dataset:
     #     logger.info("X-ray pixel intensity relationship = '{}'.".format(dataset["PixelIntensityRelationship"]))

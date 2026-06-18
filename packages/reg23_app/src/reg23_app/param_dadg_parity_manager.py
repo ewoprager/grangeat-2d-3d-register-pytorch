@@ -227,7 +227,7 @@ class ParamDADGParityManager:
 
         # Create namespaced DADG nodes
         self._dadg.set(f"{name}__xray_path", params.file_path)
-        self._dadg.set(f"{name}__source_offset", torch.zeros(2, device=device))
+        self._dadg.set(f"{name}__source_offset", torch.zeros(2, dtype=torch.float64, device=device))
         self._dadg.set(f"{name}__mask_transformation", None)
         self._dadg.set(f"{name}__current_transformation", Transformation.zero(device=device))
         uid: str | Error = self._dadg.get(f"{name}__xray_sop_instance_uid")

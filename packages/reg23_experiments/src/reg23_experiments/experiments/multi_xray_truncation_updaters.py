@@ -99,7 +99,7 @@ def apply_truncation(*, untruncated_ct_volume: Float32[torch.Tensor, "p q r"], t
 def project_drr(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Tensor, "3"],
                 current_transformation: Transformation, fixed_image_size: torch.Size, source_distance: float,
                 fixed_image_spacing: Float64[torch.Tensor, "2"], downsample_level: int,
-                translation_offset: torch.Tensor, fixed_image_offset: Float64[torch.Tensor, "2"],
+                translation_offset: Float64[torch.Tensor, "2"], fixed_image_offset: Float64[torch.Tensor, "2"],
                 device: torch.device) -> dict[str, Any]:
     # Applying the translation offset
     new_translation = current_transformation.translation + torch.cat(

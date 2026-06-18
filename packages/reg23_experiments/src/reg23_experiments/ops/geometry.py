@@ -337,33 +337,72 @@ def plane_integrals(volume_data: torch.Tensor, *, phi_values: torch.Tensor, thet
     return ret
 
 
-def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float, current_transformation: Transformation,
-                         ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
-                         fixed_image_spacing: torch.Tensor) -> Cropping:
-    def project(vector: torch.Tensor) -> torch.Tensor:
-        p_matrix = SceneGeometry.projection_matrix(source_position=torch.tensor([0.0, 0.0, source_distance]))
-        ph_matrix = torch.matmul(p_matrix, current_transformation.get_h().to(dtype=torch.float32))
-        ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1]))))
-        return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
+@jaxtyped(typechecker=typechecker)
+def project_vectors(  #
+        vectors: Float64[torch.Tensor, "... 3"],  #
+        *,  #
+        source_distance: float,  #
+        transformation: Transformation  #
+) -> Float64[torch.Tensor, "... 2"]:
+    """
+    :param vectors: (..., 3) tensor
+    :param transformation:
+    :param source_distance:
+    :return: (..., 2) tensor
+    """
+    device = vectors.device
+    p_matrix = SceneGeometry.projection_matrix(
+        source_position=torch.tensor([0.0, 0.0, -source_distance], dtype=torch.float64, device=device))
+    ph_matrix = torch.matmul(p_matrix, transformation.get_h(device))
+    vectors_homogeneous = torch.cat(
+        (vectors, torch.ones(vectors.size()[:-1], dtype=torch.float64, device=device).unsqueeze(-1)), dim=-1)
+    ret_homogeneous = torch.einsum("ji,...i->...j", ph_matrix, vectors_homogeneous)
+    return ret_homogeneous[..., 0:2] / ret_homogeneous[..., 3].unsqueeze(-1)  # just the x and y components needed
 
-    volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), dtype=torch.float32).flip(
-        dims=(0,)) * ct_spacing.cpu()
-    volume_vertices = [  #
-        torch.tensor([1.0, 1.0, 1.0]) * volume_half_diag,  #
-        torch.tensor([-1.0, 1.0, 1.0]) * volume_half_diag,  #
-        torch.tensor([1.0, -1.0, 1.0]) * volume_half_diag,  #
-        torch.tensor([1.0, 1.0, -1.0]) * volume_half_diag,  #
-        torch.tensor([-1.0, -1.0, 1.0]) * volume_half_diag,  #
-        torch.tensor([1.0, -1.0, -1.0]) * volume_half_diag,  #
-        torch.tensor([-1.0, 1.0, -1.0]) * volume_half_diag,  #
-        torch.tensor([-1.0, -1.0, -1.0]) * volume_half_diag,  #
-    ]
+
+@jaxtyped(typechecker=typechecker)
+def get_crop_nonzero_drr(  #
+        *,  #
+        image_2d_full: Float32[torch.Tensor, "n m"],  #
+        source_distance: float,  #
+        current_transformation: Transformation,  #
+        ct_volumes: list[torch.Tensor],  #
+        ct_spacing: Float64[torch.Tensor, "3"],  #
+        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+        translation_offset: Float64[torch.Tensor, "2"]  #
+) -> Cropping:
+    device = torch.device("cpu")
+    current_transformation = current_transformation.to(device=device)
+    ct_spacing = ct_spacing.to(device=device)
+    image_2d_full_spacing = image_2d_full_spacing.to(device=device)
+    translation_offset = translation_offset.to(device=device)
+    tensor_kwargs = {"device": device, "dtype": torch.float64}
+
+    new_translation = current_transformation.translation + torch.cat(
+        (translation_offset.to(device=current_transformation.device),
+         torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype)))
+    transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
+        device=device)
+
+    volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), **tensor_kwargs).flip(
+        dims=(0,)) * ct_spacing
+    volume_vertices = torch.tensor([  #
+        [1.0, 1.0, 1.0],  #
+        [-1.0, 1.0, 1.0],  #
+        [1.0, -1.0, 1.0],  #
+        [-1.0, -1.0, 1.0],  #
+        [1.0, 1.0, -1.0],  #
+        [-1.0, 1.0, -1.0],  #
+        [1.0, -1.0, -1.0],  #
+        [-1.0, -1.0, -1.0]  #
+    ], **tensor_kwargs) * volume_half_diag  # size = (8, 3)
     # project the vertices into points on the detector array, measured in mm from the centre
-    projected_vertices = torch.stack([project(vertex) for vertex in volume_vertices])  # [mm]
+    projected_vertices = project_vectors(volume_vertices, source_distance=source_distance,
+                                         transformation=transformation)  # [mm]
     mins, maxs = torch.aminmax(projected_vertices, dim=0)  # [mm]
     # get the size of the image in mm
     image_size: torch.Tensor = torch.tensor(  #
-        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * fixed_image_spacing  # [mm]
+        image_2d_full.size(), **tensor_kwargs).flip(dims=(0,)) * image_2d_full_spacing  # [mm]
     # convert the edges of the crop rectangle from mm to fractional in the fixed image
     left, top = mins / image_size + 0.5
     right, bottom = maxs / image_size + 0.5
@@ -374,35 +413,45 @@ def get_crop_nonzero_drr(*, image_2d_full: torch.Tensor, source_distance: float,
     return Cropping(right=right, top=top, left=left, bottom=bottom)
 
 
-def get_crop_full_depth_drr(*, image_2d_full: torch.Tensor, source_distance: float,
-                            current_transformation: Transformation, ct_volumes: list[torch.Tensor],
-                            ct_spacing: torch.Tensor, fixed_image_spacing: torch.Tensor,
-                            device: torch.device) -> Cropping:
-    def project(vector: torch.Tensor) -> torch.Tensor:
-        """
-        :param vector: (3,) tensor
-        :return: (2,) tensor
-        """
-        p_matrix = SceneGeometry.projection_matrix(
-            source_position=torch.tensor([0.0, 0.0, source_distance], dtype=torch.float64))
-        ph_matrix = torch.matmul(p_matrix, current_transformation.get_h(torch.device("cpu")).to(dtype=torch.float64))
-        ret_homogeneous = torch.matmul(ph_matrix, torch.cat((vector, torch.tensor([1], dtype=torch.float64))))
-        return ret_homogeneous[0:2] / ret_homogeneous[3]  # just the x and y components needed
+@jaxtyped(typechecker=typechecker)
+def get_crop_full_depth_drr(  #
+        *,  #
+        image_2d_full: Float32[torch.Tensor, "n m"],  #
+        source_distance: float,  #
+        current_transformation: Transformation,  #
+        ct_volumes: list[torch.Tensor],  #
+        ct_spacing: Float64[torch.Tensor, "3"],  #
+        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+        translation_offset: Float64[torch.Tensor, "2"]  #
+) -> Cropping:
+    device = torch.device("cpu")
+    current_transformation = current_transformation.to(device=device)
+    ct_spacing = ct_spacing.to(device=device)
+    image_2d_full_spacing = image_2d_full_spacing.to(device=device)
+    translation_offset = translation_offset.to(device=device)
+    tensor_kwargs = {"device": device, "dtype": torch.float64}
 
-    volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), dtype=torch.float32).flip(
-        dims=(0,)) * ct_spacing.cpu()
-    volume_vertices = [  #
-        torch.tensor([1.0, 1.0, 1.0], dtype=torch.float64) * volume_half_diag,  #
-        torch.tensor([-1.0, 1.0, 1.0], dtype=torch.float64) * volume_half_diag,  #
-        torch.tensor([1.0, -1.0, 1.0], dtype=torch.float64) * volume_half_diag,  #
-        torch.tensor([-1.0, -1.0, 1.0], dtype=torch.float64) * volume_half_diag,  #
-        torch.tensor([1.0, 1.0, -1.0], dtype=torch.float64) * volume_half_diag,  #
-        torch.tensor([-1.0, 1.0, -1.0], dtype=torch.float64) * volume_half_diag,  #
-        torch.tensor([1.0, -1.0, -1.0], dtype=torch.float64) * volume_half_diag,  #
-        torch.tensor([-1.0, -1.0, -1.0], dtype=torch.float64) * volume_half_diag,  #
-    ]  # size = (8, 3)
-    projected_vertices = torch.stack(
-        [project(vertex) for vertex in volume_vertices])  # [mm], origin centered on detector; size = (8, 2)
+    new_translation = current_transformation.translation + torch.cat(
+        (translation_offset.to(device=current_transformation.device),
+         torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype)))
+    transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
+        device=device)
+
+    volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), **tensor_kwargs).flip(
+        dims=(0,)) * ct_spacing
+    volume_vertices = torch.tensor([  #
+        [1.0, 1.0, 1.0],  #
+        [-1.0, 1.0, 1.0],  #
+        [1.0, -1.0, 1.0],  #
+        [-1.0, -1.0, 1.0],  #
+        [1.0, 1.0, -1.0],  #
+        [-1.0, 1.0, -1.0],  #
+        [1.0, -1.0, -1.0],  #
+        [-1.0, -1.0, -1.0]  #
+    ], **tensor_kwargs) * volume_half_diag  # size = (8, 3)
+    projected_vertices = project_vectors(volume_vertices, source_distance=source_distance,
+                                         transformation=transformation)  # [mm], origin centered on detector; size =
+    # (8, 2)
 
     # vertical bounds
     upper = projected_vertices[0:4]  # size = (4, 2)
@@ -422,7 +471,7 @@ def get_crop_full_depth_drr(*, image_2d_full: torch.Tensor, source_distance: flo
     right = on_right[:, 0].min()  # [mm]; size = (,)
     # get the size of the image in mm
     image_size: torch.Tensor = torch.tensor(  #
-        image_2d_full.size(), dtype=torch.float32).flip(dims=(0,)) * fixed_image_spacing.cpu()  # [mm]
+        image_2d_full.size(), **tensor_kwargs).flip(dims=(0,)) * image_2d_full_spacing  # [mm]
     # convert from [mm] centred on origin to fractions through image in rightward and downward directions
     right = right / image_size[1] + 0.5
     top = top / image_size[0] + 0.5

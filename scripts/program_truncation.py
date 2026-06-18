@@ -8,6 +8,9 @@ import types
 from datetime import datetime
 from typing import Any, Callable, Literal, Sequence
 
+import matplotlib
+
+matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
@@ -300,17 +303,6 @@ def run_experiment(  #
     data_manager().set("downsample_level", exp_config.downsample_level, check_equality=True)
     data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
     # -----
-    # Configuring according to desired cropping technique
-    if exp_config.cropping == "None":
-        cropping = None
-    elif exp_config.cropping == "nonzero_drr":
-        cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
-    elif exp_config.cropping == "full_depth_drr":
-        cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)()
-    else:
-        raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
-    data_manager().set("cropping", cropping, check_equality=True)
-    # -----
     # Configuring according to desired similarity metric
     p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
     # -----
@@ -366,6 +358,20 @@ def run_experiment(  #
             leave=None  #
     ):
         starting_params = random_parameters_at_distance(ground_truth, exp_config.starting_distance)
+        # -----
+        # Configuring according to desired cropping technique
+        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
+        if exp_config.cropping == "None":
+            cropping = None
+        elif exp_config.cropping == "nonzero_drr":
+            cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
+        elif exp_config.cropping == "full_depth_drr":
+            cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)()
+        else:
+            raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
+        data_manager().set("cropping", cropping, check_equality=True)
+        # -----
+        # Registration
         res = run_reg(  #
             obj_fun=objective_function,  #
             config=reg_config,  #
@@ -460,7 +466,7 @@ def main(  #
         *,  #
         cache_directory: str,  #
         ct_path: str,  #
-        xray_path: pathlib.Path | Literal["drr", "hardcoded"],  #
+        xray_path: pathlib.Path | None,  #
         data_output_dir: str | pathlib.Path,  #
         show: bool = False  #
 ):
@@ -511,7 +517,7 @@ def main(  #
 
     # -----
     # Initialise the fixed target image
-    if xray_path == "drr":
+    if xray_path is None:
         # -----
         # Use a DRR
         if isinstance(err := data_manager().set_multiple(  #
@@ -526,13 +532,9 @@ def main(  #
         if isinstance(err := data_manager().add_updater("set_target_image", set_synthetic_target_image), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
-    elif xray_path == "hardcoded":
+    elif xray_path.is_dir():
         # -----
-        # Use an X-ray image
-        if isinstance(err := data_manager().set("xray_path", xray_path), Error):
-            logger.error(f"Error setting initial data values: {err.description}")
-            return
-
+        # Use a directory of X-ray images
         if isinstance(err := data_manager().add_updater("set_target_image", set_xray_target_image), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
@@ -541,9 +543,20 @@ def main(  #
             logger.error(f"Error adding updater: {err.description}")
             return
     else:
-        assert isinstance(xray_path, pathlib.Path)
+        # -----
+        # Use an X-ray image
         if not xray_path.is_file():
-            raise Exception(f"X-ray file '{str(xray_path)}' not found.")  # ToDo...
+            raise Exception(f"X-ray file '{str(xray_path)}' not found.")
+
+        if isinstance(err := data_manager().set("xray_path", xray_path), Error):
+            logger.error(f"Error setting initial data values: {err.description}")
+            return
+        if isinstance(err := data_manager().add_updater("set_target_image", set_xray_target_image), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+        if isinstance(err := data_manager().add_updater("set_ground_truth", load_ground_truth), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
 
     # -----
     # Add updaters to the DADG
@@ -566,24 +579,93 @@ def main(  #
         logger.error(f"Error adding updater: {err.description}")
         return
 
+    # -----
+    # Default values for variables that remain constant for the experiments
+    constants = {  #
+        # ExperimentConfig
+        "ct_path": ct_path,  #
+        "xray_path": xray_path,  #
+        "ct_series_uid": data_manager().get("ct_series_uid"),  #
+        "downsample_level": 2,  #
+        "truncation_percent": 65,  #
+        "cropping": "full_depth_drr",  #
+        "mask": "None",  #
+        "sim_metric": "zncc",  #
+        "starting_distance": 1.0,  #
+        "sample_count_per_distance": 10,  #
+        # RegConfig
+        "particle_count": 2000,  #
+        "particle_initialisation_spread": 5.0,  #
+        "iteration_count": 10,  #
+    }
+
+    hardcoded_xray_names: list[str] = [  #
+        "level_000",  #
+        "level_005",  #
+    ]
+
+    params_to_vary = {  #
+        "xray_path": [str(xray_path / name) for name in hardcoded_xray_names],  #
+        "truncation_percent": [0, 65]}
+    # Remove varying variables from the constants dict
+    for key in params_to_vary:
+        if key in constants:
+            constants.pop(key)
+
+    # -----
+    # Check that all X-rays exist and have ground truth transformations available
+    for name in hardcoded_xray_names:
+        path: pathlib.Path = xray_path / name
+        if not path.is_file():
+            logger.error(f"X-ray file '{str(path)}' doesn't exist.")
+            return
+        try:
+            dicom: XrayDICOM = read_dicom(path)
+        except Exception as e:
+            logger.error(f"Failed to read X-ray file: {e}")
+            return
+        idx = (dicom["uid"], "gold_standard")
+        try:
+            saved_transformations.loc[idx]
+        except KeyError:
+            logger.error(f"No ground truth saved for X-ray '{str(path)}' with UID '{dicom["uid"]}'.")
+            return
+
     if show:
         # -----
         # Display images for debugging
         plt.ion()  # figures are non-blocking
         plt.show()
         fig, axes = plt.subplots(1, 4)
-        data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000")
         # -----
         # Set the current transformation to the ground truth if it exists
-        if data_manager().get("transformation_gt") is not None:
-            data_manager().set("current_transformation", data_manager().get("transformation_gt"))
+        data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000")
+        transformation_gt = data_manager().get("transformation_gt")
+        if isinstance(transformation_gt, Error):
+            raise RuntimeError(f"Failed to get ground truth: {transformation_gt.description}")
+        if transformation_gt is not None:
+            data_manager().set("current_transformation", transformation_gt)
             logger.info("Ground truth loaded")
+        data_manager().set("truncation_percent", 65)
+        if "downsample_level" in constants:
+            data_manager().set("downsample_level", constants["downsample_level"])
+        if "cropping" in constants:
+            if constants["cropping"] == "None":
+                cropping = None
+            elif constants["cropping"] == "nonzero_drr":
+                cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
+            elif constants["cropping"] == "full_depth_drr":
+                cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)()
+            else:
+                raise ValueError(f"Unknown cropping technique '{constants["cropping"]}'.")
+            if isinstance(cropping, Error):
+                raise RuntimeError(f"Failed to set crop: {cropping.description}")
+            data_manager().set("cropping", cropping, check_equality=True)
         image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
         if isinstance(image_2d_full, Error):
             raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
         axes[0].imshow(image_2d_full.cpu().numpy())
         axes[0].set_title("original target")
-        # data_manager().set("cropping", args_from_dadg()(geometry.get_crop_full_depth_drr)())
         fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
         if isinstance(fixed_image, Error):
             raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
@@ -604,28 +686,6 @@ def main(  #
                     f"{-similarity_metric.weighted_local_ncc(moving_image, fixed_image, mask, kernel_size=8)}")
         plt.draw()
         plt.pause(0.1)
-
-    # -----
-    # Values that remain constant for the experiments
-    constants = {  #
-        # ExperimentConfig
-        "ct_path": ct_path,  #
-        # - varying "xray_path", #
-        "ct_series_uid": data_manager().get("ct_series_uid"),  #
-        "downsample_level": 2,  #
-        "truncation_percent": 0,  #
-        "cropping": "None",  #
-        "mask": "None",  #
-        "sim_metric": "zncc",  #
-        "starting_distance": 1.0,  #
-        "sample_count_per_distance": 1,  #
-        # RegConfig
-        "particle_count": 2000,  #
-        "particle_initialisation_spread": 5.0,  #
-        "iteration_count": 10,  #
-    }
-
-    if show:
         # -----
         # Run extra registration and display images for debugging
         t: Transformation | None | Error = data_manager().get("transformation_gt")
@@ -661,39 +721,14 @@ def main(  #
         plt.show()  # return
         return
 
-    hardcoded_xray_paths: list[str] = [  #
-        "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000",  #
-        "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_005",  #
-    ]
-
-    # -----
-    # Check that all X-rays exist and have ground truth transformations available
-    for path in hardcoded_xray_paths:
-        if not pathlib.Path(path).is_file():
-            logger.error(f"X-ray file '{path}' doesn't exist.")
-            return
-        try:
-            dicom: XrayDICOM = read_dicom(path)
-        except Exception as e:
-            logger.error(f"Failed to read X-ray file: {e}")
-            return
-        idx = (dicom["uid"], "gold_standard")
-        try:
-            saved_transformations.loc[idx]
-        except KeyError:
-            logger.error(f"No ground truth saved for X-ray '{path}' with UID '{dicom["uid"]}'.")
-            return
-
     instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
 
-    (instance_output_dir / "notes.txt").write_text(  #
-        "Varying X-ray path only, just a test.")
+    (instance_output_dir / "variables.txt").write_text("\n".join(params_to_vary.keys()))
 
     # -----
     # Run experiments, setting the parameters to vary
-    run_experiments(params_to_vary={  #
-        "xray_path": hardcoded_xray_paths,  #
-    }, output_directory=instance_output_dir, constants=constants, device=device)
+    run_experiments(params_to_vary=params_to_vary, output_directory=instance_output_dir, constants=constants,
+                    device=device)
 
 
 if __name__ == "__main__":
@@ -712,6 +747,9 @@ if __name__ == "__main__":
     parser.add_argument("-x", "--xray-path", type=str, default=None,
                         help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
                              "this is provided, the X-ray will by used instead of any DRR.")
+    parser.add_argument("-d", "--xray-dir", type=str, default=None,
+                        help="Give a path to directory of DICOM X-ray images to register the CT image to. If "
+                             "this is provided, the X-rays will by used instead of any DRR.")
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")
     # parser.add_argument(
@@ -720,14 +758,27 @@ if __name__ == "__main__":
     # parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
     parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
     parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
-    parser.add_argument("-d", "--data-output-dir", type=str, default="experimental_results/program_truncation",
+    parser.add_argument("-o", "--data-output-dir", type=str, default="experimental_results/program_truncation",
                         help="Directory in which to save output data.")
     args = parser.parse_args()
 
-    if args.xray_path == "drr" or args.xray_path == "hardcoded":
-        xray = args.xray_path
+    if args.xray_path is None:
+        if args.xray_dir is None:
+            xray = None
+        else:
+            xray = pathlib.Path(args.xray_dir)
+            if not xray.is_dir():
+                logger.error(f"X-ray directory '{str(xray)}' doesn't exist.")
+                exit(1)
     else:
-        xray = pathlib.Path(args.xray_path)
+        if args.xray_dir is None:
+            xray = pathlib.Path(args.xray_path)
+            if not xray.is_file():
+                logger.error(f"X-ray file '{str(xray)}' doesn't exist.")
+                exit(1)
+        else:
+            logger.error(f"Cannot provide both an X-ray directory and an X-ray file.")
+            exit(1)
 
     # create cache directory
     if not os.path.exists(args.cache_directory):

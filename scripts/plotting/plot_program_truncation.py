@@ -1,15 +1,28 @@
 import argparse
-
 import itertools
-import torch
 import pathlib
-from matplotlib.ticker import MaxNLocator
+from typing import Any
+
 import matplotlib.pyplot as plt
 import pandas as pd
+import torch
+from matplotlib.ticker import MaxNLocator
 
-from reg23_experiments.utils import logs_setup
 from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_tensor
 from reg23_experiments.analysis.plot import separate_subplots
+from reg23_experiments.utils import logs_setup
+
+
+def var_to_string(variable_name: str, value: Any) -> str:
+    if variable_name == "mask" or variable_name == "cropping" or variable_name == "sim_metric":
+        return value
+    elif variable_name == "xray_path":
+        return pathlib.Path(value).name
+    elif variable_name == "truncation_percent" or variable_name == "downsample_level":
+        return f"{value}"
+    elif variable_name == "starting_distance":
+        return f"{value:.3f}"
+    return f"<unknown variable '{variable_name}'>"
 
 
 def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
@@ -41,9 +54,16 @@ def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
     return pd.DataFrame(rows_out)
 
 
-def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figures: bool,
-         save_directory: pathlib.Path) -> None:
+def main(  #
+        *,  #
+        load_dir: pathlib.Path,  #
+        which_dataset: str,  #
+        display: bool,  #
+        save_figures: bool,  #
+        save_directory: pathlib.Path  #
+) -> None:
     assert load_dir.is_dir()
+    # -----
     # Getting the latest data instance if desired
     if which_dataset == "latest":
         subdirs = []
@@ -55,6 +75,8 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
         which_dataset = subdirs[-1]
     instance_dir: pathlib.Path = load_dir / which_dataset
     assert instance_dir.is_dir()
+
+    # -----
     # Reading in parquet data and concatenating
     df = pd.concat([  #
         pd.read_parquet(element)  #
@@ -62,13 +84,79 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
         if element.stem.startswith("data") and element.suffix == ".parquet"  #
     ])
 
-    # data over downsample level, truncation fraction and starting distance, stratified by masking
-    if False:
+    # -----
+    # Reading in the variables
+    variables_file = instance_dir / "variables.txt"
+    assert variables_file.is_file()
+    variables: list[str] = variables_file.read_text().splitlines()
+
+    dense = False
+
+    if len(variables) == 1:
         # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_to_tensor(  #
-            df.loc[(df["mask"] == "Every evaluation")],  #
-            ordered_axes=["downsample_level", "truncation_percent", "starting_distance", "iteration"],  #
-            value_column="distance")
+        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df,  #
+            ordered_axes=variables + ["iteration"],  #
+            value_column="distance"  #
+        )
+
+        fig, axes = plt.subplots()
+        if dense:
+            fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                                right=0.98,  # right margin
+                                bottom=0.08,  # bottom margin
+                                top=0.95,  # top margin
+                                wspace=0.2,  # width space between columns
+                                hspace=0.3  # height space between rows
+                                )
+        for i0, v0 in enumerate(axis_values[variables[0]]):
+            axes.plot(axis_values["iteration"], distances[i0, :], label=f"{var_to_string(variables[0], v0)}")
+        axes.set_title(f"Dist. vs. iteration for different {variables[0]}")
+        axes.set_xlabel("iteration")
+        axes.xaxis.set_major_locator(MaxNLocator(integer=True))
+        axes.set_ylabel("distance from G.T.")
+        axes.set_ylim((0.0, None))
+        axes.legend()
+        plt.show()
+
+    if len(variables) == 2:
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df,  #
+            ordered_axes=variables + ["iteration"],  #
+            value_column="distance"  #
+        )
+
+        fig, axes = plt.subplots(distances.size(0))
+        if dense:
+            fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                                right=0.98,  # right margin
+                                bottom=0.08,  # bottom margin
+                                top=0.95,  # top margin
+                                wspace=0.2,  # width space between columns
+                                hspace=0.3  # height space between rows
+                                )
+        for i0, v0 in enumerate(axis_values[variables[0]]):
+            for i1, v1 in enumerate(axis_values[variables[1]]):
+                axes[i0].plot(axis_values["iteration"], distances[i0, i1, :],
+                              label=f"{variables[1]}={var_to_string(variables[1], v1)}")
+            axes[i0].set_title(f"{variables[0]}={var_to_string(variables[0], v0)}")
+            axes[i0].set_xlabel("iteration")
+            axes[i0].xaxis.set_major_locator(MaxNLocator(integer=True))
+            axes[i0].set_ylabel("distance from G.T.")
+            axes[i0].set_ylim((0.0, None))
+            axes[i0].legend()
+        plt.show()
+
+    # -----
+    # data over downsample level, truncation fraction and starting distance, stratified by masking
+    if len(variables) == 4 and variables[0] == "mask":
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df.loc[(df[variables[3]] == "Every evaluation")],  #
+            ordered_axes=variables[:3] + ["iteration"],  #
+            value_column="distance"  #
+        )
 
         fig, axes = plt.subplots(distances.size(0), distances.size(1))
         fig.subplots_adjust(left=0.05,  # margin on left side of figure
@@ -78,9 +166,9 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
                             wspace=0.2,  # width space between columns
                             hspace=0.3  # height space between rows
                             )
-        for k, dl in enumerate(axis_values["downsample_level"]):
-            for j, tf in enumerate(axis_values["truncation_percent"]):
-                for i, sd in enumerate(axis_values["starting_distance"]):
+        for k, dl in enumerate(axis_values[variables[0]]):
+            for j, tf in enumerate(axis_values[variables[1]]):
+                for i, sd in enumerate(axis_values[variables[2]]):
                     axes[k, j].plot(axis_values["iteration"], distances[k, j, i, :], label="s.d. {:.3f}".format(sd))
                     axes[k, j].set_title("d.l. {}; t.f. {:.3f}".format(dl, tf))
                     axes[k, j].set_xlabel("iteration")
@@ -91,11 +179,11 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
         plt.show()
 
     # data over truncation percent, masking and cropping
-    if True:
+    if len(variables) == 3:
         # converting to a tensor, with an axis per variable
         distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
             df,  #
-            ordered_axes=["cropping", "mask", "truncation_percent", "iteration"],  #
+            ordered_axes=variables + ["iteration"],  #
             value_column="distance")
 
         fig, axes = plt.subplots(distances.size(0), distances.size(1))
@@ -106,9 +194,9 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
                             wspace=0.2,  # width space between columns
                             hspace=0.3  # height space between rows
                             )
-        for k, cp in enumerate(axis_values["cropping"]):
-            for j, mk in enumerate(axis_values["mask"]):
-                for i, tp in enumerate(axis_values["truncation_percent"]):
+        for k, cp in enumerate(axis_values[variables[0]]):
+            for j, mk in enumerate(axis_values[variables[1]]):
+                for i, tp in enumerate(axis_values[variables[2]]):
                     axes[k, j].plot(axis_values["iteration"], distances[k, j, i, :], label="t.p. {:.3f}".format(tp))
                     axes[k, j].set_title("cp. {}; mk. {}".format(cp, mk))
                     axes[k, j].set_xlabel("iteration")
@@ -119,14 +207,14 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
         plt.show()
 
     # data over truncation fraction, stratified by cropping
-    if False:
+    if len(variables) == 2 and variables[1] == "cropping":
         for crop in ["None", "full_depth_drr", "nonzero_drr"]:
-        # for mask in ["None", "Every evaluation", "Every evaluation weighting zncc"]:
+            # for mask in ["None", "Every evaluation", "Every evaluation weighting zncc"]:
             # converting to a tensor, with an axis per variable
             distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
                 df.loc[(df["cropping"] == crop)],  #
                 # df.loc[(df["mask"] == mask)],  #
-                ordered_axes=["truncation_percent", "iteration"],  #
+                ordered_axes=[variables[0], "iteration"],  #
                 value_column="distance")
 
             fig, axes = plt.subplots()
@@ -137,7 +225,7 @@ def main(*, load_dir: pathlib.Path, which_dataset: str, display: bool, save_figu
                                 wspace=0.2,  # width space between columns
                                 hspace=0.3  # height space between rows
                                 )
-            for j, tf in enumerate(axis_values["truncation_percent"]):
+            for j, tf in enumerate(axis_values[variables[0]]):
                 axes.plot(axis_values["iteration"], distances[j, :], label="t.f. {:.3f}".format(tf))
                 axes.set_xlabel("iteration")
                 axes.xaxis.set_major_locator(MaxNLocator(integer=True))
@@ -259,7 +347,7 @@ if __name__ == "__main__":
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
-    parser.add_argument("-l", "--load-dir", type=str, default="data/temp/program_truncation",
+    parser.add_argument("-l", "--load-dir", type=str, default="experimental_results/program_truncation",
                         help="Directory in which to find the data files.")
     parser.add_argument("-w", "--which-dataset", type=str, default="latest",
                         help="Which dataset to plot. Either 'latest', or a timestamp in the format "

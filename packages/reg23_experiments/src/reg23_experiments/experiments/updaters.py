@@ -3,7 +3,8 @@ import pathlib
 from typing import Any
 
 import torch
-from jaxtyping import Float32, Float64
+from beartype import beartype as typechecker
+from jaxtyping import Float32, Float64, jaxtyped
 
 import reg23_core
 from reg23_app.gui.old.lib.structs import Target
@@ -131,6 +132,7 @@ def refresh_image_2d_scale_factor(*, image_2d_full_spacing: Float64[torch.Tensor
 
 
 @dadg_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset", "fixed_image_size"])
+@jaxtyped(typechecker=typechecker)
 def refresh_hyperparameter_dependent(*, image_2d_full: Float32[torch.Tensor, "n m"],
                                      image_2d_full_spacing: Float64[torch.Tensor, "2"], cropping: Cropping | None,
                                      source_offset: Float64[torch.Tensor, "2"], image_2d_scale_factor: float) -> dict[
@@ -145,17 +147,19 @@ def refresh_hyperparameter_dependent(*, image_2d_full: Float32[torch.Tensor, "n 
         scale_factor=image_2d_scale_factor,  #
         mode="bilinear",  #
         recompute_scale_factor=True,  #
-        antialias=True)[0, 0]
+        antialias=True  #
+    )[0, 0]
 
     # Cropping for the fixed image
     if cropping is None:
         cropped_target = scaled_image_2d
-        offset_from_cropping = torch.zeros(2, device=device)
+        offset_from_cropping = torch.zeros(2, dtype=torch.float64, device=device)
     else:
         cropped_target = cropping.apply(scaled_image_2d)
         offset_from_cropping = (image_2d_full_spacing  #
                                 * cropping.get_fractional_centre_offset(device=device)  #
-                                * torch.tensor(image_2d_full.size(), device=device).flip(dims=(0,)))
+                                * torch.tensor(image_2d_full.size(), dtype=torch.float64, device=device).flip(
+                    dims=(0,)))
 
     # The fixed image is offset to adjust for the cropping, and according to the source offset
     # This isn't affected by downsample level
