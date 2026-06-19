@@ -118,6 +118,16 @@ class Transformation:
     def vectorised(self) -> Float64[torch.Tensor, "6"]:
         return torch.cat((self.rotation, self.translation), dim=0)
 
+    @jaxtyped(typechecker=typechecker)
+    def with_translation_offset(self, translation_offset: Float64[torch.Tensor, "2"]) -> 'Transformation':
+        return Transformation(  #
+            rotation=self.rotation.clone(),  #
+            translation=self.translation + torch.cat((  #
+                translation_offset.to(device=self.device),  #
+                torch.zeros(1, dtype=torch.float64, device=self.device)  #
+            ))  #
+        )
+
     @staticmethod
     @jaxtyped(typechecker=typechecker)
     def from_vector(vector: Float64[torch.Tensor, "6"]) -> 'Transformation':

@@ -372,17 +372,10 @@ def get_crop_nonzero_drr(  #
         translation_offset: Float64[torch.Tensor, "2"]  #
 ) -> Cropping:
     device = torch.device("cpu")
-    current_transformation = current_transformation.to(device=device)
+    transformation = current_transformation.to(device=device).with_translation_offset(translation_offset)
     ct_spacing = ct_spacing.to(device=device)
     image_2d_full_spacing = image_2d_full_spacing.to(device=device)
-    translation_offset = translation_offset.to(device=device)
     tensor_kwargs = {"device": device, "dtype": torch.float64}
-
-    new_translation = current_transformation.translation + torch.cat(
-        (translation_offset.to(device=current_transformation.device),
-         torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype)))
-    transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
-        device=device)
 
     volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), **tensor_kwargs).flip(
         dims=(0,)) * ct_spacing
@@ -425,17 +418,10 @@ def get_crop_full_depth_drr(  #
         translation_offset: Float64[torch.Tensor, "2"]  #
 ) -> Cropping:
     device = torch.device("cpu")
-    current_transformation = current_transformation.to(device=device)
+    transformation = current_transformation.to(device=device).with_translation_offset(translation_offset)
     ct_spacing = ct_spacing.to(device=device)
     image_2d_full_spacing = image_2d_full_spacing.to(device=device)
-    translation_offset = translation_offset.to(device=device)
     tensor_kwargs = {"device": device, "dtype": torch.float64}
-
-    new_translation = current_transformation.translation + torch.cat(
-        (translation_offset.to(device=current_transformation.device),
-         torch.tensor([0.0], device=device, dtype=current_transformation.translation.dtype)))
-    transformation = Transformation(rotation=current_transformation.rotation, translation=new_translation).to(
-        device=device)
 
     volume_half_diag: torch.Tensor = 0.5 * torch.tensor(ct_volumes[0].size(), **tensor_kwargs).flip(
         dims=(0,)) * ct_spacing

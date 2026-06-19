@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 import traitlets
+from jaxtyping import Float64
 
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
@@ -649,12 +650,19 @@ def main(  #
         # -----
         # Set the current transformation to the ground truth if it exists
         data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000")
-        transformation_gt = data_manager().get("transformation_gt")
-        if isinstance(transformation_gt, Error):
-            raise RuntimeError(f"Failed to get ground truth: {transformation_gt.description}")
-        if transformation_gt is not None:
-            data_manager().set("current_transformation", transformation_gt)
+
+        ground_truth: Float64[torch.Tensor, "6"] | None = None
+        t: Transformation | None | Error = data_manager().get("transformation_gt")
+        if t is None or isinstance(t, Error):
+            t: Transformation | Error = data_manager().get("ap_transformation")
+        else:
             logger.info("Ground truth loaded")
+            ground_truth = mapping_transformation_to_parameters(t)
+        if isinstance(t, Error):
+            raise Exception(f"Failed to get an example transformation: {t.description}")
+        starting_params = random_parameters_at_distance(mapping_transformation_to_parameters(t), 1.0)
+
+        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
         data_manager().set("truncation_percent", 65)
         if "downsample_level" in constants:
             data_manager().set("downsample_level", constants["downsample_level"])
@@ -695,14 +703,6 @@ def main(  #
                     f"{-similarity_metric.weighted_local_ncc(moving_image, fixed_image, mask, kernel_size=8)}")
         plt.draw()
         plt.pause(0.1)
-        # -----
-        # Run extra registration and display images for debugging
-        t: Transformation | None | Error = data_manager().get("transformation_gt")
-        if t is None:
-            t: Transformation | Error = data_manager().get("ap_transformation")
-        if isinstance(t, Error):
-            raise Exception(f"Failed to get an example transformation: {t.description}")
-        starting_params = mapping_transformation_to_parameters(t)
 
         # starting_params = random_parameters_at_distance(mapping_transformation_to_parameters(t), 15.0)
         # data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
@@ -727,6 +727,12 @@ def main(  #
             plot="mask")  # size = (iteration count, dimensionality + 1)
         logger.info(f"Result: {res}")
         plt.ioff()  # figures are blocking
+        if ground_truth is not None:
+            fig, axes = plt.subplots()
+            distances = torch.linalg.vector_norm(res[:, :6] - ground_truth.unsqueeze(0), dim=1).cpu().numpy()
+            axes.plot(distances)
+            axes.set_xlabel("iteration")
+            axes.set_ylabel("distance from G.T.")
         plt.show()  # return
         return
 
