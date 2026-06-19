@@ -10,7 +10,7 @@ from reg23_app.context import AppContext
 from reg23_app.gui.viewer_singleton import viewer
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_experiments.data.structs import Cropping, Error, Transformation
-from reg23_experiments.ops.geometry import get_crop_full_depth_drr, project_vectors
+from reg23_experiments.ops.geometry import get_crop_full_depth_drr, get_crop_nonzero_drr, project_vectors
 
 __all__ = ["add_debug_layer"]
 
@@ -114,12 +114,37 @@ class _DebugLayerManager:
             left = int(round(cropping.left * float(size[1])))
             top = int(round(cropping.top * float(size[0])))
             bottom = int(round(cropping.bottom * float(size[0])))
-            rr, cc = skimage.draw.rectangle_perimeter(  #
-                start=(top, left),  #
-                end=(bottom, right),  #
-                shape=image.shape,  #
+            thickness = 5
+            for i in range(thickness):
+                rr, cc = skimage.draw.rectangle_perimeter(  #
+                    start=(top - i, left - i),  #
+                    end=(bottom + i, right + i),  #
+                    shape=image.shape,  #
+                )
+                image[rr, cc] = 1.0
+        if True:
+            cropping: Cropping = get_crop_nonzero_drr(  #
+                image_2d_full=nodes["image_2d_full"],  #
+                source_distance=nodes["source_distance"],  #
+                current_transformation=nodes["current_transformation"],  #
+                ct_volumes=nodes["ct_volumes"],  #
+                ct_spacing=nodes["ct_spacing"],  #
+                image_2d_full_spacing=nodes["image_2d_full_spacing"],  #
+                translation_offset=nodes["translation_offset"],  #
             )
-            image[rr, cc] = 1.0
+            size = nodes["image_2d_full"].size()
+            right = int(round(cropping.right * float(size[1])))
+            left = int(round(cropping.left * float(size[1])))
+            top = int(round(cropping.top * float(size[0])))
+            bottom = int(round(cropping.bottom * float(size[0])))
+            thickness = 5
+            for i in range(thickness):
+                rr, cc = skimage.draw.rectangle_perimeter(  #
+                    start=(top - i, left - i),  #
+                    end=(bottom + i, right + i),  #
+                    shape=image.shape,  #
+                )
+                image[rr, cc] = 2.0
 
         # updating the layer
         layer.data = image

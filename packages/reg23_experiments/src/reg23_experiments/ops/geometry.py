@@ -454,8 +454,8 @@ def get_crop_full_depth_drr(  #
     # (8, 2)
 
     # vertical bounds
-    upper = projected_vertices[0:4]  # size = (4, 2)
-    lower = projected_vertices[4:8]  # size = (4, 2)
+    upper = projected_vertices[:4]  # size = (4, 2)
+    lower = projected_vertices[4:]  # size = (4, 2)
     if upper[:, 1].sum() > lower[:, 1].sum():
         lower, upper = upper, lower
     # lower is now the 4 truncated vertices that have the higher average projected y-value (appear lower on the
@@ -473,10 +473,10 @@ def get_crop_full_depth_drr(  #
     image_size: torch.Tensor = torch.tensor(  #
         image_2d_full.size(), **tensor_kwargs).flip(dims=(0,)) * image_2d_full_spacing  # [mm]
     # convert from [mm] centred on origin to fractions through image in rightward and downward directions
-    right = right / image_size[1] + 0.5
-    top = top / image_size[0] + 0.5
-    left = left / image_size[1] + 0.5
-    bottom = bottom / image_size[0] + 0.5
+    right = right / image_size[0] + 0.5
+    top = top / image_size[1] + 0.5
+    left = left / image_size[0] + 0.5
+    bottom = bottom / image_size[1] + 0.5
     # clamping within valid ranges
     left = min(max(left.item(), 0.0), 1.0)
     right = min(max(right.item(), left), 1.0)
