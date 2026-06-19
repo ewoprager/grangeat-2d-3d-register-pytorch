@@ -77,7 +77,7 @@ class TransformationSaveData(SaveData):
                 new_values[key] = change[key]
             # update / insert into the dataframe
             idx = (uid, name)
-            self._contents.loc[idx, new_values.keys()] = new_values.values()
+            self._contents.loc[idx, list(new_values.keys())] = pd.Series(new_values)
             return None
         elif change["action"] == "remove":
             # get the uid

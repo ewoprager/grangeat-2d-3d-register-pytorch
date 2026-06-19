@@ -133,19 +133,19 @@ def project_fiducials(  #
         current_transformation: Transformation,  #
         untruncated_ct_volume: Float32[torch.Tensor, "p q r"],  #
         ct_spacing: Float64[torch.Tensor, "3"],  #
-        fixed_image_size: torch.Size,  #
+        image_2d_full: Float32[torch.Tensor, "n m"],  #
         fixed_image_offset: Float64[torch.Tensor, "2"],  #
         translation_offset: Float64[torch.Tensor, "2"],  #
-        fixed_image_spacing: Float64[torch.Tensor, "2"],  #
+        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
         ct_fiducial_points: NamedPoints3D,  #
-        source_distance: float  #
+        source_distance: float,  #
 ) -> dict[str, Any]:
     device = torch.device("cpu")
     transformation = current_transformation.to(device=device).with_translation_offset(translation_offset)
-    input_vectors = ct_fiducial_points.data.to(device=device) - 0.5 * ct_spacing.to(device=device) * torch.tensor(
-        untruncated_ct_volume.size(), dtype=torch.float64).flip(dims=(0,))
-    projected = geometry.project_vectors(input_vectors, source_distance=source_distance, transformation=transformation)
-    output_points_2d = projected + 0.5 * fixed_image_spacing.to(device=device) * torch.tensor(fixed_image_size,
-                                                                                              dtype=torch.float64).flip(
+    input_vectors = ct_fiducial_points.data.cpu() - 0.5 * ct_spacing.cpu() * torch.tensor(untruncated_ct_volume.size(),
+                                                                                          dtype=torch.float64).flip(
         dims=(0,))
+    projected = geometry.project_vectors(input_vectors, source_distance=source_distance, transformation=transformation)
+    size_tensor = torch.tensor(image_2d_full.size(), dtype=torch.float64).flip(dims=(0,))
+    output_points_2d = projected + 0.5 * image_2d_full_spacing.cpu() * size_tensor
     return {"projected_fiducials": NamedPoints2D(names=ct_fiducial_points.names, data=output_points_2d)}

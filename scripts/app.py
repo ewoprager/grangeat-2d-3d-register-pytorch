@@ -71,7 +71,6 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         save_to_cache=True,  # a
         new_drr_size=torch.Size([500, 500]),  #
         device=device,  #
-        cropping=None,  #
         current_transformation=Transformation.zero(device),  #
         truncation_percent=0.0,  #
         ap_transformation=Transformation(
