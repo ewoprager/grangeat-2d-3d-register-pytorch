@@ -202,6 +202,7 @@ class SceneGeometry(NamedTuple):
     @jaxtyped(typechecker=typechecker)
     def projection_matrix(cls, source_position: Float64[torch.Tensor, "3"],
                           central_ray: Float64[torch.Tensor, "3"] | None = None) -> Float64[torch.Tensor, "4 4"]:
+        # ToDo: Make this a normal method (rather than a class method) that also takes fixed_image_offset into account
         """
         Generate the projection matrix for the given source position
 

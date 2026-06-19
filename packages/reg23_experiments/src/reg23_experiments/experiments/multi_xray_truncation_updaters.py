@@ -17,8 +17,6 @@ from reg23_experiments.ops import geometry
 from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.io.image import read_dicom
 
-# ToDo: jax type the updaters?
-
 __all__ = ["load_untruncated_ct", "set_target_image", "apply_truncation", "project_drr", "project_fiducials"]
 
 

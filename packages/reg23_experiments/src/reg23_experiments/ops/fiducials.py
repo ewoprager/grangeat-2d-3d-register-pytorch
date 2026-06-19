@@ -8,7 +8,7 @@ from jaxtyping import Float32, Float64, jaxtyped
 from reg23_experiments.ops.optimisation import local_search
 
 __all__ = ["ball_bearing_marker_function", "construct_synthetic_fiducial_3d", "refine_spherical_fiducial_2d",
-           "refine_spherical_fiducial_3d"]
+           "refine_spherical_fiducial_3d", "refine_disk_fiducial_2d"]
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +110,62 @@ def refine_spherical_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing
 
     x = position.clone().detach().requires_grad_(True)
     lr = 0.1
+    for _ in range(200):
+        if x.grad is not None:
+            x.grad.zero_()
+        loss = objective(x)
+        loss.backward()
+        with torch.no_grad():
+            x -= lr * x.grad
+    return x.detach().to(device=output_device)
+
+
+@jaxtyped(typechecker=typechecker)
+def refine_disk_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing: Float64[torch.Tensor, "2"],
+                            position: Float64[torch.Tensor, "2"], radius: float) -> Float64[torch.Tensor, "2"]:
+    assert radius > 0.0
+    image = image.cpu()
+    spacing = spacing.cpu()
+    output_device = position.device
+    position = position.cpu()
+
+    border_thickness = spacing.max()
+    sq_inner_rad = (radius - border_thickness) * (radius - border_thickness)
+    sq_outer_rad = (radius + border_thickness) * (radius + border_thickness)
+    image_gradients = torch.stack(torch.gradient(image, spacing=tuple(s.item() for s in spacing.flip(dims=(0,)))),
+                                  dim=-1).flip(dims=(-1,))
+    image_gradients /= image_gradients.max()
+
+    def objective(pos: torch.Tensor) -> torch.Tensor:
+        pos_nograd = pos.detach()
+        i0: int = max(0, int(((pos_nograd[0] - radius) / spacing[0]).floor().item()))
+        i1: int = min(image.size()[1] - 1, int(((pos_nograd[0] + radius) / spacing[0]).ceil().item()))
+        j0: int = max(0, int(((pos_nograd[1] - radius) / spacing[1]).floor().item()))
+        j1: int = min(image.size()[0] - 1, int(((pos_nograd[1] + radius) / spacing[1]).ceil().item()))
+        if i1 <= i0 or j1 <= j0:
+            return pos.sum() * 0.0 + 1.0
+        i1 += 1
+        j1 += 1
+        patch_pixel_xs = spacing[0] * torch.arange(i0, i1, dtype=torch.float64) - pos[0]
+        patch_pixel_ys = spacing[1] * torch.arange(j0, j1, dtype=torch.float64) - pos[1]
+        patch_pixel_positions = torch.stack(torch.meshgrid(patch_pixel_ys, patch_pixel_xs), dim=-1).flip(
+            dims=(-1,))  # (n, m, 2)
+        square_distances = patch_pixel_positions.square().sum(dim=-1)  # (n, m)
+        patch_mask = torch.logical_and(square_distances > sq_inner_rad, square_distances < sq_outer_rad)
+        unit_directions = -(
+                patch_pixel_positions[patch_mask] / square_distances[patch_mask].sqrt().unsqueeze(-1)).flatten()
+        img_grad_patch = image_gradients[j0:j1, i0:i1, :][patch_mask].flatten().to(dtype=torch.float64)
+        return -(unit_directions * img_grad_patch).mean()
+
+    if False:
+        return local_search(  #
+            starting_position=position,  #
+            initial_step_size=torch.full((3,), 0.25 * radius, dtype=torch.float64),  #
+            objective_function=objective  #
+        ).to(device=output_device)
+
+    x = position.clone().detach().requires_grad_(True)
+    lr = 10.0
     for _ in range(200):
         if x.grad is not None:
             x.grad.zero_()

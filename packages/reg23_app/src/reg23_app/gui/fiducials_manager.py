@@ -8,7 +8,7 @@ from reg23_app.state import AppState
 from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
-from reg23_experiments.ops.fiducials import refine_spherical_fiducial_2d, refine_spherical_fiducial_3d
+from reg23_experiments.ops.fiducials import refine_disk_fiducial_2d, refine_spherical_fiducial_3d
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
 
@@ -174,7 +174,7 @@ class FiducialsManager:
 
         new_data = torch.empty_like(fiducial_points.data)
         for i, point in enumerate(fiducial_points.data):
-            new_data[i] = refine_spherical_fiducial_2d(  #
+            new_data[i] = refine_disk_fiducial_2d(  #
                 image=image_2d_full,  #
                 spacing=image_2d_full_spacing,  #
                 position=point,  #
