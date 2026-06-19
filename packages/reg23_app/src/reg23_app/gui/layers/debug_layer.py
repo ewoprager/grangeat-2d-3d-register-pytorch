@@ -63,9 +63,12 @@ class _DebugLayerManager:
         image[:, -4:] = 1.0
         image[:4, :] = 1.0
         image[-4:, :] = 1.0
-        # debug geometry
 
+        # -----
+        # Debug geometry
         if True:
+            # -----
+            # Draw projected CT volume extent corners
             device = torch.device("cpu")
             tensor_kwargs = {"device": device, "dtype": torch.float64}
             new_translation = nodes["current_transformation"].translation.cpu() + torch.cat(
@@ -100,6 +103,8 @@ class _DebugLayerManager:
                 rr, cc = skimage.draw.disk(tuple(point.flip(dims=(0,))), 12, shape=image.shape)
                 image[rr, cc] = 2.0
         if True:
+            # -----
+            # Draw full depth DRR bounding box / crop rectangle
             cropping: Cropping = get_crop_full_depth_drr(  #
                 image_2d_full=nodes["image_2d_full"],  #
                 source_distance=nodes["source_distance"],  #
@@ -123,6 +128,8 @@ class _DebugLayerManager:
                 )
                 image[rr, cc] = 1.0
         if True:
+            # -----
+            # Draw non-zero DRR bounding box / crop rectangle
             cropping: Cropping = get_crop_nonzero_drr(  #
                 image_2d_full=nodes["image_2d_full"],  #
                 source_distance=nodes["source_distance"],  #
