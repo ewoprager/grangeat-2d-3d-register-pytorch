@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 import traitlets
-from jaxtyping import Float64
 
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
@@ -590,7 +589,7 @@ def main(  #
         "ct_path": ct_path,  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
-        "downsample_level": 2,  #
+        "downsample_level": 0,  #
         "truncation_percent": 65,  #
         "cropping": "full_depth_drr",  #
         "mask": "None",  #
@@ -651,33 +650,16 @@ def main(  #
         # Set the current transformation to the ground truth if it exists
         data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000")
 
-        ground_truth: Float64[torch.Tensor, "6"] | None = None
-        t: Transformation | None | Error = data_manager().get("transformation_gt")
-        if t is None or isinstance(t, Error):
-            t: Transformation | Error = data_manager().get("ap_transformation")
-        else:
-            logger.info("Ground truth loaded")
-            ground_truth = mapping_transformation_to_parameters(t)
-        if isinstance(t, Error):
-            raise Exception(f"Failed to get an example transformation: {t.description}")
-        starting_params = random_parameters_at_distance(mapping_transformation_to_parameters(t), 1.0)
+        transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
+        if transformation_gt is None or isinstance(transformation_gt, Error):
+            raise RuntimeError(f"No ground truth available"
+                               f"{"." if transformation_gt is None else f": {transformation_gt.description}"}")
+        parameters_gt = mapping_transformation_to_parameters(transformation_gt)
+        starting_params = random_parameters_at_distance(parameters_gt, 1.0)
 
-        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
-        data_manager().set("truncation_percent", 65)
+        data_manager().set("current_transformation", transformation_gt)
         if "downsample_level" in constants:
             data_manager().set("downsample_level", constants["downsample_level"])
-        if "cropping" in constants:
-            if constants["cropping"] == "None":
-                cropping = None
-            elif constants["cropping"] == "nonzero_drr":
-                cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
-            elif constants["cropping"] == "full_depth_drr":
-                cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)()
-            else:
-                raise ValueError(f"Unknown cropping technique '{constants["cropping"]}'.")
-            if isinstance(cropping, Error):
-                raise RuntimeError(f"Failed to set crop: {cropping.description}")
-            data_manager().set("cropping", cropping, check_equality=True)
         image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
         if isinstance(image_2d_full, Error):
             raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
@@ -704,10 +686,20 @@ def main(  #
         plt.draw()
         plt.pause(0.1)
 
-        # starting_params = random_parameters_at_distance(mapping_transformation_to_parameters(t), 15.0)
-        # data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
-        # set_crop_to_nonzero_drr()
-        # data_manager().set("truncation_percent", 30)
+        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
+        data_manager().set("truncation_percent", 65)
+        if "cropping" in constants:
+            if constants["cropping"] == "None":
+                cropping = None
+            elif constants["cropping"] == "nonzero_drr":
+                cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
+            elif constants["cropping"] == "full_depth_drr":
+                cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)()
+            else:
+                raise ValueError(f"Unknown cropping technique '{constants["cropping"]}'.")
+            if isinstance(cropping, Error):
+                raise RuntimeError(f"Failed to set crop: {cropping.description}")
+            data_manager().set("cropping", cropping, check_equality=True)
 
         def objective_function(parameters: torch.Tensor) -> torch.Tensor:
             data_manager().set("current_transformation",
@@ -727,12 +719,11 @@ def main(  #
             plot="mask")  # size = (iteration count, dimensionality + 1)
         logger.info(f"Result: {res}")
         plt.ioff()  # figures are blocking
-        if ground_truth is not None:
-            fig, axes = plt.subplots()
-            distances = torch.linalg.vector_norm(res[:, :6] - ground_truth.unsqueeze(0), dim=1).cpu().numpy()
-            axes.plot(distances)
-            axes.set_xlabel("iteration")
-            axes.set_ylabel("distance from G.T.")
+        fig, axes = plt.subplots()
+        distances = torch.linalg.vector_norm(res[:, :6] - parameters_gt.unsqueeze(0), dim=1).cpu().numpy()
+        axes.plot(distances)
+        axes.set_xlabel("iteration")
+        axes.set_ylabel("distance from G.T.")
         plt.show()  # return
         return
 
