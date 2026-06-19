@@ -466,12 +466,14 @@ def main(  #
         *,  #
         cache_directory: str,  #
         ct_path: str,  #
-        xray_path: pathlib.Path | None,  #
+        xray_path: str | pathlib.Path | None,  #
         data_output_dir: str | pathlib.Path,  #
         show: bool = False  #
 ):
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if xray_path is not None:
+        xray_path = pathlib.Path(xray_path)
 
     # -----
     # Load the CT data, prompting the user to choose a series if multiple are found
@@ -579,9 +581,10 @@ def main(  #
         logger.error(f"Error adding updater: {err.description}")
         return
 
-    # -----
-    # Default values for variables that remain constant for the experiments
-    constants = {  #
+    # ----------------------------------
+    # - Hardcoded script configuration -
+    # ----------------------------------
+    constants: dict[str, Any] = {  #
         # ExperimentConfig
         "ct_path": ct_path,  #
         "xray_path": xray_path,  #
@@ -598,38 +601,44 @@ def main(  #
         "particle_initialisation_spread": 5.0,  #
         "iteration_count": 10,  #
     }
-
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
-        "level_005",  #
+        # "level_005",  #
     ]
+    params_to_vary: dict[str, Any] = {  #
+        "truncation_percent": [0, 65],  #
+    }
+    # ----------------------------------
 
-    params_to_vary = {  #
-        "xray_path": [str(xray_path / name) for name in hardcoded_xray_names],  #
-        "truncation_percent": [0, 65]}
+    # -----
+    # Setting the X-ray path(s) if a directory is passed
+    if xray_path is not None and xray_path.is_dir():
+        # Check that all X-rays exist and have ground truth transformations available
+        for name in hardcoded_xray_names:
+            path: pathlib.Path = xray_path / name
+            if not path.is_file():
+                logger.error(f"X-ray file '{str(path)}' doesn't exist.")
+                return
+            try:
+                dicom: XrayDICOM = read_dicom(path)
+            except Exception as e:
+                logger.error(f"Failed to read X-ray file: {e}")
+                return
+            idx = (dicom["uid"], "gold_standard")
+            try:
+                saved_transformations.loc[idx]
+            except KeyError:
+                logger.error(f"No ground truth saved for X-ray '{str(path)}' with UID '{dicom["uid"]}'.")
+                return
+        if len(hardcoded_xray_names) == 1:
+            constants["xray_path"] = str(xray_path / hardcoded_xray_names[0])
+        else:
+            params_to_vary["xray_path"] = [str(xray_path / name) for name in hardcoded_xray_names]
+
     # Remove varying variables from the constants dict
     for key in params_to_vary:
         if key in constants:
             constants.pop(key)
-
-    # -----
-    # Check that all X-rays exist and have ground truth transformations available
-    for name in hardcoded_xray_names:
-        path: pathlib.Path = xray_path / name
-        if not path.is_file():
-            logger.error(f"X-ray file '{str(path)}' doesn't exist.")
-            return
-        try:
-            dicom: XrayDICOM = read_dicom(path)
-        except Exception as e:
-            logger.error(f"Failed to read X-ray file: {e}")
-            return
-        idx = (dicom["uid"], "gold_standard")
-        try:
-            saved_transformations.loc[idx]
-        except KeyError:
-            logger.error(f"No ground truth saved for X-ray '{str(path)}' with UID '{dicom["uid"]}'.")
-            return
 
     if show:
         # -----

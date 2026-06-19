@@ -13,6 +13,7 @@ from reg23_app.gui.layers.ct_layer import add_ct_layer
 from reg23_app.gui.layers.ct_fiducial_layer import add_ct_fiducial_layer
 from reg23_app.gui.layers.xray_fiducial_layer import add_xray_fiducial_layer
 from reg23_app.gui.layers.projected_fiducials_layer import add_projected_fiducials_layer
+from reg23_app.gui.layers.debug_layer import add_debug_layer
 
 __all__ = ["ImagesWidget"]
 
@@ -30,6 +31,7 @@ class ImagesWidget(widgets.Container):
     def _on_xray_parameters_change(self, *args) -> None:
         logger.debug("X-ray parameters changed; rebuilding ImagesWidget")
         self.clear()
+
         if self._ctx.state.parameters.ct_path is not None:
             logger.debug("CT present; adding CT buttons to ImagesWidget")
             # Slice view
@@ -67,6 +69,9 @@ class ImagesWidget(widgets.Container):
                 show_projected_fiducials_button = widgets.PushButton(label="Show projected fiducials")
                 show_projected_fiducials_button.changed.connect(
                     lambda _, name=key: self._on_show_projected_fiducials_layer(name))
+                # Debug image
+                show_debug_button = widgets.PushButton(label="Show debug image")
+                show_debug_button.changed.connect(lambda _, name=key: self._on_show_debug_layer(name))
                 # appending
                 self.append(widgets.Container(widgets=[  #
                     show_image_2d_full_button,  #
@@ -74,7 +79,8 @@ class ImagesWidget(widgets.Container):
                     show_moving_image_button,  #
                     show_electrodes_button,  #
                     show_xray_fiducials_button,  #
-                    show_projected_fiducials_button  #
+                    show_projected_fiducials_button,  #
+                    show_debug_button  #
                 ], label=key))
 
     def _on_show_ct_layer(self) -> None:
@@ -110,3 +116,7 @@ class ImagesWidget(widgets.Container):
     def _on_show_projected_fiducials_layer(self, xray_name: str) -> None:
         logger.debug(f"Show projected_fiducials for '{xray_name}' clicked")
         add_projected_fiducials_layer(ctx=self._ctx, namespace=xray_name)
+
+    def _on_show_debug_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show debug for '{xray_name}' clicked")
+        add_debug_layer(ctx=self._ctx, namespace=xray_name)

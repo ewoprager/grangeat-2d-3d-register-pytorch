@@ -10,7 +10,7 @@ from reg23_experiments.data.structs import Cropping, SceneGeometry, Sinogram2dGr
 
 __all__ = ["fixed_polar_to_moving_cartesian", "moving_cartesian_to_moving_spherical", "fixed_polar_to_moving_spherical",
            "ray_cuboid_distance", "generate_drr", "generate_drr_cuboid_mask", "generate_drr_python", "plane_integrals",
-           "get_crop_nonzero_drr", "get_crop_full_depth_drr"]
+           "get_crop_nonzero_drr", "get_crop_full_depth_drr", "project_vectors"]
 
 
 @jaxtyped(typechecker=typechecker)
@@ -352,7 +352,7 @@ def project_vectors(  #
     """
     device = vectors.device
     p_matrix = SceneGeometry.projection_matrix(
-        source_position=torch.tensor([0.0, 0.0, -source_distance], dtype=torch.float64, device=device))
+        source_position=torch.tensor([0.0, 0.0, source_distance], dtype=torch.float64, device=device))
     ph_matrix = torch.matmul(p_matrix, transformation.get_h(device))
     vectors_homogeneous = torch.cat(
         (vectors, torch.ones(vectors.size()[:-1], dtype=torch.float64, device=device).unsqueeze(-1)), dim=-1)
