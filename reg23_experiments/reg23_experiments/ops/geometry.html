@@ -60,6 +60,9 @@
             <li>
                     <a class="function" href="#get_crop_full_depth_drr">get_crop_full_depth_drr</a>
             </li>
+            <li>
+                    <a class="function" href="#project_vectors">project_vectors</a>
+            </li>
     </ul>
 
 
@@ -93,7 +96,7 @@
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;fixed_polar_to_moving_cartesian&quot;</span><span class="p">,</span> <span class="s2">&quot;moving_cartesian_to_moving_spherical&quot;</span><span class="p">,</span> <span class="s2">&quot;fixed_polar_to_moving_spherical&quot;</span><span class="p">,</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a>           <span class="s2">&quot;ray_cuboid_distance&quot;</span><span class="p">,</span> <span class="s2">&quot;generate_drr&quot;</span><span class="p">,</span> <span class="s2">&quot;generate_drr_cuboid_mask&quot;</span><span class="p">,</span> <span class="s2">&quot;generate_drr_python&quot;</span><span class="p">,</span> <span class="s2">&quot;plane_integrals&quot;</span><span class="p">,</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>           <span class="s2">&quot;get_crop_nonzero_drr&quot;</span><span class="p">,</span> <span class="s2">&quot;get_crop_full_depth_drr&quot;</span><span class="p">]</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>           <span class="s2">&quot;get_crop_nonzero_drr&quot;</span><span class="p">,</span> <span class="s2">&quot;get_crop_full_depth_drr&quot;</span><span class="p">,</span> <span class="s2">&quot;project_vectors&quot;</span><span class="p">]</span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>
 </span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="nd">@jaxtyped</span><span class="p">(</span><span class="n">typechecker</span><span class="o">=</span><span class="n">typechecker</span><span class="p">)</span>
@@ -435,7 +438,7 @@
 </span><span id="L-352"><a href="#L-352"><span class="linenos">352</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-353"><a href="#L-353"><span class="linenos">353</span></a>    <span class="n">device</span> <span class="o">=</span> <span class="n">vectors</span><span class="o">.</span><span class="n">device</span>
 </span><span id="L-354"><a href="#L-354"><span class="linenos">354</span></a>    <span class="n">p_matrix</span> <span class="o">=</span> <span class="n">SceneGeometry</span><span class="o">.</span><span class="n">projection_matrix</span><span class="p">(</span>
-</span><span id="L-355"><a href="#L-355"><span class="linenos">355</span></a>        <span class="n">source_position</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="n">source_distance</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span>
+</span><span id="L-355"><a href="#L-355"><span class="linenos">355</span></a>        <span class="n">source_position</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">source_distance</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span>
 </span><span id="L-356"><a href="#L-356"><span class="linenos">356</span></a>    <span class="n">ph_matrix</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">p_matrix</span><span class="p">,</span> <span class="n">transformation</span><span class="o">.</span><span class="n">get_h</span><span class="p">(</span><span class="n">device</span><span class="p">))</span>
 </span><span id="L-357"><a href="#L-357"><span class="linenos">357</span></a>    <span class="n">vectors_homogeneous</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
 </span><span id="L-358"><a href="#L-358"><span class="linenos">358</span></a>        <span class="p">(</span><span class="n">vectors</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">vectors</span><span class="o">.</span><span class="n">size</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
@@ -1178,6 +1181,59 @@ all, or one per ray</li>
 
 
     
+
+                </section>
+                <section id="project_vectors">
+                            <input id="project_vectors-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+                    <div class="decorator decorator-jaxtyped">@jaxtyped(typechecker=typechecker)</div>
+
+        <span class="def">def</span>
+        <span class="name">project_vectors</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">vectors</span><span class="p">:</span> <span class="n">jaxtyping</span><span class="o">.</span><span class="n">Float64</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="s1">&#39;... 3&#39;</span><span class="p">]</span>,</span><span class="param">	<span class="o">*</span>,</span><span class="param">	<span class="n">source_distance</span><span class="p">:</span> <span class="nb">float</span>,</span><span class="param">	<span class="n">transformation</span><span class="p">:</span> <span class="n"><a href="../data/structs.html#Transformation">reg23_experiments.data.structs.Transformation</a></span></span><span class="return-annotation">) -> <span class="n">jaxtyping</span><span class="o">.</span><span class="n">Float64</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="s1">&#39;... 2&#39;</span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="project_vectors-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#project_vectors"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="project_vectors-341"><a href="#project_vectors-341"><span class="linenos">341</span></a><span class="nd">@jaxtyped</span><span class="p">(</span><span class="n">typechecker</span><span class="o">=</span><span class="n">typechecker</span><span class="p">)</span>
+</span><span id="project_vectors-342"><a href="#project_vectors-342"><span class="linenos">342</span></a><span class="k">def</span><span class="w"> </span><span class="nf">project_vectors</span><span class="p">(</span>  <span class="c1">#</span>
+</span><span id="project_vectors-343"><a href="#project_vectors-343"><span class="linenos">343</span></a>        <span class="n">vectors</span><span class="p">:</span> <span class="n">Float64</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="s2">&quot;... 3&quot;</span><span class="p">],</span>  <span class="c1">#</span>
+</span><span id="project_vectors-344"><a href="#project_vectors-344"><span class="linenos">344</span></a>        <span class="o">*</span><span class="p">,</span>  <span class="c1">#</span>
+</span><span id="project_vectors-345"><a href="#project_vectors-345"><span class="linenos">345</span></a>        <span class="n">source_distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>  <span class="c1">#</span>
+</span><span id="project_vectors-346"><a href="#project_vectors-346"><span class="linenos">346</span></a>        <span class="n">transformation</span><span class="p">:</span> <span class="n">Transformation</span>  <span class="c1">#</span>
+</span><span id="project_vectors-347"><a href="#project_vectors-347"><span class="linenos">347</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Float64</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="s2">&quot;... 2&quot;</span><span class="p">]:</span>
+</span><span id="project_vectors-348"><a href="#project_vectors-348"><span class="linenos">348</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="project_vectors-349"><a href="#project_vectors-349"><span class="linenos">349</span></a><span class="sd">    :param vectors: (..., 3) tensor</span>
+</span><span id="project_vectors-350"><a href="#project_vectors-350"><span class="linenos">350</span></a><span class="sd">    :param transformation:</span>
+</span><span id="project_vectors-351"><a href="#project_vectors-351"><span class="linenos">351</span></a><span class="sd">    :param source_distance:</span>
+</span><span id="project_vectors-352"><a href="#project_vectors-352"><span class="linenos">352</span></a><span class="sd">    :return: (..., 2) tensor</span>
+</span><span id="project_vectors-353"><a href="#project_vectors-353"><span class="linenos">353</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="project_vectors-354"><a href="#project_vectors-354"><span class="linenos">354</span></a>    <span class="n">device</span> <span class="o">=</span> <span class="n">vectors</span><span class="o">.</span><span class="n">device</span>
+</span><span id="project_vectors-355"><a href="#project_vectors-355"><span class="linenos">355</span></a>    <span class="n">p_matrix</span> <span class="o">=</span> <span class="n">SceneGeometry</span><span class="o">.</span><span class="n">projection_matrix</span><span class="p">(</span>
+</span><span id="project_vectors-356"><a href="#project_vectors-356"><span class="linenos">356</span></a>        <span class="n">source_position</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">source_distance</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">))</span>
+</span><span id="project_vectors-357"><a href="#project_vectors-357"><span class="linenos">357</span></a>    <span class="n">ph_matrix</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">p_matrix</span><span class="p">,</span> <span class="n">transformation</span><span class="o">.</span><span class="n">get_h</span><span class="p">(</span><span class="n">device</span><span class="p">))</span>
+</span><span id="project_vectors-358"><a href="#project_vectors-358"><span class="linenos">358</span></a>    <span class="n">vectors_homogeneous</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+</span><span id="project_vectors-359"><a href="#project_vectors-359"><span class="linenos">359</span></a>        <span class="p">(</span><span class="n">vectors</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">vectors</span><span class="o">.</span><span class="n">size</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="project_vectors-360"><a href="#project_vectors-360"><span class="linenos">360</span></a>    <span class="n">ret_homogeneous</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">&quot;ji,...i-&gt;...j&quot;</span><span class="p">,</span> <span class="n">ph_matrix</span><span class="p">,</span> <span class="n">vectors_homogeneous</span><span class="p">)</span>
+</span><span id="project_vectors-361"><a href="#project_vectors-361"><span class="linenos">361</span></a>    <span class="k">return</span> <span class="n">ret_homogeneous</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">ret_homogeneous</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># just the x and y components needed</span>
+</span></pre></div>
+
+
+            <div class="docstring"><h6 id="parameters">Parameters</h6>
+
+<ul>
+<li><strong>vectors</strong>:  (..., 3) tensor</li>
+<li><strong>transformation</strong>: </li>
+<li><strong>source_distance</strong>: </li>
+</ul>
+
+<h6 id="returns">Returns</h6>
+
+<blockquote>
+  <p>(..., 2) tensor</p>
+</blockquote>
+</div>
+
 
                 </section>
     </main>
