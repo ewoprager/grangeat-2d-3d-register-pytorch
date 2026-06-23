@@ -148,6 +148,38 @@ def main(  #
             axes[i0].legend()
         plt.show()
 
+    if len(variables) == 3:
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df,  #
+            ordered_axes=variables + ["iteration"],  #
+            value_column="distance"  #
+        )
+
+        fig, axes = plt.subplots(distances.size(0), distances.size(1))
+        if dense:
+            fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                                right=0.98,  # right margin
+                                bottom=0.08,  # bottom margin
+                                top=0.95,  # top margin
+                                wspace=0.2,  # width space between columns
+                                hspace=0.3  # height space between rows
+                                )
+        for i0, v0 in enumerate(axis_values[variables[0]]):
+            for i1, v1 in enumerate(axis_values[variables[1]]):
+                for i2, v2 in enumerate(axis_values[variables[2]]):
+                    axes[i0, i1].plot(axis_values["iteration"], distances[i0, i1, i2, :],
+                                      label=f"{variables[2]}={var_to_string(variables[2], v2)}")
+                axes[i0, i1].set_title(f"{variables[0]}={var_to_string(variables[0], v0)};{variables[1]}="
+                                       f"{var_to_string(variables[1], v1)}")
+                axes[i0, i1].set_xlabel("iteration")
+                axes[i0, i1].xaxis.set_major_locator(MaxNLocator(integer=True))
+                axes[i0, i1].set_ylabel("distance from G.T.")
+                axes[i0, i1].set_ylim((0.0, None))
+                axes[i0, i1].legend()
+        plt.show()
+        return
+
     # -----
     # data over downsample level, truncation fraction and starting distance, stratified by masking
     if len(variables) == 4 and variables[0] == "mask":
@@ -197,7 +229,7 @@ def main(  #
         for k, cp in enumerate(axis_values[variables[0]]):
             for j, mk in enumerate(axis_values[variables[1]]):
                 for i, tp in enumerate(axis_values[variables[2]]):
-                    axes[k, j].plot(axis_values["iteration"], distances[k, j, i, :], label="t.p. {:.3f}".format(tp))
+                    axes[k, j].plot(axis_values["iteration"], distances[k, j, i, :], label=f"t.p. {tp}")
                     axes[k, j].set_title("cp. {}; mk. {}".format(cp, mk))
                     axes[k, j].set_xlabel("iteration")
                     axes[k, j].xaxis.set_major_locator(MaxNLocator(integer=True))
