@@ -35,6 +35,11 @@ from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.utils.console_logging import tqdm
 
+MIN_CROP = Cropping(right=0.91, top=0.08, left=0.17, bottom=0.93)
+
+
+# ToDo: this min crop is for 3DPHead2_level_0; min crop shouldn't be hardcoded
+
 
 def configs_to_dict(*vargs) -> dict[str, Any]:
     # convert all function pointers to their `str` names and merge all configs
@@ -257,7 +262,11 @@ class ExperimentConfig(traitlets.HasTraits):
     xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
     truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
-    cropping: str = traitlets.Enum(values=["None", "nonzero_drr", "full_depth_drr"], default_value=traitlets.Undefined)
+    cropping: str = traitlets.Enum(values=[  #
+        "None",  #
+        "nonzero_drr",  #
+        "full_depth_drr"  #
+    ], default_value=traitlets.Undefined)
     mask: str = traitlets.Enum(values=[  #
         "None",  #
         "Every evaluation",  #
@@ -355,7 +364,7 @@ def run_experiment(  #
     # Running repeated registrations with configured parameters
     dimensionality = 6
     distance_samples = torch.empty([int(exp_config.sample_count_per_distance), int(reg_config.iteration_count)],
-                                   dtype=torch.float32, device=device)  # size = (sample count, iteration count)
+                                   dtype=torch.float64, device=device)  # size = (sample count, iteration count)
     transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
     if isinstance(transformation_gt, Error):
         raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
@@ -373,13 +382,15 @@ def run_experiment(  #
         # Configuring according to desired cropping technique
         data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
         if exp_config.cropping == "None":
-            cropping = None
+            cropping: Cropping | None = None
         elif exp_config.cropping == "nonzero_drr":
-            cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
+            cropping: Cropping | None = args_from_dadg()(geometry.get_crop_nonzero_drr)()
         elif exp_config.cropping == "full_depth_drr":
-            cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)()
+            cropping: Cropping | None = args_from_dadg()(geometry.get_crop_full_depth_drr)()
         else:
             raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
+        cropping = MIN_CROP if cropping is None else Cropping.intersect(cropping, MIN_CROP)
+        # ToDo: this min crop is for 3DPHead2_level_0; min crop shouldn't be hardcoded
         data_manager().set("cropping", cropping, check_equality=True)
         # -----
         # Registration
@@ -601,7 +612,7 @@ def main(  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
         "downsample_level": 2,  #
-        "truncation_percent": 65,  #
+        "truncation_percent": 50,  #
         "cropping": "full_depth_drr",  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
@@ -617,8 +628,9 @@ def main(  #
         # "level_005",  #
     ]
     params_to_vary: dict[str, Any] = {  #
-        "truncation_percent": [0, 65],  #
-    }
+        "truncation_percent": [0, 70],  #
+        "mask": ["None", "Every evaluation"],  #
+        "cropping": ["None", "full_depth_drr"]}
     # ----------------------------------
 
     # -----
@@ -710,8 +722,8 @@ def main(  #
                 raise ValueError(f"Unknown cropping technique '{constants["cropping"]}'.")
             if isinstance(cropping, Error):
                 raise RuntimeError(f"Failed to set crop: {cropping.description}")
-            min_crop = Cropping(right=0.8, top=0.3, left=0.2, bottom=0.7)
-            cropping = min_crop if cropping is None else Cropping.intersect(cropping, min_crop)
+            cropping = MIN_CROP if cropping is None else Cropping.intersect(cropping, MIN_CROP)
+            # ToDo: this min crop is for 3DPHead2_level_0; min crop shouldn't be hardcoded
             data_manager().set("cropping", cropping, check_equality=True)
 
         def objective_function(parameters: torch.Tensor) -> torch.Tensor:
