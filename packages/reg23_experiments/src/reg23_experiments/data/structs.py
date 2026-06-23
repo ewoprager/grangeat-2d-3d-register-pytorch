@@ -254,6 +254,15 @@ class Cropping(traitlets.HasTraits):
         j1 = int(round(self.bottom * float(tensor.size(0))))
         return tensor[j0:j1, i0:i1]
 
+    @staticmethod
+    def intersect(a: 'Cropping', b: 'Cropping') -> 'Cropping':
+        return Cropping(  #
+            right=min(a.right, b.right),  #
+            top=max(a.top, b.top),  #
+            left=max(a.left, b.left),  #
+            bottom=min(a.bottom, b.bottom)  #
+        )
+
     @traitlets.validate("right")
     def _validate_right(self, proposal):
         return max(proposal["value"], self.left + 0.05)

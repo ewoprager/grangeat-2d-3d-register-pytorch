@@ -10,7 +10,7 @@ from reg23_experiments.data.structs import Error, Transformation
 from reg23_app.state import WorkerState
 from reg23_app.context import AppContext
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
-    mapping_parameters_to_transformation
+    mapping_parameters_to_transformation, random_parameters_at_distance
 
 __all__ = ["RegisterWidget"]
 
@@ -139,6 +139,17 @@ class RegisterWidget(widgets.Container):
             self._save_transformation,  #
             self._load_transformation,  #
             self._delete_transformation,  #
+        ], layout="horizontal"))
+
+        # -----
+        # Misc tools
+        # -----
+        self._random_offset_distance_input = widgets.FloatSpinBox(value=1.0, step=0.1, min=0.1, max=10.0)
+        self._random_offset_button = widgets.PushButton(label="Jump random offset")
+        self._random_offset_button.changed.connect(self._on_random_offset)
+        self.append(widgets.Container(widgets=[  #
+            self._random_offset_distance_input,  #
+            self._random_offset_button,  #
         ], layout="horizontal"))
 
         self._xray_selection_changed()
@@ -273,3 +284,15 @@ class RegisterWidget(widgets.Container):
 
     def _on_load_current_best(self, *args) -> None:
         self._ctx.state.button_load_current_best = True
+
+    def _on_random_offset(self, *args) -> None:
+        distance = self._random_offset_distance_input.value
+        current_t: Transformation | Error = self._ctx.dadg.get(self._c_t_key)
+        if isinstance(current_t, Error):
+            logger.error(
+                f"Failed to get current transformation for X-ray '{self._xray_select.value}': {current_t.description}")
+            return
+        new_t = mapping_parameters_to_transformation(
+            random_parameters_at_distance(mapping_transformation_to_parameters(current_t), distance))
+        if isinstance(err := self._ctx.dadg.set(self._c_t_key, new_t), Error):
+            logger.error(f"Error setting transformation: {err.description}")

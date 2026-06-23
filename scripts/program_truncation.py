@@ -15,16 +15,18 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 import traitlets
+import SimpleITK as sitk
 
-from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.data.structs import Error, Transformation, Cropping
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.experiments import multi_xray_truncation_updaters, updaters
 from reg23_experiments.io.image import XrayDICOM, load_cached_drr, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
-from reg23_experiments.io.volume import OneSeries, SeriesDescription, Volume, find_ct_series, \
-    get_input_ct_series_choice, load_ct_series
+from reg23_experiments.io.command_line import get_string_required
+from reg23_experiments.io.serialize import serialize_recursive
+from reg23_experiments.io.sitk import find_ct_series, load_ct_series, DCMSeriesInfo
 from reg23_experiments.ops import drr, geometry, similarity_metric, swarm as pso
-from reg23_experiments.ops.ct import convert_ct_to_mu
+from reg23_experiments.ops.ct import convert_ct_to_mu_sitk
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.objective_function import ParametrisedSimilarityMetric
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
@@ -53,30 +55,39 @@ def instance_output_directory(script_output_directory: str | pathlib.Path) -> pa
     return ret
 
 
-def load_untruncated_ct(ct_path: pathlib.Path, device: torch.device, ct_permutation: Sequence[int] | None = None) -> \
-        tuple[torch.Tensor, torch.Tensor, str] | Error:
-    series: dict[str, SeriesDescription | OneSeries] = find_ct_series(ct_path)
+def load_untruncated_ct(  #
+        ct_path: pathlib.Path,  #
+        device: torch.device,  #
+        ct_permutation: Sequence[int] | None = None  #
+) -> tuple[torch.Tensor, torch.Tensor, str] | Error:
+    series: dict[str, DCMSeriesInfo] | Error = find_ct_series(ct_path)
+    if isinstance(series, Error):
+        raise Exception(f"Failed to open CT from path '{ct_path}': {series.description}")
     if not series:
         return Error(f"No CT series found at path '{str(ct_path)}'.")
     if len(series) == 1:
         key = next(iter(series))
     else:
-        key = get_input_ct_series_choice(series)
-    volume: Volume | Error = load_ct_series(ct_path, key)
+        key = get_string_required(  #
+            f"Please choose one of the following CT series:\n"
+            f"{"\n".join(f"{k}:\n\t{pprint.pformat(serialize_recursive(v))}\n" for k, v in series.items())}",  #
+            lambda k: None if k in series else Error(f"String '{k}' does not name a series.")  #
+        )
+    volume: sitk.Image | Error = load_ct_series(ct_path, key)
     if isinstance(volume, Error):
         return Error(f"Failed to open CT from path '{str(ct_path)}': {volume.description}")
-    tensor: torch.Tensor | Error = convert_ct_to_mu(volume, dtype=torch.float32)
+    tensor: torch.Tensor | Error = convert_ct_to_mu_sitk(volume, dtype=torch.float32)
     if isinstance(tensor, Error):
         return Error(f"Failed to convert CT from path '{str(ct_path)}' to mu: {tensor.description}")
     tensor = tensor.to(device=device)
-    spacing = volume.spacing.to(device=device, dtype=torch.float64)
+    spacing = torch.tensor(volume.GetSpacing(), device=device, dtype=torch.float64)
     if ct_permutation is not None:
         if len(ct_permutation) != 3:
             return Error("Length of ct_permutation must be 3.")
         tensor = tensor.permute(*ct_permutation)
         spacing = spacing[torch.tensor(ct_permutation)]
 
-    return tensor, spacing, volume.uid
+    return tensor, spacing, key
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "transformation_gt"])
@@ -589,12 +600,12 @@ def main(  #
         "ct_path": ct_path,  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
-        "downsample_level": 0,  #
+        "downsample_level": 2,  #
         "truncation_percent": 65,  #
         "cropping": "full_depth_drr",  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
-        "starting_distance": 1.0,  #
+        "starting_distance": 5.0,  #
         "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 2000,  #
@@ -655,7 +666,7 @@ def main(  #
             raise RuntimeError(f"No ground truth available"
                                f"{"." if transformation_gt is None else f": {transformation_gt.description}"}")
         parameters_gt = mapping_transformation_to_parameters(transformation_gt)
-        starting_params = random_parameters_at_distance(parameters_gt, 1.0)
+        starting_params = random_parameters_at_distance(parameters_gt, constants["starting_distance"])
 
         data_manager().set("current_transformation", transformation_gt)
         if "downsample_level" in constants:
@@ -690,15 +701,17 @@ def main(  #
         data_manager().set("truncation_percent", 65)
         if "cropping" in constants:
             if constants["cropping"] == "None":
-                cropping = None
+                cropping: Cropping | None = None
             elif constants["cropping"] == "nonzero_drr":
-                cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
+                cropping: Cropping | None = args_from_dadg()(geometry.get_crop_nonzero_drr)()
             elif constants["cropping"] == "full_depth_drr":
-                cropping = args_from_dadg()(geometry.get_crop_full_depth_drr)()
+                cropping: Cropping | None = args_from_dadg()(geometry.get_crop_full_depth_drr)()
             else:
                 raise ValueError(f"Unknown cropping technique '{constants["cropping"]}'.")
             if isinstance(cropping, Error):
                 raise RuntimeError(f"Failed to set crop: {cropping.description}")
+            min_crop = Cropping(right=0.8, top=0.3, left=0.2, bottom=0.7)
+            cropping = min_crop if cropping is None else Cropping.intersect(cropping, min_crop)
             data_manager().set("cropping", cropping, check_equality=True)
 
         def objective_function(parameters: torch.Tensor) -> torch.Tensor:
@@ -724,7 +737,7 @@ def main(  #
         axes.plot(distances)
         axes.set_xlabel("iteration")
         axes.set_ylabel("distance from G.T.")
-        plt.show()  # return
+        plt.show()
         return
 
     instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
