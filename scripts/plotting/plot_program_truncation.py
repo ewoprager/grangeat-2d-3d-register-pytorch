@@ -198,6 +198,40 @@ def main(  #
         plt.show()
         return
 
+    if len(variables) == 4:
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df,  #
+            ordered_axes=variables + ["iteration"],  #
+            value_column="distance"  #
+        )
+
+        for i0, v0 in enumerate(axis_values[variables[0]]):
+            fig, axes = plt.subplots(distances.size(1), distances.size(2), figsize=(13, 8))
+            fig.suptitle(f"{variables[0]}={var_to_string(variables[0], v0)}")
+            if dense:
+                fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                                    right=0.98,  # right margin
+                                    bottom=0.08,  # bottom margin
+                                    top=0.95,  # top margin
+                                    wspace=0.2,  # width space between columns
+                                    hspace=0.3  # height space between rows
+                                    )
+            for i1, v1 in enumerate(axis_values[variables[1]]):
+                for i2, v2 in enumerate(axis_values[variables[2]]):
+                    for i3, v3 in enumerate(axis_values[variables[3]]):
+                        axes[i1, i2].plot(axis_values["iteration"], distances[i0, i1, i2, i3, :],
+                                          label=f"{variables[3]}={var_to_string(variables[3], v3)}")
+                    axes[i1, i2].set_title(f"{variables[1]}={var_to_string(variables[1], v1)};{variables[2]}="
+                                           f"{var_to_string(variables[2], v2)}")
+                    axes[i1, i2].set_xlabel("iteration")
+                    axes[i1, i2].xaxis.set_major_locator(MaxNLocator(integer=True))
+                    axes[i1, i2].set_ylabel("distance from G.T.")
+                    axes[i1, i2].set_ylim((0.0, None))
+                    axes[i1, i2].legend()
+        plt.show()
+        return
+
     # -----
     # data over downsample level, truncation fraction and starting distance, stratified by masking
     if len(variables) == 4 and variables[0] == "mask":

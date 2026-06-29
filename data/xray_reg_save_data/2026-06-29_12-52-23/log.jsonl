@@ -1,3 +1,0 @@
-{"action": "set", "xray_sop_instance_uid": "1.2.840.113619.2.420.4.8323328.1781537396.256397", "horizontal_flip": false, "crop_left": 0.0, "crop_right": 1.0, "crop_top": 0.0, "crop_bottom": 1.0}
-{"action": "set", "xray_sop_instance_uid": "1.2.840.113619.2.420.4.8323328.1781536767.200866", "horizontal_flip": false, "crop_left": 0.17000000000000004, "crop_right": 0.9099999999999999, "crop_top": 0.08, "crop_bottom": 0.9299999999999999}
-{"action": "set", "xray_sop_instance_uid": "1.2.840.113619.2.420.4.8323328.1781537159.212274", "horizontal_flip": false, "crop_left": 0.0, "crop_right": 1.0, "crop_top": 0.0, "crop_bottom": 1.0}

@@ -262,10 +262,14 @@ def run_reg(  #
     ret = torch.empty([config.iteration_count, dimensionality + 1], dtype=torch.float32, device=device)
     tqdm_iterator = tqdm(range(config.iteration_count), desc="PSO iterations", position=tqdm_position, leave=None)
     # initialise the swarm, which performs an o.f. evaluation for each particle
-    swarm = pso.Swarm(config=pso_config, dimensionality=dimensionality, particle_count=config.particle_count,
-                      initialisation_position=starting_params,
-                      initialisation_spread=torch.full([dimensionality], config.particle_initialisation_spread),
-                      device=device)
+    swarm = pso.Swarm(  #
+        config=pso_config,  #
+        dimensionality=dimensionality,  #
+        particle_count=config.particle_count,  #
+        initialisation_position=starting_params,  #
+        initialisation_spread=torch.full([dimensionality], config.particle_initialisation_spread),  #
+        device=device  #
+    )
     ret[0, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
     ret[0, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
     tqdm_iterator.update()
@@ -559,6 +563,7 @@ def main(  #
         raise RuntimeError(f"Failed to load saved transformation: {res.description}")
     _, transformation_save_data, _ = res
     saved_transformations: pd.DataFrame = transformation_save_data.get_data()
+    logger.info(f"Saved transformation data:\n{saved_transformations.to_string()}")
 
     # -----
     # Load all saved X-ray configs; these are used for manual X-ray configurations
@@ -570,6 +575,7 @@ def main(  #
         raise RuntimeError(f"Failed to load saved X-ray reg configs: {res.description}")
     _, xray_reg_save_data, _ = res
     saved_xray_reg_configs: pd.DataFrame = xray_reg_save_data.get_data()
+    logger.info(f"Saved X-ray reg configs:\n{saved_xray_reg_configs.to_string()}")
 
     # -----
     # Initialise the DADG
@@ -674,7 +680,7 @@ def main(  #
         "ct_path": ct_path,  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
-        "downsample_level": 2,  #
+        "downsample_level": 1,  #
         "truncation_percent": 50,  #
         "cropping": "full_depth_drr",  #
         "mask": "None",  #
@@ -684,16 +690,18 @@ def main(  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
-        "iteration_count": 10,  #
+        "iteration_count": 6,  #
     }
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
-        "level_005",  #
+        "up_000",  #
+        "down_000",  #
     ]
     params_to_vary: dict[str, Any] = {  #
-        "truncation_percent": [0, 70],  #
-        "mask": ["None", "Every evaluation"],  #
-        "cropping": ["None", "full_depth_drr"]}
+        "truncation_percent": [40, 50, 60, 70, 80],  #
+        "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
+        "cropping": ["nonzero_drr", "full_depth_drr"],  #
+    }
     # ----------------------------------
 
     # -----
