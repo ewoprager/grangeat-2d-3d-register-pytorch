@@ -6,6 +6,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
+import yaml
 from matplotlib.ticker import MaxNLocator
 
 from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_tensor
@@ -60,9 +61,23 @@ def main(  #
         which_dataset: str,  #
         display: bool,  #
         save_figures: bool,  #
-        save_directory: pathlib.Path  #
+        save_directory: pathlib.Path,  #
+        analysis_format: bool,  #
 ) -> None:
     assert load_dir.is_dir()
+
+    # -----
+    if analysis_format:
+        plt.rcParams["font.size"] = 6
+    else:
+        # for outputting PGFs
+        plt.rcParams["text.usetex"] = True
+        plt.rcParams["font.family"] = "serif"
+        plt.rcParams["scatter.marker"] = 'x'
+        plt.rcParams[
+            "font.size"] = 15  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib    #
+        # scales up by 1.2 (God only knows why). 36 is tool big, however, so going a bit smaller than 30
+
     # -----
     # Getting the latest data instance if desired
     if which_dataset == "latest":
@@ -86,11 +101,14 @@ def main(  #
 
     # -----
     # Reading in the variables
-    variables_file = instance_dir / "variables.txt"
-    assert variables_file.is_file()
-    variables: list[str] = variables_file.read_text().splitlines()
+    variables_path = instance_dir / "variables.txt"
+    assert variables_path.is_file()
+    with open(variables_path, 'r') as file:
+        variables_config = yaml.safe_load(file)
+    assert "variables" in variables_config
+    variables: list[str] = list(variables_config["variables"].keys())
 
-    dense = False
+    dense = not analysis_format
 
     if len(variables) == 1:
         # converting to a tensor, with an axis per variable
@@ -370,13 +388,6 @@ if __name__ == "__main__":
     # set up logger
     logger = logs_setup.setup_logger()
 
-    # for outputting PGFs
-    plt.rcParams["text.usetex"] = True
-    plt.rcParams["font.family"] = "serif"
-    plt.rcParams["scatter.marker"] = 'x'
-    plt.rcParams["font.size"] = 15  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib
-    # scales up by 1.2 (God only knows why). 36 is tool big, however, so going a bit smaller than 30
-
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
     parser.add_argument("-l", "--load-dir", type=str, default="experimental_results/program_truncation",
@@ -386,10 +397,12 @@ if __name__ == "__main__":
                              "'YYYY-MM-DD_hh-mm-ss'.")
     parser.add_argument("-s", "--save-dir", type=str, default="figures/truncation/program_truncation",
                         help="Set a directory in which to save the resulting figures.")
-    parser.add_argument("-r", "--save-figures", action='store_true',
+    parser.add_argument("-r", "--save-figures", action="store_true",
                         help="Format plots appropriately for using in a report and save them in the save directory.")
-    parser.add_argument("-d", "--display", action='store_true', help="Display/plot the resulting data.")
+    parser.add_argument("-d", "--display", action="store_true", help="Display/plot the resulting data.")
+    parser.add_argument("-a", "--analysis", action="store_true",
+                        help="Format the plots for analysis, rather than PGF plot generation.")
     args = parser.parse_args()
 
     main(load_dir=pathlib.Path(args.load_dir), which_dataset=args.which_dataset, display=args.display,
-         save_figures=args.save_figures, save_directory=pathlib.Path(args.save_dir))
+         save_figures=args.save_figures, save_directory=pathlib.Path(args.save_dir), analysis_format=args.analysis)

@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any, Callable, Literal, Sequence
 
 import matplotlib
+import yaml
 
 matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
@@ -753,8 +754,12 @@ def main(  #
         return
 
     instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
-
-    (instance_output_dir / "variables.txt").write_text("\n".join(params_to_vary.keys()))
+    
+    with open(instance_output_dir / "variables.txt", 'w') as file:
+        yaml.safe_dump({  #
+            "constants": constants,  #
+            "variables": params_to_vary,  #
+        }, file)
 
     # -----
     # Run experiments, setting the parameters to vary
