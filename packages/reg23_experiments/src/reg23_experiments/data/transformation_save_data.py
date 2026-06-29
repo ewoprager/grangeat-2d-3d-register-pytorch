@@ -108,6 +108,7 @@ class TransformationSaveData(SaveData):
 
 class TransformationSaveManager:
     def __init__(self, directory: pathlib.Path):
+        directory.mkdir(exist_ok=True, parents=True)
         self._save_data_manager = SaveDataManager[TransformationSaveData](cls=TransformationSaveData,
                                                                           save_directory=directory)
 

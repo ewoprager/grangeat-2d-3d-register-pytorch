@@ -165,6 +165,7 @@ def compute_changes(uid: str, old_data: tuple[list[str], torch.Tensor], new_data
 
 class CTFiducialSaveManager:
     def __init__(self, directory: pathlib.Path):
+        directory.mkdir(exist_ok=True, parents=True)
         self._save_data_manager = SaveDataManager[CTFiducialSaveData](cls=CTFiducialSaveData, save_directory=directory)
 
     def get(self, uid: str) -> tuple[list[str], torch.Tensor] | None:

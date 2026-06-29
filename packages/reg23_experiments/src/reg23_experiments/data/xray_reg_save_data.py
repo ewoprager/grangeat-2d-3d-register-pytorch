@@ -57,7 +57,7 @@ class XRayRegSaveData(SaveData):
                 if _name not in change:
                     return Error(f"Key '{_name}' not found in 'set' action change.")
                 _ret = change[_name]
-                if not isinstance(_ret, bool):
+                if not isinstance(_ret, _type_check):
                     return Error(f"'{_name}' value in 'set' action change should be a `{_type_check.__name__}`.")
                 return _ret
 
@@ -105,6 +105,7 @@ class XRayRegSaveData(SaveData):
 
 class XRayRegSaveManager:
     def __init__(self, directory: pathlib.Path):
+        directory.mkdir(exist_ok=True, parents=True)
         self._save_data_manager = SaveDataManager[XRayRegSaveData](cls=XRayRegSaveData, save_directory=directory)
 
     def get_flipped(self, uid: str) -> bool | None:

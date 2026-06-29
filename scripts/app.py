@@ -107,6 +107,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                              electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),
                              ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),
                              xray_fiducial_save_directory=pathlib.Path("data/xray_fiducial_save_data"),
+                             xray_reg_save_directory=pathlib.Path("data/xray_reg_save_data"),
                              cache=external_dataset is None)
 
     # -----

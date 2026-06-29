@@ -6,8 +6,9 @@ from reg23_app.state import AppState
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints2D
-from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
+from reg23_experiments.data.xray_reg_save_data import XRayRegSaveManager
 from reg23_experiments.experiments import updaters
 from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr, project_fiducials, \
     set_target_image
@@ -38,14 +39,22 @@ class ParamDADGParityManager:
                                           "mask_transformation", "current_transformation", "cropping",
                                           "electrode_points", "fiducial_points", "projected_fiducials"]
 
-    def __init__(self, *, state: AppState, dadg: DirectedAcyclicDataGraph, electrode_save_manager: ElectrodeSaveManager,
-                 ct_fiducial_save_manager: CTFiducialSaveManager,
-                 xray_fiducial_save_manager: XRayFiducialSaveManager) -> None:
+    def __init__(  #
+            self,  #
+            *,  #
+            state: AppState,  #
+            dadg: DirectedAcyclicDataGraph,  #
+            electrode_save_manager: ElectrodeSaveManager,  #
+            ct_fiducial_save_manager: CTFiducialSaveManager,  #
+            xray_fiducial_save_manager: XRayFiducialSaveManager,  #
+            xray_reg_save_manager: XRayRegSaveManager,  #
+    ) -> None:
         self._state = state
         self._dadg = dadg
         self._electrode_save_manager = electrode_save_manager
         self._ct_fiducial_save_manager = ct_fiducial_save_manager
         self._xray_fiducial_save_manager = xray_fiducial_save_manager
+        self._xray_reg_save_manager = xray_reg_save_manager
 
         # `ct_path` should be the same in the DADG and the state; the only necessary driving direction is state -> DADG
         self._state.parameters.observe(lambda change: self._ct_path_changed(change.new), names=["ct_path"])
@@ -146,6 +155,18 @@ class ParamDADGParityManager:
             if key not in self._current_xrays:
                 self._load_new_xray(name=key, params=value)
         self._current_xrays = list(new_value.keys())
+        # Save the X-ray reg configs
+        for key, value in new_value.items():
+            uid: str | Error = self._dadg.get(f"{key}__xray_sop_instance_uid")
+            if isinstance(uid, Error):
+                logger.error(f"Couldn't save reg config for X-ray '{key}'; couldn't get UID: {uid.description}")
+                continue
+            if isinstance(err := self._xray_reg_save_manager.set(  #
+                    uid=str(uid),  #
+                    flipped=value.target_flipped,  #
+                    cropping=Cropping() if value.cropping == "None" else value.cropping_value,  #
+            ), Error):
+                logger.error(f"Error saving reg config for X-ray '{uid}': {err.description}")
 
     def _load_new_xray(self, *, name: str, params: XrayParameters):
         # Get the device

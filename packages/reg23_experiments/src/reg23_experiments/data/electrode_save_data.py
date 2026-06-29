@@ -171,6 +171,7 @@ def compute_changes(uid: str, old_data: torch.Tensor, new_data: torch.Tensor, to
 
 class ElectrodeSaveManager:
     def __init__(self, directory: pathlib.Path):
+        directory.mkdir(exist_ok=True, parents=True)
         self._save_data_manager = SaveDataManager[ElectrodeSaveData](cls=ElectrodeSaveData, save_directory=directory)
 
     def get(self, uid: str) -> torch.Tensor | None:

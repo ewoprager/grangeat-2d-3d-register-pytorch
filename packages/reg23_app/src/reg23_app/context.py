@@ -12,6 +12,7 @@ from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.transformation_save_data import TransformationSaveManager
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
+from reg23_experiments.data.xray_reg_save_data import XRayRegSaveManager
 from reg23_experiments.experiments.parameters import Parameters
 from reg23_experiments.io.serialize import deserialize_recursive, serialize_recursive
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
@@ -35,10 +36,18 @@ class AppContext:
     changes of the state to the cache manager for eagerly saving to the cache.
     """
 
-    def __init__(self, *, parameters: Parameters, dadg: DirectedAcyclicDataGraph,
-                 electrode_save_directory: pathlib.Path, transformation_save_directory: pathlib.Path,
-                 ct_fiducial_save_directory: pathlib.Path, xray_fiducial_save_directory: pathlib.Path,
-                 cache: bool = True):
+    def __init__(  #
+            self,  #
+            *,  #
+            parameters: Parameters,  #
+            dadg: DirectedAcyclicDataGraph,  #
+            electrode_save_directory: pathlib.Path,  #
+            transformation_save_directory: pathlib.Path,  #
+            ct_fiducial_save_directory: pathlib.Path,  #
+            xray_fiducial_save_directory: pathlib.Path,  #
+            xray_reg_save_directory: pathlib.Path,  #
+            cache: bool = True  #
+    ):
         logger.debug("Initialising AppContext")
         self._input_manager = InputManager()
         self._state = AppState(parameters=parameters)
@@ -47,6 +56,7 @@ class AppContext:
         self._transformation_save_manager = TransformationSaveManager(transformation_save_directory)
         self._ct_fiducial_save_manager = CTFiducialSaveManager(ct_fiducial_save_directory)
         self._xray_fiducial_save_manager = XRayFiducialSaveManager(xray_fiducial_save_directory)
+        self._xray_reg_save_manager = XRayRegSaveManager(xray_reg_save_directory)
         self._drr_manager = DRRManager(self._state, self._dadg)
         self._fiducials_manager = FiducialsManager(self._state, self._dadg)
         self._cache = cache
@@ -62,7 +72,8 @@ class AppContext:
         self._param_dadg_parity_manager = ParamDADGParityManager(  #
             state=self._state, dadg=self._dadg, electrode_save_manager=self._electrode_save_manager,
             ct_fiducial_save_manager=self._ct_fiducial_save_manager,
-            xray_fiducial_save_manager=self._xray_fiducial_save_manager)
+            xray_fiducial_save_manager=self._xray_fiducial_save_manager,
+            xray_reg_save_manager=self._xray_reg_save_manager)
 
         # observing all the parameter widgets
         observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)
