@@ -20,6 +20,7 @@ import SimpleITK as sitk
 
 from reg23_experiments.data.structs import Error, Transformation, Cropping
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
+from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
 from reg23_experiments.experiments import multi_xray_truncation_updaters, updaters
 from reg23_experiments.io.image import XrayDICOM, load_cached_drr, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
@@ -35,11 +36,6 @@ from reg23_experiments.ops.optimisation import mapping_parameters_to_transformat
 from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.utils.console_logging import tqdm
-
-MIN_CROP = Cropping(right=0.91, top=0.08, left=0.17, bottom=0.93)
-
-
-# ToDo: this min crop is for 3DPHead2_level_0; min crop shouldn't be hardcoded
 
 
 def configs_to_dict(*vargs) -> dict[str, Any]:
@@ -98,9 +94,17 @@ def load_untruncated_ct(  #
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "transformation_gt"])
 def set_synthetic_target_image(  #
-        *, ct_path: str, ct_spacing: torch.Tensor, untruncated_ct_volume: torch.Tensor, new_drr_size: torch.Size,
-        regenerate_drr: bool, save_to_cache: bool, cache_directory: str, ap_transformation: Transformation,
-        target_ap_distance: float) -> dict[str, Any]:
+        *,  #
+        ct_path: str,  #
+        ct_spacing: torch.Tensor,  #
+        untruncated_ct_volume: torch.Tensor,  #
+        new_drr_size: torch.Size,  #
+        regenerate_drr: bool,  #
+        save_to_cache: bool,  #
+        cache_directory: str,  #
+        ap_transformation: Transformation,  #
+        target_ap_distance: float  #
+) -> dict[str, Any]:
     # generate a DRR through the volume
     drr_spec = None
     if not regenerate_drr:
@@ -133,8 +137,12 @@ def set_xray_target_image(*, xray_path: str, device: torch.device) -> dict[str, 
 
 
 @dadg_updater(names_returned=["transformation_gt"])
-def load_ground_truth(*, saved_transformations: pd.DataFrame, xray_sop_instance_uid: str, device: torch.device) -> dict[
-    str, Any]:
+def load_ground_truth(  #
+        *,  #
+        saved_transformations: pd.DataFrame,  #
+        xray_sop_instance_uid: str,  #
+        device: torch.device  #
+) -> dict[str, Any]:
     idx = (xray_sop_instance_uid, "gold_standard")
     try:
         row = saved_transformations.loc[idx]
@@ -145,6 +153,44 @@ def load_ground_truth(*, saved_transformations: pd.DataFrame, xray_sop_instance_
             torch.tensor([row[f"x{i}"] for i in range(6)], device=device, dtype=torch.float64)  #
         )  #
     }
+
+
+@dadg_updater(names_returned=["base_cropping"])
+def load_base_cropping(  #
+        *,  #
+        saved_xray_reg_configs: pd.DataFrame,  #
+        xray_sop_instance_uid: str,  #
+) -> dict[str, Any]:
+    try:
+        row = saved_xray_reg_configs.loc[xray_sop_instance_uid]
+    except KeyError:
+        return {"base_cropping": None}
+    return {  #
+        "base_cropping": Cropping(  #
+            left=row["crop_left"],  #
+            right=row["crop_right"],  #
+            top=row["crop_top"],  #
+            bottom=row["crop_bottom"],  #
+        )  #
+    }
+
+
+@dadg_updater(names_returned=["cropping"])
+def combine_croppings(  #
+        *,  #
+        base_cropping: Cropping | None,  #
+        further_cropping: Cropping | None,  #
+) -> dict[str, Any]:
+    if base_cropping is None:
+        if further_cropping is None:
+            return {"cropping": None}
+        else:
+            return {"cropping": further_cropping}
+    else:
+        if further_cropping is None:
+            return {"cropping": base_cropping}
+        else:
+            return {"cropping": Cropping.intersect(base_cropping, further_cropping)}
 
 
 @dadg_updater(names_returned=["ct_volumes"])
@@ -390,9 +436,7 @@ def run_experiment(  #
             cropping: Cropping | None = args_from_dadg()(geometry.get_crop_full_depth_drr)()
         else:
             raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
-        cropping = MIN_CROP if cropping is None else Cropping.intersect(cropping, MIN_CROP)
-        # ToDo: this min crop is for 3DPHead2_level_0; min crop shouldn't be hardcoded
-        data_manager().set("cropping", cropping, check_equality=True)
+        data_manager().set("further_cropping", cropping, check_equality=True)
         # -----
         # Registration
         res = run_reg(  #
@@ -517,6 +561,17 @@ def main(  #
     saved_transformations: pd.DataFrame = transformation_save_data.get_data()
 
     # -----
+    # Load all saved X-ray configs; these are used for manual X-ray configurations
+    res: tuple[pathlib.Path, XRayRegSaveData, int] | Error = load_latest_save(  #
+        XRayRegSaveData,  #
+        save_directory=pathlib.Path("data/xray_reg_save_data")  #
+    )
+    if isinstance(res, Error):
+        raise RuntimeError(f"Failed to load saved X-ray reg configs: {res.description}")
+    _, xray_reg_save_data, _ = res
+    saved_xray_reg_configs: pd.DataFrame = xray_reg_save_data.get_data()
+
+    # -----
     # Initialise the DADG
     if isinstance(err := data_manager().set_multiple(  #
             device=device,  #
@@ -526,7 +581,7 @@ def main(  #
             cache_directory=cache_directory,  #
             save_to_cache=False,  #
             truncation_percent=0,  #
-            cropping=None,  #
+            further_cropping=None,  #
             source_offset=torch.zeros(2, dtype=torch.float64, device=device),  #
             downsample_level=0,  #
             ap_transformation=Transformation(
@@ -535,7 +590,8 @@ def main(  #
             target_ap_distance=5.0,  #
             current_transformation=Transformation.random_uniform(device=device),  #
             mask_transformation=None,  #
-            saved_transformations=saved_transformations  #
+            saved_transformations=saved_transformations,  #
+            saved_xray_reg_configs=saved_xray_reg_configs,  #
     ), Error):
         logger.error(f"Error setting initial data values: {err.description}")
         return
@@ -603,6 +659,12 @@ def main(  #
     if isinstance(err := data_manager().add_updater("project_drr", multi_xray_truncation_updaters.project_drr), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
+    if isinstance(err := data_manager().add_updater("load_base_cropping", load_base_cropping), Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    if isinstance(err := data_manager().add_updater("combine_croppings", combine_croppings), Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
 
     # ----------------------------------
     # - Hardcoded script configuration -
@@ -626,7 +688,7 @@ def main(  #
     }
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
-        # "level_005",  #
+        "level_005",  #
     ]
     params_to_vary: dict[str, Any] = {  #
         "truncation_percent": [0, 70],  #
@@ -637,7 +699,7 @@ def main(  #
     # -----
     # Setting the X-ray path(s) if a directory is passed
     if xray_path is not None and xray_path.is_dir():
-        # Check that all X-rays exist and have ground truth transformations available
+        # Check that all X-rays exist, have ground truth transformations available, and have reg configs available
         for name in hardcoded_xray_names:
             path: pathlib.Path = xray_path / name
             if not path.is_file():
@@ -653,6 +715,12 @@ def main(  #
                 saved_transformations.loc[idx]
             except KeyError:
                 logger.error(f"No ground truth saved for X-ray '{str(path)}' with UID '{dicom["uid"]}'.")
+                return
+            idx = dicom["uid"]
+            try:
+                saved_xray_reg_configs.loc[idx]
+            except KeyError:
+                logger.error(f"No reg config saved for X-ray '{str(path)}' with UID '{dicom["uid"]}'.")
                 return
         if len(hardcoded_xray_names) == 1:
             constants["xray_path"] = str(xray_path / hardcoded_xray_names[0])
@@ -723,9 +791,7 @@ def main(  #
                 raise ValueError(f"Unknown cropping technique '{constants["cropping"]}'.")
             if isinstance(cropping, Error):
                 raise RuntimeError(f"Failed to set crop: {cropping.description}")
-            cropping = MIN_CROP if cropping is None else Cropping.intersect(cropping, MIN_CROP)
-            # ToDo: this min crop is for 3DPHead2_level_0; min crop shouldn't be hardcoded
-            data_manager().set("cropping", cropping, check_equality=True)
+            data_manager().set("further_cropping", cropping, check_equality=True)
 
         def objective_function(parameters: torch.Tensor) -> torch.Tensor:
             data_manager().set("current_transformation",
@@ -754,7 +820,7 @@ def main(  #
         return
 
     instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
-    
+
     with open(instance_output_dir / "variables.txt", 'w') as file:
         yaml.safe_dump({  #
             "constants": constants,  #
