@@ -318,6 +318,7 @@ class ExperimentConfig(traitlets.HasTraits):
         "nonzero_drr",  #
         "full_depth_drr"  #
     ], default_value=traitlets.Undefined)
+    crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     crop_expand: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     mask: str = traitlets.Enum(values=[  #
         "None",  #
@@ -417,8 +418,8 @@ def run_experiment(  #
     dimensionality = 6
     distance_samples = torch.empty([int(exp_config.sample_count_per_distance), int(reg_config.iteration_count)],
                                    dtype=torch.float64, device=device)  # size = (sample count, iteration count)
-    crop_size_samples = torch.empty([int(reg_config.iteration_count), 2],
-                                    dtype=torch.float64)  # size = (iteration count, 2); (width, height)
+    crop_size_samples = torch.empty([int(exp_config.sample_count_per_distance), 2],
+                                    dtype=torch.float64)  # size = (sample count, 2); (width, height)
     transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
     if isinstance(transformation_gt, Error):
         raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
@@ -454,9 +455,12 @@ def run_experiment(  #
             crop_size_samples[i, 0] = float(image.size()[1]) * spacing[0].item()
             crop_size_samples[i, 1] = float(image.size()[0]) * spacing[1].item()
         else:
+            if cropping.is_collapsed(exp_config.crop_min_size):
+                cropping = cropping.uncollapse(exp_config.crop_min_size)
             crop_size_samples[i, 0] = (cropping.right - cropping.left) * float(image.size()[1]) * spacing[0].item()
             crop_size_samples[i, 1] = (cropping.bottom - cropping.top) * float(image.size()[0]) * spacing[1].item()
             cropping = cropping.expand_mm(exp_config.crop_expand, image_size=image.size(), image_spacing=spacing)
+
         data_manager().set("further_cropping", cropping, check_equality=True)
         # -----
         # Registration
@@ -473,8 +477,8 @@ def run_experiment(  #
         "iteration": torch.arange(reg_config.iteration_count).numpy(),  # size = (iteration count,)
         "distance": distance_samples.mean(dim=0).cpu().numpy(),  # size = (iteration count,)
         "distance_std": distance_samples.std(dim=0).cpu().numpy(),  #
-        "crop_width": crop_size_samples[:, 0].cpu().numpy(),  #
-        "crop_height": crop_size_samples[:, 1].cpu().numpy(),  #
+        "crop_width": crop_size_samples[:, 0].mean().cpu().numpy(),  #
+        "crop_height": crop_size_samples[:, 1].mean().cpu().numpy(),  #
     })
 
 
@@ -701,14 +705,15 @@ def main(  #
         "ct_path": ct_path,  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
-        "downsample_level": 1,  #
-        "truncation_percent": 70,  #
+        "downsample_level": 2,  #
+        "truncation_percent": 80,  #
         "cropping": "full_depth_drr",  #
         "crop_expand": 0.0,  #
+        "crop_min_size": 0.01,  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 5.0,  #
-        "sample_count_per_distance": 10,  #
+        "sample_count_per_distance": 5,  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -717,11 +722,11 @@ def main(  #
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
         "up_000",  #
-        "down_000",  #
+        # "down_000",  #
     ]
     params_to_vary: dict[str, list | torch.Tensor] = {  #
         # "truncation_percent": [40, 70],  #
-        "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
+        # "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
         # "cropping": ["nonzero_drr", "full_depth_drr"],  #
     }
     # ----------------------------------

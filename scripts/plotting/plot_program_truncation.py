@@ -104,7 +104,7 @@ def main(  #
         pd.read_parquet(element)  #
         for element in instance_dir.iterdir()  #
         if element.stem.startswith("data") and element.suffix == ".parquet"  #
-    ])
+    ], ignore_index=True)
     distance_std_available = "distance_std" in df
     crop_size_available = "crop_width" in df and "crop_height" in df
 
@@ -163,6 +163,9 @@ def main(  #
             if distance_std_available:
                 axes.errorbar(axis_values["iteration"], distances[i0, :], yerr=distance_stds[i0, :], fmt='x-',
                               capsize=4, color=get_color(i0))
+            if crop_size_available:
+                axes2 = axes.twinx()
+                axes2.plot(axis_values["iteration"], crop_widths[i0, :], color=get_color(i0))
 
         axes.set_title(f"Dist. vs. iteration for different {variables[0]}")
         axes.set_xlabel("iteration")

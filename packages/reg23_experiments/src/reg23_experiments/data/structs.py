@@ -262,6 +262,23 @@ class Cropping(traitlets.HasTraits):
             bottom=min(1.0, self.bottom + image_fraction),  #
         )
 
+    def is_collapsed(self, threshold: float = 0.02) -> bool:
+        return ((self.right - self.left) < threshold) or ((self.bottom - self.top) < threshold)
+
+    def uncollapse(self, minimum_size: float = 0.02) -> 'Cropping':
+        ret = Cropping()
+        if (self.right - self.left) < minimum_size:
+            avg = 0.5 * (self.left + self.right)
+            ret.left, ret.right = avg - 0.5 * minimum_size, avg + 0.5 * minimum_size
+        else:
+            ret.left, ret.right = self.left, self.right
+        if (self.bottom - self.top) < minimum_size:
+            avg = 0.5 * (self.top + self.bottom)
+            ret.top, ret.bottom = avg - 0.5 * minimum_size, avg + 0.5 * minimum_size
+        else:
+            ret.top, ret.bottom = self.top, self.bottom
+        return ret
+
     @jaxtyped(typechecker=typechecker)
     def expand_mm(self, distance: float, *, image_size: torch.Size,
                   image_spacing: Float64[torch.Tensor, "2"]) -> 'Cropping':
