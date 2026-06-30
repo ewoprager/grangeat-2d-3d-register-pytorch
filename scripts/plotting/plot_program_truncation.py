@@ -4,6 +4,7 @@ import pathlib
 from typing import Any
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import torch
 import yaml
@@ -123,6 +124,38 @@ def main(  #
 
     dense = not analysis_format
 
+    if "xray_path" in variables and crop_size_available:
+        crop_widths, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df.loc[df["iteration"] == 0],  #
+            ordered_axes=variables,  #
+            value_column="crop_width"  #
+        )
+        crop_heights, _ = dataframe_rectangular_columns_to_tensor(  #
+            df.loc[df["iteration"] == 0],  #
+            ordered_axes=variables,  #
+            value_column="crop_height"  #
+        )
+        series = {  #
+            "width": crop_widths.numpy(),  #
+            "height": crop_heights.numpy(),  #
+        }
+
+        x = np.arange(len(axis_values["xray_path"]))
+        width = 0.25
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+        for i, (label, values) in enumerate(series.items()):
+            ax.bar(x + (i - 1) * width, values, width, label=label)
+
+        ax.set_xticks(x)
+        ax.set_xticklabels([var_to_string("xray_path", v) for v in axis_values["xray_path"]])
+        ax.set_ylabel("Value")
+        ax.set_ylim((0.0, 50))
+        ax.legend()
+
+        plt.tight_layout()
+        plt.show()
+
     if len(variables) == 1:
         # converting to a tensor, with an axis per variable
         distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
@@ -135,17 +168,6 @@ def main(  #
                 df,  #
                 ordered_axes=variables + ["iteration"],  #
                 value_column="distance_std"  #
-            )
-        if crop_size_available:
-            crop_widths, _ = dataframe_rectangular_columns_to_tensor(  #
-                df.loc[df["iteration"] == 0],  #
-                ordered_axes=variables,  #
-                value_column="crop_width"  #
-            )
-            crop_heights, _ = dataframe_rectangular_columns_to_tensor(  #
-                df.loc[df["iteration"] == 0],  #
-                ordered_axes=variables,  #
-                value_column="crop_height"  #
             )
 
         fig, axes = plt.subplots()
@@ -163,9 +185,6 @@ def main(  #
             if distance_std_available:
                 axes.errorbar(axis_values["iteration"], distances[i0, :], yerr=distance_stds[i0, :], fmt='x-',
                               capsize=4, color=get_color(i0))
-            if crop_size_available:
-                axes2 = axes.twinx()
-                axes2.plot(axis_values["iteration"], crop_widths[i0, :], color=get_color(i0))
 
         axes.set_title(f"Dist. vs. iteration for different {variables[0]}")
         axes.set_xlabel("iteration")

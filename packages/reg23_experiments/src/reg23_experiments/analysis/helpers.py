@@ -52,14 +52,17 @@ def dataframe_rectangular_columns_to_tensor(df: pd.DataFrame, *, ordered_axes: l
     s: pd.Series = df.set_index(ordered_axes)[value_column].sort_index()
     # use the `levels` property of the MultiIndex to get an Index object containing the unique values for each level in
     # a list. Then extract these Index objects from the list in the order of the names given in `ordered_axes`.
-    axis_index_objects: list[pd.Index] = [  #
-        s.index.levels[s.index.names.index(name)]  #
-        for name in ordered_axes  #
-    ]
-    # create a MultiIndex object for the full grid of values, with every combination of the values from each axis.
-    full_index = pd.MultiIndex.from_product([e.tolist() for e in axis_index_objects], names=ordered_axes)
-    # re-index the DataFrame with the full index
-    s = s.reindex(full_index)
+    if s.index.nlevels == 1:
+        axis_index_objects: list[pd.Index] = [s.index]
+    else:
+        axis_index_objects: list[pd.Index] = [  #
+            s.index.levels[s.index.names.index(name)]  #
+            for name in ordered_axes  #
+        ]
+        # create a MultiIndex object for the full grid of values, with every combination of the values from each axis.
+        full_index = pd.MultiIndex.from_product([e.tolist() for e in axis_index_objects], names=ordered_axes)
+        # re-index the DataFrame with the full index
+        s = s.reindex(full_index)
     # check for missing values - these will be populated with nans.
     if s.isna().any():
         logger.warning("Grid is incomplete — missing coordinate combinations.")
