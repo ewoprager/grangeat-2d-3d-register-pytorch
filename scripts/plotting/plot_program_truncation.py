@@ -108,6 +108,10 @@ def main(  #
     assert "variables" in variables_config
     variables: list[str] = list(variables_config["variables"].keys())
 
+    variable_hierachy: list[str] = ["mask", "truncation_percent", "cropping", "xray_path"]  # most to least important
+    variable_importances = {name: importance for importance, name in enumerate(variable_hierachy)}
+    variables = sorted(variables, key=lambda name: variable_importances[name], reverse=True)
+
     dense = not analysis_format
 
     if len(variables) == 1:
@@ -206,6 +210,9 @@ def main(  #
             value_column="distance"  #
         )
 
+        # getting the median largest distance value
+        ylim_upper = distances.amax(dim=-1).quantile(q=0.75)
+
         for i0, v0 in enumerate(axis_values[variables[0]]):
             fig, axes = plt.subplots(distances.size(1), distances.size(2), figsize=(13, 8))
             fig.suptitle(f"{variables[0]}={var_to_string(variables[0], v0)}")
@@ -227,7 +234,7 @@ def main(  #
                     axes[i1, i2].set_xlabel("iteration")
                     axes[i1, i2].xaxis.set_major_locator(MaxNLocator(integer=True))
                     axes[i1, i2].set_ylabel("distance from G.T.")
-                    axes[i1, i2].set_ylim((0.0, None))
+                    axes[i1, i2].set_ylim((0.0, ylim_upper))
                     axes[i1, i2].legend()
         plt.show()
         return
