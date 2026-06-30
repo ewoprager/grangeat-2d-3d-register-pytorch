@@ -254,6 +254,26 @@ class Cropping(traitlets.HasTraits):
         j1 = int(round(self.bottom * float(tensor.size(0))))
         return tensor[j0:j1, i0:i1]
 
+    def expand_image_fraction(self, image_fraction: float) -> 'Cropping':
+        return Cropping(  #
+            right=min(1.0, self.right + image_fraction),  #
+            top=max(0.0, self.top - image_fraction),  #
+            left=max(0.0, self.left - image_fraction),  #
+            bottom=min(1.0, self.bottom + image_fraction),  #
+        )
+
+    @jaxtyped(typechecker=typechecker)
+    def expand_mm(self, distance: float, *, image_size: torch.Size,
+                  image_spacing: Float64[torch.Tensor, "2"]) -> 'Cropping':
+        h = distance / (float(image_size[1]) * image_spacing[0].item())
+        v = distance / (float(image_size[0]) * image_spacing[1].item())
+        return Cropping(  #
+            right=min(1.0, self.right + h),  #
+            top=max(0.0, self.top - v),  #
+            left=max(0.0, self.left - h),  #
+            bottom=min(1.0, self.bottom + v),  #
+        )
+
     @staticmethod
     def intersect(a: 'Cropping', b: 'Cropping') -> 'Cropping':
         return Cropping(  #
@@ -263,21 +283,19 @@ class Cropping(traitlets.HasTraits):
             bottom=min(a.bottom, b.bottom)  #
         )
 
-    @traitlets.validate("right")
-    def _validate_right(self, proposal):
-        return max(proposal["value"], self.left + 0.05)
+    @traitlets.observe("left", "right")
+    def _check_horizontal(self, change):
+        self.left = max(0.0, self.left)
+        self.right = min(1.0, self.right)
+        if self.left > self.right:
+            raise traitlets.TraitError(f"Cropping 'left' value {self.left} exceeds 'right' value {self.right}.")
 
-    @traitlets.validate("top")
-    def _validate_top(self, proposal):
-        return min(proposal["value"], self.bottom - 0.05)
-
-    @traitlets.validate("left")
-    def _validate_left(self, proposal):
-        return min(proposal["value"], self.right - 0.05)
-
-    @traitlets.validate("bottom")
-    def _validate_bottom(self, proposal):
-        return max(proposal["value"], self.top + 0.05)
+    @traitlets.observe("top", "bottom")
+    def _check_vertical(self, change):
+        self.top = max(0.0, self.top)
+        self.bottom = min(1.0, self.bottom)
+        if self.top > self.bottom:
+            raise traitlets.TraitError(f"Cropping 'top' value {self.top} exceeds 'bottom' value {self.bottom}.")
 
 
 class Sinogram2dRange(NamedTuple):

@@ -6,6 +6,7 @@ from reg23_app.cache_manager import CacheManager
 from reg23_app.gui.drr_manager import DRRManager
 from reg23_app.gui.fiducials_manager import FiducialsManager
 from reg23_app.gui.input_manager import InputManager
+from reg23_app.gui.reg_config_manager import RegConfigManager
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_app.state import AppState
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
@@ -72,8 +73,9 @@ class AppContext:
         self._param_dadg_parity_manager = ParamDADGParityManager(  #
             state=self._state, dadg=self._dadg, electrode_save_manager=self._electrode_save_manager,
             ct_fiducial_save_manager=self._ct_fiducial_save_manager,
-            xray_fiducial_save_manager=self._xray_fiducial_save_manager,
-            xray_reg_save_manager=self._xray_reg_save_manager)
+            xray_fiducial_save_manager=self._xray_fiducial_save_manager)
+        self._reg_config_manager = RegConfigManager(self._state, self._dadg,
+                                                    xray_reg_save_manager=self._xray_reg_save_manager)
 
         # observing all the parameter widgets
         observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)

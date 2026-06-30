@@ -448,38 +448,13 @@ def get_crop_full_depth_drr(  #
     # screen), upper is the other 4
     top = upper[:, 1].max()  # [mm]; size = (,)
     bottom = lower[:, 1].min()  # [mm]; size = (,)
-    # horizontal bounds
-    horizontally_sorted_order = projected_vertices[:, 0].argsort(dim=0)
-    horizontally_sorted = projected_vertices[horizontally_sorted_order]
-    on_left = horizontally_sorted[0:4]  # size = (4, 2)
-    on_right = horizontally_sorted[4:8]  # size = (4, 2)
-    left = on_left[:, 0].max()  # [mm]; size = (,)
-    right = on_right[:, 0].min()  # [mm]; size = (,)
     # get the size of the image in mm
     image_size: torch.Tensor = torch.tensor(  #
         image_2d_full.size(), **tensor_kwargs).flip(dims=(0,)) * image_2d_full_spacing  # [mm]
-    # convert from [mm] centred on origin to fractions through image in rightward and downward directions
-    right = right / image_size[0] + 0.5
+    # convert from [mm] centred on origin to fractions through image in downward direction
     top = top / image_size[1] + 0.5
-    left = left / image_size[0] + 0.5
     bottom = bottom / image_size[1] + 0.5
     # clamping within valid ranges
-    left = min(max(left.item(), 0.0), 1.0)
-    right = min(max(right.item(), left), 1.0)
     top = min(max(top.item(), 0.0), 1.0)
     bottom = min(max(bottom.item(), top), 1.0)
-    # ensuring minimum size
-    width = max(right - left, 0.1)
-    height = max(bottom - top, 0.1)
-    horizontal_centre = min(max(0.5 * (left + right), 0.05), 0.95)
-    vertical_centre = min(max(0.5 * (top + bottom), 0.05), 0.95)
-    left = horizontal_centre - 0.5 * width
-    right = horizontal_centre + 0.5 * width
-    top = vertical_centre - 0.5 * height
-    bottom = vertical_centre + 0.5 * height
-    # clamping within valid ranges
-    left = min(max(left, 0.0), 1.0)
-    right = min(max(right, left), 1.0)
-    top = min(max(top, 0.0), 1.0)
-    bottom = min(max(bottom, top), 1.0)
-    return Cropping(right=right, top=top, left=left, bottom=bottom)
+    return Cropping(right=1.0, top=top, left=0.0, bottom=bottom)

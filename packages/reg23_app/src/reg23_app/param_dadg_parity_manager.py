@@ -6,9 +6,8 @@ from reg23_app.state import AppState
 from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
 from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints2D
-from reg23_experiments.data.structs import Cropping, Error, Transformation
+from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
-from reg23_experiments.data.xray_reg_save_data import XRayRegSaveManager
 from reg23_experiments.experiments import updaters
 from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr, project_fiducials, \
     set_target_image
@@ -47,14 +46,12 @@ class ParamDADGParityManager:
             electrode_save_manager: ElectrodeSaveManager,  #
             ct_fiducial_save_manager: CTFiducialSaveManager,  #
             xray_fiducial_save_manager: XRayFiducialSaveManager,  #
-            xray_reg_save_manager: XRayRegSaveManager,  #
     ) -> None:
         self._state = state
         self._dadg = dadg
         self._electrode_save_manager = electrode_save_manager
         self._ct_fiducial_save_manager = ct_fiducial_save_manager
         self._xray_fiducial_save_manager = xray_fiducial_save_manager
-        self._xray_reg_save_manager = xray_reg_save_manager
 
         # `ct_path` should be the same in the DADG and the state; the only necessary driving direction is state -> DADG
         self._state.parameters.observe(lambda change: self._ct_path_changed(change.new), names=["ct_path"])
@@ -150,31 +147,6 @@ class ParamDADGParityManager:
         if isinstance(err, Error):
             logger.error(f"Error saving CT fiducial point data: {err.description}")
 
-    def _reg_config_changed(self, new_value, *, namespace: str) -> None:
-        # Save the X-ray reg configs
-        uid: str | Error = self._dadg.get(f"{namespace}__xray_sop_instance_uid")
-        if isinstance(uid, Error):
-            logger.error(f"Couldn't save reg config for X-ray '{namespace}'; couldn't get UID: {uid.description}")
-            return
-        cropping: Cropping | None | Error = self._dadg.get(f"{namespace}__cropping")
-        if isinstance(cropping, Error):
-            logger.error(
-                f"Couldn't save reg config for X-ray '{namespace}'; couldn't get cropping: {cropping.description}")
-            return
-        target_flipped: bool | Error = self._dadg.get(f"{namespace}__target_flipped")
-        if isinstance(target_flipped, Error):
-            logger.error(
-                f"Couldn't save reg config for X-ray '{namespace}'; couldn't get target_flipped: "
-                f"{target_flipped.description}")
-            return
-        if isinstance(err := self._xray_reg_save_manager.set(  #
-                uid=str(uid),  #
-                flipped=target_flipped,  #
-                cropping=Cropping() if cropping is None else cropping,  #
-        ), Error):
-            logger.error(f"Error saving reg config for X-ray '{uid}': {err.description}")
-        logger.info(f"Cropping saved for X-ray '{uid}'.")
-
     def _xray_parameters_changed(self, new_value: dict[str, XrayParameters]) -> None:
         for key, value in new_value.items():
             if key not in self._current_xrays:
@@ -226,12 +198,6 @@ class ParamDADGParityManager:
         # for eagerly saving the `fiducial_points`
         self._dadg.observe(f"{name}__fiducial_points", "saver",
                            lambda new_value, _name=name: self._xray_fiducial_points_changed(new_value, namespace=_name))
-
-        # for eagerly saving the X-ray reg config
-        self._dadg.observe(f"{name}__cropping", "saver",
-                           lambda new_value, _name=name: self._reg_config_changed(new_value, namespace=_name))
-        self._dadg.observe(f"{name}__target_flipped", "saver",
-                           lambda new_value, _name=name: self._reg_config_changed(new_value, namespace=_name))
 
         # Add namespaced DADG updaters
         namespace_captures = {key: name for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}

@@ -7,11 +7,18 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 import yaml
+from matplotlib import rcParams
 from matplotlib.ticker import MaxNLocator
 
 from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_tensor
 from reg23_experiments.analysis.plot import separate_subplots
 from reg23_experiments.utils import logs_setup
+
+MPL_COLOURS = rcParams['axes.prop_cycle'].by_key()['color']
+
+
+def get_color(i):
+    return MPL_COLOURS[i % len(MPL_COLOURS)]
 
 
 def var_to_string(variable_name: str, value: Any) -> str:
@@ -98,6 +105,8 @@ def main(  #
         for element in instance_dir.iterdir()  #
         if element.stem.startswith("data") and element.suffix == ".parquet"  #
     ])
+    distance_std_available = "distance_std" in df
+    crop_size_available = "crop_width" in df and "crop_height" in df
 
     # -----
     # Reading in the variables
@@ -121,6 +130,23 @@ def main(  #
             ordered_axes=variables + ["iteration"],  #
             value_column="distance"  #
         )
+        if distance_std_available:
+            distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
+                df,  #
+                ordered_axes=variables + ["iteration"],  #
+                value_column="distance_std"  #
+            )
+        if crop_size_available:
+            crop_widths, _ = dataframe_rectangular_columns_to_tensor(  #
+                df.loc[df["iteration"] == 0],  #
+                ordered_axes=variables,  #
+                value_column="crop_width"  #
+            )
+            crop_heights, _ = dataframe_rectangular_columns_to_tensor(  #
+                df.loc[df["iteration"] == 0],  #
+                ordered_axes=variables,  #
+                value_column="crop_height"  #
+            )
 
         fig, axes = plt.subplots()
         if dense:
@@ -132,7 +158,12 @@ def main(  #
                                 hspace=0.3  # height space between rows
                                 )
         for i0, v0 in enumerate(axis_values[variables[0]]):
-            axes.plot(axis_values["iteration"], distances[i0, :], label=f"{var_to_string(variables[0], v0)}")
+            axes.plot(axis_values["iteration"], distances[i0, :], label=f"{var_to_string(variables[0], v0)}",
+                      color=get_color(i0))
+            if distance_std_available:
+                axes.errorbar(axis_values["iteration"], distances[i0, :], yerr=distance_stds[i0, :], fmt='x-',
+                              capsize=4, color=get_color(i0))
+
         axes.set_title(f"Dist. vs. iteration for different {variables[0]}")
         axes.set_xlabel("iteration")
         axes.xaxis.set_major_locator(MaxNLocator(integer=True))

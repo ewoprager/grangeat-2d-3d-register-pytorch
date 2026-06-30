@@ -36,6 +36,9 @@ class AppState(HasTraits):
     button_unload_xray_file: bool = Bool(default_value=False)
     unload_xray_choice: str | None = Unicode(allow_none=True, default_value=None)
 
+    button_save_xray_reg_config: bool = Bool(default_value=False)
+    save_xray_reg_config_choice: str | None = Unicode(allow_none=True, default_value=None)
+
     button_evaluate_once: bool = Bool(default_value=False)
     eval_once_result: str | None = Unicode(allow_none=True, default_value=None)
 

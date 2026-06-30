@@ -318,6 +318,7 @@ class ExperimentConfig(traitlets.HasTraits):
         "nonzero_drr",  #
         "full_depth_drr"  #
     ], default_value=traitlets.Undefined)
+    crop_expand: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     mask: str = traitlets.Enum(values=[  #
         "None",  #
         "Every evaluation",  #
@@ -357,7 +358,7 @@ def run_experiment(  #
         exp_config: ExperimentConfig,  #
         device: torch.device,  #
         tqdm_position: int = 0  #
-) -> torch.Tensor | None:
+) -> pd.DataFrame | None:
     """
     Run multiple (`sample_count_per_distance`) registrations according to the given parameters, and return the average
     distance from ground truth at each iteration.
@@ -416,6 +417,8 @@ def run_experiment(  #
     dimensionality = 6
     distance_samples = torch.empty([int(exp_config.sample_count_per_distance), int(reg_config.iteration_count)],
                                    dtype=torch.float64, device=device)  # size = (sample count, iteration count)
+    crop_size_samples = torch.empty([int(reg_config.iteration_count), 2],
+                                    dtype=torch.float64)  # size = (iteration count, 2); (width, height)
     transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
     if isinstance(transformation_gt, Error):
         raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
@@ -440,6 +443,20 @@ def run_experiment(  #
             cropping: Cropping | None = args_from_dadg()(geometry.get_crop_full_depth_drr)()
         else:
             raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
+        image: torch.Tensor | Error = data_manager().get("image_2d_full")
+        if isinstance(image, Error):
+            raise Exception(f"Failed to get image_2d_full: {image.description}")
+        spacing: torch.Tensor | Error = data_manager().get("image_2d_full_spacing")
+        if isinstance(spacing, Error):
+            raise Exception(f"Failed to get image_2d_full_spacing: {spacing.description}")
+        spacing = spacing.cpu()
+        if cropping is None:
+            crop_size_samples[i, 0] = float(image.size()[1]) * spacing[0].item()
+            crop_size_samples[i, 1] = float(image.size()[0]) * spacing[1].item()
+        else:
+            crop_size_samples[i, 0] = (cropping.right - cropping.left) * float(image.size()[1]) * spacing[0].item()
+            crop_size_samples[i, 1] = (cropping.bottom - cropping.top) * float(image.size()[0]) * spacing[1].item()
+            cropping = cropping.expand_mm(exp_config.crop_expand, image_size=image.size(), image_spacing=spacing)
         data_manager().set("further_cropping", cropping, check_equality=True)
         # -----
         # Registration
@@ -452,7 +469,13 @@ def run_experiment(  #
         distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
                                                           dim=1)  # size = (iteration count,)
 
-    return distance_samples.mean(dim=0)  # size = (iteration count,)
+    return pd.DataFrame({  #
+        "iteration": torch.arange(reg_config.iteration_count).numpy(),  # size = (iteration count,)
+        "distance": distance_samples.mean(dim=0).cpu().numpy(),  # size = (iteration count,)
+        "distance_std": distance_samples.std(dim=0).cpu().numpy(),  #
+        "crop_width": crop_size_samples[:, 0].cpu().numpy(),  #
+        "crop_height": crop_size_samples[:, 1].cpu().numpy(),  #
+    })
 
 
 def run_experiments(  #
@@ -487,12 +510,12 @@ def run_experiments(  #
     for indices in tqdm_iterator:
         # -----
         # Unpack the parameters for this iteration
-        instance_specific = {  #
+        instance_specific: dict[str, Any] = {  #
             name: values[index]  #
             for index, (name, values) in zip(indices, params_to_vary.items())  #
         }  # config specific to this instance
         tqdm_iterator.set_postfix(**instance_specific)  # displaying this
-        instance_all = instance_specific | constants  # all the config for this instance
+        instance_all: dict[str, Any] = instance_specific | constants  # all the config for this instance
         # -----
         # Separate the config into registration and experiment configs
         exp_config_by_name = copy.deepcopy(instance_all)
@@ -500,7 +523,8 @@ def run_experiments(  #
             reg_config = RegConfig(  #
                 particle_count=exp_config_by_name.pop("particle_count"),  #
                 particle_initialisation_spread=exp_config_by_name.pop("particle_initialisation_spread"),  #
-                iteration_count=exp_config_by_name.pop("iteration_count"))
+                iteration_count=exp_config_by_name.pop("iteration_count")  #
+            )
         except Exception as e:
             logger.error(f"Error constructing registration configuration at indices {indices}: {e}")
             continue
@@ -513,8 +537,8 @@ def run_experiments(  #
         # -----
         # Run the experiment
         try:
-            res = run_experiment(reg_config=reg_config, exp_config=exp_config, device=device,
-                                 tqdm_position=tqdm_position + 1)
+            res: pd.DataFrame | None = run_experiment(reg_config=reg_config, exp_config=exp_config, device=device,
+                                                      tqdm_position=tqdm_position + 1)
         except Exception as e:
             logger.error(
                 f"Error running experiment at indices {indices}: {e}\nParameters:\n{pprint.pformat(instance_all)}")
@@ -525,11 +549,8 @@ def run_experiments(  #
                 f"trivial / unnecessary.")
             continue
         # -----
-        # Get the rows for the DataFrame and save
-        df = pd.DataFrame([  #
-            instance_all | {"iteration": iteration, "distance": res[iteration].item()}  #
-            for iteration in range(len(res))  #
-        ])
+        # Add the experiment config rows to the DataFrame and save
+        df = res.assign(**instance_all)
         df.to_parquet(output_directory / f"data_{"_".join([str(i) for i in indices])}.parquet")
 
 
@@ -681,8 +702,9 @@ def main(  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
         "downsample_level": 1,  #
-        "truncation_percent": 50,  #
+        "truncation_percent": 70,  #
         "cropping": "full_depth_drr",  #
+        "crop_expand": 0.0,  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 5.0,  #
@@ -697,10 +719,10 @@ def main(  #
         "up_000",  #
         "down_000",  #
     ]
-    params_to_vary: dict[str, Any] = {  #
-        "truncation_percent": [40, 50, 60, 70, 80],  #
+    params_to_vary: dict[str, list | torch.Tensor] = {  #
+        # "truncation_percent": [40, 70],  #
         "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
-        "cropping": ["nonzero_drr", "full_depth_drr"],  #
+        # "cropping": ["nonzero_drr", "full_depth_drr"],  #
     }
     # ----------------------------------
 

@@ -78,6 +78,17 @@ class ParametersWidget(widgets.Container):
         self._set_to_ground_truth_button.changed.connect(self._on_set_to_ground_truth)
         self.append(self._set_to_ground_truth_button)
 
+        # X-ray reg config saving
+        self._save_xray_reg_config_button = widgets.PushButton(label="Save reg config for X-ray: ")
+        self._save_xray_reg_config_button.changed.connect(self._on_save_xray_reg_config)
+        self._save_xray_reg_config_select = widgets.ComboBox(choices=self._get_xray_choices)
+        self._save_xray_reg_config_select.changed.connect(self._on_save_xray_reg_config_choice_changed)
+        self._on_save_xray_reg_config_choice_changed()
+        self.append(widgets.Container(widgets=[  #
+            self._save_xray_reg_config_button,  #
+            self._save_xray_reg_config_select  #
+        ], layout="horizontal", labels=False))
+
     def _on_open_ct_file(self, *args) -> None:
         self._ctx.state.button_open_ct_file = True
 
@@ -90,6 +101,9 @@ class ParametersWidget(widgets.Container):
     def _on_unload_xray_file(self, *args) -> None:
         self._ctx.state.button_unload_xray_file = True
 
+    def _on_save_xray_reg_config(self, *args) -> None:
+        self._ctx.state.button_save_xray_reg_config = True
+
     def _get_xray_choices(self, *args) -> list[str]:
         return list(self._ctx.state.parameters.xray_parameters.keys())
 
@@ -98,6 +112,9 @@ class ParametersWidget(widgets.Container):
 
     def _on_unload_xray_choice_changed(self, *args) -> None:
         self._ctx.state.unload_xray_choice = self._unload_xray_select.value
+
+    def _on_save_xray_reg_config_choice_changed(self, *args) -> None:
+        self._ctx.state.save_xray_reg_config_choice = self._save_xray_reg_config_select.value
 
     def _on_crop_nonzero_drr(self, *args) -> None:
         for k, v in self._ctx.state.parameters.xray_parameters.items():
