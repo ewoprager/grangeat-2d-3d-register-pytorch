@@ -1,0 +1,139 @@
+import logging
+import weakref
+from typing import Callable
+
+import napari.layers
+import numpy as np
+import scipy
+import torch
+
+from reg23_app.context import AppContext
+from reg23_app.gui.viewer_singleton import viewer
+from reg23_experiments.data.structs import Error, Transformation
+
+__all__ = ["add_mask_layer"]
+
+logger = logging.getLogger(__name__)
+
+
+class _MaskLayerManager:
+    def __init__(self, *, ctx: AppContext, layer: napari.layers.Image, namespace: str | None, spacing_dadg_key: str):
+        logger.debug(f"Initializing _MaskLayerManager in namespace {namespace}")
+        self._ctx = ctx
+        self._layer: Callable[[], napari.layers.Image | None] = weakref.ref(layer)
+        self._namespace = namespace
+        self._spacing_dadg_key = spacing_dadg_key
+        #
+        self._mask_key = "mask" if self._namespace is None else f"{self._namespace}__mask"
+        self._current_transformation_key = "current_transformation" if self._namespace is None else (
+            f"{self._namespace}__current_transformation")
+        self._ctx.dadg.observe(self._mask_key, "mask layer", self._observer_callback)
+        self._ctx.dadg.set_evaluation_laziness(self._mask_key, lazily_evaluated=False)
+        self._ctx.dadg.observe(self._spacing_dadg_key, "mask layer", self._spacing_observer_callback)
+        self._ctx.dadg.set_evaluation_laziness(self._spacing_dadg_key, lazily_evaluated=False)
+        layer.mouse_drag_callbacks.append(self._mouse_drag)
+
+    def __del__(self):
+        self._ctx.dadg.set_evaluation_laziness(self._mask_key, lazily_evaluated=True)
+        self._ctx.dadg.set_evaluation_laziness(self._spacing_dadg_key, lazily_evaluated=True)
+
+    def _observer_callback(self, new_value: torch.Tensor) -> None:
+        if (layer := self._layer()) is None:
+            return
+        layer.data = new_value.cpu().numpy()
+
+    def _spacing_observer_callback(self, new_value: torch.Tensor) -> None:
+        if (layer := self._layer()) is None:
+            return
+        layer.scale = new_value.flip(dims=(0,)).cpu().numpy()
+
+    def _mouse_drag(self, layer, event):
+        if event.button == 1 and self._ctx.input_manager.ctrl_pressed:  # Ctrl-left click drag
+            # mouse down
+            dragged = False
+            drag_start = np.array([event.position[-1], -event.position[-2]])
+            rotation_start = scipy.spatial.transform.Rotation.from_rotvec(
+                rotvec=self._ctx.dadg.get(self._current_transformation_key).rotation.cpu().numpy())
+            yield
+            # on move
+            while event.type == "mouse_move":
+                dragged = True
+
+                delta = self._ctx.state.gui_settings.rotation_sensitivity * (
+                        np.array([event.position[-1], -event.position[-2]]) - drag_start)
+                euler_angles = [delta[1], delta[0], 0.0]
+                rot_euler = scipy.spatial.transform.Rotation.from_euler(seq="xyz", angles=euler_angles)
+                rot_combined = rot_euler * rotation_start
+                prev = self._ctx.dadg.get(self._current_transformation_key)
+                self._ctx.dadg.set(  #
+                    self._current_transformation_key,  #
+                    Transformation(  #
+                        rotation=torch.tensor(  #
+                            rot_combined.as_rotvec(),  #
+                            device=prev.rotation.device,  #
+                            dtype=prev.rotation.dtype  #
+                        ),  #
+                        translation=prev.translation  #
+                    )  #
+                )
+                yield
+            # on release
+            if dragged:
+                # dragged
+                pass
+            else:
+                # just clicked
+                pass
+        elif event.button == 2 and self._ctx.input_manager.ctrl_pressed:  # Ctrl-right click drag
+            # mouse down
+            dragged = False
+            drag_start = torch.tensor(event.position[-2:])
+            # rotation_start = scipy.spatial.transform.Rotation.from_rotvec(transformation.rotation.cpu().numpy())
+            translation_start = self._ctx.dadg.get(self._current_transformation_key).translation[0:2].cpu()
+            yield
+            # on move
+            while event.type == "mouse_move":
+                dragged = True
+
+                delta = self._ctx.state.gui_settings.translation_sensitivity * (
+                        torch.tensor(event.position[-2:]) - drag_start).flip((0,))
+                prev = self._ctx.dadg.get(self._current_transformation_key)
+                tr = prev.translation
+                tr[0:2] = (translation_start + delta).to(device=tr.device)
+                self._ctx.dadg.set(  #
+                    self._current_transformation_key,  #
+                    Transformation(  #
+                        translation=tr,  #
+                        rotation=prev.rotation  #
+                    )  #
+                )
+                yield
+            # on release
+            if dragged:
+                # dragged
+                pass
+            else:
+                # just clicked
+                pass
+
+
+def add_mask_layer(*, ctx: AppContext, namespace: str | None = None,
+                   spacing_dadg_key: str) -> napari.layers.Layer | None:
+    logger.debug(f"Adding mask layer in namespace {namespace}")
+    mask_key = "mask" if namespace is None else f"{namespace}__mask"
+    if mask_key in viewer().layers:
+        logger.warning(f"Layer '{mask_key}' is already shown.")
+        return None
+    value: torch.Tensor | Error = ctx.dadg.get(mask_key, soft=True)
+    if isinstance(value, Error):
+        raise RuntimeError(f"Error softly getting '{mask_key}' from DADG: {value.description}.")
+    initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
+    logger.debug(f"Adding mask layer '{mask_key}' to napari viewer")
+    layer: napari.layers.Image = viewer().add_image(initial_image.cpu().numpy(), colormap="viridis", blending="opaque",
+                                                    interpolation2d="linear", name=mask_key)
+    spacing: torch.Tensor | Error = ctx.dadg.get(spacing_dadg_key, soft=True)
+    if isinstance(spacing, Error):
+        raise RuntimeError(f"Error softly getting '{spacing_dadg_key}' from DADG: {spacing.description}.")
+    layer.scale = spacing.flip(dims=(0,)).cpu().numpy()
+    layer.my_plugin = _MaskLayerManager(ctx=ctx, layer=layer, namespace=namespace, spacing_dadg_key=spacing_dadg_key)
+    return layer

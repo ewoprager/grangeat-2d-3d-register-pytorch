@@ -69,12 +69,6 @@ class ParamDADGParityManager:
                                        names=["truncation_percent"])
         self._truncation_percent_changed(self._state.parameters.truncation_percent)
 
-        # mask-related nodes in the DADG should be consistent with the value of `mask` in the state; the only necessary
-        # driving direction is state -> DADG
-        self._state.parameters.observe(lambda change: respond_to_mask_change(dadg=self._dadg, new_value=change.new),
-                                       names=["mask"])
-        respond_to_mask_change(dadg=self._dadg, new_value=self._state.parameters.mask)
-
         # X-ray specific nodes in the DADG should be consistent with the values in `xray_parameters` in the state; the
         # only necessary driving direction is state -> DADG
         self._state.parameters.observe(lambda change: self._xray_parameters_changed(change.new),
@@ -82,6 +76,11 @@ class ParamDADGParityManager:
         # Need to keep track of previous set of X-rays that have been loaded
         self._current_xrays: list[str] = []
         self._xray_parameters_changed(self._state.parameters.xray_parameters)
+
+        # mask-related nodes in the DADG should be consistent with the value of `mask` in the state; the only necessary
+        # driving direction is state -> DADG
+        self._state.parameters.observe(self._respond_to_mask_change, names=["mask"])
+        self._respond_to_mask_change({"new": self._state.parameters.mask})
 
         # load ct fiducial points from save manager
         self._dadg.observe("ct_series_uid", "fiducial_point_loader", self._ct_series_uid_changed)
@@ -103,6 +102,15 @@ class ParamDADGParityManager:
     def _target_flipped_changed(self, new_value: bool, *, namespace: str | None) -> None:
         self._dadg.set("target_flipped" if namespace is None else f"{namespace}__target_flipped", new_value,
                        check_equality=True)
+
+    def _respond_to_mask_change(self, change) -> None:
+        for xray in self._current_xrays:
+            respond_to_mask_change(  #
+                dadg=self._dadg,  #
+                new_value=change["new"],  #
+                namespace_captures={key: xray for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS},  #
+                namespace=xray,  #
+            )
 
     def _xray_electrode_points_changed(self, new_value: OrderedPoints2D, *, namespace: str) -> None:
         uid: str | Error = self._dadg.get(f"{namespace}__xray_sop_instance_uid")

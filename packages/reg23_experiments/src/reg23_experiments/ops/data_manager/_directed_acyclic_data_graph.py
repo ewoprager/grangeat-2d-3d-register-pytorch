@@ -82,7 +82,7 @@ class DirectedAcyclicDataGraph(ABC):
         pass
 
     @abstractmethod
-    def add_updater(self, updater_name: str, updater: Updater):
+    def add_updater(self, updater_name: str, updater: Updater) -> None | Error:
         pass
 
     @abstractmethod

@@ -7,6 +7,7 @@ from magicgui import widgets
 
 from reg23_app.context import AppContext
 from reg23_app.gui.layers.moving_image_layer import add_moving_image_layer
+from reg23_app.gui.layers.mask_layer import add_mask_layer
 from reg23_app.gui.layers.fixed_image_layer import add_fixed_image_layer
 from reg23_app.gui.layers.electrode_layer import add_electrode_layer
 from reg23_app.gui.layers.ct_layer import add_ct_layer
@@ -59,6 +60,9 @@ class ImagesWidget(widgets.Container):
                 # Moving image
                 show_moving_image_button = widgets.PushButton(label="Show moving image")
                 show_moving_image_button.changed.connect(lambda _, name=key: self._on_show_moving_image_layer(name))
+                # Mask
+                show_mask_button = widgets.PushButton(label="Show mask")
+                show_mask_button.changed.connect(lambda _, name=key: self._on_show_mask_layer(name))
                 # Electrode points
                 show_electrodes_button = widgets.PushButton(label="Show electrodes")
                 show_electrodes_button.changed.connect(lambda _, name=key: self._on_show_electrode_layer(name))
@@ -77,6 +81,7 @@ class ImagesWidget(widgets.Container):
                     show_image_2d_full_button,  #
                     show_fixed_image_button,  #
                     show_moving_image_button,  #
+                    show_mask_button,  #
                     show_electrodes_button,  #
                     show_xray_fiducials_button,  #
                     show_projected_fiducials_button,  #
@@ -104,6 +109,10 @@ class ImagesWidget(widgets.Container):
     def _on_show_moving_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show moving_image for '{xray_name}' clicked")
         add_moving_image_layer(ctx=self._ctx, namespace=xray_name, spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+
+    def _on_show_mask_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show mask for '{xray_name}' clicked")
+        add_mask_layer(ctx=self._ctx, namespace=xray_name, spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
     def _on_show_electrode_layer(self, xray_name: str) -> None:
         logger.debug(f"Show electrodes for '{xray_name}' clicked")
