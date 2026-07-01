@@ -31,6 +31,8 @@ def var_to_string(variable_name: str, value: Any) -> str:
         return f"{value}"
     elif variable_name == "starting_distance":
         return f"{value:.3f}"
+    elif variable_name == "crop_expand":
+        return f"{value:.1f}"
     return f"<unknown variable '{variable_name}'>"
 
 
@@ -118,13 +120,18 @@ def main(  #
     assert "variables" in variables_config
     variables: list[str] = list(variables_config["variables"].keys())
 
-    variable_hierachy: list[str] = ["mask", "truncation_percent", "cropping", "xray_path"]  # most to least important
-    variable_importances = {name: importance for importance, name in enumerate(variable_hierachy)}
-    variables = sorted(variables, key=lambda name: variable_importances[name], reverse=True)
+    variable_hierarchy: list[str] = ["crop_expand", "cropping", "xray_path", "truncation_percent",
+                                     "mask"]  # most to least important
+    variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
+    variables = sorted(  #
+        variables,  #
+        key=lambda name: variable_importances[name] if name in variable_importances else len(variable_hierarchy),  #
+        reverse=True  #
+    )
 
     dense = not analysis_format
 
-    if "xray_path" in variables and crop_size_available:
+    if False and "xray_path" in variables and crop_size_available:
         crop_widths, axis_values = dataframe_rectangular_columns_to_tensor(  #
             df.loc[df["iteration"] == 0],  #
             ordered_axes=variables,  #
@@ -289,6 +296,56 @@ def main(  #
                     axes[i1, i2].set_ylabel("distance from G.T.")
                     axes[i1, i2].set_ylim((0.0, ylim_upper))
                     axes[i1, i2].legend()
+        plt.show()
+        return
+
+    if len(variables) == 5:
+        # converting to a tensor, with an axis per variable
+        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df,  #
+            ordered_axes=variables + ["iteration"],  #
+            value_column="distance"  #
+        )
+        if distance_std_available:
+            distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
+                df,  #
+                ordered_axes=variables + ["iteration"],  #
+                value_column="distance_std"  #
+            )
+
+        # getting the median largest distance value
+        ylim_upper = distances.amax(dim=-1).quantile(q=0.75)
+
+        for i0, v0 in enumerate(axis_values[variables[0]]):
+            for i1, v1 in enumerate(axis_values[variables[1]]):
+                fig, axes = plt.subplots(distances.size(2), distances.size(3), figsize=(13, 8))
+                fig.suptitle(f"{variables[0]}={var_to_string(variables[0], v0)};{variables[1]}="
+                             f"{var_to_string(variables[1], v1)}")
+                if dense:
+                    fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                                        right=0.98,  # right margin
+                                        bottom=0.08,  # bottom margin
+                                        top=0.95,  # top margin
+                                        wspace=0.2,  # width space between columns
+                                        hspace=0.3  # height space between rows
+                                        )
+                for i2, v2 in enumerate(axis_values[variables[2]]):
+                    for i3, v3 in enumerate(axis_values[variables[3]]):
+                        for i4, v4 in enumerate(axis_values[variables[4]]):
+                            axes[i2, i3].plot(axis_values["iteration"], distances[i0, i1, i2, i3, i4, :],
+                                              label=f"{variables[4]}={var_to_string(variables[4], v4)}",
+                                              color=get_color(i4))
+                            if distance_std_available:
+                                axes[i2, i3].errorbar(axis_values["iteration"], distances[i0, i1, i2, i3, i4, :],
+                                                      yerr=distance_stds[i0, i1, i2, i3, i4, :], fmt='x-', capsize=4,
+                                                      color=get_color(i4))
+                        axes[i2, i3].set_title(f"{variables[2]}={var_to_string(variables[2], v2)};{variables[3]}="
+                                               f"{var_to_string(variables[3], v3)}")
+                        axes[i2, i3].set_xlabel("iteration")
+                        axes[i2, i3].xaxis.set_major_locator(MaxNLocator(integer=True))
+                        axes[i2, i3].set_ylabel("distance from G.T.")
+                        axes[i2, i3].set_ylim((0.0, ylim_upper))
+                        axes[i2, i3].legend()
         plt.show()
         return
 

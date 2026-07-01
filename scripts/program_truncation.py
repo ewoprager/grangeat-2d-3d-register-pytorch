@@ -705,7 +705,7 @@ def main(  #
         "ct_path": ct_path,  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
-        "downsample_level": 2,  #
+        "downsample_level": 1,  #
         "truncation_percent": 80,  #
         "cropping": "full_depth_drr",  #
         "crop_expand": 0.0,  #
@@ -713,7 +713,7 @@ def main(  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 5.0,  #
-        "sample_count_per_distance": 5,  #
+        "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -722,12 +722,13 @@ def main(  #
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
         "up_000",  #
-        # "down_000",  #
+        "down_000",  #
     ]
     params_to_vary: dict[str, list | torch.Tensor] = {  #
-        # "truncation_percent": [40, 70],  #
-        # "mask": ["None", "Every evaluation", "Every evaluation weighting zncc"],  #
-        # "cropping": ["nonzero_drr", "full_depth_drr"],  #
+        "truncation_percent": [70, 85],  #
+        "mask": ["None", "Every evaluation weighting zncc"],  #
+        "cropping": ["nonzero_drr", "full_depth_drr"],  #
+        "crop_expand": [0.0, 4.0, 16.0],  #
     }
     # ----------------------------------
 
