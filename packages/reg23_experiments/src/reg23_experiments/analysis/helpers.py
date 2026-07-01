@@ -46,7 +46,7 @@ def get_axis_values_if_dataframe_rectangular_over_columns(  #
 
 
 def dataframe_rectangular_columns_to_tensor(df: pd.DataFrame, *, ordered_axes: list[str], value_column: str) -> tuple[
-    torch.Tensor, dict[str, np.ndarray]]:
+    torch.Tensor, list[tuple[str, np.ndarray]]]:
     # set the index to be a MultiIndex derived from the existing columns named in `ordered_axes`, then take just the
     # series for the `value_column`, and sort the rows by the index.
     s: pd.Series = df.set_index(ordered_axes)[value_column].sort_index()
@@ -67,10 +67,10 @@ def dataframe_rectangular_columns_to_tensor(df: pd.DataFrame, *, ordered_axes: l
     if s.isna().any():
         logger.warning("Grid is incomplete — missing coordinate combinations.")
     # get the unique values of each axis from the index objects and store in a dict to return
-    axis_values: dict[str, np.ndarray] = {  #
-        name: index.to_numpy()  #
+    axis_values: list[tuple[str, np.ndarray]] = [  #
+        (name, index.to_numpy())  #
         for name, index in zip(ordered_axes, axis_index_objects)  #
-    }
+    ]
     # get the length of each axis from the index objects
     axis_lengths = [len(index) for index in axis_index_objects]
     # convert the DataFrame to a flat tensor and view with the lengths of each axis

@@ -20,14 +20,14 @@ def respond_to_mask_change(*, dadg: DirectedAcyclicDataGraph, new_value: str, na
                            namespace: str) -> None:
     if new_value == "None":
         logger.debug("Removing mask_transformation updates")
-        if isinstance(err := dadg.remove_updater("mask_follows_transformation"), Error):
+        if isinstance(err := dadg.remove_updater(f"{namespace}__mask_follows_transformation"), Error):
             logger.error(f"Failed to remove mask_transformation updater: {err.description}")
         if isinstance(err := dadg.set(f"{namespace}__mask_transformation", None, check_equality=True), Error):
             logger.error(f"Failed to set mask_transformation: {err.description}")
     else:
         logger.debug("Adding mask_transformation updates")
         if isinstance(err := dadg.add_updater(  #
-                "mask_follows_transformation",  #
+                f"{namespace}__mask_follows_transformation",  #
                 capture_in_namespaces(namespace_captures)(mask_follows_transformation)  #
         ), Error):
             logger.error(f"Failed to add mask_transformation updater: {err.description}")

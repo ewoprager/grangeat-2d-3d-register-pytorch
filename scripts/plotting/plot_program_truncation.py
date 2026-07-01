@@ -9,6 +9,7 @@ import pandas as pd
 import torch
 import yaml
 from matplotlib import rcParams
+from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
 from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_tensor
@@ -33,7 +34,10 @@ def var_to_string(variable_name: str, value: Any) -> str:
         return f"{value:.3f}"
     elif variable_name == "crop_expand":
         return f"{value:.1f}"
-    return f"<unknown variable '{variable_name}'>"
+    try:
+        return str(value)
+    except Exception:
+        return f"<unknown variable '{variable_name}'>"
 
 
 def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
@@ -63,6 +67,101 @@ def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
                 rows_out.append(rows_here | {"starting_distance": nominal_distances[j].item(), "iteration": i,
                                              "distance": convergence_series[j, i].item()})
     return pd.DataFrame(rows_out)
+
+
+def grid_of_plots_figure(  #
+        *,  #
+        independent_values: list[tuple[str, np.ndarray]],  #
+        dependent_variable: str,  #
+        dependent_values: torch.Tensor,  #
+        dependent_errors: torch.Tensor | None = None,  #
+        dense: bool = False,  #
+        ylim: tuple[float, float] | None = None,  #
+) -> tuple[Figure, np.ndarray]:
+    # check arguments
+    assert 2 <= len(independent_values) <= 4
+    assert dependent_values.size() == torch.Size([len(v) for _, v in independent_values])
+    if dependent_errors is not None:
+        assert dependent_errors.size() == dependent_values.size()
+    # figure and axes
+    fig, axes = plt.subplots(*dependent_values.size()[:-2], figsize=(13, 8))
+    axes = np.array(axes)
+    if dense:
+        fig.subplots_adjust(left=0.05,  # margin on left side of figure
+                            right=0.98,  # right margin
+                            bottom=0.08,  # bottom margin
+                            top=0.95,  # top margin
+                            wspace=0.2,  # width space between columns
+                            hspace=0.3  # height space between rows
+                            )
+    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in independent_values[:-2]]):
+        axis_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
+        for j, v in enumerate(independent_values[-2][1]):
+            dependent_index = axis_index + (j,)
+            axes[axis_index].plot(  #
+                independent_values[-1][1],  #
+                dependent_values[*dependent_index, :],  #
+                label=f"{independent_values[-2][0]}={var_to_string(independent_values[-2][0], v)}",  #
+                color=get_color(j),  #
+            )
+            if dependent_errors is not None:
+                axes[axis_index].errorbar(  #
+                    independent_values[-1][1],  #
+                    dependent_values[*dependent_index, :],  #
+                    yerr=dependent_errors[*dependent_index, :],  #
+                    fmt='x-',  #
+                    capsize=4,  #
+                    color=get_color(j)  #
+                )
+        axes[axis_index].set_xlabel(independent_values[-1][0])
+        axes[axis_index].set_title(  #
+            ";".join([  #
+                f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
+                for i, w in enumerate([v for _, v in index_value_pairs])  #
+            ])  #
+        )
+        axes[axis_index].xaxis.set_major_locator(MaxNLocator(integer=True))
+        axes[axis_index].set_ylabel(dependent_variable)
+        if ylim is not None:
+            axes[axis_index].set_ylim(ylim)
+        axes[axis_index].legend()
+    return fig, axes
+
+
+def plot_grid_figures(  #
+        *,  #
+        independent_values: list[tuple[str, np.ndarray]],  #
+        dependent_variable: str,  #
+        dependent_values: torch.Tensor,  #
+        dependent_errors: torch.Tensor | None = None,  #
+        dense: bool = False,  #
+) -> None:
+    # check arguments
+    assert 2 <= len(independent_values)
+    assert dependent_values.size() == torch.Size([len(v) for _, v in independent_values])
+    if dependent_errors is not None:
+        assert dependent_errors.size() == dependent_values.size()
+    # getting the median largest distance value
+    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.75).item()) if len(
+        independent_values) > 2 else None
+
+    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in independent_values[:-4]]):
+        dependent_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
+        fig, axes = grid_of_plots_figure(  #
+            independent_values=independent_values[-4:],  #
+            dependent_variable=dependent_variable,  #
+            dependent_values=dependent_values[*dependent_index],  #
+            dependent_errors=None if dependent_errors is None else dependent_errors[*dependent_index],  #
+            dense=dense,  #
+            ylim=ylim,  #
+        )
+        fig.suptitle(  #
+            ";".join([  #
+                f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
+                for i, w in enumerate([v for _, v in index_value_pairs])  #
+            ])  #
+        )
+    plt.show()
 
 
 def main(  #
@@ -120,8 +219,8 @@ def main(  #
     assert "variables" in variables_config
     variables: list[str] = list(variables_config["variables"].keys())
 
-    variable_hierarchy: list[str] = ["crop_expand", "cropping", "xray_path", "truncation_percent",
-                                     "mask"]  # most to least important
+    variable_hierarchy: list[str] = ["crop_expand", "mask", "cropping", "xray_path",
+                                     "truncation_percent"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     variables = sorted(  #
         variables,  #
@@ -131,309 +230,62 @@ def main(  #
 
     dense = not analysis_format
 
-    if False and "xray_path" in variables and crop_size_available:
-        crop_widths, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df.loc[df["iteration"] == 0],  #
-            ordered_axes=variables,  #
-            value_column="crop_width"  #
+    distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+        df,  #
+        ordered_axes=variables + ["iteration"],  #
+        value_column="distance"  #
+    )
+    if distance_std_available:
+        distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
+            df,  #
+            ordered_axes=variables + ["iteration"],  #
+            value_column="distance_std"  #
         )
-        crop_heights, _ = dataframe_rectangular_columns_to_tensor(  #
+    plot_grid_figures(  #
+        independent_values=axis_values,  #
+        dependent_variable="distance from G.T.",  #
+        dependent_values=distances,  #
+        dependent_errors=distance_stds if distance_std_available else None,  #
+        dense=dense,  #
+    )
+
+    if "xray_path" in variables and crop_size_available:
+        # crop_widths, axis_values = dataframe_rectangular_columns_to_tensor(  #
+        #     df.loc[df["iteration"] == 0],  #
+        #     ordered_axes=variables,  #
+        #     value_column="crop_width"  #
+        # )
+        crop_heights, axis_values = dataframe_rectangular_columns_to_tensor(  #
             df.loc[df["iteration"] == 0],  #
             ordered_axes=variables,  #
             value_column="crop_height"  #
         )
-        series = {  #
-            "width": crop_widths.numpy(),  #
-            "height": crop_heights.numpy(),  #
-        }
 
-        x = np.arange(len(axis_values["xray_path"]))
-        width = 0.25
-        fig, ax = plt.subplots(figsize=(6, 4))
+        invariant_variables = [  #
+            "crop_expand",  #
+            "mask"  #
+        ]  # crop expand is applied after measuring, so it is truly invariant
 
-        for i, (label, values) in enumerate(series.items()):
-            ax.bar(x + (i - 1) * width, values, width, label=label)
+        for name in invariant_variables:
+            try:
+                i = variables.index(name)
+            except ValueError:
+                continue
+            axis_values = [e for e in axis_values if e[0] != name]
+            # crop_widths = crop_widths.mean(dim=i)
+            crop_heights = crop_heights.mean(dim=i)
 
-        ax.set_xticks(x)
-        ax.set_xticklabels([var_to_string("xray_path", v) for v in axis_values["xray_path"]])
-        ax.set_ylabel("Value")
-        ax.set_ylim((0.0, 50))
-        ax.legend()
+        # crop_values = torch.stack((crop_widths, crop_heights), dim=-2)
+        # axis_values.insert(-1, ("crop dir", np.array(["width", "height"])))
 
-        plt.tight_layout()
-        plt.show()
-
-    if len(variables) == 1:
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df,  #
-            ordered_axes=variables + ["iteration"],  #
-            value_column="distance"  #
-        )
-        if distance_std_available:
-            distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
-                df,  #
-                ordered_axes=variables + ["iteration"],  #
-                value_column="distance_std"  #
-            )
-
-        fig, axes = plt.subplots()
-        if dense:
-            fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                                right=0.98,  # right margin
-                                bottom=0.08,  # bottom margin
-                                top=0.95,  # top margin
-                                wspace=0.2,  # width space between columns
-                                hspace=0.3  # height space between rows
-                                )
-        for i0, v0 in enumerate(axis_values[variables[0]]):
-            axes.plot(axis_values["iteration"], distances[i0, :], label=f"{var_to_string(variables[0], v0)}",
-                      color=get_color(i0))
-            if distance_std_available:
-                axes.errorbar(axis_values["iteration"], distances[i0, :], yerr=distance_stds[i0, :], fmt='x-',
-                              capsize=4, color=get_color(i0))
-
-        axes.set_title(f"Dist. vs. iteration for different {variables[0]}")
-        axes.set_xlabel("iteration")
-        axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-        axes.set_ylabel("distance from G.T.")
-        axes.set_ylim((0.0, None))
-        axes.legend()
-        plt.show()
-
-    if len(variables) == 2:
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df,  #
-            ordered_axes=variables + ["iteration"],  #
-            value_column="distance"  #
+        plot_grid_figures(  #
+            independent_values=axis_values,  #
+            dependent_variable="crop height [mm]",  #
+            dependent_values=crop_heights,  #
+            dense=dense,  #
         )
 
-        fig, axes = plt.subplots(distances.size(0))
-        if dense:
-            fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                                right=0.98,  # right margin
-                                bottom=0.08,  # bottom margin
-                                top=0.95,  # top margin
-                                wspace=0.2,  # width space between columns
-                                hspace=0.3  # height space between rows
-                                )
-        for i0, v0 in enumerate(axis_values[variables[0]]):
-            for i1, v1 in enumerate(axis_values[variables[1]]):
-                axes[i0].plot(axis_values["iteration"], distances[i0, i1, :],
-                              label=f"{variables[1]}={var_to_string(variables[1], v1)}")
-            axes[i0].set_title(f"{variables[0]}={var_to_string(variables[0], v0)}")
-            axes[i0].set_xlabel("iteration")
-            axes[i0].xaxis.set_major_locator(MaxNLocator(integer=True))
-            axes[i0].set_ylabel("distance from G.T.")
-            axes[i0].set_ylim((0.0, None))
-            axes[i0].legend()
-        plt.show()
-
-    if len(variables) == 3:
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df,  #
-            ordered_axes=variables + ["iteration"],  #
-            value_column="distance"  #
-        )
-
-        fig, axes = plt.subplots(distances.size(0), distances.size(1))
-        if dense:
-            fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                                right=0.98,  # right margin
-                                bottom=0.08,  # bottom margin
-                                top=0.95,  # top margin
-                                wspace=0.2,  # width space between columns
-                                hspace=0.3  # height space between rows
-                                )
-        for i0, v0 in enumerate(axis_values[variables[0]]):
-            for i1, v1 in enumerate(axis_values[variables[1]]):
-                for i2, v2 in enumerate(axis_values[variables[2]]):
-                    axes[i0, i1].plot(axis_values["iteration"], distances[i0, i1, i2, :],
-                                      label=f"{variables[2]}={var_to_string(variables[2], v2)}")
-                axes[i0, i1].set_title(f"{variables[0]}={var_to_string(variables[0], v0)};{variables[1]}="
-                                       f"{var_to_string(variables[1], v1)}")
-                axes[i0, i1].set_xlabel("iteration")
-                axes[i0, i1].xaxis.set_major_locator(MaxNLocator(integer=True))
-                axes[i0, i1].set_ylabel("distance from G.T.")
-                axes[i0, i1].set_ylim((0.0, None))
-                axes[i0, i1].legend()
-        plt.show()
-        return
-
-    if len(variables) == 4:
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df,  #
-            ordered_axes=variables + ["iteration"],  #
-            value_column="distance"  #
-        )
-
-        # getting the median largest distance value
-        ylim_upper = distances.amax(dim=-1).quantile(q=0.75)
-
-        for i0, v0 in enumerate(axis_values[variables[0]]):
-            fig, axes = plt.subplots(distances.size(1), distances.size(2), figsize=(13, 8))
-            fig.suptitle(f"{variables[0]}={var_to_string(variables[0], v0)}")
-            if dense:
-                fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                                    right=0.98,  # right margin
-                                    bottom=0.08,  # bottom margin
-                                    top=0.95,  # top margin
-                                    wspace=0.2,  # width space between columns
-                                    hspace=0.3  # height space between rows
-                                    )
-            for i1, v1 in enumerate(axis_values[variables[1]]):
-                for i2, v2 in enumerate(axis_values[variables[2]]):
-                    for i3, v3 in enumerate(axis_values[variables[3]]):
-                        axes[i1, i2].plot(axis_values["iteration"], distances[i0, i1, i2, i3, :],
-                                          label=f"{variables[3]}={var_to_string(variables[3], v3)}")
-                    axes[i1, i2].set_title(f"{variables[1]}={var_to_string(variables[1], v1)};{variables[2]}="
-                                           f"{var_to_string(variables[2], v2)}")
-                    axes[i1, i2].set_xlabel("iteration")
-                    axes[i1, i2].xaxis.set_major_locator(MaxNLocator(integer=True))
-                    axes[i1, i2].set_ylabel("distance from G.T.")
-                    axes[i1, i2].set_ylim((0.0, ylim_upper))
-                    axes[i1, i2].legend()
-        plt.show()
-        return
-
-    if len(variables) == 5:
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df,  #
-            ordered_axes=variables + ["iteration"],  #
-            value_column="distance"  #
-        )
-        if distance_std_available:
-            distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
-                df,  #
-                ordered_axes=variables + ["iteration"],  #
-                value_column="distance_std"  #
-            )
-
-        # getting the median largest distance value
-        ylim_upper = distances.amax(dim=-1).quantile(q=0.75)
-
-        for i0, v0 in enumerate(axis_values[variables[0]]):
-            for i1, v1 in enumerate(axis_values[variables[1]]):
-                fig, axes = plt.subplots(distances.size(2), distances.size(3), figsize=(13, 8))
-                fig.suptitle(f"{variables[0]}={var_to_string(variables[0], v0)};{variables[1]}="
-                             f"{var_to_string(variables[1], v1)}")
-                if dense:
-                    fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                                        right=0.98,  # right margin
-                                        bottom=0.08,  # bottom margin
-                                        top=0.95,  # top margin
-                                        wspace=0.2,  # width space between columns
-                                        hspace=0.3  # height space between rows
-                                        )
-                for i2, v2 in enumerate(axis_values[variables[2]]):
-                    for i3, v3 in enumerate(axis_values[variables[3]]):
-                        for i4, v4 in enumerate(axis_values[variables[4]]):
-                            axes[i2, i3].plot(axis_values["iteration"], distances[i0, i1, i2, i3, i4, :],
-                                              label=f"{variables[4]}={var_to_string(variables[4], v4)}",
-                                              color=get_color(i4))
-                            if distance_std_available:
-                                axes[i2, i3].errorbar(axis_values["iteration"], distances[i0, i1, i2, i3, i4, :],
-                                                      yerr=distance_stds[i0, i1, i2, i3, i4, :], fmt='x-', capsize=4,
-                                                      color=get_color(i4))
-                        axes[i2, i3].set_title(f"{variables[2]}={var_to_string(variables[2], v2)};{variables[3]}="
-                                               f"{var_to_string(variables[3], v3)}")
-                        axes[i2, i3].set_xlabel("iteration")
-                        axes[i2, i3].xaxis.set_major_locator(MaxNLocator(integer=True))
-                        axes[i2, i3].set_ylabel("distance from G.T.")
-                        axes[i2, i3].set_ylim((0.0, ylim_upper))
-                        axes[i2, i3].legend()
-        plt.show()
-        return
-
-    # -----
-    # data over downsample level, truncation fraction and starting distance, stratified by masking
-    if len(variables) == 4 and variables[0] == "mask":
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df.loc[(df[variables[3]] == "Every evaluation")],  #
-            ordered_axes=variables[:3] + ["iteration"],  #
-            value_column="distance"  #
-        )
-
-        fig, axes = plt.subplots(distances.size(0), distances.size(1))
-        fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                            right=0.98,  # right margin
-                            bottom=0.08,  # bottom margin
-                            top=0.95,  # top margin
-                            wspace=0.2,  # width space between columns
-                            hspace=0.3  # height space between rows
-                            )
-        for k, dl in enumerate(axis_values[variables[0]]):
-            for j, tf in enumerate(axis_values[variables[1]]):
-                for i, sd in enumerate(axis_values[variables[2]]):
-                    axes[k, j].plot(axis_values["iteration"], distances[k, j, i, :], label="s.d. {:.3f}".format(sd))
-                    axes[k, j].set_title("d.l. {}; t.f. {:.3f}".format(dl, tf))
-                    axes[k, j].set_xlabel("iteration")
-                    axes[k, j].xaxis.set_major_locator(MaxNLocator(integer=True))
-                    axes[k, j].set_ylabel("distance from G.T.")
-                    axes[k, j].set_ylim((0.0, None))
-                    axes[k, j].legend()
-        plt.show()
-
-    # data over truncation percent, masking and cropping
-    if len(variables) == 3:
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df,  #
-            ordered_axes=variables + ["iteration"],  #
-            value_column="distance")
-
-        fig, axes = plt.subplots(distances.size(0), distances.size(1))
-        fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                            right=0.98,  # right margin
-                            bottom=0.08,  # bottom margin
-                            top=0.95,  # top margin
-                            wspace=0.2,  # width space between columns
-                            hspace=0.3  # height space between rows
-                            )
-        for k, cp in enumerate(axis_values[variables[0]]):
-            for j, mk in enumerate(axis_values[variables[1]]):
-                for i, tp in enumerate(axis_values[variables[2]]):
-                    axes[k, j].plot(axis_values["iteration"], distances[k, j, i, :], label=f"t.p. {tp}")
-                    axes[k, j].set_title("cp. {}; mk. {}".format(cp, mk))
-                    axes[k, j].set_xlabel("iteration")
-                    axes[k, j].xaxis.set_major_locator(MaxNLocator(integer=True))
-                    axes[k, j].set_ylabel("distance from G.T.")
-                    axes[k, j].set_ylim((0.0, None))
-                    axes[k, j].legend()
-        plt.show()
-
-    # data over truncation fraction, stratified by cropping
-    if len(variables) == 2 and variables[1] == "cropping":
-        for crop in ["None", "full_depth_drr", "nonzero_drr"]:
-            # for mask in ["None", "Every evaluation", "Every evaluation weighting zncc"]:
-            # converting to a tensor, with an axis per variable
-            distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-                df.loc[(df["cropping"] == crop)],  #
-                # df.loc[(df["mask"] == mask)],  #
-                ordered_axes=[variables[0], "iteration"],  #
-                value_column="distance")
-
-            fig, axes = plt.subplots()
-            fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                                right=0.98,  # right margin
-                                bottom=0.08,  # bottom margin
-                                top=0.95,  # top margin
-                                wspace=0.2,  # width space between columns
-                                hspace=0.3  # height space between rows
-                                )
-            for j, tf in enumerate(axis_values[variables[0]]):
-                axes.plot(axis_values["iteration"], distances[j, :], label="t.f. {:.3f}".format(tf))
-                axes.set_xlabel("iteration")
-                axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-                axes.set_ylabel("distance from G.T.")
-                # axes.set_ylim((0.0, None))
-                axes.legend()
-                axes.set_title(crop)
+    return
 
     # data over downsample level and truncation fraction, stratified by masking
     if False:
