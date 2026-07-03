@@ -285,10 +285,10 @@ class Cropping(traitlets.HasTraits):
         h = distance / (float(image_size[1]) * image_spacing[0].item())
         v = distance / (float(image_size[0]) * image_spacing[1].item())
         return Cropping(  #
-            right=min(1.0, self.right + h),  #
-            top=max(0.0, self.top - v),  #
-            left=max(0.0, self.left - h),  #
-            bottom=min(1.0, self.bottom + v),  #
+            right=min(1.0, max(self.left, self.right + h)),  #
+            top=min(self.top, max(0.0, self.top - v)),  #
+            left=min(self.right, max(0.0, self.left - h)),  #
+            bottom=min(1.0, max(self.top, self.bottom + v)),  #
         )
 
     @staticmethod

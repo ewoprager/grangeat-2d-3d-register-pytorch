@@ -1,3 +1,6 @@
 {"action": "set", "xray_sop_instance_uid": "1.2.840.113619.2.420.4.8323328.1781537396.256397", "horizontal_flip": false, "crop_left": 0.16, "crop_right": 0.95, "crop_top": 0.05, "crop_bottom": 0.96}
 {"action": "set", "xray_sop_instance_uid": "1.2.840.113619.2.420.4.8323328.1781536767.200866", "horizontal_flip": false, "crop_left": 0.15000000000000002, "crop_right": 0.9299999999999999, "crop_top": 0.05, "crop_bottom": 0.96}
 {"action": "set", "xray_sop_instance_uid": "1.2.840.113619.2.420.4.8323328.1781537159.212274", "horizontal_flip": false, "crop_left": 0.15000000000000002, "crop_right": 0.94, "crop_top": 0.03, "crop_bottom": 0.96}
+{"action": "set", "xray_sop_instance_uid": "1.2.840.113619.2.420.4.8323328.1781537272.241157", "horizontal_flip": false, "crop_left": 0.09, "crop_right": 0.9199999999999999, "crop_top": 0.05, "crop_bottom": 0.96}
+{"action": "set", "xray_sop_instance_uid": "1.2.840.113619.2.420.4.8323328.1781536987.794348", "horizontal_flip": false, "crop_left": 0.15, "crop_right": 0.95, "crop_top": 0.060000000000000005, "crop_bottom": 0.94}
+{"action": "set", "xray_sop_instance_uid": "1.2.840.113619.2.420.4.8323328.1781537712.550659", "horizontal_flip": false, "crop_left": 0.05, "crop_right": 0.95, "crop_top": 0.08, "crop_bottom": 0.98}

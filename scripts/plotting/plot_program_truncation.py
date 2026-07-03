@@ -219,8 +219,8 @@ def main(  #
     assert "variables" in variables_config
     variables: list[str] = list(variables_config["variables"].keys())
 
-    variable_hierarchy: list[str] = ["crop_expand", "mask", "cropping", "xray_path",
-                                     "truncation_percent"]  # most to least important
+    variable_hierarchy: list[str] = ["mask", "crop_expand", "cropping", "truncation_percent",
+                                     "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     variables = sorted(  #
         variables,  #

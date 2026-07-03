@@ -319,7 +319,7 @@ class ExperimentConfig(traitlets.HasTraits):
         "full_depth_drr"  #
     ], default_value=traitlets.Undefined)
     crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
-    crop_expand: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
+    crop_expand: float = traitlets.Float(default_value=traitlets.Undefined)
     mask: str = traitlets.Enum(values=[  #
         "None",  #
         "Every evaluation",  #
@@ -460,6 +460,9 @@ def run_experiment(  #
             crop_size_samples[i, 0] = (cropping.right - cropping.left) * float(image.size()[1]) * spacing[0].item()
             crop_size_samples[i, 1] = (cropping.bottom - cropping.top) * float(image.size()[0]) * spacing[1].item()
             cropping = cropping.expand_mm(exp_config.crop_expand, image_size=image.size(), image_spacing=spacing)
+            # expand could be negative, so checking again for collapse
+            if cropping.is_collapsed(exp_config.crop_min_size):
+                cropping = cropping.uncollapse(exp_config.crop_min_size)
 
         data_manager().set("further_cropping", cropping, check_equality=True)
         # -----
@@ -707,7 +710,7 @@ def main(  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
         "downsample_level": 1,  #
         "truncation_percent": 80,  #
-        "cropping": "full_depth_drr",  #
+        "cropping": "nonzero_drr",  #
         "crop_expand": 0.0,  #
         "crop_min_size": 0.01,  #
         "mask": "None",  #
@@ -721,14 +724,17 @@ def main(  #
     }
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
+        # "level_090",  #
         "up_000",  #
+        # "up_090",  #
         "down_000",  #
+        # "down_090",  #
     ]
     params_to_vary: dict[str, list | torch.Tensor] = {  #
-        "truncation_percent": [70, 85],  #
-        "mask": ["None", "Every evaluation weighting zncc"],  #
+        "truncation_percent": [75, 80, 85],  #
         "cropping": ["nonzero_drr", "full_depth_drr"],  #
-        "crop_expand": [0.0, 4.0, 16.0],  #
+        "mask": ["None", "Every evaluation weighting zncc"],  #
+        "crop_expand": [-20.0, -10.0, 0.0, 10.0, 20.0],  #
     }
     # ----------------------------------
 
