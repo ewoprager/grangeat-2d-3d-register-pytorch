@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from typing import NamedTuple, Sequence, Tuple, Union
 
@@ -11,6 +12,8 @@ from jaxtyping import Float32, Float64, jaxtyped
 
 __all__ = ["Error", "GrowingTensor", "LinearMapping", "LinearRange", "Transformation", "SceneGeometry", "Cropping",
            "Sinogram2dRange", "Sinogram2dGrid", "Sinogram3dGrid", "OptimisationInstance"]
+
+logger = logging.getLogger(__name__)
 
 
 class Error:
@@ -87,6 +90,11 @@ class LinearRange:
 class Transformation:
     @jaxtyped(typechecker=typechecker)
     def __init__(self, *, rotation: Float64[torch.Tensor, "3"], translation: Float64[torch.Tensor, "3"]):
+        """
+        Construct a new transformation from an axis-angle rotation and a translation.
+
+        Both tensors MUST be on the same device.
+        """
         assert rotation.device == translation.device
         self._rotation = rotation
         self._translation = translation
@@ -108,7 +116,7 @@ class Transformation:
     def get_h(self, device: torch.device) -> Float64[torch.Tensor, "4 4"]:
         """
         :param device: The device to put the returned tensor on
-        :return: [(4, 4) tensor] The homogenous affine transformation matrix H corresponding to this transformation.
+        :return: The homogenous affine transformation matrix H corresponding to this transformation.
         Stored column-major.
         """
         r = kornia.geometry.conversions.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0].to(device=device)
@@ -137,19 +145,21 @@ class Transformation:
     def device(self):
         return self.rotation.device
 
-    def to(self, **kwargs) -> 'Transformation':
-        return Transformation(rotation=self.rotation.to(**kwargs), translation=self.translation.to(**kwargs))
+    def to(self, device: torch.device) -> 'Transformation':
+        return Transformation(rotation=self.rotation.to(device=device), translation=self.translation.to(device=device))
 
     def clone(self) -> 'Transformation':
         return Transformation(rotation=self.rotation.clone(), translation=self.translation.clone())
 
-    def distance(self, other: 'Transformation') -> float:
+    def distance(self, other: 'Transformation', length_scale: float = 100.0) -> float:
+        logger.warning("Transformation.distance is not currently the intended method of measurement. Prefer Euclidean "
+                       "distance in parameter space.")
         device = self.translation.device
         r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
             self.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float64)
         r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
             other.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float64)
-        return (((self.translation - other.translation) / 100.).square().sum() + torch.tensor(
+        return (((self.translation - other.translation) / length_scale).square().sum() + torch.tensor(
             numpy.array([numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))]), dtype=torch.float64,
             device=device).square().sum()).sqrt().item()
 
@@ -174,16 +184,19 @@ class Transformation:
         )
 
     @classmethod
-    def random_gaussian(cls, *, rotation_mean: torch.Tensor, rotation_std: Union[torch.Tensor, float],
-                        translation_mean: torch.Tensor, translation_std: Union[torch.Tensor, float],
-                        generator=None) -> 'Transformation':
-        assert rotation_mean.size() == torch.Size([3])
-        assert translation_mean.size() == torch.Size([3])
+    @jaxtyped(typechecker=typechecker)
+    def random_gaussian(  #
+            cls,  #
+            *,  #
+            rotation_mean: Float64[torch.Tensor, "3"],  #
+            rotation_std: Union[Float64[torch.Tensor, "3"], float],  #
+            translation_mean: Float64[torch.Tensor, "3"],  #
+            translation_std: Union[Float64[torch.Tensor, "3"], float],  #
+            generator: torch.Generator | None = None  #
+    ) -> 'Transformation':
         assert translation_mean.device == rotation_mean.device
-        assert isinstance(rotation_std, float) or (
-                (rotation_std.size() == torch.Size([3])) and (rotation_std.device == rotation_mean.device))
-        assert isinstance(translation_std, float) or (
-                (translation_std.size() == torch.Size([3])) and (translation_std.device == rotation_mean.device))
+        assert isinstance(rotation_std, float) or (rotation_std.device == rotation_mean.device)
+        assert isinstance(translation_std, float) or (translation_std.device == rotation_mean.device)
         return Transformation(rotation=torch.normal(mean=rotation_mean, std=rotation_std, generator=generator),
                               translation=torch.normal(mean=translation_mean, std=translation_std, generator=generator))
 
@@ -394,15 +407,7 @@ class Sinogram3dGrid(NamedTuple):
 
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
-    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None
-    # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count
-    # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,
-    # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #
-    # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #
-    # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #
-    # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #
-    # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,
-    # thetas, rs)
+    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None  # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count  # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,  # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #  # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #  # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #  # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #  # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,  # thetas, rs)
 
 
 class OptimisationInstance(ABC):

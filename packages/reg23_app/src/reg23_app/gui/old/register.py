@@ -13,11 +13,11 @@ import torch
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from magicgui import widgets
 from qtpy.QtWidgets import QApplication
+
 from reg23_app.gui.old.lib.structs import Cropping, HyperParameters, SavedXRayParams, Target, WidgetManageSaved, \
     WidgetSelectData
 from reg23_app.gui.old.registration_data import RegistrationData
 from reg23_app.gui.old.transformations import TransformationWidget
-
 from reg23_experiments.data.structs import GrowingTensor, SceneGeometry, Transformation
 from reg23_experiments.ops import optimisation
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
@@ -620,7 +620,7 @@ class RegisterWidget(widgets.Container):
     def _obj_func_with_mask_regen(self, obj_func: Callable[[Transformation], torch.Tensor]) -> Callable[
         [Transformation], torch.Tensor]:
         def ret(transformation: Transformation) -> torch.Tensor:
-            self._registration_data.mask_transformation = transformation.to(dtype=torch.float32)
+            self._registration_data.mask_transformation = transformation.clone()
             return obj_func(transformation)
 
         return ret

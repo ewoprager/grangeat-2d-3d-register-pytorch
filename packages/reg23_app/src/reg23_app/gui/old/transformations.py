@@ -5,8 +5,8 @@ from typing import Callable
 import torch
 from magicgui import widgets
 from qtpy.QtWidgets import QApplication
-from reg23_app.gui.old.lib.structs import WidgetManageSaved
 
+from reg23_app.gui.old.lib.structs import WidgetManageSaved
 from reg23_experiments.data.structs import Transformation
 
 __all__ = ["TransformationWidget"]
@@ -61,7 +61,7 @@ class TransformationWidget(widgets.Container):
         return self._current_transformation
 
     def set_current_transformation(self, new_value: Transformation) -> None:
-        self._current_transformation = new_value.to(device=self._current_transformation.device, dtype=torch.float32)
+        self._current_transformation = new_value.to(device=self._current_transformation.device)
         self._suppress_callbacks = True
         for i in range(3):
             self._translation_widgets[i].set_value(self._current_transformation.translation[i].item())
