@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any, Sequence
 
@@ -19,6 +20,8 @@ from reg23_experiments.io.image import read_dicom
 
 __all__ = ["load_untruncated_ct", "set_target_image", "apply_truncation", "project_drr", "project_fiducials"]
 
+logger = logging.getLogger(__name__)
+
 
 @dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing", "ct_series_uid"])
 def load_untruncated_ct(  #
@@ -31,6 +34,9 @@ def load_untruncated_ct(  #
     if isinstance(res, Error):
         raise Exception(f"Failed to open CT from path '{ct_path}': {res.description}")
     uid, volume = res
+    logger.info("CT loaded from path '{}' with size [{} x {} x {}] and spacing ({:.3f}, {:.3f}, {:.3f})".format(  #
+        str(ct_path), *list(volume.GetSize()), *list(volume.GetSpacing())  #
+    ))
     ct_volume = convert_ct_to_mu_sitk(volume, dtype=torch.float32)
     if isinstance(ct_volume, Error):
         raise Exception(f"Failed to convert CT from path '{ct_path}' to mu: {ct_volume.description}")

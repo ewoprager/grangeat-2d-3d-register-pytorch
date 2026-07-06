@@ -84,13 +84,13 @@ def grid_of_plots_figure(  #
     if dependent_errors is not None:
         assert dependent_errors.size() == dependent_values.size()
     # figure and axes
-    fig, axes = plt.subplots(*dependent_values.size()[:-2], figsize=(13, 8))
+    fig, axes = plt.subplots(*dependent_values.size()[:-2], figsize=(6, 6) if dense else (13, 8))
     axes = np.array(axes)
     if dense:
-        fig.subplots_adjust(left=0.05,  # margin on left side of figure
+        fig.subplots_adjust(left=0.08,  # margin on left side of figure
                             right=0.98,  # right margin
                             bottom=0.08,  # bottom margin
-                            top=0.95,  # top margin
+                            top=0.9,  # top margin
                             wspace=0.2,  # width space between columns
                             hspace=0.3  # height space between rows
                             )
@@ -192,7 +192,7 @@ def main(  #
         plt.rcParams["font.family"] = "serif"
         plt.rcParams["scatter.marker"] = 'x'
         plt.rcParams[
-            "font.size"] = 15  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib    #
+            "font.size"] = 11  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib    #
         # scales up by 1.2 (God only knows why). 36 is tool big, however, so going a bit smaller than 30
 
     # -----
@@ -250,13 +250,49 @@ def main(  #
             ordered_axes=variables + ["iteration"],  #
             value_column="distance_std"  #
         )
-    plot_grid_figures(  #
-        independent_values=axis_values,  #
-        dependent_variable="distance from G.T.",  #
-        dependent_values=distances,  #
-        dependent_errors=distance_stds if distance_std_available else None,  #
-        dense=dense,  #
-    )
+    if "crop_expand" not in variables or False:
+        plot_grid_figures(  #
+            independent_values=axis_values,  #
+            dependent_variable="distance from G.T.",  #
+            dependent_values=distances,  #
+            dependent_errors=distance_stds if distance_std_available else None,  #
+            dense=dense,  #
+        )
+    else:
+        dimension = variables.index("crop_expand")
+        best_crop_expand_indices = distances[..., -1].argmin(dim=dimension, keepdim=True)
+        new_size = distances.amin(dim=dimension, keepdim=True).size()
+        distances_chosen = distances.gather(  #
+            dim=dimension,  #
+            index=best_crop_expand_indices.unsqueeze(-1).expand(new_size)  #
+        ).squeeze(dimension)
+        if distance_std_available:
+            distance_stds_chosen = distance_stds.gather(  #
+                dim=dimension,  #
+                index=best_crop_expand_indices.unsqueeze(-1).expand(new_size)  #
+            ).squeeze(dimension)
+        new_axis_values = [(name, array) for name, array in axis_values if name != "crop_expand"]
+
+        ylim: tuple[float, float] | None = (0.0, distances_chosen.amax(dim=-1).quantile(q=0.75).item()) if len(
+            new_axis_values) > 2 else None
+
+        for index_value_pairs in itertools.product(*[enumerate(v) for _, v in new_axis_values[:-3]]):
+            dependent_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
+            fig, axes = grid_of_plots_figure(  #
+                independent_values=new_axis_values[-3:],  #
+                dependent_variable="distance from G.T.",  #
+                dependent_values=distances_chosen[*dependent_index],  #
+                dependent_errors=distance_stds_chosen[*dependent_index] if distance_std_available else None,  #
+                dense=dense,  #
+                ylim=ylim,  #
+            )
+            fig.suptitle(  #
+                ";".join([  #
+                    f"{new_axis_values[i][0]}={var_to_string(new_axis_values[i][0], w)}"  #
+                    for i, w in enumerate([v for _, v in index_value_pairs])  #
+                ])  #
+            )
+        plt.show()
 
     if "xray_path" in variables and crop_size_available:
         # crop_widths, axis_values = dataframe_rectangular_columns_to_tensor(  #
