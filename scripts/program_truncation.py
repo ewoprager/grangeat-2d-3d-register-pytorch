@@ -734,7 +734,7 @@ def main(  #
         "truncation_percent": [75, 80, 85],  #
         "cropping": ["nonzero_drr", "full_depth_drr"],  #
         "mask": ["None", "Every evaluation weighting zncc"],  #
-        "crop_expand": [-20.0, -10.0, 0.0, 10.0, 20.0],  #
+        "crop_expand": [-15.0, -5.0, 5.0, 15.0],  #
     }
     # ----------------------------------
 

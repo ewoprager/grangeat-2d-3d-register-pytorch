@@ -19,7 +19,7 @@ from reg23_experiments.utils import logs_setup
 MPL_COLOURS = rcParams['axes.prop_cycle'].by_key()['color']
 
 
-def get_color(i):
+def get_colour(i):
     return MPL_COLOURS[i % len(MPL_COLOURS)]
 
 
@@ -96,13 +96,21 @@ def grid_of_plots_figure(  #
                             )
     for index_value_pairs in itertools.product(*[enumerate(v) for _, v in independent_values[:-2]]):
         axis_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
+        if isinstance(independent_values[-2][1][0], float):
+            v_min = np.min(independent_values[-2][1])
+            v_max = np.max(independent_values[-2][1])
         for j, v in enumerate(independent_values[-2][1]):
             dependent_index = axis_index + (j,)
+            if isinstance(v, float):
+                r = (v - v_min) / (v_max - v_min)
+                colour = (r, 1.0 - r, 0.0)
+            else:
+                colour = get_colour(j)
             axes[axis_index].plot(  #
                 independent_values[-1][1],  #
                 dependent_values[*dependent_index, :],  #
                 label=f"{independent_values[-2][0]}={var_to_string(independent_values[-2][0], v)}",  #
-                color=get_color(j),  #
+                color=colour,  #
             )
             if dependent_errors is not None:
                 axes[axis_index].errorbar(  #
@@ -111,7 +119,7 @@ def grid_of_plots_figure(  #
                     yerr=dependent_errors[*dependent_index, :],  #
                     fmt='x-',  #
                     capsize=4,  #
-                    color=get_color(j)  #
+                    color=colour  #
                 )
         axes[axis_index].set_xlabel(independent_values[-1][0])
         axes[axis_index].set_title(  #
@@ -167,7 +175,7 @@ def plot_grid_figures(  #
 def main(  #
         *,  #
         load_dir: pathlib.Path,  #
-        which_dataset: str,  #
+        which_datasets: list[str],  #
         display: bool,  #
         save_figures: bool,  #
         save_directory: pathlib.Path,  #
@@ -189,22 +197,23 @@ def main(  #
 
     # -----
     # Getting the latest data instance if desired
-    if which_dataset == "latest":
+    if not which_datasets:
         subdirs = []
         for element in load_dir.iterdir():
             if not element.is_dir():
                 continue
             subdirs.append(str(element.stem))
         subdirs.sort()
-        which_dataset = subdirs[-1]
-    instance_dir: pathlib.Path = load_dir / which_dataset
-    assert instance_dir.is_dir()
+        which_datasets = [subdirs[-1]]
+    instance_dirs: list[pathlib.Path] = [load_dir / name for name in which_datasets]
+    for d in instance_dirs:
+        assert d.is_dir()
 
     # -----
     # Reading in parquet data and concatenating
     df = pd.concat([  #
         pd.read_parquet(element)  #
-        for element in instance_dir.iterdir()  #
+        for element in itertools.chain.from_iterable([d.iterdir() for d in instance_dirs])  #
         if element.stem.startswith("data") and element.suffix == ".parquet"  #
     ], ignore_index=True)
     distance_std_available = "distance_std" in df
@@ -212,14 +221,14 @@ def main(  #
 
     # -----
     # Reading in the variables
-    variables_path = instance_dir / "variables.txt"
+    variables_path = instance_dirs[0] / "variables.txt"
     assert variables_path.is_file()
     with open(variables_path, 'r') as file:
         variables_config = yaml.safe_load(file)
     assert "variables" in variables_config
     variables: list[str] = list(variables_config["variables"].keys())
 
-    variable_hierarchy: list[str] = ["mask", "crop_expand", "cropping", "truncation_percent",
+    variable_hierarchy: list[str] = ["crop_expand", "mask", "cropping", "truncation_percent",
                                      "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     variables = sorted(  #
@@ -395,9 +404,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="", epilog="")
     parser.add_argument("-l", "--load-dir", type=str, default="experimental_results/program_truncation",
                         help="Directory in which to find the data files.")
-    parser.add_argument("-w", "--which-dataset", type=str, default="latest",
-                        help="Which dataset to plot. Either 'latest', or a timestamp in the format "
-                             "'YYYY-MM-DD_hh-mm-ss'.")
+    parser.add_argument("-w", "--which-datasets", type=str, nargs='+',
+                        help="Which datasets to plot, given as timestamps in the format "
+                             "'YYYY-MM-DD_hh-mm-ss'. If not provided, the latest dataset will be used.")
     parser.add_argument("-s", "--save-dir", type=str, default="figures/truncation/program_truncation",
                         help="Set a directory in which to save the resulting figures.")
     parser.add_argument("-r", "--save-figures", action="store_true",
@@ -407,5 +416,11 @@ if __name__ == "__main__":
                         help="Format the plots for analysis, rather than PGF plot generation.")
     args = parser.parse_args()
 
-    main(load_dir=pathlib.Path(args.load_dir), which_dataset=args.which_dataset, display=args.display,
-         save_figures=args.save_figures, save_directory=pathlib.Path(args.save_dir), analysis_format=args.analysis)
+    main(  #
+        load_dir=pathlib.Path(args.load_dir),  #
+        which_datasets=args.which_datasets,  #
+        display=args.display,  #
+        save_figures=args.save_figures,  #
+        save_directory=pathlib.Path(args.save_dir),  #
+        analysis_format=args.analysis  #
+    )
