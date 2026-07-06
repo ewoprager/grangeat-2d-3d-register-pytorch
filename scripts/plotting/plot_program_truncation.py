@@ -23,9 +23,37 @@ def get_colour(i):
     return MPL_COLOURS[i % len(MPL_COLOURS)]
 
 
+def latex_escape(s: str) -> str:
+    return (  #
+        s.replace("\\", r"\textbackslash{}")  #
+        .replace("_", r"\_")  #
+        .replace("%", r"\%")  #
+        .replace("&", r"\&")  #
+        .replace("#", r"\#")  #
+        .replace("{", r"\{")  #
+        .replace("}", r"\}")  #
+    )
+
+
+def save_legend_figure(axes, path: pathlib.Path) -> None:
+    handles, labels = axes.get_legend_handles_labels()
+    legend_fig = plt.figure(figsize=(2, 2))
+    legend = legend_fig.legend(handles, labels, loc="center", ncol=1,  # or however many columns you want
+                               frameon=False)
+    legend_fig.canvas.draw()
+    legend_fig.savefig(path, bbox_inches="tight", bbox_extra_artists=[legend], )
+
+
 def var_to_string(variable_name: str, value: Any) -> str:
-    if variable_name == "mask" or variable_name == "cropping" or variable_name == "sim_metric":
+    if variable_name == "cropping" or variable_name == "sim_metric":
         return value
+    elif variable_name == "mask":
+        if value == "None":
+            return "no"
+        elif value == "Every evaluation weighting zncc":
+            return "yes"
+        else:
+            return value
     elif variable_name == "xray_path":
         return pathlib.Path(value).name
     elif variable_name == "truncation_percent" or variable_name == "downsample_level":
@@ -77,6 +105,7 @@ def grid_of_plots_figure(  #
         dependent_errors: torch.Tensor | None = None,  #
         dense: bool = False,  #
         ylim: tuple[float, float] | None = None,  #
+        legend: bool = True,  #
 ) -> tuple[Figure, np.ndarray]:
     # check arguments
     assert 2 <= len(independent_values) <= 4
@@ -109,7 +138,7 @@ def grid_of_plots_figure(  #
             axes[axis_index].plot(  #
                 independent_values[-1][1],  #
                 dependent_values[*dependent_index, :],  #
-                label=f"{independent_values[-2][0]}={var_to_string(independent_values[-2][0], v)}",  #
+                label=latex_escape(f"{independent_values[-2][0]}={var_to_string(independent_values[-2][0], v)}"),  #
                 color=colour,  #
             )
             if dependent_errors is not None:
@@ -121,18 +150,19 @@ def grid_of_plots_figure(  #
                     capsize=4,  #
                     color=colour  #
                 )
-        axes[axis_index].set_xlabel(independent_values[-1][0])
-        axes[axis_index].set_title(  #
+        axes[axis_index].set_xlabel(latex_escape(independent_values[-1][0]))
+        axes[axis_index].set_title(latex_escape(  #
             ";".join([  #
                 f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
                 for i, w in enumerate([v for _, v in index_value_pairs])  #
             ])  #
-        )
+        ))
         axes[axis_index].xaxis.set_major_locator(MaxNLocator(integer=True))
-        axes[axis_index].set_ylabel(dependent_variable)
+        axes[axis_index].set_ylabel(latex_escape(dependent_variable))
         if ylim is not None:
             axes[axis_index].set_ylim(ylim)
-        axes[axis_index].legend()
+        if legend:
+            axes[axis_index].legend()
     return fig, axes
 
 
@@ -143,6 +173,8 @@ def plot_grid_figures(  #
         dependent_values: torch.Tensor,  #
         dependent_errors: torch.Tensor | None = None,  #
         dense: bool = False,  #
+        save_to: pathlib.Path | None = None,  #
+        legend_separate: bool = False,  #
 ) -> None:
     # check arguments
     assert 2 <= len(independent_values)
@@ -162,13 +194,21 @@ def plot_grid_figures(  #
             dependent_errors=None if dependent_errors is None else dependent_errors[*dependent_index],  #
             dense=dense,  #
             ylim=ylim,  #
+            legend=not legend_separate,  #
         )
-        fig.suptitle(  #
+        fig.suptitle(latex_escape(  #
             ";".join([  #
                 f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
                 for i, w in enumerate([v for _, v in index_value_pairs])  #
             ])  #
-        )
+        ))
+        if save_to is not None:
+            fig.savefig(save_to / ("_".join(  #
+                f"{independent_values[i][0]}-{j}"  #
+                for i, j in enumerate([k for k, _ in index_value_pairs])  #
+            ) + ".pgf"))
+    if legend_separate:
+        save_legend_figure(axes.flatten()[0], save_to / "legend.pgf")
     plt.show()
 
 
@@ -177,11 +217,12 @@ def main(  #
         load_dir: pathlib.Path,  #
         which_datasets: list[str],  #
         display: bool,  #
-        save_figures: bool,  #
-        save_directory: pathlib.Path,  #
+        save_to: pathlib.Path | None,  #
         analysis_format: bool,  #
 ) -> None:
     assert load_dir.is_dir()
+    if save_to is not None:
+        save_to.mkdir(parents=True, exist_ok=True)
 
     # -----
     if analysis_format:
@@ -194,6 +235,7 @@ def main(  #
         plt.rcParams[
             "font.size"] = 11  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib    #
         # scales up by 1.2 (God only knows why). 36 is tool big, however, so going a bit smaller than 30
+        rcParams["pgf.texsystem"] = "pdflatex"
 
     # -----
     # Getting the latest data instance if desired
@@ -253,10 +295,12 @@ def main(  #
     if "crop_expand" not in variables or False:
         plot_grid_figures(  #
             independent_values=axis_values,  #
-            dependent_variable="distance from G.T.",  #
+            dependent_variable="distance from gold-standard",  #
             dependent_values=distances,  #
             dependent_errors=distance_stds if distance_std_available else None,  #
             dense=dense,  #
+            save_to=save_to,  #
+            legend_separate=True,  #
         )
     else:
         dimension = variables.index("crop_expand")
@@ -280,18 +324,23 @@ def main(  #
             dependent_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
             fig, axes = grid_of_plots_figure(  #
                 independent_values=new_axis_values[-3:],  #
-                dependent_variable="distance from G.T.",  #
+                dependent_variable="distance from gold-standard",  #
                 dependent_values=distances_chosen[*dependent_index],  #
                 dependent_errors=distance_stds_chosen[*dependent_index] if distance_std_available else None,  #
                 dense=dense,  #
                 ylim=ylim,  #
             )
-            fig.suptitle(  #
+            fig.suptitle(latex_escape(  #
                 ";".join([  #
                     f"{new_axis_values[i][0]}={var_to_string(new_axis_values[i][0], w)}"  #
                     for i, w in enumerate([v for _, v in index_value_pairs])  #
                 ])  #
-            )
+            ))
+            if save_to is not None:
+                fig.savefig(save_to / ("_".join(  #
+                    f"{new_axis_values[i][0]}-{j}"  #
+                    for i, j in enumerate([k for k, _ in index_value_pairs])  #
+                ) + ".pgf"))
         plt.show()
 
     if "xray_path" in variables and crop_size_available:
@@ -443,10 +492,8 @@ if __name__ == "__main__":
     parser.add_argument("-w", "--which-datasets", type=str, nargs='+',
                         help="Which datasets to plot, given as timestamps in the format "
                              "'YYYY-MM-DD_hh-mm-ss'. If not provided, the latest dataset will be used.")
-    parser.add_argument("-s", "--save-dir", type=str, default="figures/truncation/program_truncation",
+    parser.add_argument("-s", "--save-to", type=str, default=None,
                         help="Set a directory in which to save the resulting figures.")
-    parser.add_argument("-r", "--save-figures", action="store_true",
-                        help="Format plots appropriately for using in a report and save them in the save directory.")
     parser.add_argument("-d", "--display", action="store_true", help="Display/plot the resulting data.")
     parser.add_argument("-a", "--analysis", action="store_true",
                         help="Format the plots for analysis, rather than PGF plot generation.")
@@ -456,7 +503,6 @@ if __name__ == "__main__":
         load_dir=pathlib.Path(args.load_dir),  #
         which_datasets=args.which_datasets,  #
         display=args.display,  #
-        save_figures=args.save_figures,  #
-        save_directory=pathlib.Path(args.save_dir),  #
+        save_to=None if args.save_to is None else pathlib.Path(args.save_to),  #
         analysis_format=args.analysis  #
     )

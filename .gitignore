@@ -10,6 +10,7 @@ saved/
 data/temp/
 figures/landscapes/
 figures/truncation/
+figures/program_truncation/
 **/*.egg-info/
 Logs/*
 data/register_plot_data/
