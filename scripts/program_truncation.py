@@ -209,6 +209,19 @@ def apply_truncation(*, untruncated_ct_volume: torch.Tensor, truncation_percent:
     return {"ct_volumes": ct_volumes}
 
 
+@dadg_updater(names_returned=["truncation_percent"])
+def truncation_percent_for_desired_h_valid(  #
+        *,  #
+        transformation_gt: Transformation | None,  #
+        untruncated_ct_volume: torch.Tensor,  #
+        ct_spacing: torch.Tensor,  #
+        desired_h_valid: float,  #
+) -> dict[str, Any]:
+    # ToDo
+    # h = (h_valid + l*sin(theta)) / cos(theta)
+    return {"truncation_percent": 50}
+
+
 class RegConfig(traitlets.HasTraits):
     particle_count: int = traitlets.Int(default_value=traitlets.Undefined)
     particle_initialisation_spread: float = traitlets.Float(default_value=traitlets.Undefined)

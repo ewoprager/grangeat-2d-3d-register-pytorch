@@ -136,6 +136,20 @@ class Transformation:
             ))  #
         )
 
+    @jaxtyped(typechecker=typechecker)
+    def with_euler_rotation_offset(  #
+            self,  #
+            euler_angles: Float64[torch.Tensor, "3"],  #
+            seq: str = "xyz"  #
+    ) -> 'Transformation':
+        my_rot = scipy.spatial.transform.Rotation.from_rotvec(rotvec=self.rotation.cpu().numpy())
+        rot_euler = scipy.spatial.transform.Rotation.from_euler(seq=seq, angles=euler_angles.cpu().numpy())
+        rot_combined = rot_euler * my_rot
+        return Transformation(  #
+            rotation=torch.tensor(rot_combined.as_rotvec(), device=self.device, dtype=torch.float64),  #
+            translation=self.translation  #
+        )
+
     @staticmethod
     @jaxtyped(typechecker=typechecker)
     def from_vector(vector: Float64[torch.Tensor, "6"]) -> 'Transformation':
@@ -407,7 +421,15 @@ class Sinogram3dGrid(NamedTuple):
 
         return Sinogram3dGrid(ret_phi, ret_theta, ret_r)
 
-    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None  # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count  # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,  # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #  # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #  # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #  # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #  # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,  # thetas, rs)
+    # @classmethod  # def fibonacci_from_r_range(cls, r_range: LinearRange, r_count: int, *, spiral_count: int | None
+    # = None,  #                            device=torch.device("cpu")) -> 'Sinogram3dGrid':  #     if spiral_count
+    # is None:  #         spiral_count = r_count * r_count  #     rs = torch.linspace(r_range.low, r_range.high,
+    # r_count, device=device)  #     spiral_indices = torch.arange(spiral_count, dtype=torch.float32)  #  #  #  #  #
+    # two_pi_phi_inverse = 4. * torch.pi / (1. + torch.sqrt(torch.tensor([5.])))  #     thetas = (1. - 2. *  #  #  #
+    # spiral_indices / float(spiral_count)).asin()  #     phis = torch.fmod(spiral_indices * two_pi_phi_inverse +  #
+    # torch.pi, 2. * torch.pi) - torch.pi  #     rs = rs.repeat(spiral_count, 1)  #     thetas = thetas.unsqueeze(  #
+    # -1).repeat(1, r_count)  #     phis = phis.unsqueeze(-1).repeat(1, r_count)  #     return Sinogram3dGrid(phis,
+    # thetas, rs)
 
 
 class OptimisationInstance(ABC):
