@@ -15,6 +15,7 @@ matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
+import numpy as np
 import traitlets
 import SimpleITK as sitk
 
@@ -88,6 +89,9 @@ def load_untruncated_ct(  #
             return Error("Length of ct_permutation must be 3.")
         tensor = tensor.permute(*ct_permutation)
         spacing = spacing[torch.tensor(ct_permutation)]
+
+    logger.info(
+        "CT loaded; size = [{} x {} x {}]; spacing = ({}, {}, {})".format(*tensor.size(), *[e.item() for e in spacing]))
 
     return tensor, spacing, key
 
@@ -203,7 +207,7 @@ def apply_truncation(*, untruncated_ct_volume: torch.Tensor, truncation_percent:
     # mipmap the volume
     ct_volumes = [ct_volume]
     level: int = 1
-    while torch.tensor(ct_volumes[-1].size()).min() > 3:
+    while torch.tensor(ct_volumes[-1].size()).min() > 5:
         ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[0], scale_factor=0.5 ** float(level)))
         level += 1
     return {"ct_volumes": ct_volumes}
@@ -217,9 +221,16 @@ def truncation_percent_for_desired_h_valid(  #
         ct_spacing: torch.Tensor,  #
         desired_h_valid: float,  #
 ) -> dict[str, Any]:
-    # ToDo
-    # h = (h_valid + l*sin(theta)) / cos(theta)
-    return {"truncation_percent": 50}
+    if transformation_gt is None:
+        raise Exception("Need transformation gold standard for h_valid")
+    theta = abs(
+        geometry.axis_angle_extract_axis(transformation_gt.rotation, torch.tensor([1.0, 0.0, 0.0])) - 0.5 * np.pi)
+    l = ct_spacing[1].item() * float(untruncated_ct_volume.size()[1])
+    full_height = ct_spacing[2].item() * float(untruncated_ct_volume.size()[0])
+    h = (desired_h_valid + l * np.sin(theta)) / np.cos(theta)
+    truncation_percent = min(98, max(0, round(100.0 * (1.0 - h / full_height))))
+    logger.info(f"Derived truncation percent = {truncation_percent}")
+    return {"truncation_percent": truncation_percent}
 
 
 class RegConfig(traitlets.HasTraits):
@@ -325,7 +336,8 @@ class ExperimentConfig(traitlets.HasTraits):
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
-    truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
+    # truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
+    desired_h_valid: int = traitlets.Float(min=1.0, max=100.0, default_value=traitlets.Undefined)
     cropping: str = traitlets.Enum(values=[  #
         "None",  #
         "nonzero_drr",  #
@@ -387,7 +399,8 @@ def run_experiment(  #
     data_manager().set("ct_path", exp_config.ct_path, check_equality=True)
     data_manager().set("xray_path", exp_config.xray_path, check_equality=True)
     data_manager().set("downsample_level", exp_config.downsample_level, check_equality=True)
-    data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
+    # data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
+    data_manager().set("desired_h_valid", exp_config.desired_h_valid)
     # -----
     # Configuring according to desired similarity metric
     p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
@@ -627,7 +640,8 @@ def main(  #
             ct_series_uid=ct_series_uid,  #
             cache_directory=cache_directory,  #
             save_to_cache=False,  #
-            truncation_percent=0,  #
+            # truncation_percent=0,  #
+            desired_h_valid=20.0,  #
             further_cropping=None,  #
             source_offset=torch.zeros(2, dtype=torch.float64, device=device),  #
             downsample_level=0,  #
@@ -712,6 +726,11 @@ def main(  #
     if isinstance(err := data_manager().add_updater("combine_croppings", combine_croppings), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
+    # Optional
+    if isinstance(err := data_manager().add_updater("truncation_from_h_valid", truncation_percent_for_desired_h_valid),
+                  Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
 
     # ----------------------------------
     # - Hardcoded script configuration -
@@ -722,19 +741,21 @@ def main(  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
         "downsample_level": 1,  #
-        "truncation_percent": 80,  #
-        "cropping": "nonzero_drr",  #
+        # "truncation_percent": 80,  #
+        "desired_h_valid": 40.0,  #
+        "cropping": "full_depth_drr",  #
         "crop_expand": 0.0,  #
         "crop_min_size": 0.01,  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
-        "starting_distance": 5.0,  #
+        "starting_distance": 3.0,  #
         "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
         "iteration_count": 6,  #
     }
+    # X-ray choice determines the gold standard orientation, which drives h_linear:
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
         # "level_090",  #
@@ -744,10 +765,7 @@ def main(  #
         # "down_090",  #
     ]
     params_to_vary: dict[str, list | torch.Tensor] = {  #
-        "truncation_percent": [75, 80, 85],  #
-        "cropping": ["nonzero_drr", "full_depth_drr"],  #
-        "mask": ["None", "Every evaluation weighting zncc"],  #
-        "crop_expand": [-15.0, -5.0, 5.0, 15.0],  #
+        "desired_h_valid": [float(e) for e in np.geomspace(3.0, 40.0, 12)],  #
     }
     # ----------------------------------
 
@@ -795,7 +813,7 @@ def main(  #
         fig, axes = plt.subplots(1, 4)
         # -----
         # Set the current transformation to the ground truth if it exists
-        data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/level_000")
+        data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/up_000")
 
         transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
         if transformation_gt is None or isinstance(transformation_gt, Error):
@@ -834,7 +852,7 @@ def main(  #
         plt.pause(0.1)
 
         data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
-        data_manager().set("truncation_percent", 65)
+        data_manager().set("desired_h_valid", constants["desired_h_valid"])
         if "cropping" in constants:
             if constants["cropping"] == "None":
                 cropping: Cropping | None = None

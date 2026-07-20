@@ -1,6 +1,8 @@
 import copy
 
+import numpy as np
 import pyvista as pv
+import scipy
 import torch
 from beartype import beartype as typechecker
 from jaxtyping import Float, Float32, Float64, jaxtyped
@@ -458,3 +460,20 @@ def get_crop_full_depth_drr(  #
     top = min(max(top.item(), 0.0), 1.0)
     bottom = min(max(bottom.item(), top), 1.0)
     return Cropping(right=1.0, top=top, left=0.0, bottom=bottom)
+
+
+def axis_angle_extract_axis(axis_angle: torch.Tensor, axis: torch.Tensor) -> float:
+    # Get the rotation matrix
+    matrix = scipy.spatial.transform.Rotation.from_rotvec(axis_angle.cpu().numpy())
+    # Convert to a quaternion and project its vector part onto the desired axis
+    q = matrix.as_quat()
+    v = q[:3]
+    w = q[3]
+    axis = (axis / axis.square().sum().sqrt()).cpu().numpy()
+    v_twist = np.dot(v, axis) * axis
+    q_twist = np.concatenate([v_twist, [w]])
+    q_twist /= np.linalg.norm(q_twist)
+    # Convert back to a signed angle
+    twist = scipy.spatial.transform.Rotation.from_quat(q_twist)
+    rot_vec = twist.as_rotvec()
+    return np.dot(rot_vec, axis)
