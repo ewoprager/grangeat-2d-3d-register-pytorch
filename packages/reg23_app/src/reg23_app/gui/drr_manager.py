@@ -9,9 +9,9 @@ from qtpy.QtWidgets import QFileDialog
 
 from reg23_app.gui.viewer_singleton import viewer
 from reg23_app.state import AppState
+from reg23_experiments.data.parameters import XrayParameters
 from reg23_experiments.data.structs import Error
-from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr
-from reg23_experiments.experiments.parameters import XrayParameters
+from reg23_experiments.experiments.dadg_updaters.drr_reg import project_drr
 from reg23_experiments.ops.data_manager import ChildDADG, DirectedAcyclicDataGraph
 
 __all__ = ["DRRManager"]

@@ -7,7 +7,7 @@ from PyQt6.QtCore import QThread
 from reg23_app.context import AppContext
 from reg23_app.state import WorkerState
 from reg23_app.workers.registration_worker import RegistrationWorker
-from reg23_experiments.experiments.parameters import Context
+from reg23_experiments.data.parameters import Context
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
 

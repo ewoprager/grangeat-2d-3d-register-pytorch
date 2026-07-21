@@ -9,8 +9,8 @@ from PyQt6.QtCore import QObject, pyqtSignal
 
 from reg23_app.context import AppContext
 from reg23_app.state import WorkerState
+from reg23_experiments.data.parameters import Context, PsoParameters
 from reg23_experiments.data.structs import OptimisationInstance
-from reg23_experiments.experiments.parameters import Context, PsoParameters
 from reg23_experiments.ops.data_manager import ChildDADG
 from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters
 from reg23_experiments.ops.optimisation_instances import PsoInstance

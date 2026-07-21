@@ -1,8 +1,8 @@
 import logging
 from typing import Any, Literal
 
+from reg23_experiments.data.parameters import XrayParameters
 from reg23_experiments.data.structs import Cropping, Error, Transformation
-from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, capture_in_namespaces, dadg_updater
 
 __all__ = ["mask_follows_transformation", "respond_to_mask_change", "cropping_changed", "cropping_value_changed",

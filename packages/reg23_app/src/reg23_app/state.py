@@ -4,8 +4,7 @@ import torch
 from traitlets import Bool, Enum, Float, HasTraits, Instance, Int, List, Unicode, Union
 
 from reg23_app.gui_settings import GUISettings
-from reg23_experiments.experiments.drr_params import DRRParams
-from reg23_experiments.experiments.parameters import Parameters
+from reg23_experiments.data.parameters import DRRParams, Parameters
 
 __all__ = ["AppState", "WorkerState"]
 

@@ -21,9 +21,9 @@ from reg23_app.gui.widgets.parameters_widget import ParametersWidget
 from reg23_app.gui.widgets.register_widget import RegisterWidget
 from reg23_app.transformation_saver import TransformationSaver
 from reg23_app.worker_manager import WorkerManager
+from reg23_experiments.data.parameters import Context, Parameters, PsoParameters
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
-from reg23_experiments.experiments.parameters import Context, Parameters, PsoParameters
 from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.ops.similarity_metric import ncc

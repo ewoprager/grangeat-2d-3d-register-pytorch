@@ -6,7 +6,7 @@ from traitlets import TraitError
 
 from reg23_app.gui.viewer_singleton import viewer
 from reg23_app.state import AppState
-from reg23_experiments.experiments.parameters import XrayParameters
+from reg23_experiments.data.parameters import XrayParameters
 
 __all__ = ["FileManager"]
 
