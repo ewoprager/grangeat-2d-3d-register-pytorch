@@ -6,7 +6,7 @@ from typing import Tuple
 
 import torch
 from setuptools import setup
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CUDA_HOME, CppExtension
+from torch.utils.cpp_extension import CUDA_HOME, BuildExtension, CppExtension, CUDAExtension
 
 this_directory = pathlib.Path(__file__).parent
 extension_name: str = "backend.reg23_core"

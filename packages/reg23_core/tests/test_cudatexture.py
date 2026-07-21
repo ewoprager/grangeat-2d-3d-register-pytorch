@@ -5,8 +5,7 @@ import pytest
 import torch
 
 if torch.cuda.is_available():
-    from reg23_core import CUDATexture2D, CUDATexture3D
-    from reg23_core import resample_sinogram3d_cuda_texture
+    from reg23_core import CUDATexture2D, CUDATexture3D, resample_sinogram3d_cuda_texture
 
 
     def test_cuda_texture():

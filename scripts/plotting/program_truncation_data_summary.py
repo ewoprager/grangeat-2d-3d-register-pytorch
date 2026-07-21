@@ -1,13 +1,13 @@
 import argparse
-from typing import Any
-import pprint
-
 import pathlib
-import pandas as pd
-import numpy as np
+import pprint
+from typing import Any
 
+import numpy as np
+import pandas as pd
+from reg23_experiments.analysis.helpers import \
+    get_axis_values_if_dataframe_rectangular_over_columns
 from reg23_experiments.utils import logs_setup
-from reg23_experiments.analysis.helpers import get_axis_values_if_dataframe_rectangular_over_columns
 
 KNOWN_MEASUREMENT_COLUMNS = ["distance"]
 

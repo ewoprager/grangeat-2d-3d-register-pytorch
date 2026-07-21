@@ -1,33 +1,25 @@
 import argparse
+import copy
 import gc
 import logging
-import os
-from typing import Type, Callable
-import time
 import math
-from datetime import datetime
-import copy
-
+import os
 import pathlib
-import torch
+import time
+from datetime import datetime
+from typing import Callable, Type
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pyswarms
-
-from notification import logs_setup
-from registration import data
-from registration.lib import sinogram
-from registration.lib import geometry
-from registration.lib.structs import *
-from registration.lib import grangeat
-from registration import plot_data
-from registration import objective_function
-from registration import pre_computed
-from registration import drr
-from notification import pushover
-
+import torch
+from notification import logs_setup, pushover
+from registration import data, drr, objective_function, plot_data, pre_computed
 from registration.interface.register import OptimisationResult
-from registration.lib.optimisation import mapping_transformation_to_parameters, mapping_parameters_to_transformation
+from registration.lib import geometry, grangeat, sinogram
+from registration.lib.optimisation import (
+    mapping_parameters_to_transformation, mapping_transformation_to_parameters)
+from registration.lib.structs import *
 
 
 def format_time(seconds: int) -> str:

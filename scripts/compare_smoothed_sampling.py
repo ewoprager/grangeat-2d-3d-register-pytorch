@@ -4,12 +4,11 @@ import os
 import matplotlib.pyplot as plt
 import reg23_core
 import torch
-from reg23_experiments.registration import pre_computed
-from reg23_experiments.registration.lib import plot
-
 from reg23_experiments.data.structs import *
 from reg23_experiments.experiments import script
 from reg23_experiments.ops import drr, objective_function
+from reg23_experiments.registration import pre_computed
+from reg23_experiments.registration.lib import plot
 from reg23_experiments.utils import logs_setup
 
 

@@ -3,14 +3,14 @@ import os
 
 os.environ["QT_API"] = "PyQt6"
 
-from magicgui import widgets
 import torch
+from magicgui import widgets
 
-from reg23_experiments.data.structs import Error, Transformation
-from reg23_app.state import WorkerState
 from reg23_app.context import AppContext
-from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters, \
-    mapping_parameters_to_transformation, random_parameters_at_distance
+from reg23_app.state import WorkerState
+from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
+    mapping_transformation_to_parameters, random_parameters_at_distance
 
 __all__ = ["RegisterWidget"]
 

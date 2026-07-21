@@ -1,9 +1,9 @@
 import logging
 
-import torch
 import matplotlib.pyplot as plt
+import torch
 
-from reg23_experiments.ops.swarm import SwarmConfig, Swarm
+from reg23_experiments.ops.swarm import Swarm, SwarmConfig
 
 __all__ = ["test_swarm"]
 

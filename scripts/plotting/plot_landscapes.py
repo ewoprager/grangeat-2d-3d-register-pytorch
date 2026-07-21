@@ -1,13 +1,12 @@
 import argparse
+import pathlib
 import pickle
 
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
 from matplotlib.transforms import Bbox
-import pathlib
-
 from notification import logs_setup
 from registration.plot_data import LandscapePlotData
 

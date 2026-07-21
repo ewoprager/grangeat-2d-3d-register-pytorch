@@ -3,8 +3,8 @@ from typing import Any
 
 import traitlets
 from magicgui.widgets import CheckBox, ComboBox, Container, FloatSpinBox, Label, SpinBox, Widget
-from reg23_app.gui.viewer_singleton import viewer
 
+from reg23_app.gui.viewer_singleton import viewer
 from reg23_experiments.data.structs import Error
 
 __all__ = ["HasTraitsWidget"]

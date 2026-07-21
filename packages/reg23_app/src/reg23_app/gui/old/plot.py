@@ -1,19 +1,19 @@
 import copy
 import logging
-from typing import Callable, NamedTuple, Tuple
-from enum import Enum
 import pathlib
+from enum import Enum
+from typing import Callable, NamedTuple, Tuple
 
+import matplotlib.pyplot as plt
 import torch
 from magicgui import widgets
-import matplotlib.pyplot as plt
+from matplotlib import cm
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from tqdm import tqdm
-from matplotlib import cm
 
 from reg23_experiments.data.structs import Transformation
-from reg23_experiments.ui.old.transformations import TransformationWidget
 from reg23_experiments.ui.old.lib.structs import WidgetSelectData
+from reg23_experiments.ui.old.transformations import TransformationWidget
 
 __all__ = ["TransformationParameterType", "TransformationParameter", "ParameterRange", "landscape2", "WorkSpec",
            "Landscape2", "four_landscapes", "Worker", "PlotWidget"]

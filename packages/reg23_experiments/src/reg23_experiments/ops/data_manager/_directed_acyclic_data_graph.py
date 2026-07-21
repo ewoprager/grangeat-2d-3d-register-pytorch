@@ -6,6 +6,7 @@ import traitlets
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
+
 from ._data import NoNodeData, Updater
 
 __all__ = ["Node", "DirectedAcyclicDataGraph", "ChildDirectedAcyclicDataGraph"]

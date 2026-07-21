@@ -1,9 +1,9 @@
 import copy
 import pathlib
 
-import SimpleITK as sitk
 import numpy as np
 import pydicom
+import SimpleITK as sitk
 import traitlets
 from pydicom.uid import generate_uid
 

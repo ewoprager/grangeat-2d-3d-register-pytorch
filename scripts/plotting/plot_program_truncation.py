@@ -11,8 +11,8 @@ import yaml
 from matplotlib import rcParams
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
-
-from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_tensor
+from reg23_experiments.analysis.helpers import \
+    dataframe_rectangular_columns_to_tensor
 from reg23_experiments.analysis.plot import separate_subplots
 from reg23_experiments.utils import logs_setup
 

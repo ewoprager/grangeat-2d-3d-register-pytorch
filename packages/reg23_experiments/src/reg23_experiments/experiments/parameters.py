@@ -1,8 +1,8 @@
 import pathlib
 from typing import Any, Literal
 
-from traitlets import (Bool, Dict, Enum, Float, HasTraits, Instance, Int, TraitError, Undefined, Unicode, Union,
-                       observe, validate)
+from traitlets import Bool, Dict, Enum, Float, HasTraits, Instance, Int, TraitError, Undefined, Unicode, Union, \
+    observe, validate
 
 from reg23_experiments.data.structs import Cropping
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph

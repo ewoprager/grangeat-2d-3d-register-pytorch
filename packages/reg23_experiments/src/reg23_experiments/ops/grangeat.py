@@ -1,9 +1,9 @@
 import logging
 
-import reg23_core
 import torch
 from tqdm import tqdm
 
+import reg23_core
 from reg23_experiments.data.structs import *
 from reg23_experiments.ops import geometry
 

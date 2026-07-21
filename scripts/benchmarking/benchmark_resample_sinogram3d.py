@@ -1,22 +1,21 @@
-from typing import Tuple, NamedTuple, Type, TypeVar
-import time
-import os
 import argparse
 import gc
-
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
+import os
 import pathlib
-import plotly.graph_objects as pgo
-import objgraph
+import time
+from typing import NamedTuple, Tuple, Type, TypeVar
 
-from notification import logs_setup
-from registration.lib.structs import *
-from registration.lib import sinogram
+import matplotlib.pyplot as plt
+import numpy as np
+import objgraph
+import plotly.graph_objects as pgo
 import registration.data as data
 import registration.pre_computed as pre_computed
+import torch
+from notification import logs_setup
 from registration import script
+from registration.lib import sinogram
+from registration.lib.structs import *
 
 
 class TaskSummary(NamedTuple):

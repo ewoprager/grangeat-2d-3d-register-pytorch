@@ -9,13 +9,13 @@ import numpy as np
 import reg23_core
 import scipy
 import torch
-from tqdm import tqdm
-
 from reg23_experiments.data.structs import *
-from reg23_experiments.ops import drr, geometry, grangeat, objective_function, script
-from reg23_experiments.ops.optimisation import mapping_transformation_to_parameters
+from reg23_experiments.ops import (drr, geometry, grangeat, objective_function,
+                                   script)
+from reg23_experiments.ops.optimisation import \
+    mapping_transformation_to_parameters
 from reg23_experiments.utils import logs_setup
-
+from tqdm import tqdm
 
 # from diffdrr.drr import DRR
 # from diffdrr.data import read

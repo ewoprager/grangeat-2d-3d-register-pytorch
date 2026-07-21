@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 import pydicom
 import torch
-from pydicom.uid import ExplicitVRLittleEndian, UID, XRayRadiofluoroscopicImageStorage
+from pydicom.uid import UID, ExplicitVRLittleEndian, XRayRadiofluoroscopicImageStorage
 from qtpy.QtWidgets import QFileDialog
 
 from reg23_app.gui.viewer_singleton import viewer

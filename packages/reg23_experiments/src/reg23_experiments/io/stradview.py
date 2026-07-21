@@ -1,6 +1,6 @@
 import pathlib
-import pandas as pd
 
+import pandas as pd
 import torch
 
 from reg23_experiments.data.structs import Error

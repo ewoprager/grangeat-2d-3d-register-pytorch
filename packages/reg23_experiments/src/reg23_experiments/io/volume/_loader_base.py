@@ -2,6 +2,7 @@ import pathlib
 from abc import ABC, abstractmethod
 
 from reg23_experiments.data.structs import Error
+
 from ._data import OneSeries, SeriesDescription, Volume
 
 __all__ = ["VolumeLoader"]

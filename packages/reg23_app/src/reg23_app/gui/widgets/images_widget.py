@@ -6,15 +6,15 @@ os.environ["QT_API"] = "PyQt6"
 from magicgui import widgets
 
 from reg23_app.context import AppContext
-from reg23_app.gui.layers.moving_image_layer import add_moving_image_layer
-from reg23_app.gui.layers.mask_layer import add_mask_layer
-from reg23_app.gui.layers.fixed_image_layer import add_fixed_image_layer
-from reg23_app.gui.layers.electrode_layer import add_electrode_layer
-from reg23_app.gui.layers.ct_layer import add_ct_layer
 from reg23_app.gui.layers.ct_fiducial_layer import add_ct_fiducial_layer
-from reg23_app.gui.layers.xray_fiducial_layer import add_xray_fiducial_layer
-from reg23_app.gui.layers.projected_fiducials_layer import add_projected_fiducials_layer
+from reg23_app.gui.layers.ct_layer import add_ct_layer
 from reg23_app.gui.layers.debug_layer import add_debug_layer
+from reg23_app.gui.layers.electrode_layer import add_electrode_layer
+from reg23_app.gui.layers.fixed_image_layer import add_fixed_image_layer
+from reg23_app.gui.layers.mask_layer import add_mask_layer
+from reg23_app.gui.layers.moving_image_layer import add_moving_image_layer
+from reg23_app.gui.layers.projected_fiducials_layer import add_projected_fiducials_layer
+from reg23_app.gui.layers.xray_fiducial_layer import add_xray_fiducial_layer
 
 __all__ = ["ImagesWidget"]
 

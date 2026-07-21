@@ -8,16 +8,16 @@ import matplotlib
 matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import Ellipse
-from matplotlib.widgets import Slider, Button
-import SimpleITK as sitk
 import pydicom
-
+import SimpleITK as sitk
+from matplotlib.patches import Ellipse
+from matplotlib.widgets import Button, Slider
 from reg23_experiments.data.structs import Error
-from reg23_experiments.io.sitk import find_ct_series, load_ct_series, DCMSeriesInfo, save_ct_series
-from reg23_experiments.utils import logs_setup
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.serialize import serialize_recursive
+from reg23_experiments.io.sitk import (DCMSeriesInfo, find_ct_series,
+                                       load_ct_series, save_ct_series)
+from reg23_experiments.utils import logs_setup
 
 
 class SliderSpec(NamedTuple):

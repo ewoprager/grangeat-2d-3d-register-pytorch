@@ -1,36 +1,33 @@
 import argparse
 import logging
 import os
+import pathlib
 from typing import Literal
 
 os.environ["QT_API"] = "PyQt6"
 
-import torch
 import napari
-import pathlib
+import torch
 
-from reg23_experiments.utils import logs_setup, pushover
-from reg23_experiments.data.structs import Error
+from reg23_app import initialisation
+from reg23_app.context import AppContext
+from reg23_app.gui.file_manager import FileManager
+from reg23_app.gui.viewer_singleton import init_viewer, viewer
+from reg23_app.gui.widgets.drr_widget import DRRWidget
+from reg23_app.gui.widgets.fiducials_widget import FiducialsWidget
+from reg23_app.gui.widgets.hastraits_widget import HasTraitsWidget
+from reg23_app.gui.widgets.images_widget import ImagesWidget
+from reg23_app.gui.widgets.parameters_widget import ParametersWidget
+from reg23_app.gui.widgets.register_widget import RegisterWidget
+from reg23_app.transformation_saver import TransformationSaver
+from reg23_app.worker_manager import WorkerManager
+from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
+from reg23_experiments.experiments.parameters import Context, Parameters, PsoParameters
 from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
-
-from reg23_app.gui.viewer_singleton import init_viewer, viewer
-from reg23_app.gui.widgets.parameters_widget import ParametersWidget
-from reg23_app.gui.widgets.hastraits_widget import HasTraitsWidget
-from reg23_experiments.experiments.parameters import Parameters, PsoParameters, Context
-from reg23_app.gui.widgets.register_widget import RegisterWidget
-from reg23_app.gui.widgets.drr_widget import DRRWidget
-from reg23_app.context import AppContext
-from reg23_app.worker_manager import WorkerManager
-from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.similarity_metric import ncc
-from reg23_app.transformation_saver import TransformationSaver
-from reg23_app.gui.widgets.images_widget import ImagesWidget
-from reg23_app.gui.widgets.fiducials_widget import FiducialsWidget
-from reg23_experiments.experiments.multi_xray_truncation_updaters import load_untruncated_ct, apply_truncation
-from reg23_app.gui.file_manager import FileManager
-from reg23_app import initialisation
-
+from reg23_experiments.utils import logs_setup, pushover
 
 # @args_from_dag(names_left=["transformation"])
 # def of(*, transformation: Transformation, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
@@ -56,7 +53,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Updaters
     # -----
-    err = data_manager().add_updater("apply_truncation", apply_truncation)
+    err = data_manager().add_updater("apply_truncation", updaters.apply_truncation)
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -115,6 +112,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     if external_dataset == "gold_hip":
         from reg23_experiments.io.external_datasets import gold_hip
+
         # CT data
         ct_volume, ct_spacing = gold_hip.load_ct()
         # X-ray data
@@ -146,7 +144,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.info(f"total = "
                     f"{ct_spacing.cpu() * torch.tensor(ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
     else:
-        err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
+        err = data_manager().add_updater("load_untruncated_ct", updaters.load_untruncated_ct)
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
             return

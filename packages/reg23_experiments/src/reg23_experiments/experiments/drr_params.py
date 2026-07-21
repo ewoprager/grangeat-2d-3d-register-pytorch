@@ -1,5 +1,6 @@
-from traitlets import HasTraits, Int, Float, Instance, Bool, Enum, Unicode, Undefined, observe, Dict, validate, \
-    TraitError, Union
+from traitlets import (Bool, Dict, Enum, Float, HasTraits, Instance, Int,
+                       TraitError, Undefined, Unicode, Union, observe,
+                       validate)
 
 __all__ = ["DRRParams"]
 

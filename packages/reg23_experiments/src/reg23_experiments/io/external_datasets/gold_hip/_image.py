@@ -1,16 +1,15 @@
 import importlib.util
 import logging
-from typing import Any
-import traitlets
 import math
+import pathlib
 from pprint import pprint
+from typing import Any
 
-import SimpleITK as sitk
 import kornia.geometry
 import numpy as np
+import SimpleITK as sitk
 import torch
-import pathlib
-
+import traitlets
 from pandas.core.window import doc
 from tqdm import tqdm
 

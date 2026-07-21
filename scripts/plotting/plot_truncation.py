@@ -1,17 +1,18 @@
 import argparse
+import pathlib
 from abc import ABC, abstractmethod
 from typing import NamedTuple, Optional
 
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import pathlib
-
-from reg23_experiments.utils import logs_setup
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from reg23_experiments.analysis.fit import (fit_power_relationship,
+                                            torch_polyfit)
 from reg23_experiments.analysis.helpers import to_latex_scientific
-from reg23_experiments.analysis.structs import Series, LinearFit, PowerFit, QuadraticFit
-from reg23_experiments.analysis.fit import fit_power_relationship, torch_polyfit
+from reg23_experiments.analysis.structs import (LinearFit, PowerFit,
+                                                QuadraticFit, Series)
+from reg23_experiments.utils import logs_setup
 
 
 class Analysis:

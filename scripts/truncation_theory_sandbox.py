@@ -1,13 +1,14 @@
 from typing import Tuple
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
+from reg23_experiments.registration.lib.plot import (CustomFitPowerRatio,
+                                                     LinearFit, PowerFit,
+                                                     QuadraticFit, Series)
 from scipy.odr import quadratic
 from torchvision.transforms.v2.functional import horizontal_flip
 from tqdm import tqdm
-
-from reg23_experiments.registration.lib.plot import Series, LinearFit, PowerFit, QuadraticFit, CustomFitPowerRatio
 
 
 def initial():

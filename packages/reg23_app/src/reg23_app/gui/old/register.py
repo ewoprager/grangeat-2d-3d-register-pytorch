@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pyswarms
 import torch
-from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from magicgui import widgets
+from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from qtpy.QtWidgets import QApplication
 
 from reg23_app.gui.old.lib.structs import Cropping, HyperParameters, SavedXRayParams, Target, WidgetManageSaved, \

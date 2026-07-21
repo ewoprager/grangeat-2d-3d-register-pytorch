@@ -3,14 +3,14 @@ import math
 import pathlib
 from typing import Callable, NamedTuple, Type
 
-import reg23_core
 import torch
-from reg23_experiments.ui.old.lib.structs import HyperParameters, Target
 
+import reg23_core
 from reg23_experiments.data.sinogram import Sinogram, SinogramType
 from reg23_experiments.data.structs import LinearRange, Sinogram2dGrid, Sinogram2dRange, Transformation
 from reg23_experiments.io import drr, pre_computed
 from reg23_experiments.ops import grangeat
+from reg23_experiments.ui.old.lib.structs import HyperParameters, Target
 
 __all__ = ["RegistrationData"]
 

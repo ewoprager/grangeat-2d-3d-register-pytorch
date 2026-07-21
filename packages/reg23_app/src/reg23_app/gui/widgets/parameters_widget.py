@@ -5,12 +5,12 @@ os.environ["QT_API"] = "PyQt6"
 
 from magicgui import widgets
 
-from reg23_experiments.data.structs import Transformation, Error
-from reg23_app.gui.widgets.hastraits_widget import HasTraitsWidget
 from reg23_app.context import AppContext
-from reg23_experiments.ops.data_manager import args_from_dadg
-from reg23_experiments.ops.geometry import get_crop_nonzero_drr, get_crop_full_depth_drr
+from reg23_app.gui.widgets.hastraits_widget import HasTraitsWidget
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
+from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.ops.data_manager import args_from_dadg
+from reg23_experiments.ops.geometry import get_crop_full_depth_drr, get_crop_nonzero_drr
 
 __all__ = ["ParametersWidget"]
 

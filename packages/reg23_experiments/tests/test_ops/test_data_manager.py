@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from reg23_experiments.ops.data_manager import StandaloneDADG, ChildDADG, dadg_updater
+from reg23_experiments.ops.data_manager import ChildDADG, StandaloneDADG, dadg_updater
 
 
 @dadg_updater(names_returned=["c"])

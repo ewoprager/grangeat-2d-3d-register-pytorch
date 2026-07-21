@@ -1,7 +1,6 @@
 import logging
 
 from reg23_app.context import AppContext
-
 from reg23_experiments.data.structs import Error, Transformation
 
 __all__ = ["TransformationSaver"]

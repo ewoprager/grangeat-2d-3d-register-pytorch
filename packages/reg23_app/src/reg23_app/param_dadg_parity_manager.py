@@ -8,11 +8,10 @@ from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints2D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
-from reg23_experiments.experiments import updaters
-from reg23_experiments.experiments.multi_xray_truncation_updaters import project_drr, project_fiducials, \
-    set_target_image
+from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.parameters import XrayParameters
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData, capture_in_namespaces
+
 from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed, respond_to_mask_change
 
 __all__ = ["ParamDADGParityManager"]
@@ -226,17 +225,17 @@ class ParamDADGParityManager:
 
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__project_drr",  #
-                capture_in_namespaces(namespace_captures)(project_drr)), Error):
+                capture_in_namespaces(namespace_captures)(updaters.project_drr)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__set_target_image",  #
-                capture_in_namespaces(namespace_captures)(set_target_image)), Error):
+                capture_in_namespaces(namespace_captures)(updaters.set_xray_target_image_with_no_gt)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__project_fiducials",  #
-                capture_in_namespaces(namespace_captures)(project_fiducials)), Error):
+                capture_in_namespaces(namespace_captures)(updaters.project_fiducials)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         # Create namespaced DADG nodes

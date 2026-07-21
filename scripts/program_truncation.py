@@ -9,32 +9,33 @@ from datetime import datetime
 from typing import Any, Callable, Literal, Sequence
 
 import matplotlib
-import yaml
 
 matplotlib.use("QtAgg")
-import matplotlib.pyplot as plt
-import pandas as pd
-import torch
-import numpy as np
-import traitlets
-import SimpleITK as sitk
 
-from reg23_experiments.data.structs import Error, Transformation, Cropping
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import SimpleITK as sitk
+import torch
+import traitlets
+import yaml
+
+from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
-from reg23_experiments.experiments import multi_xray_truncation_updaters, updaters
-from reg23_experiments.io.image import XrayDICOM, load_cached_drr, read_dicom
-from reg23_experiments.io.save_data import load_latest_save
+from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.io.command_line import get_string_required
+from reg23_experiments.io.image import XrayDICOM, read_dicom
+from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.io.serialize import serialize_recursive
-from reg23_experiments.io.sitk import find_ct_series, load_ct_series, DCMSeriesInfo
-from reg23_experiments.ops import drr, geometry, similarity_metric, swarm as pso
+from reg23_experiments.io.sitk import DCMSeriesInfo, find_ct_series, load_ct_series
+from reg23_experiments.ops import geometry, similarity_metric
+from reg23_experiments.ops import swarm as pso
 from reg23_experiments.ops.ct import convert_ct_to_mu_sitk
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.objective_function import ParametrisedSimilarityMetric
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters, random_parameters_at_distance
-from reg23_experiments.ops.volume import downsample_trilinear_antialiased
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.utils.console_logging import tqdm
 
@@ -96,50 +97,6 @@ def load_untruncated_ct(  #
     return tensor, spacing, key
 
 
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "transformation_gt"])
-def set_synthetic_target_image(  #
-        *,  #
-        ct_path: str,  #
-        ct_spacing: torch.Tensor,  #
-        untruncated_ct_volume: torch.Tensor,  #
-        new_drr_size: torch.Size,  #
-        regenerate_drr: bool,  #
-        save_to_cache: bool,  #
-        cache_directory: str,  #
-        ap_transformation: Transformation,  #
-        target_ap_distance: float  #
-) -> dict[str, Any]:
-    # generate a DRR through the volume
-    drr_spec = None
-    if not regenerate_drr:
-        drr_spec = load_cached_drr(cache_directory, ct_path)
-
-    if drr_spec is None:
-        tr = mapping_parameters_to_transformation(
-            random_parameters_at_distance(mapping_transformation_to_parameters(ap_transformation), target_ap_distance))
-        drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
-                                              save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
-
-    image_2d_full_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
-    del drr_spec
-
-    return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
-            "image_2d_full_spacing": image_2d_full_spacing, "transformation_gt": transformation_ground_truth}
-
-
-@dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "xray_sop_instance_uid"])
-def set_xray_target_image(*, xray_path: str, device: torch.device) -> dict[str, Any]:
-    dicom: XrayDICOM = read_dicom(xray_path)
-    image_2d_full = dicom["image"].to(device=device, dtype=torch.float32)
-    image_2d_full_spacing = dicom["spacing"].to(device=device, dtype=torch.float64)
-    return {  #
-        "source_distance": dicom["scene_geometry"].source_distance,  ##
-        "image_2d_full": image_2d_full,  #
-        "image_2d_full_spacing": image_2d_full_spacing,  #
-        "xray_sop_instance_uid": dicom["uid"]  #
-    }
-
-
 @dadg_updater(names_returned=["transformation_gt"])
 def load_ground_truth(  #
         *,  #
@@ -195,22 +152,6 @@ def combine_croppings(  #
             return {"cropping": base_cropping}
         else:
             return {"cropping": Cropping.intersect(base_cropping, further_cropping)}
-
-
-@dadg_updater(names_returned=["ct_volumes"])
-def apply_truncation(*, untruncated_ct_volume: torch.Tensor, truncation_percent: int) -> dict[str, Any]:
-    # truncate the volume
-    truncation_fraction = 0.01 * float(truncation_percent)
-    top_bottom_chop = int(round(0.5 * truncation_fraction * float(untruncated_ct_volume.size()[0])))
-    ct_volume = untruncated_ct_volume[
-        top_bottom_chop:max(top_bottom_chop + 1, untruncated_ct_volume.size()[0] - top_bottom_chop)]
-    # mipmap the volume
-    ct_volumes = [ct_volume]
-    level: int = 1
-    while torch.tensor(ct_volumes[-1].size()).min() > 5:
-        ct_volumes.append(downsample_trilinear_antialiased(ct_volumes[0], scale_factor=0.5 ** float(level)))
-        level += 1
-    return {"ct_volumes": ct_volumes}
 
 
 @dadg_updater(names_returned=["truncation_percent"])
@@ -671,13 +612,14 @@ def main(  #
             logger.error(f"Error setting initial data values: {err.description}")
             return
 
-        if isinstance(err := data_manager().add_updater("set_target_image", set_synthetic_target_image), Error):
+        if isinstance(err := data_manager().add_updater("set_target_image", updaters.set_synthetic_target_image),
+                      Error):
             logger.error(f"Error adding updater: {err.description}")
             return
     elif xray_path.is_dir():
         # -----
         # Use a directory of X-ray images
-        if isinstance(err := data_manager().add_updater("set_target_image", set_xray_target_image), Error):
+        if isinstance(err := data_manager().add_updater("set_target_image", updaters.set_xray_target_image), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
 
@@ -693,7 +635,7 @@ def main(  #
         if isinstance(err := data_manager().set("xray_path", xray_path), Error):
             logger.error(f"Error setting initial data values: {err.description}")
             return
-        if isinstance(err := data_manager().add_updater("set_target_image", set_xray_target_image), Error):
+        if isinstance(err := data_manager().add_updater("set_target_image", updaters.set_xray_target_image), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
         if isinstance(err := data_manager().add_updater("set_ground_truth", load_ground_truth), Error):
@@ -702,7 +644,7 @@ def main(  #
 
     # -----
     # Add updaters to the DADG
-    if isinstance(err := data_manager().add_updater("apply_truncation", apply_truncation), Error):
+    if isinstance(err := data_manager().add_updater("apply_truncation", updaters.apply_truncation), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
     if isinstance(err := data_manager().add_updater(  #
@@ -717,7 +659,7 @@ def main(  #
                                                     updaters.refresh_mask_transformation_dependent), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    if isinstance(err := data_manager().add_updater("project_drr", multi_xray_truncation_updaters.project_drr), Error):
+    if isinstance(err := data_manager().add_updater("project_drr", updaters.project_drr), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
     if isinstance(err := data_manager().add_updater("load_base_cropping", load_base_cropping), Error):

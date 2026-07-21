@@ -3,7 +3,6 @@ import pathlib
 import sys
 
 import tifffile
-
 from reg23_experiments.utils import logs_setup
 
 

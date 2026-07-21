@@ -1,13 +1,13 @@
-from typing import Any, NamedTuple, Callable
+import logging
+import pathlib
 import pickle
 from datetime import datetime
-import logging
-
-from reg23_experiments.data.structs import Transformation
+from typing import Any, Callable, NamedTuple
 
 import torch
-import pathlib
 from magicgui import widgets
+
+from reg23_experiments.data.structs import Transformation
 
 __all__ = ["Target", "Cropping", "WidgetSelectData", "WidgetManageSaved", "ViewParams", "SavedXRayParams"]
 

@@ -1,14 +1,13 @@
 import argparse
 import logging.config
-
 import pathlib
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
-import pyvista as pv
 
-from reg23_experiments.data.structs import *
+import matplotlib.pyplot as plt
+import numpy as np
+import pyvista as pv
+import torch
 from reg23_experiments.data import sinogram
+from reg23_experiments.data.structs import *
 from reg23_experiments.registration import pre_computed
 
 

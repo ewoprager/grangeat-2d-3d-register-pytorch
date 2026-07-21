@@ -1,13 +1,11 @@
 import argparse
 
-import torch
-import numpy as np
 import matplotlib.pyplot as plt
-
-from reg23_experiments.utils import logs_setup
-from reg23_experiments.data import plot_data
-from reg23_experiments.data import sinogram
+import numpy as np
+import torch
+from reg23_experiments.data import plot_data, sinogram
 from reg23_experiments.registration.lib.plot import to_latex_scientific
+from reg23_experiments.utils import logs_setup
 
 
 def main():

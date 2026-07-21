@@ -1,5 +1,5 @@
-from reg23_experiments.utils import logs_setup
 from reg23_experiments.registration.lib import test_geometry
+from reg23_experiments.utils import logs_setup
 
 if __name__ == "__main__":
     # set up logger

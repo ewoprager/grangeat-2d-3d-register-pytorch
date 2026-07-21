@@ -1,33 +1,34 @@
-import os
 import argparse
-import time
-from typing import NamedTuple, Any, Union, Tuple, Type
-from datetime import datetime
 import copy
+import os
+import time
+from datetime import datetime
+from typing import Any, NamedTuple, Tuple, Type, Union
 
 os.environ["QT_API"] = "PyQt6"
 
 import pathlib
-import numpy as np
-import torch
+
 import napari
+import numpy as np
 import scipy
+import torch
 from magicgui import magicgui, widgets
 from PyQt6.QtWidgets import QDockWidget
-from scipy.signal import resample
-
-from reg23_experiments.utils import logs_setup
-from reg23_experiments.data.sinogram import SinogramType, SinogramClassic, SinogramHEALPix
-from reg23_experiments.ops import geometry
-from reg23_experiments.ui.old.lib.structs import Target, ViewParams, HyperParameters
-from reg23_experiments.data.structs import Transformation, SceneGeometry
+from reg23_experiments.data.sinogram import (SinogramClassic, SinogramHEALPix,
+                                             SinogramType)
+from reg23_experiments.data.structs import SceneGeometry, Transformation
+from reg23_experiments.ops import geometry, objective_function
+from reg23_experiments.ui.old.grangeat import GrangeatWidget
+from reg23_experiments.ui.old.lib.structs import (HyperParameters, Target,
+                                                  ViewParams)
+from reg23_experiments.ui.old.plot import PlotWidget
+from reg23_experiments.ui.old.register import RegisterWidget
 from reg23_experiments.ui.old.registration_data import RegistrationData
 from reg23_experiments.ui.old.transformations import TransformationWidget
 from reg23_experiments.ui.old.view import ViewWidget
-from reg23_experiments.ui.old.register import RegisterWidget
-from reg23_experiments.ui.old.grangeat import GrangeatWidget
-from reg23_experiments.ui.old.plot import PlotWidget
-from reg23_experiments.ops import objective_function
+from reg23_experiments.utils import logs_setup
+from scipy.signal import resample
 
 
 class Interface:

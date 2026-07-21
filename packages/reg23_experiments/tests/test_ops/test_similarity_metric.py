@@ -1,7 +1,7 @@
 import pytest
-import reg23_core
 import torch
 
+import reg23_core
 from reg23_experiments.ops import similarity_metric
 
 

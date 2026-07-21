@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 from typing import NamedTuple, Tuple, TypeVar
 
 import matplotlib.pyplot as plt
-import reg23_core
 import torch
 
+import reg23_core
 from reg23_experiments.analysis.plot import visualise_planes_as_points
 from reg23_experiments.data.structs import LinearMapping, LinearRange, SceneGeometry, Sinogram2dGrid, Sinogram3dGrid, \
     Transformation

@@ -9,6 +9,7 @@ from traitlets.config import SingletonConfigurable
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
+
 from ._data import Dependency, NoNodeData, Updater
 from ._directed_acyclic_data_graph import ChildDirectedAcyclicDataGraph, DirectedAcyclicDataGraph, Node
 

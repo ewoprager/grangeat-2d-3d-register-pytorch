@@ -3,7 +3,9 @@ import logging
 from typing import Any, Callable
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.utils.reflection import FunctionArgument, takes_positional_args
+from reg23_experiments.utils.reflection import (FunctionArgument,
+                                                takes_positional_args)
+
 from ._dadg_standalone import StandaloneDADG, StandaloneDADGSingleton
 from ._data import Updater
 from ._directed_acyclic_data_graph import DirectedAcyclicDataGraph

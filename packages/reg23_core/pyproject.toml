@@ -25,6 +25,7 @@ cuda = [
     "torchvision==0.22.1+cu126; platform_machine == 'x86_64'",
 ]
 dev = [
+    "isort>=8.0.1",
     "matplotlib>=3.10.0",
     "pytest>=8.4.1",
 ]
@@ -75,3 +76,13 @@ url = "https://download.pytorch.org/whl/cpu"
 [[tool.uv.index]]
 name = "torch-cuda"
 url = "https://download.pytorch.org/whl/cu126"
+
+[tool.isort]
+profile = "black"
+line_length = 120
+multi_line_output = 2
+known_first_party = [
+    "reg23_app",
+    "reg23_experiments",
+    "reg23_core",
+]

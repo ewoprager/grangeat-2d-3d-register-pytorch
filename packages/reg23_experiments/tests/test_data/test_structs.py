@@ -3,7 +3,6 @@ import torch
 from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.autograd_impl import TransformationToMatrix
 
-
 # def test_transformation_matrix_autograd():
 #     t = Transformation(rotation=torch.tensor([1.0, 2.0, 3.0]), translation=torch.tensor([3.0, 2.0, 1.0]))
 #     t.rotation.requires_grad = True

@@ -9,6 +9,7 @@ from tqdm import tqdm
 from traitlets import TraitError
 
 from reg23_experiments.data.structs import Error
+
 from ._data import OneSeries, SeriesDescription, Volume
 from ._loader_base import VolumeLoader
 

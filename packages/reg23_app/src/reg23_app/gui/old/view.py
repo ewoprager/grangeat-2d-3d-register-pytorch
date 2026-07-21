@@ -1,5 +1,5 @@
-from typing import Callable
 import logging
+from typing import Callable
 
 from magicgui import widgets
 
