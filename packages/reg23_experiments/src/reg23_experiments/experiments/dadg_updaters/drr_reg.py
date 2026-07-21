@@ -75,12 +75,10 @@ def apply_truncation(  #
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "xray_sop_instance_uid"])
-def set_xray_target_image(*, xray_path: str, target_flipped: bool, device: torch.device) -> dict[str, Any]:
+def set_xray_target_image(*, xray_path: str, device: torch.device) -> dict[str, Any]:
     dicom: XrayDICOM = read_dicom(xray_path)
     image_2d_full = dicom["image"].to(device=device, dtype=torch.float32)
     image_2d_full_spacing = dicom["spacing"].to(device=device, dtype=torch.float64)
-    if target_flipped:
-        image_2d_full = image_2d_full.flip(dims=(1,))
     return {  #
         "source_distance": dicom["scene_geometry"].source_distance,  #
         "image_2d_full": image_2d_full,  #
@@ -91,12 +89,10 @@ def set_xray_target_image(*, xray_path: str, target_flipped: bool, device: torch
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "xray_sop_instance_uid",
                               "transformation_gt"])
-def set_xray_target_image_with_no_gt(*, xray_path: str, target_flipped: bool, device: torch.device) -> dict[str, Any]:
+def set_xray_target_image_with_no_gt(*, xray_path: str, device: torch.device) -> dict[str, Any]:
     dicom: XrayDICOM = read_dicom(xray_path)
     image_2d_full = dicom["image"].to(device=device, dtype=torch.float32)
     image_2d_full_spacing = dicom["spacing"].to(device=device, dtype=torch.float64)
-    if target_flipped:
-        image_2d_full = image_2d_full.flip(dims=(1,))
     return {  #
         "source_distance": dicom["scene_geometry"].source_distance,  #
         "image_2d_full": image_2d_full,  #
@@ -149,17 +145,25 @@ def refresh_image_2d_scale_factor(*, image_2d_full_spacing: Float64[torch.Tensor
 
 @dadg_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset", "fixed_image_size"])
 @jaxtyped(typechecker=typechecker)
-def refresh_hyperparameter_dependent(*, image_2d_full: Float32[torch.Tensor, "n m"],
-                                     image_2d_full_spacing: Float64[torch.Tensor, "2"], cropping: Cropping | None,
-                                     source_offset: Float64[torch.Tensor, "2"], image_2d_scale_factor: float) -> dict[
-    str, Any]:
+def refresh_hyperparameter_dependent(  #
+        *,  #
+        image_2d_full: Float32[torch.Tensor, "n m"],  #
+        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+        cropping: Cropping | None,  #
+        target_flipped: bool,  #
+        source_offset: Float64[torch.Tensor, "2"],  #
+        image_2d_scale_factor: float  #
+) -> dict[str, Any]:
     device = image_2d_full.device
     assert source_offset.device == device
     assert image_2d_full_spacing.device == device
 
+    # Flip the image 2d if necessary
+    flipped_image_2d = image_2d_full.flip(dims=(1,)) if target_flipped else image_2d_full
+
     # Downsampling the image 2d
     scaled_image_2d = torch.nn.functional.interpolate(  #
-        image_2d_full.unsqueeze(0).unsqueeze(0),  #
+        flipped_image_2d.unsqueeze(0).unsqueeze(0),  #
         scale_factor=image_2d_scale_factor,  #
         mode="bilinear",  #
         recompute_scale_factor=True,  #

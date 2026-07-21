@@ -1,6 +1,4 @@
 import argparse
-import copy
-import itertools
 import os
 import pathlib
 import pprint
@@ -22,8 +20,9 @@ from reg23_experiments.data.transformation_save_data import TransformationSaveDa
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
-from reg23_experiments.experiments.reg_experiment import ExperimentConfig, run_experiment
+from reg23_experiments.experiments.reg_experiment import exp_config_from_dict, run_experiment
 from reg23_experiments.experiments.registration import RegConfig, run_reg
+from reg23_experiments.experiments.run import experiments_cartesian
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.image import XrayDICOM, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
@@ -35,7 +34,6 @@ from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, dat
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters, random_parameters_at_distance
 from reg23_experiments.utils import logs_setup, pushover
-from reg23_experiments.utils.console_logging import tqdm
 
 
 def load_untruncated_ct(  #
@@ -95,7 +93,7 @@ def load_ground_truth(  #
     }
 
 
-@dadg_updater(names_returned=["base_cropping"])
+@dadg_updater(names_returned=["base_cropping", "target_flipped"])
 def load_base_cropping(  #
         *,  #
         saved_xray_reg_configs: pd.DataFrame,  #
@@ -111,7 +109,8 @@ def load_base_cropping(  #
             right=row["crop_right"],  #
             top=row["crop_top"],  #
             bottom=row["crop_bottom"],  #
-        )  #
+        ),  #
+        "target_flipped": row["horizontal_flip"],  #
     }
 
 
@@ -151,82 +150,6 @@ def truncation_percent_for_desired_h_valid(  #
     truncation_percent = min(98, max(0, round(100.0 * (1.0 - h / full_height))))
     logger.info(f"Derived truncation percent = {truncation_percent}")
     return {"truncation_percent": truncation_percent}
-
-
-def run_experiments(  #
-        *,  #
-        params_to_vary: dict[str, list | torch.Tensor],  #
-        constants: dict[str, Any],  #
-        output_directory: pathlib.Path,  #
-        device: torch.device,  #
-        tqdm_position: int = 0  #
-) -> None:
-    assert output_directory.is_dir()
-    # -----
-    # Determine the total number of experiments being run
-    each_range_length = []
-    for name, values in params_to_vary.items():
-        if isinstance(values, torch.Tensor):
-            assert len(values.size()) == 1
-        each_range_length.append(len(values))
-    total = 1
-    for l in each_range_length:
-        total *= l
-    logger.info(f"Running experiments with the following constant parameters:\n{pprint.pformat(constants)}")
-    # -----
-    # Iterate through the Cartesian product of the sets of parameters values, and run an experiment for each
-    tqdm_iterator = tqdm(  #
-        itertools.product(*(range(l) for l in each_range_length)),  #
-        desc="Experiments",  #
-        total=total,  #
-        position=tqdm_position,  #
-        leave=None  #
-    )
-    for indices in tqdm_iterator:
-        # -----
-        # Unpack the parameters for this iteration
-        instance_specific: dict[str, Any] = {  #
-            name: values[index]  #
-            for index, (name, values) in zip(indices, params_to_vary.items())  #
-        }  # config specific to this instance
-        tqdm_iterator.set_postfix(**instance_specific)  # displaying this
-        instance_all: dict[str, Any] = instance_specific | constants  # all the config for this instance
-        # -----
-        # Separate the config into registration and experiment configs
-        exp_config_by_name = copy.deepcopy(instance_all)
-        try:
-            reg_config = RegConfig(  #
-                particle_count=exp_config_by_name.pop("particle_count"),  #
-                particle_initialisation_spread=exp_config_by_name.pop("particle_initialisation_spread"),  #
-                iteration_count=exp_config_by_name.pop("iteration_count")  #
-            )
-        except Exception as e:
-            logger.error(f"Error constructing registration configuration at indices {indices}: {e}")
-            continue
-        try:
-            exp_config = ExperimentConfig(**exp_config_by_name)
-        except Exception as e:
-            logger.error(f"Error constructing experiment configuration at indices {indices}: {e}\nParameters:\n"
-                         f"{pprint.pformat(instance_all)}")
-            continue
-        # -----
-        # Run the experiment
-        try:
-            res: pd.DataFrame | None = run_experiment(reg_config=reg_config, exp_config=exp_config, device=device,
-                                                      tqdm_position=tqdm_position + 1)
-        except Exception as e:
-            logger.error(
-                f"Error running experiment at indices {indices}: {e}\nParameters:\n{pprint.pformat(instance_all)}")
-            continue
-        if res is None:
-            logger.info(
-                f"Experiment at indices {indices}; configuration: \n{pprint.pformat(instance_specific)}\nwas deemed "
-                f"trivial / unnecessary.")
-            continue
-        # -----
-        # Add the experiment config rows to the DataFrame and save
-        df = res.assign(**instance_all)
-        df.to_parquet(output_directory / f"data_{"_".join([str(i) for i in indices])}.parquet")
 
 
 def main(  #
@@ -558,9 +481,27 @@ def main(  #
         }, file)
 
     # -----
+    # Perform a dry-run of the experiments, setting the parameters to vary
+    experiments_cartesian(  #
+        param_constructor=exp_config_from_dict,  #
+        experiment=run_experiment,  #
+        params_to_vary=params_to_vary,  #
+        output_directory=instance_output_dir,  #
+        constants=constants,  #
+        device=device,  #
+        dry_run=True,  #
+    )
+
+    # -----
     # Run experiments, setting the parameters to vary
-    run_experiments(params_to_vary=params_to_vary, output_directory=instance_output_dir, constants=constants,
-                    device=device)
+    experiments_cartesian(  #
+        param_constructor=exp_config_from_dict,  #
+        experiment=run_experiment,  #
+        params_to_vary=params_to_vary,  #
+        output_directory=instance_output_dir,  #
+        constants=constants,  #
+        device=device,  #
+    )
 
 
 if __name__ == "__main__":
