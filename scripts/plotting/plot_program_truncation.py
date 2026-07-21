@@ -212,6 +212,16 @@ def plot_grid_figures(  #
     plt.show()
 
 
+def convergence_curve_to_accuracy(  #
+        distances: torch.Tensor,  #
+        distance_stds: torch.Tensor,  #
+        iteration_dim: int,  #
+) -> torch.Tensor:
+    index = [slice(None)] * distances.ndim
+    index[iteration_dim] = -1
+    return (distances + distance_stds)[tuple(index)]
+
+
 def main(  #
         *,  #
         load_dir: pathlib.Path,  #
@@ -270,7 +280,7 @@ def main(  #
     assert "variables" in variables_config
     variables: list[str] = list(variables_config["variables"].keys())
 
-    variable_hierarchy: list[str] = ["crop_expand", "mask", "cropping", "truncation_percent",
+    variable_hierarchy: list[str] = ["crop_expand", "mask", "cropping", "truncation_percent", "desired_h_valid",
                                      "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     variables = sorted(  #
@@ -293,14 +303,25 @@ def main(  #
             value_column="distance_std"  #
         )
     if "crop_expand" not in variables or False:
+        if False:
+            independent_variables = axis_values
+            dependent_variable = "distance from gold-standard"
+            dependent_values = distances
+            dependent_errors = distance_stds if distance_std_available else None
+        else:
+            assert (distance_std_available, "Distance standard deviations are required for accuracy metric.")
+            independent_variables = axis_values[:-1]
+            dependent_variable = "accuracy"
+            dependent_values = convergence_curve_to_accuracy(distances, distance_stds, -1)
+            dependent_errors = None
         plot_grid_figures(  #
-            independent_values=axis_values,  #
-            dependent_variable="distance from gold-standard",  #
-            dependent_values=distances,  #
-            dependent_errors=distance_stds if distance_std_available else None,  #
+            independent_values=independent_variables,  #
+            dependent_variable=dependent_variable,  #
+            dependent_values=dependent_values,  #
+            dependent_errors=dependent_errors,  #
             dense=dense,  #
             save_to=save_to,  #
-            legend_separate=True,  #
+            legend_separate=False,  #
         )
     else:
         dimension = variables.index("crop_expand")

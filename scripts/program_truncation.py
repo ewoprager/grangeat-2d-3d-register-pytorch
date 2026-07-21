@@ -742,14 +742,14 @@ def main(  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
         "downsample_level": 1,  #
         # "truncation_percent": 80,  #
-        "desired_h_valid": 40.0,  #
+        "desired_h_valid": 60.0,  #
         "cropping": "full_depth_drr",  #
         "crop_expand": 0.0,  #
         "crop_min_size": 0.01,  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 3.0,  #
-        "sample_count_per_distance": 10,  #
+        "sample_count_per_distance": 14,  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -758,14 +758,14 @@ def main(  #
     # X-ray choice determines the gold standard orientation, which drives h_linear:
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
-        # "level_090",  #
+        "level_090",  #
         "up_000",  #
-        # "up_090",  #
+        "up_090",  #
         "down_000",  #
-        # "down_090",  #
+        "down_090",  #
     ]
     params_to_vary: dict[str, list | torch.Tensor] = {  #
-        "desired_h_valid": [float(e) for e in np.geomspace(3.0, 40.0, 12)],  #
+        "desired_h_valid": [float(e) for e in np.linspace(20.0, 33.0, 16)],  #
     }
     # ----------------------------------
 
@@ -813,7 +813,7 @@ def main(  #
         fig, axes = plt.subplots(1, 4)
         # -----
         # Set the current transformation to the ground truth if it exists
-        data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/up_000")
+        data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/down_090")
 
         transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
         if transformation_gt is None or isinstance(transformation_gt, Error):
@@ -864,6 +864,20 @@ def main(  #
                 raise ValueError(f"Unknown cropping technique '{constants["cropping"]}'.")
             if isinstance(cropping, Error):
                 raise RuntimeError(f"Failed to set crop: {cropping.description}")
+            image: torch.Tensor | Error = data_manager().get("image_2d_full")
+            if isinstance(image, Error):
+                raise Exception(f"Failed to get image_2d_full: {image.description}")
+            spacing: torch.Tensor | Error = data_manager().get("image_2d_full_spacing")
+            if isinstance(spacing, Error):
+                raise Exception(f"Failed to get image_2d_full_spacing: {spacing.description}")
+            spacing = spacing.cpu()
+            if cropping is not None:
+                if cropping.is_collapsed(constants["crop_min_size"]):
+                    cropping = cropping.uncollapse(constants["crop_min_size"])
+                cropping = cropping.expand_mm(constants["crop_expand"], image_size=image.size(), image_spacing=spacing)
+                # expand could be negative, so checking again for collapse
+                if cropping.is_collapsed(constants["crop_min_size"]):
+                    cropping = cropping.uncollapse(constants["crop_min_size"])
             data_manager().set("further_cropping", cropping, check_equality=True)
 
         def objective_function(parameters: torch.Tensor) -> torch.Tensor:
