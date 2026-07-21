@@ -15,14 +15,14 @@ import SimpleITK as sitk
 import torch
 import yaml
 
-from reg23_experiments.data.structs import Cropping, Error, Transformation
+from reg23_experiments.data.structs import Cropping, Error, LinearRange, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
 from reg23_experiments.experiments.reg_experiment import exp_config_from_dict, run_experiment
 from reg23_experiments.experiments.registration import RegConfig, run_reg
-from reg23_experiments.experiments.run import experiments_cartesian
+from reg23_experiments.experiments.run import experiments_sobol
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.image import XrayDICOM, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
@@ -315,7 +315,7 @@ def main(  #
         "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 3.0,  #
-        "sample_count_per_distance": 14,  #
+        "sample_count_per_distance": 20,  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -330,8 +330,10 @@ def main(  #
         "down_000",  #
         "down_090",  #
     ]
-    params_to_vary: dict[str, list | torch.Tensor] = {  #
-        "desired_h_valid": [float(e) for e in np.linspace(20.0, 33.0, 16)],  #
+    params_to_vary: dict[str, list | LinearRange] = {  #
+        # "desired_h_valid": [float(e) for e in np.linspace(20.0, 33.0, 16)],  #
+        "desired_h_valid": LinearRange(20.0, 33.0),  #
+        "crop_expand": LinearRange(0.0, 30.0),#
     }
     # ----------------------------------
 
@@ -482,7 +484,8 @@ def main(  #
 
     # -----
     # Perform a dry-run of the experiments, setting the parameters to vary
-    experiments_cartesian(  #
+    experiments_sobol(  #
+        m=4,  #
         param_constructor=exp_config_from_dict,  #
         experiment=run_experiment,  #
         params_to_vary=params_to_vary,  #
@@ -494,7 +497,8 @@ def main(  #
 
     # -----
     # Run experiments, setting the parameters to vary
-    experiments_cartesian(  #
+    experiments_sobol(  #
+        m=4,  #
         param_constructor=exp_config_from_dict,  #
         experiment=run_experiment,  #
         params_to_vary=params_to_vary,  #

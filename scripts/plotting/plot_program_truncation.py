@@ -3,18 +3,31 @@ import itertools
 import pathlib
 from typing import Any
 
+import matplotlib
+
+matplotlib.use("QtAgg")
+
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import SimpleITK as sitk
+import sklearn
 import torch
 import yaml
 from matplotlib import rcParams
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
-from reg23_experiments.analysis.helpers import \
-    dataframe_rectangular_columns_to_tensor
-from reg23_experiments.analysis.plot import separate_subplots
+
+from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_tensor
+from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.data.transformation_save_data import TransformationSaveData
+from reg23_experiments.io.image import read_dicom
+from reg23_experiments.io.save_data import load_latest_save
+from reg23_experiments.io.sitk import load_ct_series
+from reg23_experiments.ops import geometry
 from reg23_experiments.utils import logs_setup
+from reg23_experiments.utils.console_logging import tqdm
 
 MPL_COLOURS = rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -33,6 +46,42 @@ def latex_escape(s: str) -> str:
         .replace("{", r"\{")  #
         .replace("}", r"\}")  #
     )
+
+
+l_cache = dict()
+theta_cache = dict()
+
+
+def ct_xray_to_h_linear(  #
+        *,  #
+        saved_transformations: pd.DataFrame,  #
+        xray_path: str | pathlib.Path,  #
+        ct_path: str | pathlib.Path,  #
+        ct_series_uid: str,  #
+) -> float:
+    # CT
+    ct_key = str(ct_path) + ct_series_uid
+    if ct_key in l_cache:
+        l = l_cache[ct_key]
+    else:
+        ct: sitk.Image | Error = load_ct_series(ct_path, ct_series_uid)
+        if isinstance(ct, Error):
+            raise Exception(f"Failed to open CT from path '{ct_path}': {ct.description}")
+        l = float(ct.GetSize()[1]) * ct.GetSpacing()[1]
+        l_cache[ct_key] = l
+    # X-ray
+    if xray_path in theta_cache:
+        theta = theta_cache[xray_path]
+    else:
+        xray_sop_instance_uid = read_dicom(xray_path)["uid"]
+        idx = (xray_sop_instance_uid, "gold_standard")
+        row = saved_transformations.loc[idx]
+        t = Transformation.from_vector(  #
+            torch.tensor([row[f"x{i}"] for i in range(6)], dtype=torch.float64)  #
+        )  #
+        theta = abs(geometry.axis_angle_extract_axis(t.rotation, torch.tensor([1.0, 0.0, 0.0])) - 0.5 * np.pi)
+        theta_cache[xray_path] = theta
+    return l * np.sin(theta)
 
 
 def save_legend_figure(axes, path: pathlib.Path) -> None:
@@ -229,6 +278,7 @@ def main(  #
         display: bool,  #
         save_to: pathlib.Path | None,  #
         analysis_format: bool,  #
+        fit: bool = False,  #
 ) -> None:
     assert load_dir.is_dir()
     if save_to is not None:
@@ -291,214 +341,195 @@ def main(  #
 
     dense = not analysis_format
 
-    distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-        df,  #
-        ordered_axes=variables + ["iteration"],  #
-        value_column="distance"  #
-    )
-    if distance_std_available:
-        distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
+    if not fit:
+        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
             df,  #
             ordered_axes=variables + ["iteration"],  #
-            value_column="distance_std"  #
+            value_column="distance"  #
         )
-    if "crop_expand" not in variables or False:
-        if False:
-            independent_variables = axis_values
-            dependent_variable = "distance from gold-standard"
-            dependent_values = distances
-            dependent_errors = distance_stds if distance_std_available else None
-        else:
-            assert (distance_std_available, "Distance standard deviations are required for accuracy metric.")
-            independent_variables = axis_values[:-1]
-            dependent_variable = "accuracy"
-            dependent_values = convergence_curve_to_accuracy(distances, distance_stds, -1)
-            dependent_errors = None
-        plot_grid_figures(  #
-            independent_values=independent_variables,  #
-            dependent_variable=dependent_variable,  #
-            dependent_values=dependent_values,  #
-            dependent_errors=dependent_errors,  #
-            dense=dense,  #
-            save_to=save_to,  #
-            legend_separate=False,  #
-        )
-    else:
-        dimension = variables.index("crop_expand")
-        best_crop_expand_indices = distances[..., -1].argmin(dim=dimension, keepdim=True)
-        new_size = distances.amin(dim=dimension, keepdim=True).size()
-        distances_chosen = distances.gather(  #
-            dim=dimension,  #
-            index=best_crop_expand_indices.unsqueeze(-1).expand(new_size)  #
-        ).squeeze(dimension)
         if distance_std_available:
-            distance_stds_chosen = distance_stds.gather(  #
+            distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
+                df,  #
+                ordered_axes=variables + ["iteration"],  #
+                value_column="distance_std"  #
+            )
+        if "crop_expand" not in variables or False:
+            if False:
+                independent_variables = axis_values
+                dependent_variable = "distance from gold-standard"
+                dependent_values = distances
+                dependent_errors = distance_stds if distance_std_available else None
+            else:
+                assert (distance_std_available, "Distance standard deviations are required for accuracy metric.")
+                independent_variables = axis_values[:-1]
+                dependent_variable = "accuracy"
+                dependent_values = convergence_curve_to_accuracy(distances, distance_stds, -1)
+                dependent_errors = None
+            plot_grid_figures(  #
+                independent_values=independent_variables,  #
+                dependent_variable=dependent_variable,  #
+                dependent_values=dependent_values,  #
+                dependent_errors=dependent_errors,  #
+                dense=dense,  #
+                save_to=save_to,  #
+                legend_separate=False,  #
+            )
+        else:
+            dimension = variables.index("crop_expand")
+            best_crop_expand_indices = distances[..., -1].argmin(dim=dimension, keepdim=True)
+            new_size = distances.amin(dim=dimension, keepdim=True).size()
+            distances_chosen = distances.gather(  #
                 dim=dimension,  #
                 index=best_crop_expand_indices.unsqueeze(-1).expand(new_size)  #
             ).squeeze(dimension)
-        new_axis_values = [(name, array) for name, array in axis_values if name != "crop_expand"]
+            if distance_std_available:
+                distance_stds_chosen = distance_stds.gather(  #
+                    dim=dimension,  #
+                    index=best_crop_expand_indices.unsqueeze(-1).expand(new_size)  #
+                ).squeeze(dimension)
+            new_axis_values = [(name, array) for name, array in axis_values if name != "crop_expand"]
 
-        ylim: tuple[float, float] | None = (0.0, distances_chosen.amax(dim=-1).quantile(q=0.75).item()) if len(
-            new_axis_values) > 2 else None
+            ylim: tuple[float, float] | None = (0.0, distances_chosen.amax(dim=-1).quantile(q=0.75).item()) if len(
+                new_axis_values) > 2 else None
 
-        for index_value_pairs in itertools.product(*[enumerate(v) for _, v in new_axis_values[:-3]]):
-            dependent_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
-            fig, axes = grid_of_plots_figure(  #
-                independent_values=new_axis_values[-3:],  #
-                dependent_variable="distance from gold-standard",  #
-                dependent_values=distances_chosen[*dependent_index],  #
-                dependent_errors=distance_stds_chosen[*dependent_index] if distance_std_available else None,  #
-                dense=dense,  #
-                ylim=ylim,  #
+            for index_value_pairs in itertools.product(*[enumerate(v) for _, v in new_axis_values[:-3]]):
+                dependent_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
+                fig, axes = grid_of_plots_figure(  #
+                    independent_values=new_axis_values[-3:],  #
+                    dependent_variable="distance from gold-standard",  #
+                    dependent_values=distances_chosen[*dependent_index],  #
+                    dependent_errors=distance_stds_chosen[*dependent_index] if distance_std_available else None,  #
+                    dense=dense,  #
+                    ylim=ylim,  #
+                )
+                fig.suptitle(latex_escape(  #
+                    ";".join([  #
+                        f"{new_axis_values[i][0]}={var_to_string(new_axis_values[i][0], w)}"  #
+                        for i, w in enumerate([v for _, v in index_value_pairs])  #
+                    ])  #
+                ))
+                if save_to is not None:
+                    fig.savefig(save_to / ("_".join(  #
+                        f"{new_axis_values[i][0]}-{j}"  #
+                        for i, j in enumerate([k for k, _ in index_value_pairs])  #
+                    ) + ".pgf"))
+            plt.show()
+
+        if "xray_path" in variables and crop_size_available:
+            # crop_widths, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            #     df.loc[df["iteration"] == 0],  #
+            #     ordered_axes=variables,  #
+            #     value_column="crop_width"  #
+            # )
+            crop_heights, axis_values = dataframe_rectangular_columns_to_tensor(  #
+                df.loc[df["iteration"] == 0],  #
+                ordered_axes=variables,  #
+                value_column="crop_height"  #
             )
-            fig.suptitle(latex_escape(  #
-                ";".join([  #
-                    f"{new_axis_values[i][0]}={var_to_string(new_axis_values[i][0], w)}"  #
-                    for i, w in enumerate([v for _, v in index_value_pairs])  #
-                ])  #
-            ))
-            if save_to is not None:
-                fig.savefig(save_to / ("_".join(  #
-                    f"{new_axis_values[i][0]}-{j}"  #
-                    for i, j in enumerate([k for k, _ in index_value_pairs])  #
-                ) + ".pgf"))
-        plt.show()
 
-    if "xray_path" in variables and crop_size_available:
-        # crop_widths, axis_values = dataframe_rectangular_columns_to_tensor(  #
-        #     df.loc[df["iteration"] == 0],  #
-        #     ordered_axes=variables,  #
-        #     value_column="crop_width"  #
-        # )
-        crop_heights, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df.loc[df["iteration"] == 0],  #
-            ordered_axes=variables,  #
-            value_column="crop_height"  #
+            invariant_variables = [  #
+                "crop_expand",  #
+                "mask"  #
+            ]  # crop expand is applied after measuring, so it is truly invariant
+
+            for name in invariant_variables:
+                try:
+                    i = variables.index(name)
+                except ValueError:
+                    continue
+                axis_values = [e for e in axis_values if e[0] != name]
+                # crop_widths = crop_widths.mean(dim=i)
+                crop_heights = crop_heights.mean(dim=i)
+
+            # crop_values = torch.stack((crop_widths, crop_heights), dim=-2)
+            # axis_values.insert(-1, ("crop dir", np.array(["width", "height"])))
+
+            plot_grid_figures(  #
+                independent_values=axis_values,  #
+                dependent_variable="crop height [mm]",  #
+                dependent_values=crop_heights,  #
+                dense=dense,  #
+            )
+    else:
+        # Fit a model to the data
+
+        # -----
+        # Load all saved transformations; these are searched through for ground truth alignments
+        res: tuple[pathlib.Path, TransformationSaveData, int] | Error = load_latest_save(  #
+            TransformationSaveData,  #
+            save_directory=pathlib.Path("data/app_transformation_save_data")  #
         )
+        if isinstance(res, Error):
+            raise RuntimeError(f"Failed to load saved transformation: {res.description}")
+        _, transformation_save_data, _ = res
+        saved_transformations: pd.DataFrame = transformation_save_data.get_data()
+        logger.info(f"Saved transformation data:\n{saved_transformations.to_string()}")
 
-        invariant_variables = [  #
-            "crop_expand",  #
-            "mask"  #
-        ]  # crop expand is applied after measuring, so it is truly invariant
+        assert (distance_std_available, "Distance standard deviations are required for accuracy metric.")
+        # Collapse to just last iteration
+        accuracy_df = df[df["iteration"] == df["iteration"].max()].drop(columns=["iteration"])
+        # Remove unnecessary dependent variable columns
+        accuracy_df.drop(columns=["crop_width", "crop_height"], inplace=True)
+        # CT and X-ray paths to h_linear
+        accuracy_df["h_linear"] = [  #
+            ct_xray_to_h_linear(  #
+                saved_transformations=saved_transformations,  #
+                xray_path=xray_path,  #
+                ct_path=ct_path,  #
+                ct_series_uid=ct_series_uid,  #
+            )  #
+            for xray_path, ct_path, ct_series_uid in tqdm(  #
+                zip(accuracy_df["xray_path"], accuracy_df["ct_path"], accuracy_df["ct_series_uid"]),  #
+                desc="Calculating h_linear"  #
+            )  #
+        ]
+        accuracy_df.drop(columns=["xray_path", "ct_path", "ct_series_uid"], inplace=True)
+        # Drop columns for constant variables
+        accuracy_df = accuracy_df.drop(columns=[  #
+            col for col in  #
+            accuracy_df.columns[accuracy_df.nunique() == 1]  #
+        ])
 
-        for name in invariant_variables:
-            try:
-                i = variables.index(name)
-            except ValueError:
-                continue
-            axis_values = [e for e in axis_values if e[0] != name]
-            # crop_widths = crop_widths.mean(dim=i)
-            crop_heights = crop_heights.mean(dim=i)
+        print(accuracy_df.to_string())
 
-        # crop_values = torch.stack((crop_widths, crop_heights), dim=-2)
-        # axis_values.insert(-1, ("crop dir", np.array(["width", "height"])))
+        if "sample_count_per_distance" in accuracy_df.columns:
+            accuracy_df.drop(columns=["sample_count_per_distance"], inplace=True)
 
-        plot_grid_figures(  #
-            independent_values=axis_values,  #
-            dependent_variable="crop height [mm]",  #
-            dependent_values=crop_heights,  #
-            dense=dense,  #
+        # -----
+        # Gaussian Process Regression
+        # Get the dependent value vector
+        y: np.ndarray = accuracy_df["distance"].to_numpy()
+        y_sigma: np.ndarray = accuracy_df["distance_std"].to_numpy()
+        # Get the independent value vectors as a matrix
+        independent_variables: list[str] = ["desired_h_valid", "h_linear", "crop_expand"]
+        X: np.ndarray = accuracy_df[independent_variables].to_numpy()
+        indices_in_slice = (accuracy_df["crop_expand"] == 0.0).to_numpy()
+        gpr = sklearn.gaussian_process.GaussianProcessRegressor(alpha=np.square(y_sigma)).fit(X, y)
+
+        h_valids = np.linspace(20.0, 35.0, 50)
+        h_linears = np.linspace(15.0, 80.0, 50)
+        h_valids, h_linears = np.meshgrid(h_valids, h_linears)
+        values = {  #
+            "desired_h_valid": h_valids.flatten(),  #
+            "h_linear": h_linears.flatten(),  #
+            "crop_expand": np.zeros_like(h_valids.flatten()),  #
+        }
+        model_values, model_stds = gpr.predict(np.stack([values[name] for name in independent_variables], axis=1), return_std=True)
+        model_values = model_values.reshape(h_valids.shape)
+        model_stds = model_stds.reshape(h_valids.shape)
+        fig, axes = plt.subplots(subplot_kw={"projection": "3d"})
+        axes.plot_surface(h_linears, h_valids, model_values)
+        axes.plot_surface(h_linears, h_valids, model_values + model_stds, alpha = 0.3, color=(1.0, 0.0, 0.0))
+        axes.plot_surface(h_linears, h_valids, model_values - model_stds, alpha = 0.3, color=(1.0, 0.0, 0.0))
+        axes.scatter(  #
+            accuracy_df["h_linear"].to_numpy()[indices_in_slice],  #
+            accuracy_df["desired_h_valid"].to_numpy()[indices_in_slice],  #
+            accuracy_df["distance"].to_numpy()[indices_in_slice],  #
         )
-
-    return
-
-    # data over downsample level and truncation fraction, stratified by masking
-    if False:
-        starting_distance = df["starting_distance"].values[0]
-        iteration_count = df["iteration_count"].values[0]
-        distances, axis_values = dataframe_to_tensor(  #
-            df.loc[(df["mask"] == "None")],  #
-            ordered_axes=["downsample_level", "truncation_percent", "iteration"],  #
-            value_column="distance")
-        fig, axes = (separate_subplots if save_figures else plt.subplots)(3, distances.size(0))
-        if not save_figures:
-            fig.subplots_adjust(left=0.05,  # margin on left side of figure
-                                right=0.98,  # right margin
-                                bottom=0.08,  # bottom margin
-                                top=0.95,  # top margin
-                                wspace=0.2,  # width space between columns
-                                hspace=0.3)  # height space between rows
-        for k, mask in enumerate(["None", "Every evaluation", "Every evaluation weighting zncc"]):
-            # converting to a tensor, with an axis per variable
-            distances, axis_values = dataframe_to_tensor(  #
-                df.loc[(df["mask"] == mask)],  #
-                ordered_axes=["downsample_level", "truncation_percent", "iteration"],  #
-                value_column="distance")
-            max_truncation = axis_values["truncation_percent"].max()
-            for j, dl in enumerate(axis_values["downsample_level"]):
-                for i, tf in enumerate(axis_values["truncation_percent"]):
-                    axes[k, j].plot(  #
-                        axis_values["iteration"] + 1,  #
-                        distances[j, i, :],  #
-                        label="t.f. {:.3f}".format(tf.item()),  #
-                        color=((tf / max_truncation).item(), 1.0 - (tf / max_truncation).item(), 0.0))
-                axes[k, j].set_xlabel("iteration")
-                axes[k, j].xaxis.set_major_locator(MaxNLocator(integer=True))
-                axes[k, j].set_ylabel("distance from G.T.")
-                axes[k, j].set_ylim((0.0, starting_distance))
-                if not save_figures:
-                    axes[k, j].set_title(f"Mask: {mask}, d.l. {dl}")
-                axes[k, j].legend()
-        if save_figures:
-            for k, j in itertools.product(range(3), range(len(axis_values["downsample_level"]))):
-                fig[k, j].tight_layout()
-                fig[k, j].savefig(save_directory / f"convergence_{k}_{j}.pgf")
-
-        fig, axes = plt.subplots()
-        for j, mask in enumerate(["None", "Every evaluation", "Every evaluation weighting zncc"]):
-            distances = df.loc[  #
-                (df["mask"] == mask) &  #
-                (df["downsample_level"] == 1) &  #
-                (df["iteration"] == iteration_count - 1)  #
-                ].set_index("truncation_percent")["distance"].sort_index()
-            axes.plot(distances, label=mask)
-        axes.set_xlabel("Truncation percent")
-        axes.set_ylabel(f"Converged distance after {iteration_count} iterations")
-        axes.set_ylim((0.0, starting_distance))
-        axes.legend()
-        if save_figures:
-            fig.tight_layout()
-            fig.savefig(save_directory / "converged_against_truncation.pgf")
-        if display:
-            plt.show()
-
-    # data over similarity metric only
-    if False:
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_to_tensor(  #
-            df,  #
-            ordered_axes=["sim_metric", "iteration"],  #
-            value_column="distance")
-
-        fig, axes = plt.subplots()
-        for i, sm in enumerate(axis_values["sim_metric"]):
-            axes.plot(axis_values["iteration"], distances[i, :], label=sm)
-            axes.set_xlabel("iteration")
-            axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-            axes.set_ylabel("distance from G.T.")
-            # axes.set_ylim((0.0, None))
-            axes.legend()
-        if display:
-            plt.show()
-
-    # data over cropping only
-    if False:
-        # converting to a tensor, with an axis per variable
-        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            df,  #
-            ordered_axes=["cropping", "iteration"],  #
-            value_column="distance")
-
-        fig, axes = plt.subplots()
-        for i, cropping_desc in enumerate(axis_values["cropping"]):
-            axes.plot(axis_values["iteration"], distances[i, :], label=cropping_desc)
-            axes.set_xlabel("iteration")
-            axes.xaxis.set_major_locator(MaxNLocator(integer=True))
-            axes.set_ylabel("distance from G.T.")
-            # axes.set_ylim((0.0, None))
-            axes.legend()
-
-    if display:
+        axes.set_zlim((np.min(model_values), np.max(model_values)))
+        axes.set_xlabel("$h_\\mathrm{linear}$")
+        axes.set_ylabel("$h_\\mathrm{V}$")
+        axes.set_zlabel("distance at final iteration")
         plt.show()
 
 
@@ -518,6 +549,8 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--display", action="store_true", help="Display/plot the resulting data.")
     parser.add_argument("-a", "--analysis", action="store_true",
                         help="Format the plots for analysis, rather than PGF plot generation.")
+    parser.add_argument("-f", "--fit", action="store_true",
+                        help="Fit a model to the data rather than assuming it is a full Cartesian grid.")
     args = parser.parse_args()
 
     main(  #
@@ -525,5 +558,6 @@ if __name__ == "__main__":
         which_datasets=args.which_datasets,  #
         display=args.display,  #
         save_to=None if args.save_to is None else pathlib.Path(args.save_to),  #
-        analysis_format=args.analysis  #
+        analysis_format=args.analysis,  #
+        fit=args.fit,  #
     )

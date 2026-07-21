@@ -7,6 +7,7 @@ import numpy
 import scipy
 import torch
 import traitlets
+import yaml
 from beartype import beartype as typechecker
 from jaxtyping import Float32, Float64, jaxtyped
 
@@ -85,6 +86,20 @@ class LinearRange:
     @classmethod
     def grid_sample_range(cls):
         return LinearRange(-1., 1.)
+
+    def to_dict(self):
+        return {  #
+            "name": self.__class__.__name__,  #
+            "low": self.low,  #
+            "high": self.high,  #
+        }
+
+
+def _linear_range_representer(dumper, data):
+    return dumper.represent_dict(data.to_dict())
+
+
+yaml.SafeDumper.add_representer(LinearRange, _linear_range_representer)
 
 
 class Transformation:
