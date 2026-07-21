@@ -1,6 +1,5 @@
-import inspect
 import logging
-from typing import Callable, Tuple
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import torch
@@ -9,31 +8,9 @@ from reg23_experiments.data.sinogram import Sinogram, SinogramClassic
 from reg23_experiments.data.structs import SceneGeometry, Sinogram2dGrid, Transformation
 from reg23_experiments.ops import grangeat, similarity_metric
 
-__all__ = ["ParametrisedSimilarityMetric", "evaluate", "evaluate_direct"]
+__all__ = ["evaluate", "evaluate_direct"]
 
 logger = logging.getLogger(__name__)
-
-
-class ParametrisedSimilarityMetric:
-    def __init__(self, underlying_function: Callable, **kwargs):
-        # filter out key-word arguments that the function doesn't accept
-        self._underlying_function = underlying_function
-        sig = inspect.signature(self._underlying_function)
-        self._kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
-
-    @property
-    def func(self) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
-        return lambda a, b: self._underlying_function(a, b, **self._kwargs)
-
-    @property
-    def func_weighted(self) -> Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor] | None:
-        if self._underlying_function == similarity_metric.ncc:
-            weighted_function = similarity_metric.weighted_ncc
-        elif self._underlying_function == similarity_metric.local_ncc:
-            weighted_function = similarity_metric.weighted_local_ncc
-        else:
-            return None
-        return lambda a, b, w: weighted_function(a, b, w, **self._kwargs)
 
 
 def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation: Transformation,
@@ -63,7 +40,8 @@ def evaluate(fixed_image: torch.Tensor, sinogram3d: Sinogram, *, transformation:
         plt.colorbar(mesh)
         if save:
             plt.savefig(
-                "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else "data/temp/d_dr_R3_mu_resampled.pgf")
+                "data/temp/d_dr_R3_mu_resampled_with_sample_smoothing.pgf" if smooth else
+                "data/temp/d_dr_R3_mu_resampled.pgf")
 
     return similarity_metric.ncc(fixed_image, resampled), resampled
 

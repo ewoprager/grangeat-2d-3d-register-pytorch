@@ -4,9 +4,7 @@ import itertools
 import os
 import pathlib
 import pprint
-import types
-from datetime import datetime
-from typing import Any, Callable, Literal, Sequence
+from typing import Any, Sequence
 
 import matplotlib
 
@@ -17,46 +15,27 @@ import numpy as np
 import pandas as pd
 import SimpleITK as sitk
 import torch
-import traitlets
 import yaml
 
 from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
+from reg23_experiments.experiments.helpers import instance_output_directory
+from reg23_experiments.experiments.reg_experiment import ExperimentConfig, run_experiment
+from reg23_experiments.experiments.registration import RegConfig, run_reg
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.image import XrayDICOM, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.io.serialize import serialize_recursive
 from reg23_experiments.io.sitk import DCMSeriesInfo, find_ct_series, load_ct_series
 from reg23_experiments.ops import geometry, similarity_metric
-from reg23_experiments.ops import swarm as pso
 from reg23_experiments.ops.ct import convert_ct_to_mu_sitk
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
-from reg23_experiments.ops.objective_function import ParametrisedSimilarityMetric
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters, random_parameters_at_distance
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.utils.console_logging import tqdm
-
-
-def configs_to_dict(*vargs) -> dict[str, Any]:
-    # convert all function pointers to their `str` names and merge all configs
-    return {k: (v.__qualname__ if isinstance(v, types.FunctionType) else v) for config in vargs for k, v in
-            config.trait_values().items()}
-
-
-def save_dict(d: dict, *, directory: pathlib.Path, stem: str) -> None:
-    directory.mkdir(exist_ok=True, parents=True)
-    torch.save(d, directory / f"{stem}.pkl")
-    (directory / f"{stem}.txt").write_text(pprint.pformat(d))
-
-
-def instance_output_directory(script_output_directory: str | pathlib.Path) -> pathlib.Path:
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    ret: pathlib.Path = pathlib.Path(script_output_directory) / timestamp
-    ret.mkdir(parents=True, exist_ok=True)
-    return ret
 
 
 def load_untruncated_ct(  #
@@ -172,284 +151,6 @@ def truncation_percent_for_desired_h_valid(  #
     truncation_percent = min(98, max(0, round(100.0 * (1.0 - h / full_height))))
     logger.info(f"Derived truncation percent = {truncation_percent}")
     return {"truncation_percent": truncation_percent}
-
-
-class RegConfig(traitlets.HasTraits):
-    particle_count: int = traitlets.Int(default_value=traitlets.Undefined)
-    particle_initialisation_spread: float = traitlets.Float(default_value=traitlets.Undefined)
-    iteration_count: int = traitlets.Int(default_value=traitlets.Undefined)
-
-
-def run_reg(  #
-        *,  #
-        obj_fun: Callable,  #
-        starting_params: torch.Tensor,  #
-        config: RegConfig,  #
-        device: torch.device,  #
-        plot: Literal["no", "yes", "mask"] = "no",  #
-        tqdm_position: int = 0  #
-) -> torch.Tensor:
-    """
-    Run a PSO from the given starting params and return a tensor containing the params and O.F. value at each iteration.
-    :param obj_fun:
-    :param starting_params:
-    :param config:
-    :param device:
-    :param plot:
-    :param tqdm_position:
-    :return: A tensor of size (iteration count, dimensionality + 1), where each row corresponds to an iteration of
-    the optimisation, and stores the following data: | <- position of current best -> | current best |
-    """
-    if plot != "no":
-        ncols = 2
-        if plot == "mask":
-            ncols += 2
-        fig, axes = plt.subplots(1, ncols)
-        axes = axes.tolist()
-        # axes.insert(2, axes[1].twinx())
-        plt.ion()
-        plt.show()
-        t = mapping_parameters_to_transformation(starting_params)
-        axes[0].clear()
-        axes[0].set_title("moving image AT start: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
-            t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
-            t.translation[1].item(), t.translation[2].item()))
-        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
-        axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
-        plt.draw()
-        plt.pause(0.1)
-
-    # -----
-    # Initialise a particle swarm optimisation, with tqdm
-    pso_config = pso.SwarmConfig(objective_function=obj_fun)
-    dimensionality = starting_params.numel()
-    # initialise the return tensor
-    ret = torch.empty([config.iteration_count, dimensionality + 1], dtype=torch.float32, device=device)
-    tqdm_iterator = tqdm(range(config.iteration_count), desc="PSO iterations", position=tqdm_position, leave=None)
-    # initialise the swarm, which performs an o.f. evaluation for each particle
-    swarm = pso.Swarm(  #
-        config=pso_config,  #
-        dimensionality=dimensionality,  #
-        particle_count=config.particle_count,  #
-        initialisation_position=starting_params,  #
-        initialisation_spread=torch.full([dimensionality], config.particle_initialisation_spread),  #
-        device=device  #
-    )
-    ret[0, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
-    ret[0, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
-    tqdm_iterator.update()
-    # -----
-    # The optimisation loop
-    for it in range(1, config.iteration_count):
-        swarm.iterate()
-        ret[it, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
-        ret[it, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
-
-        if plot != "no":
-            data_manager().set("current_transformation",
-                               mapping_parameters_to_transformation(swarm.current_optimum_position))
-            axes[0].clear()
-            axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
-            t = data_manager().get("current_transformation")
-            axes[0].set_title("Iteration {}: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
-                it, t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
-                t.translation[1].item(), t.translation[2].item()))
-            axes[1].clear()
-            axes[1].plot(ret[0:it + 1, -1].cpu().numpy())
-            axes[1].set_xlabel("iteration")
-            axes[1].set_ylabel("o.f. value")
-            if plot == "mask":
-                axes[2].clear()
-                axes[2].set_title("mask")
-                axes[2].imshow(data_manager().get("mask").cpu().numpy())
-                axes[3].clear()
-                axes[3].set_title("masked fixed image")
-                axes[3].imshow(data_manager().get("fixed_image").cpu().numpy())
-            plt.draw()
-            plt.pause(0.1)
-
-        tqdm_iterator.update()
-        tqdm_iterator.set_postfix(best=swarm.current_optimum.item())
-    return ret
-
-
-class ExperimentConfig(traitlets.HasTraits):
-    ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
-    xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
-    downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
-    # truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
-    desired_h_valid: int = traitlets.Float(min=1.0, max=100.0, default_value=traitlets.Undefined)
-    cropping: str = traitlets.Enum(values=[  #
-        "None",  #
-        "nonzero_drr",  #
-        "full_depth_drr"  #
-    ], default_value=traitlets.Undefined)
-    crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
-    crop_expand: float = traitlets.Float(default_value=traitlets.Undefined)
-    mask: str = traitlets.Enum(values=[  #
-        "None",  #
-        "Every evaluation",  #
-        "Every evaluation weighting zncc"  #
-    ], default_value=traitlets.Undefined)
-    sim_metric: str = traitlets.Enum(values=[  #
-        "zncc",  #
-        "local_zncc",  #
-        "multiscale_zncc",  #
-        "gradient_correlation"  #
-    ], default_value=traitlets.Undefined)
-    starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
-    sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
-
-
-def string_to_sim_met(  #
-        config_string: str,  #
-        *,  #
-        kernel_size: int = 8,  #
-        llambda: float = 1.0,  #
-        gradient_method: Literal["sobel", "central_difference"] = "sobel"  #
-) -> ParametrisedSimilarityMetric:
-    if config_string == "zncc":
-        return ParametrisedSimilarityMetric(similarity_metric.ncc)
-    elif config_string == "local_zncc":
-        return ParametrisedSimilarityMetric(similarity_metric.local_ncc, kernel_size=kernel_size)
-    elif config_string == "multiscale_zncc":
-        return ParametrisedSimilarityMetric(similarity_metric.multiscale_ncc, kernel_size=kernel_size, llambda=llambda)
-    elif config_string == "gradient_correlation":
-        return ParametrisedSimilarityMetric(similarity_metric.gradient_correlation, gradient_method=gradient_method)
-    raise ValueError(f"Unknown similarity metric '{config_string}'.")
-
-
-def run_experiment(  #
-        *,  #
-        reg_config: RegConfig,  #
-        exp_config: ExperimentConfig,  #
-        device: torch.device,  #
-        tqdm_position: int = 0  #
-) -> pd.DataFrame | None:
-    """
-    Run multiple (`sample_count_per_distance`) registrations according to the given parameters, and return the average
-    distance from ground truth at each iteration.
-    :param reg_config:
-    :param exp_config:
-    :param device:
-    :param tqdm_position:
-    :return: A tensor of size (iteration count,) or None; the distance from g.t. of the optimisation at each
-    iteration, averaged over `sample_count_per_distance` repetitions, unless the configuration is trivial /
-    unnecessary, in which case `None`.
-    """
-    data_manager().set("ct_path", exp_config.ct_path, check_equality=True)
-    data_manager().set("xray_path", exp_config.xray_path, check_equality=True)
-    data_manager().set("downsample_level", exp_config.downsample_level, check_equality=True)
-    # data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
-    data_manager().set("desired_h_valid", exp_config.desired_h_valid)
-    # -----
-    # Configuring according to desired similarity metric
-    p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
-    # -----
-    # Configuring according to desired masking technique
-    if exp_config.mask == "None":
-        apply_mask = False
-        data_manager().set("mask_transformation", None, check_equality=True)
-    elif exp_config.mask == "Every evaluation":
-        apply_mask = True
-        weight_with_mask = False
-    elif exp_config.mask == "Every evaluation weighting zncc":
-        apply_mask = True
-        weight_with_mask = True
-        # Checking that the parametrised sim. metric has a weighted counterpart
-        if p_sim_met.func_weighted is None:
-            # No weighted counterpart of the similarity metric; skipping this configuration
-            return None
-    else:
-        raise ValueError(f"Unknown mask technique '{exp_config.mask}'.")
-
-    # -----
-    # Defining the objective function
-    def objective_function(parameters: torch.Tensor) -> torch.Tensor:
-        t: Transformation = mapping_parameters_to_transformation(parameters)
-        # Setting the parameters
-        data_manager().set("current_transformation", t)
-        if apply_mask:
-            data_manager().set("mask_transformation", t)
-        # Getting the resulting moving and fixed images
-        moving_image: torch.Tensor | Error = data_manager().get("moving_image")
-        fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
-        # Comparing, potentially weighting with a mask
-        if apply_mask and weight_with_mask:
-            mask: torch.Tensor | Error = data_manager().get("mask")
-            return -p_sim_met.func_weighted(moving_image, fixed_image, mask)
-        return -p_sim_met.func(moving_image, fixed_image)
-
-    # -----
-    # Running repeated registrations with configured parameters
-    dimensionality = 6
-    distance_samples = torch.empty([int(exp_config.sample_count_per_distance), int(reg_config.iteration_count)],
-                                   dtype=torch.float64, device=device)  # size = (sample count, iteration count)
-    crop_size_samples = torch.empty([int(exp_config.sample_count_per_distance), 2],
-                                    dtype=torch.float64)  # size = (sample count, 2); (width, height)
-    transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
-    if isinstance(transformation_gt, Error):
-        raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
-    if transformation_gt is None:
-        raise Exception(f"No ground truth transformation available.")
-    ground_truth = mapping_transformation_to_parameters(transformation_gt)
-    for i in tqdm(  #
-            range(int(exp_config.sample_count_per_distance)),  #
-            desc="Repeated samples",  #
-            position=tqdm_position,  #
-            leave=None  #
-    ):
-        starting_params = random_parameters_at_distance(ground_truth, exp_config.starting_distance)
-        # -----
-        # Configuring according to desired cropping technique
-        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
-        if exp_config.cropping == "None":
-            cropping: Cropping | None = None
-        elif exp_config.cropping == "nonzero_drr":
-            cropping: Cropping | None = args_from_dadg()(geometry.get_crop_nonzero_drr)()
-        elif exp_config.cropping == "full_depth_drr":
-            cropping: Cropping | None = args_from_dadg()(geometry.get_crop_full_depth_drr)()
-        else:
-            raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
-        image: torch.Tensor | Error = data_manager().get("image_2d_full")
-        if isinstance(image, Error):
-            raise Exception(f"Failed to get image_2d_full: {image.description}")
-        spacing: torch.Tensor | Error = data_manager().get("image_2d_full_spacing")
-        if isinstance(spacing, Error):
-            raise Exception(f"Failed to get image_2d_full_spacing: {spacing.description}")
-        spacing = spacing.cpu()
-        if cropping is None:
-            crop_size_samples[i, 0] = float(image.size()[1]) * spacing[0].item()
-            crop_size_samples[i, 1] = float(image.size()[0]) * spacing[1].item()
-        else:
-            if cropping.is_collapsed(exp_config.crop_min_size):
-                cropping = cropping.uncollapse(exp_config.crop_min_size)
-            crop_size_samples[i, 0] = (cropping.right - cropping.left) * float(image.size()[1]) * spacing[0].item()
-            crop_size_samples[i, 1] = (cropping.bottom - cropping.top) * float(image.size()[0]) * spacing[1].item()
-            cropping = cropping.expand_mm(exp_config.crop_expand, image_size=image.size(), image_spacing=spacing)
-            # expand could be negative, so checking again for collapse
-            if cropping.is_collapsed(exp_config.crop_min_size):
-                cropping = cropping.uncollapse(exp_config.crop_min_size)
-
-        data_manager().set("further_cropping", cropping, check_equality=True)
-        # -----
-        # Registration
-        res = run_reg(  #
-            obj_fun=objective_function,  #
-            config=reg_config,  #
-            starting_params=starting_params,  #
-            device=device,  #
-            tqdm_position=tqdm_position + 1)  # size = (iteration count, dimensionality + 1)
-        distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
-                                                          dim=1)  # size = (iteration count,)
-
-    return pd.DataFrame({  #
-        "iteration": torch.arange(reg_config.iteration_count).numpy(),  # size = (iteration count,)
-        "distance": distance_samples.mean(dim=0).cpu().numpy(),  # size = (iteration count,)
-        "distance_std": distance_samples.std(dim=0).cpu().numpy(),  #
-        "crop_width": crop_size_samples[:, 0].mean().cpu().numpy(),  #
-        "crop_height": crop_size_samples[:, 1].mean().cpu().numpy(),  #
-    })
 
 
 def run_experiments(  #
