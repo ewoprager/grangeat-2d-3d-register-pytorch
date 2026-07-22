@@ -103,7 +103,7 @@ class Swarm:
 
     def __init__(self, *, config: SwarmConfig, dimensionality: int, particle_count: int,
                  initialisation_position: torch.Tensor, initialisation_spread: torch.Tensor, device: torch.device,
-                 generator: torch.Generator | None = None):
+                 batch_size: int = 1, generator: torch.Generator | None = None):
         """
         :param config: The configuration of the swarm. This is stored as a property and can be mutated safely between
         iterations.
@@ -117,11 +117,14 @@ class Swarm:
         around the `initialisation_position`. The value for each dimension is the standard deviation used to sample
         the particles' initialisation positions in that dimension. This must have size `(dimensionality,)`.
         :param device: The device on which to store all `torch.Tensor`s.
+        :param batch_size: If batch_size == 1, the objective function must be able to take a 1D tensor, in which case
+        it returns a scalar. Otherwise, the objective function must take a (B, D) tensor, and return a (B,) tensor.
         :param generator: Optional; a generator with which to generate random values for initialisation and movement
         of the particles.
         """
         self._config = config
         self._dimensionality = dimensionality
+        self._batch_size = batch_size
         self._generator = generator
         assert initialisation_position.size() == torch.Size([self._dimensionality])
         assert initialisation_spread.size() == torch.Size([self._dimensionality])
@@ -137,16 +140,21 @@ class Swarm:
         self._particles = torch.cat([particle_positions, particle_velocities, particle_positions,
                                      torch.zeros([particle_count, 1], dtype=torch.float32, device=device)], dim=1)
         # evaluating for the first particle
-        self._particles[0, -1] = self._config.objective_function(self._particles[0, 0:dimensionality])
+        self._particles[0, -1] = self._config.objective_function(  #
+            self._particles[0, 0:dimensionality] if self._batch_size == 1 else self._particles[
+                0, 0:dimensionality].unsqueeze(0)  #
+        )
         # initialising to determine global best
         self._global_best_position = self._particles[0, 0:dimensionality]
         self._global_best = self._particles[0, -1]
         # evaluating for rest of particles, and determining global best
-        for particle in range(particle_count):
-            self._particles[particle, -1] = self._config.objective_function(self._particles[particle, 0:dimensionality])
-            if self._particles[particle, -1] < self._global_best:
-                self._global_best = self._particles[particle, -1]
-                self._global_best_position = self._particles[particle, 0:dimensionality]
+        for particles in self._particles[1:].split(self._batch_size):
+            objective_function_values = self.config.objective_function(particles[:, 0:self.dimensionality].squeeze())
+            particles[:, -1] = objective_function_values
+            batch_best, particle_best = objective_function_values.min(dim=0)
+            if batch_best < self._global_best:
+                self._global_best = batch_best
+                self._global_best_position = particles[particle_best, 0:self.dimensionality]
 
     @property
     def device(self) -> torch.device:
@@ -204,12 +212,13 @@ class Swarm:
                 self._particles[:, 0:self.dimensionality] +  #
                 self._particles[:, self.dimensionality:2 * self.dimensionality])
         # evaluating objective function
-        for particle in range(self.particle_count):
-            objective_function_value = self.config.objective_function(self._particles[particle, 0:self.dimensionality])
-            if objective_function_value < self._particles[particle, -1]:
-                self._particles[particle, -1] = objective_function_value
-                self._particles[particle, 2 * self.dimensionality:3 * self.dimensionality] = self._particles[
-                    particle, 0:self.dimensionality]
-                if objective_function_value < self._global_best:
-                    self._global_best = objective_function_value
-                    self._global_best_position = self._particles[particle, 0:self.dimensionality]
+        for particles in self._particles.split(self._batch_size):
+            objective_function_values = self.config.objective_function(particles[:, 0:self.dimensionality].squeeze())
+            improved = objective_function_values < particles[:, -1]
+            particles[improved, -1] = objective_function_values[improved]
+            particles[improved, 2 * self.dimensionality:3 * self.dimensionality] = particles[
+                improved, 0:self.dimensionality]
+            batch_best, particle_best = objective_function_values.min(dim=0)
+            if batch_best < self._global_best:
+                self._global_best = batch_best
+                self._global_best_position = particles[particle_best, 0:self.dimensionality]

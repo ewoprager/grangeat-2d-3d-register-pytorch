@@ -15,6 +15,7 @@ from reg23_experiments.utils.console_logging import tqdm
 
 __all__ = ["RegConfig", "run_reg"]
 
+
 class RegConfig(traitlets.HasTraits):
     particle_count: int = traitlets.Int(default_value=traitlets.Undefined)
     particle_initialisation_spread: float = traitlets.Float(default_value=traitlets.Undefined)
@@ -28,7 +29,8 @@ def run_reg(  #
         config: RegConfig,  #
         device: torch.device,  #
         plot: Literal["no", "yes", "mask"] = "no",  #
-        tqdm_position: int = 0  #
+        tqdm_position: int = 0,  #
+        batch_size: int = 1,  #
 ) -> torch.Tensor:
     """
     Run a PSO from the given starting params and return a tensor containing the params and O.F. value at each iteration.
@@ -74,7 +76,8 @@ def run_reg(  #
         particle_count=config.particle_count,  #
         initialisation_position=starting_params,  #
         initialisation_spread=torch.full([dimensionality], config.particle_initialisation_spread),  #
-        device=device  #
+        device=device,  #
+        batch_size=batch_size,  #
     )
     ret[0, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
     ret[0, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)

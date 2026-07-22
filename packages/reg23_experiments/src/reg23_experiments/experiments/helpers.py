@@ -40,11 +40,11 @@ class ParametrisedSimilarityMetric:
         self._kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
 
     @property
-    def func(self) -> Callable[[torch.Tensor, torch.Tensor], torch.Tensor]:
+    def func(self) -> Callable:
         return lambda a, b: self._underlying_function(a, b, **self._kwargs)
 
     @property
-    def func_weighted(self) -> Callable[[torch.Tensor, torch.Tensor, torch.Tensor], torch.Tensor] | None:
+    def func_weighted(self) -> Callable | None:
         if self._underlying_function == similarity_metric.ncc:
             weighted_function = similarity_metric.weighted_ncc
         elif self._underlying_function == similarity_metric.local_ncc:

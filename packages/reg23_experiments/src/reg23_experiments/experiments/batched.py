@@ -11,9 +11,9 @@ __all__ = ["objective_function_binary_weighted", "objective_function_alpha_weigh
 
 
 def objective_function_binary_weighted(  #
+        *,  #
         weighted_sim_metric: Callable,  #
         parameters: Float64[torch.Tensor, "b 6"],  #
-        *,  #
         ct_volumes: list[torch.Tensor],  #
         ct_spacing: Float64[torch.Tensor, "3"],  #
         fixed_image: Float32[torch.Tensor, "n m"],  #
@@ -61,9 +61,9 @@ def objective_function_binary_weighted(  #
 
 
 def objective_function_alpha_weighted(  #
+        *,  #
         weighted_sim_metric: Callable,  #
         parameters: Float64[torch.Tensor, "b 6"],  #
-        *,  #
         ct_volumes: list[torch.Tensor],  #
         ct_spacing: Float64[torch.Tensor, "3"],  #
         fixed_image: Float32[torch.Tensor, "n m"],  #
