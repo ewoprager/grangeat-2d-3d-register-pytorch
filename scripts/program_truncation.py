@@ -15,14 +15,14 @@ import SimpleITK as sitk
 import torch
 import yaml
 
-from reg23_experiments.data.structs import Cropping, Error, LinearRange, Transformation
+from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
 from reg23_experiments.experiments.reg_experiment2 import exp_config_from_dict, run_experiment
 from reg23_experiments.experiments.registration import RegConfig, run_reg
-from reg23_experiments.experiments.run import experiments_sobol
+from reg23_experiments.experiments.run import experiments_sobol, experiments_cartesian
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.image import XrayDICOM, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
@@ -293,10 +293,12 @@ def main(  #
         logger.error(f"Error adding updater: {err.description}")
         return
     # Optional
-    if isinstance(err := data_manager().add_updater("truncation_from_h_valid", truncation_percent_for_desired_h_valid),
-                  Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
+    if False:
+        if isinstance(
+                err := data_manager().add_updater("truncation_from_h_valid", truncation_percent_for_desired_h_valid),
+                Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
 
     # ----------------------------------
     # - Hardcoded script configuration -
@@ -307,15 +309,17 @@ def main(  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
         "downsample_level": 1,  #
-        # "truncation_percent": 80,  #
-        "desired_h_valid": 60.0,  #
-        # "cropping": "full_depth_drr",  #
+        "truncation_percent": 80,  #
+        # "desired_h_valid": 60.0,  #
+        #
+        # "cropping": "nonzero_drr",  #
         # "crop_expand": 0.0,  #
+        # "mask": "Every evaluation",  #
+        #
         "crop_min_size": 0.01,  #
         "weight_alpha": 0.0,  #
-        # "mask": "None",  #
         "sim_metric": "zncc",  #
-        "starting_distance": 3.0,  #
+        "starting_distance": 5.0,  #
         "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 2000,  #
@@ -326,15 +330,17 @@ def main(  #
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
         # "level_090",  #
-        # "up_000",  #
+        "up_000",  #
         # "up_090",  #
-        # "down_000",  #
+        "down_000",  #
         # "down_090",  #
     ]
-    params_to_vary: dict[str, list | LinearRange] = {  #
+    params_to_vary: dict[str, Any] = {  #
         # "desired_h_valid": [float(e) for e in np.linspace(20.0, 33.0, 16)],  #
-        "desired_h_valid": LinearRange(10.0, 60.0),  #
+        # "desired_h_valid": LinearRange(10.0, 60.0),  #
         # "crop_expand": LinearRange(0.0, 30.0),  #
+        "truncation_percent": [75, 80, 85],  #
+        "weight_alpha": [0.0, 0.2 * 0.2, 0.4 * 0.4, 0.6 * 0.6, 0.8 * 0.8],  #
     }
     # ----------------------------------
 
@@ -484,29 +490,31 @@ def main(  #
         }, file)
 
     # -----
-    # Perform a dry-run of the experiments, setting the parameters to vary
-    experiments_sobol(  #
-        m=1,  #
-        param_constructor=exp_config_from_dict,  #
-        experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 4),  #
-        params_to_vary=params_to_vary,  #
-        output_directory=instance_output_dir,  #
-        constants=constants,  #
-        device=device,  #
-        dry_run=True,  #
-    )
-
-    # -----
-    # Run experiments, setting the parameters to vary
-    experiments_sobol(  #
-        m=1,  #
-        param_constructor=exp_config_from_dict,  #
-        experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 4),  #
-        params_to_vary=params_to_vary,  #
-        output_directory=instance_output_dir,  #
-        constants=constants,  #
-        device=device,  #
-    )
+    # Run experiments, initially just as a dry-run
+    for dry_run in [True, False]:
+        if False:
+            experiments_sobol(  #
+                m=1,  #
+                param_constructor=exp_config_from_dict,  #
+                # experiment=run_experiment,  #
+                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
+                params_to_vary=params_to_vary,  #
+                output_directory=instance_output_dir,  #
+                constants=constants,  #
+                device=device,  #
+                dry_run=dry_run,  #
+            )
+        else:
+            experiments_cartesian(  #
+                param_constructor=exp_config_from_dict,  #
+                # experiment=run_experiment,  #
+                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
+                params_to_vary=params_to_vary,  #
+                output_directory=instance_output_dir,  #
+                constants=constants,  #
+                device=device,  #
+                dry_run=dry_run,  #
+            )
 
 
 if __name__ == "__main__":

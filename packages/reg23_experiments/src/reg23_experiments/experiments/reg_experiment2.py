@@ -31,8 +31,8 @@ class ExperimentConfig(traitlets.HasTraits):
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
-    # truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
-    desired_h_valid: int = traitlets.Float(min=1.0, max=100.0, default_value=traitlets.Undefined)
+    truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
+    # desired_h_valid: int = traitlets.Float(min=1.0, max=100.0, default_value=traitlets.Undefined)
     crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     weight_alpha: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     sim_metric: str = traitlets.Enum(values=[  #
@@ -64,8 +64,8 @@ def run_experiment(  #
     data_manager().set("ct_path", exp_config.ct_path, check_equality=True)
     data_manager().set("xray_path", exp_config.xray_path, check_equality=True)
     data_manager().set("downsample_level", exp_config.downsample_level, check_equality=True)
-    # data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
-    data_manager().set("desired_h_valid", exp_config.desired_h_valid)
+    data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
+    # data_manager().set("desired_h_valid", exp_config.desired_h_valid)
     # -----
     # Configuring according to desired similarity metric
     p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
