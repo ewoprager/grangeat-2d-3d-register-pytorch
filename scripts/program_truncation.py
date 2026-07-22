@@ -332,7 +332,7 @@ def main(  #
     ]
     params_to_vary: dict[str, list | LinearRange] = {  #
         # "desired_h_valid": [float(e) for e in np.linspace(20.0, 33.0, 16)],  #
-        "desired_h_valid": LinearRange(20.0, 33.0),  #
+        "desired_h_valid": LinearRange(10.0, 60.0),  #
         "crop_expand": LinearRange(0.0, 30.0),#
     }
     # ----------------------------------
@@ -485,7 +485,7 @@ def main(  #
     # -----
     # Perform a dry-run of the experiments, setting the parameters to vary
     experiments_sobol(  #
-        m=4,  #
+        m=6,  #
         param_constructor=exp_config_from_dict,  #
         experiment=run_experiment,  #
         params_to_vary=params_to_vary,  #
@@ -498,7 +498,7 @@ def main(  #
     # -----
     # Run experiments, setting the parameters to vary
     experiments_sobol(  #
-        m=4,  #
+        m=6,  #
         param_constructor=exp_config_from_dict,  #
         experiment=run_experiment,  #
         params_to_vary=params_to_vary,  #

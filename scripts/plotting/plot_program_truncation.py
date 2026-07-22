@@ -7,7 +7,6 @@ import matplotlib
 
 matplotlib.use("QtAgg")
 
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -503,33 +502,47 @@ def main(  #
         # Get the independent value vectors as a matrix
         independent_variables: list[str] = ["desired_h_valid", "h_linear", "crop_expand"]
         X: np.ndarray = accuracy_df[independent_variables].to_numpy()
-        indices_in_slice = (accuracy_df["crop_expand"] == 0.0).to_numpy()
         gpr = sklearn.gaussian_process.GaussianProcessRegressor(alpha=np.square(y_sigma)).fit(X, y)
 
-        h_valids = np.linspace(20.0, 35.0, 50)
-        h_linears = np.linspace(15.0, 80.0, 50)
-        h_valids, h_linears = np.meshgrid(h_valids, h_linears)
-        values = {  #
-            "desired_h_valid": h_valids.flatten(),  #
-            "h_linear": h_linears.flatten(),  #
-            "crop_expand": np.zeros_like(h_valids.flatten()),  #
-        }
-        model_values, model_stds = gpr.predict(np.stack([values[name] for name in independent_variables], axis=1), return_std=True)
-        model_values = model_values.reshape(h_valids.shape)
-        model_stds = model_stds.reshape(h_valids.shape)
-        fig, axes = plt.subplots(subplot_kw={"projection": "3d"})
-        axes.plot_surface(h_linears, h_valids, model_values)
-        axes.plot_surface(h_linears, h_valids, model_values + model_stds, alpha = 0.3, color=(1.0, 0.0, 0.0))
-        axes.plot_surface(h_linears, h_valids, model_values - model_stds, alpha = 0.3, color=(1.0, 0.0, 0.0))
-        axes.scatter(  #
-            accuracy_df["h_linear"].to_numpy()[indices_in_slice],  #
-            accuracy_df["desired_h_valid"].to_numpy()[indices_in_slice],  #
-            accuracy_df["distance"].to_numpy()[indices_in_slice],  #
-        )
-        axes.set_zlim((np.min(model_values), np.max(model_values)))
-        axes.set_xlabel("$h_\\mathrm{linear}$")
-        axes.set_ylabel("$h_\\mathrm{V}$")
-        axes.set_zlabel("distance at final iteration")
+        n = 50
+        h_linears = np.linspace(10.0, 90.0, n)
+        h_valids = np.linspace(0.0, 70.0, n)
+        h_valids, _ = np.meshgrid(h_valids, h_linears)
+        crop_expands = np.linspace(0.0, 30.0, n)
+        crop_expands, h_linears = np.meshgrid(crop_expands, h_linears)
+        plot_specs = [  #
+            # (h_linears, h_valids, np.mean(crop_expands), "h_linear", "desired_h_valid", "crop_expand"),  #
+            # (h_linears, crop_expands, np.mean(h_valids), "h_linear", "crop_expand", "desired_h_valid"),  #
+            # (crop_expands.transpose(), h_valids, np.mean(h_linears), "crop_expand", "desired_h_valid", "h_linear"),  #
+            (h_linears, h_valids, 0.0, "h_linear", "desired_h_valid", "crop_expand"),  #
+            (h_linears, h_valids, 10.0, "h_linear", "desired_h_valid", "crop_expand"),  #
+            (h_linears, h_valids, 20.0, "h_linear", "desired_h_valid", "crop_expand"),  #
+            (h_linears, h_valids, 30.0, "h_linear", "desired_h_valid", "crop_expand"),  #
+        ]
+        fig, axes = plt.subplots(1, len(plot_specs), subplot_kw={"projection": "3d"})
+        for i, (xs, ys, other_value, x_name, y_name, other_name) in enumerate(plot_specs):
+            values = {  #
+                x_name: xs.flatten(),  #
+                y_name: ys.flatten(),  #
+                other_name: np.full_like(xs.flatten(), other_value),  #
+            }
+            model_values, model_stds = gpr.predict(np.stack([values[name] for name in independent_variables], axis=1),
+                                                   return_std=True)
+            model_values = model_values.reshape(h_valids.shape)
+            model_stds = model_stds.reshape(h_valids.shape)
+            axes[i].plot_surface(xs, ys, model_values)
+            axes[i].plot_surface(xs, ys, model_values + model_stds, alpha=0.3, color=(1.0, 0.0, 0.0))
+            axes[i].plot_surface(xs, ys, model_values - model_stds, alpha=0.3, color=(1.0, 0.0, 0.0))
+            axes[i].scatter(  #
+                accuracy_df[x_name].to_numpy(),  #
+                accuracy_df[y_name].to_numpy(),  #
+                accuracy_df["distance"].to_numpy(),  #
+            )
+            axes[i].set_zlim((0.0, np.quantile(accuracy_df["distance"].to_numpy(), 0.75)))
+            axes[i].set_xlabel(f"{x_name}")
+            axes[i].set_ylabel(f"{y_name}")
+            axes[i].set_zlabel("distance at final iteration")
+            axes[i].set_title(f"{other_name} = {other_value}")
         plt.show()
 
 
