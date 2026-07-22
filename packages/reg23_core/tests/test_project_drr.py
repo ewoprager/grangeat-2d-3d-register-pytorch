@@ -160,7 +160,7 @@ def test_project_drr_autograd():
         plt.show()
 
 
-def skip_test_project_drrs_batched():
+def test_project_drrs_batched():
     if not torch.cuda.is_available():
         return
     input_ = torch.rand((11, 12, 8))
@@ -169,8 +169,9 @@ def skip_test_project_drrs_batched():
     source_distance = 1000.0
     output_size = torch.Size([3, 10, 15])
     detector_spacing = torch.tensor([0.2, 0.25])
-    res_cuda = project_drrs_batched(input_.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance, output_size[1],
-                                    output_size[0], torch.zeros(2, dtype=torch.float64), detector_spacing.cuda())
+    res_cuda = project_drrs_batched(input_.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance,
+                                    output_size[-1], output_size[-2], torch.zeros(2, dtype=torch.float64),
+                                    detector_spacing.cuda())
     assert res_cuda.size() == output_size
     fig, axes = plt.subplots(1, 3)
     axes[0].imshow(res_cuda[0].cpu().numpy())

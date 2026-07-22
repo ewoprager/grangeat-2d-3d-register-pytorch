@@ -35,6 +35,17 @@ __host__ at::Tensor ProjectDRRCuboidMask_CUDA(const at::Tensor &volumeSize, cons
 											  int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
 											  const at::Tensor &detectorSpacing);
 
+
+/**
+ * @ingroup pytorch_functions
+ * @brief An implementation of reg23::ProjectDRRCuboidMask_CUDA that evaluates a batch of DRR masks for a batch of
+ * inverse H matrices.
+ */
+__host__ at::Tensor ProjectDRRCuboidMaskBatched_CUDA(const at::Tensor &volumeSize, const at::Tensor &voxelSpacing,
+											  const at::Tensor &invHMatrices, double sourceDistance,
+											  int64_t outputWidth, int64_t outputHeight, const at::Tensor &outputOffset,
+											  const at::Tensor &detectorSpacing);
+
 /**
  * @ingroup general_tools
  * @brief Calculate the length of the intersection between a ray and a convex polyhedron

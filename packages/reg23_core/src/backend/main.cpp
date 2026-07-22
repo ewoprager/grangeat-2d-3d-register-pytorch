@@ -61,8 +61,10 @@ TORCH_LIBRARY(reg23_core, m) {
 		  "outOff, Tensor outSpacing, Tensor dLossDDRR) -> Tensor");
 	m.def("project_drr_cuboid_mask(Tensor vSize, Tensor spacing, Tensor hi, float sourceDist, int outW, int outH, "
 		  "Tensor outOff, Tensor outSpacing) -> Tensor");
-	m.def("project_drrs_batched(Tensor volume, Tensor spacing, Tensor his, float sourceDist, int outW, int outH, "
-		  "Tensor outOff, Tensor outSpacing) -> Tensor");
+	m.def("project_drrs_batched(Tensor volume, Tensor spacing, Tensor his, float sourceDist, int outW, int outH, Tensor"
+	   " outOff, Tensor outSpacing) -> Tensor");
+	m.def("project_drr_cuboid_masks_batched(Tensor vSize, Tensor spacing, Tensor his, float sourceDist, int outW, int "
+	   "outH, Tensor outOff, Tensor outSpacing) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(reg23_core, CPU, m) {
@@ -98,6 +100,7 @@ TORCH_LIBRARY_IMPL(reg23_core, CUDA, m) {
 	m.impl("project_drr_backward", &ProjectDRR_backward_CUDA);
 	m.impl("project_drr_cuboid_mask", &ProjectDRRCuboidMask_CUDA);
 	m.impl("project_drrs_batched", &ProjectDRRsBatched_CUDA);
+	m.impl("project_drr_cuboid_masks_batched", &ProjectDRRCuboidMaskBatched_CUDA);
 }
 #endif
 

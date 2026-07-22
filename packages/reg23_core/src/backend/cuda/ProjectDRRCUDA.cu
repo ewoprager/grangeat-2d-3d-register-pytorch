@@ -107,7 +107,7 @@ __host__ at::Tensor ProjectDRRsBatched_CUDA(const at::Tensor &volume, const at::
 	// voxelSpacing should be a 1D tensor of 3 doubles
 	TORCH_CHECK(voxelSpacing.sizes() == at::IntArrayRef{3});
 	TORCH_CHECK(voxelSpacing.dtype() == at::kDouble);
-	// homographyMatrixInverse should be of size (4, 4), contain doubles and be on the chosen device
+	// homographyMatrixInverse should be of size (..., 4, 4)
 	TORCH_CHECK(invHMatrices.sizes().size() > 2);
 	TORCH_CHECK(invHMatrices.sizes()[invHMatrices.sizes().size() - 2] == 4);
 	TORCH_CHECK(invHMatrices.sizes()[invHMatrices.sizes().size() - 1] == 4);

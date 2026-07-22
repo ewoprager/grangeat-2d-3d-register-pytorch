@@ -10,6 +10,7 @@ matplotlib.use("QtAgg")
 import pandas as pd
 import torch
 import traitlets
+from jaxtyping import Float64
 
 from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.experiments.helpers import ParametrisedSimilarityMetric, string_to_sim_met
@@ -58,7 +59,7 @@ def run_experiment(  #
         exp_config: ExperimentConfig,  #
         device: torch.device,  #
         tqdm_position: int = 0,  #
-        dry_run: bool = False,#
+        dry_run: bool = False,  #
 ) -> pd.DataFrame | None:
     """
     Run multiple (`sample_count_per_distance`) registrations according to the given parameters, and return the average
@@ -98,7 +99,7 @@ def run_experiment(  #
 
     # -----
     # Defining the objective function
-    def objective_function(parameters: torch.Tensor) -> torch.Tensor:
+    def objective_function(parameters: Float64[torch.Tensor, "6"]) -> torch.Tensor:
         t: Transformation = mapping_parameters_to_transformation(parameters)
         # Setting the parameters
         data_manager().set("current_transformation", t)
