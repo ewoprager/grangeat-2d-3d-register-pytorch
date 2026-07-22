@@ -63,7 +63,7 @@ def weighted_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *,
     # filtering out ZNCC calculations where fewer than 2 value pairs are being used
     exclude_mask = weights.count_nonzero(dim=dim) < 2
     if (exclude_mask.numel() - exclude_mask.count_nonzero()) < 1:
-        return torch.tensor(0.0, dtype=dtype, device=device)
+        return torch.zeros_like(xs.sum(dim=dim))
     sum_w = weights.sum(dim=dim)
     sum_wx = (weights * xs).sum(dim=dim)
     sum_wy = (weights * ys).sum(dim=dim)

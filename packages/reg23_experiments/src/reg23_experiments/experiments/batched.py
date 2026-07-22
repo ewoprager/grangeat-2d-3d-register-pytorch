@@ -16,7 +16,7 @@ def objective_function_binary_weighted(  #
         parameters: Float64[torch.Tensor, "b 6"],  #
         ct_volumes: list[torch.Tensor],  #
         ct_spacing: Float64[torch.Tensor, "3"],  #
-        fixed_image: Float32[torch.Tensor, "n m"],  #
+        cropped_target: Float32[torch.Tensor, "n m"],  #
         source_distance: float,  #
         fixed_image_spacing: Float64[torch.Tensor, "2"],  #
         downsample_level: int,  #
@@ -35,8 +35,8 @@ def objective_function_binary_weighted(  #
         voxel_spacing=ct_spacing,  #
         inverse_h_matrices=h_invs,  #
         source_distance=source_distance,  #
-        output_width=fixed_image.size()[1],  #
-        output_height=fixed_image.size()[0],  #
+        output_width=cropped_target.size()[1],  #
+        output_height=cropped_target.size()[0],  #
         output_offset=fixed_image_offset,  #
         detector_spacing=fixed_image_spacing  #
     )
@@ -47,17 +47,18 @@ def objective_function_binary_weighted(  #
         voxel_spacing=ct_spacing * 2.0 ** downsample_level,  #
         inverse_h_matrices=h_invs,  #
         source_distance=source_distance,  #
-        output_width=fixed_image.size()[1],  #
-        output_height=fixed_image.size()[0],  #
+        output_width=cropped_target.size()[1],  #
+        output_height=cropped_target.size()[0],  #
         output_offset=fixed_image_offset,  #
         detector_spacing=fixed_image_spacing,  #
     )
-    return -weighted_sim_metric(  #
+    ret = -weighted_sim_metric(  #
         moving_images,  #
-        fixed_image.expand(moving_images.size()),  #
+        cropped_target.expand(moving_images.size()),  #
         weights,  #
         dim=(-1, -2)  #
     )
+    return ret
 
 
 def objective_function_alpha_weighted(  #
@@ -66,7 +67,7 @@ def objective_function_alpha_weighted(  #
         parameters: Float64[torch.Tensor, "b 6"],  #
         ct_volumes: list[torch.Tensor],  #
         ct_spacing: Float64[torch.Tensor, "3"],  #
-        fixed_image: Float32[torch.Tensor, "n m"],  #
+        cropped_target: Float32[torch.Tensor, "n m"],  #
         source_distance: float,  #
         fixed_image_spacing: Float64[torch.Tensor, "2"],  #
         downsample_level: int,  #
@@ -85,13 +86,13 @@ def objective_function_alpha_weighted(  #
         voxel_spacing=ct_spacing,  #
         inverse_h_matrices=h_invs,  #
         source_distance=source_distance,  #
-        output_width=fixed_image.size()[1],  #
-        output_height=fixed_image.size()[0],  #
+        output_width=cropped_target.size()[1],  #
+        output_height=cropped_target.size()[0],  #
         output_offset=fixed_image_offset,  #
         detector_spacing=fixed_image_spacing  #
     )
     # Generate the masked fixed images
-    masked_fixed_images = masks * fixed_image.unsqueeze(0)
+    masked_fixed_images = masks * cropped_target.unsqueeze(0)
     # Calculate the weight images
     weights = torch.pow(3.0 * masks * masks - 2 * masks * masks * masks, 1.0 / weight_alpha)
     # Project the DRRs
@@ -100,8 +101,8 @@ def objective_function_alpha_weighted(  #
         voxel_spacing=ct_spacing * 2.0 ** downsample_level,  #
         inverse_h_matrices=h_invs,  #
         source_distance=source_distance,  #
-        output_width=fixed_image.size()[1],  #
-        output_height=fixed_image.size()[0],  #
+        output_width=cropped_target.size()[1],  #
+        output_height=cropped_target.size()[0],  #
         output_offset=fixed_image_offset,  #
         detector_spacing=fixed_image_spacing,  #
     )

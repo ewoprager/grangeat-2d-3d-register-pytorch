@@ -73,20 +73,38 @@ def run_experiment(  #
     # -----
     # Defining the objective function
     def objective_function(parameters: Float64[torch.Tensor, "6"]) -> torch.Tensor:
-        return args_from_dadg(  #
-            names_left=["weighted_sim_metric", "parameters"]  #
-        )(objective_function_binary_weighted)(  #
-            weighted_sim_metric=p_sim_met.func_weighted,  #
-            parameters=parameters.unsqueeze(0),  #
-        )[0]
+        if exp_config.weight_alpha < 1.0e-4:
+            return args_from_dadg(  #
+                names_left=["weighted_sim_metric", "parameters"]  #
+            )(objective_function_binary_weighted)(  #
+                weighted_sim_metric=p_sim_met.func_weighted,  #
+                parameters=parameters.unsqueeze(0),  #
+            )[0]
+        else:
+            return args_from_dadg(  #
+                names_left=["weighted_sim_metric", "parameters", "weight_alpha"]  #
+            )(objective_function_binary_weighted)(  #
+                weighted_sim_metric=p_sim_met.func_weighted,  #
+                parameters=parameters.unsqueeze(0),  #
+                weight_alpha=exp_config.weight_alpha,  #
+            )[0]
 
     def objective_function_batched(parameters: Float64[torch.Tensor, "b 6"]) -> Float64[torch.Tensor, "b"]:
-        return args_from_dadg(  #
-            names_left=["weighted_sim_metric", "parameters"]  #
-        )(objective_function_binary_weighted)(  #
-            weighted_sim_metric=p_sim_met.func_weighted,  #
-            parameters=parameters,  #
-        )
+        if exp_config.weight_alpha < 1.0e-4:
+            return args_from_dadg(  #
+                names_left=["weighted_sim_metric", "parameters"]  #
+            )(objective_function_binary_weighted)(  #
+                weighted_sim_metric=p_sim_met.func_weighted,  #
+                parameters=parameters,  #
+            )
+        else:
+            return args_from_dadg(  #
+                names_left=["weighted_sim_metric", "parameters", "weight_alpha"]  #
+            )(objective_function_binary_weighted)(  #
+                weighted_sim_metric=p_sim_met.func_weighted,  #
+                parameters=parameters,  #
+                weight_alpha=exp_config.weight_alpha,  #
+            )
 
     # -----
     # Running repeated registrations with configured parameters

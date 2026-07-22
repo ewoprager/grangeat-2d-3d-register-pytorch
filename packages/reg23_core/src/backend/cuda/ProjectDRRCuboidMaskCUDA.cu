@@ -158,7 +158,7 @@ __host__ at::Tensor ProjectDRRCuboidMaskBatched_CUDA(const at::Tensor &volumeSiz
 		batchCount *= n;
 
 	at::Tensor flatOutput =
-		torch::zeros(at::IntArrayRef({outputWidth * outputHeight}), at::TensorOptions{at::Device{at::DeviceType::CUDA}});
+		torch::zeros(at::IntArrayRef({batchCount * outputWidth * outputHeight}), at::TensorOptions{at::Device{at::DeviceType::CUDA}});
 	float *resultFlatPtr = flatOutput.data_ptr<float>();
 
 	int minGridSize, blockSize;

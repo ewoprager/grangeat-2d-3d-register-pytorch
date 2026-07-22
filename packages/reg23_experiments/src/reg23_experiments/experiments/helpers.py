@@ -41,7 +41,7 @@ class ParametrisedSimilarityMetric:
 
     @property
     def func(self) -> Callable:
-        return lambda a, b: self._underlying_function(a, b, **self._kwargs)
+        return lambda *args, **kwargs: self._underlying_function(*args, **kwargs, **self._kwargs)
 
     @property
     def func_weighted(self) -> Callable | None:
@@ -51,7 +51,7 @@ class ParametrisedSimilarityMetric:
             weighted_function = similarity_metric.weighted_local_ncc
         else:
             return None
-        return lambda a, b, w: weighted_function(a, b, w, **self._kwargs)
+        return lambda *args, **kwargs: weighted_function(*args, **kwargs, **self._kwargs)
 
 
 def string_to_sim_met(  #

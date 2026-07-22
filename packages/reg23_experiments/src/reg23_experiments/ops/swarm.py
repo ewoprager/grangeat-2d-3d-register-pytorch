@@ -149,7 +149,12 @@ class Swarm:
         self._global_best = self._particles[0, -1]
         # evaluating for rest of particles, and determining global best
         for particles in self._particles[1:].split(self._batch_size):
-            objective_function_values = self.config.objective_function(particles[:, 0:self.dimensionality].squeeze())
+            objective_function_values = self.config.objective_function(  #
+                particles[:, 0:self.dimensionality].squeeze() if self._batch_size == 1 else particles[
+                    :, 0:self.dimensionality]  #
+            )
+            if self._batch_size == 1:
+                objective_function_values = objective_function_values.unsqueeze(0)
             particles[:, -1] = objective_function_values
             batch_best, particle_best = objective_function_values.min(dim=0)
             if batch_best < self._global_best:
@@ -213,7 +218,12 @@ class Swarm:
                 self._particles[:, self.dimensionality:2 * self.dimensionality])
         # evaluating objective function
         for particles in self._particles.split(self._batch_size):
-            objective_function_values = self.config.objective_function(particles[:, 0:self.dimensionality].squeeze())
+            objective_function_values = self.config.objective_function(  #
+                particles[:, 0:self.dimensionality].squeeze() if self._batch_size == 1 else particles[
+                    :, 0:self.dimensionality]  #
+            )
+            if self._batch_size == 1:
+                objective_function_values = objective_function_values.unsqueeze(0)
             improved = objective_function_values < particles[:, -1]
             particles[improved, -1] = objective_function_values[improved]
             particles[improved, 2 * self.dimensionality:3 * self.dimensionality] = particles[

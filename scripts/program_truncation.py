@@ -20,7 +20,7 @@ from reg23_experiments.data.transformation_save_data import TransformationSaveDa
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
-from reg23_experiments.experiments.reg_experiment import exp_config_from_dict, run_experiment
+from reg23_experiments.experiments.reg_experiment2 import exp_config_from_dict, run_experiment
 from reg23_experiments.experiments.registration import RegConfig, run_reg
 from reg23_experiments.experiments.run import experiments_sobol
 from reg23_experiments.io.command_line import get_string_required
@@ -148,7 +148,6 @@ def truncation_percent_for_desired_h_valid(  #
     full_height = ct_spacing[2].item() * float(untruncated_ct_volume.size()[0])
     h = (desired_h_valid + l * np.sin(theta)) / np.cos(theta)
     truncation_percent = min(98, max(0, round(100.0 * (1.0 - h / full_height))))
-    logger.info(f"Derived truncation percent = {truncation_percent}")
     return {"truncation_percent": truncation_percent}
 
 
@@ -279,13 +278,14 @@ def main(  #
                                                     updaters.refresh_hyperparameter_dependent), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    if isinstance(err := data_manager().add_updater("refresh_mask_transformation_dependent",
-                                                    updaters.refresh_mask_transformation_dependent), Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
-    if isinstance(err := data_manager().add_updater("project_drr", updaters.project_drr), Error):
-        logger.error(f"Error adding updater: {err.description}")
-        return
+    if False:
+        if isinstance(err := data_manager().add_updater("refresh_mask_transformation_dependent",
+                                                        updaters.refresh_mask_transformation_dependent), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+        if isinstance(err := data_manager().add_updater("project_drr", updaters.project_drr), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
     if isinstance(err := data_manager().add_updater("load_base_cropping", load_base_cropping), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -309,13 +309,14 @@ def main(  #
         "downsample_level": 1,  #
         # "truncation_percent": 80,  #
         "desired_h_valid": 60.0,  #
-        "cropping": "full_depth_drr",  #
-        "crop_expand": 0.0,  #
+        # "cropping": "full_depth_drr",  #
+        # "crop_expand": 0.0,  #
         "crop_min_size": 0.01,  #
-        "mask": "None",  #
+        "weight_alpha": 0.0,  #
+        # "mask": "None",  #
         "sim_metric": "zncc",  #
         "starting_distance": 3.0,  #
-        "sample_count_per_distance": 20,  #
+        "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 2000,  #
         "particle_initialisation_spread": 5.0,  #
@@ -324,16 +325,16 @@ def main(  #
     # X-ray choice determines the gold standard orientation, which drives h_linear:
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
-        "level_090",  #
-        "up_000",  #
-        "up_090",  #
-        "down_000",  #
-        "down_090",  #
+        # "level_090",  #
+        # "up_000",  #
+        # "up_090",  #
+        # "down_000",  #
+        # "down_090",  #
     ]
     params_to_vary: dict[str, list | LinearRange] = {  #
         # "desired_h_valid": [float(e) for e in np.linspace(20.0, 33.0, 16)],  #
         "desired_h_valid": LinearRange(10.0, 60.0),  #
-        "crop_expand": LinearRange(0.0, 30.0),#
+        # "crop_expand": LinearRange(0.0, 30.0),  #
     }
     # ----------------------------------
 
@@ -485,9 +486,9 @@ def main(  #
     # -----
     # Perform a dry-run of the experiments, setting the parameters to vary
     experiments_sobol(  #
-        m=6,  #
+        m=1,  #
         param_constructor=exp_config_from_dict,  #
-        experiment=run_experiment,  #
+        experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 4),  #
         params_to_vary=params_to_vary,  #
         output_directory=instance_output_dir,  #
         constants=constants,  #
@@ -498,9 +499,9 @@ def main(  #
     # -----
     # Run experiments, setting the parameters to vary
     experiments_sobol(  #
-        m=6,  #
+        m=1,  #
         param_constructor=exp_config_from_dict,  #
-        experiment=run_experiment,  #
+        experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 4),  #
         params_to_vary=params_to_vary,  #
         output_directory=instance_output_dir,  #
         constants=constants,  #
