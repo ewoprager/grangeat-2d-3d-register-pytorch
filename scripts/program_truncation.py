@@ -476,8 +476,6 @@ def main(  #
         plt.show()
         return
 
-    # -----
-    # Run experiments, initially just as a dry-run
     if show:
         experiments_cartesian(  #
             param_constructor=exp_config_from_dict,  #
@@ -503,6 +501,8 @@ def main(  #
                 "variables": params_to_vary,  #
             }, file)
 
+        # -----
+        # Run experiments, initially just as a dry-run
         for dry_run in [True, False]:
             if False:
                 experiments_sobol(  #

@@ -165,8 +165,8 @@ def run_experiment(  #
                 batch_size=batch_size,  #
                 plot=plot,  #
             )  # size = (iteration count, dimensionality + 1)
-        distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
-                                                          dim=1)  # size = (iteration count,)
+            distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
+                                                              dim=1)  # size = (iteration count,)
 
     if plot != "no":
         axes[2].plot(range(exp_config.reg_config.iteration_count), distance_samples[0, :].cpu().numpy())

@@ -70,12 +70,12 @@ def experiments_cartesian(  #
             raise Exception(f"Failed to construct parameters at indices {indices}")
         # -----
         # Run the experiment
-        try:
-            res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
-        except Exception as e:
-            logger.error(
-                f"Error running experiment at indices {indices}: {e}\nParameters:\n{pprint.pformat(instance_all)}")
-            continue
+        # try:
+        res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
+        # except Exception as e:
+        #     logger.error(
+        #         f"Error running experiment at indices {indices}: {e}\nParameters:\n{pprint.pformat(instance_all)}")
+        #     continue
         if res is None:
             logger.info(
                 f"Experiment at indices {indices}; configuration: \n{pprint.pformat(instance_specific)}\nwas deemed "
