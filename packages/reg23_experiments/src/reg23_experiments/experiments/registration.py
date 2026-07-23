@@ -57,16 +57,16 @@ def run_reg(  #
         # Moving image
         moving_image: torch.Tensor = args_from_dadg()(  #
             lambda *, cropped_target, ct_volumes, downsample_level, ct_spacing, source_distance, fixed_image_spacing,
-                   fixed_image_offset: reg23_core.project_drr(  #
+                   fixed_image_offset: reg23_core.project_drrs_batched(  #
                 volume=ct_volumes[downsample_level],  #
                 voxel_spacing=ct_spacing * 2.0 ** downsample_level,  #
-                homography_matrix_inverse=t.inverse().get_h(device=ct_volumes[0].device),  #
+                inverse_h_matrices=t.inverse().get_h(device=ct_volumes[0].device).unsqueeze(0),  #
                 source_distance=source_distance,  #
                 output_width=cropped_target.size()[1],  #
                 output_height=cropped_target.size()[0],  #
                 output_offset=fixed_image_offset,  #
                 detector_spacing=fixed_image_spacing,  #
-            ))()
+            ))()[0]
         axes[0].clear()
         axes[0].set_title("moving image AT start: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
             t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
@@ -107,16 +107,16 @@ def run_reg(  #
             axes[0].clear()
             moving_image: torch.Tensor = args_from_dadg()(  #
                 lambda *, cropped_target, ct_volumes, downsample_level, ct_spacing, source_distance,
-                       fixed_image_spacing, fixed_image_offset: reg23_core.project_drr(  #
+                       fixed_image_spacing, fixed_image_offset: reg23_core.project_drrs_batched(  #
                     volume=ct_volumes[downsample_level],  #
                     voxel_spacing=ct_spacing * 2.0 ** downsample_level,  #
-                    homography_matrix_inverse=t.inverse().get_h(device=ct_volumes[0].device),  #
+                    inverse_h_matrices=t.inverse().get_h(device=ct_volumes[0].device).unsqueeze(0),  #
                     source_distance=source_distance,  #
                     output_width=cropped_target.size()[1],  #
                     output_height=cropped_target.size()[0],  #
                     output_offset=fixed_image_offset,  #
                     detector_spacing=fixed_image_spacing,  #
-                ))()
+                ))()[0]
             axes[0].imshow(moving_image.cpu().numpy())
             axes[0].set_title("Iteration {}: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
                 it, t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),

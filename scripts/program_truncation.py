@@ -317,9 +317,9 @@ def main(  #
         # "mask": "Every evaluation",  #
         #
         "crop_min_size": 0.01,  #
-        "weight_alpha": 0.0,  #
+        "weight_alpha": 0.4,  #
         "sim_metric": "zncc",  #
-        "starting_distance": 5.0,  #
+        "starting_distance": 3.0,  #
         "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 2000,  #
