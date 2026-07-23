@@ -106,6 +106,26 @@ def test_project_drr_cuboid_mask():
     assert zero[3:, 3:] == pytest.approx(offset[:-3, :-3], abs=0.001)
 
 
+def test_project_drr_cuboid_mask_batched():
+    if not torch.cuda.is_available():
+        return
+    input_size = torch.tensor([8, 12, 11])
+    voxel_spacing = torch.tensor([0.1, 0.2, 0.3])
+    h_matrix_inv = torch.eye(4)
+    source_distance = 1000.0
+    output_size = torch.Size([1, 10, 15])
+    detector_spacing = torch.tensor([0.2, 0.25])
+    res_batched = project_drr_cuboid_masks_batched(input_size.cuda(), voxel_spacing.cuda(),
+                                                   h_matrix_inv.unsqueeze(0).cuda(), source_distance, output_size[-1],
+                                                   output_size[-2], torch.zeros(2, dtype=torch.float64).cuda(),
+                                                   detector_spacing.cuda()).cpu()
+    assert res_batched.size() == output_size
+    res_unbatched = project_drr_cuboid_mask(input_size.cuda(), voxel_spacing.cuda(), h_matrix_inv.cuda(),
+                                            source_distance, output_size[-1], output_size[-2],
+                                            torch.zeros(2, dtype=torch.float64).cuda(), detector_spacing.cuda()).cpu()
+    assert res_batched[0] == pytest.approx(res_unbatched, rel=1e-3, abs=1e-3)
+
+
 import matplotlib.pyplot as plt
 
 

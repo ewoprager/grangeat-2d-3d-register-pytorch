@@ -139,7 +139,7 @@ def run_experiment(  #
         if plot != "no":
             plt.ion()  # figures are non-blocking
             plt.show()
-            fig, axes = plt.subplots(1, 2)
+            fig, axes = plt.subplots(1, 3)
             # Getting the data from the DADG
             image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
             if isinstance(image_2d_full, Error):
@@ -153,20 +153,28 @@ def run_experiment(  #
             # Cropped target
             axes[1].imshow(cropped_target.cpu().numpy())
             axes[1].set_title("cropped target at start")
-            # -----
-            # Registration
-            if not dry_run:
-                res = run_reg(  #
-                    obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
-                    config=exp_config.reg_config,  #
-                    starting_params=starting_params,  #
-                    device=device,  #
-                    tqdm_position=tqdm_position + 1,  #
-                    batch_size=batch_size,  #
-                    plot=plot,  #
-                )  # size = (iteration count, dimensionality + 1)
-            distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
-                                                              dim=1)  # size = (iteration count,)
+        # -----
+        # Registration
+        if not dry_run:
+            res = run_reg(  #
+                obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
+                config=exp_config.reg_config,  #
+                starting_params=starting_params,  #
+                device=device,  #
+                tqdm_position=tqdm_position + 1,  #
+                batch_size=batch_size,  #
+                plot=plot,  #
+            )  # size = (iteration count, dimensionality + 1)
+        distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
+                                                          dim=1)  # size = (iteration count,)
+
+    if plot != "no":
+        axes[2].plot(range(exp_config.reg_config.iteration_count), distance_samples[0, :].cpu().numpy())
+        axes[2].set_xlabel("iteration")
+        axes[2].set_ylabel("distance from gold standard")
+        axes[2].set_ylim((0.0, None))
+        plt.ioff()  # figures are blocking
+        plt.show()
 
     return None if (dry_run or plot != "no") else pd.DataFrame({  #
         "iteration": torch.arange(exp_config.reg_config.iteration_count).numpy(),  # size = (iteration count,)

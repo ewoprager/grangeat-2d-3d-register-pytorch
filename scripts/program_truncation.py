@@ -317,9 +317,9 @@ def main(  #
         # "mask": "Every evaluation",  #
         #
         "crop_min_size": 0.01,  #
-        "weight_alpha": 0.4,  #
+        "weight_alpha": 0.0,  #
         "sim_metric": "zncc",  #
-        "starting_distance": 3.0,  #
+        "starting_distance": 5.0,  #
         "sample_count_per_distance": 10,  #
         # RegConfig
         "particle_count": 2000,  #
@@ -330,17 +330,17 @@ def main(  #
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
         # "level_090",  #
-        # "up_000",  #
+        "up_000",  #
         # "up_090",  #
-        # "down_000",  #
+        "down_000",  #
         # "down_090",  #
     ]
     params_to_vary: dict[str, Any] = {  #
         # "desired_h_valid": [float(e) for e in np.linspace(20.0, 33.0, 16)],  #
         # "desired_h_valid": LinearRange(10.0, 60.0),  #
         # "crop_expand": LinearRange(0.0, 30.0),  #
-        # "truncation_percent": [75, 80, 85],  #
-        # "weight_alpha": [0.2 * 0.2, 0.4 * 0.4, 0.6 * 0.6, 0.8 * 0.8, 0.0],  #
+        "truncation_percent": [75, 80, 85],  #
+        "weight_alpha": [0.0, 0.2 * 0.2, 0.4 * 0.4, 0.6 * 0.6, 0.8 * 0.8],  #
     }
     # ----------------------------------
 
@@ -482,7 +482,7 @@ def main(  #
         experiments_cartesian(  #
             param_constructor=exp_config_from_dict,  #
             # experiment=run_experiment,  #
-            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 1, plot="yes"),  #
+            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000, plot="yes"),  #
             params_to_vary={},  #
             output_directory=None,  #
             constants=constants,  #
@@ -520,7 +520,7 @@ def main(  #
                 experiments_cartesian(  #
                     param_constructor=exp_config_from_dict,  #
                     # experiment=run_experiment,  #
-                    experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 1),  #
+                    experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
                     params_to_vary=params_to_vary,  #
                     output_directory=instance_output_dir,  #
                     constants=constants,  #
