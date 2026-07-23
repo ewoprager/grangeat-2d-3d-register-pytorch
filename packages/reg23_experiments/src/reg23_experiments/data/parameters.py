@@ -1,8 +1,8 @@
 import pathlib
 from typing import Any, Literal
 
-from traitlets import Bool, Dict, Enum, Float, HasTraits, Instance, Int, TraitError, Undefined, Unicode, Union, \
-    observe, validate
+from traitlets import (Bool, Dict, Enum, Float, HasTraits, Instance, Int, TraitError, Undefined, Unicode, Union,
+                       observe, validate)
 
 from reg23_experiments.data.structs import Cropping
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
@@ -106,10 +106,11 @@ class Parameters(HasTraits):
     ct_path: str | None = Unicode(allow_none=True, default_value=None).tag(ui=True)
     downsample_level: int = Int(min=0).tag(ui=True)
     truncation_percent: int = Int(min=0, max=100).tag(ui=True)
-    mask: Literal["None", "Every evaluation", "Every evaluation weighting zncc"] = Enum(values=[  #
+    mask: Literal["None", "Every evaluation", "Every evaluation weighting zncc", "Binary weighting"] = Enum(values=[  #
         "None",  #
         "Every evaluation",  #
-        "Every evaluation weighting zncc"  #
+        "Every evaluation weighting zncc",  #
+        "Binary weighting",  #
     ]).tag(ui=True)
     sim_metric: Literal["zncc", "local_zncc", "multiscale_zncc", "gradient_correlation"] = Enum(values=[  #
         "zncc",  #

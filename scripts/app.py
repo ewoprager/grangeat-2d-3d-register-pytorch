@@ -26,8 +26,9 @@ from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
-from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.utils import logs_setup, pushover
+from reg23_experiments.experiments import helpers as experiment_helpers
+
 
 # @args_from_dag(names_left=["transformation"])
 # def of(*, transformation: Transformation, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,
@@ -174,29 +175,42 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # The universal objective function
     # -----
     def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
+        prefix = "" if context.namespace is None else f"{context.namespace}__"
         t = mapping_parameters_to_transformation(x)
         # Setting the parameters
-        context.dadg.set(
-            "current_transformation" if context.namespace is None else f"{context.namespace}__current_transformation",
-            t)
+        context.dadg.set(prefix + "current_transformation", t)
         # Getting the resulting moving and fixed images
-        moving_image = context.dadg.get(
-            "moving_image" if context.namespace is None else f"{context.namespace}__moving_image")
+        moving_image = context.dadg.get(prefix + "moving_image")
         if isinstance(moving_image, Error):
             logger.error(f"Error getting moving image for obj. func.: {moving_image.description}")
             return torch.zeros(1, device=x.device)
-        fixed_image = context.dadg.get(
-            "fixed_image" if context.namespace is None else f"{context.namespace}__fixed_image")
+        fixed_image = context.dadg.get(prefix + "fixed_image")
         if isinstance(fixed_image, Error):
             logger.error(f"Error getting fixed image for obj. func.: {fixed_image.description}")
             return torch.zeros(1, device=x.device)
+        # Getting the similarity metric
+        p_sim_met: experiment_helpers.ParametrisedSimilarityMetric = experiment_helpers.string_to_sim_met(
+            context.parameters.sim_metric)
         # Comparing, potentially weighting with a mask
-        # if apply_mask:
-        #     mask = data_manager().get("mask")
-        #     if weight_with_mask:
-        #         return -p_sim_met.func_weighted(moving_image, fixed_image, mask)
-        # return -p_sim_met.func(moving_image, fixed_image)
-        return -ncc(fixed_image, moving_image)  # ToDo: configured sim metric
+        if context.parameters.mask == "Every evaluation weighting zncc":
+            weights: torch.Tensor | Error = context.dadg.get(prefix + "mask")
+            if isinstance(weights, Error):
+                logger.error(f"Error getting mask for obj. func.: {weights.description}")
+                return torch.zeros(1, device=x.device)
+            similarity = p_sim_met.func_weighted(moving_image, fixed_image, weights)
+        elif context.parameters.mask == "Binary weighting":
+            weights: torch.Tensor | Error = context.dadg.get(prefix + "mask")
+            if isinstance(weights, Error):
+                logger.error(f"Error getting mask for obj. func.: {weights.description}")
+                return torch.zeros(1, device=x.device)
+            weights[weights < 1.0 - 1e-3] = 0.0
+            similarity = p_sim_met.func_weighted(moving_image, fixed_image, weights)
+        else:  # is "None" or "Every evaluation"
+            similarity = p_sim_met.func(moving_image, fixed_image)
+        if similarity is None:
+            logger.error(f"Similarity metric not compatible with masking method.")
+            return torch.zeros(1, device=x.device)
+        return -similarity
 
     # -----
     # Modules

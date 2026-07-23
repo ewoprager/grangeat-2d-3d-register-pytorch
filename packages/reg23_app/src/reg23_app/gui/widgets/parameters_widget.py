@@ -119,22 +119,24 @@ class ParametersWidget(widgets.Container):
     def _on_crop_nonzero_drr(self, *args) -> None:
         for k, v in self._ctx.state.parameters.xray_parameters.items():
             v.cropping = "Fixed"
-            v.cropping_value = args_from_dadg(  #
+            new_value = args_from_dadg(  #
                 dadg=self._ctx.dadg,  #
                 namespace_captures={e: k for e in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}  #
             )(get_crop_nonzero_drr)()
-            if v.cropping_value.is_collapsed():
-                v.cropping_value = v.cropping_value.uncollapse()
+            if new_value.is_collapsed():
+                new_value = new_value.uncollapse()
+            v.cropping_value = new_value
 
     def _on_crop_full_depth_drr(self, *args) -> None:
         for k, v in self._ctx.state.parameters.xray_parameters.items():
             v.cropping = "Fixed"
-            v.cropping_value = args_from_dadg(  #
+            new_value = args_from_dadg(  #
                 dadg=self._ctx.dadg,  #
                 namespace_captures={e: k for e in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}  #
             )(get_crop_full_depth_drr)()
-            if v.cropping_value.is_collapsed():
-                v.cropping_value = v.cropping_value.uncollapse()
+            if new_value.is_collapsed():
+                new_value = new_value.uncollapse()
+            v.cropping_value = new_value
 
     def _on_set_to_ground_truth(self, *args) -> None:
         for k, v in self._ctx.state.parameters.xray_parameters.items():

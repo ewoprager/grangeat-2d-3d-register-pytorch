@@ -8,8 +8,9 @@ import matplotlib.pyplot as plt
 import torch
 import traitlets
 
+import reg23_core
 from reg23_experiments.ops import swarm as pso
-from reg23_experiments.ops.data_manager import data_manager
+from reg23_experiments.ops.data_manager import data_manager, args_from_dadg
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils.console_logging import tqdm
 
@@ -53,12 +54,24 @@ def run_reg(  #
         plt.ion()
         plt.show()
         t = mapping_parameters_to_transformation(starting_params)
+        # Moving image
+        moving_image: torch.Tensor = args_from_dadg()(  #
+            lambda *, cropped_target, ct_volumes, downsample_level, ct_spacing, source_distance, fixed_image_spacing,
+                   fixed_image_offset: reg23_core.project_drr(  #
+                volume=ct_volumes[downsample_level],  #
+                voxel_spacing=ct_spacing * 2.0 ** downsample_level,  #
+                homography_matrix_inverse=t.inverse().get_h(device=ct_volumes[0].device),  #
+                source_distance=source_distance,  #
+                output_width=cropped_target.size()[1],  #
+                output_height=cropped_target.size()[0],  #
+                output_offset=fixed_image_offset,  #
+                detector_spacing=fixed_image_spacing,  #
+            ))()
         axes[0].clear()
         axes[0].set_title("moving image AT start: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
             t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
             t.translation[1].item(), t.translation[2].item()))
-        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
-        axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
+        axes[0].imshow(moving_image.cpu().numpy())
         plt.draw()
         plt.pause(0.1)
 
@@ -90,11 +103,21 @@ def run_reg(  #
         ret[it, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
 
         if plot != "no":
-            data_manager().set("current_transformation",
-                               mapping_parameters_to_transformation(swarm.current_optimum_position))
+            t = mapping_parameters_to_transformation(swarm.current_optimum_position)
             axes[0].clear()
-            axes[0].imshow(data_manager().get("moving_image").cpu().numpy())
-            t = data_manager().get("current_transformation")
+            moving_image: torch.Tensor = args_from_dadg()(  #
+                lambda *, cropped_target, ct_volumes, downsample_level, ct_spacing, source_distance,
+                       fixed_image_spacing, fixed_image_offset: reg23_core.project_drr(  #
+                    volume=ct_volumes[downsample_level],  #
+                    voxel_spacing=ct_spacing * 2.0 ** downsample_level,  #
+                    homography_matrix_inverse=t.inverse().get_h(device=ct_volumes[0].device),  #
+                    source_distance=source_distance,  #
+                    output_width=cropped_target.size()[1],  #
+                    output_height=cropped_target.size()[0],  #
+                    output_offset=fixed_image_offset,  #
+                    detector_spacing=fixed_image_spacing,  #
+                ))()
+            axes[0].imshow(moving_image.cpu().numpy())
             axes[0].set_title("Iteration {}: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
                 it, t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
                 t.translation[1].item(), t.translation[2].item()))
@@ -102,13 +125,13 @@ def run_reg(  #
             axes[1].plot(ret[0:it + 1, -1].cpu().numpy())
             axes[1].set_xlabel("iteration")
             axes[1].set_ylabel("o.f. value")
-            if plot == "mask":
+            if False and plot == "mask":
                 axes[2].clear()
                 axes[2].set_title("mask")
                 axes[2].imshow(data_manager().get("mask").cpu().numpy())
                 axes[3].clear()
                 axes[3].set_title("masked fixed image")
-                axes[3].imshow(data_manager().get("fixed_image").cpu().numpy())
+                axes[3].imshow(data_manager().get("cropped_target").cpu().numpy())
             plt.draw()
             plt.pause(0.1)
 

@@ -27,12 +27,13 @@ def experiments_cartesian(  #
         experiment: Callable[[Any, torch.device, int, bool], pd.DataFrame | None],  #
         params_to_vary: dict[str, list | torch.Tensor],  #
         constants: dict[str, Any],  #
-        output_directory: pathlib.Path,  #
+        output_directory: pathlib.Path | None,  #
         device: torch.device,  #
         tqdm_position: int = 0,  #
         dry_run: bool = False,  #
 ) -> None:
-    assert output_directory.is_dir()
+    if output_directory is not None:
+        assert output_directory.is_dir()
     # -----
     # Determine the total number of experiments being run
     each_range_length = []
@@ -82,8 +83,9 @@ def experiments_cartesian(  #
             continue
         # -----
         # Add the experiment config rows to the DataFrame and save
-        df = res.assign(**instance_all)
-        df.to_parquet(output_directory / f"data_{"_".join([str(i) for i in indices])}.parquet")
+        if output_directory is not None:
+            df = res.assign(**instance_all)
+            df.to_parquet(output_directory / f"data_{"_".join([str(i) for i in indices])}.parquet")
 
 
 def float01s_to_indices_linear(float01s: np.ndarray, index_count: int) -> np.ndarray:

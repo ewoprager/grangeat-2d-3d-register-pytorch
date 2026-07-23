@@ -225,7 +225,7 @@ def plot_grid_figures(  #
         legend_separate: bool = False,  #
 ) -> None:
     # check arguments
-    assert 2 <= len(independent_values)
+    assert len(independent_values) >= 2
     assert dependent_values.size() == torch.Size([len(v) for _, v in independent_values])
     if dependent_errors is not None:
         assert dependent_errors.size() == dependent_values.size()
@@ -353,7 +353,7 @@ def main(  #
                 value_column="distance_std"  #
             )
         if "crop_expand" not in variables or False:
-            if False:
+            if True:
                 independent_variables = axis_values
                 dependent_variable = "distance from gold-standard"
                 dependent_values = distances
@@ -364,15 +364,21 @@ def main(  #
                 dependent_variable = "accuracy"
                 dependent_values = convergence_curve_to_accuracy(distances, distance_stds, -1)
                 dependent_errors = None
-            plot_grid_figures(  #
-                independent_values=independent_variables,  #
-                dependent_variable=dependent_variable,  #
-                dependent_values=dependent_values,  #
-                dependent_errors=dependent_errors,  #
-                dense=dense,  #
-                save_to=save_to,  #
-                legend_separate=False,  #
-            )
+            if len(independent_variables) == 1:
+                plt.plot(independent_variables[0][1], dependent_values)
+                plt.xlabel(f"{independent_variables[0][0]}")
+                plt.ylabel(f"{dependent_variable}")
+                plt.show()
+            else:
+                plot_grid_figures(  #
+                    independent_values=independent_variables,  #
+                    dependent_variable=dependent_variable,  #
+                    dependent_values=dependent_values,  #
+                    dependent_errors=dependent_errors,  #
+                    dense=dense,  #
+                    save_to=save_to,  #
+                    legend_separate=False,  #
+                )
         else:
             dimension = variables.index("crop_expand")
             best_crop_expand_indices = distances[..., -1].argmin(dim=dimension, keepdim=True)

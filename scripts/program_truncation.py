@@ -309,7 +309,7 @@ def main(  #
         "xray_path": xray_path,  #
         "ct_series_uid": data_manager().get("ct_series_uid"),  #
         "downsample_level": 1,  #
-        "truncation_percent": 80,  #
+        "truncation_percent": 75,  #
         # "desired_h_valid": 60.0,  #
         #
         # "cropping": "nonzero_drr",  #
@@ -330,17 +330,17 @@ def main(  #
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
         # "level_090",  #
-        "up_000",  #
+        # "up_000",  #
         # "up_090",  #
-        "down_000",  #
+        # "down_000",  #
         # "down_090",  #
     ]
     params_to_vary: dict[str, Any] = {  #
         # "desired_h_valid": [float(e) for e in np.linspace(20.0, 33.0, 16)],  #
         # "desired_h_valid": LinearRange(10.0, 60.0),  #
         # "crop_expand": LinearRange(0.0, 30.0),  #
-        "truncation_percent": [75, 80, 85],  #
-        "weight_alpha": [0.0, 0.2 * 0.2, 0.4 * 0.4, 0.6 * 0.6, 0.8 * 0.8],  #
+        # "truncation_percent": [75, 80, 85],  #
+        # "weight_alpha": [0.2 * 0.2, 0.4 * 0.4, 0.6 * 0.6, 0.8 * 0.8, 0.0],  #
     }
     # ----------------------------------
 
@@ -375,12 +375,7 @@ def main(  #
         else:
             params_to_vary["xray_path"] = [str(xray_path / name) for name in hardcoded_xray_names]
 
-    # Remove varying variables from the constants dict
-    for key in params_to_vary:
-        if key in constants:
-            constants.pop(key)
-
-    if show:
+    if False and show:
         # -----
         # Display images for debugging
         plt.ion()  # figures are non-blocking
@@ -481,40 +476,57 @@ def main(  #
         plt.show()
         return
 
-    instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
-
-    with open(instance_output_dir / "variables.txt", 'w') as file:
-        yaml.safe_dump({  #
-            "constants": constants,  #
-            "variables": params_to_vary,  #
-        }, file)
-
     # -----
     # Run experiments, initially just as a dry-run
-    for dry_run in [True, False]:
-        if False:
-            experiments_sobol(  #
-                m=1,  #
-                param_constructor=exp_config_from_dict,  #
-                # experiment=run_experiment,  #
-                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
-                params_to_vary=params_to_vary,  #
-                output_directory=instance_output_dir,  #
-                constants=constants,  #
-                device=device,  #
-                dry_run=dry_run,  #
-            )
-        else:
-            experiments_cartesian(  #
-                param_constructor=exp_config_from_dict,  #
-                # experiment=run_experiment,  #
-                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
-                params_to_vary=params_to_vary,  #
-                output_directory=instance_output_dir,  #
-                constants=constants,  #
-                device=device,  #
-                dry_run=dry_run,  #
-            )
+    if show:
+        experiments_cartesian(  #
+            param_constructor=exp_config_from_dict,  #
+            # experiment=run_experiment,  #
+            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 1, plot="yes"),  #
+            params_to_vary={},  #
+            output_directory=None,  #
+            constants=constants,  #
+            device=device,  #
+            dry_run=False,  #
+        )
+    else:
+        # Remove varying variables from the constants dict
+        for key in params_to_vary:
+            if key in constants:
+                constants.pop(key)
+
+        instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
+
+        with open(instance_output_dir / "variables.txt", 'w') as file:
+            yaml.safe_dump({  #
+                "constants": constants,  #
+                "variables": params_to_vary,  #
+            }, file)
+
+        for dry_run in [True, False]:
+            if False:
+                experiments_sobol(  #
+                    m=1,  #
+                    param_constructor=exp_config_from_dict,  #
+                    # experiment=run_experiment,  #
+                    experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
+                    params_to_vary=params_to_vary,  #
+                    output_directory=instance_output_dir,  #
+                    constants=constants,  #
+                    device=device,  #
+                    dry_run=dry_run,  #
+                )
+            else:
+                experiments_cartesian(  #
+                    param_constructor=exp_config_from_dict,  #
+                    # experiment=run_experiment,  #
+                    experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 1),  #
+                    params_to_vary=params_to_vary,  #
+                    output_directory=instance_output_dir,  #
+                    constants=constants,  #
+                    device=device,  #
+                    dry_run=dry_run,  #
+                )
 
 
 if __name__ == "__main__":

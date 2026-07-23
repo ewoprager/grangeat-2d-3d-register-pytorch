@@ -1,12 +1,13 @@
 import copy
 import logging
 import pprint
-from typing import Any
+from typing import Any, Literal
 
 import matplotlib
 
 matplotlib.use("QtAgg")
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 import traitlets
@@ -20,7 +21,7 @@ from reg23_experiments.ops.data_manager import args_from_dadg, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters, random_parameters_at_distance
 from reg23_experiments.utils.console_logging import tqdm
-from reg23_experiments.experiments.batched import objective_function_binary_weighted
+from reg23_experiments.experiments.batched import objective_function_binary_weighted, objective_function_alpha_weighted
 
 __all__ = ["ExperimentConfig", "run_experiment", "exp_config_from_dict"]
 
@@ -50,6 +51,7 @@ def run_experiment(  #
         tqdm_position: int = 0,  #
         dry_run: bool = False,  #
         batch_size: int = 1,  #
+        plot: Literal["no", "yes", "mask"] = "no",  #
 ) -> pd.DataFrame | None:
     """
     Run multiple (`sample_count_per_distance`) registrations according to the given parameters, and return the average
@@ -83,7 +85,7 @@ def run_experiment(  #
         else:
             return args_from_dadg(  #
                 names_left=["weighted_sim_metric", "parameters", "weight_alpha"]  #
-            )(objective_function_binary_weighted)(  #
+            )(objective_function_alpha_weighted)(  #
                 weighted_sim_metric=p_sim_met.func_weighted,  #
                 parameters=parameters.unsqueeze(0),  #
                 weight_alpha=exp_config.weight_alpha,  #
@@ -100,7 +102,7 @@ def run_experiment(  #
         else:
             return args_from_dadg(  #
                 names_left=["weighted_sim_metric", "parameters", "weight_alpha"]  #
-            )(objective_function_binary_weighted)(  #
+            )(objective_function_alpha_weighted)(  #
                 weighted_sim_metric=p_sim_met.func_weighted,  #
                 parameters=parameters,  #
                 weight_alpha=exp_config.weight_alpha,  #
@@ -119,7 +121,7 @@ def run_experiment(  #
         raise Exception(f"No ground truth transformation available.")
     ground_truth = mapping_transformation_to_parameters(transformation_gt)
     for i in tqdm(  #
-            range(int(exp_config.sample_count_per_distance)),  #
+            range(int(exp_config.sample_count_per_distance) if plot == "no" else 1),  #
             desc="Repeated samples",  #
             position=tqdm_position,  #
             leave=None  #
@@ -133,20 +135,40 @@ def run_experiment(  #
             cropping = cropping.uncollapse(exp_config.crop_min_size)
         data_manager().set("further_cropping", cropping, check_equality=True)
         # -----
-        # Registration
-        if not dry_run:
-            res = run_reg(  #
-                obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
-                config=exp_config.reg_config,  #
-                starting_params=starting_params,  #
-                device=device,  #
-                tqdm_position=tqdm_position + 1,  #
-                batch_size=batch_size,  #
-            )  # size = (iteration count, dimensionality + 1)
+        # Plotting if desired
+        if plot != "no":
+            plt.ion()  # figures are non-blocking
+            plt.show()
+            fig, axes = plt.subplots(1, 2)
+            # Getting the data from the DADG
+            image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
+            if isinstance(image_2d_full, Error):
+                raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
+            cropped_target: torch.Tensor | Error = data_manager().get("cropped_target")
+            if isinstance(cropped_target, Error):
+                raise RuntimeError(f"Error getting fixed image: {cropped_target.description}")
+            # Full 2D image
+            axes[0].imshow(image_2d_full.cpu().numpy())
+            axes[0].set_title("full 2d image")
+            # Cropped target
+            axes[1].imshow(cropped_target.cpu().numpy())
+            axes[1].set_title("cropped target at start")
+            # -----
+            # Registration
+            if not dry_run:
+                res = run_reg(  #
+                    obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
+                    config=exp_config.reg_config,  #
+                    starting_params=starting_params,  #
+                    device=device,  #
+                    tqdm_position=tqdm_position + 1,  #
+                    batch_size=batch_size,  #
+                    plot=plot,  #
+                )  # size = (iteration count, dimensionality + 1)
             distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
                                                               dim=1)  # size = (iteration count,)
 
-    return None if dry_run else pd.DataFrame({  #
+    return None if (dry_run or plot != "no") else pd.DataFrame({  #
         "iteration": torch.arange(exp_config.reg_config.iteration_count).numpy(),  # size = (iteration count,)
         "distance": distance_samples.mean(dim=0).cpu().numpy(),  # size = (iteration count,)
         "distance_std": distance_samples.std(dim=0).cpu().numpy(),  #

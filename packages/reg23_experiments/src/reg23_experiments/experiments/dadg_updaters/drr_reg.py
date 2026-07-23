@@ -134,8 +134,12 @@ def set_synthetic_target_image(  #
 
 
 @dadg_updater(names_returned=["image_2d_scale_factor", "fixed_image_spacing"])
-def refresh_image_2d_scale_factor(*, image_2d_full_spacing: Float64[torch.Tensor, "2"], downsample_level: int,
-                                  ct_spacing: Float64[torch.Tensor, "3"]) -> dict[str, Any]:
+def refresh_image_2d_scale_factor(  #
+        *,  #
+        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+        downsample_level: int,  #
+        ct_spacing: Float64[torch.Tensor, "3"]  #
+) -> dict[str, Any]:
     assert ct_spacing.device == image_2d_full_spacing.device
     downsampled_ct_spacing = ct_spacing * 2.0 ** float(downsample_level)
     image_2d_scale_factor = (image_2d_full_spacing.mean() / downsampled_ct_spacing.mean()).item()
@@ -194,12 +198,16 @@ def refresh_hyperparameter_dependent(  #
 
 
 @dadg_updater(names_returned=["mask", "fixed_image"])
-def refresh_mask_transformation_dependent(*, ct_volumes: list[torch.Tensor], ct_spacing: Float64[torch.Tensor, "3"],
-                                          cropped_target: Float32[torch.Tensor, "n m"],
-                                          mask_transformation: Transformation | None,
-                                          fixed_image_spacing: Float64[torch.Tensor, "2"],
-                                          fixed_image_offset: Float64[torch.Tensor, "2"], source_distance: float,
-                                          device) -> dict[str, Any]:
+def refresh_mask_transformation_dependent(  #
+        *,  #
+        ct_volumes: list[torch.Tensor],  #
+        ct_spacing: Float64[torch.Tensor, "3"],  #
+        cropped_target: Float32[torch.Tensor, "n m"],  #
+        mask_transformation: Transformation | None,  #
+        fixed_image_spacing: Float64[torch.Tensor, "2"],  #
+        fixed_image_offset: Float64[torch.Tensor, "2"],  #
+        source_distance: float  #
+) -> dict[str, Any]:
     device = ct_volumes[0].device
     assert ct_spacing.device == device
     assert cropped_target.device == device
