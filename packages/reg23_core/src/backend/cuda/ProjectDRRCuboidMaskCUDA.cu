@@ -77,7 +77,7 @@ __global__ void Kernel_ProjectDRRCuboidMaskBatched_CUDA(double sourceDistance, C
 															  	outputOffset;
 	Vec<Vec<double, 4>, 4> homographyMatrixInverse{};
 	for (int k = 0; k < 16; ++k)
-		homographyMatrixInverse[k / 4][k % 4] = invHMatrices[16 * batchIndex + k]; // ToDo: Transpose??
+		homographyMatrixInverse[k % 4][k / 4] = invHMatrices[16 * batchIndex + k];
 	Vec<float, 3> sourcePositionTransformed =
 		MatMul(homographyMatrixInverse, Vec<double, 4>{0.0, 0.0, sourceDistance, 1.0})
 			.XYZ().StaticCast<float>();

@@ -76,7 +76,7 @@ __global__ void Kernel_ProjectDRRsBatched_CUDA(Texture3DCUDA volume, double sour
 											outputOffset;
 	Vec<Vec<double, 4>, 4> homographyMatrixInverse{};
 	for (int k = 0; k < 16; ++k)
-		homographyMatrixInverse[k / 4][k % 4] = invHMatrices[16 * batchIndex + k]; // ToDo: Transpose??
+		homographyMatrixInverse[k % 4][k / 4] = invHMatrices[16 * batchIndex + k];
 	Vec<double, 3> direction = VecCat(detectorPosition, -sourceDistance);
 	direction /= direction.Length();
 	Vec<double, 3> delta = direction * stepSize;
@@ -93,7 +93,7 @@ __global__ void Kernel_ProjectDRRsBatched_CUDA(Texture3DCUDA volume, double sour
 		sum += volume.Sample(mappingWorldToTexCoord(samplePoint));
 		samplePoint += delta;
 	}
-	arrayOut[batchIndex * outputNumel + pixelIndex] = static_cast<float>(stepSize) * sum;
+	arrayOut[threadIndex] = static_cast<float>(stepSize) * sum;
 }
 
 __host__ at::Tensor ProjectDRRsBatched_CUDA(const at::Tensor &volume, const at::Tensor &voxelSpacing,
@@ -145,7 +145,7 @@ __host__ at::Tensor ProjectDRRsBatched_CUDA(const at::Tensor &volume, const at::
 	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, &Kernel_ProjectDRRsBatched_CUDA, 0, 0);
 	const int gridSize = (static_cast<int>(flatOutput.numel()) + blockSize - 1) / blockSize;
 	Kernel_ProjectDRRsBatched_CUDA<<<gridSize, blockSize>>>(
-		inputTexture, sourceDistance, volumeDiagLength, stepSize, samplesPerRay, batchCount,
+		inputTexture, sourceDistance, stepSize, volumeDiagLength, samplesPerRay, batchCount,
 		invHMatricesContiguous.data_ptr<double>(), inputTexture.MappingWorldToTexCoord(), detectorSpacingVec,
 		Vec<int64_t, 2>{outputWidth, outputHeight}, outputOffsetVec, resultFlatPtr);
 	std::vector<int64_t> outputSizesVector{};

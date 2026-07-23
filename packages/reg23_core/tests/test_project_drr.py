@@ -169,12 +169,17 @@ def test_project_drrs_batched():
     source_distance = 1000.0
     output_size = torch.Size([3, 10, 15])
     detector_spacing = torch.tensor([0.2, 0.25])
-    res_cuda = project_drrs_batched(input_.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance,
-                                    output_size[-1], output_size[-2], torch.zeros(2, dtype=torch.float64),
-                                    detector_spacing.cuda())
-    assert res_cuda.size() == output_size
-    fig, axes = plt.subplots(1, 3)
-    axes[0].imshow(res_cuda[0].cpu().numpy())
-    axes[1].imshow(res_cuda[1].cpu().numpy())
-    axes[2].imshow(res_cuda[2].cpu().numpy())
-    plt.show()
+    res_batched = project_drrs_batched(input_.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance,
+                                       output_size[-1], output_size[-2], torch.zeros(2, dtype=torch.float64),
+                                       detector_spacing.cuda()).cpu()
+    assert res_batched.size() == output_size
+    res_unbatched = [project_drr(input_.cuda(), voxel_spacing.cuda(), inv_h.cuda(), source_distance, output_size[-1],
+                                 output_size[-2], torch.zeros(2, dtype=torch.float64), detector_spacing.cuda()).cpu()
+                     for inv_h in inv_hs]
+    if False:
+        fig, axes = plt.subplots(1, 2)
+        axes[0].imshow(res_batched[0].numpy())
+        axes[1].imshow(res_unbatched[0].numpy())
+        plt.show()
+    for a, b in zip(res_batched, res_unbatched):
+        assert a == pytest.approx(b, rel=1e-3, abs=1e-3)
