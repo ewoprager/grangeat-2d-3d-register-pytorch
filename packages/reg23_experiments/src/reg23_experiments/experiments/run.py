@@ -16,9 +16,49 @@ import torch
 from reg23_experiments.data.structs import Error, LinearRange
 from reg23_experiments.utils.console_logging import tqdm
 
-__all__ = ["experiments_cartesian", "experiments_sobol"]
+__all__ = ["experiments_hybrid", "experiments_cartesian", "experiments_sobol"]
 
 logger = logging.getLogger(__name__)
+
+
+def experiments_hybrid(  #
+        param_constructor: Callable[[dict[str, Any]], Any | Error],  #
+        experiment: Callable[[Any, torch.device, int, bool], pd.DataFrame | None],  #
+        config_iterable: Iterable[tuple[str, dict[str, Any]]],  #
+        output_directory: pathlib.Path,  #
+        device: torch.device,  #
+        tqdm_position: int = 0,  #
+        dry_run: bool = False,  #
+) -> None:
+    assert output_directory.is_dir()
+    tqdm_iterator = tqdm(  #
+        config_iterable,  #
+        desc="Experiments",  #
+        position=tqdm_position,  #
+        leave=None  #
+    )
+    for name, config in tqdm_iterator:
+        # -----
+        # Construct the experiment parameters
+        parameters: Any | Error = param_constructor(config)
+        if isinstance(parameters, Error):
+            raise Exception(f"Failed to construct parameters at iteration {name}")
+        # -----
+        # Run the experiment
+        try:
+            res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
+        except Exception as e:
+            logger.error(f"Error running experiment at iteration {name}: {e}\nParameters:\n{pprint.pformat(config)}")
+            continue
+        if res is None:
+            logger.info(f"Experiment at iteration {name}; configuration: \n{pprint.pformat(config)}\nwas deemed "
+                        f"trivial / unnecessary.")
+            continue
+        # -----
+        # Add the experiment config rows to the DataFrame and save
+        if output_directory is not None:
+            df = res.assign(**config)
+            df.to_parquet(output_directory / f"data_{name}.parquet")
 
 
 def experiments_cartesian(  #
@@ -70,12 +110,12 @@ def experiments_cartesian(  #
             raise Exception(f"Failed to construct parameters at indices {indices}")
         # -----
         # Run the experiment
-        # try:
-        res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
-        # except Exception as e:
-        #     logger.error(
-        #         f"Error running experiment at indices {indices}: {e}\nParameters:\n{pprint.pformat(instance_all)}")
-        #     continue
+        try:
+            res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
+        except Exception as e:
+            logger.error(
+                f"Error running experiment at indices {indices}: {e}\nParameters:\n{pprint.pformat(instance_all)}")
+            continue
         if res is None:
             logger.info(
                 f"Experiment at indices {indices}; configuration: \n{pprint.pformat(instance_specific)}\nwas deemed "
@@ -166,15 +206,3 @@ def experiments_sobol(  #
         # Add the experiment config rows to the DataFrame and save
         df = res.assign(**instance_all)
         df.to_parquet(output_directory / f"data_sobol_{i}.parquet")
-
-
-def experiments(  #
-        param_constructor: Callable[[dict[str, Any]], Any | Error],  #
-        experiment: Callable[[Any, torch.device, int, bool], pd.DataFrame | None],  #
-        config_iterable: Iterable[dict[str, Any]],  #
-        output_directory: pathlib.Path,  #
-        device: torch.device,  #
-        tqdm_position: int = 0,  #
-        dry_run: bool = False,  #
-) -> None:
-    pass
