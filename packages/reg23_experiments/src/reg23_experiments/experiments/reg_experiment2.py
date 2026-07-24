@@ -14,6 +14,7 @@ import traitlets
 from jaxtyping import Float64
 
 from reg23_experiments.data.structs import Cropping, Error, Transformation
+from reg23_experiments.experiments.batched import objective_function_alpha_weighted, objective_function_binary_weighted
 from reg23_experiments.experiments.helpers import ParametrisedSimilarityMetric, string_to_sim_met
 from reg23_experiments.experiments.registration import RegConfig, run_reg
 from reg23_experiments.ops import geometry
@@ -21,7 +22,6 @@ from reg23_experiments.ops.data_manager import args_from_dadg, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters, random_parameters_at_distance
 from reg23_experiments.utils.console_logging import tqdm
-from reg23_experiments.experiments.batched import objective_function_binary_weighted, objective_function_alpha_weighted
 
 __all__ = ["ExperimentConfig", "run_experiment", "exp_config_from_dict"]
 
@@ -32,8 +32,8 @@ class ExperimentConfig(traitlets.HasTraits):
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
-    truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
-    # desired_h_valid: int = traitlets.Float(min=1.0, max=100.0, default_value=traitlets.Undefined)
+    # truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
+    desired_h_valid: int = traitlets.Float(min=1.0, default_value=traitlets.Undefined)
     crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     weight_alpha: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     sim_metric: str = traitlets.Enum(values=[  #
@@ -66,8 +66,8 @@ def run_experiment(  #
     data_manager().set("ct_path", exp_config.ct_path, check_equality=True)
     data_manager().set("xray_path", exp_config.xray_path, check_equality=True)
     data_manager().set("downsample_level", exp_config.downsample_level, check_equality=True)
-    data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
-    # data_manager().set("desired_h_valid", exp_config.desired_h_valid)
+    # data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
+    data_manager().set("desired_h_valid", exp_config.desired_h_valid)
     # -----
     # Configuring according to desired similarity metric
     p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)

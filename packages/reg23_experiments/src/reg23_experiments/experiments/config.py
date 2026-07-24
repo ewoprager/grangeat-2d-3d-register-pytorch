@@ -38,10 +38,11 @@ class Cartesian(traitlets.HasTraits):
 
 
 class Range(traitlets.HasTraits):
-    range_: list | LinearRange | IntRange = traitlets.Union([  #
+    range_: list | LinearRange | IntRange | tuple[str, Callable[[float], Any]] = traitlets.Union([  #
         traitlets.List(minlen=2),  #
         traitlets.Instance(LinearRange, allow_none=False),  #
         traitlets.Instance(IntRange, allow_none=False),  #
+        traitlets.Tuple(traitlets.Unicode(allow_none=False), traitlets.Callable()),  #
     ])
 
     def __init__(self, range_):
@@ -52,24 +53,31 @@ class Range(traitlets.HasTraits):
             return self.range_[min(len(self.range_) - 1, int(np.floor(float01 * float(len(self.range_)))))]
         elif isinstance(self.range_, LinearRange):
             return self.range_.low + float01 * (self.range_.high - self.range_.low)
-        else:  # self.range_ is an IntRange:
+        elif isinstance(self.range_, IntRange):
             width = self.range_.high - self.range_.low
             return self.range_.low + min(width, int(np.floor(float01 * float(width + 1))))
+        else:  # self.range_ is a named function
+            return self.range_[1](float01)
 
     def serialize(self) -> dict[str, Any] | list:
         if isinstance(self.range_, list):
             return self.range_
         elif isinstance(self.range_, LinearRange):
             return {  #
-                "name": "LinearRange",  #
+                "range_type": "LinearRange",  #
                 "low": self.range_.low,  #
                 "high": self.range_.high,  #
             }
-        else:  # self.range_ is an IntRange
+        elif isinstance(self.range_, IntRange):
             return {  #
-                "name": "IntRange",  #
+                "range_type": "IntRange",  #
                 "low": self.range_.low,  #
                 "high": self.range_.high,  #
+            }
+        else:  # self.range_ is a named function
+            return {  #
+                "range_type": "function",  #
+                "name": self.range_[0],  #
             }
 
 
@@ -187,6 +195,7 @@ class ExperimentConfig(traitlets.HasTraits):
 
     def iterable(  #
             self,  #
+            *,  #
             space_sample_method: Literal["sobol"] = "sobol",  #
             space_sample_count: int | None = None,  #
     ) -> _Configs:

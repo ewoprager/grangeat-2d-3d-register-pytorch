@@ -94,7 +94,7 @@ def objective_function_alpha_weighted(  #
     # Generate the masked fixed images
     masked_fixed_images = masks * cropped_target.unsqueeze(0)
     # Calculate the weight images
-    weights = torch.pow(3.0 * masks * masks - 2 * masks * masks * masks, 1.0 / weight_alpha)
+    weights = torch.pow(3.0 * masks * masks - 2 * masks * masks * masks, 1.0 / (weight_alpha * weight_alpha))
     # Project the DRRs
     moving_images = reg23_core.project_drrs_batched(  #
         volume=ct_volumes[downsample_level],  #
