@@ -2,7 +2,7 @@ import itertools
 import logging
 import pathlib
 import pprint
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import matplotlib
 
@@ -166,3 +166,15 @@ def experiments_sobol(  #
         # Add the experiment config rows to the DataFrame and save
         df = res.assign(**instance_all)
         df.to_parquet(output_directory / f"data_sobol_{i}.parquet")
+
+
+def experiments(  #
+        param_constructor: Callable[[dict[str, Any]], Any | Error],  #
+        experiment: Callable[[Any, torch.device, int, bool], pd.DataFrame | None],  #
+        config_iterable: Iterable[dict[str, Any]],  #
+        output_directory: pathlib.Path,  #
+        device: torch.device,  #
+        tqdm_position: int = 0,  #
+        dry_run: bool = False,  #
+) -> None:
+    pass

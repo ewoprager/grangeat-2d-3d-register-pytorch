@@ -352,7 +352,7 @@ def main(  #
                 ordered_axes=variables + ["iteration"],  #
                 value_column="distance_std"  #
             )
-        if "crop_expand" not in variables or False:
+        if "crop_expand" not in variables or True:
             if True:
                 independent_variables = axis_values
                 dependent_variable = "distance from gold-standard"
