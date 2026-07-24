@@ -15,14 +15,15 @@ import SimpleITK as sitk
 import torch
 import yaml
 
-from reg23_experiments.data.structs import Cropping, Error, Transformation
+from reg23_experiments.data.structs import Cropping, Error, LinearRange, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
+from reg23_experiments.experiments.config import Cartesian, Constant, ExperimentConfig, Range
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
 from reg23_experiments.experiments.reg_experiment2 import exp_config_from_dict, run_experiment
 from reg23_experiments.experiments.registration import RegConfig, run_reg
-from reg23_experiments.experiments.run import experiments_sobol, experiments_cartesian
+from reg23_experiments.experiments.run import experiments_hybrid
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.image import XrayDICOM, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
@@ -303,29 +304,30 @@ def main(  #
     # ----------------------------------
     # - Hardcoded script configuration -
     # ----------------------------------
-    constants: dict[str, Any] = {  #
-        # ExperimentConfig
-        "ct_path": ct_path,  #
-        "xray_path": xray_path,  #
-        "ct_series_uid": data_manager().get("ct_series_uid"),  #
-        "downsample_level": 1,  #
-        "truncation_percent": 75,  #
+    config = ExperimentConfig({  #
+        "ct_path": Constant(ct_path),  #
+        "xray_path": Constant(xray_path),  #
+        "ct_series_uid": Constant(data_manager().get("ct_series_uid")),  #
+        "downsample_level": Constant(1),  #
+        "truncation_percent": Cartesian([75, 80, 85]),  #
         # "desired_h_valid": 60.0,  #
         #
         # "cropping": "nonzero_drr",  #
         # "crop_expand": 0.0,  #
         # "mask": "Every evaluation",  #
         #
-        "crop_min_size": 0.01,  #
-        "weight_alpha": 0.0,  #
-        "sim_metric": "zncc",  #
-        "starting_distance": 5.0,  #
-        "sample_count_per_distance": 10,  #
-        # RegConfig
-        "particle_count": 2000,  #
-        "particle_initialisation_spread": 5.0,  #
-        "iteration_count": 6,  #
-    }
+        "crop_min_size": Constant(0.01),  #
+        "weight_alpha": Range(LinearRange(0.0, 0.8)),  #
+        # "weight_alpha": Constant(0.0),  #
+        "sim_metric": Constant("zncc"),  #
+        "starting_distance": Constant(5.0),  #
+        "sample_count_per_distance": Constant(2),  #
+        # PSO config
+        "particle_count": Constant(200),  #
+        "particle_initialisation_spread": Constant(5.0),  #
+        "iteration_count": Constant(6),  #
+    })
+
     # X-ray choice determines the gold standard orientation, which drives h_linear:
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
@@ -335,14 +337,6 @@ def main(  #
         "down_000",  #
         # "down_090",  #
     ]
-    params_to_vary: dict[str, Any] = {  #
-        # "desired_h_valid": [float(e) for e in np.linspace(20.0, 33.0, 16)],  #
-        # "desired_h_valid": LinearRange(10.0, 60.0),  #
-        # "crop_expand": LinearRange(0.0, 30.0),  #
-        "truncation_percent": [75, 80, 85],  #
-        "weight_alpha": [0.0, 0.2 * 0.2, 0.4 * 0.4, 0.6 * 0.6, 0.8 * 0.8],  #
-    }
-    # ----------------------------------
 
     # -----
     # Setting the X-ray path(s) if a directory is passed
@@ -371,9 +365,9 @@ def main(  #
                 logger.error(f"No reg config saved for X-ray '{str(path)}' with UID '{dicom["uid"]}'.")
                 return
         if len(hardcoded_xray_names) == 1:
-            constants["xray_path"] = str(xray_path / hardcoded_xray_names[0])
+            config.values["xray_path"] = Constant(str(xray_path / hardcoded_xray_names[0]))
         else:
-            params_to_vary["xray_path"] = [str(xray_path / name) for name in hardcoded_xray_names]
+            config.values["xray_path"] = Cartesian([str(xray_path / name) for name in hardcoded_xray_names])
 
     if False and show:
         # -----
@@ -477,56 +471,33 @@ def main(  #
         return
 
     if show:
-        experiments_cartesian(  #
+        experiments_hybrid(  #
             param_constructor=exp_config_from_dict,  #
             # experiment=run_experiment,  #
             experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000, plot="yes"),  #
-            params_to_vary={},  #
+            config_iterable=(c for c in [next(iter(config.iterable()))]),  # just the first iteration
             output_directory=None,  #
-            constants=constants,  #
             device=device,  #
             dry_run=False,  #
         )
     else:
-        # Remove varying variables from the constants dict
-        for key in params_to_vary:
-            if key in constants:
-                constants.pop(key)
-
         instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
 
         with open(instance_output_dir / "variables.txt", 'w') as file:
-            yaml.safe_dump({  #
-                "constants": constants,  #
-                "variables": params_to_vary,  #
-            }, file)
+            yaml.safe_dump(config.serialize(), file)
 
         # -----
         # Run experiments, initially just as a dry-run
         for dry_run in [True, False]:
-            if False:
-                experiments_sobol(  #
-                    m=1,  #
-                    param_constructor=exp_config_from_dict,  #
-                    # experiment=run_experiment,  #
-                    experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
-                    params_to_vary=params_to_vary,  #
-                    output_directory=instance_output_dir,  #
-                    constants=constants,  #
-                    device=device,  #
-                    dry_run=dry_run,  #
-                )
-            else:
-                experiments_cartesian(  #
-                    param_constructor=exp_config_from_dict,  #
-                    # experiment=run_experiment,  #
-                    experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
-                    params_to_vary=params_to_vary,  #
-                    output_directory=instance_output_dir,  #
-                    constants=constants,  #
-                    device=device,  #
-                    dry_run=dry_run,  #
-                )
+            experiments_hybrid(  #
+                param_constructor=exp_config_from_dict,  #
+                # experiment=run_experiment,  #
+                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
+                config_iterable=config.iterable(),  #
+                output_directory=instance_output_dir,  #
+                device=device,  #
+                dry_run=dry_run,  #
+            )
 
 
 if __name__ == "__main__":

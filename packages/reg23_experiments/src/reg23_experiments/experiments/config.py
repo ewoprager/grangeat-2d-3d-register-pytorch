@@ -26,29 +26,54 @@ class IntRange:
 class Constant(traitlets.HasTraits):
     value: Any = traitlets.Any(default_value=traitlets.Undefined)
 
+    def __init__(self, value):
+        super().__init__(value=value)
+
 
 class Cartesian(traitlets.HasTraits):
     values: list = traitlets.List(minlen=1)
 
+    def __init__(self, values):
+        super().__init__(values=values)
+
 
 class Range(traitlets.HasTraits):
-    range: list | LinearRange | IntRange = traitlets.Union([  #
+    range_: list | LinearRange | IntRange = traitlets.Union([  #
         traitlets.List(minlen=2),  #
         traitlets.Instance(LinearRange, allow_none=False),  #
         traitlets.Instance(IntRange, allow_none=False),  #
     ])
 
+    def __init__(self, range_):
+        super().__init__(range_=range_)
+
     def sample(self, float01: float) -> Any:
-        if isinstance(self.range, list):
-            return self.range[min(len(self.range) - 1, int(np.floor(float01 * float(len(self.range)))))]
-        elif isinstance(self.range, LinearRange):
-            return self.range.low + float01 * (self.range.high - self.range.low)
-        else:  # self.range is an IntRange:
-            width = self.range.high - self.range.low
-            return self.range.low + min(width, int(np.floor(float01 * float(width + 1))))
+        if isinstance(self.range_, list):
+            return self.range_[min(len(self.range_) - 1, int(np.floor(float01 * float(len(self.range_)))))]
+        elif isinstance(self.range_, LinearRange):
+            return self.range_.low + float01 * (self.range_.high - self.range_.low)
+        else:  # self.range_ is an IntRange:
+            width = self.range_.high - self.range_.low
+            return self.range_.low + min(width, int(np.floor(float01 * float(width + 1))))
+
+    def serialize(self) -> dict[str, Any] | list:
+        if isinstance(self.range_, list):
+            return self.range_
+        elif isinstance(self.range_, LinearRange):
+            return {  #
+                "name": "LinearRange",  #
+                "low": self.range_.low,  #
+                "high": self.range_.high,  #
+            }
+        else:  # self.range_ is an IntRange
+            return {  #
+                "name": "IntRange",  #
+                "low": self.range_.low,  #
+                "high": self.range_.high,  #
+            }
 
 
-class _Configs(Iterable[dict[str, Any]]):
+class _Configs(Iterable[tuple[str, dict[str, Any]]]):
     def __init__(  #
             self,  #
             values: dict[str, Constant | Cartesian | Range],  #
@@ -74,7 +99,7 @@ class _Configs(Iterable[dict[str, Any]]):
                 enumerate(values[name].values) for name in ordered_cartesian_names  #
             ])
             cart_n = int(np.prod([len(value.values) for _, value in values.items() if isinstance(value, Cartesian)]))
-            self._cart_generator: Generator[tuple[str, dict[str, Any]]] | None = (  #
+            self._cart_generator: Callable[[], Generator[tuple[str, dict[str, Any]]]] | None = lambda: (  #
                 (  #
                     "c" + "-".join(f"{i}" for i, _ in indexed_cart_values),  #
                     {  #
@@ -86,7 +111,7 @@ class _Configs(Iterable[dict[str, Any]]):
             )
         else:
             cart_n = 1
-            self._cart_generator: Generator[tuple[str, dict[str, Any]]] | None = None
+            self._cart_generator: Callable[[], Generator[tuple[str, dict[str, Any]]]] | None = None
         # -----
         # Spatial sampling of values
         range_samplers: dict[str, Callable[[float], Any]] = {  #
@@ -106,7 +131,10 @@ class _Configs(Iterable[dict[str, Any]]):
                     f"The space sample count for Sobol sampling must be a power of 2. Rounding to the nearest power "
                     f"of 2, = {space_sample_count}")
             # ToDo: Currently only do Sobol
-            self._range_generator: Generator[tuple[str, dict[str, Any]]] | None = (  #
+            sobol_samples = scipy.stats.qmc.Sobol(len(range_samplers)).random_base2(  #
+                space_sample_count.bit_length() - 1  #
+            )  # size (space_sample_count, len(range_samplers))
+            self._range_generator: Callable[[], Generator[tuple[str, dict[str, Any]]]] | None = lambda: (  #
                 (  #
                     f"s{i}",  #
                     {  #
@@ -114,13 +142,11 @@ class _Configs(Iterable[dict[str, Any]]):
                         for float01, (name, sampler) in zip(float01s, range_samplers.items())  #
                     }  #
                 )  #
-                for i, float01s in enumerate(scipy.stats.qmc.Sobol(len(range_samplers)).random_base2(  #
-                space_sample_count.bit_length() - 1  #
-            ))  #
+                for i, float01s in enumerate(sobol_samples)  #
             )
         else:
             space_sample_count = 1
-            self._range_generator: Generator[tuple[str, dict[str, Any]]] | None = None
+            self._range_generator: Callable[[], Generator[tuple[str, dict[str, Any]]]] | None = None
         # -----
         # Total number of configs
         self._len = cart_n * space_sample_count
@@ -130,16 +156,16 @@ class _Configs(Iterable[dict[str, Any]]):
             if self._range_generator is None:
                 yield "only_config", self._constants
             else:
-                for range_name, range_config in self._range_generator:
+                for range_name, range_config in self._range_generator():
                     yield range_name, range_config | self._constants
         else:
             if self._range_generator is None:
-                for cart_name, cart_config in self._cart_generator:
+                for cart_name, cart_config in self._cart_generator():
                     yield cart_name, cart_config | self._constants
             else:
-                for cart_name, cart_config in self._cart_generator:
+                for cart_name, cart_config in self._cart_generator():
                     intermediate = cart_config | self._constants
-                    for range_name, range_config in self._range_generator:
+                    for range_name, range_config in self._range_generator():
                         yield cart_name + "_" + range_name, range_config | intermediate
 
     def __len__(self) -> int:
@@ -156,6 +182,9 @@ class ExperimentConfig(traitlets.HasTraits):
         ]),  #
     )
 
+    def __init__(self, values):
+        super().__init__(values=values)
+
     def iterable(  #
             self,  #
             space_sample_method: Literal["sobol"] = "sobol",  #
@@ -166,3 +195,22 @@ class ExperimentConfig(traitlets.HasTraits):
             space_sample_method=space_sample_method,  #
             space_sample_count=space_sample_count,  #
         )
+
+    def serialize(self) -> dict[str, Any]:
+        return {  #
+            "constants": {  #
+                key: value.value  #
+                for key, value in self.values.items()  #
+                if isinstance(value, Constant)  #
+            },  #
+            "cartesian": {  #
+                key: value.values  #
+                for key, value in self.values.items()  #
+                if isinstance(value, Cartesian)  #
+            },  #
+            "range": {  #
+                key: value.serialize()  #
+                for key, value in self.values.items()  #
+                if isinstance(value, Range)  #
+            },  #
+        }

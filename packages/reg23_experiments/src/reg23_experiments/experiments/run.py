@@ -25,12 +25,13 @@ def experiments_hybrid(  #
         param_constructor: Callable[[dict[str, Any]], Any | Error],  #
         experiment: Callable[[Any, torch.device, int, bool], pd.DataFrame | None],  #
         config_iterable: Iterable[tuple[str, dict[str, Any]]],  #
-        output_directory: pathlib.Path,  #
+        output_directory: pathlib.Path | None,  #
         device: torch.device,  #
         tqdm_position: int = 0,  #
         dry_run: bool = False,  #
 ) -> None:
-    assert output_directory.is_dir()
+    if output_directory is not None:
+        assert output_directory.is_dir()
     tqdm_iterator = tqdm(  #
         config_iterable,  #
         desc="Experiments",  #
@@ -38,6 +39,7 @@ def experiments_hybrid(  #
         leave=None  #
     )
     for name, config in tqdm_iterator:
+        tqdm_iterator.set_postfix({"iteration": name})
         # -----
         # Construct the experiment parameters
         parameters: Any | Error = param_constructor(config)
@@ -49,6 +51,8 @@ def experiments_hybrid(  #
             res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
         except Exception as e:
             logger.error(f"Error running experiment at iteration {name}: {e}\nParameters:\n{pprint.pformat(config)}")
+            continue
+        if dry_run:
             continue
         if res is None:
             logger.info(f"Experiment at iteration {name}; configuration: \n{pprint.pformat(config)}\nwas deemed "
