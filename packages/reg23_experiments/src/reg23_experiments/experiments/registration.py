@@ -10,7 +10,7 @@ import traitlets
 
 import reg23_core
 from reg23_experiments.ops import swarm as pso
-from reg23_experiments.ops.data_manager import data_manager, args_from_dadg
+from reg23_experiments.ops.data_manager import args_from_dadg, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils.console_logging import tqdm
 
@@ -32,6 +32,7 @@ def run_reg(  #
         plot: Literal["no", "yes", "mask"] = "no",  #
         tqdm_position: int = 0,  #
         batch_size: int = 1,  #
+        periodic_behaviour: list[tuple[int, Callable[[], None]]] = [],  #
 ) -> torch.Tensor:
     """
     Run a PSO from the given starting params and return a tensor containing the params and O.F. value at each iteration.
@@ -44,6 +45,9 @@ def run_reg(  #
     :return: A tensor of size (iteration count, dimensionality + 1), where each row corresponds to an iteration of
     the optimisation, and stores the following data: | <- position of current best -> | current best |
     """
+    for _, f in periodic_behaviour:
+        f()
+
     if plot != "no":
         ncols = 2
         if plot == "mask":
@@ -98,6 +102,10 @@ def run_reg(  #
     # -----
     # The optimisation loop
     for it in range(1, config.iteration_count):
+        for t, f in periodic_behaviour:
+            if it % t == 0:
+                f()
+
         swarm.iterate()
         ret[it, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
         ret[it, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)

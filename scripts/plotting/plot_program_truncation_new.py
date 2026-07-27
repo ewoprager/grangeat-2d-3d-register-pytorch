@@ -210,81 +210,84 @@ def main(  #
 
     assert (distance_std_available, "Distance standard deviations are required for accuracy metric.")
     # Collapse to just last iteration for level_000
-    df = df[df["xray_path"] == "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/up_090"]
-    accuracy_df = df[df["iteration"] == df["iteration"].max()].drop(columns=["iteration"])
-    # Remove unnecessary dependent variable columns
-    # accuracy_df.drop(columns=["crop_width", "crop_height"], inplace=True)
-    # CT and X-ray paths to h_linear
-    if False:
-        accuracy_df["h_linear"] = [  #
-            ct_xray_to_h_linear(  #
-                saved_transformations=saved_transformations,  #
-                xray_path=xray_path,  #
-                ct_path=ct_path,  #
-                ct_series_uid=ct_series_uid,  #
-            )  #
-            for xray_path, ct_path, ct_series_uid in tqdm(  #
-                zip(accuracy_df["xray_path"], accuracy_df["ct_path"], accuracy_df["ct_series_uid"]),  #
-                desc="Calculating h_linear"  #
-            )  #
-        ]
-    accuracy_df.drop(columns=["xray_path", "ct_path", "ct_series_uid"], inplace=True)
-    # Drop columns for constant variables
-    accuracy_df = accuracy_df.drop(columns=[  #
-        col for col in  #
-        accuracy_df.columns[accuracy_df.nunique() == 1]  #
-    ])
-
-    print(accuracy_df.to_string())
-
-    if "sample_count_per_distance" in accuracy_df.columns:
-        accuracy_df.drop(columns=["sample_count_per_distance"], inplace=True)
-
-    # -----
-    # Gaussian Process Regression
-    # Get the dependent value vector
-    y: np.ndarray = accuracy_df["distance"].to_numpy()
-    y_sigma: np.ndarray = accuracy_df["distance_std"].to_numpy()
-    y_sigma = np.minimum(y_sigma, 3.0)
-    # Get the independent value vectors as a matrix
-    independent_variables: list[str] = ["desired_h_valid", "weight_alpha"]
-    approx_length_scales: list[float] = [30.0, 0.4]
-    X: np.ndarray = accuracy_df[independent_variables].to_numpy()
-    kernel = sklearn.gaussian_process.kernels.ConstantKernel() * sklearn.gaussian_process.kernels.RBF(
-        length_scale=approx_length_scales)
-    gpr = sklearn.gaussian_process.GaussianProcessRegressor(kernel=kernel, alpha=np.square(y_sigma)).fit(X, y)
-    # gpr = sklearn.gaussian_process.GaussianProcessRegressor(alpha=y_sigma).fit(X, y)
-    # gpr = sklearn.gaussian_process.GaussianProcessRegressor(alpha=15.0).fit(X, y)
-
-    n = 50
-    h_valids = np.linspace(5.0, 80.0, n)
-    alphas = np.linspace(0.0, 1.0, n)
-    alphas, h_valids = np.meshgrid(alphas, h_valids)
-    xs = h_valids
-    ys = alphas
-    x_name = "desired_h_valid"
-    y_name = "weight_alpha"
     fig, axes = plt.subplots(subplot_kw={"projection": "3d"})
-    values = {  #
-        x_name: xs.flatten(),  #
-        y_name: ys.flatten(),  #
-    }
-    model_values, model_stds = gpr.predict(np.stack([values[name] for name in independent_variables], axis=1),
-                                           return_std=True)
-    model_values = model_values.reshape(h_valids.shape)
-    model_stds = model_stds.reshape(h_valids.shape)
-    axes.plot_surface(xs, ys, model_values)
-    axes.plot_surface(xs, ys, model_values + model_stds, alpha=0.3, color=(1.0, 0.0, 0.0))
-    axes.plot_surface(xs, ys, model_values - model_stds, alpha=0.3, color=(1.0, 0.0, 0.0))
-    axes.scatter(  #
-        accuracy_df[x_name].to_numpy(),  #
-        accuracy_df[y_name].to_numpy(),  #
-        accuracy_df["distance"].to_numpy(),  #
-    )
-    axes.set_zlim((0.0, np.quantile(accuracy_df["distance"].to_numpy(), 0.75)))
-    axes.set_xlabel(f"{x_name}")
-    axes.set_ylabel(f"{y_name}")
-    axes.set_zlabel("distance at final iteration")
+    for i, xray in enumerate(df["xray_path"].unique()):
+        accuracy_df = df[df["xray_path"] == xray]
+        accuracy_df = accuracy_df[accuracy_df["iteration"] == accuracy_df["iteration"].max()].drop(columns=["iteration"])
+        # Remove unnecessary dependent variable columns
+        # accuracy_df.drop(columns=["crop_width", "crop_height"], inplace=True)
+        # CT and X-ray paths to h_linear
+        if False:
+            accuracy_df["h_linear"] = [  #
+                ct_xray_to_h_linear(  #
+                    saved_transformations=saved_transformations,  #
+                    xray_path=xray_path,  #
+                    ct_path=ct_path,  #
+                    ct_series_uid=ct_series_uid,  #
+                )  #
+                for xray_path, ct_path, ct_series_uid in tqdm(  #
+                    zip(accuracy_df["xray_path"], accuracy_df["ct_path"], accuracy_df["ct_series_uid"]),  #
+                    desc="Calculating h_linear"  #
+                )  #
+            ]
+        accuracy_df.drop(columns=["xray_path", "ct_path", "ct_series_uid"], inplace=True)
+        # Drop columns for constant variables
+        accuracy_df = accuracy_df.drop(columns=[  #
+            col for col in  #
+            accuracy_df.columns[accuracy_df.nunique() == 1]  #
+        ])
+
+        print(accuracy_df.to_string())
+
+        if "sample_count_per_distance" in accuracy_df.columns:
+            accuracy_df.drop(columns=["sample_count_per_distance"], inplace=True)
+
+        # -----
+        # Gaussian Process Regression
+        # Get the dependent value vector
+        y: np.ndarray = accuracy_df["distance"].to_numpy()
+        y_sigma: np.ndarray = accuracy_df["distance_std"].to_numpy()
+        y_sigma = np.minimum(y_sigma, 3.0)
+        # Get the independent value vectors as a matrix
+        independent_variables: list[str] = ["desired_h_valid", "weight_alpha"]
+        approx_length_scales: list[float] = [30.0, 0.4]
+        X: np.ndarray = accuracy_df[independent_variables].to_numpy()
+        kernel = sklearn.gaussian_process.kernels.ConstantKernel() * sklearn.gaussian_process.kernels.RBF(
+            length_scale=approx_length_scales)
+        # gpr = sklearn.gaussian_process.GaussianProcessRegressor(kernel=kernel, alpha=np.square(y_sigma)).fit(X, y)
+        # gpr = sklearn.gaussian_process.GaussianProcessRegressor(alpha=y_sigma).fit(X, y)
+        # gpr = sklearn.gaussian_process.GaussianProcessRegressor(alpha=15.0).fit(X, y)
+
+        n = 50
+        h_valids = np.linspace(5.0, 80.0, n)
+        alphas = np.linspace(0.0, 1.0, n)
+        alphas, h_valids = np.meshgrid(alphas, h_valids)
+        # xs = h_valids
+        # ys = alphas
+        x_name = "desired_h_valid"
+        y_name = "weight_alpha"
+        # values = {  #
+        #     x_name: xs.flatten(),  #
+        #     y_name: ys.flatten(),  #
+        # }
+        # model_values, model_stds = gpr.predict(np.stack([values[name] for name in independent_variables], axis=1),
+        #                                        return_std=True)
+        # model_values = model_values.reshape(h_valids.shape)
+        # model_stds = model_stds.reshape(h_valids.shape)
+        # axes[i].plot_surface(xs, ys, model_values)
+        # axes[i].plot_surface(xs, ys, model_values + model_stds, alpha=0.3, color=(1.0, 0.0, 0.0))
+        # axes[i].plot_surface(xs, ys, model_values - model_stds, alpha=0.3, color=(1.0, 0.0, 0.0))
+        axes.scatter(  #
+            accuracy_df[x_name].to_numpy(),  #
+            accuracy_df[y_name].to_numpy(),  #
+            accuracy_df["distance"].to_numpy(),  #
+            label=pathlib.Path(xray).name,#
+        )
+        # axes.set_zlim((0.0, np.quantile(accuracy_df["distance"].to_numpy(), 0.75)))
+        axes.set_xlabel(f"{x_name}")
+        axes.set_ylabel(f"{y_name}")
+        axes.set_zlabel("distance at final iteration")
+    plt.legend()
     plt.show()
 
 

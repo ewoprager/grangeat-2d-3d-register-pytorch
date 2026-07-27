@@ -15,10 +15,10 @@ from jaxtyping import Float64
 
 from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.experiments.batched import objective_function_alpha_weighted, objective_function_binary_weighted
-from reg23_experiments.experiments.helpers import ParametrisedSimilarityMetric, string_to_sim_met
+from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.registration import RegConfig, run_reg
 from reg23_experiments.ops import geometry
-from reg23_experiments.ops.data_manager import args_from_dadg, data_manager
+from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters, random_parameters_at_distance
 from reg23_experiments.utils.console_logging import tqdm
@@ -36,6 +36,8 @@ class ExperimentConfig(traitlets.HasTraits):
     desired_h_valid: int = traitlets.Float(min=1.0, default_value=traitlets.Undefined)
     crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     weight_alpha: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
+    iterations_per_weight_update: int = traitlets.Int(min=0,
+                                                      default_value=traitlets.Undefined)  # 0 means every o.f. eval.
     sim_metric: str = traitlets.Enum(values=[  #
         "zncc",  #
         "local_zncc",  #
@@ -70,7 +72,9 @@ def run_experiment(  #
     data_manager().set("desired_h_valid", exp_config.desired_h_valid)
     # -----
     # Configuring according to desired similarity metric
-    p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
+    # p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
+    data_manager().set("sim_metric", exp_config.sim_metric)
+    data_manager().set("weight_alpha", exp_config.weight_alpha)
 
     # -----
     # Defining the objective function
@@ -107,6 +111,32 @@ def run_experiment(  #
                 parameters=parameters,  #
                 weight_alpha=exp_config.weight_alpha,  #
             )
+
+    def new_objective_function(parameters: Float64[torch.Tensor, "b 6"]) -> Float64[torch.Tensor, "b"]:
+        data_manager().set("parameters", parameters)
+        res: torch.Tensor | Error = data_manager().get("of_values")
+        if isinstance(res, Error):
+            raise Exception(f"Objective function evaluation failed: {res}")
+        return res
+
+    # -----
+    # Periodic behaviour
+    if exp_config.iterations_per_weight_update > 0:
+        data_manager().remove_updater("refresh_weights")
+
+        def do_weight_refresh() -> None:
+            weight_images = args_from_dadg()(batched.refresh_weights)()
+            data_manager().set("weight_images", weight_images)
+
+        periodic_behaviour = [  #
+            (exp_config.iterations_per_weight_update, do_weight_refresh),  #
+        ]
+    else:
+        periodic_behaviour = []
+        data_manager().add_updater(  #
+            "refresh_weights",  #
+            dadg_updater(names_returned=["weight_images"])(batched.refresh_weights)  #
+        )
 
     # -----
     # Running repeated registrations with configured parameters
@@ -157,13 +187,15 @@ def run_experiment(  #
         # Registration
         if not dry_run:
             res = run_reg(  #
-                obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
+                # obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
+                obj_fun=new_objective_function,  #
                 config=exp_config.reg_config,  #
                 starting_params=starting_params,  #
                 device=device,  #
                 tqdm_position=tqdm_position + 1,  #
                 batch_size=batch_size,  #
                 plot=plot,  #
+                periodic_behaviour=periodic_behaviour,  #
             )  # size = (iteration count, dimensionality + 1)
             distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
                                                               dim=1)  # size = (iteration count,)

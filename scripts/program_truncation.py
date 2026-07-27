@@ -19,6 +19,7 @@ from reg23_experiments.data.structs import Cropping, Error, LinearRange, Transfo
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
 from reg23_experiments.experiments.config import Cartesian, Constant, ExperimentConfig, Range
+from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
 from reg23_experiments.experiments.reg_experiment2 import exp_config_from_dict, run_experiment
@@ -300,6 +301,16 @@ def main(  #
                 Error):
             logger.error(f"Error adding updater: {err.description}")
             return
+    if True:
+        if isinstance(err := data_manager().add_updater("refresh_masks", batched.refresh_masks), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+        if isinstance(err := data_manager().add_updater("project_moving_images", batched.project_moving_images), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+        if isinstance(err := data_manager().add_updater("apply_sim_metric", batched.apply_sim_metric), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
 
     # ----------------------------------
     # - Hardcoded script configuration -
@@ -311,14 +322,17 @@ def main(  #
         "downsample_level": Constant(1),  #
         # "truncation_percent": Cartesian([75, 80, 85]),  #
         # "desired_h_valid": Constant(60.0),  #
-        "desired_h_valid": Range(LinearRange(5.0, 80.0)),  #
+        # "desired_h_valid": Range(LinearRange(5.0, 80.0)),  #
+        "desired_h_valid": Cartesian([5.0, 50.0]),  #
         #
         # "cropping": "nonzero_drr",  #
         # "crop_expand": 0.0,  #
         # "mask": "Every evaluation",  #
         #
         "crop_min_size": Constant(0.01),  #
-        "weight_alpha": Range(LinearRange(0.0, 1.0)),  #
+        # "weight_alpha": Range(LinearRange(0.0, 1.0)),  #
+        "weight_alpha": Cartesian([0.0, 0.3, 0.6]),  #
+        "iterations_per_weight_update": Cartesian([0, 2]),  #
         # "weight_alpha": Constant(0.0),  #
         "sim_metric": Constant("zncc"),  #
         "starting_distance": Constant(5.0),  #
@@ -326,15 +340,15 @@ def main(  #
         # PSO config
         "particle_count": Constant(2000),  #
         "particle_initialisation_spread": Constant(5.0),  #
-        "iteration_count": Constant(6),  #
+        "iteration_count": Constant(8),  #
     })
 
     # X-ray choice determines the gold standard orientation, which drives h_linear:
     hardcoded_xray_names: list[str] = [  #
         "level_000",  #
         # "level_090",  #
-        "up_000",  #
-        "up_090",  #
+        # "up_000",  #
+        # "up_090",  #
         # "down_000",  #
         # "down_090",  #
     ]
@@ -475,7 +489,7 @@ def main(  #
         experiments_hybrid(  #
             param_constructor=exp_config_from_dict,  #
             # experiment=run_experiment,  #
-            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000, plot="yes"),  #
+            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 500, plot="yes"),  #
             config_iterable=(c for c in [next(iter(config.iterable()))]),  # just the first iteration
             output_directory=None,  #
             device=device,  #
@@ -493,7 +507,7 @@ def main(  #
             experiments_hybrid(  #
                 param_constructor=exp_config_from_dict,  #
                 # experiment=run_experiment,  #
-                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
+                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 500),  #
                 config_iterable=config.iterable(space_sample_count=64),  #
                 output_directory=instance_output_dir,  #
                 device=device,  #
