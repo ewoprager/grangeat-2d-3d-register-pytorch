@@ -113,7 +113,9 @@ def run_experiment(  #
             )
 
     def new_objective_function(parameters: Float64[torch.Tensor, "b 6"]) -> Float64[torch.Tensor, "b"]:
-        data_manager().set("parameters", parameters)
+        err: Error | None = data_manager().set("parameters", parameters)
+        if isinstance(err, Error):
+            logger.warning(f"Error setting parameters in o.f.: {err.description}")
         res: torch.Tensor | Error = data_manager().get("of_values")
         if isinstance(res, Error):
             raise Exception(f"Objective function evaluation failed: {res}")
@@ -124,9 +126,12 @@ def run_experiment(  #
     if exp_config.iterations_per_weight_update > 0:
         data_manager().remove_updater("refresh_weights")
 
-        def do_weight_refresh() -> None:
-            weight_images = args_from_dadg()(batched.refresh_weights)()
-            data_manager().set("weight_images", weight_images)
+        def do_weight_refresh(best_parameters: Float64[torch.Tensor, "6"]) -> None:
+            value_dict = args_from_dadg(names_left=["parameters"])(batched.refresh_masks)(parameters=best_parameters.unsqueeze(0))
+            best_mask = value_dict["masks"]
+            value_dict = args_from_dadg(names_left=["masks"])(batched.refresh_weights)(masks=best_mask)
+            weight_image = value_dict["weight_images"]
+            data_manager().set("weight_images", weight_image)
 
         periodic_behaviour = [  #
             (exp_config.iterations_per_weight_update, do_weight_refresh),  #

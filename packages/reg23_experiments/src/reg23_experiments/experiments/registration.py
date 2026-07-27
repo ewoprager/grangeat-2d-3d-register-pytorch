@@ -32,7 +32,7 @@ def run_reg(  #
         plot: Literal["no", "yes", "mask"] = "no",  #
         tqdm_position: int = 0,  #
         batch_size: int = 1,  #
-        periodic_behaviour: list[tuple[int, Callable[[], None]]] = [],  #
+        periodic_behaviour: list[tuple[int, Callable[[torch.Tensor], None]]] = [],  #
 ) -> torch.Tensor:
     """
     Run a PSO from the given starting params and return a tensor containing the params and O.F. value at each iteration.
@@ -46,7 +46,7 @@ def run_reg(  #
     the optimisation, and stores the following data: | <- position of current best -> | current best |
     """
     for _, f in periodic_behaviour:
-        f()
+        f(starting_params)
 
     if plot != "no":
         ncols = 2
@@ -102,9 +102,10 @@ def run_reg(  #
     # -----
     # The optimisation loop
     for it in range(1, config.iteration_count):
+        best_so_far = ret[it - 1, 0:dimensionality]
         for t, f in periodic_behaviour:
             if it % t == 0:
-                f()
+                f(best_so_far)
 
         swarm.iterate()
         ret[it, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)

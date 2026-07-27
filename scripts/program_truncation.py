@@ -15,10 +15,10 @@ import SimpleITK as sitk
 import torch
 import yaml
 
-from reg23_experiments.data.structs import Cropping, Error, LinearRange, Transformation
+from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
-from reg23_experiments.experiments.config import Cartesian, Constant, ExperimentConfig, Range
+from reg23_experiments.experiments.config import Cartesian, Constant, ExperimentConfig
 from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
@@ -199,6 +199,7 @@ def main(  #
 
     # -----
     # Initialise the DADG
+    t = Transformation.random_uniform(device=device)
     if isinstance(err := data_manager().set_multiple(  #
             device=device,  #
             untruncated_ct_volume=untruncated_ct_volume,  #
@@ -215,7 +216,8 @@ def main(  #
                 rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
                 translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
             target_ap_distance=5.0,  #
-            current_transformation=Transformation.random_uniform(device=device),  #
+            current_transformation=t,  #
+            parameters=mapping_transformation_to_parameters(t).unsqueeze(0),  #
             mask_transformation=None,  #
             saved_transformations=saved_transformations,  #
             saved_xray_reg_configs=saved_xray_reg_configs,  #
@@ -302,7 +304,9 @@ def main(  #
             logger.error(f"Error adding updater: {err.description}")
             return
     if True:
-        if isinstance(err := data_manager().add_updater("refresh_masks", batched.refresh_masks), Error):
+        if isinstance(err := data_manager().add_updater("refresh_masks",
+                                                        dadg_updater(names_returned=["masks", "fixed_images"])(
+                                                                batched.refresh_masks)), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
         if isinstance(err := data_manager().add_updater("project_moving_images", batched.project_moving_images), Error):
@@ -332,7 +336,7 @@ def main(  #
         "crop_min_size": Constant(0.01),  #
         # "weight_alpha": Range(LinearRange(0.0, 1.0)),  #
         "weight_alpha": Cartesian([0.0, 0.3, 0.6]),  #
-        "iterations_per_weight_update": Cartesian([0, 2]),  #
+        "iterations_per_weight_update": Constant(2),  #
         # "weight_alpha": Constant(0.0),  #
         "sim_metric": Constant("zncc"),  #
         "starting_distance": Constant(5.0),  #

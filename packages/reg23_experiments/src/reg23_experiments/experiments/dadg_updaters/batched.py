@@ -12,7 +12,7 @@ from reg23_experiments.ops.optimisation import mapping_parameters_to_transformat
 __all__ = ["refresh_masks", "refresh_weights", "project_moving_images", "apply_sim_metric"]
 
 
-@dadg_updater(names_returned=["masks", "fixed_images"])
+# @dadg_updater(names_returned=["masks", "fixed_images"])
 def refresh_masks(  #
         *,  #
         parameters: Float64[torch.Tensor, "b 6"],  #
@@ -101,8 +101,8 @@ def apply_sim_metric(  #
         *,  #
         sim_metric: str,  #
         moving_images: Float32[torch.Tensor, "b n m"],  #
-        fixed_images: Float32[torch.Tensor, "b n m"],  #
-        weight_images: Float32[torch.Tensor, "b n m"],  #
+        fixed_images: Float32[torch.Tensor, "#b n m"],  #
+        weight_images: Float32[torch.Tensor, "#b n m"],  #
 ) -> dict[str, Any]:
     p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(sim_metric)
     return {  #

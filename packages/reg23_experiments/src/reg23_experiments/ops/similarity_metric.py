@@ -50,20 +50,19 @@ def multiscale_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int, llam
 def weighted_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *,
                  dim: int | torch.Size | Tuple | None = None) -> torch.Tensor:
     size = xs.size()
+    ret_size = size[:-2]
     dtype = xs.dtype
     device = xs.device
-    assert ys.size() == size
     assert ys.dtype == dtype
     assert ys.device == device
-    assert weights.size() == size
     assert weights.dtype == dtype
     assert weights.device == device
     if dim is None:
         dim = torch.Size(range(len(size)))  #
     # filtering out ZNCC calculations where fewer than 2 value pairs are being used
-    exclude_mask = weights.count_nonzero(dim=dim) < 2
+    exclude_mask = (weights.count_nonzero(dim=dim) < 2).expand(ret_size)
     if (exclude_mask.numel() - exclude_mask.count_nonzero()) < 1:
-        return torch.zeros_like(xs.sum(dim=dim))
+        return torch.zeros(ret_size, dtype=dtype, device=device)
     sum_w = weights.sum(dim=dim)
     sum_wx = (weights * xs).sum(dim=dim)
     sum_wy = (weights * ys).sum(dim=dim)
