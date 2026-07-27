@@ -326,8 +326,10 @@ def main(  #
     assert variables_path.is_file()
     with open(variables_path, 'r') as file:
         variables_config = yaml.safe_load(file)
-    assert "variables" in variables_config
-    variables: list[str] = list(variables_config["variables"].keys())
+    # assert "variables" in variables_config
+    # variables: list[str] = list(variables_config["variables"].keys())
+    assert "cartesian" in variables_config
+    variables: list[str] = list(variables_config["cartesian"].keys())
 
     variable_hierarchy: list[str] = ["crop_expand", "mask", "cropping", "truncation_percent", "desired_h_valid",
                                      "xray_path"]  # most to least important

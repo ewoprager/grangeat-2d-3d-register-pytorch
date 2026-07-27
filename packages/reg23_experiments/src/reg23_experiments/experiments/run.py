@@ -47,11 +47,11 @@ def experiments_hybrid(  #
             raise Exception(f"Failed to construct parameters at iteration {name}")
         # -----
         # Run the experiment
-        # try:
-        res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
-        # except Exception as e:
-        #     logger.error(f"Error running experiment at iteration {name}: {e}\nParameters:\n{pprint.pformat(config)}")
-        #     continue
+        try:
+            res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
+        except Exception as e:
+            logger.error(f"Error running experiment at iteration {name}: {e}\nParameters:\n{pprint.pformat(config)}")
+            continue
         if dry_run:
             continue
         if res is None:
