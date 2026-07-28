@@ -24,6 +24,9 @@ cpu = [
 cuda = [
     "reg23-experiments[cuda]",
 ]
+cuda13 = [
+    "reg23-experiments[cuda13]",
+]
 dev = [
     "reg23-experiments[dev]"
 ]
@@ -38,6 +41,7 @@ conflicts = [
     [
         { extra = "cpu" },
         { extra = "cuda" },
+        { extra = "cuda13" },
     ],
 ]
 

@@ -42,6 +42,9 @@ cpu = [
 cuda = [
     "reg23-core[cuda]",
 ]
+cuda13 = [
+    "reg23-core[cuda13]",
+]
 dev = [
     "reg23-core[dev]",
     "pytest>=8.3.4",
@@ -64,6 +67,7 @@ conflicts = [
     [
         { extra = "cpu" },
         { extra = "cuda" },
+        { extra = "cuda13" },
     ],
 ]
 

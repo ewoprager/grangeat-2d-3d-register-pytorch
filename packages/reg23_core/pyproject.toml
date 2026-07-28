@@ -24,6 +24,10 @@ cuda = [
     "torch==2.7.1+cu126; platform_machine == 'x86_64'",
     "torchvision==0.22.1+cu126; platform_machine == 'x86_64'",
 ]
+cuda13 = [
+    "torch==2.10.0+cu130; platform_machine == 'x86_64'",
+    "torchvision==0.25.0+cu130; platform_machine == 'x86_64'",
+]
 dev = [
     "isort>=8.0.1",
     "matplotlib>=3.10.0",
@@ -33,7 +37,7 @@ dev = [
 [build-system]
 requires = [
     "numpy==2.2.1",
-    "torch==2.7.1",
+    "wheel",
     "setuptools==75.8.0",
 ]
 build-backend = "setuptools.build_meta"
@@ -52,6 +56,7 @@ conflicts = [
     [
         { extra = "cpu" },
         { extra = "cuda" },
+        { extra = "cuda13" },
     ],
 ]
 
@@ -61,10 +66,12 @@ conflicts = [
 torch = [
     { index = "torch-cpu", extra = "cpu" },
     { index = "torch-cuda", extra = "cuda" },
+    { index = "torch-cuda13", extra = "cuda13" },
 ]
 torchvision = [
     { index = "torch-cpu", extra = "cpu" },
     { index = "torch-cuda", extra = "cuda" },
+    { index = "torch-cuda13", extra = "cuda13" },
 ]
 
 # this defines an index (a type of source from which a package can be installed) called `torch-cpu` at a particular url
@@ -76,6 +83,10 @@ url = "https://download.pytorch.org/whl/cpu"
 [[tool.uv.index]]
 name = "torch-cuda"
 url = "https://download.pytorch.org/whl/cu126"
+
+[[tool.uv.index]]
+name = "torch-cuda13"
+url = "https://download.pytorch.org/whl/cu130"
 
 [tool.isort]
 profile = "black"

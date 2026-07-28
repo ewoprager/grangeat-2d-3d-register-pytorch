@@ -493,7 +493,7 @@ def main(  #
         experiments_hybrid(  #
             param_constructor=exp_config_from_dict,  #
             # experiment=run_experiment,  #
-            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 500, plot="yes"),  #
+            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000, plot="yes"),  #
             config_iterable=(c for c in [next(iter(config.iterable()))]),  # just the first iteration
             output_directory=None,  #
             device=device,  #
@@ -511,7 +511,7 @@ def main(  #
             experiments_hybrid(  #
                 param_constructor=exp_config_from_dict,  #
                 # experiment=run_experiment,  #
-                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 500),  #
+                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 2000),  #
                 config_iterable=config.iterable(space_sample_count=64),  #
                 output_directory=instance_output_dir,  #
                 device=device,  #
