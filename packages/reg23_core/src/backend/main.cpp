@@ -66,8 +66,8 @@ TORCH_LIBRARY(reg23_core, m) {
 	   " outOff, Tensor outSpacing) -> Tensor");
 	m.def("project_drr_cuboid_masks_batched(Tensor vSize, Tensor spacing, Tensor his, float sourceDist, int outW, int "
 	"outH, Tensor outOff, Tensor outSpacing) -> Tensor");
-	m.def("objective_function(Tensor volume, Tensor fixed, Tensor vSpacing, Tensor his, float sourceDist, int outW, int"
-	   " outH, Tensor oo, Tensor dSpacing, float alpha) -> Tensor");
+	m.def("objective_function(Tensor volume, Tensor fixed, Tensor vSpacing, Tensor his, float sourceDist, Tensor oo, "
+	   "Tensor dSpacing, float alpha) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(reg23_core, CPU, m) {

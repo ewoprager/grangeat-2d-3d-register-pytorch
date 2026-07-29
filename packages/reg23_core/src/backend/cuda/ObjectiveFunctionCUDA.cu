@@ -85,7 +85,7 @@ int blockSizeToDynamicSMemSize_ObjectiveFunction_CUDA(int blockSize) {
 
 __host__ at::Tensor ObjectiveFunction_CUDA(const at::Tensor &volume, const at::Tensor &fixedImage,
 										   const at::Tensor &voxelSpacing, const at::Tensor &invHMatrices,
-										   double sourceDistance, int64_t outputWidth, int64_t outputHeight,
+										   double sourceDistance,
 										   const at::Tensor &outputOffset, const at::Tensor &detectorSpacing,
 										   double weightAlpha) {
 	// volume should be a 3D tensor of floats on the chosen device
@@ -112,6 +112,9 @@ __host__ at::Tensor ObjectiveFunction_CUDA(const at::Tensor &volume, const at::T
 
 	const Texture3DCUDA inputTexture =
 		Texture3DCUDA::FromTensor(volume, Texture3DCUDA::VectorType::FromTensor(voxelSpacing));
+
+	const int64_t outputWidth = fixedImage.sizes()[1];
+	const int64_t outputHeight = fixedImage.sizes()[0];
 
 	const at::Tensor invHMatricesContiguous = invHMatrices.to(at::kCUDA, at::kDouble).contiguous();
 	const at::Tensor fixedImageContiguous = fixedImage.to(at::kCUDA, at::kFloat).contiguous();

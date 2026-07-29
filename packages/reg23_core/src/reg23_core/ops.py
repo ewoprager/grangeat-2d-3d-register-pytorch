@@ -136,10 +136,9 @@ if torch.cuda.is_available():
 
 
     def objective_function(volume: torch.Tensor, fixed_image: torch.Tensor, voxel_spacing: torch.Tensor,
-                           inverse_h_matrices: torch.Tensor, source_distance: float, output_width: int,
-                           output_height: int, output_offset: torch.Tensor, detector_spacing: torch.Tensor,
-                           weight_alpha: float) -> torch.Tensor:
+                           inverse_h_matrices: torch.Tensor, source_distance: float, output_offset: torch.Tensor,
+                           detector_spacing: torch.Tensor, weight_alpha: float) -> torch.Tensor:
         return torch.ops.reg23_core.objective_function.default(  #
             volume, fixed_image, voxel_spacing.to(dtype=torch.float64), inverse_h_matrices.to(dtype=torch.float64),
-            source_distance, output_width, output_height, output_offset.to(dtype=torch.float64),
-            detector_spacing.to(dtype=torch.float64), weight_alpha)
+            source_distance, output_offset.to(dtype=torch.float64), detector_spacing.to(dtype=torch.float64),
+            weight_alpha)

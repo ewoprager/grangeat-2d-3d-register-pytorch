@@ -14,7 +14,8 @@ import traitlets
 from jaxtyping import Float64
 
 from reg23_experiments.data.structs import Cropping, Error, Transformation
-from reg23_experiments.experiments.batched import objective_function_alpha_weighted, objective_function_binary_weighted
+from reg23_experiments.experiments.batched import (objective_function_alpha_weighted,
+                                                   objective_function_binary_weighted, objective_function_together)
 from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.registration import RegConfig, run_reg
 from reg23_experiments.ops import geometry
@@ -121,13 +122,21 @@ def run_experiment(  #
             raise Exception(f"Objective function evaluation failed: {res}")
         return res
 
+    def new_new_objective_function(parameters: Float64[torch.Tensor, "b 6"]) -> Float64[torch.Tensor, "b"]:
+        return args_from_dadg(  #
+            names_left=["parameters"]  #
+        )(objective_function_together)(  #
+            parameters=parameters,  #
+        )
+
     # -----
     # Periodic behaviour
     if exp_config.iterations_per_weight_update > 0:
         data_manager().remove_updater("refresh_weights")
 
         def do_weight_refresh(best_parameters: Float64[torch.Tensor, "6"]) -> None:
-            value_dict = args_from_dadg(names_left=["parameters"])(batched.refresh_masks)(parameters=best_parameters.unsqueeze(0))
+            value_dict = args_from_dadg(names_left=["parameters"])(batched.refresh_masks)(
+                parameters=best_parameters.unsqueeze(0))
             best_mask = value_dict["masks"]
             value_dict = args_from_dadg(names_left=["masks"])(batched.refresh_weights)(masks=best_mask)
             weight_image = value_dict["weight_images"]
@@ -193,7 +202,8 @@ def run_experiment(  #
         if not dry_run:
             res = run_reg(  #
                 # obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
-                obj_fun=new_objective_function,  #
+                # obj_fun=new_objective_function,  #
+                obj_fun=new_new_objective_function,  #
                 config=exp_config.reg_config,  #
                 starting_params=starting_params,  #
                 device=device,  #

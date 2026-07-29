@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Callable
 
 import torch
 from jaxtyping import Float32, Float64
@@ -7,7 +7,36 @@ import reg23_core
 from reg23_experiments.data.structs import Transformation
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 
-__all__ = ["objective_function_binary_weighted", "objective_function_alpha_weighted"]
+__all__ = ["objective_function_together", "objective_function_binary_weighted", "objective_function_alpha_weighted"]
+
+
+def objective_function_together(  #
+        *,  #
+        parameters: Float64[torch.Tensor, "b 6"],  #
+        ct_volumes: list[torch.Tensor],  #
+        ct_spacing: Float64[torch.Tensor, "3"],  #
+        cropped_target: Float32[torch.Tensor, "n m"],  #
+        source_distance: float,  #
+        fixed_image_spacing: Float64[torch.Tensor, "2"],  #
+        downsample_level: int,  #
+        translation_offset: Float64[torch.Tensor, "2"],  #
+        fixed_image_offset: Float64[torch.Tensor, "2"],  #
+        weight_alpha: float,  #
+) -> torch.Tensor:
+    ts: list[Transformation] = [mapping_parameters_to_transformation(p) for p in parameters]
+    h_invs: torch.Tensor = torch.stack([  #
+        t.with_translation_offset(translation_offset).inverse().get_h(device=torch.device("cuda"))  #
+        for t in ts], dim=0)
+    return -reg23_core.objective_function(  #
+        ct_volumes[downsample_level],  #
+        cropped_target,  #
+        ct_spacing * 2.0 ** downsample_level,  #
+        h_invs,  #
+        source_distance,  #
+        fixed_image_offset,  #
+        fixed_image_spacing,  #
+        weight_alpha,  #
+    )
 
 
 def objective_function_binary_weighted(  #

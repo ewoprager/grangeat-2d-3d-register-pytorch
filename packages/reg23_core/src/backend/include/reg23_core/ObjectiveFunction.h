@@ -117,8 +117,7 @@ __device__ float DRRCuboidMaskRay(const Vec<double, 2> &detectorPosition, double
 
 __host__ at::Tensor ObjectiveFunction_CUDA(const at::Tensor &volume, const at::Tensor &fixedImage,
 										   const at::Tensor &voxelSpacing, const at::Tensor &invHMatrices,
-										   double sourceDistance, int64_t outputWidth, int64_t outputHeight,
-										   const at::Tensor &outputOffset, const at::Tensor &detectorSpacing,
-										   double weightAlpha);
+										   double sourceDistance, const at::Tensor &outputOffset,
+										   const at::Tensor &detectorSpacing, double weightAlpha);
 
 } // namespace reg23

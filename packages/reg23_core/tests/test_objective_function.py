@@ -48,8 +48,7 @@ def test_objective_function():
     detector_spacing = torch.tensor([0.2, 0.25])
     weight_alpha = 0.0
     res_of = objective_function(input_.cuda(), fixed_image.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance,
-                                output_size[-1], output_size[-2], torch.zeros(2, dtype=torch.float64),
-                                detector_spacing.cuda(), weight_alpha).cpu()
+                                torch.zeros(2, dtype=torch.float64), detector_spacing.cuda(), weight_alpha).cpu()
 
     drrs = project_drrs_batched(input_.cuda(), voxel_spacing.cuda(), inv_hs.cuda(), source_distance, output_size[-1],
                                 output_size[-2], torch.zeros(2, dtype=torch.float64), detector_spacing.cuda())
