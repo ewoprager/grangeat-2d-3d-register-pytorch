@@ -9,7 +9,8 @@ __all__ = ["radon2d", "radon2d_v2", "d_radon2d_dr", "radon3d", "radon3d_v2", "d_
 if torch.cuda.is_available():
     from . import structs
 
-    __all__ += ["resample_sinogram3d_cuda_texture", "project_drrs_batched", "project_drr_cuboid_masks_batched"]
+    __all__ += ["resample_sinogram3d_cuda_texture", "project_drrs_batched", "project_drr_cuboid_masks_batched",
+                "objective_function"]
 
 
 def radon2d(image: torch.Tensor, image_spacing: torch.Tensor, phi_values: torch.Tensor, r_values: torch.Tensor,
@@ -132,3 +133,13 @@ if torch.cuda.is_available():
         return torch.ops.reg23_core.project_drr_cuboid_masks_batched.default(  #
             volume_size, voxel_spacing.to(dtype=torch.float64), inverse_h_matrices.to(dtype=torch.float64),
             source_distance, output_width, output_height, output_offset, detector_spacing.to(dtype=torch.float64))
+
+
+    def objective_function(volume: torch.Tensor, fixed_image: torch.Tensor, voxel_spacing: torch.Tensor,
+                           inverse_h_matrices: torch.Tensor, source_distance: float, output_width: int,
+                           output_height: int, output_offset: torch.Tensor, detector_spacing: torch.Tensor,
+                           weight_alpha: float) -> torch.Tensor:
+        return torch.ops.reg23_core.objective_function.default(  #
+            volume, fixed_image, voxel_spacing.to(dtype=torch.float64), inverse_h_matrices.to(dtype=torch.float64),
+            source_distance, output_width, output_height, output_offset.to(dtype=torch.float64),
+            detector_spacing.to(dtype=torch.float64), weight_alpha)

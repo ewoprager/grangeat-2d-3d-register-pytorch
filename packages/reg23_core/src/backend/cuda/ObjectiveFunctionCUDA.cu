@@ -1,6 +1,6 @@
 #include <torch/extension.h>
 
-#include <reg23_core/ObjectiveFunction/ProjectDRR.h>
+#include <reg23_core/ObjectiveFunction.h>
 
 namespace reg23 {
 
@@ -48,7 +48,7 @@ __global__ void Kernel_ObjectiveFunction_CUDA(Texture3DCUDA texture, const float
 	const float maskValue = DRRCuboidMaskRay(detectorPosition, sourceDistance, maskGeometry, homographyMatrixInverse);
 	const float maskedFixedImageValue = maskValue * fixedImage[pixelIndex];
 	const float weightValue =
-		weightAlpha > 1e-3 ? cuda::std::pow(3.f * maskValue * maskValue - 2.f * maskValue * maskValue * maskValue,
+		weightAlpha > 1e-3 ? pow(3.f * maskValue * maskValue - 2.f * maskValue * maskValue * maskValue,
 											1.f / (weightAlpha * weightAlpha))
 						   : (maskValue > 1.0 - 1.0e-3 ? 1.0 : 0.0);
 
@@ -64,8 +64,8 @@ __global__ void Kernel_ObjectiveFunction_CUDA(Texture3DCUDA texture, const float
 	for (long cutoff = blockDim.x / 2; cutoff > 0; cutoff /= 2) {
 		if (threadIdx.x < cutoff) {
 			const long sumWith = sharedBufferIndex + cutoff * sharedValueCount;
-			for (long i = 0; i < sharedValueCount; ++i)
-				buffer[sharedBufferIndex + i] += buffer[sumWith + i];
+			for (long k = 0; k < sharedValueCount; ++k)
+				buffer[sharedBufferIndex + k] += buffer[sumWith + k];
 		}
 
 		__syncthreads();
@@ -84,15 +84,18 @@ int blockSizeToDynamicSMemSize_ObjectiveFunction_CUDA(int blockSize) {
 }
 
 __host__ at::Tensor ObjectiveFunction_CUDA(const at::Tensor &volume, const at::Tensor &fixedImage,
-										   const at::Tenosr &voxelSpacing, const at::Tensor &invHMatrices,
+										   const at::Tensor &voxelSpacing, const at::Tensor &invHMatrices,
 										   double sourceDistance, int64_t outputWidth, int64_t outputHeight,
 										   const at::Tensor &outputOffset, const at::Tensor &detectorSpacing,
 										   double weightAlpha) {
-
 	// volume should be a 3D tensor of floats on the chosen device
 	TORCH_CHECK(volume.sizes().size() == 3);
 	TORCH_CHECK(volume.dtype() == at::kFloat);
 	TORCH_INTERNAL_ASSERT(volume.device().type() == at::DeviceType::CUDA);
+	// fixedImage should be a 2D tensor of floats on the chosen device
+	TORCH_CHECK(fixedImage.sizes().size() == 2);
+	TORCH_CHECK(fixedImage.dtype() == at::kFloat);
+	TORCH_INTERNAL_ASSERT(fixedImage.device().type() == at::DeviceType::CUDA);
 	// voxelSpacing should be a 1D tensor of 3 doubles
 	TORCH_CHECK(voxelSpacing.sizes() == at::IntArrayRef{3});
 	TORCH_CHECK(voxelSpacing.dtype() == at::kDouble);
@@ -130,13 +133,13 @@ __host__ at::Tensor ObjectiveFunction_CUDA(const at::Tensor &volume, const at::T
 	const int gridSize = imageCount * blocksPerImage;
 	// stores the sums for each kernel block of w, wx, wy, wx^2, wy^2 and wxy, for each image
 	at::Tensor blockSums = torch::zeros(at::IntArrayRef({imageCount, blocksPerImage, sharedValueCount}),
-										torch::TensorOptions{}.dtype(torch::kDouble).device(a.device()));
+										torch::TensorOptions{}.dtype(torch::kDouble).device(at::kCUDA));
 	double *blockSumsPtr = blockSums.data_ptr<double>();
 
 	Kernel_ObjectiveFunction_CUDA<<<gridSize, blockSize, bufferSize>>>(
 		inputTexture, fixedImageContiguous.data_ptr<float>(), drrParams, maskGeometry, imageCount,
 		invHMatricesContiguous.data_ptr<double>(), Vec<double, 2>::FromTensor(detectorSpacing),
-		Vec<int64_t, 2>{outputWidth, outputHeight}, sourceDistance, weightAlpha,
+		Vec<int64_t, 2>{outputWidth, outputHeight}, blocksPerImage, sourceDistance, weightAlpha,
 		Vec<double, 2>::FromTensor(outputOffset), blockSumsPtr);
 
 	const at::Tensor sums = blockSums.sum({1});						  // size = (imageCount, sharedValueCount)

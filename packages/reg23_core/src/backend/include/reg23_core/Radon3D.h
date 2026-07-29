@@ -201,7 +201,7 @@ template <typename texture_t> struct Radon3D {
 		const FloatType cp = cos(phi);
 		const FloatType st = sin(theta);
 		const FloatType ct = cos(theta);
-		return textureIn.MappingWorldToTexCoord().gradient * sign * VectorType{ct * cp, ct * sp, st};
+		return sign * textureIn.MappingWorldToTexCoord().gradient * VectorType{ct * cp, ct * sp, st};
 	}
 
 	/**

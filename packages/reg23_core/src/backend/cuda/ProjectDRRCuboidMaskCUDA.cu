@@ -73,7 +73,7 @@ __global__ void Kernel_ProjectDRRCuboidMaskBatched_CUDA(double sourceDistance, C
 	const uint64_t i = pixelIndex % outputSize.X();
 	const uint64_t j = pixelIndex / outputSize.X();
 	const Vec<double, 2> detectorPosition = detectorSpacing * (Vec<uint64_t, 2>{i, j}.StaticCast<double>() -
-															  0.5f * (outputSize - int64_t{1}).StaticCast<double>()) +
+															  0.5 * (outputSize - int64_t{1}).StaticCast<double>()) +
 															  	outputOffset;
 	Vec<Vec<double, 4>, 4> homographyMatrixInverse{};
 	for (int k = 0; k < 16; ++k)

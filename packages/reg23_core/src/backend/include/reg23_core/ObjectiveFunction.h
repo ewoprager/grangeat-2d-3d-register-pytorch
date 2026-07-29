@@ -1,14 +1,14 @@
 #pragma once
 
-#include "reg23_core/CUDATexture.h"
-
 #include <reg23_core/Global.h>
-#include <reg23_core/Texture3DCUDA.h>
 #include <reg23_core/Vec.h>
+#include <reg23_core/Texture3DCUDA.h>
 
 #include <reg23_core/ProjectDRRCuboidMaskCPU.h>
 
 namespace reg23 {
+
+#ifdef __CUDACC__
 
 using Cuboid = ProjectDRRCuboidMask::Cuboid;
 
@@ -16,7 +16,7 @@ __device__ inline Vec<double, 2> EvaluateDetectorPosition(uint64_t i, uint64_t j
 														  const Vec<int64_t, 2> &outputSize,
 														  const Vec<double, 2> &outputOffset) {
 	return detectorSpacing *
-			   (Vec<uint64_t, 2>{i, j}.StaticCast<double>() - 0.5f * (outputSize - int64_t{1}).StaticCast<double>()) +
+			   (Vec<uint64_t, 2>{i, j}.StaticCast<double>() - 0.5 * (outputSize - int64_t{1}).StaticCast<double>()) +
 		   outputOffset;
 }
 
@@ -48,7 +48,7 @@ struct MaskGeometry {
 
 	__host__ static MaskGeometry Evaluate(const Texture3DCUDA &texture) {
 		const Vec<float, 6> planeSigns = Vec<int, 6>{1, 1, 1, -1, -1, -1}.StaticCast<float>();
-		const Vec<float, 3> cuboidHalfSize = 0.5f * texture.Spacing() * texture.Size().StaticCast<float>();
+		const Vec<float, 3> cuboidHalfSize = 0.5f * texture.Spacing().StaticCast<float>() * texture.Size().StaticCast<float>();
 		const Cuboid cuboidIn = {VecOuter(cuboidHalfSize, planeSigns),
 								 VecCat(Vec<Vec<float, 3>, 3>::Identity(), -1.f * Vec<Vec<float, 3>, 3>::Identity())};
 		const Vec<float, 3> aboveBelowHalfSize = Vec<float, 3>{1.f, 1.f, 4.f} * cuboidHalfSize;
@@ -68,10 +68,10 @@ __device__ float DRRRay(const Texture3DCUDA &volume, const DRRParams &params,
 						double sourceDistance) {
 	Vec<double, 3> direction = VecCat(detectorPosition, -sourceDistance);
 	direction /= direction.Length();
-	Vec<double, 3> delta = direction * params.stepSize;
+	Vec<double, 3> delta = params.stepSize * direction;
 	delta = MatMul(homographyMatrixInverse, VecCat(delta, 0.0)).XYZ();
 	const Texture3DCUDA::VectorType sourcePosition = {0.0, 0.0, sourceDistance};
-	const float lambdaStart =
+	const double lambdaStart =
 		MatMul(homographyMatrixInverse, VecCat(sourcePosition, 1.0)).XYZ().Length() - 0.5 * params.volumeDiagLength;
 	Vec<double, 3> start = Vec<double, 3>{0.0, 0.0, sourceDistance} + lambdaStart * direction;
 	start = MatMul(homographyMatrixInverse, VecCat(start, 1.0)).XYZ();
@@ -112,5 +112,13 @@ __device__ float DRRCuboidMaskRay(const Vec<double, 2> &detectorPosition, double
 		return 1.f;
 	}
 }
+
+#endif
+
+__host__ at::Tensor ObjectiveFunction_CUDA(const at::Tensor &volume, const at::Tensor &fixedImage,
+										   const at::Tensor &voxelSpacing, const at::Tensor &invHMatrices,
+										   double sourceDistance, int64_t outputWidth, int64_t outputHeight,
+										   const at::Tensor &outputOffset, const at::Tensor &detectorSpacing,
+										   double weightAlpha);
 
 } // namespace reg23
