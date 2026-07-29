@@ -327,7 +327,7 @@ def main(  #
         # "truncation_percent": Cartesian([75, 80, 85]),  #
         # "desired_h_valid": Constant(60.0),  #
         # "desired_h_valid": Range(LinearRange(5.0, 80.0)),  #
-        "desired_h_valid": Cartesian([5.0, 50.0]),  #
+        "desired_h_valid": Cartesian([2.5, 3.5, 6.3]),  #
         #
         # "cropping": "nonzero_drr",  #
         # "crop_expand": 0.0,  #
@@ -335,8 +335,8 @@ def main(  #
         #
         "crop_min_size": Constant(0.01),  #
         # "weight_alpha": Range(LinearRange(0.0, 1.0)),  #
-        "weight_alpha": Cartesian([0.0, 0.3, 0.6]),  #
-        "iterations_per_weight_update": Constant(2),  #
+        "weight_alpha": Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+        "iterations_per_weight_update": Cartesian([0, 1, 2, 4]),  #
         # "weight_alpha": Constant(0.0),  #
         "sim_metric": Constant("zncc"),  #
         "starting_distance": Constant(5.0),  #
@@ -344,7 +344,7 @@ def main(  #
         # PSO config
         "particle_count": Constant(2000),  #
         "particle_initialisation_spread": Constant(5.0),  #
-        "iteration_count": Constant(8),  #
+        "iteration_count": Constant(6),  #
     })
 
     # X-ray choice determines the gold standard orientation, which drives h_linear:
@@ -352,7 +352,7 @@ def main(  #
         "level_000",  #
         # "level_090",  #
         # "up_000",  #
-        # "up_090",  #
+        "up_090",  #
         # "down_000",  #
         # "down_090",  #
     ]

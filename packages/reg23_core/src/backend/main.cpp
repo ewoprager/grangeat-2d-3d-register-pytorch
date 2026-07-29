@@ -13,6 +13,7 @@
 
 #ifdef USE_CUDA
 #include <reg23_core/CUDATexture.h>
+#include <reg23_core/ObjectiveFunction.h>
 #endif
 
 namespace reg23 {
@@ -64,7 +65,9 @@ TORCH_LIBRARY(reg23_core, m) {
 	m.def("project_drrs_batched(Tensor volume, Tensor spacing, Tensor his, float sourceDist, int outW, int outH, Tensor"
 	   " outOff, Tensor outSpacing) -> Tensor");
 	m.def("project_drr_cuboid_masks_batched(Tensor vSize, Tensor spacing, Tensor his, float sourceDist, int outW, int "
-	   "outH, Tensor outOff, Tensor outSpacing) -> Tensor");
+	"outH, Tensor outOff, Tensor outSpacing) -> Tensor");
+	m.def("objective_function(Tensor volume, Tensor fixed, Tensor vSpacing, Tensor his, float sourceDist, Tensor oo, "
+	   "Tensor dSpacing, float alpha) -> Tensor");
 }
 
 TORCH_LIBRARY_IMPL(reg23_core, CPU, m) {
@@ -101,6 +104,7 @@ TORCH_LIBRARY_IMPL(reg23_core, CUDA, m) {
 	m.impl("project_drr_cuboid_mask", &ProjectDRRCuboidMask_CUDA);
 	m.impl("project_drrs_batched", &ProjectDRRsBatched_CUDA);
 	m.impl("project_drr_cuboid_masks_batched", &ProjectDRRCuboidMaskBatched_CUDA);
+	m.impl("objective_function", &ObjectiveFunction_CUDA);
 }
 #endif
 

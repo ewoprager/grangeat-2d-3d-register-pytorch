@@ -176,7 +176,7 @@ template <typename texture_t> struct Radon2D {
 		const FloatType sign = static_cast<FloatType>(r > 0.) - static_cast<FloatType>(r < 0.);
 		const FloatType s = sin(phi);
 		const FloatType c = cos(phi);
-		return textureIn.MappingWorldToTexCoord().gradient * sign * VectorType{c, s};
+		return sign * textureIn.MappingWorldToTexCoord().gradient * VectorType{c, s};
 	}
 
 	/**

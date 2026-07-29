@@ -556,10 +556,21 @@ __host__ __device__ constexpr Vec<T, N> operator*(const Vec<T, N> &lhs, const Ve
 
 /**
  * @ingroup data_structures
- * @brief reg23::Vec element-wise multiplication
+ * @brief reg23::Vec element-wise multiplication with a scalar
  */
-template <typename T, std::size_t N, typename scalar_t>
-__host__ __device__ constexpr Vec<T, N> operator*(const Vec<T, N> &lhs, const scalar_t &rhs) {
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator*(const T &lhs, const Vec<T, N> &rhs) {
+	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
+		return {{(lhs * rhs[indices])...}};
+	}(std::make_index_sequence<N>{});
+}
+
+/**
+ * @ingroup data_structures
+ * @brief reg23::Vec element-wise multiplication with a scalar
+ */
+template <typename T, std::size_t N>
+__host__ __device__ constexpr Vec<T, N> operator*(const Vec<T, N> &lhs, const T &rhs) {
 	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
 		return {{(lhs[indices] * rhs)...}};
 	}(std::make_index_sequence<N>{});
@@ -567,13 +578,24 @@ __host__ __device__ constexpr Vec<T, N> operator*(const Vec<T, N> &lhs, const sc
 
 /**
  * @ingroup data_structures
- * @brief reg23::Vec element-wise multiplication
+ * @brief reg23::Vec element-wise multiplication of a matrix with a scalar
  */
-template <typename T, std::size_t N, typename scalar_t>
-__host__ __device__ constexpr Vec<T, N> operator*(const scalar_t &lhs, const Vec<T, N> &rhs) {
-	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<T, N> {
+template <typename T, std::size_t R, std::size_t C>
+__host__ __device__ constexpr Vec<Vec<T, R>, C> operator*(const T &lhs, const Vec<Vec<T, R>, C> &rhs) {
+	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<Vec<T, R>, C> {
 		return {{(lhs * rhs[indices])...}};
-	}(std::make_index_sequence<N>{});
+	}(std::make_index_sequence<C>{});
+}
+
+/**
+ * @ingroup data_structures
+ * @brief reg23::Vec element-wise multiplication with a scalar
+ */
+template <typename T, std::size_t R, std::size_t C>
+__host__ __device__ constexpr Vec<Vec<T, R>, C> operator*(const Vec<Vec<T, R>, C> &lhs, const T &rhs) {
+	return [&]<std::size_t... indices>(std::index_sequence<indices...>) -> std::array<Vec<T, R>, C> {
+		return {{(lhs[indices] * rhs)...}};
+	}(std::make_index_sequence<C>{});
 }
 
 // Element-wise division: /

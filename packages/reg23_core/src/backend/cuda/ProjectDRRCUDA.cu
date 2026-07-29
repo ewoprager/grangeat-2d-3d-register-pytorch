@@ -22,7 +22,7 @@ __global__ void Kernel_ProjectDRR_CUDA(Texture3DCUDA volume, double sourceDistan
 											outputOffset;
 	Vec<double, 3> direction = VecCat(detectorPosition, -sourceDistance);
 	direction /= direction.Length();
-	Vec<double, 3> delta = direction * stepSize;
+	Vec<double, 3> delta = stepSize * direction;
 	delta = MatMul(homographyMatrixInverse, VecCat(delta, 0.0)).XYZ();
 	Vec<double, 3> start = Vec<double, 3>{0.0, 0.0, sourceDistance} + lambdaStart * direction;
 	start = MatMul(homographyMatrixInverse, VecCat(start, 1.0)).XYZ();
@@ -79,10 +79,10 @@ __global__ void Kernel_ProjectDRRsBatched_CUDA(Texture3DCUDA volume, double sour
 		homographyMatrixInverse[k % 4][k / 4] = invHMatrices[16 * batchIndex + k];
 	Vec<double, 3> direction = VecCat(detectorPosition, -sourceDistance);
 	direction /= direction.Length();
-	Vec<double, 3> delta = direction * stepSize;
+	Vec<double, 3> delta = stepSize * direction;
 	delta = MatMul(homographyMatrixInverse, VecCat(delta, 0.0)).XYZ();
 	const Texture3DCUDA::VectorType sourcePosition = {0.0, 0.0, sourceDistance};
-	const float lambdaStart =
+	const double lambdaStart =
 		MatMul(homographyMatrixInverse, VecCat(sourcePosition, 1.0)).XYZ().Length() - 0.5 * volumeDiagLength;
 	Vec<double, 3> start = Vec<double, 3>{0.0, 0.0, sourceDistance} + lambdaStart * direction;
 	start = MatMul(homographyMatrixInverse, VecCat(start, 1.0)).XYZ();
@@ -189,7 +189,7 @@ __global__ void Kernel_ProjectDRR_backward_CUDA(Texture3DCUDA volume, double sou
 
 	Vec<double, 3> direction = VecCat(detectorPosition, -sourceDistance);
 	direction /= direction.Length();
-	const Vec<double, 4> delta = VecCat(direction * stepSize, 0.0);
+	const Vec<double, 4> delta = VecCat(stepSize * direction, 0.0);
 	const Vec<double, 4> start = VecCat(Vec<double, 3>{0.0, 0.0, sourceDistance} + lambdaStart * direction, 1.0);
 
 	Vec<Vec<double, 4>, 4> dIntensityDHomographyMatrixInverse = Vec<Vec<double, 4>, 4>::Full(Vec<double, 4>::Full(0.f));
