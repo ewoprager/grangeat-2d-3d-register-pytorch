@@ -143,7 +143,7 @@ class Swarm:
         self._particles[0, -1] = self._config.objective_function(  #
             self._particles[0, 0:dimensionality] if self._batch_size == 1 else self._particles[
                 0, 0:dimensionality].unsqueeze(0)  #
-        )
+        ).to(dtype=torch.float32)
         # initialising to determine global best
         self._global_best_position = self._particles[0, 0:dimensionality]
         self._global_best = self._particles[0, -1]
@@ -152,7 +152,7 @@ class Swarm:
             objective_function_values = self.config.objective_function(  #
                 particles[:, 0:self.dimensionality].squeeze() if self._batch_size == 1 else particles[
                     :, 0:self.dimensionality]  #
-            )
+            ).to(dtype=torch.float32)
             if self._batch_size == 1:
                 objective_function_values = objective_function_values.unsqueeze(0)
             particles[:, -1] = objective_function_values
@@ -221,7 +221,7 @@ class Swarm:
             objective_function_values = self.config.objective_function(  #
                 particles[:, 0:self.dimensionality].squeeze() if self._batch_size == 1 else particles[
                     :, 0:self.dimensionality]  #
-            )
+            ).to(dtype=torch.float32)
             if self._batch_size == 1:
                 objective_function_values = objective_function_values.unsqueeze(0)
             improved = objective_function_values < particles[:, -1]
