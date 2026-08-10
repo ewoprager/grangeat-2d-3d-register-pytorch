@@ -163,7 +163,6 @@ def run_experiment(  #
         raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
     if transformation_gt is None:
         raise Exception(f"No ground truth transformation available.")
-    ground_truth = mapping_transformation_to_parameters(transformation_gt)
     for i in tqdm(  #
             range(int(exp_config.sample_count_per_distance) if plot == "no" else 1),  #
             desc="Repeated samples",  #

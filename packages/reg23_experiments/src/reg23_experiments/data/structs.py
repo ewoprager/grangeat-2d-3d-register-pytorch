@@ -198,14 +198,13 @@ class Transformation:
         d_t2 = (tcs * (self.translation - other.translation)).square().sum()
         return (d_r2 + d_t2).sqrt().item()
 
-    @jaxtyped(typechecker=typechecker)
     def with_random_offset_at_distance(self, distance: float) -> 'Transformation':
         x = distance * torch.nn.functional.normalize(torch.randn(6, dtype=torch.float64, device=self.device), dim=0)
-        axis_angle_offset = 0.03125 * x[:3]
+        axis_angle_offset = 0.03125 * x[:3] / 1.4142135624 # because || [\phi]_\times ||_F = \sqrt{2} || \phi ||
         translation_offset = torch.tensor([1.0, 1.0, 20.0], device=self.device, dtype=torch.float64) * x[3:]
         r_offset = kornia.geometry.axis_angle_to_rotation_matrix(axis_angle_offset.unsqueeze(0))[0]
         r_self = kornia.geometry.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0]
-        r_ret = r_offset * r_self
+        r_ret = r_offset @ r_self
         return Transformation(  #
             rotation=kornia.geometry.rotation_matrix_to_axis_angle(r_ret.unsqueeze(0))[0],  #
             translation=self.translation + translation_offset,  #
