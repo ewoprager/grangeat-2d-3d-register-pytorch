@@ -17,7 +17,7 @@ from reg23_experiments.io.sitk import load_one_ct_series
 from reg23_experiments.ops import ct, drr, geometry, volume
 from reg23_experiments.ops.data_manager import dadg_updater
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
-    mapping_transformation_to_parameters, random_parameters_at_distance
+    mapping_transformation_to_parameters
 
 __all__ = ["load_untruncated_ct", "apply_truncation", "set_xray_target_image", "set_xray_target_image_with_no_gt",
            "set_synthetic_target_image", "refresh_image_2d_scale_factor", "refresh_hyperparameter_dependent",
@@ -121,8 +121,7 @@ def set_synthetic_target_image(  #
         drr_spec = load_cached_drr(cache_directory, ct_path)
 
     if drr_spec is None:
-        tr = mapping_parameters_to_transformation(
-            random_parameters_at_distance(mapping_transformation_to_parameters(ap_transformation), target_ap_distance))
+        tr = ap_transformation.with_random_offset_at_distance(target_ap_distance)
         drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
                                               save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
 

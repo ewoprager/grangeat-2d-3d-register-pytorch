@@ -14,14 +14,14 @@ import traitlets
 from jaxtyping import Float64
 
 from reg23_experiments.data.structs import Cropping, Error, Transformation
-from reg23_experiments.experiments.batched import (objective_function_alpha_weighted,
-                                                   objective_function_binary_weighted, objective_function_together)
+from reg23_experiments.experiments.batched import objective_function_alpha_weighted, \
+    objective_function_binary_weighted, objective_function_together
 from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.registration import RegConfig, run_reg
 from reg23_experiments.ops import geometry
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
-    mapping_transformation_to_parameters, random_parameters_at_distance
+    mapping_transformation_to_parameters
 from reg23_experiments.utils.console_logging import tqdm
 
 __all__ = ["ExperimentConfig", "run_experiment", "exp_config_from_dict"]
@@ -170,10 +170,11 @@ def run_experiment(  #
             position=tqdm_position,  #
             leave=None  #
     ):
-        starting_params = random_parameters_at_distance(ground_truth, exp_config.starting_distance)
+        starting_tr = transformation_gt.with_random_offset_at_distance(exp_config.starting_distance)
+        starting_params = mapping_transformation_to_parameters(starting_tr)
         # -----
         # Crop to the non-zero domain of the DRR at the starting parameters
-        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
+        data_manager().set("current_transformation", starting_tr)
         cropping: Cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
         if cropping.is_collapsed(exp_config.crop_min_size):
             cropping = cropping.uncollapse(exp_config.crop_min_size)
@@ -212,8 +213,10 @@ def run_experiment(  #
                 plot=plot,  #
                 periodic_behaviour=periodic_behaviour,  #
             )  # size = (iteration count, dimensionality + 1)
-            distance_samples[i, :] = torch.linalg.vector_norm(res[:, 0:dimensionality] - ground_truth,
-                                                              dim=1)  # size = (iteration count,)
+            distance_samples[i, :] = torch.tensor([  #
+                transformation_gt.distance(mapping_parameters_to_transformation(row))  #
+                for row in res[:, 0:dimensionality]  #
+            ], device=distance_samples.device, dtype=distance_samples.dtype)  # size = (iteration count,)
 
     if plot != "no":
         axes[2].plot(range(exp_config.reg_config.iteration_count), distance_samples[0, :].cpu().numpy())

@@ -10,7 +10,7 @@ from reg23_app.context import AppContext
 from reg23_app.state import WorkerState
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
-    mapping_transformation_to_parameters, random_parameters_at_distance
+    mapping_transformation_to_parameters
 
 __all__ = ["RegisterWidget"]
 
@@ -292,7 +292,6 @@ class RegisterWidget(widgets.Container):
             logger.error(
                 f"Failed to get current transformation for X-ray '{self._xray_select.value}': {current_t.description}")
             return
-        new_t = mapping_parameters_to_transformation(
-            random_parameters_at_distance(mapping_transformation_to_parameters(current_t), distance))
+        new_t = current_t.with_random_offset_at_distance(distance)
         if isinstance(err := self._ctx.dadg.set(self._c_t_key, new_t), Error):
             logger.error(f"Error setting transformation: {err.description}")

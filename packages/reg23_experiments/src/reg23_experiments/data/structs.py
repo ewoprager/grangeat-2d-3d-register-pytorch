@@ -180,17 +180,36 @@ class Transformation:
     def clone(self) -> 'Transformation':
         return Transformation(rotation=self.rotation.clone(), translation=self.translation.clone())
 
-    def distance(self, other: 'Transformation', length_scale: float = 100.0) -> float:
-        logger.warning("Transformation.distance is not currently the intended method of measurement. Prefer Euclidean "
-                       "distance in parameter space.")
+    def distance(  #
+            self,  #
+            other: 'Transformation',  #
+            rotation_coefficient: float = 32.0,  #
+            translation_coefficients: tuple[float, float, float] | torch.Tensor = (1.0, 1.0, 0.05),  #
+    ) -> float:
         device = self.translation.device
-        r1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
+        tcs = torch.tensor(translation_coefficients, device=device, dtype=torch.float64)
+        r_1 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
             self.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float64)
-        r2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
+        r_2 = kornia.geometry.conversions.axis_angle_to_rotation_matrix(  #
             other.rotation.unsqueeze(0))[0].to(device=device, dtype=torch.float64)
-        return (((self.translation - other.translation) / length_scale).square().sum() + torch.tensor(
-            numpy.array([numpy.real(scipy.linalg.logm((torch.matmul(r1.t(), r2).cpu().numpy())))]), dtype=torch.float64,
-            device=device).square().sum()).sqrt().item()
+        d_r2 = (rotation_coefficient * torch.tensor(numpy.array([  #
+            numpy.real(scipy.linalg.logm((torch.matmul(r_1.t(), r_2).cpu().numpy())))  #
+        ]), dtype=torch.float64, device=device)).square().sum()
+        d_t2 = (tcs * (self.translation - other.translation)).square().sum()
+        return (d_r2 + d_t2).sqrt().item()
+
+    @jaxtyped(typechecker=typechecker)
+    def with_random_offset_at_distance(self, distance: float) -> 'Transformation':
+        x = distance * torch.nn.functional.normalize(torch.randn(6, dtype=torch.float64, device=self.device), dim=0)
+        axis_angle_offset = 0.03125 * x[:3]
+        translation_offset = torch.tensor([1.0, 1.0, 20.0], device=self.device, dtype=torch.float64) * x[3:]
+        r_offset = kornia.geometry.axis_angle_to_rotation_matrix(axis_angle_offset.unsqueeze(0))[0]
+        r_self = kornia.geometry.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0]
+        r_ret = r_offset * r_self
+        return Transformation(  #
+            rotation=kornia.geometry.rotation_matrix_to_axis_angle(r_ret.unsqueeze(0))[0],  #
+            translation=self.translation + translation_offset,  #
+        )
 
     def is_close(self, other: 'Transformation') -> bool:
         return torch.allclose(self.rotation, other.rotation.to(device=self.rotation.device)) and torch.allclose(

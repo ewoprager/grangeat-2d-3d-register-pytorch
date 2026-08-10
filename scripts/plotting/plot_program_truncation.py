@@ -331,7 +331,7 @@ def main(  #
     assert "cartesian" in variables_config
     variables: list[str] = list(variables_config["cartesian"].keys())
 
-    variable_hierarchy: list[str] = ["iterations_per_weight_update", "weight_alpha", "crop_expand", "mask", "cropping",
+    variable_hierarchy: list[str] = ["weight_alpha", "iterations_per_weight_update", "crop_expand", "mask", "cropping",
                                      "truncation_percent", "desired_h_valid", "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     variables = sorted(  #
@@ -355,7 +355,7 @@ def main(  #
                 value_column="distance_std"  #
             )
         if "crop_expand" not in variables or True:
-            if True:
+            if False:
                 independent_variables = axis_values
                 dependent_variable = "distance from gold-standard"
                 dependent_values = distances

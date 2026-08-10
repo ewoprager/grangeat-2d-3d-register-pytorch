@@ -34,7 +34,7 @@ from reg23_experiments.ops import geometry, similarity_metric
 from reg23_experiments.ops.ct import convert_ct_to_mu_sitk
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
-    mapping_transformation_to_parameters, random_parameters_at_distance
+    mapping_transformation_to_parameters
 from reg23_experiments.utils import logs_setup, pushover
 
 
@@ -403,7 +403,8 @@ def main(  #
             raise RuntimeError(f"No ground truth available"
                                f"{"." if transformation_gt is None else f": {transformation_gt.description}"}")
         parameters_gt = mapping_transformation_to_parameters(transformation_gt)
-        starting_params = random_parameters_at_distance(parameters_gt, constants["starting_distance"])
+        starting_tr = transformation_gt.with_random_offset_at_distance(constants["starting_distance"])
+        starting_params = mapping_transformation_to_parameters(starting_tr)
 
         data_manager().set("current_transformation", transformation_gt)
         if "downsample_level" in constants:
