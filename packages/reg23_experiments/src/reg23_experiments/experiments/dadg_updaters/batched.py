@@ -85,7 +85,6 @@ def refresh_cropping(  #
         ct_volumes: list[torch.Tensor],  #
         ct_spacing: Float64[torch.Tensor, "3"],  #
         image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
-        translation_offset: Float64[torch.Tensor, "2"],  #
 ) -> dict[str, Any]:
     """
     !Requires a batch size of 1!
@@ -110,7 +109,6 @@ def refresh_cropping(  #
             current_transformation=current_transformation,  #
             ct_spacing=ct_spacing,  #
             image_2d_full_spacing=image_2d_full_spacing,  #
-            translation_offset=translation_offset,  #
         )
     else:
         assert cropping_method == "valid_only"
@@ -121,7 +119,6 @@ def refresh_cropping(  #
             current_transformation=current_transformation,  #
             ct_spacing=ct_spacing,  #
             image_2d_full_spacing=image_2d_full_spacing,  #
-            translation_offset=translation_offset,  #
         )
     return {"further_cropping": cropping}
 

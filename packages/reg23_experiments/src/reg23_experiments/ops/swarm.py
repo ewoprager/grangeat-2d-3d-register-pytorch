@@ -52,7 +52,7 @@ class SwarmConfig(traitlets.HasTraits):
     A struct that contains configuration information for an instance of the `Swarm` class. These values can safely be
     mutated between iterations of the swarm.
     """
-    objective_function: Callable = traitlets.Callable()
+    objective_function: Callable[[torch.Tensor], torch.Tensor] = traitlets.Callable()
     inertia_coefficient: float = traitlets.Float(default_value=0.28)
     cognitive_coefficient: float = traitlets.Float(default_value=2.525)
     social_coefficient: float = traitlets.Float(default_value=1.225)
@@ -117,8 +117,8 @@ class Swarm:
         around the `initialisation_position`. The value for each dimension is the standard deviation used to sample
         the particles' initialisation positions in that dimension. This must have size `(dimensionality,)`.
         :param device: The device on which to store all `torch.Tensor`s.
-        :param batch_size: If batch_size == 1, the objective function must be able to take a 1D tensor, in which case
-        it returns a scalar. Otherwise, the objective function must take a (B, D) tensor, and return a (B,) tensor.
+        :param batch_size: The objective function must take a (B, D) tensor, and return a (B,) tensor, where B can be
+        any value between 1 and batch_size inclusive.
         :param generator: Optional; a generator with which to generate random values for initialisation and movement
         of the particles.
         """
@@ -141,8 +141,7 @@ class Swarm:
                                      torch.zeros([particle_count, 1], dtype=torch.float32, device=device)], dim=1)
         # evaluating for the first particle
         self._particles[0, -1] = self._config.objective_function(  #
-            self._particles[0, 0:dimensionality] if self._batch_size == 1 else self._particles[
-                0, 0:dimensionality].unsqueeze(0)  #
+            self._particles[0, 0:dimensionality].unsqueeze(0)  #
         ).to(dtype=torch.float32)
         # initialising to determine global best
         self._global_best_position = self._particles[0, 0:dimensionality]
@@ -150,11 +149,8 @@ class Swarm:
         # evaluating for rest of particles, and determining global best
         for particles in self._particles[1:].split(self._batch_size):
             objective_function_values = self.config.objective_function(  #
-                particles[:, 0:self.dimensionality].squeeze() if self._batch_size == 1 else particles[
-                    :, 0:self.dimensionality]  #
+                particles[:, 0:self.dimensionality]  #
             ).to(dtype=torch.float32)
-            if self._batch_size == 1:
-                objective_function_values = objective_function_values.unsqueeze(0)
             particles[:, -1] = objective_function_values
             batch_best, particle_best = objective_function_values.min(dim=0)
             if batch_best < self._global_best:
@@ -219,11 +215,8 @@ class Swarm:
         # evaluating objective function
         for particles in self._particles.split(self._batch_size):
             objective_function_values = self.config.objective_function(  #
-                particles[:, 0:self.dimensionality].squeeze() if self._batch_size == 1 else particles[
-                    :, 0:self.dimensionality]  #
+                particles[:, 0:self.dimensionality]  #
             ).to(dtype=torch.float32)
-            if self._batch_size == 1:
-                objective_function_values = objective_function_values.unsqueeze(0)
             improved = objective_function_values < particles[:, -1]
             particles[improved, -1] = objective_function_values[improved]
             particles[improved, 2 * self.dimensionality:3 * self.dimensionality] = particles[
