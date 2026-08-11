@@ -16,8 +16,6 @@ from reg23_experiments.io.image import XrayDICOM, load_cached_drr, read_dicom
 from reg23_experiments.io.sitk import load_one_ct_series
 from reg23_experiments.ops import ct, drr, geometry, volume
 from reg23_experiments.ops.data_manager import dadg_updater
-from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
-    mapping_transformation_to_parameters
 
 __all__ = ["load_untruncated_ct", "apply_truncation", "set_xray_target_image", "set_xray_target_image_with_no_gt",
            "set_synthetic_target_image", "refresh_image_2d_scale_factor", "refresh_hyperparameter_dependent",

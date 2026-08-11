@@ -297,22 +297,21 @@ def main(  #
         logger.error(f"Error adding updater: {err.description}")
         return
     # Optional
-    if True:
+    if False:
         if isinstance(
                 err := data_manager().add_updater("truncation_from_h_valid", truncation_percent_for_desired_h_valid),
                 Error):
             logger.error(f"Error adding updater: {err.description}")
             return
     if True:
-        if isinstance(err := data_manager().add_updater("refresh_masks",
-                                                        dadg_updater(names_returned=["masks", "fixed_images"])(
-                                                                batched.refresh_masks)), Error):
-            logger.error(f"Error adding updater: {err.description}")
-            return
         if isinstance(err := data_manager().add_updater("project_moving_images", batched.project_moving_images), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
         if isinstance(err := data_manager().add_updater("apply_sim_metric", batched.apply_sim_metric), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+        if isinstance(err := data_manager().add_updater("refresh_scaling_images", batched.refresh_scaling_images),
+                      Error):
             logger.error(f"Error adding updater: {err.description}")
             return
 
@@ -320,28 +319,27 @@ def main(  #
     # - Hardcoded script configuration -
     # ----------------------------------
     config = ExperimentConfig({  #
+        # ----- images
         "ct_path": Constant(ct_path),  #
-        "xray_path": Constant(xray_path),  #
         "ct_series_uid": Constant(data_manager().get("ct_series_uid")),  #
+        "xray_path": Constant(xray_path),  #
+        # ----- preprocessing
         "downsample_level": Constant(1),  #
-        # "truncation_percent": Cartesian([75, 80, 85]),  #
-        # "desired_h_valid": Constant(60.0),  #
-        # "desired_h_valid": Range(LinearRange(5.0, 80.0)),  #
-        "desired_h_valid": Constant(3.5), #Cartesian([2.5, 3.5, 6.3]),  #
-        #
-        # "cropping": "nonzero_drr",  #
-        # "crop_expand": 0.0,  #
-        # "mask": "Every evaluation",  #
-        #
+        "truncation_percent": Constant(70),# Cartesian([75, 80, 85]),  #
+        # ----- cropping
+        "cropping_method": Cartesian(["none", "bounding_box"]),  #
         "crop_min_size": Constant(0.01),  #
-        # "weight_alpha": Range(LinearRange(0.0, 1.0)),  #
-        "weight_alpha": Constant(0.5), #Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
-        "iterations_per_weight_update": Constant(0),# Cartesian([0, 1, 2, 4]),  #
-        # "weight_alpha": Constant(0.0),  #
+        "iterations_per_crop_update": Cartesian([0, 2, 1000]),  #
+        # ----- scaling
+        "apply_scaling": Constant(True),  #
+        # ----- similarity & weighting
+        "weighting": Constant(None),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+        "iterations_per_weight_update": Constant(0),  # Cartesian([0, 1, 2, 4]),  #
         "sim_metric": Constant("zncc"),  #
+        # ----- registration
         "starting_distance": Constant(5.0),  #
         "sample_count_per_distance": Constant(10),  #
-        # PSO config
+        # ----- PSO config
         "particle_count": Constant(2000),  #
         "particle_initialisation_spread": Constant(5.0),  #
         "iteration_count": Constant(6),  #
