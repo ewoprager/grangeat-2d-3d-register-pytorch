@@ -13,7 +13,7 @@ from reg23_experiments.ops.optimisation import mapping_parameters_to_transformat
 __all__ = ["refresh_scaling_images", "refresh_weights", "project_moving_images", "apply_sim_metric", "refresh_cropping"]
 
 
-@dadg_updater(names_returned=["scaling_images", "fixed_images"])
+# @dadg_updater(names_returned=["scaling_images", "fixed_images"])
 def refresh_scaling_images(  #
         *,  #
         parameters: Float64[torch.Tensor, "b 6"],  #
