@@ -13,16 +13,15 @@ import torch
 import traitlets
 from jaxtyping import Float64
 
-from reg23_experiments.data.structs import Cropping, Error, Transformation
+from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments.batched import objective_function_alpha_weighted, \
     objective_function_binary_weighted, objective_function_together
 from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.registration import RegConfig, run_reg
-from reg23_experiments.ops import geometry
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
-from reg23_experiments.utils.console_logging import tqdm
+from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
 
 __all__ = ["ExperimentConfig", "run_experiment", "exp_config_from_dict"]
 
@@ -55,7 +54,8 @@ class ExperimentConfig(traitlets.HasTraits):
         "valid_only",  #
     ], default_value=traitlets.Undefined)
     crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
-    iterations_per_crop_update: int = traitlets.Int(min=0, default_value=traitlets.Undefined)  # 0 means every o.f. eval.
+    iterations_per_crop_update: int = traitlets.Int(min=0,
+                                                    default_value=traitlets.Undefined)  # 0 means every o.f. eval.
     # ----- scaling
     apply_scaling: bool = traitlets.Bool(default_value=traitlets.Undefined)
     # ----- similarity & weighting
@@ -63,7 +63,8 @@ class ExperimentConfig(traitlets.HasTraits):
         traitlets.Enum(values=["linear"], default_value=traitlets.Undefined),  #
         traitlets.Float(min=0.0, default_value=traitlets.Undefined),  #
     ], allow_none=True, default_value=traitlets.Undefined)
-    iterations_per_weight_update: int = traitlets.Int(min=0, default_value=traitlets.Undefined)  # 0 means every o.f. eval.
+    iterations_per_weight_update: int = traitlets.Int(min=0,
+                                                      default_value=traitlets.Undefined)  # 0 means every o.f. eval.
     sim_metric: Literal["zncc", "local_zncc"] = traitlets.Enum(values=[  #
         "zncc",  #
         "local_zncc",  #
@@ -99,10 +100,11 @@ def run_experiment(  #
     # -----
     # Configuring according to desired similarity metric
     # p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(config.sim_metric)
-    data_manager().set("cropping_method", config.cropping_method)
-    data_manager().set("apply_scaling", config.apply_scaling)
-    data_manager().set("weighting", config.weighting)
-    data_manager().set("sim_metric", config.sim_metric)
+    data_manager().set("cropping_method", config.cropping_method, check_equality=True)
+    data_manager().set("crop_min_size", config.crop_min_size, check_equality=True)
+    data_manager().set("apply_scaling", config.apply_scaling, check_equality=True)
+    data_manager().set("weighting", config.weighting, check_equality=True)
+    data_manager().set("sim_metric", config.sim_metric, check_equality=True)
 
     # -----
     # Defining the objective function
@@ -159,18 +161,44 @@ def run_experiment(  #
     # -----
     # Periodic behaviour
     periodic_behaviour = []
-    # Weight image updates
+    # Crop rectangle updates
+    if config.iterations_per_crop_update > 0:
+        data_manager().remove_updater("refresh_cropping")
+
+        def do_crop_refresh(best_parameters: Float64[torch.Tensor, "6"]) -> None:
+            # get the cropping at the best transformation
+            value_dict: dict[str, Any] | Error = args_from_dadg(names_left=["parameters"])(batched.refresh_cropping)(
+                parameters=best_parameters.unsqueeze(0))
+            if isinstance(value_dict, Error):
+                raise Exception(f"Error refreshing cropping for crop refresh: {value_dict.description}")
+            best_cropping = value_dict["further_cropping"]
+            # set the cropping
+            data_manager().set("further_cropping", best_cropping)
+
+        periodic_behaviour.append((config.iterations_per_crop_update, do_crop_refresh))
+    else:
+        batch_size = 1  # necessary for crop refresh every o.f. evaluation
+        data_manager().add_updater(  #
+            "refresh_cropping",  #
+            dadg_updater(names_returned=["further_cropping"])(batched.refresh_cropping),  #
+        )
+    # Weight image updates, only after the crop updates
     if config.iterations_per_weight_update > 0:
         data_manager().remove_updater("refresh_weights")
 
         def do_weight_refresh(best_parameters: Float64[torch.Tensor, "6"]) -> None:
             # get the scaling image at the best transformation
-            value_dict = args_from_dadg(names_left=["parameters"])(batched.refresh_scaling_images)(
-                parameters=best_parameters.unsqueeze(0))
+            if isinstance(err := data_manager().set("parameters", best_parameters.unsqueeze(0)), Error):
+                raise Exception(f"Error setting parameters for weight refresh: {err.description}")
+            value_dict: dict[str, Any] | Error = args_from_dadg()(batched.refresh_scaling_images)()
+            if isinstance(value_dict, Error):
+                raise Exception(f"Error refreshing scaling image for weight refresh: {value_dict.description}")
             best_scaling_image = value_dict["scaling_images"]
             # convert to weight image
-            value_dict = args_from_dadg(names_left=["scaling_images"])(batched.refresh_weights)(
+            value_dict: dict[str, Any] | Error = args_from_dadg(names_left=["scaling_images"])(batched.refresh_weights)(
                 scaling_images=best_scaling_image)
+            if isinstance(value_dict, Error):
+                raise Exception(f"Error refreshing weight image for weight refresh: {value_dict.description}")
             weight_image = value_dict["weight_images"]
             # set the weight image
             data_manager().set("weight_images", weight_image)
@@ -180,25 +208,6 @@ def run_experiment(  #
         data_manager().add_updater(  #
             "refresh_weights",  #
             dadg_updater(names_returned=["weight_images"])(batched.refresh_weights),  #
-        )
-    # Crop rectangle updates
-    if config.iterations_per_crop_update > 0:
-        data_manager().remove_updater("refresh_cropping")
-
-        def do_crop_refresh(best_parameters: Float64[torch.Tensor, "6"]) -> None:
-            # get the cropping at the best transformation
-            value_dict = args_from_dadg(names_left=["parameters"])(batched.refresh_cropping)(
-                parameters=best_parameters.unsqueeze(0))
-            best_cropping = value_dict["further_cropping"]
-            # set the cropping
-            data_manager().set("further_cropping", best_cropping)
-
-        periodic_behaviour.append((config.iterations_per_crop_update, do_crop_refresh))
-    else:
-        batch_size = 1 # necessary for crop refresh every o.f. evaluation
-        data_manager().add_updater(  #
-            "refresh_cropping",  #
-            dadg_updater(names_returned=["further_cropping"])(batched.refresh_cropping),  #
         )
 
     # -----
@@ -213,19 +222,12 @@ def run_experiment(  #
         raise Exception(f"No ground truth transformation available.")
     for i in tqdm(  #
             range(int(config.sample_count_per_distance) if plot == "no" else 1),  #
-            desc="Repeated samples",  #
+            desc=indentation_prefix(tqdm_position) + "Repeated samples",  #
             position=tqdm_position,  #
             leave=None  #
     ):
         starting_tr = transformation_gt.with_random_offset_at_distance(config.starting_distance)
         starting_params = mapping_transformation_to_parameters(starting_tr)
-        # -----
-        # Crop to the non-zero domain of the DRR at the starting parameters
-        data_manager().set("current_transformation", starting_tr)
-        cropping: Cropping = args_from_dadg()(geometry.get_crop_nonzero_drr)()
-        if cropping.is_collapsed(config.crop_min_size):
-            cropping = cropping.uncollapse(config.crop_min_size)
-        data_manager().set("further_cropping", cropping, check_equality=True)
         # -----
         # Plotting if desired
         if plot != "no":
@@ -258,7 +260,7 @@ def run_experiment(  #
             batch_size=batch_size,  #
             plot=plot,  #
             periodic_behaviour=periodic_behaviour,  #
-            dry_run=dry_run,#
+            dry_run=dry_run,  #
         )  # size = (iteration count, dimensionality + 1)
         if not dry_run:
             distance_samples[i, :] = torch.tensor([  #

@@ -1,14 +1,14 @@
 import logging
-from typing import Literal, Tuple
+from typing import Literal
 
 import torch
 
-__all__ = ["ncc", "local_ncc", "multiscale_ncc", "weighted_ncc", "weighted_local_ncc", "gradient_correlation", ]
+__all__ = ["ncc", "local_ncc", "multiscale_ncc", "weighted_ncc", "weighted_local_ncc", "gradient_correlation"]
 
 logger = logging.getLogger(__name__)
 
 
-def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dim: int | Tuple | torch.Size | None = None) -> torch.Tensor:
+def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dim: int | tuple | torch.Size | None = None) -> torch.Tensor:
     # check tensor compatibility
     dtype = xs.dtype
     device = xs.device
@@ -42,8 +42,16 @@ def local_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int) -> torch.
     :param kernel_size:
     :return: The mean of the ZNCCs of the pairs of corresponding image patches.
     """
-    assert xs.size() == ys.size()
-    assert len(xs.size()) == 2
+    # check tensor compatibility
+    dtype = xs.dtype
+    device = xs.device
+    assert ys.dtype == dtype
+    assert ys.device == device
+    # broadcast all tensors to the same shape
+    size = torch.broadcast_shapes(xs.size(), ys.size())
+    xs = xs.broadcast_to(size)
+    ys = ys.broadcast_to(size)
+    assert len(size) == 2
     xs_patches = torch.nn.functional.unfold(xs.unsqueeze(0), kernel_size=kernel_size,
                                             stride=kernel_size)  # size = (kernel_size * kernel_size, patch number)
     ys_patches = torch.nn.functional.unfold(ys.unsqueeze(0), kernel_size=kernel_size,
@@ -55,8 +63,13 @@ def multiscale_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int, llam
     return ncc(xs, ys) + llambda * local_ncc(xs, ys, kernel_size=kernel_size)
 
 
-def weighted_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *,
-                 dim: int | torch.Size | Tuple | None = None) -> torch.Tensor:
+def weighted_ncc(  #
+        xs: torch.Tensor,  #
+        ys: torch.Tensor,  #
+        weights: torch.Tensor,  #
+        *,  #
+        dim: int | torch.Size | tuple | None = None  #
+) -> torch.Tensor:
     # check tensor compatibility
     dtype = xs.dtype
     device = xs.device

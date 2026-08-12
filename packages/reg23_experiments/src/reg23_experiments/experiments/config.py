@@ -80,6 +80,23 @@ class Range(traitlets.HasTraits):
                 "name": self.range_[0],  #
             }
 
+    @staticmethod
+    def deserialize(config: dict[str, Any] | list) -> 'Range':
+        if isinstance(config, list):
+            return Range(config)
+        assert "range_type" in config
+        if config["range_type"] == "LinearRange":
+            assert "low" in config
+            assert "high" in config
+            return Range(LinearRange(low=config["low"], high=config["high"]))
+        if config["range_type"] == "IntRange":
+            assert "low" in config
+            assert "high" in config
+            return Range(IntRange(low=config["low"], high=config["high"]))
+        if config["range_type"] == "function":
+            raise Exception(f"Deserializing not implemented for range of type {config['range_type']}.")
+        raise Exception(f"Unknown range type {config['range_type']}")
+
 
 class _Configs(Iterable[tuple[str, dict[str, Any]]]):
     def __init__(  #
@@ -223,3 +240,21 @@ class ExperimentConfig(traitlets.HasTraits):
                 if isinstance(value, Range)  #
             },  #
         }
+
+    @staticmethod
+    def deserialize(variables: dict[str, Any]) -> 'ExperimentConfig':
+        assert "cartesian" in variables
+        assert "constants" in variables
+        assert "range" in variables
+        return ExperimentConfig(  #
+            {  #
+                key: Constant(value)  #
+                for key, value in variables["constants"].items()  #
+            } | {  #
+                key: Cartesian(value)  #
+                for key, value in variables["cartesian"].items()  #
+            } | {  #
+                key: Range.deserialize(value)  #
+                for key, value in variables["range"].items()  #
+            }  #
+        )

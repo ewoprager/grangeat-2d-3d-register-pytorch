@@ -38,25 +38,30 @@ from reg23_experiments.ops.optimisation import mapping_parameters_to_transformat
 from reg23_experiments.utils import logs_setup, pushover
 
 
-def load_untruncated_ct(  #
-        ct_path: pathlib.Path,  #
-        device: torch.device,  #
-        ct_permutation: Sequence[int] | None = None  #
-) -> tuple[torch.Tensor, torch.Tensor, str] | Error:
+def acquire_ct_series_uid(ct_path: pathlib.Path) -> str | Error:
     series: dict[str, DCMSeriesInfo] | Error = find_ct_series(ct_path)
     if isinstance(series, Error):
         raise Exception(f"Failed to open CT from path '{ct_path}': {series.description}")
     if not series:
         return Error(f"No CT series found at path '{str(ct_path)}'.")
     if len(series) == 1:
-        key = next(iter(series))
+        ct_series_uid = next(iter(series))
     else:
-        key = get_string_required(  #
+        ct_series_uid = get_string_required(  #
             f"Please choose one of the following CT series:\n"
             f"{"\n".join(f"{k}:\n\t{pprint.pformat(serialize_recursive(v))}\n" for k, v in series.items())}",  #
             lambda k: None if k in series else Error(f"String '{k}' does not name a series.")  #
         )
-    volume: sitk.Image | Error = load_ct_series(ct_path, key)
+    return ct_series_uid
+
+
+def load_untruncated_ct(  #
+        ct_path: pathlib.Path,  #
+        ct_series_uid: str,  #
+        device: torch.device,  #
+        ct_permutation: Sequence[int] | None = None  #
+) -> tuple[torch.Tensor, torch.Tensor] | Error:
+    volume: sitk.Image | Error = load_ct_series(ct_path, ct_series_uid)
     if isinstance(volume, Error):
         return Error(f"Failed to open CT from path '{str(ct_path)}': {volume.description}")
     tensor: torch.Tensor | Error = convert_ct_to_mu_sitk(volume, dtype=torch.float32)
@@ -72,8 +77,7 @@ def load_untruncated_ct(  #
 
     logger.info(
         "CT loaded; size = [{} x {} x {}]; spacing = ({}, {}, {})".format(*tensor.size(), *[e.item() for e in spacing]))
-
-    return tensor, spacing, key
+    return tensor, spacing
 
 
 @dadg_updater(names_returned=["transformation_gt"])
@@ -159,19 +163,13 @@ def main(  #
         ct_path: str,  #
         xray_path: str | pathlib.Path | None,  #
         data_output_dir: str | pathlib.Path,  #
-        show: bool = False  #
+        show: bool = False,  #
+        fill_gaps: str | None = None,  #
 ):
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if xray_path is not None:
         xray_path = pathlib.Path(xray_path)
-
-    # -----
-    # Load the CT data, prompting the user to choose a series if multiple are found
-    res = load_untruncated_ct(pathlib.Path(ct_path), device)
-    if isinstance(res, Error):
-        raise Exception(f"Failed to load CT: {res.description}")
-    untruncated_ct_volume, ct_spacing, ct_series_uid = res
 
     # -----
     # Load all saved transformations; these are searched through for ground truth alignments
@@ -197,28 +195,154 @@ def main(  #
     saved_xray_reg_configs: pd.DataFrame = xray_reg_save_data.get_data()
     logger.info(f"Saved X-ray reg configs:\n{saved_xray_reg_configs.to_string()}")
 
+    # -----------------------------
+    # ----- Experiment config -----
+    # -----------------------------
+
+    if fill_gaps is None:
+        # -----
+        # Look for series at the CT path, prompting the user to choose one series if multiple are found
+        res: str | Error = acquire_ct_series_uid(pathlib.Path(ct_path))
+        if isinstance(res, Error):
+            raise Exception(f"Failed to find CT series: {res.description}")
+        ct_series_uid = res
+
+        # ----------------------------------
+        # - Hardcoded script configuration -
+        # ----------------------------------
+        config = ExperimentConfig({  #
+            # ----- images
+            "ct_path": Constant(ct_path),  #
+            "ct_series_uid": Constant(ct_series_uid),  #
+            # ----- preprocessing
+            "downsample_level": Constant(1),  #
+            "truncation_percent": Constant(0),  # Cartesian([0, 75]),  # Cartesian([65, 75, 85]),  #
+            # ----- cropping
+            "cropping_method": Constant("none"),  # Cartesian(["none", "bounding_box", "valid_only"]),  #
+            "crop_min_size": Constant(0.01),  #
+            "iterations_per_crop_update": Cartesian([0, 2]),  # Cartesian([0, 2, 1000]),  #
+            # ----- scaling
+            "apply_scaling": Constant(False),  # Cartesian([False, True]),  #
+            # ----- similarity & weighting
+            "weighting": Constant(None),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+            "iterations_per_weight_update": Constant(1000),  # Cartesian([0, 1, 2, 4]),  #
+            "sim_metric": Constant("zncc"),  #
+            # ----- registration
+            "starting_distance": Constant(5.0),  #
+            "sample_count_per_distance": Constant(10),  #
+            # ----- PSO config
+            "particle_count": Constant(2000),  #
+            "particle_initialisation_spread": Constant(5.0),  #
+            "iteration_count": Constant(6),  #
+        })
+
+        # X-ray choice determines the gold standard orientation, which drives h_linear:
+        hardcoded_xray_names: list[str] = [  #
+            "level_000",  #
+            # "level_090",  #
+            # "up_000",  #
+            # "up_090",  #
+            # "down_000",  #
+            # "down_090",  #
+        ]
+
+        # -----
+        # Set the X-ray path(s) depending on if a directory or filename is passed
+        if xray_path is None or xray_path.is_file():
+            config.values["xray_path"] = Constant(xray_path)
+        elif xray_path.is_dir():
+            if len(hardcoded_xray_names) == 1:
+                config.values["xray_path"] = Constant(str(xray_path / hardcoded_xray_names[0]))
+            else:
+                config.values["xray_path"] = Cartesian([str(xray_path / name) for name in hardcoded_xray_names])
+
+        if not show:
+            instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
+
+            with open(instance_output_dir / "variables.txt", 'w') as file:
+                yaml.safe_dump(config.serialize(), file, sort_keys=False) # very important to preserve order of keys
+    else:
+        assert not show
+
+        instance_output_dir = pathlib.Path(data_output_dir) / fill_gaps
+        if not instance_output_dir.is_dir():
+            raise FileNotFoundError(f"Directory in which to fill gaps '{str(instance_output_dir)}' not found.")
+
+        variables_path = instance_output_dir / "variables.txt"
+        if not variables_path.is_file():
+            raise FileNotFoundError(f"File '{str(variables_path)}' not found; cannot fill gaps.")
+
+        variables = yaml.safe_load(variables_path.read_text())
+        assert isinstance(variables, dict)
+        config = ExperimentConfig.deserialize(variables)
+
+        logger.info(f"Filling gaps in experiment output directory '{str(instance_output_dir)}'.")
+
+    # -----
+    # Check that all X-rays exist, have ground truth transformations available, and have reg configs available
+    def check_xray_path(p: str | pathlib.Path) -> Error | None:
+        p = pathlib.Path(p)
+        if not p.is_file():
+            return Error(f"X-ray file '{str(p)}' doesn't exist.")
+        try:
+            dicom: XrayDICOM = read_dicom(p)
+        except Exception as e:
+            return Error(f"Failed to read X-ray file: {e}")
+        idx = (dicom["uid"], "gold_standard")
+        try:
+            saved_transformations.loc[idx]
+        except KeyError:
+            return Error(f"No ground truth saved for X-ray '{str(p)}' with UID '{dicom["uid"]}'.")
+        idx = dicom["uid"]
+        try:
+            saved_xray_reg_configs.loc[idx]
+        except KeyError:
+            return Error(f"No reg config saved for X-ray '{str(p)}' with UID '{dicom["uid"]}'.")
+        return None
+
+    if isinstance(c := config.values["xray_path"], Constant):
+        if isinstance(err := check_xray_path(c.value), Error):
+            logger.error(f"Invalid X-ray path '{c.value}': {err.description}")
+            return
+    else:
+        assert isinstance(l := config.values["xray_path"], Cartesian)
+        for v in l.values:
+            if isinstance(err := check_xray_path(v), Error):
+                logger.error(f"Invalid X-ray path '{v}': {err.description}")
+                return
+
+    # --------------------------
+    # ----- Initialisation -----
+    # --------------------------
+
+    # ----- Load the CT series
+    assert "ct_path" in config.values
+    assert "ct_series_uid" in config.values
+    assert isinstance(path_config := config.values["ct_path"], Constant)
+    assert isinstance(uid_config := config.values["ct_series_uid"], Constant)
+    untruncated_ct_volume, ct_spacing = load_untruncated_ct(path_config.value, uid_config.value, device)
+
     # -----
     # Initialise the DADG
-    t = Transformation.random_uniform(device=device)
+    # t = Transformation.random_uniform(device=device)
     if isinstance(err := data_manager().set_multiple(  #
             device=device,  #
             untruncated_ct_volume=untruncated_ct_volume,  #
             ct_spacing=ct_spacing,  #
-            ct_series_uid=ct_series_uid,  #
             cache_directory=cache_directory,  #
             save_to_cache=False,  #
             # truncation_percent=0,  #
-            desired_h_valid=20.0,  #
-            further_cropping=None,  #
+            # desired_h_valid=20.0,  #
+            # further_cropping=None,  #
             source_offset=torch.zeros(2, dtype=torch.float64, device=device),  #
-            downsample_level=0,  #
+            # downsample_level=0,  #
             ap_transformation=Transformation(
                 rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
                 translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
             target_ap_distance=5.0,  #
-            current_transformation=t,  #
-            parameters=mapping_transformation_to_parameters(t).unsqueeze(0),  #
-            mask_transformation=None,  #
+            # current_transformation=t,  #
+            # parameters=mapping_transformation_to_parameters(t).unsqueeze(0),  #
+            # mask_transformation=None,  #
             saved_transformations=saved_transformations,  #
             saved_xray_reg_configs=saved_xray_reg_configs,  #
     ), Error):
@@ -227,14 +351,13 @@ def main(  #
 
     # -----
     # Initialise the fixed target image
-    if xray_path is None:
+    if isinstance(c := config.values["xray_path"], Constant) and c.value is None:
         # -----
         # Use a DRR
         if isinstance(err := data_manager().set_multiple(  #
                 xray_path=None,  #
                 regenerate_drr=True,  #
                 new_drr_size=torch.Size([1000, 1000]),  #
-                target_ap_distance=5.0,  #
         ), Error):
             logger.error(f"Error setting initial data values: {err.description}")
             return
@@ -243,28 +366,19 @@ def main(  #
                       Error):
             logger.error(f"Error adding updater: {err.description}")
             return
-    elif xray_path.is_dir():
-        # -----
-        # Use a directory of X-ray images
-        if isinstance(err := data_manager().add_updater("set_target_image", updaters.set_xray_target_image), Error):
-            logger.error(f"Error adding updater: {err.description}")
-            return
-
-        if isinstance(err := data_manager().add_updater("set_ground_truth", load_ground_truth), Error):
-            logger.error(f"Error adding updater: {err.description}")
-            return
     else:
-        # -----
-        # Use an X-ray image
-        if not xray_path.is_file():
-            raise Exception(f"X-ray file '{str(xray_path)}' not found.")
+        if isinstance(c := config.values["xray_path"], Cartesian) and len(c.values) > 1 and any(  #
+            e is None  #
+            for e in c.values  #
+        ):
+            raise ValueError(f"Cannot run experiments over DRRs and X-ray images.")
 
-        if isinstance(err := data_manager().set("xray_path", xray_path), Error):
-            logger.error(f"Error setting initial data values: {err.description}")
-            return
+        # -----
+        # Use X-ray file(s)
         if isinstance(err := data_manager().add_updater("set_target_image", updaters.set_xray_target_image), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
+
         if isinstance(err := data_manager().add_updater("set_ground_truth", load_ground_truth), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
@@ -312,80 +426,9 @@ def main(  #
             return
         if isinstance(err := data_manager().add_updater("refresh_scaling_images",
                                                         dadg_updater(names_returned=["scaling_images", "fixed_images"])(
-                                                                batched.refresh_scaling_images)), Error):
+                                                            batched.refresh_scaling_images)), Error):
             logger.error(f"Error adding updater: {err.description}")
             return
-
-    # ----------------------------------
-    # - Hardcoded script configuration -
-    # ----------------------------------
-    config = ExperimentConfig({  #
-        # ----- images
-        "ct_path": Constant(ct_path),  #
-        "ct_series_uid": Constant(data_manager().get("ct_series_uid")),  #
-        "xray_path": Constant(xray_path),  #
-        # ----- preprocessing
-        "downsample_level": Constant(1),  #
-        "truncation_percent": Constant(0), #Cartesian([0, 75]),  # Cartesian([65, 75, 85]),  #
-        # ----- cropping
-        "cropping_method": Constant("none"), # Cartesian(["none", "bounding_box", "valid_only"]),  #
-        "crop_min_size": Constant(0.01),  #
-        "iterations_per_crop_update": Cartesian([0, 2]), #Cartesian([0, 2, 1000]),  #
-        # ----- scaling
-        "apply_scaling": Constant(False), #Cartesian([False, True]),  #
-        # ----- similarity & weighting
-        "weighting": Constant(None),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
-        "iterations_per_weight_update": Constant(1000),  # Cartesian([0, 1, 2, 4]),  #
-        "sim_metric": Constant("zncc"),  #
-        # ----- registration
-        "starting_distance": Constant(5.0),  #
-        "sample_count_per_distance": Constant(10),  #
-        # ----- PSO config
-        "particle_count": Constant(2000),  #
-        "particle_initialisation_spread": Constant(5.0),  #
-        "iteration_count": Constant(6),  #
-    })
-
-    # X-ray choice determines the gold standard orientation, which drives h_linear:
-    hardcoded_xray_names: list[str] = [  #
-        "level_000",  #
-        # "level_090",  #
-        # "up_000",  #
-        # "up_090",  #
-        # "down_000",  #
-        # "down_090",  #
-    ]
-
-    # -----
-    # Setting the X-ray path(s) if a directory is passed
-    if xray_path is not None and xray_path.is_dir():
-        # Check that all X-rays exist, have ground truth transformations available, and have reg configs available
-        for name in hardcoded_xray_names:
-            path: pathlib.Path = xray_path / name
-            if not path.is_file():
-                logger.error(f"X-ray file '{str(path)}' doesn't exist.")
-                return
-            try:
-                dicom: XrayDICOM = read_dicom(path)
-            except Exception as e:
-                logger.error(f"Failed to read X-ray file: {e}")
-                return
-            idx = (dicom["uid"], "gold_standard")
-            try:
-                saved_transformations.loc[idx]
-            except KeyError:
-                logger.error(f"No ground truth saved for X-ray '{str(path)}' with UID '{dicom["uid"]}'.")
-                return
-            idx = dicom["uid"]
-            try:
-                saved_xray_reg_configs.loc[idx]
-            except KeyError:
-                logger.error(f"No reg config saved for X-ray '{str(path)}' with UID '{dicom["uid"]}'.")
-                return
-        if len(hardcoded_xray_names) == 1:
-            config.values["xray_path"] = Constant(str(xray_path / hardcoded_xray_names[0]))
-        else:
-            config.values["xray_path"] = Cartesian([str(xray_path / name) for name in hardcoded_xray_names])
 
     if False and show:
         # -----
@@ -500,11 +543,6 @@ def main(  #
             dry_run=False,  #
         )
     else:
-        instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
-
-        with open(instance_output_dir / "variables.txt", 'w') as file:
-            yaml.safe_dump(config.serialize(), file)
-
         # -----
         # Run experiments, initially just as a dry-run
         for dry_run in [True, False]:
@@ -548,6 +586,9 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
     parser.add_argument("-o", "--data-output-dir", type=str, default="experimental_results/program_truncation",
                         help="Directory in which to save output data.")
+    parser.add_argument("-f", "--fill-gaps", type=str, default=None,
+                        help="Give a path to an existing results directory and run all experiments specified by "
+                             "variables.txt whose results are not present.")
     args = parser.parse_args()
 
     if args.xray_path is None:
@@ -574,7 +615,7 @@ if __name__ == "__main__":
 
     try:
         main(cache_directory=args.cache_directory, ct_path=args.ct_path, xray_path=xray,
-             data_output_dir=args.data_output_dir, show=args.show)
+             data_output_dir=args.data_output_dir, show=args.show, fill_gaps=args.fill_gaps)
         if args.notify:
             pushover.send_notification(__file__, "Script finished.")
     except Exception as e:

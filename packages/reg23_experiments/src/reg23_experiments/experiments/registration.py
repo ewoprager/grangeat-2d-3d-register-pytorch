@@ -12,7 +12,7 @@ import reg23_core
 from reg23_experiments.ops import swarm as pso
 from reg23_experiments.ops.data_manager import args_from_dadg, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
-from reg23_experiments.utils.console_logging import tqdm
+from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
 
 __all__ = ["RegConfig", "run_reg"]
 
@@ -33,7 +33,7 @@ def run_reg(  #
         tqdm_position: int = 0,  #
         batch_size: int = 1,  #
         periodic_behaviour: list[tuple[int, Callable[[torch.Tensor], None]]] = [],  #
-        dry_run: bool=False,#
+        dry_run: bool = False,  #
 ) -> torch.Tensor:
     """
     Run a PSO from the given starting params and return a tensor containing the params and O.F. value at each iteration.
@@ -62,8 +62,8 @@ def run_reg(  #
             t = mapping_parameters_to_transformation(starting_params)
             # Moving image
             moving_image: torch.Tensor = args_from_dadg()(  #
-                lambda *, cropped_target, ct_volumes, downsample_level, ct_spacing, source_distance, fixed_image_spacing,
-                       fixed_image_offset: reg23_core.project_drrs_batched(  #
+                lambda *, cropped_target, ct_volumes, downsample_level, ct_spacing, source_distance,
+                       fixed_image_spacing, fixed_image_offset: reg23_core.project_drrs_batched(  #
                     volume=ct_volumes[downsample_level],  #
                     voxel_spacing=ct_spacing * 2.0 ** downsample_level,  #
                     inverse_h_matrices=t.inverse().get_h(device=ct_volumes[0].device).unsqueeze(0),  #
@@ -103,7 +103,12 @@ def run_reg(  #
         )
         ret[0, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
         ret[0, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
-    tqdm_iterator = tqdm(range(config.iteration_count), desc="PSO iterations", position=tqdm_position, leave=None)
+    tqdm_iterator = tqdm(  #
+        range(config.iteration_count),  #
+        desc=indentation_prefix(tqdm_position) + "PSO iterations",  #
+        position=tqdm_position,  #
+        leave=None  #
+    )
     tqdm_iterator.update()
     # -----
     # The optimisation loop

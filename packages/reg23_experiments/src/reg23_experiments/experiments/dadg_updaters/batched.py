@@ -85,6 +85,7 @@ def refresh_cropping(  #
         ct_volumes: list[torch.Tensor],  #
         ct_spacing: Float64[torch.Tensor, "3"],  #
         image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+        crop_min_size: float,  #
 ) -> dict[str, Any]:
     """
     !Requires a batch size of 1!
@@ -120,6 +121,9 @@ def refresh_cropping(  #
             ct_spacing=ct_spacing,  #
             image_2d_full_spacing=image_2d_full_spacing,  #
         )
+    if cropping is not None:
+        if cropping.is_collapsed(crop_min_size):
+            cropping = cropping.uncollapse(crop_min_size)
     return {"further_cropping": cropping}
 
 

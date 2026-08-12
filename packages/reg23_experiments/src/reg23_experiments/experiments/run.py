@@ -14,7 +14,7 @@ import scipy
 import torch
 
 from reg23_experiments.data.structs import Error, LinearRange
-from reg23_experiments.utils.console_logging import tqdm
+from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
 
 __all__ = ["experiments_hybrid", "experiments_cartesian", "experiments_sobol"]
 
@@ -29,17 +29,26 @@ def experiments_hybrid(  #
         device: torch.device,  #
         tqdm_position: int = 0,  #
         dry_run: bool = False,  #
+        throw: bool = False,  #
+        overwrite: bool = False,  #
 ) -> None:
     if output_directory is not None:
         assert output_directory.is_dir()
     tqdm_iterator = tqdm(  #
         config_iterable,  #
-        desc="Experiments",  #
+        desc=indentation_prefix(tqdm_position) + "Dry run of experiments" if dry_run else "Experiments",  #
         position=tqdm_position,  #
         leave=None  #
     )
     for name, config in tqdm_iterator:
         tqdm_iterator.set_postfix({"iteration": name})
+        # -----
+        # Skip if this results file already exists, and not configured to overwrite
+        if output_directory is not None:
+            output_file = output_directory / f"data_{name}.parquet"
+            if not overwrite and output_file.exists():
+                logger.info(f"Skipping experiment '{name}' as results file '{str(output_file)}' already exists.")
+                continue
         # -----
         # Construct the experiment parameters
         parameters: Any | Error = param_constructor(config)
@@ -47,11 +56,15 @@ def experiments_hybrid(  #
             raise Exception(f"Failed to construct parameters at iteration {name}")
         # -----
         # Run the experiment
-        # try:
-        res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
-        # except Exception as e:
-        #     logger.error(f"Error running experiment at iteration {name}: {e}\nParameters:\n{pprint.pformat(config)}")
-        #     continue
+        if throw or dry_run:
+            res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
+        else:
+            try:
+                res: pd.DataFrame | None = experiment(parameters, device, tqdm_position + 1, dry_run)
+            except Exception as e:
+                logger.error(
+                    f"Error running experiment at iteration {name}: {e}\nParameters:\n{pprint.pformat(config)}")
+                continue
         if dry_run:
             continue
         if res is None:
@@ -62,7 +75,7 @@ def experiments_hybrid(  #
         # Add the experiment config rows to the DataFrame and save
         if output_directory is not None:
             df = res.assign(**config)
-            df.to_parquet(output_directory / f"data_{name}.parquet")
+            df.to_parquet(output_file)
 
 
 def experiments_cartesian(  #
