@@ -200,7 +200,7 @@ class Transformation:
 
     def with_random_offset_at_distance(self, distance: float) -> 'Transformation':
         x = distance * torch.nn.functional.normalize(torch.randn(6, dtype=torch.float64, device=self.device), dim=0)
-        axis_angle_offset = 0.03125 * x[:3] / 1.4142135624 # because || [\phi]_\times ||_F = \sqrt{2} || \phi ||
+        axis_angle_offset = 0.03125 * x[:3] / 1.4142135624  # because || [\phi]_\times ||_F = \sqrt{2} || \phi ||
         translation_offset = torch.tensor([1.0, 1.0, 20.0], device=self.device, dtype=torch.float64) * x[3:]
         r_offset = kornia.geometry.axis_angle_to_rotation_matrix(axis_angle_offset.unsqueeze(0))[0]
         r_self = kornia.geometry.axis_angle_to_rotation_matrix(self.rotation.unsqueeze(0))[0]
@@ -298,11 +298,37 @@ class Cropping(traitlets.HasTraits):
 
     A valid Cropping must have right > left, and bottom > top.
     """
+    right: float = traitlets.Float().tag(ui=True)
+    top: float = traitlets.Float().tag(ui=True)
+    left: float = traitlets.Float().tag(ui=True)
+    bottom: float = traitlets.Float().tag(ui=True)
 
-    right: float = traitlets.Float(default_value=1.0, min=0.0, max=1.0).tag(ui=True)
-    top: float = traitlets.Float(default_value=0.0, min=0.0, max=1.0).tag(ui=True)
-    left: float = traitlets.Float(default_value=0.0, min=0.0, max=1.0).tag(ui=True)
-    bottom: float = traitlets.Float(default_value=1.0, min=0.0, max=1.0).tag(ui=True)
+    min_size: float = 0.02
+
+    def __init__(self, right: float, top: float, left: float, bottom: float):
+        if right - left < Cropping.min_size:
+            av = 0.5 * (left + right)
+            left, right = av - 0.5 * Cropping.min_size, av + 0.5 * Cropping.min_size
+        if bottom - top < Cropping.min_size:
+            av = 0.5 * (top + bottom)
+            top, bottom = av - 0.5 * Cropping.min_size, av + 0.5 * Cropping.min_size
+        super().__init__(right=right, top=top, left=left, bottom=bottom)
+
+    @traitlets.validate("right")
+    def _validate_right(self, proposal):
+        return min(1.0, max(self.left + Cropping.min_size, proposal["value"]))
+
+    @traitlets.validate("top")
+    def _validate_top(self, proposal):
+        return min(self.bottom - Cropping.min_size, max(0.0, proposal["value"]))
+
+    @traitlets.validate("left")
+    def _validate_left(self, proposal):
+        return min(self.right - Cropping.min_size, max(0.0, proposal["value"]))
+
+    @traitlets.validate("bottom")
+    def _validate_bottom(self, proposal):
+        return min(1.0, max(self.top + Cropping.min_size, proposal["value"]))
 
     def get_fractional_centre_offset(self, **tensor_kwargs) -> torch.Tensor:
         return 0.5 * torch.tensor([self.left + self.right, self.top + self.bottom], **tensor_kwargs) - 0.5
@@ -316,28 +342,28 @@ class Cropping(traitlets.HasTraits):
 
     def expand_image_fraction(self, image_fraction: float) -> 'Cropping':
         return Cropping(  #
-            right=min(1.0, self.right + image_fraction),  #
-            top=max(0.0, self.top - image_fraction),  #
-            left=max(0.0, self.left - image_fraction),  #
-            bottom=min(1.0, self.bottom + image_fraction),  #
+            right=self.right + image_fraction,  #
+            top=self.top - image_fraction,  #
+            left=self.left - image_fraction,  #
+            bottom=self.bottom + image_fraction,  #
         )
 
-    def is_collapsed(self, threshold: float = 0.02) -> bool:
-        return ((self.right - self.left) < threshold) or ((self.bottom - self.top) < threshold)
-
-    def uncollapse(self, minimum_size: float = 0.02) -> 'Cropping':
-        ret = Cropping()
-        if (self.right - self.left) < minimum_size:
-            avg = 0.5 * (self.left + self.right)
-            ret.left, ret.right = avg - 0.5 * minimum_size, avg + 0.5 * minimum_size
-        else:
-            ret.left, ret.right = self.left, self.right
-        if (self.bottom - self.top) < minimum_size:
-            avg = 0.5 * (self.top + self.bottom)
-            ret.top, ret.bottom = avg - 0.5 * minimum_size, avg + 0.5 * minimum_size
-        else:
-            ret.top, ret.bottom = self.top, self.bottom
-        return ret
+    # def is_collapsed(self, threshold: float = 0.02) -> bool:
+    #     return ((self.right - self.left) < threshold) or ((self.bottom - self.top) < threshold)
+    #
+    # def uncollapse(self, minimum_size: float = 0.02) -> 'Cropping':
+    #     ret = Cropping()
+    #     if (self.right - self.left) < minimum_size:
+    #         avg = min(1.0 - 0.50001 * minimum_size, max(0.50001 * minimum_size, 0.5 * (self.left + self.right)))
+    #         ret.left, ret.right = avg - 0.5 * minimum_size, avg + 0.5 * minimum_size
+    #     else:
+    #         ret.left, ret.right = self.left, self.right
+    #     if (self.bottom - self.top) < minimum_size:
+    #         avg = min(1.0 - 0.50001 * minimum_size, max(0.50001 * minimum_size, 0.5 * (self.top + self.bottom)))
+    #         ret.top, ret.bottom = avg - 0.5 * minimum_size, avg + 0.5 * minimum_size
+    #     else:
+    #         ret.top, ret.bottom = self.top, self.bottom
+    #     return ret
 
     @jaxtyped(typechecker=typechecker)
     def expand_mm(self, distance: float, *, image_size: torch.Size,
@@ -345,10 +371,10 @@ class Cropping(traitlets.HasTraits):
         h = distance / (float(image_size[1]) * image_spacing[0].item())
         v = distance / (float(image_size[0]) * image_spacing[1].item())
         return Cropping(  #
-            right=min(1.0, max(self.left, self.right + h)),  #
-            top=min(self.top, max(0.0, self.top - v)),  #
-            left=min(self.right, max(0.0, self.left - h)),  #
-            bottom=min(1.0, max(self.top, self.bottom + v)),  #
+            right=max(self.left, self.right + h),  #
+            top=min(self.top, self.top - v),  #
+            left=min(self.right,self.left - h),  #
+            bottom=max(self.top, self.bottom + v),  #
         )
 
     @staticmethod
@@ -360,19 +386,19 @@ class Cropping(traitlets.HasTraits):
             bottom=min(a.bottom, b.bottom)  #
         )
 
-    @traitlets.observe("left", "right")
-    def _check_horizontal(self, change):
-        self.left = max(0.0, self.left)
-        self.right = min(1.0, self.right)
-        if self.left > self.right:
-            raise traitlets.TraitError(f"Cropping 'left' value {self.left} exceeds 'right' value {self.right}.")
-
-    @traitlets.observe("top", "bottom")
-    def _check_vertical(self, change):
-        self.top = max(0.0, self.top)
-        self.bottom = min(1.0, self.bottom)
-        if self.top > self.bottom:
-            raise traitlets.TraitError(f"Cropping 'top' value {self.top} exceeds 'bottom' value {self.bottom}.")
+    # @traitlets.observe("left", "right")
+    # def _check_horizontal(self, change):
+    #     self.left = max(0.0, self.left)
+    #     self.right = min(1.0, self.right)
+    #     if self.left > self.right:
+    #         raise traitlets.TraitError(f"Cropping 'left' value {self.left} exceeds 'right' value {self.right}.")
+    #
+    # @traitlets.observe("top", "bottom")
+    # def _check_vertical(self, change):
+    #     self.top = max(0.0, self.top)
+    #     self.bottom = min(1.0, self.bottom)
+    #     if self.top > self.bottom:
+    #         raise traitlets.TraitError(f"Cropping 'top' value {self.top} exceeds 'bottom' value {self.bottom}.")
 
 
 class Sinogram2dRange(NamedTuple):

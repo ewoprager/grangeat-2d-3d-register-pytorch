@@ -400,11 +400,7 @@ def get_crop_nonzero_drr(  #
     # convert the edges of the crop rectangle from mm to fractional in the fixed image
     left, top = mins / image_size + 0.5
     right, bottom = maxs / image_size + 0.5
-    left = min(max(left.item(), 0.0), 1.0)
-    right = min(max(right.item(), left), 1.0)
-    top = min(max(top.item(), 0.0), 1.0)
-    bottom = min(max(bottom.item(), top), 1.0)
-    return Cropping(right=right, top=top, left=left, bottom=bottom)
+    return Cropping(right=right.item(), top=top.item(), left=left.item(), bottom=bottom.item())
 
 
 @jaxtyped(typechecker=typechecker)
@@ -454,10 +450,7 @@ def get_crop_full_depth_drr(  #
     # convert from [mm] centred on origin to fractions through image in downward direction
     top = top / image_size[1] + 0.5
     bottom = bottom / image_size[1] + 0.5
-    # clamping within valid ranges
-    top = min(max(top.item(), 0.0), 1.0)
-    bottom = min(max(bottom.item(), top), 1.0)
-    return Cropping(right=1.0, top=top, left=0.0, bottom=bottom)
+    return Cropping(right=1.0, top=top.item(), left=0.0, bottom=bottom.item())
 
 
 def axis_angle_extract_axis(axis_angle: torch.Tensor, axis: torch.Tensor) -> float:

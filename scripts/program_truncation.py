@@ -219,7 +219,6 @@ def main(  #
             "truncation_percent": Constant(0),  # Cartesian([0, 75]),  # Cartesian([65, 75, 85]),  #
             # ----- cropping
             "cropping_method": Constant("none"),  # Cartesian(["none", "bounding_box", "valid_only"]),  #
-            "crop_min_size": Constant(0.01),  #
             "iterations_per_crop_update": Cartesian([0, 2]),  # Cartesian([0, 2, 1000]),  #
             # ----- scaling
             "apply_scaling": Constant(False),  # Cartesian([False, True]),  #
@@ -260,7 +259,7 @@ def main(  #
             instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
 
             with open(instance_output_dir / "variables.txt", 'w') as file:
-                yaml.safe_dump(config.serialize(), file, sort_keys=False) # very important to preserve order of keys
+                yaml.safe_dump(config.serialize(), file, sort_keys=False)  # very important to preserve order of keys
     else:
         assert not show
 
@@ -368,8 +367,8 @@ def main(  #
             return
     else:
         if isinstance(c := config.values["xray_path"], Cartesian) and len(c.values) > 1 and any(  #
-            e is None  #
-            for e in c.values  #
+                e is None  #
+                for e in c.values  #
         ):
             raise ValueError(f"Cannot run experiments over DRRs and X-ray images.")
 
@@ -554,6 +553,7 @@ def main(  #
                 output_directory=instance_output_dir,  #
                 device=device,  #
                 dry_run=dry_run,  #
+                throw=dry_run,#
             )
 
 
