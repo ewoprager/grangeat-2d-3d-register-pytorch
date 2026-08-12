@@ -326,13 +326,13 @@ def main(  #
         "xray_path": Constant(xray_path),  #
         # ----- preprocessing
         "downsample_level": Constant(1),  #
-        "truncation_percent": Cartesian([0, 75]),  # Cartesian([65, 75, 85]),  #
+        "truncation_percent": Constant(0), #Cartesian([0, 75]),  # Cartesian([65, 75, 85]),  #
         # ----- cropping
-        "cropping_method": Cartesian(["none", "bounding_box", "valid_only"]),  #
+        "cropping_method": Constant("none"), # Cartesian(["none", "bounding_box", "valid_only"]),  #
         "crop_min_size": Constant(0.01),  #
-        "iterations_per_crop_update": Cartesian([0, 2, 1000]),  #
+        "iterations_per_crop_update": Cartesian([0, 2]), #Cartesian([0, 2, 1000]),  #
         # ----- scaling
-        "apply_scaling": Cartesian([False, True]),  #
+        "apply_scaling": Constant(False), #Cartesian([False, True]),  #
         # ----- similarity & weighting
         "weighting": Constant(None),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
         "iterations_per_weight_update": Constant(1000),  # Cartesian([0, 1, 2, 4]),  #
@@ -351,7 +351,7 @@ def main(  #
         "level_000",  #
         # "level_090",  #
         # "up_000",  #
-        "up_090",  #
+        # "up_090",  #
         # "down_000",  #
         # "down_090",  #
     ]

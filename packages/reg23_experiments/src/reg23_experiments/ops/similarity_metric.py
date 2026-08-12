@@ -9,9 +9,17 @@ logger = logging.getLogger(__name__)
 
 
 def ncc(xs: torch.Tensor, ys: torch.Tensor, *, dim: int | Tuple | torch.Size | None = None) -> torch.Tensor:
-    assert xs.size() == ys.size()
+    # check tensor compatibility
+    dtype = xs.dtype
+    device = xs.device
+    assert ys.dtype == dtype
+    assert ys.device == device
+    # broadcast all tensors to the same shape
+    size = torch.broadcast_shapes(xs.size(), ys.size())
+    xs = xs.broadcast_to(size)
+    ys = ys.broadcast_to(size)
     if dim is None:
-        dim = torch.Size(range(len(xs.size())))
+        dim = torch.Size(range(len(size)))
     sum_x = xs.sum(dim=dim)
     sum_y = ys.sum(dim=dim)
     sum_x2 = xs.square().sum(dim=dim)
@@ -49,18 +57,29 @@ def multiscale_ncc(xs: torch.Tensor, ys: torch.Tensor, *, kernel_size: int, llam
 
 def weighted_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *,
                  dim: int | torch.Size | Tuple | None = None) -> torch.Tensor:
-    size = xs.size()
-    ret_size = size[:-2]
+    # check tensor compatibility
     dtype = xs.dtype
     device = xs.device
     assert ys.dtype == dtype
     assert ys.device == device
     assert weights.dtype == dtype
     assert weights.device == device
+    # broadcast all tensors to the same shape
+    size = torch.broadcast_shapes(xs.size(), ys.size(), weights.size())
+    xs = xs.broadcast_to(size)
+    ys = ys.broadcast_to(size)
+    weights = weights.broadcast_to(size)
+    # convert the given `dim` parameter to a torch.Size with non-negative elements
     if dim is None:
         dim = torch.Size(range(len(size)))  #
+    elif isinstance(dim, int):
+        dim = torch.Size([dim % len(size)])
+    else:
+        dim = torch.Size(d % len(size) for d in dim)
+    # determine the size of the returned value
+    ret_size = torch.Size([s for i, s in enumerate(size) if i not in dim])
     # filtering out ZNCC calculations where fewer than 2 value pairs are being used
-    exclude_mask = (weights.count_nonzero(dim=dim) < 2).expand(ret_size)
+    exclude_mask = weights.count_nonzero(dim=dim) < 2
     if (exclude_mask.numel() - exclude_mask.count_nonzero()) < 1:
         return torch.zeros(ret_size, dtype=dtype, device=device)
     sum_w = weights.sum(dim=dim)

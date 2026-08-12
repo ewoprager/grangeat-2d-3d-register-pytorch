@@ -247,19 +247,20 @@ def run_experiment(  #
             axes[1].set_title("cropped target at start")
         # -----
         # Registration
+        res = run_reg(  #
+            # obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
+            obj_fun=new_objective_function,  #
+            # obj_fun=new_new_objective_function,  #
+            config=config.reg_config,  #
+            starting_params=starting_params,  #
+            device=device,  #
+            tqdm_position=tqdm_position + 1,  #
+            batch_size=batch_size,  #
+            plot=plot,  #
+            periodic_behaviour=periodic_behaviour,  #
+            dry_run=dry_run,#
+        )  # size = (iteration count, dimensionality + 1)
         if not dry_run:
-            res = run_reg(  #
-                # obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
-                obj_fun=new_objective_function,  #
-                # obj_fun=new_new_objective_function,  #
-                config=config.reg_config,  #
-                starting_params=starting_params,  #
-                device=device,  #
-                tqdm_position=tqdm_position + 1,  #
-                batch_size=batch_size,  #
-                plot=plot,  #
-                periodic_behaviour=periodic_behaviour,  #
-            )  # size = (iteration count, dimensionality + 1)
             distance_samples[i, :] = torch.tensor([  #
                 transformation_gt.distance(mapping_parameters_to_transformation(row))  #
                 for row in res[:, 0:dimensionality]  #
