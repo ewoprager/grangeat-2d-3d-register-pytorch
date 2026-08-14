@@ -63,7 +63,7 @@ def cartesian_plots(  #
                 "yvalues": dependent_values[*dependent_index, :].tolist(),  #
             }
             if dependent_errors is not None:
-                serie["yerr"] =  dependent_errors[*dependent_index, :].tolist()
+                serie["yerr"] = dependent_errors[*dependent_index, :].tolist()
             series.append(serie)
         plot = {  #
             "title": ";".join([  #
@@ -80,8 +80,8 @@ def cartesian_plots(  #
     return plots
 
 
-def main():
-    instance_dirs: list[pathlib.Path] = [CROPPING_RESULTS_DIR]
+def simple_shared_cartesian(directory, name):
+    instance_dirs: list[pathlib.Path] = [directory]
     for d in instance_dirs:
         assert d.is_dir()
 
@@ -106,8 +106,8 @@ def main():
     assert "cartesian" in variables_config
     variables: list[str] = list(variables_config["cartesian"].keys())
 
-    variable_hierarchy: list[str] = ["weight_alpha", "cropping", "cropping_method", "truncation_percent",
-                                     "apply_scaling", "iterations_per_weight_update", "iterations_per_crop_update",
+    variable_hierarchy: list[str] = ["weight_alpha", "iterations_per_crop_update", "cropping", "cropping_method",
+                                     "truncation_percent", "apply_scaling", "iterations_per_weight_update",
                                      "crop_expand", "mask", "desired_h_valid", "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     variables = sorted(  #
@@ -144,8 +144,17 @@ def main():
         ylim=ylim,  #
     )
 
-    with open(OUTPUT_DIR / "plots.yaml", 'w') as file:
+    with open(OUTPUT_DIR / f"{name}.yaml", 'w') as file:
         yaml.safe_dump(plots, file)
+
+
+def main():
+    if False:
+        # 0: cropping
+        simple_shared_cartesian(CROPPING_RESULTS_DIR, "0_cropping")
+    if True:
+        # 1: reeval
+        simple_shared_cartesian(REEVAL_RESULTS_DIR, "1_reeval")
 
 
 if __name__ == "__main__":
