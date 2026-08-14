@@ -165,6 +165,7 @@ def main(  #
         data_output_dir: str | pathlib.Path,  #
         show: bool = False,  #
         fill_gaps: str | None = None,  #
+        name: str | None = None,  #
 ):
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -216,10 +217,10 @@ def main(  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
             "downsample_level": Constant(1),  #
-            "truncation_percent": Constant(0),  # Cartesian([0, 75]),  # Cartesian([65, 75, 85]),  #
+            "truncation_percent": Constant(75),  # Cartesian([65, 75, 85]),  #
             # ----- cropping
-            "cropping_method": Constant("none"),  # Cartesian(["none", "bounding_box", "valid_only"]),  #
-            "iterations_per_crop_update": Cartesian([0, 2]),  # Cartesian([0, 2, 1000]),  #
+            "cropping_method": Cartesian(["bounding_box", "valid_only"]),  #
+            "iterations_per_crop_update": Cartesian([0, 2, 1000]),  # Cartesian([0, 2, 1000]),  #
             # ----- scaling
             "apply_scaling": Constant(False),  # Cartesian([False, True]),  #
             # ----- similarity & weighting
@@ -239,9 +240,9 @@ def main(  #
         hardcoded_xray_names: list[str] = [  #
             "level_000",  #
             # "level_090",  #
-            # "up_000",  #
+            "up_000",  #
             # "up_090",  #
-            # "down_000",  #
+            "down_000",  #
             # "down_090",  #
         ]
 
@@ -256,7 +257,7 @@ def main(  #
                 config.values["xray_path"] = Cartesian([str(xray_path / name) for name in hardcoded_xray_names])
 
         if not show:
-            instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir)
+            instance_output_dir: pathlib.Path = instance_output_directory(data_output_dir, name)
 
             with open(instance_output_dir / "variables.txt", 'w') as file:
                 yaml.safe_dump(config.serialize(), file, sort_keys=False)  # very important to preserve order of keys
@@ -553,7 +554,7 @@ def main(  #
                 output_directory=instance_output_dir,  #
                 device=device,  #
                 dry_run=dry_run,  #
-                throw=dry_run,#
+                throw=dry_run,  #
             )
 
 
@@ -589,6 +590,8 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--fill-gaps", type=str, default=None,
                         help="Give a path to an existing results directory and run all experiments specified by "
                              "variables.txt whose results are not present.")
+    parser.add_argument("--name", type=str, default=None,
+                        help="Name to give the experiment; this will just be used in the name of the output directory.")
     args = parser.parse_args()
 
     if args.xray_path is None:
@@ -615,7 +618,7 @@ if __name__ == "__main__":
 
     try:
         main(cache_directory=args.cache_directory, ct_path=args.ct_path, xray_path=xray,
-             data_output_dir=args.data_output_dir, show=args.show, fill_gaps=args.fill_gaps)
+             data_output_dir=args.data_output_dir, show=args.show, fill_gaps=args.fill_gaps, name=args.name)
         if args.notify:
             pushover.send_notification(__file__, "Script finished.")
     except Exception as e:

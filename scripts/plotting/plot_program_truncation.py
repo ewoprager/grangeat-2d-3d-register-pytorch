@@ -331,8 +331,9 @@ def main(  #
     assert "cartesian" in variables_config
     variables: list[str] = list(variables_config["cartesian"].keys())
 
-    variable_hierarchy: list[str] = ["weight_alpha", "iterations_per_weight_update", "crop_expand", "mask", "cropping",
-                                     "truncation_percent", "desired_h_valid", "xray_path"]  # most to least important
+    variable_hierarchy: list[str] = ["weight_alpha", "cropping", "cropping_method", "truncation_percent",
+                                     "apply_scaling", "iterations_per_weight_update", "iterations_per_crop_update",
+                                     "crop_expand", "mask", "desired_h_valid", "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     variables = sorted(  #
         variables,  #

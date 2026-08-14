@@ -25,9 +25,10 @@ def save_dict(d: dict, *, directory: pathlib.Path, stem: str) -> None:
     (directory / f"{stem}.txt").write_text(pprint.pformat(d))
 
 
-def instance_output_directory(script_output_directory: str | pathlib.Path) -> pathlib.Path:
+def instance_output_directory(script_output_directory: str | pathlib.Path, name: str | None = None) -> pathlib.Path:
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    ret: pathlib.Path = pathlib.Path(script_output_directory) / timestamp
+    dir_name = timestamp if name is None else f"{timestamp}_{name}"
+    ret: pathlib.Path = pathlib.Path(script_output_directory) / dir_name
     ret.mkdir(parents=True, exist_ok=True)
     return ret
 
