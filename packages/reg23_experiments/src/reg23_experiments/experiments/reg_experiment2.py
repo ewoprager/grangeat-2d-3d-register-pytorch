@@ -212,7 +212,7 @@ def run_experiment(  #
 
     if plot:
         # Show the target image, fixed image and moving image at the gold-standard
-        fig, axes = plt.subplots(1, 3)
+        fig, axes = plt.subplots(1, 5)
 
         # Target image
         image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
@@ -231,18 +231,31 @@ def run_experiment(  #
             raise RuntimeError(f"Error setting parameters to ground truth transformation: {err.description}")
         for _, f in periodic_behaviour:
             f(params_gt)
+        # Scaling image at gold-standard
+        scaling_image: torch.Tensor | Error = data_manager().get("scaling_images")
+        if isinstance(scaling_image, Error):
+            raise RuntimeError(f"Error getting fixed image: {scaling_image.description}")
+        axes[1].imshow(scaling_image[0].cpu().numpy())
+        axes[1].set_title("scaling image")
+        # Weighting image at gold-standard
+        weighting_image: torch.Tensor | None | Error = data_manager().get("weight_images")
+        if isinstance(weighting_image, Error):
+            raise RuntimeError(f"Error getting fixed image: {weighting_image.description}")
+        if weighting_image is not None:
+            axes[2].imshow(weighting_image[0].cpu().numpy())
+            axes[2].set_title("weighting image")
         # Fixed image at gold-standard
         fixed_image: torch.Tensor | Error = data_manager().get("fixed_images")
         if isinstance(fixed_image, Error):
             raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
-        axes[1].imshow(fixed_image[0].cpu().numpy())
-        axes[1].set_title("fixed image")
+        axes[3].imshow(fixed_image[0].cpu().numpy())
+        axes[3].set_title("fixed image")
         # Moving image at gold-standard
         moving_image: torch.Tensor | Error = data_manager().get("moving_images")
         if isinstance(moving_image, Error):
             raise RuntimeError(f"Error getting moving image: {moving_image.description}")
-        axes[2].imshow(moving_image[0].cpu().numpy())
-        axes[2].set_title("moving image at G.T.")
+        axes[4].imshow(moving_image[0].cpu().numpy())
+        axes[4].set_title("moving image at G.T.")
 
         plt.ion()  # figures are non-blocking
         plt.show()

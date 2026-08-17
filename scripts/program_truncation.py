@@ -213,7 +213,7 @@ def main(  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
             "downsample_level": Constant(1),  #
-            "truncation_percent": Constant(75),  # Cartesian([65, 75, 85]),  #
+            "truncation_percent": Constant(50),  # Cartesian([65, 75, 85]),  #
             # ----- cropping
             "cropping_method": Cartesian(["bounding_box", "valid_only"]),  #
             "iterations_per_crop_update": Constant(1000),  # Cartesian([0, 2, 1000]),  #
