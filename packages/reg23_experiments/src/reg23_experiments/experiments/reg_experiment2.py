@@ -81,7 +81,7 @@ def run_experiment(  #
         tqdm_position: int = 0,  #
         dry_run: bool = False,  #
         batch_size: int = 1,  #
-        plot: Literal["no", "yes", "mask"] = "no",  #
+        plot: bool = False,  #
 ) -> pd.DataFrame | None:
     """
     Run multiple (`sample_count_per_distance`) registrations according to the given parameters, and return the average
@@ -210,6 +210,43 @@ def run_experiment(  #
             dadg_updater(names_returned=["weight_images"])(batched.refresh_weights),  #
         )
 
+    if plot:
+        # Show the target image, fixed image and moving image at the gold-standard
+        fig, axes = plt.subplots(1, 3)
+
+        # Target image
+        image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
+        if isinstance(image_2d_full, Error):
+            raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
+        axes[0].imshow(image_2d_full.cpu().numpy())
+        axes[0].set_title("original target")
+        # Initialise at the gold-standard
+        transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
+        if isinstance(transformation_gt, Error):
+            raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
+        if transformation_gt is None:
+            raise Exception(f"No ground truth transformation available.")
+        params_gt = mapping_transformation_to_parameters(transformation_gt)
+        if isinstance(err := data_manager().set("parameters", params_gt.unsqueeze(0)), Error):
+            raise RuntimeError(f"Error setting parameters to ground truth transformation: {err.description}")
+        for _, f in periodic_behaviour:
+            f(params_gt)
+        # Fixed image at gold-standard
+        fixed_image: torch.Tensor | Error = data_manager().get("fixed_images")
+        if isinstance(fixed_image, Error):
+            raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
+        axes[1].imshow(fixed_image[0].cpu().numpy())
+        axes[1].set_title("fixed image")
+        # Moving image at gold-standard
+        moving_image: torch.Tensor | Error = data_manager().get("moving_images")
+        if isinstance(moving_image, Error):
+            raise RuntimeError(f"Error getting moving image: {moving_image.description}")
+        axes[2].imshow(moving_image[0].cpu().numpy())
+        axes[2].set_title("moving image at G.T.")
+
+        plt.ion()  # figures are non-blocking
+        plt.show()
+
     # -----
     # Running repeated registrations with configured parameters
     dimensionality = 6
@@ -221,32 +258,13 @@ def run_experiment(  #
     if transformation_gt is None:
         raise Exception(f"No ground truth transformation available.")
     for i in tqdm(  #
-            range(int(config.sample_count_per_distance) if plot == "no" else 1),  #
+            range(1 if plot else int(config.sample_count_per_distance)),  #
             desc=indentation_prefix(tqdm_position) + "Repeated samples",  #
             position=tqdm_position,  #
             leave=None  #
     ):
         starting_tr = transformation_gt.with_random_offset_at_distance(config.starting_distance)
         starting_params = mapping_transformation_to_parameters(starting_tr)
-        # -----
-        # Plotting if desired
-        if plot != "no":
-            plt.ion()  # figures are non-blocking
-            plt.show()
-            fig, axes = plt.subplots(1, 3)
-            # Getting the data from the DADG
-            image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
-            if isinstance(image_2d_full, Error):
-                raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
-            cropped_target: torch.Tensor | Error = data_manager().get("cropped_target")
-            if isinstance(cropped_target, Error):
-                raise RuntimeError(f"Error getting fixed image: {cropped_target.description}")
-            # Full 2D image
-            axes[0].imshow(image_2d_full.cpu().numpy())
-            axes[0].set_title("full 2d image")
-            # Cropped target
-            axes[1].imshow(cropped_target.cpu().numpy())
-            axes[1].set_title("cropped target at start")
         # -----
         # Registration
         res = run_reg(  #
@@ -268,15 +286,18 @@ def run_experiment(  #
                 for row in res[:, 0:dimensionality]  #
             ], device=distance_samples.device, dtype=distance_samples.dtype)  # size = (iteration count,)
 
-    if plot != "no":
-        axes[2].plot(range(config.reg_config.iteration_count), distance_samples[0, :].cpu().numpy())
-        axes[2].set_xlabel("iteration")
-        axes[2].set_ylabel("distance from gold standard")
-        axes[2].set_ylim((0.0, None))
+    if plot:
+        fig, axes = plt.subplots()
+        axes.plot(range(config.reg_config.iteration_count), distance_samples[0, :].cpu().numpy())
+        axes.set_xlabel("iteration")
+        axes.set_ylabel("distance from gold standard")
+        axes.set_ylim((0.0, None))
+        plt.draw()
+        plt.pause(0.1)
         plt.ioff()  # figures are blocking
         plt.show()
 
-    return None if (dry_run or plot != "no") else pd.DataFrame({  #
+    return None if (dry_run or plot) else pd.DataFrame({  #
         "iteration": torch.arange(config.reg_config.iteration_count).numpy(),  # size = (iteration count,)
         "distance": distance_samples.mean(dim=0).cpu().numpy(),  # size = (iteration count,)
         "distance_std": distance_samples.std(dim=0).cpu().numpy(),  #

@@ -8,7 +8,6 @@ import matplotlib
 
 matplotlib.use("QtAgg")
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import SimpleITK as sitk
@@ -23,18 +22,15 @@ from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
 from reg23_experiments.experiments.reg_experiment2 import exp_config_from_dict, run_experiment
-from reg23_experiments.experiments.registration import RegConfig, run_reg
 from reg23_experiments.experiments.run import experiments_hybrid
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.image import XrayDICOM, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.io.serialize import serialize_recursive
 from reg23_experiments.io.sitk import DCMSeriesInfo, find_ct_series, load_ct_series
-from reg23_experiments.ops import geometry, similarity_metric
+from reg23_experiments.ops import geometry
 from reg23_experiments.ops.ct import convert_ct_to_mu_sitk
-from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
-from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
-    mapping_transformation_to_parameters
+from reg23_experiments.ops.data_manager import dadg_updater, data_manager
 from reg23_experiments.utils import logs_setup, pushover
 
 
@@ -220,9 +216,9 @@ def main(  #
             "truncation_percent": Constant(75),  # Cartesian([65, 75, 85]),  #
             # ----- cropping
             "cropping_method": Cartesian(["bounding_box", "valid_only"]),  #
-            "iterations_per_crop_update": Constant(1000), #Cartesian([0, 2, 1000]),  #
+            "iterations_per_crop_update": Constant(1000),  # Cartesian([0, 2, 1000]),  #
             # ----- scaling
-            "apply_scaling": Constant(False), #Cartesian([False, True]),  #
+            "apply_scaling": Constant(False),  # Cartesian([False, True]),  #
             # ----- similarity & weighting
             "weighting": Cartesian([None, 0.0]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  # Cartesian([0, 1, 2, 4]),  #
@@ -331,18 +327,11 @@ def main(  #
             ct_spacing=ct_spacing,  #
             cache_directory=cache_directory,  #
             save_to_cache=False,  #
-            # truncation_percent=0,  #
-            # desired_h_valid=20.0,  #
-            # further_cropping=None,  #
             source_offset=torch.zeros(2, dtype=torch.float64, device=device),  #
-            # downsample_level=0,  #
             ap_transformation=Transformation(
                 rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
                 translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
             target_ap_distance=5.0,  #
-            # current_transformation=t,  #
-            # parameters=mapping_transformation_to_parameters(t).unsqueeze(0),  #
-            # mask_transformation=None,  #
             saved_transformations=saved_transformations,  #
             saved_xray_reg_configs=saved_xray_reg_configs,  #
     ), Error):
@@ -430,117 +419,16 @@ def main(  #
             logger.error(f"Error adding updater: {err.description}")
             return
 
-    if False and show:
-        # -----
-        # Display images for debugging
-        plt.ion()  # figures are non-blocking
-        plt.show()
-        fig, axes = plt.subplots(1, 4)
-        # -----
-        # Set the current transformation to the ground truth if it exists
-        data_manager().set("xray_path", "/home/eprager/Documents/Datasets/3DP Head 2/X-ray/down_090")
-
-        transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
-        if transformation_gt is None or isinstance(transformation_gt, Error):
-            raise RuntimeError(f"No ground truth available"
-                               f"{"." if transformation_gt is None else f": {transformation_gt.description}"}")
-        parameters_gt = mapping_transformation_to_parameters(transformation_gt)
-        starting_tr = transformation_gt.with_random_offset_at_distance(constants["starting_distance"])
-        starting_params = mapping_transformation_to_parameters(starting_tr)
-
-        data_manager().set("current_transformation", transformation_gt)
-        if "downsample_level" in constants:
-            data_manager().set("downsample_level", constants["downsample_level"])
-        image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
-        if isinstance(image_2d_full, Error):
-            raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
-        axes[0].imshow(image_2d_full.cpu().numpy())
-        axes[0].set_title("original target")
-        fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
-        if isinstance(fixed_image, Error):
-            raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
-        axes[1].imshow(fixed_image.cpu().numpy())
-        axes[1].set_title("fixed image")
-        moving_image: torch.Tensor | Error = data_manager().get("moving_image")
-        if isinstance(moving_image, Error):
-            raise RuntimeError(f"Error getting moving image: {moving_image.description}")
-        axes[2].imshow(moving_image.cpu().numpy())
-        axes[2].set_title("moving image at G.T.")
-        data_manager().set("mask_transformation", data_manager().get("current_transformation"))
-        mask: torch.Tensor | Error = data_manager().get("mask")
-        if isinstance(mask, Error):
-            raise RuntimeError(f"Error getting mask: {mask.description}")
-        axes[3].imshow(mask.cpu().numpy())
-        axes[3].set_title("mask at G.T.")
-        logger.info(f"ZNCC at G.T. with masking = "
-                    f"{-similarity_metric.weighted_local_ncc(moving_image, fixed_image, mask, kernel_size=8)}")
-        plt.draw()
-        plt.pause(0.1)
-
-        data_manager().set("current_transformation", mapping_parameters_to_transformation(starting_params))
-        data_manager().set("desired_h_valid", constants["desired_h_valid"])
-        if "cropping" in constants:
-            if constants["cropping"] == "None":
-                cropping: Cropping | None = None
-            elif constants["cropping"] == "nonzero_drr":
-                cropping: Cropping | None = args_from_dadg()(geometry.get_crop_nonzero_drr)()
-            elif constants["cropping"] == "full_depth_drr":
-                cropping: Cropping | None = args_from_dadg()(geometry.get_crop_full_depth_drr)()
-            else:
-                raise ValueError(f"Unknown cropping technique '{constants["cropping"]}'.")
-            if isinstance(cropping, Error):
-                raise RuntimeError(f"Failed to set crop: {cropping.description}")
-            image: torch.Tensor | Error = data_manager().get("image_2d_full")
-            if isinstance(image, Error):
-                raise Exception(f"Failed to get image_2d_full: {image.description}")
-            spacing: torch.Tensor | Error = data_manager().get("image_2d_full_spacing")
-            if isinstance(spacing, Error):
-                raise Exception(f"Failed to get image_2d_full_spacing: {spacing.description}")
-            spacing = spacing.cpu()
-            if cropping is not None:
-                if cropping.is_collapsed(constants["crop_min_size"]):
-                    cropping = cropping.uncollapse(constants["crop_min_size"])
-                cropping = cropping.expand_mm(constants["crop_expand"], image_size=image.size(), image_spacing=spacing)
-                # expand could be negative, so checking again for collapse
-                if cropping.is_collapsed(constants["crop_min_size"]):
-                    cropping = cropping.uncollapse(constants["crop_min_size"])
-            data_manager().set("further_cropping", cropping, check_equality=True)
-
-        def objective_function(parameters: torch.Tensor) -> torch.Tensor:
-            data_manager().set("current_transformation",
-                               mapping_parameters_to_transformation(parameters.to(dtype=torch.float64)))
-            _moving_image: torch.Tensor | Error = data_manager().get("moving_image")
-            _fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
-            return -similarity_metric.ncc(_moving_image, _fixed_image)
-
-        res: torch.Tensor = run_reg(  #
-            obj_fun=objective_function,  #
-            starting_params=starting_params, config=RegConfig(  #
-                particle_count=constants["particle_count"],  #
-                particle_initialisation_spread=constants["particle_initialisation_spread"],  #
-                iteration_count=constants["iteration_count"],  #
-            ),  #
-            device=device,  #
-            plot="mask")  # size = (iteration count, dimensionality + 1)
-        logger.info(f"Result: {res}")
-        plt.ioff()  # figures are blocking
-        fig, axes = plt.subplots()
-        distances = torch.linalg.vector_norm(res[:, :6] - parameters_gt.unsqueeze(0), dim=1).cpu().numpy()
-        axes.plot(distances)
-        axes.set_xlabel("iteration")
-        axes.set_ylabel("distance from G.T.")
-        plt.show()
-        return
-
     if show:
         experiments_hybrid(  #
             param_constructor=exp_config_from_dict,  #
             # experiment=run_experiment,  #
-            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 500, plot="yes"),  #
+            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 500, plot=True),  #
             config_iterable=(c for c in [next(iter(config.iterable()))]),  # just the first iteration
             output_directory=None,  #
             device=device,  #
             dry_run=False,  #
+            throw=True,  #
         )
     else:
         # -----
@@ -577,12 +465,6 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--xray-dir", type=str, default=None,
                         help="Give a path to directory of DICOM X-ray images to register the CT image to. If "
                              "this is provided, the X-rays will by used instead of any DRR.")
-    # parser.add_argument("-i", "--no-load", action='store_true',
-    #                     help="Do not load any pre-calculated data from the cache.")
-    # parser.add_argument(
-    #     "-r", "--regenerate-drr", action='store_true',
-    #     help="Regenerate the DRR through the 3D data, regardless of whether a DRR has been cached.")
-    # parser.add_argument("-n", "--no-save", action='store_true', help="Do not save any data to the cache.")
     parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
     parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
     parser.add_argument("-o", "--data-output-dir", type=str, default="experimental_results/program_truncation",

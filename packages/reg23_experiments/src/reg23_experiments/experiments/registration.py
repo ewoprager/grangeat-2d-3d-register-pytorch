@@ -29,7 +29,7 @@ def run_reg(  #
         starting_params: torch.Tensor,  #
         config: RegConfig,  #
         device: torch.device,  #
-        plot: Literal["no", "yes", "mask"] = "no",  #
+        plot: bool=False,  #
         tqdm_position: int = 0,  #
         batch_size: int = 1,  #
         periodic_behaviour: list[tuple[int, Callable[[torch.Tensor], None]]] = [],  #
@@ -50,10 +50,8 @@ def run_reg(  #
         f(starting_params)
 
     if not dry_run:
-        if plot != "no":
+        if plot:
             ncols = 2
-            if plot == "mask":
-                ncols += 2
             fig, axes = plt.subplots(1, ncols)
             axes = axes.tolist()
             # axes.insert(2, axes[1].twinx())
@@ -127,7 +125,7 @@ def run_reg(  #
             ret[it, 0:dimensionality] = swarm.current_optimum_position.to(dtype=torch.float32, device=device)
             ret[it, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
 
-            if plot != "no":
+            if plot:
                 t = mapping_parameters_to_transformation(swarm.current_optimum_position)
                 axes[0].clear()
                 moving_image: torch.Tensor = args_from_dadg()(  #
@@ -150,7 +148,7 @@ def run_reg(  #
                 axes[1].plot(ret[0:it + 1, -1].cpu().numpy())
                 axes[1].set_xlabel("iteration")
                 axes[1].set_ylabel("o.f. value")
-                if False and plot == "mask":
+                if False:
                     axes[2].clear()
                     axes[2].set_title("mask")
                     axes[2].imshow(data_manager().get("mask").cpu().numpy())
