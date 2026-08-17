@@ -178,7 +178,7 @@ def grid_of_plots_figure(  #
             v_max = np.max(independent_values[-2][1])
         for j, v in enumerate(independent_values[-2][1]):
             dependent_index = axis_index + (j,)
-            if isinstance(v, float):
+            if False and isinstance(v, float):
                 r = (v - v_min) / (v_max - v_min)
                 colour = (r, 1.0 - r, 0.0)
             else:
@@ -331,7 +331,7 @@ def main(  #
     assert "cartesian" in variables_config
     variables: list[str] = list(variables_config["cartesian"].keys())
 
-    variable_hierarchy: list[str] = ["weight_alpha", "iterations_per_crop_update", "cropping", "cropping_method",
+    variable_hierarchy: list[str] = ["weighting", "weight_alpha", "iterations_per_crop_update", "cropping", "cropping_method",
                                      "truncation_percent", "apply_scaling", "iterations_per_weight_update",
                                      "crop_expand", "mask", "desired_h_valid", "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}

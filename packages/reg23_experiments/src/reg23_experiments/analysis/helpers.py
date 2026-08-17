@@ -56,7 +56,7 @@ def dataframe_rectangular_columns_to_tensor(df: pd.DataFrame, *, ordered_axes: l
         axis_index_objects: list[pd.Index] = [s.index]
     else:
         axis_index_objects: list[pd.Index] = [  #
-            s.index.levels[s.index.names.index(name)]  #
+            s.index.get_level_values(name).unique()  #
             for name in ordered_axes  #
         ]
         # create a MultiIndex object for the full grid of values, with every combination of the values from each axis.
