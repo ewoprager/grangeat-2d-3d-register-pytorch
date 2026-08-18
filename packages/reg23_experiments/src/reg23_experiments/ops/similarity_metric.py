@@ -165,6 +165,7 @@ def mutual_information(#
         xs: torch.Tensor, #
         ys: torch.Tensor, #
         *,#
+        weights: torch.Tensor | None =None,#
         dim: int | tuple | torch.Size | None = None,#
         x_bins: int = 64,#
         y_bins: int = 64,#
@@ -174,10 +175,15 @@ def mutual_information(#
     device = xs.device
     assert ys.dtype == dtype
     assert ys.device == device
+    if weights is not None:
+        assert weights.dtype == dtype
+        assert weights.device == device
     # broadcast all tensors to the same shape
-    size = torch.broadcast_shapes(xs.size(), ys.size())
+    size = torch.broadcast_shapes(xs.size(), ys.size()) if weights is None else torch.broadcast_shapes(xs.size(), ys.size(), weights.size())
     xs = xs.broadcast_to(size)
     ys = ys.broadcast_to(size)
+    if weights is not None:
+        weights = weights.broadcast_to(size)
     if dim is None:
         dim = torch.Size(range(len(size)))  #
     elif isinstance(dim, int):
@@ -199,6 +205,8 @@ def mutual_information(#
     # moving the chosen dimensions to the back and flattening them
     x_bins_f = x_bins_f.permute(*ret_dims, *dim).flatten(start_dim=-len(dim))
     y_bins_f = y_bins_f.permute(*ret_dims, *dim).flatten(start_dim=-len(dim))
+    if weights is not None:
+        weights = weights.permute(*ret_dims, *dim).flatten(start_dim=-len(dim))
 
     x_bins_0 = x_bins_f.floor().long().clamp(max=x_bins - 2)
     y_bins_0 = y_bins_f.floor().long().clamp(max=y_bins - 2)
@@ -213,6 +221,12 @@ def mutual_information(#
     contributions_01 = (1 - x_alphas) * y_alphas
     contributions_10 = x_alphas * (1 - y_alphas)
     contributions_11 = x_alphas * y_alphas
+
+    if weights is not None:
+        contributions_00 = weights * contributions_00
+        contributions_01 = weights * contributions_01
+        contributions_10 = weights * contributions_10
+        contributions_11 = weights * contributions_11
 
     bins_00 = x_bins_0 * y_bins + y_bins_0
     bins_01 = x_bins_0 * y_bins + y_bins_1

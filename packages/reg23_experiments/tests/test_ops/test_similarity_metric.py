@@ -69,6 +69,19 @@ def test_gradient_correlation():
 
 def test_mutual_information():
     a = torch.rand((3, 100, 100))
+
+    b = a * 2.0
+    res0 = similarity_metric.mutual_information(a, b, dim=(-2, -1))
+
+    b = a * 2.0 + 0.5 * torch.rand_like(a)
+    res1 = similarity_metric.mutual_information(a, b, dim=(-2, -1))
+    assert((res1 < res0).all())
+
     b = a * 2.0 + 0.75 * torch.rand_like(a)
-    res = similarity_metric.mutual_information(a, b, dim=(-2, -1))
-    print(res)
+    res2 = similarity_metric.mutual_information(a, b, dim=(-2, -1))
+    assert((res2 < res1).all())
+
+    b = torch.rand_like(a)
+    res3 = similarity_metric.mutual_information(a, b, dim=(-2, -1))
+    assert((res3 < res2).all())
+
