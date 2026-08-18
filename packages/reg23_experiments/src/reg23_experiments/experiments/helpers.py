@@ -50,6 +50,10 @@ class ParametrisedSimilarityMetric:
             weighted_function = similarity_metric.weighted_ncc
         elif self._underlying_function == similarity_metric.local_ncc:
             weighted_function = similarity_metric.weighted_local_ncc
+        elif self._underlying_function == similarity_metric.mutual_information:
+            weighted_function = lambda xs, ys, ws, **kwargs: similarity_metric.mutual_information(  #
+                xs, ys, weights=ws, **kwargs  #
+            )
         else:
             return None
         return lambda *args, **kwargs: weighted_function(*args, **kwargs, **self._kwargs)
@@ -60,7 +64,8 @@ def string_to_sim_met(  #
         *,  #
         kernel_size: int = 8,  #
         llambda: float = 1.0,  #
-        gradient_method: Literal["sobel", "central_difference"] = "sobel"  #
+        gradient_method: Literal["sobel", "central_difference"] = "sobel",  #
+        mi_bin_count: int = 64,  #
 ) -> ParametrisedSimilarityMetric:
     if config_string == "zncc":
         return ParametrisedSimilarityMetric(similarity_metric.ncc)
@@ -70,4 +75,7 @@ def string_to_sim_met(  #
         return ParametrisedSimilarityMetric(similarity_metric.multiscale_ncc, kernel_size=kernel_size, llambda=llambda)
     elif config_string == "gradient_correlation":
         return ParametrisedSimilarityMetric(similarity_metric.gradient_correlation, gradient_method=gradient_method)
+    elif config_string == "mutual_information":
+        return ParametrisedSimilarityMetric(similarity_metric.mutual_information, x_bins=mi_bin_count,
+                                            y_bins=mi_bin_count)
     raise ValueError(f"Unknown similarity metric '{config_string}'.")

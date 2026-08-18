@@ -65,9 +65,10 @@ class ExperimentConfig(traitlets.HasTraits):
     ], allow_none=True, default_value=traitlets.Undefined)
     iterations_per_weight_update: int = traitlets.Int(min=0,
                                                       default_value=traitlets.Undefined)  # 0 means every o.f. eval.
-    sim_metric: Literal["zncc", "local_zncc"] = traitlets.Enum(values=[  #
+    sim_metric: Literal["zncc", "local_zncc", "mutual_information"] = traitlets.Enum(values=[  #
         "zncc",  #
         "local_zncc",  #
+        "mutual_information",  #
     ], default_value=traitlets.Undefined)
     # ----- registration
     starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
