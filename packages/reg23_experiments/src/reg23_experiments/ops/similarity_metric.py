@@ -1,6 +1,7 @@
 import logging
 from typing import Literal
 
+import numpy as np
 import torch
 
 __all__ = ["ncc", "local_ncc", "multiscale_ncc", "weighted_ncc", "weighted_local_ncc", "gradient_correlation"]
@@ -159,3 +160,73 @@ def gradient_correlation(xs: torch.Tensor, ys: torch.Tensor, *,
         gx_ys = torch.gradient(ys, dim=0)[0]
         gy_ys = torch.gradient(ys, dim=1)[0]
     return 0.5 * (ncc(gx_xs, gx_ys) + ncc(gy_xs, gy_ys))
+
+def mutual_information(#
+        xs: torch.Tensor, #
+        ys: torch.Tensor, #
+        *,#
+        dim: int | tuple | torch.Size | None = None,#
+        x_bins: int = 64,#
+        y_bins: int = 64,#
+) -> torch.Tensor:
+    # check tensor compatibility
+    dtype = xs.dtype
+    device = xs.device
+    assert ys.dtype == dtype
+    assert ys.device == device
+    # broadcast all tensors to the same shape
+    size = torch.broadcast_shapes(xs.size(), ys.size())
+    xs = xs.broadcast_to(size)
+    ys = ys.broadcast_to(size)
+    if dim is None:
+        dim = torch.Size(range(len(size)))  #
+    elif isinstance(dim, int):
+        dim = torch.Size([dim % len(size)])
+    else:
+        dim = torch.Size(d % len(size) for d in dim)
+    # determine the size of the returned value
+    ret_size = torch.Size([s for i, s in enumerate(size) if i not in dim])
+    ret_dims = torch.Size([i for i in range(len(size)) if i not in dim])
+
+    x_min = xs.amin(dim=dim, keepdim=True)
+    x_max = xs.amax(dim=dim, keepdim=True)
+    y_min = ys.amin(dim=dim, keepdim=True)
+    y_max = ys.amax(dim=dim, keepdim=True)
+
+    x_bins_f = (xs - x_min) / (x_max - x_min) * (x_bins - 1)
+    y_bins_f = (ys - y_min) / (y_max - y_min) * (y_bins - 1)
+
+    # moving the chosen dimensions to the back and flattening them
+    x_bins_f = x_bins_f.permute(*ret_dims, *dim).flatten(start_dim=-len(dim))
+    y_bins_f = y_bins_f.permute(*ret_dims, *dim).flatten(start_dim=-len(dim))
+
+    x_bins_0 = x_bins_f.floor().long().clamp(max=x_bins - 2)
+    y_bins_0 = y_bins_f.floor().long().clamp(max=y_bins - 2)
+
+    x_bins_1 = x_bins_0 + 1
+    y_bins_1 = y_bins_0 + 1
+
+    x_alphas = x_bins_f - x_bins_0.float()
+    y_alphas = y_bins_f - y_bins_0.float()
+
+    contributions_00 = (1 - x_alphas) * (1 - y_alphas)
+    contributions_01 = (1 - x_alphas) * y_alphas
+    contributions_10 = x_alphas * (1 - y_alphas)
+    contributions_11 = x_alphas * y_alphas
+
+    bins_00 = x_bins_0 * y_bins + y_bins_0
+    bins_01 = x_bins_0 * y_bins + y_bins_1
+    bins_10 = x_bins_1 * y_bins + y_bins_0
+    bins_11 = x_bins_1 * y_bins + y_bins_1
+
+    hist = torch.zeros((*ret_size, x_bins * y_bins), dtype=dtype, device=device)
+    hist.scatter_add_(-1, bins_00, contributions_00)
+    hist.scatter_add_(-1, bins_01, contributions_01)
+    hist.scatter_add_(-1, bins_10, contributions_10)
+    hist.scatter_add_(-1, bins_11, contributions_11)
+    hist = hist.reshape(*ret_size, x_bins, y_bins)
+
+    p = hist / hist.sum(dim=(-2, -1), keepdim=True)
+    px = p.sum(dim=-2, keepdim=True)
+    py = p.sum(dim=-1, keepdim=True)
+    return (p * (p / (px * py)).log()).nan_to_num().sum(dim=(-2, -1))

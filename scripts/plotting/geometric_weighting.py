@@ -12,6 +12,8 @@ from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_
 RESULTS_DIR = pathlib.Path("experimental_results/program_truncation")
 CROPPING_RESULTS_DIR = RESULTS_DIR / "2026-08-13_11-40-04_gw-0-cropping"
 REEVAL_RESULTS_DIR = RESULTS_DIR / "2026-08-13_23-32-31_gw-1-reeval"
+MASKING_RESULTS_DIR = RESULTS_DIR / "2026-08-17_15-46-02_gw-2-masking"
+ALPHA_RESULTS_DIR = RESULTS_DIR / "2026-08-17_19-18-23_gw-3-alpha"
 OUTPUT_DIR = pathlib.Path("figures/geometric_weighting")
 
 
@@ -106,7 +108,7 @@ def simple_shared_cartesian(directory, name):
     assert "cartesian" in variables_config
     variables: list[str] = list(variables_config["cartesian"].keys())
 
-    variable_hierarchy: list[str] = ["weight_alpha", "iterations_per_crop_update", "cropping", "cropping_method",
+    variable_hierarchy: list[str] = ["weighting", "weight_alpha", "iterations_per_crop_update", "cropping", "cropping_method",
                                      "truncation_percent", "apply_scaling", "iterations_per_weight_update",
                                      "crop_expand", "mask", "desired_h_valid", "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
@@ -152,9 +154,15 @@ def main():
     if False:
         # 0: cropping
         simple_shared_cartesian(CROPPING_RESULTS_DIR, "0_cropping")
-    if True:
+    if False:
         # 1: reeval
         simple_shared_cartesian(REEVAL_RESULTS_DIR, "1_reeval")
+    if False:
+        # 2: masking
+        simple_shared_cartesian(MASKING_RESULTS_DIR, "2_masking")
+    if True:
+        # 3: alpha
+        simple_shared_cartesian(ALPHA_RESULTS_DIR, "3_alpha")
 
 
 if __name__ == "__main__":

@@ -213,14 +213,14 @@ def main(  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
             "downsample_level": Constant(1),  #
-            "truncation_percent": Constant(50),  # Cartesian([65, 75, 85]),  #
+            "truncation_percent": Cartesian([50, 75]),  #
             # ----- cropping
-            "cropping_method": Cartesian(["bounding_box", "valid_only"]),  #
+            "cropping_method": Constant("bounding_box"), #Cartesian(["bounding_box", "valid_only"]),  #
             "iterations_per_crop_update": Constant(1000),  # Cartesian([0, 2, 1000]),  #
             # ----- scaling
-            "apply_scaling": Constant(False),  # Cartesian([False, True]),  #
+            "apply_scaling": Constant(True),  # Cartesian([False, True]),  #
             # ----- similarity & weighting
-            "weighting": Cartesian([None, 0.0]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+            "weighting": Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  # Cartesian([0, 1, 2, 4]),  #
             "sim_metric": Constant("zncc"),  #
             # ----- registration
