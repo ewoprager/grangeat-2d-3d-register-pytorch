@@ -135,16 +135,28 @@ def gradient_correlation(  #
         sobel_y = sobel_y.unsqueeze(0).unsqueeze(0)
         xs = xs.unsqueeze(1)
         ys = ys.unsqueeze(1)
-        gx_xs = torch.nn.functional.conv2d(xs, sobel_x)[0]
-        gy_xs = torch.nn.functional.conv2d(xs, sobel_y)[0]
-        gx_ys = torch.nn.functional.conv2d(ys, sobel_x)[0]
-        gy_ys = torch.nn.functional.conv2d(ys, sobel_y)[0]
+        gx_xs = torch.nn.functional.conv2d(xs, sobel_x)
+        gy_xs = torch.nn.functional.conv2d(xs, sobel_y)
+        gx_ys = torch.nn.functional.conv2d(ys, sobel_x)
+        gy_ys = torch.nn.functional.conv2d(ys, sobel_y)
         if weights is not None:
             # take the geometric means of the weights that contribute to each value in the gradient images
-            log_weights = weights.unsqueeze(1).log()
-            kernel_sum = sobel_x.abs().sum()
-            weights_x = (torch.nn.functional.conv2d(log_weights, sobel_x.abs())[0] / kernel_sum).exp()
-            weights_y = (torch.nn.functional.conv2d(log_weights, sobel_y.abs())[0] / kernel_sum).exp()
+            # need to deal with 0s separately as they cause the log to produce -infs that then turn into nans
+            weights_kernel_x = sobel_x.abs()
+            weights_kernel_y = sobel_y.abs()
+            weights = weights.unsqueeze(1)
+
+            zero_mask = weights.abs() < 1e-6
+            safe_log_weights = torch.where(zero_mask, 1.0, weights).log()
+            kernel_sum = weights_kernel_x.sum()
+
+            weights_x = (torch.nn.functional.conv2d(safe_log_weights, weights_kernel_x) / kernel_sum).exp()
+            weights_x_zero = torch.nn.functional.conv2d(zero_mask.float(), weights_kernel_x)
+            weights_x = torch.where(weights_x_zero > 1e-6, 0.0, weights_x)
+
+            weights_y = (torch.nn.functional.conv2d(safe_log_weights, weights_kernel_y) / kernel_sum).exp()
+            weights_y_zero = torch.nn.functional.conv2d(zero_mask.float(), weights_kernel_y)
+            weights_y = torch.where(weights_y_zero > 1e-6, 0.0, weights_y)
     else:  # gradient_method is "central_difference"
         gx_xs = torch.gradient(xs, dim=-2)[0]
         gy_xs = torch.gradient(xs, dim=-1)[0]

@@ -216,13 +216,13 @@ def main(  #
             "truncation_percent": Cartesian([50, 75]),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
-            "iterations_per_crop_update": Constant(1000),  # Cartesian([0, 2, 1000]),  #
+            "iterations_per_crop_update": Constant(1000),  #
             # ----- scaling
             "apply_scaling": Constant(True),  # Cartesian([False, True]),  #
             # ----- similarity & weighting
-            "weighting": Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),
-            "iterations_per_weight_update": Constant(1000),  # Cartesian([0, 1, 2, 4]),  #
-            "sim_metric": Constant("mutual_information"),# Constant("zncc"),  #
+            "weighting": Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+            "iterations_per_weight_update": Constant(1000),  #
+            "sim_metric": Constant("gradient_correlation"),  #
             # ----- registration
             "starting_distance": Constant(5.0),  #
             "sample_count_per_distance": Constant(10),  #
