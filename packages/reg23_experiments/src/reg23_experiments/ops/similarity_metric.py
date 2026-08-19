@@ -193,6 +193,11 @@ def mutual_information(#
     # determine the size of the returned value
     ret_size = torch.Size([s for i, s in enumerate(size) if i not in dim])
     ret_dims = torch.Size([i for i in range(len(size)) if i not in dim])
+    # filtering out ZNCC calculations where fewer than 2 value pairs are being used
+    if weights is not None:
+        exclude_mask = weights.count_nonzero(dim=dim) < 2
+        if (exclude_mask.numel() - exclude_mask.count_nonzero()) < 1:
+            return torch.zeros(ret_size, dtype=dtype, device=device)
 
     x_min = xs.amin(dim=dim, keepdim=True)
     x_max = xs.amax(dim=dim, keepdim=True)
@@ -217,16 +222,16 @@ def mutual_information(#
     x_alphas = x_bins_f - x_bins_0.float()
     y_alphas = y_bins_f - y_bins_0.float()
 
-    contributions_00 = (1 - x_alphas) * (1 - y_alphas)
-    contributions_01 = (1 - x_alphas) * y_alphas
-    contributions_10 = x_alphas * (1 - y_alphas)
+    contributions_00 = (1.0 - x_alphas) * (1.0 - y_alphas)
+    contributions_01 = (1.0 - x_alphas) * y_alphas
+    contributions_10 = x_alphas * (1.0 - y_alphas)
     contributions_11 = x_alphas * y_alphas
 
     if weights is not None:
-        contributions_00 = weights * contributions_00
-        contributions_01 = weights * contributions_01
-        contributions_10 = weights * contributions_10
-        contributions_11 = weights * contributions_11
+        contributions_00 *= weights
+        contributions_01 *= weights
+        contributions_10 *= weights
+        contributions_11 *= weights
 
     bins_00 = x_bins_0 * y_bins + y_bins_0
     bins_01 = x_bins_0 * y_bins + y_bins_1
