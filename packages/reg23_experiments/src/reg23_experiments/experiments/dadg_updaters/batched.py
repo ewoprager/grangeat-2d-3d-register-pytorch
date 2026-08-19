@@ -5,7 +5,7 @@ from jaxtyping import Float32, Float64
 
 import reg23_core
 from reg23_experiments.data.structs import Transformation
-from reg23_experiments.experiments.helpers import ParametrisedSimilarityMetric, string_to_sim_met
+from reg23_experiments.experiments.helpers import string_to_sim_met
 from reg23_experiments.ops.data_manager import dadg_updater
 from reg23_experiments.ops.geometry import get_crop_full_depth_drr, get_crop_nonzero_drr
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
@@ -162,11 +162,6 @@ def apply_sim_metric(  #
         fixed_images: Float32[torch.Tensor, "#b n m"],  #
         weight_images: Float32[torch.Tensor, "#b n m"] | None,  #
 ) -> dict[str, Any]:
-    p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(sim_metric)
-    if weight_images is None:
-        sim = p_sim_met.func(moving_images, fixed_images, dim=(-1, -2))
-    else:
-        sim = p_sim_met.func_weighted(moving_images, fixed_images, weight_images, dim=(-1, -2))
     return {  #
-        "of_values": -sim,  #
+        "of_values": -string_to_sim_met(sim_metric)(moving_images, fixed_images, weights=weight_images),  #
     }

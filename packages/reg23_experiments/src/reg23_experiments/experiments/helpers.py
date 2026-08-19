@@ -9,8 +9,7 @@ import torch
 
 from reg23_experiments.ops import similarity_metric
 
-__all__ = ["configs_to_dict", "save_dict", "instance_output_directory", "ParametrisedSimilarityMetric",
-           "string_to_sim_met"]
+__all__ = ["configs_to_dict", "save_dict", "instance_output_directory", "string_to_sim_met"]
 
 
 def configs_to_dict(*vargs) -> dict[str, Any]:
@@ -33,49 +32,36 @@ def instance_output_directory(script_output_directory: str | pathlib.Path, name:
     return ret
 
 
-class ParametrisedSimilarityMetric:
-    def __init__(self, underlying_function: Callable, **kwargs):
-        # filter out key-word arguments that the function doesn't accept
-        self._underlying_function = underlying_function
-        sig = inspect.signature(self._underlying_function)
-        self._kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
-
-    @property
-    def func(self) -> Callable:
-        return lambda *args, **kwargs: self._underlying_function(*args, **kwargs, **self._kwargs)
-
-    @property
-    def func_weighted(self) -> Callable | None:
-        if self._underlying_function == similarity_metric.ncc:
-            weighted_function = similarity_metric.weighted_ncc
-        elif self._underlying_function == similarity_metric.local_ncc:
-            weighted_function = similarity_metric.weighted_local_ncc
-        elif self._underlying_function == similarity_metric.mutual_information:
-            weighted_function = lambda xs, ys, ws, **kwargs: similarity_metric.mutual_information(  #
-                xs, ys, weights=ws, **kwargs  #
-            )
-        else:
-            return None
-        return lambda *args, **kwargs: weighted_function(*args, **kwargs, **self._kwargs)
+STRING_TO_SIM_MET = {  #
+    "zncc": similarity_metric.ncc,  ##
+    "gradient_correlation": similarity_metric.gradient_correlation,  #
+    "mutual_information": similarity_metric.mutual_information,  #
+}
 
 
 def string_to_sim_met(  #
-        config_string: str,  #
+        name: str,  #
         *,  #
         kernel_size: int = 8,  #
         llambda: float = 1.0,  #
         gradient_method: Literal["sobel", "central_difference"] = "sobel",  #
         mi_bin_count: int = 64,  #
-) -> ParametrisedSimilarityMetric:
-    if config_string == "zncc":
-        return ParametrisedSimilarityMetric(similarity_metric.ncc)
-    elif config_string == "local_zncc":
-        return ParametrisedSimilarityMetric(similarity_metric.local_ncc, kernel_size=kernel_size)
-    elif config_string == "multiscale_zncc":
-        return ParametrisedSimilarityMetric(similarity_metric.multiscale_ncc, kernel_size=kernel_size, llambda=llambda)
-    elif config_string == "gradient_correlation":
-        return ParametrisedSimilarityMetric(similarity_metric.gradient_correlation, gradient_method=gradient_method)
-    elif config_string == "mutual_information":
-        return ParametrisedSimilarityMetric(similarity_metric.mutual_information, x_bins=mi_bin_count,
-                                            y_bins=mi_bin_count)
-    raise ValueError(f"Unknown similarity metric '{config_string}'.")
+        dim: int | tuple | torch.Size | None = (-2, -1),  #
+) -> Callable:
+    all_kwargs = {  #
+        "kernel_size": kernel_size,  #
+        "llambda": llambda,  #
+        "gradient_method": gradient_method,  #
+        "mi_bin_count": mi_bin_count,  #
+        "dim": dim,  #
+    }
+    if name not in STRING_TO_SIM_MET:
+        raise ValueError(f"Unknown similarity metric '{name}'.")
+    underlying = STRING_TO_SIM_MET[name]
+    sig = inspect.signature(underlying)
+    applicable_kwargs = {  #
+        k: v  #
+        for k, v in all_kwargs.items()  #
+        if k in sig.parameters  #
+    }
+    return lambda *args, **kwargs: underlying(*args, **kwargs, **applicable_kwargs)

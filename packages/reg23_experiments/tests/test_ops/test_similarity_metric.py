@@ -63,7 +63,7 @@ def test_gradient_correlation():
     res = similarity_metric.gradient_correlation(a, b, gradient_method="central_difference")
 
     b = torch.rand((100,))
-    with pytest.raises(AssertionError):
+    with pytest.raises(RuntimeError):
         res = similarity_metric.gradient_correlation(a, b)
 
 

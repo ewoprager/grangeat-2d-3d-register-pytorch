@@ -65,9 +65,9 @@ class ExperimentConfig(traitlets.HasTraits):
     ], allow_none=True, default_value=traitlets.Undefined)
     iterations_per_weight_update: int = traitlets.Int(min=0,
                                                       default_value=traitlets.Undefined)  # 0 means every o.f. eval.
-    sim_metric: Literal["zncc", "local_zncc", "mutual_information"] = traitlets.Enum(values=[  #
+    sim_metric: Literal["zncc", "gradient_correlation", "mutual_information"] = traitlets.Enum(values=[  #
         "zncc",  #
-        "local_zncc",  #
+        "gradient_correlation",  #
         "mutual_information",  #
     ], default_value=traitlets.Undefined)
     # ----- registration
@@ -109,41 +109,7 @@ def run_experiment(  #
 
     # -----
     # Defining the objective function
-    def objective_function(parameters: Float64[torch.Tensor, "6"]) -> torch.Tensor:
-        if config.weight_alpha < 1.0e-4:
-            return args_from_dadg(  #
-                names_left=["weighted_sim_metric", "parameters"]  #
-            )(objective_function_binary_weighted)(  #
-                weighted_sim_metric=p_sim_met.func_weighted,  #
-                parameters=parameters.unsqueeze(0),  #
-            )[0]
-        else:
-            return args_from_dadg(  #
-                names_left=["weighted_sim_metric", "parameters", "weight_alpha"]  #
-            )(objective_function_alpha_weighted)(  #
-                weighted_sim_metric=p_sim_met.func_weighted,  #
-                parameters=parameters.unsqueeze(0),  #
-                weight_alpha=config.weight_alpha,  #
-            )[0]
-
-    def objective_function_batched(parameters: Float64[torch.Tensor, "b 6"]) -> Float64[torch.Tensor, "b"]:
-        if config.weight_alpha < 1.0e-4:
-            return args_from_dadg(  #
-                names_left=["weighted_sim_metric", "parameters"]  #
-            )(objective_function_binary_weighted)(  #
-                weighted_sim_metric=p_sim_met.func_weighted,  #
-                parameters=parameters,  #
-            )
-        else:
-            return args_from_dadg(  #
-                names_left=["weighted_sim_metric", "parameters", "weight_alpha"]  #
-            )(objective_function_alpha_weighted)(  #
-                weighted_sim_metric=p_sim_met.func_weighted,  #
-                parameters=parameters,  #
-                weight_alpha=config.weight_alpha,  #
-            )
-
-    def new_objective_function(parameters: Float64[torch.Tensor, "b 6"]) -> Float64[torch.Tensor, "b"]:
+    def objective_function(parameters: Float64[torch.Tensor, "b 6"]) -> Float64[torch.Tensor, "b"]:
         err: Error | None = data_manager().set("parameters", parameters)
         if isinstance(err, Error):
             logger.warning(f"Error setting parameters in o.f.: {err.description}")
@@ -283,7 +249,7 @@ def run_experiment(  #
         # Registration
         res = run_reg(  #
             # obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
-            obj_fun=new_objective_function,  #
+            obj_fun=objective_function,  #
             # obj_fun=new_new_objective_function,  #
             config=config.reg_config,  #
             starting_params=starting_params,  #
