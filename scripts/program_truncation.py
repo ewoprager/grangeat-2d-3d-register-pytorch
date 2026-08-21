@@ -17,7 +17,7 @@ import yaml
 from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
-from reg23_experiments.experiments.config import Cartesian, Constant, ExperimentConfig
+from reg23_experiments.experiments.config import Cartesian, Constant, ExperimentConfig, Zipped
 from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
@@ -213,18 +213,18 @@ def main(  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
             "downsample_level": Constant(1),  #
-            "truncation_percent": Cartesian([50, 75]),  #
+            "truncation_percent": Constant(85),  # Cartesian([0, 75]),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
             # ----- scaling
-            "apply_scaling": Constant(True),  # Cartesian([False, True]),  #
+            "apply_scaling": Zipped([False, True]),  # Cartesian([False, True]),  #
             # ----- similarity & weighting
-            "weighting": Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+            "weighting": Zipped([None, 0.25]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  #
-            "sim_metric": Constant("gradient_correlation"),  #
+            "sim_metric": Zipped(["gradient_correlation", "zncc"]),
             # ----- registration
-            "starting_distance": Constant(5.0),  #
+            "starting_distance": Constant(10.0),  #
             "sample_count_per_distance": Constant(10),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
@@ -234,11 +234,11 @@ def main(  #
 
         # X-ray choice determines the gold standard orientation, which drives h_linear:
         hardcoded_xray_names: list[str] = [  #
-            "level_000",  #
+            # "level_000",  #
             # "level_090",  #
             "up_000",  #
             # "up_090",  #
-            "down_000",  #
+            # "down_000",  #
             # "down_090",  #
         ]
 

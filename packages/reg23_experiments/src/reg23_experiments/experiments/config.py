@@ -1,3 +1,4 @@
+import functools
 import itertools
 import logging
 from typing import Any, Callable, Generator, Iterable, Iterator, Literal
@@ -8,7 +9,7 @@ import traitlets
 
 from reg23_experiments.data.structs import LinearRange
 
-__all__ = ["IntRange", "Constant", "Cartesian", "Range", "ExperimentConfig"]
+__all__ = ["IntRange", "Constant", "Cartesian", "Zipped", "Range", "ExperimentConfig"]
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,13 @@ class Constant(traitlets.HasTraits):
 
 
 class Cartesian(traitlets.HasTraits):
+    values: list = traitlets.List(minlen=1)
+
+    def __init__(self, values):
+        super().__init__(values=values)
+
+
+class Zipped(traitlets.HasTraits):
     values: list = traitlets.List(minlen=1)
 
     def __init__(self, values):
@@ -101,7 +109,7 @@ class Range(traitlets.HasTraits):
 class _Configs(Iterable[tuple[str, dict[str, Any]]]):
     def __init__(  #
             self,  #
-            values: dict[str, Constant | Cartesian | Range],  #
+            values: dict[str, Constant | Cartesian | Zipped | Range],  #
             space_sample_method: Literal["sobol"] = "sobol",  #
             space_sample_count: int | None = None,  #
     ):
@@ -112,6 +120,7 @@ class _Configs(Iterable[tuple[str, dict[str, Any]]]):
             for key, value in values.items()  #
             if isinstance(value, Constant)  #
         }
+
         # -----
         # Cartesian grid of values
         ordered_cartesian_names: list[str] = [  #
@@ -137,6 +146,26 @@ class _Configs(Iterable[tuple[str, dict[str, Any]]]):
         else:
             cart_n = 1
             self._cart_generator: Callable[[], Generator[tuple[str, dict[str, Any]]]] | None = None
+
+        # -----
+        # Zipped series of values
+        zipped = {  #
+            key: value.values  #
+            for key, value in values.items()  #
+            if isinstance(value, Zipped)  #
+        }
+        if zipped:
+            zipped_n = len(next(iter(zipped.values())))
+            if not all(len(v) == zipped_n for v in zipped.values()):
+                raise ValueError("All instances of `Zipped` in the config must be of the same length.")
+            self._zipped_generator: Callable[[], Generator[tuple[str, dict[str, Any]]]] | None = lambda: (  #
+                (f"z{i}", dict(zip(zipped.keys(), row)))  #
+                for i, row in enumerate(zip(*zipped.values()))  #
+            )
+        else:
+            zipped_n = 1
+            self._zipped_generator: Callable[[], Generator[tuple[str, dict[str, Any]]]] | None = None
+
         # -----
         # Spatial sampling of values
         range_samplers: dict[str, Callable[[float], Any]] = {  #
@@ -172,38 +201,38 @@ class _Configs(Iterable[tuple[str, dict[str, Any]]]):
         else:
             space_sample_count = 1
             self._range_generator: Callable[[], Generator[tuple[str, dict[str, Any]]]] | None = None
+
         # -----
         # Total number of configs
-        self._len = cart_n * space_sample_count
+        self._len = cart_n * space_sample_count * zipped_n
 
     def __iter__(self) -> Iterator[tuple[str, dict[str, Any]]]:
-        if self._cart_generator is None:
-            if self._range_generator is None:
-                yield "only_config", self._constants
-            else:
-                for range_name, range_config in self._range_generator():
-                    yield range_name, range_config | self._constants
+        # generators all yield values of type `tuple[str, dict[str, Any]]`
+        generators = [g() for g in [  #
+            self._cart_generator,  #
+            self._range_generator,  #
+            self._zipped_generator,  #
+        ] if g is not None]
+        if generators:
+            for tuples in itertools.product(*generators):
+                names = [t[0] for t in tuples]
+                configs = [t[1] for t in tuples]
+                yield "_".join(names), functools.reduce(lambda a, b: a | b, configs) | self._constants
         else:
-            if self._range_generator is None:
-                for cart_name, cart_config in self._cart_generator():
-                    yield cart_name, cart_config | self._constants
-            else:
-                for cart_name, cart_config in self._cart_generator():
-                    intermediate = cart_config | self._constants
-                    for range_name, range_config in self._range_generator():
-                        yield cart_name + "_" + range_name, range_config | intermediate
+            yield "only_config", self._constants
 
     def __len__(self) -> int:
         return self._len
 
 
 class ExperimentConfig(traitlets.HasTraits):
-    values: dict[str, Constant | Cartesian | Range] = traitlets.Dict(  #
+    values: dict[str, Constant | Cartesian | Range | Zipped] = traitlets.Dict(  #
         key_trait=traitlets.Unicode(allow_none=False),  #
         value_trait=traitlets.Union([  #
             traitlets.Instance(Constant, allow_none=False),  #
             traitlets.Instance(Cartesian, allow_none=False),  #
             traitlets.Instance(Range, allow_none=False),  #
+            traitlets.Instance(Zipped, allow_none=False),  #
         ]),  #
     )
 
@@ -239,22 +268,34 @@ class ExperimentConfig(traitlets.HasTraits):
                 for key, value in self.values.items()  #
                 if isinstance(value, Range)  #
             },  #
+            "zipped": {  #
+                key: value.values  #
+                for key, value in self.values.items()  #
+                if isinstance(value, Zipped)  #
+            },  #
         }
 
     @staticmethod
     def deserialize(variables: dict[str, Any]) -> 'ExperimentConfig':
-        assert "cartesian" in variables
-        assert "constants" in variables
-        assert "range" in variables
-        return ExperimentConfig(  #
-            {  #
+        config = {}
+        if "constants" in variables:
+            config |= {  #
                 key: Constant(value)  #
                 for key, value in variables["constants"].items()  #
-            } | {  #
+            }
+        if "cartesian" in variables:
+            config |= {  #
                 key: Cartesian(value)  #
                 for key, value in variables["cartesian"].items()  #
-            } | {  #
+            }
+        if "range" in variables:
+            config |= {  #
                 key: Range.deserialize(value)  #
                 for key, value in variables["range"].items()  #
-            }  #
-        )
+            }
+        if "zipped" in variables:
+            config |= {  #
+                key: Zipped(value)  #
+                for key, value in variables["zipped"].items()  #
+            }
+        return ExperimentConfig(config)

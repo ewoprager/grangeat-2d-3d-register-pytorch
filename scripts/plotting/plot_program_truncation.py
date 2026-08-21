@@ -230,7 +230,7 @@ def plot_grid_figures(  #
     if dependent_errors is not None:
         assert dependent_errors.size() == dependent_values.size()
     # getting the median largest distance value
-    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.75).item()) if len(
+    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.5).item()) if len(
         independent_values) > 2 else None
 
     for index_value_pairs in itertools.product(*[enumerate(v) for _, v in independent_values[:-4]]):
