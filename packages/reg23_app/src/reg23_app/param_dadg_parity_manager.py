@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 import torch
 
@@ -12,7 +13,7 @@ from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManag
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData, capture_in_namespaces
 
-from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed, respond_to_mask_change
+from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed
 
 __all__ = ["ParamDADGParityManager"]
 
@@ -32,9 +33,9 @@ class ParamDADGParityManager:
     XRAY_SPECIFIC_DADG_KEYS: list[str] = ["image_2d_full", "image_2d_full_spacing", "fixed_image_spacing",
                                           "transformation_gt", "source_distance", "xray_path", "target_flipped",
                                           "moving_image", "fixed_image_size", "fixed_image_offset",
-                                          "xray_sop_instance_uid", "fixed_image", "cropped_target", "mask",
-                                          "translation_offset", "image_2d_scale_factor", "source_offset",
-                                          "mask_transformation", "current_transformation", "cropping",
+                                          "xray_sop_instance_uid", "fixed_image", "cropped_target", "scaling_image",
+                                          "weight_image", "translation_offset", "image_2d_scale_factor",
+                                          "source_offset", "of_value", "current_transformation", "cropping",
                                           "electrode_points", "fiducial_points", "projected_fiducials"]
 
     def __init__(  #
@@ -68,6 +69,27 @@ class ParamDADGParityManager:
                                        names=["truncation_percent"])
         self._truncation_percent_changed(self._state.parameters.truncation_percent)
 
+        # `sim_metric` should be the same in the DADG and the state; the only necessary driving direction is state ->
+        # DADG
+        self._state.parameters.observe(lambda change: self._sim_metric_changed(change.new), names=["sim_metric"])
+        self._sim_metric_changed(self._state.parameters.sim_metric)
+
+        # `apply_scaling` should be the same in the DADG and the state; the only necessary driving direction is state
+        # -> DADG
+        self._state.parameters.observe(lambda change: self._apply_scaling_changed(change.new), names=["apply_scaling"])
+        self._apply_scaling_changed(self._state.parameters.apply_scaling)
+
+        # `apply_weighting` should be the same in the DADG and the state; the only necessary driving direction is state
+        # -> DADG
+        self._state.parameters.observe(lambda change: self._apply_weighting_changed(change.new),
+                                       names=["apply_weighting"])
+        self._apply_weighting_changed(self._state.parameters.apply_weighting)
+
+        # `weight_alpha` should be the same in the DADG and the state; the only necessary driving direction is state
+        # -> DADG
+        self._state.parameters.observe(lambda change: self._weight_alpha_changed(change.new), names=["weight_alpha"])
+        self._weight_alpha_changed(self._state.parameters.weight_alpha)
+
         # X-ray specific nodes in the DADG should be consistent with the values in `xray_parameters` in the state; the
         # only necessary driving direction is state -> DADG
         self._state.parameters.observe(lambda change: self._xray_parameters_changed(change.new),
@@ -75,11 +97,6 @@ class ParamDADGParityManager:
         # Need to keep track of previous set of X-rays that have been loaded
         self._current_xrays: list[str] = []
         self._xray_parameters_changed(self._state.parameters.xray_parameters)
-
-        # mask-related nodes in the DADG should be consistent with the value of `mask` in the state; the only necessary
-        # driving direction is state -> DADG
-        self._state.parameters.observe(self._respond_to_mask_change, names=["mask"])
-        self._respond_to_mask_change({"new": self._state.parameters.mask})
 
         # load ct fiducial points from save manager
         self._dadg.observe("ct_series_uid", "fiducial_point_loader", self._ct_series_uid_changed)
@@ -98,18 +115,21 @@ class ParamDADGParityManager:
     def _truncation_percent_changed(self, new_value: int) -> None:
         self._dadg.set("truncation_percent", new_value, check_equality=True)
 
+    def _sim_metric_changed(self, new_value: str) -> None:
+        self._dadg.set("sim_metric", new_value, check_equality=True)
+
+    def _apply_scaling_changed(self, new_value: bool) -> None:
+        self._dadg.set("apply_scaling", new_value, check_equality=True)
+
+    def _apply_weighting_changed(self, new_value: bool) -> None:
+        self._dadg.set("apply_weighting", new_value, check_equality=True)
+
+    def _weight_alpha_changed(self, new_value: float) -> None:
+        self._dadg.set("weight_alpha", new_value, check_equality=True)
+
     def _target_flipped_changed(self, new_value: bool, *, namespace: str | None) -> None:
         self._dadg.set("target_flipped" if namespace is None else f"{namespace}__target_flipped", new_value,
                        check_equality=True)
-
-    def _respond_to_mask_change(self, change) -> None:
-        for xray in self._current_xrays:
-            respond_to_mask_change(  #
-                dadg=self._dadg,  #
-                new_value=change["new"],  #
-                namespace_captures={key: xray for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS},  #
-                namespace=xray,  #
-            )
 
     def _xray_electrode_points_changed(self, new_value: OrderedPoints2D, *, namespace: str) -> None:
         uid: str | Error = self._dadg.get(f"{namespace}__xray_sop_instance_uid")
@@ -219,8 +239,8 @@ class ParamDADGParityManager:
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
-                f"{name}__refresh_mask_transformation_dependent",  #
-                capture_in_namespaces(namespace_captures)(updaters.refresh_mask_transformation_dependent)), Error):
+                f"{name}__refresh_scaling_image",  #
+                capture_in_namespaces(namespace_captures)(updaters.refresh_scaling_image)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
@@ -238,11 +258,17 @@ class ParamDADGParityManager:
                 capture_in_namespaces(namespace_captures)(updaters.project_fiducials)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__apply_sim_metric",  #
+                capture_in_namespaces(namespace_captures)(updaters.apply_sim_metric)), Error):
+            logger.error(f"Error adding updater: {err.description}")
+
         # Create namespaced DADG nodes
         self._dadg.set(f"{name}__xray_path", params.file_path)
         self._dadg.set(f"{name}__source_offset", torch.zeros(2, dtype=torch.float64, device=device))
         self._dadg.set(f"{name}__mask_transformation", None)
         self._dadg.set(f"{name}__current_transformation", Transformation.zero(device=device))
+        self._dadg.set(f"{name}__weight_image", None)
         uid: str | Error = self._dadg.get(f"{name}__xray_sop_instance_uid")
         if isinstance(uid, Error):
             logger.error(f"Error getting uid of X-ray '{name}': {uid.description}")

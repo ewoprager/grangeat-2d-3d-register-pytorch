@@ -106,12 +106,10 @@ class Parameters(HasTraits):
     ct_path: str | None = Unicode(allow_none=True, default_value=None).tag(ui=True)
     downsample_level: int = Int(min=0).tag(ui=True)
     truncation_percent: int = Int(min=0, max=100).tag(ui=True)
-    weighting: None | Literal["linear"] | float = Union(trait_types=[  #
-        Enum(values=["linear"], default_value=Undefined),  #
-        Float(min=0.0, default_value=Undefined),  #
-    ], allow_none=True, default_value=Undefined).tag(ui=True)
+    apply_weighting: bool = Bool(default_value=False).tag(ui=True)
+    weight_alpha: float = Float(min=0.0, default_value=0.0).tag(ui=True)
     iterations_per_weight_update: int = Int(min=0, default_value=Undefined).tag(ui=True)  # 0 means every o.f. eval.
-    apply_scaling: bool = Bool(default_value=Undefined).tag(ui=True)
+    apply_scaling: bool = Bool(default_value=False).tag(ui=True)
     sim_metric: Literal["zncc", "gradient_correlation", "mutual_information"] = Enum(values=[  #
         "zncc",  #
         "gradient_correlation",  #
@@ -119,8 +117,8 @@ class Parameters(HasTraits):
     ], default_value=Undefined).tag(ui=True)
     sim_metric_parameters: LocalZnccParameters | None = Instance(LocalZnccParameters, allow_none=True,
                                                                  default_value=None).tag(ui=True)
-    starting_distance: float = Float(min=0.0).tag(ui=True)
-    sample_count_per_distance: int = Int(min=1).tag(ui=True)
+    starting_distance: float = Float(min=0.0)
+    sample_count_per_distance: int = Int(min=1)
     optimisation_algorithm: Literal["pso", "local_search"] = Enum(values=[  #
         "pso",  #
         "local_search",  #
