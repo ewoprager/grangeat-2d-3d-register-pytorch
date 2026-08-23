@@ -1,7 +1,6 @@
 import argparse
 import itertools
 import pathlib
-from typing import Any
 
 import matplotlib
 
@@ -13,36 +12,17 @@ import pandas as pd
 import SimpleITK as sitk
 import torch
 import yaml
-from matplotlib import rcParams
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
-from reg23_experiments.analysis.helpers import CartesianZippedTensors, dataframe_rectangular_columns_to_tensor, \
+from reg23_experiments.analysis.format import get_colour, latex_escape, set_mpl_latex_options, var_to_string
+from reg23_experiments.analysis.manipulation import CartesianZippedTensors, dataframe_rectangular_columns_to_tensor, \
     dataframe_to_cartesian_zipped_tensors
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.io.image import read_dicom
 from reg23_experiments.io.sitk import load_ct_series
 from reg23_experiments.ops import geometry
 from reg23_experiments.utils import logs_setup
-
-MPL_COLOURS = rcParams['axes.prop_cycle'].by_key()['color']
-
-
-def get_colour(i):
-    return MPL_COLOURS[i % len(MPL_COLOURS)]
-
-
-def latex_escape(s: str) -> str:
-    return (  #
-        s.replace("\\", r"\textbackslash{}")  #
-        .replace("_", r"\_")  #
-        .replace("%", r"\%")  #
-        .replace("&", r"\&")  #
-        .replace("#", r"\#")  #
-        .replace("{", r"\{")  #
-        .replace("}", r"\}")  #
-    )
-
 
 l_cache = dict()
 theta_cache = dict()
@@ -89,59 +69,6 @@ def save_legend_figure(axes, path: pathlib.Path) -> None:
     legend_fig.savefig(path, bbox_inches="tight", bbox_extra_artists=[legend], )
 
 
-def var_to_string(variable_name: str, value: Any) -> str:
-    if variable_name == "cropping" or variable_name == "sim_metric":
-        return value
-    elif variable_name == "mask":
-        if value == "None":
-            return "no"
-        elif value == "Every evaluation weighting zncc":
-            return "yes"
-        else:
-            return value
-    elif variable_name == "xray_path":
-        return pathlib.Path(value).name
-    elif variable_name == "truncation_percent" or variable_name == "downsample_level":
-        return f"{value}"
-    elif variable_name == "starting_distance":
-        return f"{value:.3f}"
-    elif variable_name == "crop_expand":
-        return f"{value:.1f}"
-    try:
-        return str(value)
-    except Exception:
-        return f"<unknown variable '{variable_name}'>"
-
-
-def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
-    config = torch.load(directory / "config.pkl")
-    assert isinstance(config, dict)
-    nominal_distances = config.pop("nominal_distances")
-    if "distance_distribution" in config:
-        config.pop("distance_distribution")
-    if "iteration_count" in config:
-        config.pop("iteration_count")
-    if "notes" in config:
-        config.pop("notes")
-    shared_parameters = torch.load(directory / "shared_parameters.pkl")
-    assert isinstance(shared_parameters, dict)
-    row_global = config | shared_parameters
-    rows_out = []
-    for element in directory.iterdir():
-        if not element.is_dir():
-            continue
-        parameters = torch.load(element / "parameters.pkl")
-        rows_here = row_global | parameters
-        convergence_series = torch.load(element / "convergence_series.pkl")  # size = (n.d. count, it. count)
-        nominal_distance_count = convergence_series.size(0)
-        iteration_count = convergence_series.size(1)
-        for j in range(nominal_distance_count):
-            for i in range(iteration_count):
-                rows_out.append(rows_here | {"starting_distance": nominal_distances[j].item(), "iteration": i,
-                                             "distance": convergence_series[j, i].item()})
-    return pd.DataFrame(rows_out)
-
-
 def grid_of_plots_figure(  #
         *,  #
         cartesian_axes_values: list[tuple[str, np.ndarray]],  #
@@ -168,13 +95,7 @@ def grid_of_plots_figure(  #
     fig, axes = plt.subplots(*dependent_values.size()[:-2], figsize=(6, 6) if dense else (13, 8))
     axes = np.array(axes)
     if dense:
-        fig.subplots_adjust(left=0.08,  # margin on left side of figure
-                            right=0.98,  # right margin
-                            bottom=0.08,  # bottom margin
-                            top=0.9,  # top margin
-                            wspace=0.2,  # width space between columns
-                            hspace=0.3  # height space between rows
-                            )
+        fig.subplots_adjust(left=0.08, right=0.98, bottom=0.08, top=0.9, wspace=0.2, hspace=0.3)
 
     x_label = cartesian_axes_values[-1][0]
     x_values = cartesian_axes_values[-1][1]
@@ -200,6 +121,14 @@ def grid_of_plots_figure(  #
                     dependent_values[dependent_index],  #
                     label=line_label,  #
                 )
+                if dependent_errors is not None:
+                    axes[axis_index].errorbar(  #
+                        x_values,  #
+                        dependent_values[dependent_index],  #
+                        yerr=dependent_errors[dependent_index],  #
+                        fmt='x-',  #
+                        capsize=4,  #
+                    )
         else:
             line_variable = cartesian_axes_values[-2][0]
             line_values = cartesian_axes_values[-2][1]
@@ -211,6 +140,14 @@ def grid_of_plots_figure(  #
                     dependent_values[dependent_index],  #
                     label=line_label,  #
                 )
+                if dependent_errors is not None:
+                    axes[axis_index].errorbar(  #
+                        x_values,  #
+                        dependent_values[dependent_index],  #
+                        yerr=dependent_errors[dependent_index],  #
+                        fmt='x-',  #
+                        capsize=4,  #
+                    )
 
         axes[axis_index].set_xlabel(latex_escape(x_label))
         axes[axis_index].set_title(latex_escape(title))
@@ -358,14 +295,7 @@ def main(  #
     if analysis_format:
         plt.rcParams["font.size"] = 6
     else:
-        # for outputting PGFs
-        plt.rcParams["text.usetex"] = True
-        plt.rcParams["font.family"] = "serif"
-        plt.rcParams["scatter.marker"] = 'x'
-        plt.rcParams[
-            "font.size"] = 11  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib    #
-        # scales up by 1.2 (God only knows why). 36 is tool big, however, so going a bit smaller than 30
-        rcParams["pgf.texsystem"] = "pdflatex"
+        set_mpl_latex_options()
 
     # -----
     # Getting the latest data instance if desired
@@ -421,6 +351,9 @@ def main(  #
     if distance_std_available:
         dependent_variables.append("distance_std")
 
+    if crop_size_available:
+        df = df.drop(columns=["crop_width", "crop_height"])
+
     czt: CartesianZippedTensors = dataframe_to_cartesian_zipped_tensors(  #
         df,  #
         cartesian_variables=cartesian_variables + ["iteration"],  #
@@ -434,6 +367,7 @@ def main(  #
         zipped_axis_values=czt.zipped_axis_values,  #
         dependent_variable="distance from gold standard",  #
         dependent_values=czt.dependent_variable_tensors["distance"],  #
+        dependent_errors=czt.dependent_variable_tensors["distance_std"] if distance_std_available else None,  #
         dense=dense,  #
     )
 
