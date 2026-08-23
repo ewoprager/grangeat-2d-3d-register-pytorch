@@ -1,11 +1,12 @@
 import logging
+from typing import Any, NamedTuple
 
 import numpy as np
 import pandas as pd
 import torch
 
 __all__ = ["to_latex_scientific", "save_colourmap_for_latex", "get_axis_values_if_dataframe_rectangular_over_columns",
-           "dataframe_rectangular_columns_to_tensor"]
+           "dataframe_rectangular_columns_to_tensor", "dataframe_to_cartesian_zipped_tensors", "CartesianZippedTensors"]
 
 logger = logging.getLogger(__name__)
 
@@ -76,3 +77,85 @@ def dataframe_rectangular_columns_to_tensor(df: pd.DataFrame, *, ordered_axes: l
     # convert the DataFrame to a flat tensor and view with the lengths of each axis
     tensor = torch.from_numpy(s.to_numpy()).view(*axis_lengths)
     return tensor, axis_values
+
+
+class CartesianZippedTensors(NamedTuple):
+    dependent_variable_tensors: dict[str, torch.Tensor]
+    cartesian_axes_values: list[tuple[str, np.ndarray]]
+    zipped_axis_values: list[tuple[str, np.ndarray]]
+    constant_values: dict[str, Any]
+
+
+def dataframe_to_cartesian_zipped_tensors(  #
+        df: pd.DataFrame,  #
+        *,  #
+        cartesian_variables: list[str],  #
+        dependent_variables: list[str],  #
+) -> CartesianZippedTensors:
+    # Remove constant variables
+    constant_values = df.loc[:, df.nunique() == 1].iloc[0].to_dict()
+    constant_variables = list(constant_values.keys())
+    df = df.drop(columns=constant_variables)
+
+    # Construct a MultiIndex from the values in the Cartesian columns
+    cartesian_index = pd.MultiIndex.from_product([df[v].unique() for v in cartesian_variables],
+                                                 names=cartesian_variables)
+
+    # Find potentially zipped variables
+    zipped_variables: list[str] = [  #
+        v for v in df.columns  #
+        if v not in cartesian_variables and v not in dependent_variables  #
+    ]
+
+    if zipped_variables:
+        # Use the cartesian variables, and then the zipped variables as a MultiIndex
+        df = df.set_index(cartesian_variables + zipped_variables).sort_index()
+
+        # Extract the rows for the first Cartesian variable combination, and get their index
+        first_cartesian_rows = df.loc[tuple(df.index.get_level_values(v)[0] for v in cartesian_variables)].sort_index()
+        zipped_axis_values = [  #
+            (v, first_cartesian_rows.index.get_level_values(v).to_numpy())  #
+            for v in zipped_variables  #
+        ]
+        zipped_index = first_cartesian_rows.index
+
+        # The zipped indices should match for every Cartesian variable combination; take the Cartesian product of the
+        # two
+        # indices
+        full_index = pd.MultiIndex.from_tuples(  #
+            [(*x, *y) for x in cartesian_index for y in zipped_index],  #
+            names=[*cartesian_index.names, *zipped_index.names]  #
+        )
+
+        df = df.reindex(full_index).sort_index()
+    else:
+        # There are no potentially zipped variables, so reindex with the cartesian variables
+        df = df.set_index(cartesian_variables)
+        df = df.reindex(cartesian_index).sort_index()
+        zipped_axis_values = []
+
+    # check for missing values - these will have been populated with nans.
+    if df.isna().any().any():
+        logger.warning("Grid is incomplete — missing coordinate combinations.")
+
+    # get the unique values of each Cartesian axis and store as an ordered list of named value arrays
+    cartesian_axws_values: list[tuple[str, np.ndarray]] = [  #
+        (v, df.index.get_level_values(v).unique().to_numpy())  #
+        for v in cartesian_variables  #
+    ]
+    # get the length of each axis
+    cartesian_axes_lengths = [len(values) for _, values in cartesian_axws_values]
+
+    axes_lengths = cartesian_axes_lengths + [-1] if zipped_variables else cartesian_axes_lengths
+
+    # convert the DataFrame to a flat tensor for each dependent variables and view with the lengths of each axis
+    tensors = {v: torch.from_numpy(df[v].to_numpy()).view(*axes_lengths)  #
+               for v in dependent_variables  #
+               }
+
+    return CartesianZippedTensors(  #
+        dependent_variable_tensors=tensors,  #
+        cartesian_axes_values=cartesian_axws_values,  #
+        zipped_axis_values=zipped_axis_values,  #
+        constant_values=constant_values,  #
+    )

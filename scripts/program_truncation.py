@@ -212,33 +212,33 @@ def main(  #
             "ct_path": Constant(ct_path),  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
-            "downsample_level": Constant(1),  #
-            "truncation_percent": Constant(85),  # Cartesian([0, 75]),  #
+            "downsample_level": Cartesian([0, 1]),  #
+            "truncation_percent": Constant(85),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
             # ----- scaling
-            "apply_scaling": Zipped([False, True]),  # Cartesian([False, True]),  #
+            "apply_scaling": Cartesian([False, True]),  #
             # ----- similarity & weighting
-            "weighting": Zipped([None, 0.25]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+            "weighting": Cartesian([None, 0.0, 0.25, 0.5]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  #
-            "sim_metric": Zipped(["gradient_correlation", "zncc"]),
+            "sim_metric": Constant("gradient_correlation"),
             # ----- registration
             "starting_distance": Constant(10.0),  #
             "sample_count_per_distance": Constant(10),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
-            "particle_initialisation_spread": Constant(5.0),  #
+            "particle_initialisation_spread": Constant(5.0),#
             "iteration_count": Constant(6),  #
         })
 
         # X-ray choice determines the gold standard orientation, which drives h_linear:
         hardcoded_xray_names: list[str] = [  #
-            # "level_000",  #
+            "level_000",  #
             # "level_090",  #
             "up_000",  #
             # "up_090",  #
-            # "down_000",  #
+            "down_000",  #
             # "down_090",  #
         ]
 
