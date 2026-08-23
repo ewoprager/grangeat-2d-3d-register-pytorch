@@ -31,10 +31,6 @@ logger = logging.getLogger(__name__)
 class ExperimentConfig(traitlets.HasTraits):
     """
     Notes:
-        - the value of `weighting` is interpreted as follows:
-            - if None, no weight image is used
-            - if "linear", the scaling image is applied as a weight image
-            - if of type float, the weighting image is generated from the scaling image, using the float value as alpha
         - the value of `iterations_per_update` is interpreted as follows:
             - if 0, the cropping, scaling and weight images will be updated to the current transformation every o.f. 
             evaluation
@@ -59,10 +55,8 @@ class ExperimentConfig(traitlets.HasTraits):
     # ----- scaling
     apply_scaling: bool = traitlets.Bool(default_value=traitlets.Undefined)
     # ----- similarity & weighting
-    weighting: None | Literal["linear"] | float = traitlets.Union(trait_types=[  #
-        traitlets.Enum(values=["linear"], default_value=traitlets.Undefined),  #
-        traitlets.Float(min=0.0, default_value=traitlets.Undefined),  #
-    ], allow_none=True, default_value=traitlets.Undefined)
+    apply_weighting: bool = traitlets.Bool(default_value=traitlets.Undefined)
+    weight_alpha: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     iterations_per_weight_update: int = traitlets.Int(min=0,
                                                       default_value=traitlets.Undefined)  # 0 means every o.f. eval.
     sim_metric: Literal["zncc", "gradient_correlation", "mutual_information"] = traitlets.Enum(values=[  #
@@ -104,7 +98,8 @@ def run_experiment(  #
     data_manager().set("cropping_method", config.cropping_method, check_equality=True)
     data_manager().set("crop_min_size", config.crop_min_size, check_equality=True)
     data_manager().set("apply_scaling", config.apply_scaling, check_equality=True)
-    data_manager().set("weighting", config.weighting, check_equality=True)
+    data_manager().set("apply_weighting", config.apply_weighting, check_equality=True)
+    data_manager().set("weight_alpha", config.weight_alpha, check_equality=True)
     data_manager().set("sim_metric", config.sim_metric, check_equality=True)
 
     # -----

@@ -120,6 +120,7 @@ def grid_of_plots_figure(  #
                     x_values,  #
                     dependent_values[dependent_index],  #
                     label=line_label,  #
+                    color=get_colour(i),#
                 )
                 if dependent_errors is not None:
                     axes[axis_index].errorbar(  #
@@ -128,6 +129,7 @@ def grid_of_plots_figure(  #
                         yerr=dependent_errors[dependent_index],  #
                         fmt='x-',  #
                         capsize=4,  #
+                        color=get_colour(i),#
                     )
         else:
             line_variable = cartesian_axes_values[-2][0]
@@ -139,6 +141,7 @@ def grid_of_plots_figure(  #
                     x_values,  #
                     dependent_values[dependent_index],  #
                     label=line_label,  #
+                    color=get_colour(i),#
                 )
                 if dependent_errors is not None:
                     axes[axis_index].errorbar(  #
@@ -147,6 +150,7 @@ def grid_of_plots_figure(  #
                         yerr=dependent_errors[dependent_index],  #
                         fmt='x-',  #
                         capsize=4,  #
+                        color=get_colour(i),#
                     )
 
         axes[axis_index].set_xlabel(latex_escape(x_label))
