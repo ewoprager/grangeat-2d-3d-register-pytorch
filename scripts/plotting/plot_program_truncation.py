@@ -20,13 +20,10 @@ from matplotlib.ticker import MaxNLocator
 from reg23_experiments.analysis.helpers import CartesianZippedTensors, dataframe_rectangular_columns_to_tensor, \
     dataframe_to_cartesian_zipped_tensors
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.io.image import read_dicom
-from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.io.sitk import load_ct_series
 from reg23_experiments.ops import geometry
 from reg23_experiments.utils import logs_setup
-from reg23_experiments.utils.console_logging import tqdm
 
 MPL_COLOURS = rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -148,7 +145,7 @@ def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
 def grid_of_plots_figure(  #
         *,  #
         cartesian_axes_values: list[tuple[str, np.ndarray]],  #
-        zipped_axis_values: list[tuple[str, np.ndarray]],#
+        zipped_axis_values: list[tuple[str, np.ndarray]],  #
         dependent_variable: str,  #
         dependent_values: torch.Tensor,  #
         dependent_errors: torch.Tensor | None = None,  #
@@ -178,54 +175,98 @@ def grid_of_plots_figure(  #
                             wspace=0.2,  # width space between columns
                             hspace=0.3  # height space between rows
                             )
-    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in cartesian_axes_values[:axes_threshold]]):
-        axis_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
 
-        if isinstance(cartesian_axes_values[-2][1][0], float):
-            v_min = np.min(cartesian_axes_values[-2][1])
-            v_max = np.max(cartesian_axes_values[-2][1])
-        for j, v in enumerate(independent_values[-2][1]):
-            dependent_index = axis_index + (j,)
-            if False and isinstance(v, float):
-                r = (v - v_min) / (v_max - v_min)
-                colour = (r, 1.0 - r, 0.0)
-            else:
-                colour = get_colour(j)
-            axes[axis_index].plot(  #
-                independent_values[-1][1],  #
-                dependent_values[*dependent_index, :],  #
-                label=latex_escape(f"{independent_values[-2][0]}={var_to_string(independent_values[-2][0], v)}"),  #
-                color=colour,  #
-            )
-            if dependent_errors is not None:
-                axes[axis_index].errorbar(  #
-                    independent_values[-1][1],  #
-                    dependent_values[*dependent_index, :],  #
-                    yerr=dependent_errors[*dependent_index, :],  #
-                    fmt='x-',  #
-                    capsize=4,  #
-                    color=colour  #
+    x_label = cartesian_axes_values[-1][0]
+    x_values = cartesian_axes_values[-1][1]
+
+    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in cartesian_axes_values[:axes_threshold]]):
+        axis_index = tuple(i for i, _ in index_value_pairs)
+
+        title = ";".join([  #
+            f"{cartesian_axes_values[i][0]}={var_to_string(cartesian_axes_values[i][0], w)}"  #
+            for i, w in enumerate([v for _, v in index_value_pairs])  #
+        ])  #
+
+        if zipped_axis_values:
+            zipped_variables = [t[0] for t in zipped_axis_values]
+            for i, zipped_values in enumerate(zip(*[t[1] for t in zipped_axis_values])):
+                dependent_index = axis_index + (slice(None), i)
+                line_label = ";".join(  #
+                    f"{var}={var_to_string(var, val)}"  #
+                    for var, val in zip(zipped_variables, zipped_values)  #
                 )
-        axes[axis_index].set_xlabel(latex_escape(independent_values[-1][0]))
-        axes[axis_index].set_title(latex_escape(  #
-            ";".join([  #
-                f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
-                for i, w in enumerate([v for _, v in index_value_pairs])  #
-            ])  #
-        ))
+                axes[axis_index].plot(  #
+                    x_values,  #
+                    dependent_values[dependent_index],  #
+                    label=line_label,  #
+                )
+        else:
+            line_variable = cartesian_axes_values[-2][0]
+            line_values = cartesian_axes_values[-2][1]
+            for i, line_value in enumerate(line_values):
+                dependent_index = axis_index + (i, slice(None))
+                line_label = f"{line_variable}={var_to_string(line_variable, line_value)}"
+                axes[axis_index].plot(  #
+                    x_values,  #
+                    dependent_values[dependent_index],  #
+                    label=line_label,  #
+                )
+
+        axes[axis_index].set_xlabel(latex_escape(x_label))
+        axes[axis_index].set_title(latex_escape(title))
         axes[axis_index].xaxis.set_major_locator(MaxNLocator(integer=True))
         axes[axis_index].set_ylabel(latex_escape(dependent_variable))
         if ylim is not None:
             axes[axis_index].set_ylim(ylim)
         if legend:
             axes[axis_index].legend()
+
+        if False:
+            if isinstance(cartesian_axes_values[-2][1][0], float):
+                v_min = np.min(cartesian_axes_values[-2][1])
+                v_max = np.max(cartesian_axes_values[-2][1])
+            for j, v in enumerate(independent_values[-2][1]):
+                dependent_index = axis_index + (j,)
+                if False and isinstance(v, float):
+                    r = (v - v_min) / (v_max - v_min)
+                    colour = (r, 1.0 - r, 0.0)
+                else:
+                    colour = get_colour(j)
+                axes[axis_index].plot(  #
+                    independent_values[-1][1],  #
+                    dependent_values[*dependent_index, :],  #
+                    label=latex_escape(f"{independent_values[-2][0]}={var_to_string(independent_values[-2][0], v)}"),  #
+                    color=colour,  #
+                )
+                if dependent_errors is not None:
+                    axes[axis_index].errorbar(  #
+                        independent_values[-1][1],  #
+                        dependent_values[*dependent_index, :],  #
+                        yerr=dependent_errors[*dependent_index, :],  #
+                        fmt='x-',  #
+                        capsize=4,  #
+                        color=colour  #
+                    )
+            axes[axis_index].set_xlabel(latex_escape(independent_values[-1][0]))
+            axes[axis_index].set_title(latex_escape(  #
+                ";".join([  #
+                    f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
+                    for i, w in enumerate([v for _, v in index_value_pairs])  #
+                ])  #
+            ))
+            axes[axis_index].xaxis.set_major_locator(MaxNLocator(integer=True))
+            axes[axis_index].set_ylabel(latex_escape(dependent_variable))
+            if ylim is not None:
+                axes[axis_index].set_ylim(ylim)
+            if legend:
+                axes[axis_index].legend()
     return fig, axes
 
 
 def plot_grid_figures(  #
         *,  #
         cartesian_axes_values: list[tuple[str, np.ndarray]],  #
-        zipped_axis_values: list[tuple[str, np.ndarray]],#
+        zipped_axis_values: list[tuple[str, np.ndarray]],  #
         dependent_variable: str,  #
         dependent_values: torch.Tensor,  #
         dependent_errors: torch.Tensor | None = None,  #
@@ -234,8 +275,26 @@ def plot_grid_figures(  #
         legend_separate: bool = False,  #
 ) -> None:
     axes_threshold = -3 if zipped_axis_values else -4
+
+    # getting the median largest distance value
+    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.5).item()) if len(
+        cartesian_axes_values) > 2 else None
+
     # check arguments
-    assert len(cartesian_axes_values) > abs(axes_threshold)
+    if len(cartesian_axes_values) <= abs(axes_threshold):
+        fig, axes = grid_of_plots_figure(  #
+            cartesian_axes_values=cartesian_axes_values[axes_threshold:],  #
+            zipped_axis_values=zipped_axis_values,  #
+            dependent_variable=dependent_variable,  #
+            dependent_values=dependent_values,  #
+            dependent_errors=dependent_errors,  #
+            dense=dense,  #
+            ylim=ylim,  #
+            legend=not legend_separate,  #
+        )
+        plt.show()
+        return
+
     axes_lengths = [len(v) for _, v in cartesian_axes_values]
     if zipped_axis_values:
         zipped_length = len(zipped_axis_values[0][1])
@@ -244,15 +303,12 @@ def plot_grid_figures(  #
     assert dependent_values.size() == torch.Size(axes_lengths)
     if dependent_errors is not None:
         assert dependent_errors.size() == dependent_values.size()
-    # getting the median largest distance value
-    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.5).item()) if len(
-        cartesian_axes_values) > 2 else None
 
     for index_value_pairs in itertools.product(*[enumerate(v) for _, v in cartesian_axes_values[:axes_threshold]]):
-        dependent_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
+        dependent_index = tuple(i for i, _ in index_value_pairs)
         fig, axes = grid_of_plots_figure(  #
             cartesian_axes_values=cartesian_axes_values[axes_threshold:],  #
-            zipped_axis_values=zipped_axis_values,#
+            zipped_axis_values=zipped_axis_values,  #
             dependent_variable=dependent_variable,  #
             dependent_values=dependent_values[*dependent_index],  #
             dependent_errors=None if dependent_errors is None else dependent_errors[*dependent_index],  #
@@ -373,7 +429,15 @@ def main(  #
 
     dense = not analysis_format
 
+    plot_grid_figures(  #
+        cartesian_axes_values=czt.cartesian_axes_values,  #
+        zipped_axis_values=czt.zipped_axis_values,  #
+        dependent_variable="distance from gold standard",  #
+        dependent_values=czt.dependent_variable_tensors["distance"],  #
+        dense=dense,  #
+    )
 
+    return
 
     distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
         df,  #
