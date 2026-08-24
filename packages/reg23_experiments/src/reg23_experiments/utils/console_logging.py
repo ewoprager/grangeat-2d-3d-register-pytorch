@@ -3,7 +3,7 @@ import sys
 
 import tqdm as _tqdm
 
-__all__ = ["ColourFormatter", "tqdm", "TqdmStreamHandler"]
+__all__ = ["ColourFormatter", "tqdm", "indentation_prefix", "TqdmStreamHandler"]
 
 # ANSI escape codes
 WHITE = "\033[37m"
@@ -32,6 +32,12 @@ class ColourFormatter(logging.Formatter):
 def tqdm(*args, **kwargs):
     kwargs.setdefault("disable", not sys.stderr.isatty())
     return _tqdm.tqdm(*args, **kwargs)
+
+
+def indentation_prefix(tqdm_position: int) -> str:
+    if tqdm_position == 0:
+        return ""
+    return "  " * (tqdm_position - 1) + "└ "
 
 
 class TqdmStreamHandler(logging.StreamHandler):

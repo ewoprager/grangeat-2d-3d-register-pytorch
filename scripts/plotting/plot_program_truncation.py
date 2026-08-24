@@ -1,7 +1,6 @@
 import argparse
 import itertools
 import pathlib
-from typing import Any
 
 import matplotlib
 
@@ -11,41 +10,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import SimpleITK as sitk
-import sklearn
 import torch
 import yaml
-from matplotlib import rcParams
 from matplotlib.figure import Figure
 from matplotlib.ticker import MaxNLocator
 
-from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_tensor
+from reg23_experiments.analysis.format import get_colour, latex_escape, set_mpl_latex_options, var_to_string
+from reg23_experiments.analysis.manipulation import CartesianZippedTensors, dataframe_rectangular_columns_to_tensor, \
+    dataframe_to_cartesian_zipped_tensors
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.io.image import read_dicom
-from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.io.sitk import load_ct_series
 from reg23_experiments.ops import geometry
 from reg23_experiments.utils import logs_setup
-from reg23_experiments.utils.console_logging import tqdm
-
-MPL_COLOURS = rcParams['axes.prop_cycle'].by_key()['color']
-
-
-def get_colour(i):
-    return MPL_COLOURS[i % len(MPL_COLOURS)]
-
-
-def latex_escape(s: str) -> str:
-    return (  #
-        s.replace("\\", r"\textbackslash{}")  #
-        .replace("_", r"\_")  #
-        .replace("%", r"\%")  #
-        .replace("&", r"\&")  #
-        .replace("#", r"\#")  #
-        .replace("{", r"\{")  #
-        .replace("}", r"\}")  #
-    )
-
 
 l_cache = dict()
 theta_cache = dict()
@@ -92,62 +69,10 @@ def save_legend_figure(axes, path: pathlib.Path) -> None:
     legend_fig.savefig(path, bbox_inches="tight", bbox_extra_artists=[legend], )
 
 
-def var_to_string(variable_name: str, value: Any) -> str:
-    if variable_name == "cropping" or variable_name == "sim_metric":
-        return value
-    elif variable_name == "mask":
-        if value == "None":
-            return "no"
-        elif value == "Every evaluation weighting zncc":
-            return "yes"
-        else:
-            return value
-    elif variable_name == "xray_path":
-        return pathlib.Path(value).name
-    elif variable_name == "truncation_percent" or variable_name == "downsample_level":
-        return f"{value}"
-    elif variable_name == "starting_distance":
-        return f"{value:.3f}"
-    elif variable_name == "crop_expand":
-        return f"{value:.1f}"
-    try:
-        return str(value)
-    except Exception:
-        return f"<unknown variable '{variable_name}'>"
-
-
-def convert_to_dataframe(directory: pathlib.Path) -> pd.DataFrame:
-    config = torch.load(directory / "config.pkl")
-    assert isinstance(config, dict)
-    nominal_distances = config.pop("nominal_distances")
-    if "distance_distribution" in config:
-        config.pop("distance_distribution")
-    if "iteration_count" in config:
-        config.pop("iteration_count")
-    if "notes" in config:
-        config.pop("notes")
-    shared_parameters = torch.load(directory / "shared_parameters.pkl")
-    assert isinstance(shared_parameters, dict)
-    row_global = config | shared_parameters
-    rows_out = []
-    for element in directory.iterdir():
-        if not element.is_dir():
-            continue
-        parameters = torch.load(element / "parameters.pkl")
-        rows_here = row_global | parameters
-        convergence_series = torch.load(element / "convergence_series.pkl")  # size = (n.d. count, it. count)
-        nominal_distance_count = convergence_series.size(0)
-        iteration_count = convergence_series.size(1)
-        for j in range(nominal_distance_count):
-            for i in range(iteration_count):
-                rows_out.append(rows_here | {"starting_distance": nominal_distances[j].item(), "iteration": i,
-                                             "distance": convergence_series[j, i].item()})
-    return pd.DataFrame(rows_out)
-
-
 def grid_of_plots_figure(  #
         *,  #
-        independent_values: list[tuple[str, np.ndarray]],  #
+        cartesian_axes_values: list[tuple[str, np.ndarray]],  #
+        zipped_axis_values: list[tuple[str, np.ndarray]],  #
         dependent_variable: str,  #
         dependent_values: torch.Tensor,  #
         dependent_errors: torch.Tensor | None = None,  #
@@ -155,68 +80,134 @@ def grid_of_plots_figure(  #
         ylim: tuple[float, float] | None = None,  #
         legend: bool = True,  #
 ) -> tuple[Figure, np.ndarray]:
+    axes_threshold = -1 if zipped_axis_values else -2
     # check arguments
-    assert 2 <= len(independent_values) <= 4
-    assert dependent_values.size() == torch.Size([len(v) for _, v in independent_values])
+    assert 1 <= len(cartesian_axes_values) <= 2 + abs(axes_threshold)
+    axes_lengths = [len(v) for _, v in cartesian_axes_values]
+    if zipped_axis_values:
+        zipped_length = len(zipped_axis_values[0][1])
+        assert all(len(t[1]) == zipped_length for t in zipped_axis_values)
+        axes_lengths += [zipped_length]
+    assert dependent_values.size() == torch.Size(axes_lengths)
     if dependent_errors is not None:
         assert dependent_errors.size() == dependent_values.size()
     # figure and axes
     fig, axes = plt.subplots(*dependent_values.size()[:-2], figsize=(6, 6) if dense else (13, 8))
     axes = np.array(axes)
     if dense:
-        fig.subplots_adjust(left=0.08,  # margin on left side of figure
-                            right=0.98,  # right margin
-                            bottom=0.08,  # bottom margin
-                            top=0.9,  # top margin
-                            wspace=0.2,  # width space between columns
-                            hspace=0.3  # height space between rows
-                            )
-    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in independent_values[:-2]]):
-        axis_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
-        if isinstance(independent_values[-2][1][0], float):
-            v_min = np.min(independent_values[-2][1])
-            v_max = np.max(independent_values[-2][1])
-        for j, v in enumerate(independent_values[-2][1]):
-            dependent_index = axis_index + (j,)
-            if isinstance(v, float):
-                r = (v - v_min) / (v_max - v_min)
-                colour = (r, 1.0 - r, 0.0)
-            else:
-                colour = get_colour(j)
-            axes[axis_index].plot(  #
-                independent_values[-1][1],  #
-                dependent_values[*dependent_index, :],  #
-                label=latex_escape(f"{independent_values[-2][0]}={var_to_string(independent_values[-2][0], v)}"),  #
-                color=colour,  #
-            )
-            if dependent_errors is not None:
-                axes[axis_index].errorbar(  #
-                    independent_values[-1][1],  #
-                    dependent_values[*dependent_index, :],  #
-                    yerr=dependent_errors[*dependent_index, :],  #
-                    fmt='x-',  #
-                    capsize=4,  #
-                    color=colour  #
+        fig.subplots_adjust(left=0.08, right=0.98, bottom=0.08, top=0.9, wspace=0.2, hspace=0.3)
+
+    x_label = cartesian_axes_values[-1][0]
+    x_values = cartesian_axes_values[-1][1]
+
+    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in cartesian_axes_values[:axes_threshold]]):
+        axis_index = tuple(i for i, _ in index_value_pairs)
+
+        title = ";".join([  #
+            f"{cartesian_axes_values[i][0]}={var_to_string(cartesian_axes_values[i][0], w)}"  #
+            for i, w in enumerate([v for _, v in index_value_pairs])  #
+        ])  #
+
+        if zipped_axis_values:
+            zipped_variables = [t[0] for t in reversed(zipped_axis_values)]
+            for i, zipped_values in enumerate(zip(*[t[1] for t in reversed(zipped_axis_values)])):
+                dependent_index = axis_index + (slice(None), i)
+                line_label = ";".join(  #
+                    f"{var}={var_to_string(var, val)}"  #
+                    for var, val in zip(zipped_variables, zipped_values)  #
                 )
-        axes[axis_index].set_xlabel(latex_escape(independent_values[-1][0]))
-        axes[axis_index].set_title(latex_escape(  #
-            ";".join([  #
-                f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
-                for i, w in enumerate([v for _, v in index_value_pairs])  #
-            ])  #
-        ))
+                axes[axis_index].plot(  #
+                    x_values,  #
+                    dependent_values[dependent_index],  #
+                    label=line_label,  #
+                    color=get_colour(i),#
+                )
+                if dependent_errors is not None:
+                    axes[axis_index].errorbar(  #
+                        x_values,  #
+                        dependent_values[dependent_index],  #
+                        yerr=dependent_errors[dependent_index],  #
+                        fmt='x-',  #
+                        capsize=4,  #
+                        color=get_colour(i),#
+                    )
+        else:
+            line_variable = cartesian_axes_values[-2][0]
+            line_values = cartesian_axes_values[-2][1]
+            for i, line_value in enumerate(line_values):
+                dependent_index = axis_index + (i, slice(None))
+                line_label = f"{line_variable}={var_to_string(line_variable, line_value)}"
+                axes[axis_index].plot(  #
+                    x_values,  #
+                    dependent_values[dependent_index],  #
+                    label=line_label,  #
+                    color=get_colour(i),#
+                )
+                if dependent_errors is not None:
+                    axes[axis_index].errorbar(  #
+                        x_values,  #
+                        dependent_values[dependent_index],  #
+                        yerr=dependent_errors[dependent_index],  #
+                        fmt='x-',  #
+                        capsize=4,  #
+                        color=get_colour(i),#
+                    )
+
+        axes[axis_index].set_xlabel(latex_escape(x_label))
+        axes[axis_index].set_title(latex_escape(title))
         axes[axis_index].xaxis.set_major_locator(MaxNLocator(integer=True))
         axes[axis_index].set_ylabel(latex_escape(dependent_variable))
         if ylim is not None:
             axes[axis_index].set_ylim(ylim)
         if legend:
             axes[axis_index].legend()
+
+        if False:
+            if isinstance(cartesian_axes_values[-2][1][0], float):
+                v_min = np.min(cartesian_axes_values[-2][1])
+                v_max = np.max(cartesian_axes_values[-2][1])
+            for j, v in enumerate(independent_values[-2][1]):
+                dependent_index = axis_index + (j,)
+                if False and isinstance(v, float):
+                    r = (v - v_min) / (v_max - v_min)
+                    colour = (r, 1.0 - r, 0.0)
+                else:
+                    colour = get_colour(j)
+                axes[axis_index].plot(  #
+                    independent_values[-1][1],  #
+                    dependent_values[*dependent_index, :],  #
+                    label=latex_escape(f"{independent_values[-2][0]}={var_to_string(independent_values[-2][0], v)}"),  #
+                    color=colour,  #
+                )
+                if dependent_errors is not None:
+                    axes[axis_index].errorbar(  #
+                        independent_values[-1][1],  #
+                        dependent_values[*dependent_index, :],  #
+                        yerr=dependent_errors[*dependent_index, :],  #
+                        fmt='x-',  #
+                        capsize=4,  #
+                        color=colour  #
+                    )
+            axes[axis_index].set_xlabel(latex_escape(independent_values[-1][0]))
+            axes[axis_index].set_title(latex_escape(  #
+                ";".join([  #
+                    f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
+                    for i, w in enumerate([v for _, v in index_value_pairs])  #
+                ])  #
+            ))
+            axes[axis_index].xaxis.set_major_locator(MaxNLocator(integer=True))
+            axes[axis_index].set_ylabel(latex_escape(dependent_variable))
+            if ylim is not None:
+                axes[axis_index].set_ylim(ylim)
+            if legend:
+                axes[axis_index].legend()
     return fig, axes
 
 
 def plot_grid_figures(  #
         *,  #
-        independent_values: list[tuple[str, np.ndarray]],  #
+        cartesian_axes_values: list[tuple[str, np.ndarray]],  #
+        zipped_axis_values: list[tuple[str, np.ndarray]],  #
         dependent_variable: str,  #
         dependent_values: torch.Tensor,  #
         dependent_errors: torch.Tensor | None = None,  #
@@ -224,19 +215,41 @@ def plot_grid_figures(  #
         save_to: pathlib.Path | None = None,  #
         legend_separate: bool = False,  #
 ) -> None:
+    axes_threshold = -3 if zipped_axis_values else -4
+
+    # getting the median largest distance value
+    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.5).item()) if len(
+        cartesian_axes_values) > 2 else None
+
     # check arguments
-    assert len(independent_values) >= 2
-    assert dependent_values.size() == torch.Size([len(v) for _, v in independent_values])
+    if len(cartesian_axes_values) <= abs(axes_threshold):
+        fig, axes = grid_of_plots_figure(  #
+            cartesian_axes_values=cartesian_axes_values[axes_threshold:],  #
+            zipped_axis_values=zipped_axis_values,  #
+            dependent_variable=dependent_variable,  #
+            dependent_values=dependent_values,  #
+            dependent_errors=dependent_errors,  #
+            dense=dense,  #
+            ylim=ylim,  #
+            legend=not legend_separate,  #
+        )
+        plt.show()
+        return
+
+    axes_lengths = [len(v) for _, v in cartesian_axes_values]
+    if zipped_axis_values:
+        zipped_length = len(zipped_axis_values[0][1])
+        assert all(len(t[1]) == zipped_length for t in zipped_axis_values)
+        axes_lengths += [zipped_length]
+    assert dependent_values.size() == torch.Size(axes_lengths)
     if dependent_errors is not None:
         assert dependent_errors.size() == dependent_values.size()
-    # getting the median largest distance value
-    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.75).item()) if len(
-        independent_values) > 2 else None
 
-    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in independent_values[:-4]]):
-        dependent_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
+    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in cartesian_axes_values[:axes_threshold]]):
+        dependent_index = tuple(i for i, _ in index_value_pairs)
         fig, axes = grid_of_plots_figure(  #
-            independent_values=independent_values[-4:],  #
+            cartesian_axes_values=cartesian_axes_values[axes_threshold:],  #
+            zipped_axis_values=zipped_axis_values,  #
             dependent_variable=dependent_variable,  #
             dependent_values=dependent_values[*dependent_index],  #
             dependent_errors=None if dependent_errors is None else dependent_errors[*dependent_index],  #
@@ -246,13 +259,13 @@ def plot_grid_figures(  #
         )
         fig.suptitle(latex_escape(  #
             ";".join([  #
-                f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
+                f"{cartesian_axes_values[i][0]}={var_to_string(cartesian_axes_values[i][0], w)}"  #
                 for i, w in enumerate([v for _, v in index_value_pairs])  #
             ])  #
         ))
         if save_to is not None:
             fig.savefig(save_to / ("_".join(  #
-                f"{independent_values[i][0]}-{j}"  #
+                f"{cartesian_axes_values[i][0]}-{j}"  #
                 for i, j in enumerate([k for k, _ in index_value_pairs])  #
             ) + ".pgf"))
     if legend_separate:
@@ -277,7 +290,6 @@ def main(  #
         display: bool,  #
         save_to: pathlib.Path | None,  #
         analysis_format: bool,  #
-        fit: bool = False,  #
 ) -> None:
     assert load_dir.is_dir()
     if save_to is not None:
@@ -287,14 +299,7 @@ def main(  #
     if analysis_format:
         plt.rcParams["font.size"] = 6
     else:
-        # for outputting PGFs
-        plt.rcParams["text.usetex"] = True
-        plt.rcParams["font.family"] = "serif"
-        plt.rcParams["scatter.marker"] = 'x'
-        plt.rcParams[
-            "font.size"] = 11  # figures are includes in latex at quarte size, so 36 is desired size. matplotlib    #
-        # scales up by 1.2 (God only knows why). 36 is tool big, however, so going a bit smaller than 30
-        rcParams["pgf.texsystem"] = "pdflatex"
+        set_mpl_latex_options()
 
     # -----
     # Getting the latest data instance if desired
@@ -329,229 +334,163 @@ def main(  #
     # assert "variables" in variables_config
     # variables: list[str] = list(variables_config["variables"].keys())
     assert "cartesian" in variables_config
-    variables: list[str] = list(variables_config["cartesian"].keys())
+    cartesian_variables: list[str] = list(variables_config["cartesian"].keys())
 
-    variable_hierarchy: list[str] = ["iterations_per_weight_update", "weight_alpha", "crop_expand", "mask", "cropping",
-                                     "truncation_percent", "desired_h_valid", "xray_path"]  # most to least important
+    ## !!!
+    # cartesian_variables.append("sim_metric")
+    ## !!!
+
+    variable_hierarchy: list[str] = ["sim_metric", "weighting", "weight_alpha", "iterations_per_crop_update",
+                                     "cropping", "cropping_method", "truncation_percent", "apply_scaling",
+                                     "iterations_per_weight_update", "crop_expand", "mask", "desired_h_valid",
+                                     "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
-    variables = sorted(  #
-        variables,  #
+    cartesian_variables = sorted(  #
+        cartesian_variables,  #
         key=lambda name: variable_importances[name] if name in variable_importances else len(variable_hierarchy),  #
         reverse=True  #
     )
 
+    dependent_variables = ["distance"]
+    if distance_std_available:
+        dependent_variables.append("distance_std")
+
+    if crop_size_available:
+        df = df.drop(columns=["crop_width", "crop_height"])
+
+    czt: CartesianZippedTensors = dataframe_to_cartesian_zipped_tensors(  #
+        df,  #
+        cartesian_variables=cartesian_variables + ["iteration"],  #
+        dependent_variables=dependent_variables,  #
+    )
+
     dense = not analysis_format
 
-    if not fit:
-        distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+    plot_grid_figures(  #
+        cartesian_axes_values=czt.cartesian_axes_values,  #
+        zipped_axis_values=czt.zipped_axis_values,  #
+        dependent_variable="distance from gold standard",  #
+        dependent_values=czt.dependent_variable_tensors["distance"],  #
+        dependent_errors=czt.dependent_variable_tensors["distance_std"] if distance_std_available else None,  #
+        dense=dense,  #
+    )
+
+    return
+
+    distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
+        df,  #
+        ordered_axes=variables + ["iteration"],  #
+        value_column="distance"  #
+    )
+    if distance_std_available:
+        distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
             df,  #
             ordered_axes=variables + ["iteration"],  #
-            value_column="distance"  #
+            value_column="distance_std"  #
         )
-        if distance_std_available:
-            distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
-                df,  #
-                ordered_axes=variables + ["iteration"],  #
-                value_column="distance_std"  #
-            )
-        if "crop_expand" not in variables or True:
-            if True:
-                independent_variables = axis_values
-                dependent_variable = "distance from gold-standard"
-                dependent_values = distances
-                dependent_errors = distance_stds if distance_std_available else None
-            else:
-                assert (distance_std_available, "Distance standard deviations are required for accuracy metric.")
-                independent_variables = axis_values[:-1]
-                dependent_variable = "accuracy"
-                dependent_values = convergence_curve_to_accuracy(distances, distance_stds, -1)
-                dependent_errors = None
-            if len(independent_variables) == 1:
-                plt.plot(independent_variables[0][1], dependent_values)
-                plt.xlabel(f"{independent_variables[0][0]}")
-                plt.ylabel(f"{dependent_variable}")
-                plt.show()
-            else:
-                plot_grid_figures(  #
-                    independent_values=independent_variables,  #
-                    dependent_variable=dependent_variable,  #
-                    dependent_values=dependent_values,  #
-                    dependent_errors=dependent_errors,  #
-                    dense=dense,  #
-                    save_to=save_to,  #
-                    legend_separate=False,  #
-                )
+    if "crop_expand" not in variables or True:
+        if True:
+            independent_variables = axis_values
+            dependent_variable = "distance from gold-standard"
+            dependent_values = distances
+            dependent_errors = distance_stds if distance_std_available else None
         else:
-            dimension = variables.index("crop_expand")
-            best_crop_expand_indices = distances[..., -1].argmin(dim=dimension, keepdim=True)
-            new_size = distances.amin(dim=dimension, keepdim=True).size()
-            distances_chosen = distances.gather(  #
+            assert (distance_std_available, "Distance standard deviations are required for accuracy metric.")
+            independent_variables = axis_values[:-1]
+            dependent_variable = "accuracy"
+            dependent_values = convergence_curve_to_accuracy(distances, distance_stds, -1)
+            dependent_errors = None
+        if len(independent_variables) == 1:
+            plt.plot(independent_variables[0][1], dependent_values)
+            plt.xlabel(f"{independent_variables[0][0]}")
+            plt.ylabel(f"{dependent_variable}")
+            plt.show()
+        else:
+            plot_grid_figures(  #
+                independent_values=independent_variables,  #
+                dependent_variable=dependent_variable,  #
+                dependent_values=dependent_values,  #
+                dependent_errors=dependent_errors,  #
+                dense=dense,  #
+                save_to=save_to,  #
+                legend_separate=False,  #
+            )
+    else:
+        dimension = variables.index("crop_expand")
+        best_crop_expand_indices = distances[..., -1].argmin(dim=dimension, keepdim=True)
+        new_size = distances.amin(dim=dimension, keepdim=True).size()
+        distances_chosen = distances.gather(  #
+            dim=dimension,  #
+            index=best_crop_expand_indices.unsqueeze(-1).expand(new_size)  #
+        ).squeeze(dimension)
+        if distance_std_available:
+            distance_stds_chosen = distance_stds.gather(  #
                 dim=dimension,  #
                 index=best_crop_expand_indices.unsqueeze(-1).expand(new_size)  #
             ).squeeze(dimension)
-            if distance_std_available:
-                distance_stds_chosen = distance_stds.gather(  #
-                    dim=dimension,  #
-                    index=best_crop_expand_indices.unsqueeze(-1).expand(new_size)  #
-                ).squeeze(dimension)
-            new_axis_values = [(name, array) for name, array in axis_values if name != "crop_expand"]
+        new_axis_values = [(name, array) for name, array in axis_values if name != "crop_expand"]
 
-            ylim: tuple[float, float] | None = (0.0, distances_chosen.amax(dim=-1).quantile(q=0.75).item()) if len(
-                new_axis_values) > 2 else None
+        ylim: tuple[float, float] | None = (0.0, distances_chosen.amax(dim=-1).quantile(q=0.75).item()) if len(
+            new_axis_values) > 2 else None
 
-            for index_value_pairs in itertools.product(*[enumerate(v) for _, v in new_axis_values[:-3]]):
-                dependent_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
-                fig, axes = grid_of_plots_figure(  #
-                    independent_values=new_axis_values[-3:],  #
-                    dependent_variable="distance from gold-standard",  #
-                    dependent_values=distances_chosen[*dependent_index],  #
-                    dependent_errors=distance_stds_chosen[*dependent_index] if distance_std_available else None,  #
-                    dense=dense,  #
-                    ylim=ylim,  #
-                )
-                fig.suptitle(latex_escape(  #
-                    ";".join([  #
-                        f"{new_axis_values[i][0]}={var_to_string(new_axis_values[i][0], w)}"  #
-                        for i, w in enumerate([v for _, v in index_value_pairs])  #
-                    ])  #
-                ))
-                if save_to is not None:
-                    fig.savefig(save_to / ("_".join(  #
-                        f"{new_axis_values[i][0]}-{j}"  #
-                        for i, j in enumerate([k for k, _ in index_value_pairs])  #
-                    ) + ".pgf"))
-            plt.show()
-
-        if "xray_path" in variables and crop_size_available:
-            # crop_widths, axis_values = dataframe_rectangular_columns_to_tensor(  #
-            #     df.loc[df["iteration"] == 0],  #
-            #     ordered_axes=variables,  #
-            #     value_column="crop_width"  #
-            # )
-            crop_heights, axis_values = dataframe_rectangular_columns_to_tensor(  #
-                df.loc[df["iteration"] == 0],  #
-                ordered_axes=variables,  #
-                value_column="crop_height"  #
-            )
-
-            invariant_variables = [  #
-                "crop_expand",  #
-                "mask"  #
-            ]  # crop expand is applied after measuring, so it is truly invariant
-
-            for name in invariant_variables:
-                try:
-                    i = variables.index(name)
-                except ValueError:
-                    continue
-                axis_values = [e for e in axis_values if e[0] != name]
-                # crop_widths = crop_widths.mean(dim=i)
-                crop_heights = crop_heights.mean(dim=i)
-
-            # crop_values = torch.stack((crop_widths, crop_heights), dim=-2)
-            # axis_values.insert(-1, ("crop dir", np.array(["width", "height"])))
-
-            plot_grid_figures(  #
-                independent_values=axis_values,  #
-                dependent_variable="crop height [mm]",  #
-                dependent_values=crop_heights,  #
+        for index_value_pairs in itertools.product(*[enumerate(v) for _, v in new_axis_values[:-3]]):
+            dependent_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
+            fig, axes = grid_of_plots_figure(  #
+                independent_values=new_axis_values[-3:],  #
+                dependent_variable="distance from gold-standard",  #
+                dependent_values=distances_chosen[*dependent_index],  #
+                dependent_errors=distance_stds_chosen[*dependent_index] if distance_std_available else None,  #
                 dense=dense,  #
+                ylim=ylim,  #
             )
-    else:
-        # Fit a model to the data
-
-        # -----
-        # Load all saved transformations; these are searched through for ground truth alignments
-        res: tuple[pathlib.Path, TransformationSaveData, int] | Error = load_latest_save(  #
-            TransformationSaveData,  #
-            save_directory=pathlib.Path("data/app_transformation_save_data")  #
-        )
-        if isinstance(res, Error):
-            raise RuntimeError(f"Failed to load saved transformation: {res.description}")
-        _, transformation_save_data, _ = res
-        saved_transformations: pd.DataFrame = transformation_save_data.get_data()
-        logger.info(f"Saved transformation data:\n{saved_transformations.to_string()}")
-
-        assert (distance_std_available, "Distance standard deviations are required for accuracy metric.")
-        # Collapse to just last iteration
-        accuracy_df = df[df["iteration"] == df["iteration"].max()].drop(columns=["iteration"])
-        # Remove unnecessary dependent variable columns
-        accuracy_df.drop(columns=["crop_width", "crop_height"], inplace=True)
-        # CT and X-ray paths to h_linear
-        accuracy_df["h_linear"] = [  #
-            ct_xray_to_h_linear(  #
-                saved_transformations=saved_transformations,  #
-                xray_path=xray_path,  #
-                ct_path=ct_path,  #
-                ct_series_uid=ct_series_uid,  #
-            )  #
-            for xray_path, ct_path, ct_series_uid in tqdm(  #
-                zip(accuracy_df["xray_path"], accuracy_df["ct_path"], accuracy_df["ct_series_uid"]),  #
-                desc="Calculating h_linear"  #
-            )  #
-        ]
-        accuracy_df.drop(columns=["xray_path", "ct_path", "ct_series_uid"], inplace=True)
-        # Drop columns for constant variables
-        accuracy_df = accuracy_df.drop(columns=[  #
-            col for col in  #
-            accuracy_df.columns[accuracy_df.nunique() == 1]  #
-        ])
-
-        print(accuracy_df.to_string())
-
-        if "sample_count_per_distance" in accuracy_df.columns:
-            accuracy_df.drop(columns=["sample_count_per_distance"], inplace=True)
-
-        # -----
-        # Gaussian Process Regression
-        # Get the dependent value vector
-        y: np.ndarray = accuracy_df["distance"].to_numpy()
-        y_sigma: np.ndarray = accuracy_df["distance_std"].to_numpy()
-        # Get the independent value vectors as a matrix
-        independent_variables: list[str] = ["desired_h_valid", "h_linear", "crop_expand"]
-        X: np.ndarray = accuracy_df[independent_variables].to_numpy()
-        gpr = sklearn.gaussian_process.GaussianProcessRegressor(alpha=np.square(y_sigma)).fit(X, y)
-
-        n = 50
-        h_linears = np.linspace(10.0, 90.0, n)
-        h_valids = np.linspace(0.0, 70.0, n)
-        h_valids, _ = np.meshgrid(h_valids, h_linears)
-        crop_expands = np.linspace(0.0, 30.0, n)
-        crop_expands, h_linears = np.meshgrid(crop_expands, h_linears)
-        plot_specs = [  #
-            # (h_linears, h_valids, np.mean(crop_expands), "h_linear", "desired_h_valid", "crop_expand"),  #
-            # (h_linears, crop_expands, np.mean(h_valids), "h_linear", "crop_expand", "desired_h_valid"),  #
-            # (crop_expands.transpose(), h_valids, np.mean(h_linears), "crop_expand", "desired_h_valid", "h_linear"),  #
-            (h_linears, h_valids, 0.0, "h_linear", "desired_h_valid", "crop_expand"),  #
-            (h_linears, h_valids, 10.0, "h_linear", "desired_h_valid", "crop_expand"),  #
-            (h_linears, h_valids, 20.0, "h_linear", "desired_h_valid", "crop_expand"),  #
-            (h_linears, h_valids, 30.0, "h_linear", "desired_h_valid", "crop_expand"),  #
-        ]
-        fig, axes = plt.subplots(1, len(plot_specs), subplot_kw={"projection": "3d"})
-        for i, (xs, ys, other_value, x_name, y_name, other_name) in enumerate(plot_specs):
-            values = {  #
-                x_name: xs.flatten(),  #
-                y_name: ys.flatten(),  #
-                other_name: np.full_like(xs.flatten(), other_value),  #
-            }
-            model_values, model_stds = gpr.predict(np.stack([values[name] for name in independent_variables], axis=1),
-                                                   return_std=True)
-            model_values = model_values.reshape(h_valids.shape)
-            model_stds = model_stds.reshape(h_valids.shape)
-            axes[i].plot_surface(xs, ys, model_values)
-            axes[i].plot_surface(xs, ys, model_values + model_stds, alpha=0.3, color=(1.0, 0.0, 0.0))
-            axes[i].plot_surface(xs, ys, model_values - model_stds, alpha=0.3, color=(1.0, 0.0, 0.0))
-            axes[i].scatter(  #
-                accuracy_df[x_name].to_numpy(),  #
-                accuracy_df[y_name].to_numpy(),  #
-                accuracy_df["distance"].to_numpy(),  #
-            )
-            axes[i].set_zlim((0.0, np.quantile(accuracy_df["distance"].to_numpy(), 0.75)))
-            axes[i].set_xlabel(f"{x_name}")
-            axes[i].set_ylabel(f"{y_name}")
-            axes[i].set_zlabel("distance at final iteration")
-            axes[i].set_title(f"{other_name} = {other_value}")
+            fig.suptitle(latex_escape(  #
+                ";".join([  #
+                    f"{new_axis_values[i][0]}={var_to_string(new_axis_values[i][0], w)}"  #
+                    for i, w in enumerate([v for _, v in index_value_pairs])  #
+                ])  #
+            ))
+            if save_to is not None:
+                fig.savefig(save_to / ("_".join(  #
+                    f"{new_axis_values[i][0]}-{j}"  #
+                    for i, j in enumerate([k for k, _ in index_value_pairs])  #
+                ) + ".pgf"))
         plt.show()
+
+    if "xray_path" in variables and crop_size_available:
+        # crop_widths, axis_values = dataframe_rectangular_columns_to_tensor(  #
+        #     df.loc[df["iteration"] == 0],  #
+        #     ordered_axes=variables,  #
+        #     value_column="crop_width"  #
+        # )
+        crop_heights, axis_values = dataframe_rectangular_columns_to_tensor(  #
+            df.loc[df["iteration"] == 0],  #
+            ordered_axes=variables,  #
+            value_column="crop_height"  #
+        )
+
+        invariant_variables = [  #
+            "crop_expand",  #
+            "mask"  #
+        ]  # crop expand is applied after measuring, so it is truly invariant
+
+        for name in invariant_variables:
+            try:
+                i = variables.index(name)
+            except ValueError:
+                continue
+            axis_values = [e for e in axis_values if e[0] != name]
+            # crop_widths = crop_widths.mean(dim=i)
+            crop_heights = crop_heights.mean(dim=i)
+
+        # crop_values = torch.stack((crop_widths, crop_heights), dim=-2)
+        # axis_values.insert(-1, ("crop dir", np.array(["width", "height"])))
+
+        plot_grid_figures(  #
+            independent_values=axis_values,  #
+            dependent_variable="crop height [mm]",  #
+            dependent_values=crop_heights,  #
+            dense=dense,  #
+        )
 
 
 if __name__ == "__main__":
@@ -570,8 +509,6 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--display", action="store_true", help="Display/plot the resulting data.")
     parser.add_argument("-a", "--analysis", action="store_true",
                         help="Format the plots for analysis, rather than PGF plot generation.")
-    parser.add_argument("-f", "--fit", action="store_true",
-                        help="Fit a model to the data rather than assuming it is a full Cartesian grid.")
     args = parser.parse_args()
 
     main(  #
@@ -580,5 +517,4 @@ if __name__ == "__main__":
         display=args.display,  #
         save_to=None if args.save_to is None else pathlib.Path(args.save_to),  #
         analysis_format=args.analysis,  #
-        fit=args.fit,  #
     )

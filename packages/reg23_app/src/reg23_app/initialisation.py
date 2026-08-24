@@ -1,7 +1,7 @@
 import torch
 import traitlets
 
-from reg23_app._gui_param_to_dag_node import cropping_changed, cropping_value_changed, respond_to_mask_change
+from reg23_app._gui_param_to_dag_node import cropping_changed, cropping_value_changed
 from reg23_app.context import AppContext
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_experiments.data.parameters import XrayParameters
@@ -93,9 +93,9 @@ def load_fixed_dataset(*,  #
         if isinstance(err, Error):
             return Error(f"Error adding updater: {err.description}")
 
-        err = app_context.dadg.add_updater(f"{name}__refresh_mask_transformation_dependent",
+        err = app_context.dadg.add_updater(f"{name}__refresh_scaling_image",
                                            capture_in_namespaces(namespace_captures)(
-                                               updaters.refresh_mask_transformation_dependent))
+                                               updaters.refresh_scaling_image))
         if isinstance(err, Error):
             return Error(f"Error adding updater: {err.description}")
 

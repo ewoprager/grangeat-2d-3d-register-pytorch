@@ -63,5 +63,25 @@ def test_gradient_correlation():
     res = similarity_metric.gradient_correlation(a, b, gradient_method="central_difference")
 
     b = torch.rand((100,))
-    with pytest.raises(AssertionError):
+    with pytest.raises(RuntimeError):
         res = similarity_metric.gradient_correlation(a, b)
+
+
+def test_mutual_information():
+    a = torch.rand((3, 100, 100))
+
+    b = a * 2.0
+    res0 = similarity_metric.mutual_information(a, b, dim=(-2, -1))
+
+    b = a * 2.0 + 0.5 * torch.rand_like(a)
+    res1 = similarity_metric.mutual_information(a, b, dim=(-2, -1))
+    assert((res1 < res0).all())
+
+    b = a * 2.0 + 0.75 * torch.rand_like(a)
+    res2 = similarity_metric.mutual_information(a, b, dim=(-2, -1))
+    assert((res2 < res1).all())
+
+    b = torch.rand_like(a)
+    res3 = similarity_metric.mutual_information(a, b, dim=(-2, -1))
+    assert((res3 < res2).all())
+

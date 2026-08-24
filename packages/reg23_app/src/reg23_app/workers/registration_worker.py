@@ -36,7 +36,7 @@ def new_optimisation_instance(ctx: AppContext, objective_function: Callable[[Con
             #
             starting_spread=oa_params.starting_spread,  #
             config=SwarmConfig(  #
-                objective_function=lambda x: objective_function(context, x),  #
+                objective_function=lambda x: objective_function(context, x.squeeze()),  #
                 inertia_coefficient=oa_params.inertia_coefficient,  #
                 cognitive_coefficient=oa_params.cognitive_coefficient,  #
                 social_coefficient=oa_params.social_coefficient,  #

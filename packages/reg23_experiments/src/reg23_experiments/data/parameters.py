@@ -1,8 +1,8 @@
 import pathlib
 from typing import Any, Literal
 
-from traitlets import (Bool, Dict, Enum, Float, HasTraits, Instance, Int, TraitError, Undefined, Unicode, Union,
-                       observe, validate)
+from traitlets import Bool, Dict, Enum, Float, HasTraits, Instance, Int, TraitError, Undefined, Unicode, Union, \
+    observe, validate
 
 from reg23_experiments.data.structs import Cropping
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
@@ -106,23 +106,20 @@ class Parameters(HasTraits):
     ct_path: str | None = Unicode(allow_none=True, default_value=None).tag(ui=True)
     downsample_level: int = Int(min=0).tag(ui=True)
     truncation_percent: int = Int(min=0, max=100).tag(ui=True)
-    mask: Literal["None", "Every evaluation", "Every evaluation weighting zncc", "Binary weighting"] = Enum(values=[  #
-        "None",  #
-        "Every evaluation",  #
-        "Every evaluation weighting zncc",  #
-        "Binary weighting",  #
-    ]).tag(ui=True)
-    sim_metric: Literal["zncc", "local_zncc", "multiscale_zncc", "gradient_correlation"] = Enum(values=[  #
+    apply_weighting: bool = Bool(default_value=False).tag(ui=True)
+    weight_alpha: float = Float(min=0.0, default_value=0.0).tag(ui=True)
+    iterations_per_weight_update: int = Int(min=0, default_value=Undefined).tag(ui=True)  # 0 means every o.f. eval.
+    apply_scaling: bool = Bool(default_value=False).tag(ui=True)
+    sim_metric: Literal["zncc", "gradient_correlation", "mutual_information"] = Enum(values=[  #
         "zncc",  #
-        "local_zncc",  #
-        "multiscale_zncc",  #
-        "gradient_correlation"  #
-    ]).tag(ui=True)
+        "gradient_correlation",  #
+        "mutual_information",  #
+    ], default_value=Undefined).tag(ui=True)
     sim_metric_parameters: LocalZnccParameters | None = Instance(LocalZnccParameters, allow_none=True,
                                                                  default_value=None).tag(ui=True)
     starting_distance: float = Float(min=0.0)
     sample_count_per_distance: int = Int(min=1)
-    optimisation_algorithm: Literal["pso", "local_search", "cmaes"] = Enum(values=[  #
+    optimisation_algorithm: Literal["pso", "local_search"] = Enum(values=[  #
         "pso",  #
         "local_search",  #
         # "cmaes",  #
@@ -146,9 +143,10 @@ class Parameters(HasTraits):
 
     SIM_MET_PARAM_CLASSES: dict[str, type] = {  #
         "zncc": type(None),  #
-        "local_zncc": LocalZnccParameters,  #
-        "multiscale_zncc": type(None),  #
+        # "local_zncc": LocalZnccParameters,  #
+        # "multiscale_zncc": type(None),  #
         "gradient_correlation": type(None),  #
+        "mutual_information" : type(None), #
     }
 
     def __init__(self, **kwargs):

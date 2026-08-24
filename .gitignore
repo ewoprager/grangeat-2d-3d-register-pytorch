@@ -11,6 +11,7 @@ data/temp/
 figures/landscapes/
 figures/truncation/
 figures/program_truncation/
+figures/geometric_weighting/
 **/*.egg-info/
 Logs/*
 data/register_plot_data/

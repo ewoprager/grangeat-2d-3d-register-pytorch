@@ -372,10 +372,8 @@ def get_crop_nonzero_drr(  #
         ct_volumes: list[torch.Tensor],  #
         ct_spacing: Float64[torch.Tensor, "3"],  #
         image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
-        translation_offset: Float64[torch.Tensor, "2"]  #
 ) -> Cropping:
     device = torch.device("cpu")
-    transformation = current_transformation.to(device=device).with_translation_offset(translation_offset)
     ct_spacing = ct_spacing.to(device=device)
     image_2d_full_spacing = image_2d_full_spacing.to(device=device)
     tensor_kwargs = {"device": device, "dtype": torch.float64}
@@ -394,7 +392,7 @@ def get_crop_nonzero_drr(  #
     ], **tensor_kwargs) * volume_half_diag  # size = (8, 3)
     # project the vertices into points on the detector array, measured in mm from the centre
     projected_vertices = project_vectors(volume_vertices, source_distance=source_distance,
-                                         transformation=transformation)  # [mm]
+                                         transformation=current_transformation)  # [mm]
     mins, maxs = torch.aminmax(projected_vertices, dim=0)  # [mm]
     # get the size of the image in mm
     image_size: torch.Tensor = torch.tensor(  #
@@ -402,11 +400,7 @@ def get_crop_nonzero_drr(  #
     # convert the edges of the crop rectangle from mm to fractional in the fixed image
     left, top = mins / image_size + 0.5
     right, bottom = maxs / image_size + 0.5
-    left = min(max(left.item(), 0.0), 1.0)
-    right = min(max(right.item(), left), 1.0)
-    top = min(max(top.item(), 0.0), 1.0)
-    bottom = min(max(bottom.item(), top), 1.0)
-    return Cropping(right=right, top=top, left=left, bottom=bottom)
+    return Cropping(right=right.item(), top=top.item(), left=left.item(), bottom=bottom.item())
 
 
 @jaxtyped(typechecker=typechecker)
@@ -418,10 +412,8 @@ def get_crop_full_depth_drr(  #
         ct_volumes: list[torch.Tensor],  #
         ct_spacing: Float64[torch.Tensor, "3"],  #
         image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
-        translation_offset: Float64[torch.Tensor, "2"]  #
 ) -> Cropping:
     device = torch.device("cpu")
-    transformation = current_transformation.to(device=device).with_translation_offset(translation_offset)
     ct_spacing = ct_spacing.to(device=device)
     image_2d_full_spacing = image_2d_full_spacing.to(device=device)
     tensor_kwargs = {"device": device, "dtype": torch.float64}
@@ -439,7 +431,8 @@ def get_crop_full_depth_drr(  #
         [-1.0, -1.0, -1.0]  #
     ], **tensor_kwargs) * volume_half_diag  # size = (8, 3)
     projected_vertices = project_vectors(volume_vertices, source_distance=source_distance,
-                                         transformation=transformation)  # [mm], origin centered on detector; size =
+                                         transformation=current_transformation)  # [mm], origin centered on detector;
+    # size =
     # (8, 2)
 
     # vertical bounds
@@ -457,10 +450,7 @@ def get_crop_full_depth_drr(  #
     # convert from [mm] centred on origin to fractions through image in downward direction
     top = top / image_size[1] + 0.5
     bottom = bottom / image_size[1] + 0.5
-    # clamping within valid ranges
-    top = min(max(top.item(), 0.0), 1.0)
-    bottom = min(max(bottom.item(), top), 1.0)
-    return Cropping(right=1.0, top=top, left=0.0, bottom=bottom)
+    return Cropping(right=1.0, top=top.item(), left=0.0, bottom=bottom.item())
 
 
 def axis_angle_extract_axis(axis_angle: torch.Tensor, axis: torch.Tensor) -> float:

@@ -10,8 +10,7 @@ from jaxtyping import Float64
 from reg23_experiments.data.structs import GrowingTensor, Transformation
 from reg23_experiments.ops.data_manager import args_from_dadg
 
-__all__ = ["mapping_transformation_to_parameters", "mapping_parameters_to_transformation", "local_search",
-           "random_parameters_at_distance"]
+__all__ = ["mapping_transformation_to_parameters", "mapping_parameters_to_transformation", "local_search"]
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +24,6 @@ def mapping_parameters_to_transformation(params: Float64[torch.Tensor, "6"]) -> 
     return Transformation.from_vector(
         params.to(dtype=torch.float64) * torch.tensor([0.03125, 0.03125, 0.03125, 1.0, 1.0, 20.0], device=params.device,
                                                       dtype=torch.float64))
-
-
-def random_parameters_at_distance(from_parameters: Float64[torch.Tensor, "6"],
-                                  distance: float | Float64[torch.Tensor, "6"]) -> Float64[torch.Tensor, "6"]:
-    u_hat = torch.nn.functional.normalize(torch.randn_like(from_parameters), dim=0)
-    return from_parameters + distance * u_hat
 
 
 def local_search(*, starting_position: torch.Tensor, initial_step_size: torch.Tensor,
