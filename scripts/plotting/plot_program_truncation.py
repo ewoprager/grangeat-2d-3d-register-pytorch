@@ -109,8 +109,8 @@ def grid_of_plots_figure(  #
         ])  #
 
         if zipped_axis_values:
-            zipped_variables = [t[0] for t in zipped_axis_values]
-            for i, zipped_values in enumerate(zip(*[t[1] for t in zipped_axis_values])):
+            zipped_variables = [t[0] for t in reversed(zipped_axis_values)]
+            for i, zipped_values in enumerate(zip(*[t[1] for t in reversed(zipped_axis_values)])):
                 dependent_index = axis_index + (slice(None), i)
                 line_label = ";".join(  #
                     f"{var}={var_to_string(var, val)}"  #

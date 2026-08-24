@@ -213,22 +213,23 @@ def main(  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
             "downsample_level": Cartesian([0, 1]),  #
-            "truncation_percent": Constant(85),  #
+            "truncation_percent": Cartesian([80, 90]),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
             # ----- scaling
-            "apply_scaling": Cartesian([False, True]),  #
+            "apply_scaling": Constant(False),  #
             # ----- similarity & weighting
-            "weighting": Cartesian([None, 0.0, 0.25, 0.5]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+            "apply_weighting": Zipped([False, True, True, True, True]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+            "weight_alpha": Zipped([0.0, 0.0, 0.25, 0.5, 1.0]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  #
             "sim_metric": Constant("gradient_correlation"),
             # ----- registration
-            "starting_distance": Constant(10.0),  #
+            "starting_distance": Constant(3.0),  # Constant(5.0)
             "sample_count_per_distance": Constant(10),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
-            "particle_initialisation_spread": Constant(5.0),#
+            "particle_initialisation_spread": Constant(1.5),# # Constant(2.5)
             "iteration_count": Constant(6),  #
         })
 
