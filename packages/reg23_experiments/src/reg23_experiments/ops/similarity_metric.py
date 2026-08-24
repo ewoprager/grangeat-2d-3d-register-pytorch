@@ -167,16 +167,16 @@ def gradient_correlation(  #
 
 
 def gradient_difference(  #
-        xs: torch.Tensor,  #
-        ys: torch.Tensor,  #
+        fixed: torch.Tensor,  #
+        moving: torch.Tensor,  #
         *,  #
         weights: torch.Tensor | None = None,  #
 ) -> torch.Tensor:
     if weights is None:
-        xs, ys = _broadcast_together(xs, ys)
+        fixed, moving = _broadcast_together(fixed, moving)
     else:
-        xs, ys, weights = _broadcast_together(xs, ys, weights)
-    size, dtype, device = xs.size(), xs.dtype, xs.device
+        fixed, moving, weights = _broadcast_together(fixed, moving, weights)
+    size, dtype, device = fixed.size(), fixed.dtype, fixed.device
 
     assert len(size) >= 2
     ret_size = size[:-2]
@@ -184,13 +184,13 @@ def gradient_difference(  #
     if len(size) < 3:
         size = torch.Size([1, *size])
     # broadcast all tensors to the same shape
-    xs = xs.broadcast_to(size)
-    ys = ys.broadcast_to(size)
+    fixed = fixed.broadcast_to(size)
+    moving = moving.broadcast_to(size)
     if weights is not None:
         weights = weights.broadcast_to(size)
     # flatten batch dimensions
-    xs = xs.flatten(end_dim=-3)
-    ys = ys.flatten(end_dim=-3)
+    fixed = fixed.flatten(end_dim=-3)
+    moving = moving.flatten(end_dim=-3)
     if weights is not None:
         weights = weights.flatten(end_dim=-3)
     # size is now (N total batches, H, W)
@@ -199,21 +199,22 @@ def gradient_difference(  #
     sobel_y = sobel_x.t()
     sobel_x = sobel_x.unsqueeze(0).unsqueeze(0)
     sobel_y = sobel_y.unsqueeze(0).unsqueeze(0)
-    xs = xs.unsqueeze(1)
-    ys = ys.unsqueeze(1)
-    gx_xs = torch.nn.functional.conv2d(xs, sobel_x)
-    gy_xs = torch.nn.functional.conv2d(xs, sobel_y)
-    gx_ys = torch.nn.functional.conv2d(ys, sobel_x)
-    gy_ys = torch.nn.functional.conv2d(ys, sobel_y)
-    g_delta_x = gx_xs - gx_ys
-    g_delta_y = gy_xs - gy_ys
+    fixed = fixed.unsqueeze(1)
+    moving = moving.unsqueeze(1)
+    gx_fixed = torch.nn.functional.conv2d(fixed, sobel_x)
+    gy_fixed = torch.nn.functional.conv2d(fixed, sobel_y)
+    gx_moving = torch.nn.functional.conv2d(moving, sobel_x)
+    gy_moving = torch.nn.functional.conv2d(moving, sobel_y)
+
+    g_delta_x = gx_fixed - gx_moving
+    g_delta_y = gy_fixed - gy_moving
 
     if weights is None:
-        var_g_delta_x = g_delta_x.var(dim=(-2, -1), keepdim=True)
-        var_g_delta_y = g_delta_y.var(dim=(-2, -1), keepdim=True)
+        var_gx_fixed = gx_fixed.var(dim=(-2, -1), keepdim=True)
+        var_gy_fixed = gy_fixed.var(dim=(-2, -1), keepdim=True)
 
-        hori = (var_g_delta_x / (var_g_delta_x + g_delta_x.square())).mean(dim=(-2, -1))
-        vert = (var_g_delta_y / (var_g_delta_y + g_delta_y.square())).mean(dim=(-2, -1))
+        hori = (var_gx_fixed / (var_gx_fixed + g_delta_x.square())).mean(dim=(-2, -1))
+        vert = (var_gy_fixed / (var_gy_fixed + g_delta_y.square())).mean(dim=(-2, -1))
     else:
         # take the geometric means of the weights that contribute to each value in the gradient images
         # need to deal with 0s separately as they cause the log to produce -infs that then turn into nans
@@ -235,17 +236,12 @@ def gradient_difference(  #
         weights_y = torch.where(weights_y_zero > 1e-6, 0.0, weights_y)
         weight_y_sums = weights_y.sum(dim=(-2, -1), keepdim=True)
 
-        mean_g_delta_x = (weights_x * g_delta_x).sum(dim=(-2, -1), keepdim=True) / weight_x_sums
-        mean_g_delta_y = (weights_y * g_delta_y).sum(dim=(-2, -1), keepdim=True) / weight_y_sums
+        var_gx_fixed = gx_fixed.var(dim=(-2, -1), keepdim=True)
+        var_gy_fixed = gy_fixed.var(dim=(-2, -1), keepdim=True)
 
-        var_g_delta_x = (weights_x * (g_delta_x - mean_g_delta_x).square()).sum(dim=(-2, -1),
-                                                                                keepdim=True) / weight_x_sums
-        var_g_delta_y = (weights_y * (g_delta_y - mean_g_delta_y).square()).sum(dim=(-2, -1),
-                                                                                keepdim=True) / weight_y_sums
-
-        hori = (weights_x * var_g_delta_x / (var_g_delta_x + g_delta_x.square())).sum(dim=(-2, -1),
+        hori = (weights_x * var_gx_fixed / (var_gx_fixed + g_delta_x.square())).sum(dim=(-2, -1),
                                                                                       keepdim=True) / weight_x_sums
-        vert = (weights_y * var_g_delta_y / (var_g_delta_y + g_delta_y.square())).sum(dim=(-2, -1),
+        vert = (weights_y * var_gy_fixed / (var_gy_fixed + g_delta_y.square())).sum(dim=(-2, -1),
                                                                                       keepdim=True) / weight_y_sums
 
     return 0.5 * (hori + vert).view(ret_size)
