@@ -33,8 +33,9 @@ def instance_output_directory(script_output_directory: str | pathlib.Path, name:
 
 
 STRING_TO_SIM_MET = {  #
-    "zncc": similarity_metric.ncc,  ##
+    "zncc": similarity_metric.ncc,  #
     "gradient_correlation": similarity_metric.gradient_correlation,  #
+    "gradient_difference": similarity_metric.gradient_difference,  #
     "mutual_information": similarity_metric.mutual_information,  #
 }
 

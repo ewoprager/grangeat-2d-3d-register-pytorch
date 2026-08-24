@@ -59,11 +59,13 @@ class ExperimentConfig(traitlets.HasTraits):
     weight_alpha: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     iterations_per_weight_update: int = traitlets.Int(min=0,
                                                       default_value=traitlets.Undefined)  # 0 means every o.f. eval.
-    sim_metric: Literal["zncc", "gradient_correlation", "mutual_information"] = traitlets.Enum(values=[  #
-        "zncc",  #
-        "gradient_correlation",  #
-        "mutual_information",  #
-    ], default_value=traitlets.Undefined)
+    sim_metric: Literal["zncc", "gradient_correlation", "gradient_difference", "mutual_information"] = traitlets.Enum(
+        values=[  #
+            "zncc",  #
+            "gradient_correlation",  #
+            "gradient_difference",  #
+            "mutual_information",  #
+        ], default_value=traitlets.Undefined)
     # ----- registration
     starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
