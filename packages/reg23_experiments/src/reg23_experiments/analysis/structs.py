@@ -6,7 +6,7 @@ import scipy
 import torch
 
 from reg23_experiments.analysis.fit import torch_polyfit
-from reg23_experiments.analysis.helpers import to_latex_scientific
+from reg23_experiments.analysis.format import to_latex_scientific
 
 __all__ = ["Series", "DataFit", "LinearFit", "QuadraticFit", "PowerFit", "CustomFitPowerRatio"]
 

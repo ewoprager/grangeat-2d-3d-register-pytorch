@@ -67,6 +67,19 @@ def test_gradient_correlation():
         res = similarity_metric.gradient_correlation(a, b)
 
 
+def test_gradient_difference():
+    a = torch.rand((10, 10))
+    b = torch.rand((10, 10))
+    res = similarity_metric.gradient_difference(a, b)
+
+    w = torch.rand((10, 10))
+    res = similarity_metric.gradient_difference(a, b, weights=w)
+
+    b = torch.rand((100,))
+    with pytest.raises(RuntimeError):
+        res = similarity_metric.gradient_difference(a, b)
+
+
 def test_mutual_information():
     a = torch.rand((3, 100, 100))
 

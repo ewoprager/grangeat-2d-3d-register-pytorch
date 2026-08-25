@@ -161,5 +161,5 @@ def apply_sim_metric(  #
         weight_images: Float32[torch.Tensor, "#b n m"] | None,  #
 ) -> dict[str, Any]:
     return {  #
-        "of_values": -string_to_sim_met(sim_metric)(moving_images, fixed_images, weights=weight_images),  #
+        "of_values": -string_to_sim_met(sim_metric)(fixed_images, moving_images, weights=weight_images),  #
     }

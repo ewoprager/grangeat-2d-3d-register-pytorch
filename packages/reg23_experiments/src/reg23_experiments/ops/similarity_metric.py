@@ -13,35 +13,30 @@ from typing import Literal
 
 import torch
 
-__all__ = ["ncc", "gradient_correlation", "mutual_information"]
+__all__ = ["ncc", "gradient_correlation", "gradient_difference", "mutual_information"]
 
 logger = logging.getLogger(__name__)
 
 
-def _broadcast_similarity_tensors(  #
-        xs: torch.Tensor,  #
-        ys: torch.Tensor,  #
-        weights: torch.Tensor | None  #
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None, torch.Size, torch.dtype, torch.device]:
-    # check tensor compatibility
-    dtype = xs.dtype
-    device = xs.device
-    assert ys.dtype == dtype
-    assert ys.device == device
-    if weights is not None:
-        assert weights.dtype == dtype
-        assert weights.device == device
-    # broadcast all tensors to the same shape
-    size = torch.broadcast_shapes(  #
-        xs.size(), ys.size()  #
-    ) if weights is None else torch.broadcast_shapes(  #
-        xs.size(), ys.size(), weights.size()  #
-    )
-    xs = xs.broadcast_to(size)
-    ys = ys.broadcast_to(size)
-    if weights is not None:
-        weights = weights.broadcast_to(size)
-    return xs, ys, weights, size, dtype, device
+def _broadcast_together(*tensors: torch.Tensor) -> tuple[torch.Tensor, ...]:
+    if len(tensors) == 0:
+        return ()
+    dtype = tensors[0].dtype
+    device = tensors[0].device
+    assert all(t.dtype == dtype for t in tensors[1:])
+    assert all(t.device == device for t in tensors[1:])
+    size = torch.broadcast_shapes(*[t.size() for t in tensors])
+    return tuple(t.broadcast_to(size) for t in tensors)
+
+
+def _dim_to_full_nonneg(dim: int | torch.Size | tuple | None, *, dimensions: int) -> tuple[int, ...]:
+    if dim is None:
+        dim = tuple(range(dimensions))  #
+    elif isinstance(dim, int):
+        dim = (dim % dimensions,)
+    else:
+        dim = tuple(d % dimensions for d in dim)
+    return dim
 
 
 def ncc(  #
@@ -51,14 +46,13 @@ def ncc(  #
         weights: torch.Tensor | None = None,  #
         dim: int | torch.Size | tuple | None = None,  #
 ) -> torch.Tensor:
-    xs, ys, weights, size, dtype, device = _broadcast_similarity_tensors(xs, ys, weights)
-    # convert the given `dim` parameter to a torch.Size with non-negative elements
-    if dim is None:
-        dim = torch.Size(range(len(size)))  #
-    elif isinstance(dim, int):
-        dim = torch.Size([dim % len(size)])
+    if weights is None:
+        xs, ys = _broadcast_together(xs, ys)
     else:
-        dim = torch.Size(d % len(size) for d in dim)
+        xs, ys, weights = _broadcast_together(xs, ys, weights)
+    size, dtype, device = xs.size(), xs.dtype, xs.device
+    # convert the given `dim` parameter to a torch.Size with non-negative elements
+    dim = _dim_to_full_nonneg(dim, dimensions=len(size))
     # determine the size of the returned value
     ret_size = torch.Size([s for i, s in enumerate(size) if i not in dim])
     if weights is None:
@@ -108,7 +102,11 @@ def gradient_correlation(  #
     :param gradient_method:
     :return:
     """
-    xs, ys, weights, size, dtype, device = _broadcast_similarity_tensors(xs, ys, weights)
+    if weights is None:
+        xs, ys = _broadcast_together(xs, ys)
+    else:
+        xs, ys, weights = _broadcast_together(xs, ys, weights)
+    size, dtype, device = xs.size(), xs.dtype, xs.device
 
     assert len(size) >= 2
     ret_size = size[:-2]
@@ -168,6 +166,87 @@ def gradient_correlation(  #
     ).view(ret_size)
 
 
+def gradient_difference(  #
+        fixed: torch.Tensor,  #
+        moving: torch.Tensor,  #
+        *,  #
+        weights: torch.Tensor | None = None,  #
+) -> torch.Tensor:
+    if weights is None:
+        fixed, moving = _broadcast_together(fixed, moving)
+    else:
+        fixed, moving, weights = _broadcast_together(fixed, moving, weights)
+    size, dtype, device = fixed.size(), fixed.dtype, fixed.device
+
+    assert len(size) >= 2
+    ret_size = size[:-2]
+    # make sure there is a batch dimension so we can safely flatten them
+    if len(size) < 3:
+        size = torch.Size([1, *size])
+    # broadcast all tensors to the same shape
+    fixed = fixed.broadcast_to(size)
+    moving = moving.broadcast_to(size)
+    if weights is not None:
+        weights = weights.broadcast_to(size)
+    # flatten batch dimensions
+    fixed = fixed.flatten(end_dim=-3)
+    moving = moving.flatten(end_dim=-3)
+    if weights is not None:
+        weights = weights.flatten(end_dim=-3)
+    # size is now (N total batches, H, W)
+
+    sobel_x = torch.tensor([[-1., 0., 1.], [-2., 0., 2.], [-1., 0., 1.]], dtype=dtype, device=device)
+    sobel_y = sobel_x.t()
+    sobel_x = sobel_x.unsqueeze(0).unsqueeze(0)
+    sobel_y = sobel_y.unsqueeze(0).unsqueeze(0)
+    fixed = fixed.unsqueeze(1)
+    moving = moving.unsqueeze(1)
+    gx_fixed = torch.nn.functional.conv2d(fixed, sobel_x)
+    gy_fixed = torch.nn.functional.conv2d(fixed, sobel_y)
+    gx_moving = torch.nn.functional.conv2d(moving, sobel_x)
+    gy_moving = torch.nn.functional.conv2d(moving, sobel_y)
+
+    g_delta_x = gx_fixed - gx_moving
+    g_delta_y = gy_fixed - gy_moving
+
+    if weights is None:
+        var_gx_fixed = gx_fixed.var(dim=(-2, -1), keepdim=True)
+        var_gy_fixed = gy_fixed.var(dim=(-2, -1), keepdim=True)
+
+        hori = (var_gx_fixed / (var_gx_fixed + g_delta_x.square())).mean(dim=(-2, -1))
+        vert = (var_gy_fixed / (var_gy_fixed + g_delta_y.square())).mean(dim=(-2, -1))
+    else:
+        # take the geometric means of the weights that contribute to each value in the gradient images
+        # need to deal with 0s separately as they cause the log to produce -infs that then turn into nans
+        weights_kernel_x = sobel_x.abs()
+        weights_kernel_y = sobel_y.abs()
+        weights = weights.unsqueeze(1)
+
+        zero_mask = weights.abs() < 1e-6
+        safe_log_weights = torch.where(zero_mask, 1.0, weights).log()
+        kernel_sum = weights_kernel_x.sum()
+
+        weights_x = (torch.nn.functional.conv2d(safe_log_weights, weights_kernel_x) / kernel_sum).exp()
+        weights_x_zero = torch.nn.functional.conv2d(zero_mask.float(), weights_kernel_x)
+        weights_x = torch.where(weights_x_zero > 1e-6, 0.0, weights_x)
+        weight_x_sums = weights_x.sum(dim=(-2, -1), keepdim=True)
+
+        weights_y = (torch.nn.functional.conv2d(safe_log_weights, weights_kernel_y) / kernel_sum).exp()
+        weights_y_zero = torch.nn.functional.conv2d(zero_mask.float(), weights_kernel_y)
+        weights_y = torch.where(weights_y_zero > 1e-6, 0.0, weights_y)
+        weight_y_sums = weights_y.sum(dim=(-2, -1), keepdim=True)
+
+        var_gx_fixed = gx_fixed.var(dim=(-2, -1), keepdim=True)
+        var_gy_fixed = gy_fixed.var(dim=(-2, -1), keepdim=True)
+
+        hori = (weights_x * var_gx_fixed / (var_gx_fixed + g_delta_x.square())).sum(dim=(-2, -1),
+                                                                                      keepdim=True) / weight_x_sums
+        vert = (weights_y * var_gy_fixed / (var_gy_fixed + g_delta_y.square())).sum(dim=(-2, -1),
+                                                                                      keepdim=True) / weight_y_sums
+
+    return 0.5 * (hori + vert).view(ret_size)
+
+
 def mutual_information(  #
         xs: torch.Tensor,  #
         ys: torch.Tensor,  #
@@ -190,13 +269,12 @@ def mutual_information(  #
     :param y_bins: (default: 64) The number of equally-spaced bins in which to bin the values in ys
     :return:
     """
-    xs, ys, weights, size, dtype, device = _broadcast_similarity_tensors(xs, ys, weights)
-    if dim is None:
-        dim = torch.Size(range(len(size)))  #
-    elif isinstance(dim, int):
-        dim = torch.Size([dim % len(size)])
+    if weights is None:
+        xs, ys = _broadcast_together(xs, ys)
     else:
-        dim = torch.Size(d % len(size) for d in dim)
+        xs, ys, weights = _broadcast_together(xs, ys, weights)
+    size, dtype, device = xs.size(), xs.dtype, xs.device
+    dim = _dim_to_full_nonneg(dim, dimensions=len(size))
     # determine the size of the returned value
     ret_size = torch.Size([s for i, s in enumerate(size) if i not in dim])
     ret_dims = torch.Size([i for i in range(len(size)) if i not in dim])

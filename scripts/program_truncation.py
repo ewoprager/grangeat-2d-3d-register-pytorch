@@ -212,25 +212,25 @@ def main(  #
             "ct_path": Constant(ct_path),  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
-            "downsample_level": Cartesian([0, 1]),  #
-            "truncation_percent": Cartesian([80, 90]),  #
+            "downsample_level": Cartesian([1, 2, 3]),  #
+            "truncation_percent": Constant(85),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
             # ----- scaling
             "apply_scaling": Constant(False),  #
             # ----- similarity & weighting
-            "apply_weighting": Zipped([False, True, True, True, True]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
-            "weight_alpha": Zipped([0.0, 0.0, 0.25, 0.5, 1.0]),  # Cartesian([0.0, 0.25, 0.5, 1.0, 2.0]),  #
+            "apply_weighting": Cartesian([False, True]),  #
+            "weight_alpha": Constant(1.0),  #
             "iterations_per_weight_update": Constant(1000),  #
-            "sim_metric": Constant("gradient_correlation"),
+            "sim_metric": Constant("gradient_correlation"), #
             # ----- registration
-            "starting_distance": Constant(3.0),  # Constant(5.0)
+            "starting_distance": Cartesian([15.0, 17.5, 20.0]),  # Constant(5.0)
             "sample_count_per_distance": Constant(10),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
-            "particle_initialisation_spread": Constant(1.5),# # Constant(2.5)
-            "iteration_count": Constant(6),  #
+            "particle_initialisation_spread": Constant(7.5),  # Constant(2.5)
+            "iteration_count": Constant(4),  #
         })
 
         # X-ray choice determines the gold standard orientation, which drives h_linear:
