@@ -326,7 +326,7 @@ def main(  #
     distance_std_available = "distance_std" in df
     crop_size_available = "crop_width" in df and "crop_height" in df
 
-    if True:
+    if False:
         # -----
         # Reading in parquet data and concatenating
         df_extra = pd.concat([  #
@@ -381,7 +381,7 @@ def main(  #
         dependent_variables=dependent_variables,  #
     )
 
-    if True:
+    if False:
         plot_grid_figures(  #
             cartesian_axes_values=czt.cartesian_axes_values,  #
             zipped_axis_values=czt.zipped_axis_values,  #

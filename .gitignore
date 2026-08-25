@@ -19,3 +19,4 @@ data/register_plot_data/
 **/*.log
 **/.zed/
 experimental_results/
+.env

@@ -75,6 +75,8 @@ Note: instructions here may be slightly outdated and not work on all platforms.
 The [build_test.yml](.github/workflows/build_test.yml) GitHub
 workflow can generally be relied upon to be up-to-date, and to work.
 
+The [justfile](justfile) contains some helpful commands, including many listed below.
+
 ### [`uv`](https://docs.astral.sh/uv/) is required
 
 Initialise the virtual environment:
@@ -102,6 +104,14 @@ Supported options for `<platform>`:
 - `cuda` This should work on a system with an NVIDIA GPU, and the version of NVCC detailed above.
 
 Options passed to `uv sync` should also be passed to `uv run` if you want the run to use the same dependencies.
+
+### Environment variables
+
+Rename [.env.example](.env.example) to '.env' and add your own environment variables for additional functionality:
+
+- If you have a [Pushover](https://pushover.net/) account, add you API key and user ID to enable scripts to send you
+  notifications. The script [program_truncation.py](scripts/program_truncation.py) can be configured to send a
+  notification on completion of experiments by passing the command line argument `--notify`.
 
 ## Docker
 
