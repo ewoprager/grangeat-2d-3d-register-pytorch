@@ -1,8 +1,4 @@
-from typing import Callable, Literal
-
-import matplotlib
-
-matplotlib.use("QtAgg")
+from typing import Callable
 
 import matplotlib.pyplot as plt
 import torch
@@ -29,7 +25,7 @@ def run_reg(  #
         starting_params: torch.Tensor,  #
         config: RegConfig,  #
         device: torch.device,  #
-        plot: bool=False,  #
+        plot: bool = False,  #
         tqdm_position: int = 0,  #
         batch_size: int = 1,  #
         periodic_behaviour: list[tuple[int, Callable[[torch.Tensor], None]]] = [],  #

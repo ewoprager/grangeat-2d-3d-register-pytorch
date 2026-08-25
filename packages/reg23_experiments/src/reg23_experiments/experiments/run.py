@@ -4,10 +4,6 @@ import pathlib
 import pprint
 from typing import Any, Callable, Iterable
 
-import matplotlib
-
-matplotlib.use("QtAgg")
-
 import numpy as np
 import pandas as pd
 import scipy

@@ -3,10 +3,6 @@ import logging
 import pprint
 from typing import Any, Literal
 
-import matplotlib
-
-matplotlib.use("QtAgg")
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
