@@ -14,8 +14,8 @@ def test_swarm():
     particle_count = 20
 
     def objective_function(xy: torch.Tensor) -> torch.Tensor:
-        p = xy[0] - 3.0
-        q = xy[1] - 2.0
+        p = xy[..., 0] - 3.0
+        q = xy[..., 1] - 2.0
         return p * p + q * q
 
     config = SwarmConfig(objective_function=objective_function, inertia_coefficient=0.9, cognitive_coefficient=0.5,
