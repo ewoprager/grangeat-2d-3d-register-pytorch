@@ -1,6 +1,9 @@
 import torch
 
-from reg23_core import objective_function, project_drr_cuboid_masks_batched, project_drrs_batched
+from reg23_core import objective_function
+
+if torch.cuda.is_available():
+    from reg23_core import project_drr_cuboid_masks_batched, project_drrs_batched
 
 
 def weighted_ncc(xs: torch.Tensor, ys: torch.Tensor, weights: torch.Tensor, *,
