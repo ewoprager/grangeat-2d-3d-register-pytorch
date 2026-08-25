@@ -120,7 +120,7 @@ def grid_of_plots_figure(  #
                     x_values,  #
                     dependent_values[dependent_index],  #
                     label=line_label,  #
-                    color=get_colour(i),#
+                    color=get_colour(i),  #
                 )
                 if dependent_errors is not None:
                     axes[axis_index].errorbar(  #
@@ -129,7 +129,7 @@ def grid_of_plots_figure(  #
                         yerr=dependent_errors[dependent_index],  #
                         fmt='x-',  #
                         capsize=4,  #
-                        color=get_colour(i),#
+                        color=get_colour(i),  #
                     )
         else:
             line_variable = cartesian_axes_values[-2][0]
@@ -141,7 +141,7 @@ def grid_of_plots_figure(  #
                     x_values,  #
                     dependent_values[dependent_index],  #
                     label=line_label,  #
-                    color=get_colour(i),#
+                    color=get_colour(i),  #
                 )
                 if dependent_errors is not None:
                     axes[axis_index].errorbar(  #
@@ -150,7 +150,7 @@ def grid_of_plots_figure(  #
                         yerr=dependent_errors[dependent_index],  #
                         fmt='x-',  #
                         capsize=4,  #
-                        color=get_colour(i),#
+                        color=get_colour(i),  #
                     )
 
         axes[axis_index].set_xlabel(latex_escape(x_label))
@@ -340,10 +340,10 @@ def main(  #
     # cartesian_variables.append("sim_metric")
     ## !!!
 
-    variable_hierarchy: list[str] = ["sim_metric", "weighting", "weight_alpha", "iterations_per_crop_update",
+    variable_hierarchy: list[str] = ["sim_metric", "weight_alpha", "apply_weighting", "iterations_per_crop_update",
                                      "cropping", "cropping_method", "truncation_percent", "apply_scaling",
                                      "iterations_per_weight_update", "crop_expand", "mask", "desired_h_valid",
-                                     "xray_path"]  # most to least important
+                                     "downsample_level", "starting_distance", "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     cartesian_variables = sorted(  #
         cartesian_variables,  #
