@@ -120,6 +120,10 @@ Functions</h2></td></tr>
 <tr class="separator:a559715523a36f5b433a24fb01179ad14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff938b66f6dded6b0ecfce8b35d6d9b9" id="r_aff938b66f6dded6b0ecfce8b35d6d9b9"><td class="memItemLeft" align="right" valign="top">torch.Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereg23__core_1_1ops.html#aff938b66f6dded6b0ecfce8b35d6d9b9">project_drrs_batched</a> (torch.Tensor volume, torch.Tensor voxel_spacing, torch.Tensor inverse_h_matrices, float source_distance, int output_width, int output_height, torch.Tensor output_offset, torch.Tensor detector_spacing)</td></tr>
 <tr class="separator:aff938b66f6dded6b0ecfce8b35d6d9b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f13f6e1b7d625206f206bc52e9cf7aa" id="r_a3f13f6e1b7d625206f206bc52e9cf7aa"><td class="memItemLeft" align="right" valign="top">torch.Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereg23__core_1_1ops.html#a3f13f6e1b7d625206f206bc52e9cf7aa">project_drr_cuboid_masks_batched</a> (torch.Tensor volume_size, torch.Tensor voxel_spacing, torch.Tensor inverse_h_matrices, float source_distance, int output_width, int output_height, torch.Tensor output_offset, torch.Tensor detector_spacing)</td></tr>
+<tr class="separator:a3f13f6e1b7d625206f206bc52e9cf7aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a031e6f6223e70459edabaacc955d3d" id="r_a8a031e6f6223e70459edabaacc955d3d"><td class="memItemLeft" align="right" valign="top">torch.Tensor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereg23__core_1_1ops.html#a8a031e6f6223e70459edabaacc955d3d">objective_function</a> (torch.Tensor volume, torch.Tensor fixed_image, torch.Tensor voxel_spacing, torch.Tensor inverse_h_matrices, float source_distance, torch.Tensor output_offset, torch.Tensor detector_spacing, float weight_alpha)</td></tr>
+<tr class="separator:a8a031e6f6223e70459edabaacc955d3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="aedb7a1fdc0acf203bc2af8ac7051a2e0" name="aedb7a1fdc0acf203bc2af8ac7051a2e0"></a>
@@ -352,6 +356,70 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a8a031e6f6223e70459edabaacc955d3d" name="a8a031e6f6223e70459edabaacc955d3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a031e6f6223e70459edabaacc955d3d">&#9670;&#160;</a></span>objective_function()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> torch.Tensor reg23_core.ops.objective_function </td>
+          <td>(</td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>volume</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>fixed_image</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>voxel_spacing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>inverse_h_matrices</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>source_distance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>output_offset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>detector_spacing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>weight_alpha</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a4860c7533107b1bd18a57947b410b9b5" name="a4860c7533107b1bd18a57947b410b9b5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4860c7533107b1bd18a57947b410b9b5">&#9670;&#160;</a></span>project_drr()</h2>
 
@@ -509,6 +577,70 @@ Functions</h2></td></tr>
           <td></td>
           <td class="paramtype">torch.Tensor&#160;</td>
           <td class="paramname"><em>homography_matrix_inverse</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>source_distance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>output_width</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>output_height</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>output_offset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>detector_spacing</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3f13f6e1b7d625206f206bc52e9cf7aa" name="a3f13f6e1b7d625206f206bc52e9cf7aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f13f6e1b7d625206f206bc52e9cf7aa">&#9670;&#160;</a></span>project_drr_cuboid_masks_batched()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> torch.Tensor reg23_core.ops.project_drr_cuboid_masks_batched </td>
+          <td>(</td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>volume_size</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>voxel_spacing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>inverse_h_matrices</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
