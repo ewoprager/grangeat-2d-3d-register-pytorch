@@ -1,5 +1,5 @@
 import logging
-from typing import Any, NamedTuple
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -58,11 +58,100 @@ def dataframe_rectangular_columns_to_tensor(df: pd.DataFrame, *, ordered_axes: l
     return tensor, axis_values
 
 
-class CartesianZippedTensors(NamedTuple):
-    dependent_variable_tensors: dict[str, torch.Tensor]
-    cartesian_axes_values: list[tuple[str, np.ndarray]]
-    zipped_axis_values: list[tuple[str, np.ndarray]]
-    constant_values: dict[str, Any]
+class CartesianZippedTensors:
+    def __init__(  #
+            self,  #
+            *,  #
+            dependent_variable_tensors: dict[str, torch.Tensor],  #
+            cartesian_axes_values: list[tuple[str, np.ndarray]],  #
+            zipped_axis_values: list[tuple[str, np.ndarray]],  #
+            constant_values: dict[str, Any],  #
+    ):
+        # there must be at least one dependent variable
+        assert len(dependent_variable_tensors) > 0
+
+        # all tensors of dependent variables must be the same size
+        tensor_size = next(iter(dependent_variable_tensors.values())).size()
+        assert all(t.size() == tensor_size for t in dependent_variable_tensors.values())
+
+        # all cartesian and zipped axes values should be 1D arrays
+        assert all(len(t[1].shape) == 1 for t in cartesian_axes_values)
+        assert all(len(t[1].shape) == 1 for t in zipped_axis_values)
+
+        # all zipped axis value arrays should have the same length
+        if zipped_axis_values:
+            zipped_n = len(zipped_axis_values[0][1])
+            assert all(len(t[1]) == zipped_n for t in zipped_axis_values)
+
+        # the lengths of the cartesian and zipped axes values should match the dependent tensor axes sizes
+        expected_size = [len(t[1]) for t in cartesian_axes_values]
+        if zipped_axis_values:
+            expected_size += [zipped_n]
+        assert tensor_size == torch.Size(expected_size)
+
+        self._dependent_variable_tensors = dependent_variable_tensors
+        self._cartesian_axes_values = cartesian_axes_values
+        self._zipped_axis_values = zipped_axis_values
+        self._constant_values = constant_values
+
+    @property
+    def dependent_variable_tensors(self) -> dict[str, torch.Tensor]:
+        return self._dependent_variable_tensors
+
+    @property
+    def cartesian_axes_values(self) -> list[tuple[str, np.ndarray]]:
+        return self._cartesian_axes_values
+
+    @property
+    def zipped_axis_values(self) -> list[tuple[str, np.ndarray]]:
+        return self._zipped_axis_values
+
+    @property
+    def constant_values(self) -> dict[str, Any]:
+        return self._constant_values
+
+    def reduce(  #
+            self,  #
+            variable: str,  #
+            *,  #
+            method: Literal["take_last"],  #
+    ) -> 'CartesianZippedTensors':
+        try:
+            cart_index = [t[0] for t in self.cartesian_axes_values].index(variable)
+        except ValueError:
+            cart_index = None
+
+        if cart_index is not None:
+            index = (slice(None),) * cart_index + (-1,)
+            dvt = {  #
+                f"{k}_at_last_{variable}": v[index]  #
+                for k, v in self.dependent_variable_tensors.items()  #
+            }
+            cav = [t for t in self.cartesian_axes_values if t[0] != variable]
+            return CartesianZippedTensors(  #
+                dependent_variable_tensors=dvt,  #
+                cartesian_axes_values=cav,  #
+                zipped_axis_values=self.zipped_axis_values,  #
+                constant_values=self.constant_values,  #
+            )
+
+        if variable in (t[0] for t in self.zipped_axis_values):
+            logger.info(
+                f"Requests reduction over zipped variable '{variable}'; reducing over full zip, including variables "
+                f"{", ".join(t[0] for t in self.zipped_axis_values)}")
+            index = (slice(None),) * len(self.cartesian_axes_values) + (-1,)
+            dvt = {  #
+                f"{k}_at_last_zipped": v[index]  #
+                for k, v in self.dependent_variable_tensors.items()  #
+            }
+            return CartesianZippedTensors(  #
+                dependent_variable_tensors=dvt,  #
+                cartesian_axes_values=self.cartesian_axes_values,  #
+                zipped_axis_values=[],  #
+                constant_values=self.constant_values,  #
+            )
+
+        raise ValueError(f"Variable '{variable}' not present in CartesianZippedTensors")
 
 
 def dataframe_to_cartesian_zipped_tensors(  #

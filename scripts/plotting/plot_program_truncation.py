@@ -300,6 +300,7 @@ def main(  #
         plt.rcParams["font.size"] = 6
     else:
         set_mpl_latex_options()
+    dense = not analysis_format
 
     # -----
     # Getting the latest data instance if desired
@@ -325,6 +326,22 @@ def main(  #
     distance_std_available = "distance_std" in df
     crop_size_available = "crop_width" in df and "crop_height" in df
 
+    if True:
+        # -----
+        # Reading in parquet data and concatenating
+        df_extra = pd.concat([  #
+            pd.read_parquet(element)  #
+            for element in pathlib.Path(
+                "/home/eprager/Projects/grangeat-2d-3d-register-pytorch/experimental_results/program_truncation/2026"
+                "-08-25_00-42-02_capture_range").iterdir()
+            #
+            if element.stem.startswith("data") and element.suffix == ".parquet"  #
+        ], ignore_index=True)
+        df_extra = df_extra[df_extra["downsample_level"] == 2]
+        df = pd.concat([df, df_extra], ignore_index=True)
+        df["xray_path"] = df["xray_path"].map(lambda p: pathlib.Path(p).name)
+        df["ct_path"] = df["ct_path"].map(lambda p: pathlib.Path(p).name)
+
     # -----
     # Reading in the variables
     variables_path = instance_dirs[0] / "variables.txt"
@@ -340,10 +357,10 @@ def main(  #
     # cartesian_variables.append("sim_metric")
     ## !!!
 
-    variable_hierarchy: list[str] = ["sim_metric", "weight_alpha", "apply_weighting", "iterations_per_crop_update",
-                                     "cropping", "cropping_method", "truncation_percent", "apply_scaling",
-                                     "iterations_per_weight_update", "crop_expand", "mask", "desired_h_valid",
-                                     "downsample_level", "starting_distance", "xray_path"]  # most to least important
+    variable_hierarchy: list[str] = ["starting_distance", "sim_metric", "weight_alpha", "apply_weighting",
+                                     "iterations_per_crop_update", "cropping", "cropping_method", "truncation_percent",
+                                     "apply_scaling", "iterations_per_weight_update", "crop_expand", "mask",
+                                     "desired_h_valid", "downsample_level", "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     cartesian_variables = sorted(  #
         cartesian_variables,  #
@@ -364,16 +381,25 @@ def main(  #
         dependent_variables=dependent_variables,  #
     )
 
-    dense = not analysis_format
-
-    plot_grid_figures(  #
-        cartesian_axes_values=czt.cartesian_axes_values,  #
-        zipped_axis_values=czt.zipped_axis_values,  #
-        dependent_variable="distance from gold standard",  #
-        dependent_values=czt.dependent_variable_tensors["distance"],  #
-        dependent_errors=czt.dependent_variable_tensors["distance_std"] if distance_std_available else None,  #
-        dense=dense,  #
-    )
+    if True:
+        plot_grid_figures(  #
+            cartesian_axes_values=czt.cartesian_axes_values,  #
+            zipped_axis_values=czt.zipped_axis_values,  #
+            dependent_variable="distance from gold standard",  #
+            dependent_values=czt.dependent_variable_tensors["distance"],  #
+            dependent_errors=czt.dependent_variable_tensors["distance_std"] if distance_std_available else None,  #
+            dense=dense,  #
+        )
+    else:
+        czt = czt.reduce("iteration", method="take_last")
+        plot_grid_figures(  #
+            cartesian_axes_values=czt.cartesian_axes_values,  #
+            zipped_axis_values=czt.zipped_axis_values,  #
+            dependent_variable="distance_at_last_iteration",  #
+            dependent_values=czt.dependent_variable_tensors["distance_at_last_iteration"],  #
+            # dependent_errors=czt.dependent_variable_tensors["distance_std"] if distance_std_available else None,  #
+            dense=dense,  #
+        )
 
     return
 

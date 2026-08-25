@@ -305,7 +305,14 @@ class Cropping(traitlets.HasTraits):
 
     min_size: float = 0.02
 
-    def __init__(self, right: float, top: float, left: float, bottom: float):
+    def __init__(  #
+            self,  #
+            *,  #
+            right: float = 1.0,  #
+            top: float = 0.0,  #
+            left: float = 0.0,  #
+            bottom: float = 1.0  #
+    ):
         if right - left < Cropping.min_size:
             av = 0.5 * (left + right)
             left, right = av - 0.5 * Cropping.min_size, av + 0.5 * Cropping.min_size
@@ -373,7 +380,7 @@ class Cropping(traitlets.HasTraits):
         return Cropping(  #
             right=max(self.left, self.right + h),  #
             top=min(self.top, self.top - v),  #
-            left=min(self.right,self.left - h),  #
+            left=min(self.right, self.left - h),  #
             bottom=max(self.top, self.bottom + v),  #
         )
 
@@ -386,19 +393,12 @@ class Cropping(traitlets.HasTraits):
             bottom=min(a.bottom, b.bottom)  #
         )
 
-    # @traitlets.observe("left", "right")
-    # def _check_horizontal(self, change):
-    #     self.left = max(0.0, self.left)
-    #     self.right = min(1.0, self.right)
-    #     if self.left > self.right:
-    #         raise traitlets.TraitError(f"Cropping 'left' value {self.left} exceeds 'right' value {self.right}.")
-    #
-    # @traitlets.observe("top", "bottom")
-    # def _check_vertical(self, change):
-    #     self.top = max(0.0, self.top)
-    #     self.bottom = min(1.0, self.bottom)
-    #     if self.top > self.bottom:
-    #         raise traitlets.TraitError(f"Cropping 'top' value {self.top} exceeds 'bottom' value {self.bottom}.")
+    # @traitlets.observe("left", "right")  # def _check_horizontal(self, change):  #     self.left = max(0.0,
+    # self.left)  #     self.right = min(1.0, self.right)  #     if self.left > self.right:  #         raise
+    # traitlets.TraitError(f"Cropping 'left' value {self.left} exceeds 'right' value {self.right}.")  #  #
+    # @traitlets.observe("top", "bottom")  # def _check_vertical(self, change):  #     self.top = max(0.0,
+    # self.top)  #     self.bottom = min(1.0, self.bottom)  #     if self.top > self.bottom:  #         raise
+    # traitlets.TraitError(f"Cropping 'top' value {self.top} exceeds 'bottom' value {self.bottom}.")
 
 
 class Sinogram2dRange(NamedTuple):

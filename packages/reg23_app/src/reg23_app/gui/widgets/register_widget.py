@@ -144,7 +144,7 @@ class RegisterWidget(widgets.Container):
         # -----
         # Misc tools
         # -----
-        self._random_offset_distance_input = widgets.FloatSpinBox(value=1.0, step=0.1, min=0.1, max=10.0)
+        self._random_offset_distance_input = widgets.FloatSpinBox(value=1.0, min=0.0)
         self._random_offset_button = widgets.PushButton(label="Jump random offset")
         self._random_offset_button.changed.connect(self._on_random_offset)
         self.append(widgets.Container(widgets=[  #
