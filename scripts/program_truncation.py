@@ -21,7 +21,7 @@ from reg23_experiments.experiments.config import Cartesian, Constant, Experiment
 from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
 from reg23_experiments.experiments.helpers import instance_output_directory
-from reg23_experiments.experiments.reg_experiment2 import exp_config_from_dict, run_experiment
+from reg23_experiments.experiments.reg_experiment import exp_config_from_dict, run_experiment
 from reg23_experiments.experiments.run import experiments_hybrid
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.image import XrayDICOM, read_dicom

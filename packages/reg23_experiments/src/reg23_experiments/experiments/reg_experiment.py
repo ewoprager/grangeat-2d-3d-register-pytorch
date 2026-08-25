@@ -1,25 +1,27 @@
 import copy
 import logging
 import pprint
-from typing import Any
+from typing import Any, Literal
 
 import matplotlib
 
 matplotlib.use("QtAgg")
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 import traitlets
 from jaxtyping import Float64
 
-from reg23_experiments.data.structs import Cropping, Error, Transformation
-from reg23_experiments.experiments.helpers import ParametrisedSimilarityMetric, string_to_sim_met
+from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.experiments.batched import objective_function_alpha_weighted, \
+    objective_function_binary_weighted, objective_function_together
+from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.registration import RegConfig, run_reg
-from reg23_experiments.ops import geometry
-from reg23_experiments.ops.data_manager import args_from_dadg, data_manager
+from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
-from reg23_experiments.utils.console_logging import tqdm
+from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
 
 __all__ = ["ExperimentConfig", "run_experiment", "exp_config_from_dict"]
 
@@ -27,167 +29,255 @@ logger = logging.getLogger(__name__)
 
 
 class ExperimentConfig(traitlets.HasTraits):
+    """
+    Notes:
+        - the value of `iterations_per_update` is interpreted as follows:
+            - if 0, the cropping, scaling and weight images will be updated to the current transformation every o.f. 
+            evaluation
+            - otherwise, these images will only be updated every N iterations
+    """
+
+    # ----- images
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
+    # ----- preprocessing
     downsample_level: int = traitlets.Int(min=0, default_value=traitlets.Undefined)
-    # truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
-    desired_h_valid: int = traitlets.Float(min=1.0, max=100.0, default_value=traitlets.Undefined)
-    cropping: str = traitlets.Enum(values=[  #
-        "None",  #
-        "nonzero_drr",  #
-        "full_depth_drr"  #
+    truncation_percent: int = traitlets.Int(min=0, max=100, default_value=traitlets.Undefined)
+    # ----- cropping
+    cropping_method: Literal["none", "bounding_box", "valid_only"] = traitlets.Enum(values=[  #
+        "none",  #
+        "bounding_box",  #
+        "valid_only",  #
     ], default_value=traitlets.Undefined)
     crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
-    crop_expand: float = traitlets.Float(default_value=traitlets.Undefined)
-    mask: str = traitlets.Enum(values=[  #
-        "None",  #
-        "Every evaluation",  #
-        "Every evaluation weighting zncc"  #
-    ], default_value=traitlets.Undefined)
-    sim_metric: str = traitlets.Enum(values=[  #
-        "zncc",  #
-        "local_zncc",  #
-        "multiscale_zncc",  #
-        "gradient_correlation"  #
-    ], default_value=traitlets.Undefined)
+    iterations_per_crop_update: int = traitlets.Int(min=0,
+                                                    default_value=traitlets.Undefined)  # 0 means every o.f. eval.
+    # ----- scaling
+    apply_scaling: bool = traitlets.Bool(default_value=traitlets.Undefined)
+    # ----- similarity & weighting
+    apply_weighting: bool = traitlets.Bool(default_value=traitlets.Undefined)
+    weight_alpha: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
+    iterations_per_weight_update: int = traitlets.Int(min=0,
+                                                      default_value=traitlets.Undefined)  # 0 means every o.f. eval.
+    sim_metric: Literal["zncc", "gradient_correlation", "gradient_difference", "mutual_information"] = traitlets.Enum(
+        values=[  #
+            "zncc",  #
+            "gradient_correlation",  #
+            "gradient_difference",  #
+            "mutual_information",  #
+        ], default_value=traitlets.Undefined)
+    # ----- registration
     starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
     reg_config: RegConfig = traitlets.Instance(RegConfig, allow_none=False, default_value=traitlets.Undefined)
 
 
 def run_experiment(  #
-        exp_config: ExperimentConfig,  #
+        config: ExperimentConfig,  #
         device: torch.device,  #
         tqdm_position: int = 0,  #
         dry_run: bool = False,  #
+        batch_size: int = 1,  #
+        plot: bool = False,  #
 ) -> pd.DataFrame | None:
     """
     Run multiple (`sample_count_per_distance`) registrations according to the given parameters, and return the average
     distance from ground truth at each iteration.
-    :param exp_config:
+    :param config:
     :param device:
     :param tqdm_position:
     :return: A tensor of size (iteration count,) or None; the distance from g.t. of the optimisation at each
     iteration, averaged over `sample_count_per_distance` repetitions, unless the configuration is trivial /
     unnecessary, in which case `None`.
     """
-    data_manager().set("ct_path", exp_config.ct_path, check_equality=True)
-    data_manager().set("xray_path", exp_config.xray_path, check_equality=True)
-    data_manager().set("downsample_level", exp_config.downsample_level, check_equality=True)
-    # data_manager().set("truncation_percent", exp_config.truncation_percent, check_equality=True)
-    data_manager().set("desired_h_valid", exp_config.desired_h_valid)
+    data_manager().set("ct_path", config.ct_path, check_equality=True)
+    data_manager().set("xray_path", config.xray_path, check_equality=True)
+    data_manager().set("downsample_level", config.downsample_level, check_equality=True)
+    data_manager().set("truncation_percent", config.truncation_percent, check_equality=True)
     # -----
     # Configuring according to desired similarity metric
-    p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(exp_config.sim_metric)
-    # -----
-    # Configuring according to desired masking technique
-    if exp_config.mask == "None":
-        apply_mask = False
-        data_manager().set("mask_transformation", None, check_equality=True)
-    elif exp_config.mask == "Every evaluation":
-        apply_mask = True
-        weight_with_mask = False
-    elif exp_config.mask == "Every evaluation weighting zncc":
-        apply_mask = True
-        weight_with_mask = True
-        # Checking that the parametrised sim. metric has a weighted counterpart
-        if p_sim_met.func_weighted is None:
-            # No weighted counterpart of the similarity metric; skipping this configuration
-            return None
-    else:
-        raise ValueError(f"Unknown mask technique '{exp_config.mask}'.")
+    # p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(config.sim_metric)
+    data_manager().set("cropping_method", config.cropping_method, check_equality=True)
+    data_manager().set("crop_min_size", config.crop_min_size, check_equality=True)
+    data_manager().set("apply_scaling", config.apply_scaling, check_equality=True)
+    data_manager().set("apply_weighting", config.apply_weighting, check_equality=True)
+    data_manager().set("weight_alpha", config.weight_alpha, check_equality=True)
+    data_manager().set("sim_metric", config.sim_metric, check_equality=True)
 
     # -----
     # Defining the objective function
-    def objective_function(parameters: Float64[torch.Tensor, "6"]) -> torch.Tensor:
-        t: Transformation = mapping_parameters_to_transformation(parameters)
-        # Setting the parameters
-        data_manager().set("current_transformation", t)
-        if apply_mask:
-            data_manager().set("mask_transformation", t)
-        # Getting the resulting moving and fixed images
-        moving_image: torch.Tensor | Error = data_manager().get("moving_image")
-        fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
-        # Comparing, potentially weighting with a mask
-        if apply_mask and weight_with_mask:
-            mask: torch.Tensor | Error = data_manager().get("mask")
-            return -p_sim_met.func_weighted(moving_image, fixed_image, mask)
-        return -p_sim_met.func(moving_image, fixed_image)
+    def objective_function(parameters: Float64[torch.Tensor, "b 6"]) -> Float64[torch.Tensor, "b"]:
+        err: Error | None = data_manager().set("parameters", parameters)
+        if isinstance(err, Error):
+            logger.warning(f"Error setting parameters in o.f.: {err.description}")
+        res: torch.Tensor | Error = data_manager().get("of_values")
+        if isinstance(res, Error):
+            raise Exception(f"Objective function evaluation failed: {res}")
+        return res
+
+    def new_new_objective_function(parameters: Float64[torch.Tensor, "b 6"]) -> Float64[torch.Tensor, "b"]:
+        return args_from_dadg(  #
+            names_left=["parameters"]  #
+        )(objective_function_together)(  #
+            parameters=parameters,  #
+        )
+
+    # -----
+    # Periodic behaviour
+    periodic_behaviour = []
+    # Crop rectangle updates
+    if config.iterations_per_crop_update > 0:
+        data_manager().remove_updater("refresh_cropping")
+
+        def do_crop_refresh(best_parameters: Float64[torch.Tensor, "6"]) -> None:
+            # get the cropping at the best transformation
+            value_dict: dict[str, Any] | Error = args_from_dadg(names_left=["parameters"])(batched.refresh_cropping)(
+                parameters=best_parameters.unsqueeze(0))
+            if isinstance(value_dict, Error):
+                raise Exception(f"Error refreshing cropping for crop refresh: {value_dict.description}")
+            best_cropping = value_dict["further_cropping"]
+            # set the cropping
+            data_manager().set("further_cropping", best_cropping)
+
+        periodic_behaviour.append((config.iterations_per_crop_update, do_crop_refresh))
+    else:
+        batch_size = 1  # necessary for crop refresh every o.f. evaluation
+        data_manager().add_updater(  #
+            "refresh_cropping",  #
+            dadg_updater(names_returned=["further_cropping"])(batched.refresh_cropping),  #
+        )
+    # Weight image updates, only after the crop updates
+    if config.iterations_per_weight_update > 0:
+        data_manager().remove_updater("refresh_weights")
+
+        def do_weight_refresh(best_parameters: Float64[torch.Tensor, "6"]) -> None:
+            # get the scaling image at the best transformation
+            if isinstance(err := data_manager().set("parameters", best_parameters.unsqueeze(0)), Error):
+                raise Exception(f"Error setting parameters for weight refresh: {err.description}")
+            value_dict: dict[str, Any] | Error = args_from_dadg()(batched.refresh_scaling_images)()
+            if isinstance(value_dict, Error):
+                raise Exception(f"Error refreshing scaling image for weight refresh: {value_dict.description}")
+            best_scaling_image = value_dict["scaling_images"]
+            # convert to weight image
+            value_dict: dict[str, Any] | Error = args_from_dadg(names_left=["scaling_images"])(batched.refresh_weights)(
+                scaling_images=best_scaling_image)
+            if isinstance(value_dict, Error):
+                raise Exception(f"Error refreshing weight image for weight refresh: {value_dict.description}")
+            weight_image = value_dict["weight_images"]
+            # set the weight image
+            data_manager().set("weight_images", weight_image)
+
+        periodic_behaviour.append((config.iterations_per_weight_update, do_weight_refresh))
+    else:
+        data_manager().add_updater(  #
+            "refresh_weights",  #
+            dadg_updater(names_returned=["weight_images"])(batched.refresh_weights),  #
+        )
+
+    if plot:
+        # Show the target image, fixed image and moving image at the gold-standard
+        fig, axes = plt.subplots(1, 5)
+
+        # Target image
+        image_2d_full: torch.Tensor | Error = data_manager().get("image_2d_full")
+        if isinstance(image_2d_full, Error):
+            raise RuntimeError(f"Error getting image_2d_full: {image_2d_full.description}")
+        axes[0].imshow(image_2d_full.cpu().numpy())
+        axes[0].set_title("original target")
+        # Initialise at the gold-standard
+        transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
+        if isinstance(transformation_gt, Error):
+            raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
+        if transformation_gt is None:
+            raise Exception(f"No ground truth transformation available.")
+        params_gt = mapping_transformation_to_parameters(transformation_gt)
+        if isinstance(err := data_manager().set("parameters", params_gt.unsqueeze(0)), Error):
+            raise RuntimeError(f"Error setting parameters to ground truth transformation: {err.description}")
+        for _, f in periodic_behaviour:
+            f(params_gt)
+        # Scaling image at gold-standard
+        scaling_image: torch.Tensor | Error = data_manager().get("scaling_images")
+        if isinstance(scaling_image, Error):
+            raise RuntimeError(f"Error getting fixed image: {scaling_image.description}")
+        axes[1].imshow(scaling_image[0].cpu().numpy())
+        axes[1].set_title("scaling image")
+        # Weighting image at gold-standard
+        weighting_image: torch.Tensor | None | Error = data_manager().get("weight_images")
+        if isinstance(weighting_image, Error):
+            raise RuntimeError(f"Error getting fixed image: {weighting_image.description}")
+        if weighting_image is not None:
+            axes[2].imshow(weighting_image[0].cpu().numpy())
+            axes[2].set_title("weighting image")
+        # Fixed image at gold-standard
+        fixed_image: torch.Tensor | Error = data_manager().get("fixed_images")
+        if isinstance(fixed_image, Error):
+            raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
+        axes[3].imshow(fixed_image[0].cpu().numpy())
+        axes[3].set_title("fixed image")
+        # Moving image at gold-standard
+        moving_image: torch.Tensor | Error = data_manager().get("moving_images")
+        if isinstance(moving_image, Error):
+            raise RuntimeError(f"Error getting moving image: {moving_image.description}")
+        axes[4].imshow(moving_image[0].cpu().numpy())
+        axes[4].set_title("moving image at G.T.")
+
+        plt.ion()  # figures are non-blocking
+        plt.show()
 
     # -----
     # Running repeated registrations with configured parameters
     dimensionality = 6
-    distance_samples = torch.empty(
-        [int(exp_config.sample_count_per_distance), int(exp_config.reg_config.iteration_count)], dtype=torch.float64,
-        device=device)  # size = (sample count, iteration count)
-    crop_size_samples = torch.empty([int(exp_config.sample_count_per_distance), 2],
-                                    dtype=torch.float64)  # size = (sample count, 2); (width, height)
+    distance_samples = torch.empty([int(config.sample_count_per_distance), int(config.reg_config.iteration_count)],
+                                   dtype=torch.float64, device=device)  # size = (sample count, iteration count)
     transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
     if isinstance(transformation_gt, Error):
         raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
     if transformation_gt is None:
         raise Exception(f"No ground truth transformation available.")
     for i in tqdm(  #
-            range(int(exp_config.sample_count_per_distance)),  #
-            desc="Repeated samples",  #
+            range(1 if plot else int(config.sample_count_per_distance)),  #
+            desc=indentation_prefix(tqdm_position) + "Repeated samples",  #
             position=tqdm_position,  #
             leave=None  #
     ):
-        starting_tr = transformation_gt.with_random_offset_at_distance(exp_config.starting_distance)
+        starting_tr = transformation_gt.with_random_offset_at_distance(config.starting_distance)
         starting_params = mapping_transformation_to_parameters(starting_tr)
         # -----
-        # Configuring according to desired cropping technique
-        data_manager().set("current_transformation", starting_tr)
-        if exp_config.cropping == "None":
-            cropping: Cropping | None = None
-        elif exp_config.cropping == "nonzero_drr":
-            cropping: Cropping | None = args_from_dadg()(geometry.get_crop_nonzero_drr)()
-        elif exp_config.cropping == "full_depth_drr":
-            cropping: Cropping | None = args_from_dadg()(geometry.get_crop_full_depth_drr)()
-        else:
-            raise ValueError(f"Unknown cropping technique '{exp_config.cropping}'.")
-        if not dry_run:
-            image: torch.Tensor | Error = data_manager().get("image_2d_full")
-            if isinstance(image, Error):
-                raise Exception(f"Failed to get image_2d_full: {image.description}")
-            spacing: torch.Tensor | Error = data_manager().get("image_2d_full_spacing")
-            if isinstance(spacing, Error):
-                raise Exception(f"Failed to get image_2d_full_spacing: {spacing.description}")
-            spacing = spacing.cpu()
-            if cropping is None:
-                crop_size_samples[i, 0] = float(image.size()[1]) * spacing[0].item()
-                crop_size_samples[i, 1] = float(image.size()[0]) * spacing[1].item()
-            else:
-                if cropping.is_collapsed(exp_config.crop_min_size):
-                    cropping = cropping.uncollapse(exp_config.crop_min_size)
-                crop_size_samples[i, 0] = (cropping.right - cropping.left) * float(image.size()[1]) * spacing[0].item()
-                crop_size_samples[i, 1] = (cropping.bottom - cropping.top) * float(image.size()[0]) * spacing[1].item()
-                cropping = cropping.expand_mm(exp_config.crop_expand, image_size=image.size(), image_spacing=spacing)
-                # expand could be negative, so checking again for collapse
-                if cropping.is_collapsed(exp_config.crop_min_size):
-                    cropping = cropping.uncollapse(exp_config.crop_min_size)
-
-        data_manager().set("further_cropping", cropping, check_equality=True)
-        # -----
         # Registration
+        res = run_reg(  #
+            # obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
+            obj_fun=objective_function,  #
+            # obj_fun=new_new_objective_function,  #
+            config=config.reg_config,  #
+            starting_params=starting_params,  #
+            device=device,  #
+            tqdm_position=tqdm_position + 1,  #
+            batch_size=batch_size,  #
+            plot=plot,  #
+            periodic_behaviour=periodic_behaviour,  #
+            dry_run=dry_run,  #
+        )  # size = (iteration count, dimensionality + 1)
         if not dry_run:
-            res = run_reg(  #
-                obj_fun=objective_function,  #
-                config=exp_config.reg_config,  #
-                starting_params=starting_params,  #
-                device=device,  #
-                tqdm_position=tqdm_position + 1)  # size = (iteration count, dimensionality + 1)
             distance_samples[i, :] = torch.tensor([  #
                 transformation_gt.distance(mapping_parameters_to_transformation(row))  #
                 for row in res[:, 0:dimensionality]  #
             ], device=distance_samples.device, dtype=distance_samples.dtype)  # size = (iteration count,)
 
-    return None if dry_run else pd.DataFrame({  #
-        "iteration": torch.arange(exp_config.reg_config.iteration_count).numpy(),  # size = (iteration count,)
+    if plot:
+        fig, axes = plt.subplots()
+        axes.plot(range(config.reg_config.iteration_count), distance_samples[0, :].cpu().numpy())
+        axes.set_xlabel("iteration")
+        axes.set_ylabel("distance from gold standard")
+        axes.set_ylim((0.0, None))
+        plt.draw()
+        plt.pause(0.1)
+        plt.ioff()  # figures are blocking
+        plt.show()
+
+    return None if (dry_run or plot) else pd.DataFrame({  #
+        "iteration": torch.arange(config.reg_config.iteration_count).numpy(),  # size = (iteration count,)
         "distance": distance_samples.mean(dim=0).cpu().numpy(),  # size = (iteration count,)
         "distance_std": distance_samples.std(dim=0).cpu().numpy(),  #
-        "crop_width": crop_size_samples[:, 0].mean().cpu().numpy(),  #
-        "crop_height": crop_size_samples[:, 1].mean().cpu().numpy(),  #
     })
 
 
@@ -205,8 +295,8 @@ def exp_config_from_dict(dict_config: dict[str, Any]) -> ExperimentConfig | Erro
     dict_config_copy["reg_config"] = reg_config
 
     try:
-        exp_config = ExperimentConfig(**dict_config_copy)
+        config = ExperimentConfig(**dict_config_copy)
     except Exception as e:
         return Error(f"Failed to construct ExperimentConfig: {e}\nParameters:\n{pprint.pformat(dict_config_copy)}")
 
-    return exp_config
+    return config
