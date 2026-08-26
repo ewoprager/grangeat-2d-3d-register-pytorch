@@ -6,8 +6,9 @@ import math
 import os
 import pathlib
 import time
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, Type
+from typing import Type
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,8 +18,7 @@ from notification import logs_setup, pushover
 from registration import data, drr, objective_function, plot_data, pre_computed
 from registration.interface.register import OptimisationResult
 from registration.lib import geometry, grangeat, sinogram
-from registration.lib.optimisation import (
-    mapping_parameters_to_transformation, mapping_transformation_to_parameters)
+from registration.lib.optimisation import mapping_parameters_to_transformation, mapping_transformation_to_parameters
 from registration.lib.structs import *
 
 

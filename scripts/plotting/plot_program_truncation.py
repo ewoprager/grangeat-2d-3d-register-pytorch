@@ -333,8 +333,7 @@ def main(  #
             pd.read_parquet(element)  #
             for element in pathlib.Path(
                 "/home/eprager/Projects/grangeat-2d-3d-register-pytorch/experimental_results/program_truncation/2026"
-                "-08-25_00-42-02_capture_range").iterdir()
-            #
+                "-08-25_00-42-02_capture_range").iterdir() #
             if element.stem.startswith("data") and element.suffix == ".parquet"  #
         ], ignore_index=True)
         df_extra = df_extra[df_extra["downsample_level"] == 2]
@@ -381,7 +380,7 @@ def main(  #
         dependent_variables=dependent_variables,  #
     )
 
-    if False:
+    if True:
         plot_grid_figures(  #
             cartesian_axes_values=czt.cartesian_axes_values,  #
             zipped_axis_values=czt.zipped_axis_values,  #

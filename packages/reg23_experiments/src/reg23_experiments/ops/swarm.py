@@ -37,7 +37,7 @@ for i in range(iteration_count):
 """
 
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 import traitlets

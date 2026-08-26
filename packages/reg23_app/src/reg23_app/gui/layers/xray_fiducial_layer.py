@@ -1,6 +1,6 @@
 import logging
 import weakref
-from typing import Callable
+from collections.abc import Callable
 
 import napari.layers
 import pandas as pd

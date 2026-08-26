@@ -17,12 +17,12 @@ import yaml
 from reg23_experiments.data.structs import Cropping, Error, Transformation
 from reg23_experiments.data.transformation_save_data import TransformationSaveData
 from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
-from reg23_experiments.experiments.config import Cartesian, Constant, ExperimentConfig, Zipped
 from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
+from reg23_experiments.experiments.experiment_set_config import Cartesian, Constant, ExperimentSetConfig, Zipped
 from reg23_experiments.experiments.helpers import instance_output_directory
-from reg23_experiments.experiments.reg_experiment import exp_config_from_dict, run_experiment
-from reg23_experiments.experiments.run import experiments_hybrid
+from reg23_experiments.experiments.reg_experiment import ExperimentParametrisation, reg_experiment
+from reg23_experiments.experiments.run_experiments import run_experiments
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.image import XrayDICOM, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
@@ -207,12 +207,12 @@ def main(  #
         # ----------------------------------
         # - Hardcoded script configuration -
         # ----------------------------------
-        config = ExperimentConfig({  #
+        config = ExperimentSetConfig({  #
             # ----- images
             "ct_path": Constant(ct_path),  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
-            "downsample_level": Constant(0),  #
+            "downsample_level": Constant(2),  #
             "truncation_percent": Cartesian([80, 90]),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
@@ -223,10 +223,10 @@ def main(  #
             "apply_weighting": Zipped([False, True, True, True]),  #
             "weight_alpha": Zipped([1.0, 1.0, 1.5, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  #
-            "sim_metric": Constant("gradient_correlation"), #
+            "sim_metric": Constant("gradient_correlation"),  #
             # ----- registration
             "starting_distance": Constant(0.5),  # Constant(5.0)
-            "sample_count_per_distance": Constant(50),  #
+            "sample_count_per_distance": Constant(2),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
             "particle_initialisation_spread": Constant(0.25),  # Constant(2.5)
@@ -271,7 +271,7 @@ def main(  #
 
         variables = yaml.safe_load(variables_path.read_text())
         assert isinstance(variables, dict)
-        config = ExperimentConfig.deserialize(variables)
+        config = ExperimentSetConfig.deserialize(variables)
 
         logger.info(f"Filling gaps in experiment output directory '{str(instance_output_dir)}'.")
 
@@ -421,11 +421,11 @@ def main(  #
             return
 
     if show:
-        experiments_hybrid(  #
-            param_constructor=exp_config_from_dict,  #
+        run_experiments(  #
+            param_constructor=ExperimentParametrisation.dict_constructor,  #
             # experiment=run_experiment,  #
-            experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 250, plot=True),  #
-            config_iterable=(c for c in [next(iter(config.iterable()))]),  # just the first iteration
+            experiment=lambda conf: reg_experiment(conf, batch_size=250, plot=True),  #
+            parametrisation_iterable=(c for c in [next(iter(config.iterable()))]),  # just the first iteration
             output_directory=None,  #
             device=device,  #
             dry_run=False,  #
@@ -435,11 +435,11 @@ def main(  #
         # -----
         # Run experiments, initially just as a dry-run
         for dry_run in [True, False]:
-            experiments_hybrid(  #
-                param_constructor=exp_config_from_dict,  #
+            run_experiments(  #
+                param_constructor=ExperimentParametrisation.dict_constructor,  #
                 # experiment=run_experiment,  #
-                experiment=lambda conf, dev, pos, dry: run_experiment(conf, dev, pos, dry, 250),  #
-                config_iterable=config.iterable(space_sample_count=64),  #
+                experiment=lambda conf: reg_experiment(conf, batch_size=250),  #
+                parametrisation_iterable=config.iterable(space_sample_count=64),  #
                 output_directory=instance_output_dir,  #
                 device=device,  #
                 dry_run=dry_run,  #

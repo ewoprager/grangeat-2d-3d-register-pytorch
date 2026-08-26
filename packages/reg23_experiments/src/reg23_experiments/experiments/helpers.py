@@ -2,8 +2,9 @@ import inspect
 import pathlib
 import pprint
 import types
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 import torch
 

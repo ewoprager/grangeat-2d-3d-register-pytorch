@@ -1,8 +1,9 @@
 import copy
 import logging
 import pathlib
+from collections.abc import Callable
 from enum import Enum
-from typing import Callable, NamedTuple, Tuple
+from typing import NamedTuple, Tuple
 
 import matplotlib.pyplot as plt
 import torch

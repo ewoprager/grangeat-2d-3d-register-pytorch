@@ -13,18 +13,19 @@ from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments.batched import objective_function_alpha_weighted, \
     objective_function_binary_weighted, objective_function_together
 from reg23_experiments.experiments.dadg_updaters import batched
-from reg23_experiments.experiments.registration import RegConfig, run_reg
+from reg23_experiments.experiments.registration import RegistrationConfig, register
+from reg23_experiments.experiments.run_experiments import Experiment, ExperimentConfig
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
 from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
 
-__all__ = ["ExperimentConfig", "run_experiment", "exp_config_from_dict"]
+__all__ = ["ExperimentParametrisation", "reg_experiment"]
 
 logger = logging.getLogger(__name__)
 
 
-class ExperimentConfig(traitlets.HasTraits):
+class ExperimentParametrisation(traitlets.HasTraits):
     """
     Notes:
         - the value of `iterations_per_update` is interpreted as follows:
@@ -65,14 +66,33 @@ class ExperimentConfig(traitlets.HasTraits):
     # ----- registration
     starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
-    reg_config: RegConfig = traitlets.Instance(RegConfig, allow_none=False, default_value=traitlets.Undefined)
+    reg_config: RegistrationConfig = traitlets.Instance(RegistrationConfig, allow_none=False, default_value=traitlets.Undefined)
+
+    @staticmethod
+    def dict_constructor(dict_config: dict[str, Any]) -> 'ExperimentParametrisation | Error':
+        dict_config_copy = copy.deepcopy(dict_config)
+        try:
+            reg_config = RegistrationConfig(  #
+                particle_count=dict_config_copy.pop("particle_count"),  #
+                particle_initialisation_spread=dict_config_copy.pop("particle_initialisation_spread"),  #
+                iteration_count=dict_config_copy.pop("iteration_count")  #
+            )
+        except Exception as e:
+            return Error(f"Failed to construct RegConfig: {e}\nParameters:\n{pprint.pformat(dict_config_copy)}")
+
+        dict_config_copy["reg_config"] = reg_config
+
+        try:
+            config = ExperimentParametrisation(**dict_config_copy)
+        except Exception as e:
+            return Error(f"Failed to construct ExperimentConfig: {e}\nParameters:\n{pprint.pformat(dict_config_copy)}")
+
+        return config
 
 
-def run_experiment(  #
-        config: ExperimentConfig,  #
-        device: torch.device,  #
-        tqdm_position: int = 0,  #
-        dry_run: bool = False,  #
+def reg_experiment(  #
+        config: ExperimentConfig[ExperimentParametrisation],  #
+        *,  #
         batch_size: int = 1,  #
         plot: bool = False,  #
 ) -> pd.DataFrame | None:
@@ -80,25 +100,27 @@ def run_experiment(  #
     Run multiple (`sample_count_per_distance`) registrations according to the given parameters, and return the average
     distance from ground truth at each iteration.
     :param config:
-    :param device:
-    :param tqdm_position:
+    :param batch_size:
+    :param plot:
     :return: A tensor of size (iteration count,) or None; the distance from g.t. of the optimisation at each
     iteration, averaged over `sample_count_per_distance` repetitions, unless the configuration is trivial /
     unnecessary, in which case `None`.
     """
-    data_manager().set("ct_path", config.ct_path, check_equality=True)
-    data_manager().set("xray_path", config.xray_path, check_equality=True)
-    data_manager().set("downsample_level", config.downsample_level, check_equality=True)
-    data_manager().set("truncation_percent", config.truncation_percent, check_equality=True)
+    params = config.params
+
+    data_manager().set("ct_path", params.ct_path, check_equality=True)
+    data_manager().set("xray_path", params.xray_path, check_equality=True)
+    data_manager().set("downsample_level", params.downsample_level, check_equality=True)
+    data_manager().set("truncation_percent", params.truncation_percent, check_equality=True)
     # -----
     # Configuring according to desired similarity metric
-    # p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(config.sim_metric)
-    data_manager().set("cropping_method", config.cropping_method, check_equality=True)
-    data_manager().set("crop_min_size", config.crop_min_size, check_equality=True)
-    data_manager().set("apply_scaling", config.apply_scaling, check_equality=True)
-    data_manager().set("apply_weighting", config.apply_weighting, check_equality=True)
-    data_manager().set("weight_alpha", config.weight_alpha, check_equality=True)
-    data_manager().set("sim_metric", config.sim_metric, check_equality=True)
+    # p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(params.sim_metric)
+    data_manager().set("cropping_method", params.cropping_method, check_equality=True)
+    data_manager().set("crop_min_size", params.crop_min_size, check_equality=True)
+    data_manager().set("apply_scaling", params.apply_scaling, check_equality=True)
+    data_manager().set("apply_weighting", params.apply_weighting, check_equality=True)
+    data_manager().set("weight_alpha", params.weight_alpha, check_equality=True)
+    data_manager().set("sim_metric", params.sim_metric, check_equality=True)
 
     # -----
     # Defining the objective function
@@ -122,7 +144,7 @@ def run_experiment(  #
     # Periodic behaviour
     periodic_behaviour = []
     # Crop rectangle updates
-    if config.iterations_per_crop_update > 0:
+    if params.iterations_per_crop_update > 0:
         data_manager().remove_updater("refresh_cropping")
 
         def do_crop_refresh(best_parameters: Float64[torch.Tensor, "6"]) -> None:
@@ -135,7 +157,7 @@ def run_experiment(  #
             # set the cropping
             data_manager().set("further_cropping", best_cropping)
 
-        periodic_behaviour.append((config.iterations_per_crop_update, do_crop_refresh))
+        periodic_behaviour.append((params.iterations_per_crop_update, do_crop_refresh))
     else:
         batch_size = 1  # necessary for crop refresh every o.f. evaluation
         data_manager().add_updater(  #
@@ -143,7 +165,7 @@ def run_experiment(  #
             dadg_updater(names_returned=["further_cropping"])(batched.refresh_cropping),  #
         )
     # Weight image updates, only after the crop updates
-    if config.iterations_per_weight_update > 0:
+    if params.iterations_per_weight_update > 0:
         data_manager().remove_updater("refresh_weights")
 
         def do_weight_refresh(best_parameters: Float64[torch.Tensor, "6"]) -> None:
@@ -163,7 +185,7 @@ def run_experiment(  #
             # set the weight image
             data_manager().set("weight_images", weight_image)
 
-        periodic_behaviour.append((config.iterations_per_weight_update, do_weight_refresh))
+        periodic_behaviour.append((params.iterations_per_weight_update, do_weight_refresh))
     else:
         data_manager().add_updater(  #
             "refresh_weights",  #
@@ -223,37 +245,37 @@ def run_experiment(  #
     # -----
     # Running repeated registrations with configured parameters
     dimensionality = 6
-    distance_samples = torch.empty([int(config.sample_count_per_distance), int(config.reg_config.iteration_count)],
-                                   dtype=torch.float64, device=device)  # size = (sample count, iteration count)
+    distance_samples = torch.empty([int(params.sample_count_per_distance), int(params.reg_config.iteration_count)],
+                                   dtype=torch.float64, device=config.device)  # size = (sample count, iteration count)
     transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
     if isinstance(transformation_gt, Error):
         raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
     if transformation_gt is None:
         raise Exception(f"No ground truth transformation available.")
     for i in tqdm(  #
-            range(1 if plot else int(config.sample_count_per_distance)),  #
-            desc=indentation_prefix(tqdm_position) + "Repeated samples",  #
-            position=tqdm_position,  #
+            range(1 if plot else int(params.sample_count_per_distance)),  #
+            desc=indentation_prefix(config.tqdm_position) + "Repeated samples",  #
+            position=config.tqdm_position,  #
             leave=None  #
     ):
-        starting_tr = transformation_gt.with_random_offset_at_distance(config.starting_distance)
+        starting_tr = transformation_gt.with_random_offset_at_distance(params.starting_distance)
         starting_params = mapping_transformation_to_parameters(starting_tr)
         # -----
         # Registration
-        res = run_reg(  #
+        res = register(  #
             # obj_fun=objective_function if batch_size == 1 else objective_function_batched,  #
             obj_fun=objective_function,  #
             # obj_fun=new_new_objective_function,  #
-            config=config.reg_config,  #
+            config=params.reg_config,  #
             starting_params=starting_params,  #
-            device=device,  #
-            tqdm_position=tqdm_position + 1,  #
+            device=config.device,  #
+            tqdm_position=config.tqdm_position + 1,  #
             batch_size=batch_size,  #
             plot=plot,  #
             periodic_behaviour=periodic_behaviour,  #
-            dry_run=dry_run,  #
+            dry_run=config.dry_run,  #
         )  # size = (iteration count, dimensionality + 1)
-        if not dry_run:
+        if not config.dry_run:
             distance_samples[i, :] = torch.tensor([  #
                 transformation_gt.distance(mapping_parameters_to_transformation(row))  #
                 for row in res[:, 0:dimensionality]  #
@@ -261,7 +283,7 @@ def run_experiment(  #
 
     if plot:
         fig, axes = plt.subplots()
-        axes.plot(range(config.reg_config.iteration_count), distance_samples[0, :].cpu().numpy())
+        axes.plot(range(params.reg_config.iteration_count), distance_samples[0, :].cpu().numpy())
         axes.set_xlabel("iteration")
         axes.set_ylabel("distance from gold standard")
         axes.set_ylim((0.0, None))
@@ -270,29 +292,12 @@ def run_experiment(  #
         plt.ioff()  # figures are blocking
         plt.show()
 
-    return None if (dry_run or plot) else pd.DataFrame({  #
-        "iteration": torch.arange(config.reg_config.iteration_count).numpy(),  # size = (iteration count,)
+    return None if (config.dry_run or plot) else pd.DataFrame({  #
+        "iteration": torch.arange(params.reg_config.iteration_count).numpy(),  # size = (iteration count,)
         "distance": distance_samples.mean(dim=0).cpu().numpy(),  # size = (iteration count,)
         "distance_std": distance_samples.std(dim=0).cpu().numpy(),  #
     })
 
 
-def exp_config_from_dict(dict_config: dict[str, Any]) -> ExperimentConfig | Error:
-    dict_config_copy = copy.deepcopy(dict_config)
-    try:
-        reg_config = RegConfig(  #
-            particle_count=dict_config_copy.pop("particle_count"),  #
-            particle_initialisation_spread=dict_config_copy.pop("particle_initialisation_spread"),  #
-            iteration_count=dict_config_copy.pop("iteration_count")  #
-        )
-    except Exception as e:
-        return Error(f"Failed to construct RegConfig: {e}\nParameters:\n{pprint.pformat(dict_config_copy)}")
-
-    dict_config_copy["reg_config"] = reg_config
-
-    try:
-        config = ExperimentConfig(**dict_config_copy)
-    except Exception as e:
-        return Error(f"Failed to construct ExperimentConfig: {e}\nParameters:\n{pprint.pformat(dict_config_copy)}")
-
-    return config
+# Check that the `reg_experiment` function adheres to the Experiment type
+_: Experiment[ExperimentParametrisation] = reg_experiment

@@ -1,8 +1,9 @@
 import logging
 import pathlib
 import pickle
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, NamedTuple
+from typing import Any, NamedTuple
 
 import torch
 from magicgui import widgets

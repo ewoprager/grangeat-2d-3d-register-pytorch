@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 from magicgui import widgets

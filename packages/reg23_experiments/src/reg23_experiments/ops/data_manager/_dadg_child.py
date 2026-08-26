@@ -3,7 +3,8 @@ import copy
 import functools
 import logging
 import weakref
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.utils.reflection import FunctionArgument
