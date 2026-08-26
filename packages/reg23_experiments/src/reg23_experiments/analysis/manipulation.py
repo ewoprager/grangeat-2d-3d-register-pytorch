@@ -174,6 +174,8 @@ def dataframe_to_cartesian_zipped_tensors(  #
         v for v in df.columns  #
         if v not in cartesian_variables and v not in dependent_variables  #
     ]
+    assert len(zipped_variables) != 1, (
+        f"There must be at least two Zipped variables, if any; found 1: {zipped_variables[0]}")
 
     if zipped_variables:
         # Use the cartesian variables, and then the zipped variables as a MultiIndex

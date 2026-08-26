@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import NamedTuple, Tuple, Union
 
 import kornia
 import numpy

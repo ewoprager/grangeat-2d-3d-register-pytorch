@@ -240,6 +240,16 @@ class ExperimentSetConfig(traitlets.HasTraits):
     def __init__(self, values):
         super().__init__(values=values)
 
+        zipped_variables = {k: v for k, v in values.items() if isinstance(v, Zipped)}
+        assert len(zipped_variables) != 1, (
+            f"A config must contain at least two Zipped variables, if any; found only 1: "
+            f"{next(iter(zipped_variables.keys()))}")
+        if zipped_variables:
+            zipped_n = len(next(iter(zipped_variables.values())).values)
+            assert all(len(v.values) == zipped_n for v in
+                       zipped_variables.values()), "All zipped variables must be given the same number of values."
+            assert zipped_n > 1, "Zipped variables must be given at least two values."
+
     def iterable(  #
             self,  #
             *,  #

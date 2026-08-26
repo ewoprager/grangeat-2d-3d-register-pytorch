@@ -10,15 +10,16 @@ import traitlets
 from jaxtyping import Float64
 
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.experiments.batched import objective_function_alpha_weighted, \
-    objective_function_binary_weighted, objective_function_together
-from reg23_experiments.experiments.dadg_updaters import batched
 from reg23_experiments.experiments.registration import RegistrationConfig, register
 from reg23_experiments.experiments.run_experiments import Experiment, ExperimentConfig
 from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
 from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
+
+from ._dadg_updaters import batched
+from ._of_together import objective_function_alpha_weighted, objective_function_binary_weighted, \
+    objective_function_together
 
 __all__ = ["ExperimentParametrisation", "reg_experiment"]
 
