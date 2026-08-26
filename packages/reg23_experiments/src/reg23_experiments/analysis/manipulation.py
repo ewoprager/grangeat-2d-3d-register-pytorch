@@ -110,11 +110,11 @@ class CartesianZippedTensors:
     def constant_values(self) -> dict[str, Any]:
         return self._constant_values
 
-    def reduce(  #
+    def collapse(  #
             self,  #
             variable: str,  #
             *,  #
-            method: Literal["take_last"],  #
+            method: Literal["take_last", "mean"],  #
     ) -> 'CartesianZippedTensors':
         try:
             cart_index = [t[0] for t in self.cartesian_axes_values].index(variable)
@@ -122,9 +122,16 @@ class CartesianZippedTensors:
             cart_index = None
 
         if cart_index is not None:
-            index = (slice(None),) * cart_index + (-1,)
+            if method == "take_last":
+                index = (slice(None),) * cart_index + (-1,)
+                mapping = lambda t: t[index]
+            elif method == "mean":
+                mapping = lambda t: t.mean(dim=cart_index)
+            else:
+                raise ValueError(f"Unrecognised collapse method '{method}'.")
+
             dvt = {  #
-                f"{k}_at_last_{variable}": v[index]  #
+                k: mapping(v)  #
                 for k, v in self.dependent_variable_tensors.items()  #
             }
             cav = [t for t in self.cartesian_axes_values if t[0] != variable]
@@ -137,11 +144,18 @@ class CartesianZippedTensors:
 
         if variable in (t[0] for t in self.zipped_axis_values):
             logger.info(
-                f"Requests reduction over zipped variable '{variable}'; reducing over full zip, including variables "
+                f"Requested reduction over zipped variable '{variable}'; reducing over full zip, including variables "
                 f"{", ".join(t[0] for t in self.zipped_axis_values)}")
-            index = (slice(None),) * len(self.cartesian_axes_values) + (-1,)
+            if method == "take_last":
+                index = (slice(None),) * len(self.cartesian_axes_values) + (-1,)
+                mapping = lambda t: t[index]
+            elif method == "mean":
+                mapping = lambda t: t.mean(dim=-1)
+            else:
+                raise ValueError(f"Unrecognised collapse method '{method}'.")
+
             dvt = {  #
-                f"{k}_at_last_zipped": v[index]  #
+                k: mapping(v)  #
                 for k, v in self.dependent_variable_tensors.items()  #
             }
             return CartesianZippedTensors(  #

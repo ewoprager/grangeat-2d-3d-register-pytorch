@@ -354,6 +354,7 @@ def main(  #
 
     ## !!!
     # cartesian_variables.append("sim_metric")
+    cartesian_variables.append("xray_path")
     ## !!!
 
     variable_hierarchy: list[str] = ["starting_distance", "sim_metric", "weight_alpha", "apply_weighting",
@@ -380,7 +381,7 @@ def main(  #
         dependent_variables=dependent_variables,  #
     )
 
-    if True:
+    if False:
         plot_grid_figures(  #
             cartesian_axes_values=czt.cartesian_axes_values,  #
             zipped_axis_values=czt.zipped_axis_values,  #
@@ -390,12 +391,13 @@ def main(  #
             dense=dense,  #
         )
     else:
-        czt = czt.reduce("iteration", method="take_last")
+        czt = czt.collapse("iteration", method="take_last")
+        czt = czt.collapse("xray_path", method="mean")
         plot_grid_figures(  #
             cartesian_axes_values=czt.cartesian_axes_values,  #
             zipped_axis_values=czt.zipped_axis_values,  #
-            dependent_variable="distance_at_last_iteration",  #
-            dependent_values=czt.dependent_variable_tensors["distance_at_last_iteration"],  #
+            dependent_variable="distance",  #
+            dependent_values=czt.dependent_variable_tensors["distance"],  #
             # dependent_errors=czt.dependent_variable_tensors["distance_std"] if distance_std_available else None,  #
             dense=dense,  #
         )
