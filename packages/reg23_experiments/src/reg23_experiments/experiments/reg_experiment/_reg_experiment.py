@@ -18,8 +18,7 @@ from reg23_experiments.ops.optimisation import mapping_parameters_to_transformat
 from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
 
 from ._dadg_updaters import batched
-from ._of_together import objective_function_alpha_weighted, objective_function_binary_weighted, \
-    objective_function_together
+from ._of_together import objective_function_together
 
 __all__ = ["ExperimentParametrisation", "reg_experiment"]
 
@@ -53,7 +52,12 @@ class ExperimentParametrisation(traitlets.HasTraits):
     # ----- scaling
     apply_scaling: bool = traitlets.Bool(default_value=traitlets.Undefined)
     # ----- similarity & weighting
-    apply_weighting: bool = traitlets.Bool(default_value=traitlets.Undefined)
+    weighting_method: Literal["none", "linear", "smooth_step", "gaussian"] = traitlets.Enum(values=[  #
+        "none",  #
+        "linear",  #
+        "smooth_step",  #
+        "gaussian",  #
+    ], default_value=traitlets.Undefined)
     weight_alpha: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     iterations_per_weight_update: int = traitlets.Int(min=0,
                                                       default_value=traitlets.Undefined)  # 0 means every o.f. eval.
@@ -67,7 +71,8 @@ class ExperimentParametrisation(traitlets.HasTraits):
     # ----- registration
     starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
-    reg_config: RegistrationConfig = traitlets.Instance(RegistrationConfig, allow_none=False, default_value=traitlets.Undefined)
+    reg_config: RegistrationConfig = traitlets.Instance(RegistrationConfig, allow_none=False,
+                                                        default_value=traitlets.Undefined)
 
     @staticmethod
     def dict_constructor(dict_config: dict[str, Any]) -> 'ExperimentParametrisation | Error':
@@ -119,7 +124,7 @@ def reg_experiment(  #
     data_manager().set("cropping_method", params.cropping_method, check_equality=True)
     data_manager().set("crop_min_size", params.crop_min_size, check_equality=True)
     data_manager().set("apply_scaling", params.apply_scaling, check_equality=True)
-    data_manager().set("apply_weighting", params.apply_weighting, check_equality=True)
+    data_manager().set("weighting_method", params.weighting_method, check_equality=True)
     data_manager().set("weight_alpha", params.weight_alpha, check_equality=True)
     data_manager().set("sim_metric", params.sim_metric, check_equality=True)
 

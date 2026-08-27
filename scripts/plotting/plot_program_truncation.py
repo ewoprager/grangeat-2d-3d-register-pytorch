@@ -333,7 +333,7 @@ def main(  #
             pd.read_parquet(element)  #
             for element in pathlib.Path(
                 "/home/eprager/Projects/grangeat-2d-3d-register-pytorch/experimental_results/program_truncation/2026"
-                "-08-25_00-42-02_capture_range").iterdir() #
+                "-08-25_00-42-02_capture_range").iterdir()  #
             if element.stem.startswith("data") and element.suffix == ".parquet"  #
         ], ignore_index=True)
         df_extra = df_extra[df_extra["downsample_level"] == 2]
@@ -354,13 +354,13 @@ def main(  #
 
     ## !!!
     # cartesian_variables.append("sim_metric")
-    cartesian_variables.append("xray_path")
+    # cartesian_variables.append("xray_path")
     ## !!!
 
-    variable_hierarchy: list[str] = ["starting_distance", "sim_metric", "weight_alpha", "apply_weighting",
+    variable_hierarchy: list[str] = ["starting_distance", "sim_metric", "weight_alpha", "weighting_method",
                                      "iterations_per_crop_update", "cropping", "cropping_method", "truncation_percent",
                                      "apply_scaling", "iterations_per_weight_update", "crop_expand", "mask",
-                                     "desired_h_valid", "downsample_level", "xray_path"]  # most to least important
+                                     "downsample_level", "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     cartesian_variables = sorted(  #
         cartesian_variables,  #
@@ -392,13 +392,13 @@ def main(  #
         )
     else:
         czt = czt.collapse("iteration", method="take_last")
-        czt = czt.collapse("xray_path", method="mean")
+        # czt = czt.collapse("xray_path", method="mean")
         plot_grid_figures(  #
             cartesian_axes_values=czt.cartesian_axes_values,  #
             zipped_axis_values=czt.zipped_axis_values,  #
             dependent_variable="distance",  #
             dependent_values=czt.dependent_variable_tensors["distance"],  #
-            # dependent_errors=czt.dependent_variable_tensors["distance_std"] if distance_std_available else None,  #
+            dependent_errors=czt.dependent_variable_tensors["distance_std"] if distance_std_available else None,  #
             dense=dense,  #
         )
 

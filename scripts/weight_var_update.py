@@ -2,6 +2,7 @@ import pathlib
 import sys
 
 import pandas as pd
+import yaml
 
 from reg23_experiments.data.structs import Error
 
@@ -25,14 +26,44 @@ def main(p: str) -> Error | None:
             continue
 
         df = pd.read_parquet(f)
-        df["weight_alpha"] = 0.0
-        df["weight_alpha"] = df["weighting"].fillna(df["weight_alpha"])
-        df["apply_weighting"] = df["weighting"].notna()
-        df = df.drop(columns=["weighting"])
+        df["weighting_method"] = df["apply_weighting"].map({False: "none", True: "smooth_step"})
+        df = df.drop(columns=["apply_weighting"])
 
         this_out = out / f.name
         df.to_parquet(this_out)
         print(f"Wrote to {str(this_out)}")
+
+    variables_file_in = p / "variables.txt"
+    if variables_file_in.is_file():
+        with open(variables_file_in, 'r') as file:
+            variables_config = yaml.safe_load(file)
+
+        assert isinstance(variables_config, dict)
+        for section_contents in variables_config.values():
+            assert isinstance(section_contents, dict)
+
+        def map_value(value, var_name):
+            if var_name == "apply_weighting":
+                return "smooth_step" if value else "none"
+            return value
+
+        new_variables_config = {  #
+            section_name: {  #
+                ("weighting_method" if variable_name == "apply_weighting" else variable_name):  #
+                    ([  #
+                         map_value(e, variable_name)  #
+                         for e in value  #
+                     ] if isinstance(value, list) else map_value(value, variable_name))  #
+                for variable_name, value in section_contents.items()  #
+            }  #
+            for section_name, section_contents in variables_config.items()  #
+        }
+
+        variables_file_out = out / "variables.txt"
+        with open(variables_file_out, 'w') as file:
+            yaml.safe_dump(new_variables_config, file, sort_keys=False)  # very important to preserve order of keys
+    else:
+        print(f"Warning: No variables.txt found.")
 
     return None
 
