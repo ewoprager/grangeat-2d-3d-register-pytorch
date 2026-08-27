@@ -19,5 +19,5 @@ data/register_plot_data/
 **/*.log
 **/.zed/
 experimental_results/
-justfile
+justfile.local
 .env
