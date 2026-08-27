@@ -55,19 +55,29 @@ def refresh_scaling_images(  #
 
 def refresh_weights(  #
         *,  #
-        apply_weighting: bool,  #
+        weighting_method: Literal["none", "linear", "smooth_step", "gaussian"],  #
         weight_alpha: float,  #
         scaling_images: Float32[torch.Tensor, "b n m"],  #
         weight_epsilon: float = 1e-5,  #
 ) -> dict[str, Any]:
-    if apply_weighting:
+    if weighting_method == "linear":
+        weight_images = scaling_images.clone()
+    elif weighting_method == "smooth_step":
         if weight_alpha < 1e-2:
             weight_images = scaling_images.clone()
             weight_images[weight_images < 1.0 - weight_epsilon] = 0.0
         else:
             sc_sq = scaling_images.square()
             weight_images = torch.pow(3.0 * sc_sq - 2.0 * scaling_images * sc_sq, 1.0 / (weight_alpha * weight_alpha))
+    elif weighting_method == "gaussian":
+        if weight_alpha < 1e-2:
+            weight_images = scaling_images.clone()
+            weight_images[weight_images < 1.0 - weight_epsilon] = 0.0
+        else:
+            weight_images = (-((scaling_images - 1.0) / (0.6 * weight_alpha)).square()).exp()
+            weight_images[scaling_images < weight_epsilon] = 0.0
     else:
+        # weighting_method == "none"
         weight_images = None
     return {  #
         "weight_images": weight_images,  #
