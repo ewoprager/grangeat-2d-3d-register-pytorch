@@ -1,7 +1,8 @@
 import argparse
 import pathlib
 import pprint
-from typing import Callable, NamedTuple
+from collections.abc import Callable
+from typing import NamedTuple
 
 import matplotlib
 
@@ -12,11 +13,11 @@ import pydicom
 import SimpleITK as sitk
 from matplotlib.patches import Ellipse
 from matplotlib.widgets import Button, Slider
+
 from reg23_experiments.data.structs import Error
 from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.serialize import serialize_recursive
-from reg23_experiments.io.sitk import (DCMSeriesInfo, find_ct_series,
-                                       load_ct_series, save_ct_series)
+from reg23_experiments.io.sitk import DCMSeriesInfo, find_ct_series, load_ct_series, save_ct_series
 from reg23_experiments.utils import logs_setup
 
 

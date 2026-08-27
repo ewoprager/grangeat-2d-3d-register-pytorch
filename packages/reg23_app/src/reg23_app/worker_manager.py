@@ -1,5 +1,5 @@
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 from PyQt6.QtCore import QThread

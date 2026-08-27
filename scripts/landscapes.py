@@ -2,22 +2,23 @@ import argparse
 import copy
 import os
 import pathlib
-from typing import Callable, NamedTuple, Tuple
+from collections.abc import Callable
+from typing import NamedTuple, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pyswarms
 import torch
 from matplotlib import cm
+from tqdm import tqdm
+
 from reg23_experiments.data import sinogram
 from reg23_experiments.data.plot_data import LandscapePlotData
 from reg23_experiments.data.structs import SceneGeometry, Transformation
 from reg23_experiments.ops import geometry, objective_function
-from reg23_experiments.ui.old.lib.structs import (Cropping, HyperParameters,
-                                                  SavedXRayParams, Target)
+from reg23_experiments.ui.old.lib.structs import Cropping, HyperParameters, SavedXRayParams, Target
 from reg23_experiments.ui.old.registration_data import RegistrationData
 from reg23_experiments.utils import logs_setup, pushover
-from tqdm import tqdm
 
 SAVE_DIRECTORY = pathlib.Path("data/temp/landscapes")
 

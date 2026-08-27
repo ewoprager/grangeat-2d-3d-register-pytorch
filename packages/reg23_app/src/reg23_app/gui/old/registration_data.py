@@ -1,7 +1,8 @@
 import logging
 import math
 import pathlib
-from typing import Callable, NamedTuple, Type
+from collections.abc import Callable
+from typing import NamedTuple, Type
 
 import torch
 

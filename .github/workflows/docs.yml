@@ -27,17 +27,19 @@ jobs:
 
       - name: "[ reg23-experiments Python Docs ] Install dependencies for the reg23-experiments package; this will in turn install the reg23-core package"
         working-directory: packages/reg23_experiments
-        run: uv sync --extra cpu --group docs
+        run: |
+          uv sync --extra cpu --group docs --no-install-workspace
+          uv sync --extra cpu --group docs
 
       - name: "[ reg23-experiments Python Docs ] Build HTML with pdoc"
-        run: uv run pdoc -o packages/reg23_experiments/docs packages/reg23_experiments/src/reg23_experiments \!reg23_experiments.io.external_datasets
+        run: uv run --extra cpu --group docs pdoc -o packages/reg23_experiments/docs packages/reg23_experiments/src/reg23_experiments "!reg23_experiments.io.external_datasets*"
 
-      - name: "[ reg23 C++ Docs ] Install dependencies"
+      - name: "[ reg23-core C++ Docs ] Install dependencies"
         run: |
           sudo apt-get update
           sudo apt-get install doxygen
 
-      - name: "[ reg23 C++ Docs ] Build Doxygen HTML"
+      - name: "[ reg23-core C++ Docs ] Build Doxygen HTML"
         working-directory: packages/reg23_core/Docs
         run: doxygen Doxyfile
 

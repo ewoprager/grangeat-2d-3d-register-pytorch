@@ -1,10 +1,10 @@
 import functools
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.utils.reflection import (FunctionArgument,
-                                                takes_positional_args)
+from reg23_experiments.utils.reflection import FunctionArgument, takes_positional_args
 
 from ._dadg_standalone import StandaloneDADG, StandaloneDADGSingleton
 from ._data import Updater

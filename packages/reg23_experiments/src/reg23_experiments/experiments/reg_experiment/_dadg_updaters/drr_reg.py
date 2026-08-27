@@ -1,9 +1,12 @@
 import logging
 import os
-from typing import Any, Literal, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 os.environ["QT_API"] = "PyQt6"
 
+import numpy as np
+import pandas as pd
 import SimpleITK as sitk
 import torch
 from beartype import beartype as typechecker
@@ -18,11 +21,89 @@ from reg23_experiments.io.sitk import load_one_ct_series
 from reg23_experiments.ops import ct, drr, geometry, volume
 from reg23_experiments.ops.data_manager import dadg_updater
 
-__all__ = ["load_untruncated_ct", "apply_truncation", "set_xray_target_image", "set_xray_target_image_with_no_gt",
+__all__ = ["load_ground_truth", "load_base_cropping", "combine_croppings", "truncation_percent_for_desired_h_valid",
+           "load_untruncated_ct", "apply_truncation", "set_xray_target_image", "set_xray_target_image_with_no_gt",
            "set_synthetic_target_image", "refresh_image_2d_scale_factor", "refresh_hyperparameter_dependent",
            "refresh_scaling_image", "refresh_weight_image", "project_drr", "project_fiducials", "apply_sim_metric"]
 
 logger = logging.getLogger(__name__)
+
+
+@dadg_updater(names_returned=["transformation_gt"])
+def load_ground_truth(  #
+        *,  #
+        saved_transformations: pd.DataFrame,  #
+        xray_sop_instance_uid: str,  #
+        device: torch.device  #
+) -> dict[str, Any]:
+    idx = (xray_sop_instance_uid, "gold_standard")
+    try:
+        row = saved_transformations.loc[idx]
+    except KeyError:
+        return {"transformation_gt": None}
+    return {  #
+        "transformation_gt": Transformation.from_vector(  #
+            torch.tensor([row[f"x{i}"] for i in range(6)], device=device, dtype=torch.float64)  #
+        )  #
+    }
+
+
+@dadg_updater(names_returned=["base_cropping", "target_flipped"])
+def load_base_cropping(  #
+        *,  #
+        saved_xray_reg_configs: pd.DataFrame,  #
+        xray_sop_instance_uid: str,  #
+) -> dict[str, Any]:
+    try:
+        row = saved_xray_reg_configs.loc[xray_sop_instance_uid]
+    except KeyError:
+        return {"base_cropping": None}
+    return {  #
+        "base_cropping": Cropping(  #
+            left=row["crop_left"],  #
+            right=row["crop_right"],  #
+            top=row["crop_top"],  #
+            bottom=row["crop_bottom"],  #
+        ),  #
+        "target_flipped": row["horizontal_flip"],  #
+    }
+
+
+@dadg_updater(names_returned=["cropping"])
+def combine_croppings(  #
+        *,  #
+        base_cropping: Cropping | None,  #
+        further_cropping: Cropping | None,  #
+) -> dict[str, Any]:
+    if base_cropping is None:
+        if further_cropping is None:
+            return {"cropping": None}
+        else:
+            return {"cropping": further_cropping}
+    else:
+        if further_cropping is None:
+            return {"cropping": base_cropping}
+        else:
+            return {"cropping": Cropping.intersect(base_cropping, further_cropping)}
+
+
+@dadg_updater(names_returned=["truncation_percent"])
+def truncation_percent_for_desired_h_valid(  #
+        *,  #
+        transformation_gt: Transformation | None,  #
+        untruncated_ct_volume: torch.Tensor,  #
+        ct_spacing: torch.Tensor,  #
+        desired_h_valid: float,  #
+) -> dict[str, Any]:
+    if transformation_gt is None:
+        raise Exception("Need transformation gold standard for h_valid")
+    theta = abs(
+        geometry.axis_angle_extract_axis(transformation_gt.rotation, torch.tensor([1.0, 0.0, 0.0])) - 0.5 * np.pi)
+    l = ct_spacing[1].item() * float(untruncated_ct_volume.size()[1])
+    full_height = ct_spacing[2].item() * float(untruncated_ct_volume.size()[0])
+    h = (desired_h_valid + l * np.sin(theta)) / np.cos(theta)
+    truncation_percent = min(98, max(0, round(100.0 * (1.0 - h / full_height))))
+    return {"truncation_percent": truncation_percent}
 
 
 @dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing", "ct_series_uid"])

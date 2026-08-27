@@ -2,7 +2,6 @@ import logging
 import re
 import shutil
 import sys
-import textwrap
 
 import tqdm as _tqdm
 
@@ -49,15 +48,8 @@ class ColourFormatter(logging.Formatter):
         if space >= 0:
             return prefix + record.message + ' ' * space + suffix0 + suffix1 + suffix2
 
-        lines = [prefix + record.message]
-        if _len_in_terminal(lines[0]) > available_width:
-            lines[0] = prefix + ":"
-            lines += textwrap.wrap(#
-                record.message,#
-                width=available_width,#
-                initial_indent="└ ",#
-                subsequent_indent="    ",#
-            )
+        message_lines = record.message.split("\n")
+        lines = [prefix + "\\"] + message_lines if len(message_lines) > 1 else [prefix + message_lines[0]]
         lines.append("└ " + suffix0 + suffix1 + suffix2)
         space = available_width - _len_in_terminal(lines[-1])
         if space >= 0:

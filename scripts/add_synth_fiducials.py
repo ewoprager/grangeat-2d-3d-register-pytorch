@@ -1,15 +1,14 @@
 import argparse
 import pathlib
-from typing import Callable
+from collections.abc import Callable
 
 import nrrd
 import torch
+
 from reg23_experiments.data.structs import Error
 from reg23_experiments.io import stradview
-from reg23_experiments.io.volume import (OneSeries, SeriesDescription, Volume,
-                                         find_ct_series,
-                                         get_input_ct_series_choice,
-                                         load_ct_series)
+from reg23_experiments.io.volume import OneSeries, SeriesDescription, Volume, find_ct_series, \
+    get_input_ct_series_choice, load_ct_series
 from reg23_experiments.ops.ct import convert_ct_to_mu
 from reg23_experiments.utils import logs_setup
 

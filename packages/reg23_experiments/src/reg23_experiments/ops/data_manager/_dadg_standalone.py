@@ -2,7 +2,8 @@ import collections
 import functools
 import logging
 import weakref
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import traitlets
 from traitlets.config import SingletonConfigurable

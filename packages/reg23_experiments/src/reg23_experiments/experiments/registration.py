@@ -1,8 +1,4 @@
-from typing import Callable, Literal
-
-import matplotlib
-
-matplotlib.use("QtAgg")
+from collections.abc import Callable
 
 import matplotlib.pyplot as plt
 import torch
@@ -14,27 +10,27 @@ from reg23_experiments.ops.data_manager import args_from_dadg, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
 
-__all__ = ["RegConfig", "run_reg"]
+__all__ = ["RegistrationConfig", "register"]
 
 
-class RegConfig(traitlets.HasTraits):
+class RegistrationConfig(traitlets.HasTraits):
     particle_count: int = traitlets.Int(default_value=traitlets.Undefined)
     particle_initialisation_spread: float = traitlets.Float(default_value=traitlets.Undefined)
     iteration_count: int = traitlets.Int(default_value=traitlets.Undefined)
 
 
-def run_reg(  #
+def register(  #
         *,  #
         obj_fun: Callable,  #
         starting_params: torch.Tensor,  #
-        config: RegConfig,  #
+        config: RegistrationConfig,  #
         device: torch.device,  #
-        plot: bool=False,  #
+        plot: bool = False,  #
         tqdm_position: int = 0,  #
         batch_size: int = 1,  #
         periodic_behaviour: list[tuple[int, Callable[[torch.Tensor], None]]] = [],  #
         dry_run: bool = False,  #
-) -> torch.Tensor:
+) -> torch.Tensor | None:
     """
     Run a PSO from the given starting params and return a tensor containing the params and O.F. value at each iteration.
     :param obj_fun:
@@ -43,6 +39,9 @@ def run_reg(  #
     :param device:
     :param plot:
     :param tqdm_position:
+    :param batch_size:
+    :param periodic_behaviour:
+    :param dry_run:
     :return: A tensor of size (iteration count, dimensionality + 1), where each row corresponds to an iteration of
     the optimisation, and stores the following data: | <- position of current best -> | current best |
     """

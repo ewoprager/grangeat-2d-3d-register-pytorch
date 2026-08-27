@@ -2,7 +2,7 @@
 
 ### Documentation
 
-Documentation for the python libraries in this repo, as well as for the `reg23` library, can be found here:
+Documentation for the Python libraries in this repo, as well as for the `reg23_core` C++ source code, can be found here:
 
 [https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/](https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/)
 
@@ -13,6 +13,12 @@ Image Anal. 2021 Jan;67:101815. doi: 10.1016/j.media.2020.101815. Epub 2020 Sep 
 
 This project is very much in the experimental stages, so none of the code is very usable yet. It is being actively
 developed as part of a PhD.
+
+Code in this repository was used to generate the experimental data presented in the following conference proceedings:
+
+Edmund W. O. Prager, Andrew H. Gee, Manohar L. Bance "Fast, open-source 2D/3D radiographic image registration using
+Grangeat's relation", Proc. SPIE 13925, Medical Imaging 2026: Image Processing, 139251Q (3 Apr 2026);
+https://doi.org/10.1117/12.3085848
 
 # Repo contents
 
@@ -36,7 +42,8 @@ developed as part of a PhD.
 │   ├── app_electrode_save_data/    # Segmented positions of electrodes in X-rays are saved here.
 │   ├── app_transformation_save.../ # Registered transformations between X-rays and CTs in the app are saved here.
 │   ├── ct_fiducial_save_data/      # Segmented positions of fiducial markers in CT scans are saved here.
-│   └── xray_fiducial_save_data/    # Segmented positions of fiducial markers in X-rays are saved here.
+│   ├── xray_fiducial_save_data/    # Segmented positions of fiducial markers in X-rays are saved here.
+│   └── xray_reg_save_data/         # Manually determined parameters of registration configurations for X-ray images.
 ├── figures/                        # Plots and images from experiments.
 ├── README.md                       # This file.
 ├── pyproject.toml                  # The project configuration file used by `uv` to setup the environment and dependencies used by all Python scripts.
@@ -66,8 +73,9 @@ sudo apt install ninja-build
 
 Note: instructions here may be slightly outdated and not work on all platforms.
 The [build_test.yml](.github/workflows/build_test.yml) GitHub
-workflow can generally be relied upon to be up-to-date,
-and to work.
+workflow can generally be relied upon to be up-to-date, and to work.
+
+The [justfile](justfile) contains some helpful commands, including many listed below.
 
 ### [`uv`](https://docs.astral.sh/uv/) is required
 
@@ -81,18 +89,33 @@ source .venv/bin/activate
 Install all dependencies with:
 
 ```bash
-uv sync --extra cpu
+uv sync --extra <platform> --no-install-workspace
 ```
 
-or, if you have an NVIDIA GPU:
+And subsequently build the reg23_* packages with:
 
 ```bash
-uv sync --extra cuda
+uv sync --extra <platform>
 ```
+
+Supported options for `<platform>`:
+
+- `cpu` This should work on most systems, but many of the functions provided by `reg23_core` will be very slow;
+- `cuda` This should work on a system with an NVIDIA GPU, and the version of NVCC detailed above.
+
+Options passed to `uv sync` should also be passed to `uv run` if you want the run to use the same dependencies.
+
+### Environment variables
+
+Rename [.env.example](.env.example) to '.env' and add your own environment variables for additional functionality:
+
+- If you have a [Pushover](https://pushover.net/) account, add you API key and user ID to enable scripts to send you
+  notifications. The script [program_truncation.py](scripts/program_truncation.py) can be configured to send a
+  notification on completion of experiments by passing the command line argument `--notify`.
 
 ## Docker
 
-The Dockerfiles do not work yet.
+**The Dockerfiles do not work yet.**
 
 Docker images are built for linux/amd64.
 Linux ARM64 is not supported due to upstream binary dependencies (e.g. triangle).
@@ -119,7 +142,7 @@ newgrp docker
 The main script is an interface based on `napari`:
 
 ```bash
-uv run scripts/app.py
+uv run --extra <platform> scripts/app.py
 ```
 
 Most of the implementation of the app is contained in the `py-lib` library in
@@ -242,7 +265,7 @@ The main ideas are as follows:
 All scripts are contained in the `scripts/` directory, and can be run with
 
 ```bash
-uv run <script name> <args...>
+uv run --extra <platform> <script name> <args...>
 ```
 
 To run any script directly with the python binary:
@@ -262,44 +285,8 @@ The extension is contained within the [reg23-core](packages/reg23_core) package,
 own [README.md](packages/reg23_core/README.md).
 
 It is used by the app (in [reg23-app](packages/reg23_app)) and in underlying functionality in
-the [reg23_experiments](packages/reg23_experiments) package. In particular, `project_drr` is very commonly used.
-
-## Other scripts (not maintained)
-
-### Run Radon transform algorithms on CPU and GPU (CUDA) to compare performance:
-
-```bash
-uv run scripts/benchmaking/benchmark_radon2d.py "/path/to/x_ray.dcm"
-uv run scripts/benchmaking/benchmark_radon3d.py "/path/to/ct.nrrd"
-```
-
-### Run the Grangeat-based resampling algorithms on CPU and GPU (CUDA) to compare performance:
-
-```bash
-uv run scripts/benchmaking/benchmark_resample_sinogram3d.py -h
-uv run scripts/benchmaking/benchmark_resample_sinogram3d.py --no-load --no-save --sinogram-size 64 # run on synthetic data
-uv run scripts/benchmaking/benchmark_resample_sinogram3d.py --ct-nrrd-path "/path/to/ct.nrrd"
-```
-
-### Run registration experiments:
-
-```bash
-uv run scripts/register.py -h
-uv run scripts/register.py --no-load --no-save --sinogram-size 64 # run on synthetic data
-uv run scripts/register.py --ct-nrrd-path "/path/to/ct.nrrd"
-```
-
-### Dev scripts
-
-```bash
-uv run registration/lib/dev_scripts/dev_sinogram.py --help 
-```
-
-or
-
-```bash
-python registration/lib/dev_scripts/dev_sinogram.py --help 
-```
+the [reg23_experiments](packages/reg23_experiments) package. In particular, `project_drr` and its variants are very
+commonly used.
 
 ## IDE integration
 

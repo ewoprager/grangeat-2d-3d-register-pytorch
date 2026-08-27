@@ -1,7 +1,8 @@
 import functools
 import itertools
 import logging
-from typing import Any, Callable, Generator, Iterable, Iterator, Literal
+from collections.abc import Callable, Generator, Iterable, Iterator
+from typing import Any, Literal
 
 import numpy as np
 import scipy
@@ -9,7 +10,7 @@ import traitlets
 
 from reg23_experiments.data.structs import LinearRange
 
-__all__ = ["IntRange", "Constant", "Cartesian", "Zipped", "Range", "ExperimentConfig"]
+__all__ = ["IntRange", "Constant", "Cartesian", "Zipped", "Range", "ExperimentSetConfig"]
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class Range(traitlets.HasTraits):
         raise Exception(f"Unknown range type {config['range_type']}")
 
 
-class _Configs(Iterable[tuple[str, dict[str, Any]]]):
+class _ParametrisationGenerator(Iterable[tuple[str, dict[str, Any]]]):
     def __init__(  #
             self,  #
             values: dict[str, Constant | Cartesian | Zipped | Range],  #
@@ -225,7 +226,7 @@ class _Configs(Iterable[tuple[str, dict[str, Any]]]):
         return self._len
 
 
-class ExperimentConfig(traitlets.HasTraits):
+class ExperimentSetConfig(traitlets.HasTraits):
     values: dict[str, Constant | Cartesian | Range | Zipped] = traitlets.Dict(  #
         key_trait=traitlets.Unicode(allow_none=False),  #
         value_trait=traitlets.Union([  #
@@ -239,13 +240,23 @@ class ExperimentConfig(traitlets.HasTraits):
     def __init__(self, values):
         super().__init__(values=values)
 
+        zipped_variables = {k: v for k, v in values.items() if isinstance(v, Zipped)}
+        assert len(zipped_variables) != 1, (
+            f"A config must contain at least two Zipped variables, if any; found only 1: "
+            f"{next(iter(zipped_variables.keys()))}")
+        if zipped_variables:
+            zipped_n = len(next(iter(zipped_variables.values())).values)
+            assert all(len(v.values) == zipped_n for v in
+                       zipped_variables.values()), "All zipped variables must be given the same number of values."
+            assert zipped_n > 1, "Zipped variables must be given at least two values."
+
     def iterable(  #
             self,  #
             *,  #
             space_sample_method: Literal["sobol"] = "sobol",  #
             space_sample_count: int | None = None,  #
-    ) -> _Configs:
-        return _Configs(  #
+    ) -> _ParametrisationGenerator:
+        return _ParametrisationGenerator(  #
             self.values,  #
             space_sample_method=space_sample_method,  #
             space_sample_count=space_sample_count,  #
@@ -276,7 +287,7 @@ class ExperimentConfig(traitlets.HasTraits):
         }
 
     @staticmethod
-    def deserialize(variables: dict[str, Any]) -> 'ExperimentConfig':
+    def deserialize(variables: dict[str, Any]) -> 'ExperimentSetConfig':
         config = {}
         if "constants" in variables:
             config |= {  #
@@ -298,4 +309,4 @@ class ExperimentConfig(traitlets.HasTraits):
                 key: Zipped(value)  #
                 for key, value in variables["zipped"].items()  #
             }
-        return ExperimentConfig(config)
+        return ExperimentSetConfig(config)

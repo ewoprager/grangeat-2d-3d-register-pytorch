@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 from reg23_experiments.data.structs import Error
 

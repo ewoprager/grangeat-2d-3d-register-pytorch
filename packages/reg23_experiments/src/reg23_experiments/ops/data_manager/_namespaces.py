@@ -1,6 +1,7 @@
 import copy
 import functools
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from reg23_experiments.utils.reflection import takes_positional_args
 

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Callable
+from collections.abc import Callable
 
 os.environ["QT_API"] = "PyQt6"
 

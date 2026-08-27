@@ -3,8 +3,9 @@ import logging
 import pathlib
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, NamedTuple
+from typing import Any, NamedTuple
 
 import matplotlib.pyplot as plt
 import numpy as np

@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 from magicgui.widgets import request_values
 

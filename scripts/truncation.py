@@ -1,21 +1,21 @@
 import argparse
 import os
 import pathlib
-from typing import Callable, NamedTuple
+from collections.abc import Callable
+from typing import NamedTuple
 
 import matplotlib.pyplot as plt
-import reg23_core
 import torch
 import torchviz
-from reg23_experiments.data.plot_data import LandscapePlotData
-from reg23_experiments.data.structs import (Cropping, SceneGeometry,
-                                            Transformation)
-from reg23_experiments.ops import drr, geometry, objective_function
-from reg23_experiments.ops.optimisation import (
-    local_search, mapping_parameters_to_transformation,
-    mapping_transformation_to_parameters)
-from reg23_experiments.utils import logs_setup, pushover
 from tqdm import tqdm
+
+import reg23_core
+from reg23_experiments.data.plot_data import LandscapePlotData
+from reg23_experiments.data.structs import Cropping, SceneGeometry, Transformation
+from reg23_experiments.ops import drr, geometry, objective_function
+from reg23_experiments.ops.optimisation import local_search, mapping_parameters_to_transformation, \
+    mapping_transformation_to_parameters
+from reg23_experiments.utils import logs_setup, pushover
 
 
 class RegistrationData:
