@@ -10,7 +10,7 @@ services:
       - DISPLAY=${DISPLAY}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - data:/app/data
+    #      - data:/app/data
     network_mode: host
 
   reg23-app-cuda:
