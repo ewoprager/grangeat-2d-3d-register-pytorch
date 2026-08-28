@@ -6,7 +6,7 @@ from reg23_app.context import AppContext
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_experiments.data.parameters import XrayParameters
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
+from reg23_experiments.experiments.reg_experiment import drr_reg_updaters as updaters
 from reg23_experiments.ops.data_manager import capture_in_namespaces
 
 __all__ = ["FixedTarget", "load_fixed_dataset"]
@@ -94,8 +94,7 @@ def load_fixed_dataset(*,  #
             return Error(f"Error adding updater: {err.description}")
 
         err = app_context.dadg.add_updater(f"{name}__refresh_scaling_image",
-                                           capture_in_namespaces(namespace_captures)(
-                                               updaters.refresh_scaling_image))
+                                           capture_in_namespaces(namespace_captures)(updaters.refresh_scaling_image))
         if isinstance(err, Error):
             return Error(f"Error adding updater: {err.description}")
 

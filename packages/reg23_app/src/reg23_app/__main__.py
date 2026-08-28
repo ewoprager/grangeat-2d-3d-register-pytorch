@@ -1,10 +1,10 @@
 import argparse
+import logging
 import os
+import pathlib
 from typing import Literal
 
 os.environ["QT_API"] = "PyQt6"
-
-import pathlib
 
 import napari
 import torch
@@ -14,21 +14,19 @@ from reg23_app.context import AppContext
 from reg23_app.gui.file_manager import FileManager
 from reg23_app.gui.viewer_singleton import init_viewer, viewer
 from reg23_app.gui.widgets.drr_widget import DRRWidget
+from reg23_app.gui.widgets.fiducials_widget import FiducialsWidget
 from reg23_app.gui.widgets.hastraits_widget import HasTraitsWidget
 from reg23_app.gui.widgets.images_widget import ImagesWidget
 from reg23_app.gui.widgets.parameters_widget import ParametersWidget
 from reg23_app.gui.widgets.register_widget import RegisterWidget
 from reg23_app.transformation_saver import TransformationSaver
 from reg23_app.worker_manager import WorkerManager
+from reg23_experiments.data.parameters import Context, Parameters, PsoParameters
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.experiments.multi_xray_truncation_updaters import apply_truncation, load_untruncated_ct
-from reg23_experiments.experiments.parameters import Context, Parameters, PsoParameters
+from reg23_experiments.experiments.reg_experiment import drr_reg_updaters as updaters
 from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
-from reg23_experiments.ops.similarity_metric import ncc
 from reg23_experiments.utils import logs_setup, pushover
-
-__all__ = []
 
 
 # @args_from_dag(names_left=["transformation"])
@@ -49,12 +47,13 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Viewer
     # -----
-    init_viewer(title="Program Test")
+    logger.debug("Initialising viewer")
+    init_viewer(title="reg23-app")
 
     # -----
     # Updaters
     # -----
-    err = data_manager().add_updater("apply_truncation", apply_truncation)
+    err = data_manager().add_updater("apply_truncation", updaters.apply_truncation)
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -69,11 +68,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         save_to_cache=True,  # a
         new_drr_size=torch.Size([500, 500]),  #
         device=device,  #
-        cropping=None,  #
-        current_transformation=Transformation.zero(device=device),  #
+        current_transformation=Transformation.zero(device),  #
         truncation_percent=0.0,  #
-        ap_transformation=Transformation(rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], device=device),
-                                         translation=torch.zeros(3, device=device)),  #
+        ap_transformation=Transformation(
+            rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
+            translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
         target_ap_distance=5.0,  #
     )
     if ct_path is not None:
@@ -103,6 +102,9 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     app_context = AppContext(parameters=parameters, dadg=data_manager(),
                              transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
                              electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),
+                             ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),
+                             xray_fiducial_save_directory=pathlib.Path("data/xray_fiducial_save_data"),
+                             xray_reg_save_directory=pathlib.Path("data/xray_reg_save_data"),
                              cache=external_dataset is None)
 
     # -----
@@ -142,7 +144,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.info(f"total = "
                     f"{ct_spacing.cpu() * torch.tensor(ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
     else:
-        err = data_manager().add_updater("load_untruncated_ct", load_untruncated_ct)
+        err = data_manager().add_updater("load_untruncated_ct", updaters.load_untruncated_ct)
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
             return
@@ -150,6 +152,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Widgets
     # -----
+    logger.debug("Initialising widgets")
     parameters_widget = ParametersWidget(app_context, external_dataset is None)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
@@ -163,38 +166,29 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                                     tabify=True)
     drr_widget = DRRWidget(app_context)
     viewer().window.add_dock_widget(drr_widget, name="DRR", area="right", menu=viewer().window.window_menu, tabify=True)
+    fiducials_widget = FiducialsWidget(app_context)
+    viewer().window.add_dock_widget(fiducials_widget, name="Fiducials", area="right", menu=viewer().window.window_menu,
+                                    tabify=True)
 
     # -----
     # The universal objective function
     # -----
     def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
+        prefix = "" if context.namespace is None else f"{context.namespace}__"
         t = mapping_parameters_to_transformation(x)
         # Setting the parameters
-        context.dadg.set(
-            "current_transformation" if context.namespace is None else f"{context.namespace}__current_transformation",
-            t)
-        # Getting the resulting moving and fixed images
-        moving_image = context.dadg.get(
-            "moving_image" if context.namespace is None else f"{context.namespace}__moving_image")
-        if isinstance(moving_image, Error):
-            logger.error(f"Error getting moving image for obj. func.: {moving_image.description}")
+        context.dadg.set(prefix + "current_transformation", t)
+        # Getting the result
+        ret: torch.Tensor | Error = context.dadg.get(prefix + "of_value")
+        if isinstance(ret, Error):
+            logger.error(f"Failed to get o.f. value for objective function evaluation: {ret.description}")
             return torch.zeros(1, device=x.device)
-        fixed_image = context.dadg.get(
-            "fixed_image" if context.namespace is None else f"{context.namespace}__fixed_image")
-        if isinstance(fixed_image, Error):
-            logger.error(f"Error getting fixed image for obj. func.: {fixed_image.description}")
-            return torch.zeros(1, device=x.device)
-        # Comparing, potentially weighting with a mask
-        # if apply_mask:
-        #     mask = data_manager().get("mask")
-        #     if weight_with_mask:
-        #         return -p_sim_met.func_weighted(moving_image, fixed_image, mask)
-        # return -p_sim_met.func(moving_image, fixed_image)
-        return -ncc(fixed_image, moving_image)  # ToDo: configured sim metric
+        return ret
 
     # -----
     # Modules
     # -----
+    logger.debug("Initialising modules")
     worker_manager = WorkerManager(ctx=app_context, objective_function=objective_function)
     transformation_saver = TransformationSaver(app_context)
     file_manager = FileManager(app_context.state)
@@ -204,12 +198,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     #     logger.error(f"Couldn't get moving image: {value.description}.")
     #     return
 
+    logger.debug("Running napari loop")
     napari.run()
 
 
 if __name__ == "__main__":
-    # set up logger
-    logger = logs_setup.setup_logger()
 
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
@@ -225,6 +218,8 @@ if __name__ == "__main__":
     parser.add_argument("-x", "--xray-path", type=str, default=None,
                         help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
                              "this is provided, the X-ray will by used instead of any DRR.")
+    parser.add_argument("-l", "--log-level", type=str, default=None,
+                        help=f"Set the log level; options: [{", ".join(logging._nameToLevel.keys())}]; default = INFO.")
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")
     # parser.add_argument(
@@ -234,6 +229,9 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
     # parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
     args = parser.parse_args()
+
+    # set up logger
+    logger = logs_setup.setup_logger(level=args.log_level)
 
     # create cache directory
     if not os.path.exists(args.cache_directory):
