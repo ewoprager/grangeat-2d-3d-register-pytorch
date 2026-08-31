@@ -213,7 +213,8 @@ def main(  #
     fig, axes = plt.subplots(subplot_kw={"projection": "3d"})
     for i, xray in enumerate(df["xray_path"].unique()):
         accuracy_df = df[df["xray_path"] == xray]
-        accuracy_df = accuracy_df[accuracy_df["iteration"] == accuracy_df["iteration"].max()].drop(columns=["iteration"])
+        accuracy_df = accuracy_df[accuracy_df["iteration"] == accuracy_df["iteration"].max()].drop(
+            columns=["iteration"])
         # Remove unnecessary dependent variable columns
         # accuracy_df.drop(columns=["crop_width", "crop_height"], inplace=True)
         # CT and X-ray paths to h_linear
@@ -234,7 +235,7 @@ def main(  #
         # Drop columns for constant variables
         accuracy_df = accuracy_df.drop(columns=[  #
             col for col in  #
-            accuracy_df.columns[accuracy_df.nunique() == 1]  #
+            accuracy_df.columns[accuracy_df.nunique(dropna=False) == 1]  #
         ])
 
         print(accuracy_df.to_string())
@@ -281,7 +282,7 @@ def main(  #
             accuracy_df[x_name].to_numpy(),  #
             accuracy_df[y_name].to_numpy(),  #
             accuracy_df["distance"].to_numpy(),  #
-            label=pathlib.Path(xray).name,#
+            label=pathlib.Path(xray).name,  #
         )
         # axes.set_zlim((0.0, np.quantile(accuracy_df["distance"].to_numpy(), 0.75)))
         axes.set_xlabel(f"{x_name}")

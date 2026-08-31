@@ -175,7 +175,7 @@ def dataframe_to_cartesian_zipped_tensors(  #
         dependent_variables: list[str],  #
 ) -> CartesianZippedTensors:
     # Remove constant variables
-    constant_values = df.loc[:, df.nunique() == 1].iloc[0].to_dict()
+    constant_values = df.loc[:, df.nunique(dropna=False) == 1].iloc[0].to_dict()
     constant_variables = list(constant_values.keys())
     df = df.drop(columns=constant_variables)
 

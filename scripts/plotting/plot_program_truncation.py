@@ -92,7 +92,10 @@ def grid_of_plots_figure(  #
     if dependent_errors is not None:
         assert dependent_errors.size() == dependent_values.size()
     # figure and axes
-    fig, axes = plt.subplots(*dependent_values.size()[:-2], figsize=(6, 6) if dense else (13, 8))
+    grid_size = dependent_values.size()[:-2]
+    if len(grid_size) == 1:
+        grid_size = [1, grid_size[0]]
+    fig, axes = plt.subplots(*grid_size, figsize=(6, 6) if dense else (13, 8))
     axes = np.array(axes)
     if dense:
         fig.subplots_adjust(left=0.08, right=0.98, bottom=0.08, top=0.9, wspace=0.2, hspace=0.3)
@@ -218,7 +221,7 @@ def plot_grid_figures(  #
     axes_threshold = -3 if zipped_axis_values else -4
 
     # getting the median largest distance value
-    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.5).item()) if len(
+    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.9).item()) if len(
         cartesian_axes_values) > 2 else None
 
     # check arguments
@@ -263,6 +266,7 @@ def plot_grid_figures(  #
                 for i, w in enumerate([v for _, v in index_value_pairs])  #
             ])  #
         ))
+        fig.tight_layout()
         if save_to is not None:
             fig.savefig(save_to / ("_".join(  #
                 f"{cartesian_axes_values[i][0]}-{j}"  #
@@ -352,15 +356,15 @@ def main(  #
     assert "cartesian" in variables_config
     cartesian_variables: list[str] = list(variables_config["cartesian"].keys())
 
-    ## !!!
-    # cartesian_variables.append("sim_metric")
+    # !!!
+    cartesian_variables.append("sim_metric")
     # cartesian_variables.append("xray_path")
     ## !!!
 
-    variable_hierarchy: list[str] = ["starting_distance", "sim_metric", "weight_alpha", "weighting_method",
-                                     "iterations_per_crop_update", "cropping", "cropping_method", "truncation_percent",
-                                     "apply_scaling", "iterations_per_weight_update", "crop_expand", "mask",
-                                     "downsample_level", "xray_path"]  # most to least important
+    variable_hierarchy: list[str] = ["starting_distance", "sim_metric", "weighting", "weight_alpha", "weighting_method",
+                                     "iterations_per_crop_update", "cropping", "cropping_method", "apply_scaling",
+                                     "iterations_per_weight_update", "crop_expand", "mask", "downsample_level",
+                                     "truncation_percent", "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
     cartesian_variables = sorted(  #
         cartesian_variables,  #
@@ -381,7 +385,7 @@ def main(  #
         dependent_variables=dependent_variables,  #
     )
 
-    if False:
+    if True:
         plot_grid_figures(  #
             cartesian_axes_values=czt.cartesian_axes_values,  #
             zipped_axis_values=czt.zipped_axis_values,  #
@@ -392,7 +396,7 @@ def main(  #
         )
     else:
         czt = czt.collapse("iteration", method="take_last")
-        # czt = czt.collapse("xray_path", method="mean")
+        czt = czt.collapse("xray_path", method="mean")
         plot_grid_figures(  #
             cartesian_axes_values=czt.cartesian_axes_values,  #
             zipped_axis_values=czt.zipped_axis_values,  #
@@ -400,6 +404,7 @@ def main(  #
             dependent_values=czt.dependent_variable_tensors["distance"],  #
             dependent_errors=czt.dependent_variable_tensors["distance_std"] if distance_std_available else None,  #
             dense=dense,  #
+            legend_separate=False,  #
         )
 
     return
