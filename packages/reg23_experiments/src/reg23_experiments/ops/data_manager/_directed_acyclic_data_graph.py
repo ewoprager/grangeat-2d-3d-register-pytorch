@@ -18,6 +18,7 @@ class Node(traitlets.HasTraits):
     dirty: bool = traitlets.Bool(default_value=False)
     updater: str | None = traitlets.Unicode(allow_none=True, default_value=None)
     lazily_evaluated: bool = traitlets.Bool(default_value=True)
+    check_equality: bool = traitlets.Bool(default_value=False)
     data: Any = traitlets.Any(allow_none=True, default_value=NoNodeData)
     observers: dict[str, Callable] = traitlets.Dict(key_trait=traitlets.Unicode(), value_trait=traitlets.Callable())
 
@@ -39,6 +40,7 @@ class Node(traitlets.HasTraits):
             dirty=self.dirty,  #
             updater=copy.deepcopy(self.updater),  #
             lazily_evaluated=self.lazily_evaluated,  #
+            check_equality=self.check_equality,  #
             data=copy.deepcopy(self.data),  #
             observers=dict(),  #
         )
@@ -49,6 +51,7 @@ class Node(traitlets.HasTraits):
             dirty=self.dirty,  #
             updater=copy.deepcopy(self.updater),  #
             lazily_evaluated=self.lazily_evaluated,  #
+            check_equality=self.check_equality,  #
             data=data,  #
             observers=dict(),  #
         )
