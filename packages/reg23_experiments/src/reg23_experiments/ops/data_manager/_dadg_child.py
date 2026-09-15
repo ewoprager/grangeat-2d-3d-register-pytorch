@@ -87,18 +87,22 @@ class ChildDADG(ChildDirectedAcyclicDataGraph):
         return data
 
     @__data_mutating
-    def set(self, node_name: str, data: Any, *, check_equality: bool = False) -> None | Error:
+    def set(self, node_name: str, data: Any, *, check_equality: bool | None = None) -> None | Error:
         """
         Set the data associated with a named node. Will create the node if it doesn't exist.
         :param node_name: Name of the node.
         :param data: New data to assign.
-        :param check_equality: [Optional; default=False] Whether to check the new value against the old value,
-        and leave the node clean if the new value is the same.
+        :param check_equality: [Optional; default=None] A boolean value to associate with the node that determines
+        whether new values will be compared with old values to check whether they have changed.
         """
         # make sure node exists
         node = self.__get_node_ensure_exists(node_name)
+        # set the value of 'check_equality'
+        if check_equality is not None:
+            node.check_equality = check_equality
         # set the data and make not dirty
         if check_equality and node.data == data:
+            node.dirty = False
             return None
         self.__send_children_copies(node_name)
         if node_name in self.__nodes:
