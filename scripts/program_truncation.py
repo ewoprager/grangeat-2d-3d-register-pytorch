@@ -11,7 +11,7 @@ import torch
 import yaml
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.experiments.experiment_set_config import Cartesian, Constant, ExperimentSetConfig
+from reg23_experiments.experiments.experiment_set_config import Cartesian, Constant, ExperimentSetConfig, Zipped
 from reg23_experiments.experiments.helpers import instance_output_directory
 from reg23_experiments.experiments.reg_experiment import ExperimentParametrisation, ImageSpecificConfigurations, \
     init_dadg, reg_experiment
@@ -90,14 +90,14 @@ def main(  #
             "weighting_method": Constant("none"),  # Zipped(["linear", "gaussian", "gaussian", "gaussian"]),  #
             "weight_alpha": Constant(0.0),  # Zipped([1.0, 1.0, 1.5, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  #
-            "sim_metric": Constant("zncc"),  #
+            "sim_metric": Zipped(["gradient_correlation", "zncc", "zncc", "zncc", "zncc", "zncc"]),  #
             # ----- frequency domain filtering
-            "filter_method": Constant("highpass"),  #
+            "filter_method": Zipped(["none", "none", "gradient_like", "highpass", "highpass", "highpass"]),  #
             "lowpass_threshold": Constant(1.0),  #
-            "highpass_threshold": Constant(1.0 / 20.0),  #
+            "highpass_threshold": Zipped([1.0, 1.0, 1.0, 1.0 / 10.0, 1.0 / 20.0, 1.0 / 40.0]),  #
             # ----- registration
             "starting_distance": Constant(5.0),  #
-            "sample_count_per_distance": Constant(10),  #
+            "sample_count_per_distance": Constant(20),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
             "particle_initialisation_spread": Constant(2.5),  # Constant(2.5)
@@ -108,9 +108,9 @@ def main(  #
         hardcoded_xray_names: list[str] = [  #
             "level_000",  #
             # "level_090",  #
-            # "up_000",  #
+            "up_000",  #
             # "up_090",  #
-            # "down_000",  #
+            "down_000",  #
             # "down_090",  #
         ]
 

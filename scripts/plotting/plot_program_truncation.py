@@ -357,7 +357,7 @@ def main(  #
     cartesian_variables: list[str] = list(variables_config["cartesian"].keys())
 
     # !!!
-    cartesian_variables.append("sim_metric")
+    # cartesian_variables.append("sim_metric")
     # cartesian_variables.append("xray_path")
     ## !!!
 

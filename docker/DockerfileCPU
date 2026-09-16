@@ -1,23 +1,12 @@
 # ---- builder ----
-FROM python:3.12-slim AS builder
+FROM python:3.12 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # --- system deps for napari / Qt ---
 RUN apt-get update && apt-get install -y \
     build-essential \
-    g++ \
-    gcc \
-    make \
     ninja-build \
-    libgl1 \
-    libxkbcommon-x11-0 \
-    libxcb-cursor0 \
-    libxrender1 \
-    libxext6 \
-    libxinerama1 \
-    libsm6 \
-    libice6 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -34,7 +23,7 @@ RUN uv sync --extra cpu
 
 
 # ---- runtime ----
-FROM python:3.12-slim
+FROM python:3.12
 
 RUN apt-get update && apt-get install -y \
     libgl1 \
