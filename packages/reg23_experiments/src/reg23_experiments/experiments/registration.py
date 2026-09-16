@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable
 
 import matplotlib.pyplot as plt
@@ -5,12 +6,15 @@ import torch
 import traitlets
 
 import reg23_core
+from reg23_experiments.data.structs import Error
 from reg23_experiments.ops import swarm as pso
 from reg23_experiments.ops.data_manager import args_from_dadg, data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
 
 __all__ = ["RegistrationConfig", "register"]
+
+logger = logging.getLogger(__name__)
 
 
 class RegistrationConfig(traitlets.HasTraits):
@@ -56,25 +60,19 @@ def register(  #
             # axes.insert(2, axes[1].twinx())
             plt.ion()
             plt.show()
-            t = mapping_parameters_to_transformation(starting_params)
             # Moving image
-            moving_image: torch.Tensor = args_from_dadg()(  #
-                lambda *, cropped_target, ct_volumes, downsample_level, ct_spacing, source_distance,
-                       fixed_image_spacing, fixed_image_offset: reg23_core.project_drrs_batched(  #
-                    volume=ct_volumes[downsample_level],  #
-                    voxel_spacing=ct_spacing * 2.0 ** downsample_level,  #
-                    inverse_h_matrices=t.inverse().get_h(device=ct_volumes[0].device).unsqueeze(0),  #
-                    source_distance=source_distance,  #
-                    output_width=cropped_target.size()[1],  #
-                    output_height=cropped_target.size()[0],  #
-                    output_offset=fixed_image_offset,  #
-                    detector_spacing=fixed_image_spacing,  #
-                ))()[0]
+            err: Error | None = data_manager().set("parameters", starting_params.unsqueeze(0))
+            if isinstance(err, Error):
+                logger.warning(f"Error setting parameters in o.f.: {err.description}")
+            moving_image: torch.Tensor | Error = data_manager().get("filtered_moving_images")
+            if isinstance(moving_image, Error):
+                raise Exception(f"Objective function evaluation failed: {moving_image}")
             axes[0].clear()
-            axes[0].set_title("moving image AT start: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
+            t = mapping_parameters_to_transformation(starting_params)
+            axes[0].set_title("f moving image AT start: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
                 t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
                 t.translation[1].item(), t.translation[2].item()))
-            axes[0].imshow(moving_image.cpu().numpy())
+            axes[0].imshow(moving_image[0].cpu().numpy())
             plt.draw()
             plt.pause(0.1)
 
@@ -125,21 +123,15 @@ def register(  #
             ret[it, -1] = swarm.current_optimum.to(dtype=torch.float32, device=device)
 
             if plot:
-                t = mapping_parameters_to_transformation(swarm.current_optimum_position)
                 axes[0].clear()
-                moving_image: torch.Tensor = args_from_dadg()(  #
-                    lambda *, cropped_target, ct_volumes, downsample_level, ct_spacing, source_distance,
-                           fixed_image_spacing, fixed_image_offset: reg23_core.project_drrs_batched(  #
-                        volume=ct_volumes[downsample_level],  #
-                        voxel_spacing=ct_spacing * 2.0 ** downsample_level,  #
-                        inverse_h_matrices=t.inverse().get_h(device=ct_volumes[0].device).unsqueeze(0),  #
-                        source_distance=source_distance,  #
-                        output_width=cropped_target.size()[1],  #
-                        output_height=cropped_target.size()[0],  #
-                        output_offset=fixed_image_offset,  #
-                        detector_spacing=fixed_image_spacing,  #
-                    ))()[0]
-                axes[0].imshow(moving_image.cpu().numpy())
+                err: Error | None = data_manager().set("parameters", swarm.current_optimum_position.unsqueeze(0))
+                if isinstance(err, Error):
+                    logger.warning(f"Error setting parameters in o.f.: {err.description}")
+                moving_image: torch.Tensor | Error = data_manager().get("filtered_moving_images")
+                if isinstance(moving_image, Error):
+                    raise Exception(f"Objective function evaluation failed: {moving_image}")
+                axes[0].imshow(moving_image[0].cpu().numpy())
+                t = mapping_parameters_to_transformation(swarm.current_optimum_position)
                 axes[0].set_title("Iteration {}: R=({:.3f},{:.3f},{:.3f}), T=({:.3f},{:.3f},{:.3f})".format(  #
                     it, t.rotation[0].item(), t.rotation[1].item(), t.rotation[2].item(), t.translation[0].item(),
                     t.translation[1].item(), t.translation[2].item()))

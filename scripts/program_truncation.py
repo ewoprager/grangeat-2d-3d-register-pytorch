@@ -11,7 +11,7 @@ import torch
 import yaml
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.experiments.experiment_set_config import Cartesian, Constant, ExperimentSetConfig, Zipped
+from reg23_experiments.experiments.experiment_set_config import Cartesian, Constant, ExperimentSetConfig
 from reg23_experiments.experiments.helpers import instance_output_directory
 from reg23_experiments.experiments.reg_experiment import ExperimentParametrisation, ImageSpecificConfigurations, \
     init_dadg, reg_experiment
@@ -79,25 +79,29 @@ def main(  #
             "ct_path": Constant(ct_path),  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
-            "downsample_level": Constant(0),  #
-            "truncation_percent": Cartesian([80, 90]),  #
+            "downsample_level": Constant(1),  #
+            "truncation_percent": Constant(80),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
             # ----- scaling
             "apply_scaling": Constant(False),  #
             # ----- similarity & weighting
-            "weighting_method": Zipped(["none", "smooth_step", "smooth_step", "smooth_step"]),  #
-            "weight_alpha": Zipped([1.0, 1.0, 1.5, 2.0]),  #
+            "weighting_method": Constant("none"),  # Zipped(["linear", "gaussian", "gaussian", "gaussian"]),  #
+            "weight_alpha": Constant(0.0),  # Zipped([1.0, 1.0, 1.5, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  #
-            "sim_metric": Constant("gradient_correlation"),  #
+            "sim_metric": Constant("zncc"),  #
+            # ----- frequency domain filtering
+            "filter_method": Constant("highpass"),  #
+            "lowpass_threshold": Constant(1.0),  #
+            "highpass_threshold": Constant(1.0 / 20.0),  #
             # ----- registration
-            "starting_distance": Constant(0.5),  # Constant(5.0)
-            "sample_count_per_distance": Constant(50),  #
+            "starting_distance": Constant(5.0),  #
+            "sample_count_per_distance": Constant(10),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
-            "particle_initialisation_spread": Constant(0.25),  # Constant(2.5)
-            "iteration_count": Constant(5),  #
+            "particle_initialisation_spread": Constant(2.5),  # Constant(2.5)
+            "iteration_count": Constant(6),  #
         })
 
         # X-ray choice determines the gold standard orientation, which drives h_linear:
@@ -106,7 +110,7 @@ def main(  #
             # "level_090",  #
             # "up_000",  #
             # "up_090",  #
-            "down_000",  #
+            # "down_000",  #
             # "down_090",  #
         ]
 
@@ -173,7 +177,7 @@ def main(  #
         run_experiments(  #
             param_constructor=ExperimentParametrisation.dict_constructor,  #
             # experiment=run_experiment,  #
-            experiment=lambda conf: reg_experiment(conf, batch_size=250, plot=True),  #
+            experiment=lambda conf: reg_experiment(conf, batch_size=125, plot=True),  #
             parametrisation_iterable=(c for c in [next(iter(config.iterable()))]),  # just the first iteration
             output_directory=None,  #
             device=device,  #
@@ -187,7 +191,7 @@ def main(  #
             run_experiments(  #
                 param_constructor=ExperimentParametrisation.dict_constructor,  #
                 # experiment=run_experiment,  #
-                experiment=lambda conf: reg_experiment(conf, batch_size=250),  #
+                experiment=lambda conf: reg_experiment(conf, batch_size=125),  #
                 parametrisation_iterable=config.iterable(space_sample_count=64),  #
                 output_directory=instance_output_dir,  #
                 device=device,  #

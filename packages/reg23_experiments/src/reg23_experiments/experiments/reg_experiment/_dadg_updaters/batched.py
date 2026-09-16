@@ -8,9 +8,11 @@ from reg23_experiments.data.structs import Transformation
 from reg23_experiments.experiments.helpers import string_to_sim_met
 from reg23_experiments.ops.data_manager import dadg_updater
 from reg23_experiments.ops.geometry import get_crop_full_depth_drr, get_crop_nonzero_drr
+from reg23_experiments.ops.image import frequency_filter
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 
-__all__ = ["refresh_scaling_images", "refresh_weights", "project_moving_images", "apply_sim_metric", "refresh_cropping"]
+__all__ = ["refresh_scaling_images", "refresh_weights", "project_moving_images", "apply_sim_metric", "refresh_cropping",
+           "apply_filter"]
 
 
 # @dadg_updater(names_returned=["scaling_images", "fixed_images"])
@@ -162,14 +164,56 @@ def project_moving_images(  #
     }
 
 
+@dadg_updater(names_returned=["filtered_moving_images", "filtered_fixed_images"])
+def apply_filter(  #
+        *,  #
+        filter_method: str,  #
+        moving_images: Float32[torch.Tensor, "b n m"],  #
+        fixed_images: Float32[torch.Tensor, "#b n m"],  #
+        fixed_image_spacing: Float64[torch.Tensor, "2"],  #
+        lowpass_threshold: float,  #
+        highpass_threshold: float,  #
+) -> dict[str, Any]:
+    if filter_method == "none":
+        return {  #
+            "filtered_moving_images": moving_images,  #
+            "filtered_fixed_images": fixed_images,  #
+        }
+    if filter_method == "highpass":
+        function = lambda freq: 1.0 - (-0.5 * freq.square() / (highpass_threshold * highpass_threshold)).exp()
+    elif filter_method == "bandpass":
+        function = lambda freq: (-0.5 * freq.square() / (lowpass_threshold * lowpass_threshold)).exp() - (
+                -0.5 * freq.square() / (highpass_threshold * highpass_threshold)).exp()
+    else:
+        # filter_method == "gradient_like"
+        function = lambda freq: freq.square()
+
+    return {  #
+        "filtered_moving_images": frequency_filter(  #
+            moving_images,  #
+            fixed_image_spacing,  #
+            function,  #
+        ),  #
+        "filtered_fixed_images": frequency_filter(  #
+            fixed_images,  #
+            fixed_image_spacing,  #
+            function,  #
+        ),  #
+    }
+
+
 @dadg_updater(names_returned=["of_values"])
 def apply_sim_metric(  #
         *,  #
         sim_metric: str,  #
-        moving_images: Float32[torch.Tensor, "b n m"],  #
-        fixed_images: Float32[torch.Tensor, "#b n m"],  #
+        filtered_moving_images: Float32[torch.Tensor, "b n m"],  #
+        filtered_fixed_images: Float32[torch.Tensor, "#b n m"],  #
         weight_images: Float32[torch.Tensor, "#b n m"] | None,  #
 ) -> dict[str, Any]:
     return {  #
-        "of_values": -string_to_sim_met(sim_metric)(fixed_images, moving_images, weights=weight_images),  #
+        "of_values": -string_to_sim_met(sim_metric)(  #
+            filtered_fixed_images,  #
+            filtered_moving_images,  #
+            weights=weight_images,  #
+        ),  #
     }

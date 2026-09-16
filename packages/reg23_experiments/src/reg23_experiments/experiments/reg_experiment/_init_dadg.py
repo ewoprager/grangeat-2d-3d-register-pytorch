@@ -135,10 +135,12 @@ def init_dadg(  #
     # Optional
     if False:
         if isinstance(err := dadg.add_updater("truncation_from_h_valid", truncation_percent_for_desired_h_valid),
-                Error):
+                      Error):
             return Error(f"Error adding updater: {err.description}")
     if True:
         if isinstance(err := dadg.add_updater("project_moving_images", batched.project_moving_images), Error):
+            return Error(f"Error adding updater: {err.description}")
+        if isinstance(err := dadg.add_updater("apply_filter", batched.apply_filter), Error):
             return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("apply_sim_metric", batched.apply_sim_metric), Error):
             return Error(f"Error adding updater: {err.description}")

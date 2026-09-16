@@ -68,6 +68,15 @@ class ExperimentParametrisation(traitlets.HasTraits):
             "gradient_difference",  #
             "mutual_information",  #
         ], default_value=traitlets.Undefined)
+    # ----- frequency domain filtering
+    filter_method: Literal["none", "highpass", "bandpass", "gradient_like"] = traitlets.Enum(values=[  #
+        "none",  #
+        "highpass",  #
+        "bandpass",  #
+        "gradient_like",  #
+    ], default_value=traitlets.Undefined)
+    lowpass_threshold: float = traitlets.Float(default_value=traitlets.Undefined)
+    highpass_threshold: float = traitlets.Float(default_value=traitlets.Undefined)
     # ----- registration
     starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
@@ -126,6 +135,9 @@ def reg_experiment(  #
     data_manager().set("apply_scaling", params.apply_scaling, check_equality=True)
     data_manager().set("weighting_method", params.weighting_method, check_equality=True)
     data_manager().set("weight_alpha", params.weight_alpha, check_equality=True)
+    data_manager().set("filter_method", params.filter_method, check_equality=True)
+    data_manager().set("lowpass_threshold", params.lowpass_threshold, check_equality=True)
+    data_manager().set("highpass_threshold", params.highpass_threshold, check_equality=True)
     data_manager().set("sim_metric", params.sim_metric, check_equality=True)
 
     # -----
@@ -233,17 +245,17 @@ def reg_experiment(  #
             axes[2].imshow(weighting_image[0].cpu().numpy())
             axes[2].set_title("weighting image")
         # Fixed image at gold-standard
-        fixed_image: torch.Tensor | Error = data_manager().get("fixed_images")
+        fixed_image: torch.Tensor | Error = data_manager().get("filtered_fixed_images")
         if isinstance(fixed_image, Error):
             raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
         axes[3].imshow(fixed_image[0].cpu().numpy())
-        axes[3].set_title("fixed image")
+        axes[3].set_title("f fixed image")
         # Moving image at gold-standard
-        moving_image: torch.Tensor | Error = data_manager().get("moving_images")
+        moving_image: torch.Tensor | Error = data_manager().get("filtered_moving_images")
         if isinstance(moving_image, Error):
             raise RuntimeError(f"Error getting moving image: {moving_image.description}")
         axes[4].imshow(moving_image[0].cpu().numpy())
-        axes[4].set_title("moving image at G.T.")
+        axes[4].set_title("f moving image at G.T.")
 
         plt.ion()  # figures are non-blocking
         plt.show()
