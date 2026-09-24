@@ -23,10 +23,11 @@ from reg23_app.transformation_saver import TransformationSaver
 from reg23_app.worker_manager import WorkerManager
 from reg23_experiments.data.parameters import Context, Parameters, PsoParameters
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.experiments.dadg_updaters import drr_reg as updaters
+from reg23_experiments.experiments.reg_experiment import drr_reg_updaters as updaters
 from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils import logs_setup, pushover
+
 
 # @args_from_dag(names_left=["transformation"])
 # def of(*, transformation: Transformation, ct_volumes: list[torch.Tensor], ct_spacing: torch.Tensor,

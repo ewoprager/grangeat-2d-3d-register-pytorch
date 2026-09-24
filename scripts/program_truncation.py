@@ -79,32 +79,36 @@ def main(  #
             "ct_path": Constant(ct_path),  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
-            "downsample_level": Constant(0),  #
-            "truncation_percent": Cartesian([80, 90]),  #
+            "downsample_level": Constant(1),  #
+            "truncation_percent": Constant(80),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
             # ----- scaling
             "apply_scaling": Constant(False),  #
             # ----- similarity & weighting
-            "weighting_method": Zipped(["none", "smooth_step", "smooth_step", "smooth_step"]),  #
-            "weight_alpha": Zipped([1.0, 1.0, 1.5, 2.0]),  #
+            "weighting_method": Constant("none"),  # Zipped(["linear", "gaussian", "gaussian", "gaussian"]),  #
+            "weight_alpha": Constant(0.0),  # Zipped([1.0, 1.0, 1.5, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  #
-            "sim_metric": Constant("gradient_correlation"),  #
+            "sim_metric": Zipped(["gradient_correlation", "zncc", "zncc", "zncc", "zncc", "zncc"]),  #
+            # ----- frequency domain filtering
+            "filter_method": Zipped(["none", "none", "gradient_like", "highpass", "highpass", "highpass"]),  #
+            "lowpass_threshold": Constant(1.0),  #
+            "highpass_threshold": Zipped([1.0, 1.0, 1.0, 1.0 / 10.0, 1.0 / 20.0, 1.0 / 40.0]),  #
             # ----- registration
-            "starting_distance": Constant(0.5),  # Constant(5.0)
-            "sample_count_per_distance": Constant(50),  #
+            "starting_distance": Constant(5.0),  #
+            "sample_count_per_distance": Constant(20),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
-            "particle_initialisation_spread": Constant(0.25),  # Constant(2.5)
-            "iteration_count": Constant(5),  #
+            "particle_initialisation_spread": Constant(2.5),  # Constant(2.5)
+            "iteration_count": Constant(6),  #
         })
 
         # X-ray choice determines the gold standard orientation, which drives h_linear:
         hardcoded_xray_names: list[str] = [  #
             "level_000",  #
             # "level_090",  #
-            # "up_000",  #
+            "up_000",  #
             # "up_090",  #
             "down_000",  #
             # "down_090",  #
@@ -173,7 +177,7 @@ def main(  #
         run_experiments(  #
             param_constructor=ExperimentParametrisation.dict_constructor,  #
             # experiment=run_experiment,  #
-            experiment=lambda conf: reg_experiment(conf, batch_size=250, plot=True),  #
+            experiment=lambda conf: reg_experiment(conf, batch_size=125, plot=True),  #
             parametrisation_iterable=(c for c in [next(iter(config.iterable()))]),  # just the first iteration
             output_directory=None,  #
             device=device,  #
@@ -187,7 +191,7 @@ def main(  #
             run_experiments(  #
                 param_constructor=ExperimentParametrisation.dict_constructor,  #
                 # experiment=run_experiment,  #
-                experiment=lambda conf: reg_experiment(conf, batch_size=250),  #
+                experiment=lambda conf: reg_experiment(conf, batch_size=125),  #
                 parametrisation_iterable=config.iterable(space_sample_count=64),  #
                 output_directory=instance_output_dir,  #
                 device=device,  #

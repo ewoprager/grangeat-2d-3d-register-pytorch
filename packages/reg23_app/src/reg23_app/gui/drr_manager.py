@@ -4,14 +4,14 @@ from datetime import datetime
 import numpy as np
 import pydicom
 import torch
-from pydicom.uid import UID, ExplicitVRLittleEndian, XRayRadiofluoroscopicImageStorage
+from pydicom.uid import ExplicitVRLittleEndian, UID, XRayRadiofluoroscopicImageStorage
 from qtpy.QtWidgets import QFileDialog
 
 from reg23_app.gui.viewer_singleton import viewer
 from reg23_app.state import AppState
 from reg23_experiments.data.parameters import XrayParameters
 from reg23_experiments.data.structs import Error
-from reg23_experiments.experiments.dadg_updaters.drr_reg import project_drr
+from reg23_experiments.experiments.reg_experiment import drr_reg_updaters
 from reg23_experiments.ops.data_manager import ChildDADG, DirectedAcyclicDataGraph
 
 __all__ = ["DRRManager"]
@@ -52,7 +52,7 @@ class DRRManager:
         temp_dadg.set("fixed_image_offset", torch.zeros(2))
         temp_dadg.set("image_2d_scale_factor", 1.0)
 
-        err = temp_dadg.add_updater("project_drr", project_drr)
+        err = temp_dadg.add_updater("project_drr", drr_reg_updaters.project_drr)
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
 

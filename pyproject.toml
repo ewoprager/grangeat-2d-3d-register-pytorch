@@ -1,3 +1,26 @@
+[project]
+name = "reg23-scripts"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "reg23-experiments",
+]
+
+[project.optional-dependencies]
+cpu = [
+    "reg23-experiments[cpu]", # the option in the square brackets is a group of optional dependencies
+]
+cuda = [
+    "reg23-experiments[cuda]",
+]
+dev = [
+    "reg23-experiments[dev]"
+]
+
+[tool.uv]
+package = false
+
 [tool.uv.workspace]
 members = ["packages/*"]
 

@@ -105,6 +105,19 @@ Supported options for `<platform>`:
 
 Options passed to `uv sync` should also be passed to `uv run` if you want the run to use the same dependencies.
 
+### Note on MacOS
+
+There is a known incompatibility between PyTorch 2.7.1 and the Xcode 26 SDK. If your build on MacOS fails, run
+`xcodebuild -version`. If you get a version later than 15, the following may solve your problems:
+
+- Run `ls /Library/Developer/CommandLineTools/SDKs/`
+- Identify an SDK version near 15
+- Try `uv sync` again, but with the environment variable `SDKROOT` set to the full path of the chosen SDK, e.g.:
+
+```bash
+SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX15.sdk uv sync --extra cpu
+```
+
 ### Environment variables
 
 Rename [.env.example](.env.example) to '.env' and add your own environment variables for additional functionality:

@@ -10,6 +10,7 @@ dependencies = [
     "napari[all]>=0.6.6; sys_platform == 'linux' and platform_machine == 'x86_64'",
     "magicgui>=0.10.0",
     "pyqt6>=6.8.0",
+    "reg23-experiments",
 ]
 
 # copilot suggests this? to install a binary that just runs it?
