@@ -26,6 +26,7 @@ members = [
     "reg23-app",
     "reg23-core",
     "reg23-experiments",
+    "reg23-scripts",
 ]
 
 [[package]]
@@ -2587,6 +2588,7 @@ dependencies = [
     { name = "napari", extra = ["all"], marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra != 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra != 'extra-10-reg23-core-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (sys_platform != 'linux' and extra != 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra != 'extra-10-reg23-core-cpu' and extra != 'extra-17-reg23-experiments-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (sys_platform != 'linux' and extra != 'extra-10-reg23-core-cpu' and extra != 'extra-17-reg23-experiments-cpu' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
     { name = "napari", extra = ["optional", "pyqt6"], marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine != 'aarch64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
     { name = "pyqt6" },
+    { name = "reg23-experiments" },
 ]
 
 [package.optional-dependencies]
@@ -2607,6 +2609,7 @@ requires-dist = [
     { name = "napari", extras = ["pyqt6", "optional"], marker = "sys_platform == 'darwin'", specifier = ">=0.6.6" },
     { name = "napari", extras = ["pyqt6", "optional"], marker = "platform_machine == 'aarch64' and sys_platform == 'linux'", specifier = ">=0.6.6" },
     { name = "pyqt6", specifier = ">=6.8.0" },
+    { name = "reg23-experiments", editable = "packages/reg23_experiments" },
     { name = "reg23-experiments", extras = ["cpu"], marker = "extra == 'cpu'", editable = "packages/reg23_experiments" },
     { name = "reg23-experiments", extras = ["cuda"], marker = "extra == 'cuda'", editable = "packages/reg23_experiments" },
     { name = "reg23-experiments", extras = ["dev"], marker = "extra == 'dev'", editable = "packages/reg23_experiments" },
@@ -2672,6 +2675,7 @@ dependencies = [
     { name = "pyswarms" },
     { name = "pyvista" },
     { name = "pyyaml" },
+    { name = "reg23-core" },
     { name = "requests" },
     { name = "scikit-learn" },
     { name = "scipy" },
@@ -2723,6 +2727,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4" },
     { name = "pyvista", specifier = ">=0.48.0" },
     { name = "pyyaml", specifier = "==6.0.2" },
+    { name = "reg23-core", editable = "packages/reg23_core" },
     { name = "reg23-core", extras = ["cpu"], marker = "extra == 'cpu'", editable = "packages/reg23_core" },
     { name = "reg23-core", extras = ["cuda"], marker = "extra == 'cuda'", editable = "packages/reg23_core" },
     { name = "reg23-core", extras = ["dev"], marker = "extra == 'dev'", editable = "packages/reg23_core" },
@@ -2741,6 +2746,33 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 docs = [{ name = "pdoc", specifier = ">=16.0.0" }]
+
+[[package]]
+name = "reg23-scripts"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "reg23-experiments" },
+]
+
+[package.optional-dependencies]
+cpu = [
+    { name = "reg23-experiments", extra = ["cpu"], marker = "(extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cpu') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cpu') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+]
+cuda = [
+    { name = "reg23-experiments", extra = ["cuda"], marker = "(extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (extra != 'extra-10-reg23-core-cpu' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+]
+dev = [
+    { name = "reg23-experiments", extra = ["dev"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "reg23-experiments", editable = "packages/reg23_experiments" },
+    { name = "reg23-experiments", extras = ["cpu"], marker = "extra == 'cpu'", editable = "packages/reg23_experiments" },
+    { name = "reg23-experiments", extras = ["cuda"], marker = "extra == 'cuda'", editable = "packages/reg23_experiments" },
+    { name = "reg23-experiments", extras = ["dev"], marker = "extra == 'dev'", editable = "packages/reg23_experiments" },
+]
 
 [[package]]
 name = "requests"

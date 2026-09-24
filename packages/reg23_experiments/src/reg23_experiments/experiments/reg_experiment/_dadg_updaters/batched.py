@@ -186,7 +186,7 @@ def apply_filter(  #
                 -0.5 * freq.square() / (highpass_threshold * highpass_threshold)).exp()
     else:
         # filter_method == "gradient_like"
-        function = lambda freq: freq.square()
+        function = lambda freq: freq.abs()
 
     return {  #
         "filtered_moving_images": frequency_filter(  #
