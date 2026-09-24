@@ -1,4 +1,4 @@
-set dotenv-load := true
+set dotenv-load
 
 build platform="cuda":
     uv sync --extra {{ platform }} --no-install-workspace
@@ -10,10 +10,10 @@ devbuild platform="cuda":
 
 experiment ctpath xraydir name="" platform="cuda":
     uv run --extra {{ platform }} --extra dev scripts/program_truncation.py \
-        --ct-path {{ ctpath }} \
-        --xray-dir {{ xraydir }} \
+        --ct-path "{{ ctpath }}" \
+        --xray-dir "{{ xraydir }}" \
         --notify \
-        {{ if name == "" { "" } else { "--name " + name } }}
+        {{ if name == "" { "" } else { "--name \"" + name + "\"" } }}
 
 runapp platform="cuda":
     uv run --extra {{ platform }} scripts/app.py
