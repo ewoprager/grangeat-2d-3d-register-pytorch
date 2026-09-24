@@ -21,20 +21,12 @@ jobs:
         with:
           version: "0.5.26"
           enable-cache: true
-      
-      # - name: Set up Python
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version-file: "pyproject.toml"
 
-      - name: "Set up virtual environment"
+      - name: "Set up a virtual environment"
         run: |
           uv venv .venv
           source .venv/bin/activate
 
-        # - name: Install dependencies from lockfile
-        #   run: uv sync --all-extras --dev
-      
       # - name: Lint with flake8
       #   run: |
       #     # stop the build if there are Python syntax errors or undefined names
