@@ -16,7 +16,6 @@ from reg23_experiments.ops.data_manager import args_from_dadg, dadg_updater, dat
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
 from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
-
 from ._dadg_updaters import batched
 from ._of_together import objective_function_together
 
@@ -49,8 +48,6 @@ class ExperimentParametrisation(traitlets.HasTraits):
     crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     iterations_per_crop_update: int = traitlets.Int(min=0,
                                                     default_value=traitlets.Undefined)  # 0 means every o.f. eval.
-    # ----- scaling
-    apply_scaling: bool = traitlets.Bool(default_value=traitlets.Undefined)
     # ----- similarity & weighting
     weighting_method: Literal["none", "linear", "smooth_step", "gaussian"] = traitlets.Enum(values=[  #
         "none",  #
@@ -132,7 +129,6 @@ def reg_experiment(  #
     # p_sim_met: ParametrisedSimilarityMetric = string_to_sim_met(params.sim_metric)
     data_manager().set("cropping_method", params.cropping_method, check_equality=True)
     data_manager().set("crop_min_size", params.crop_min_size, check_equality=True)
-    data_manager().set("apply_scaling", params.apply_scaling, check_equality=True)
     data_manager().set("weighting_method", params.weighting_method, check_equality=True)
     data_manager().set("weight_alpha", params.weight_alpha, check_equality=True)
     data_manager().set("filter_method", params.filter_method, check_equality=True)

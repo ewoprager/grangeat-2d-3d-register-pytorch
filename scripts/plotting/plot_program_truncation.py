@@ -2,14 +2,10 @@ import argparse
 import itertools
 import pathlib
 
-import matplotlib
-
-matplotlib.use("QtAgg")
-
+import SimpleITK as sitk
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import SimpleITK as sitk
 import torch
 import yaml
 from matplotlib.figure import Figure
@@ -23,6 +19,9 @@ from reg23_experiments.io.image import read_dicom
 from reg23_experiments.io.sitk import load_ct_series
 from reg23_experiments.ops import geometry
 from reg23_experiments.utils import logs_setup
+
+# matplotlib.use("QtAgg")
+
 
 l_cache = dict()
 theta_cache = dict()
@@ -329,6 +328,20 @@ def main(  #
     ], ignore_index=True)
     distance_std_available = "distance_std" in df
     crop_size_available = "crop_width" in df and "crop_height" in df
+
+    # -----
+    # Including extra datapoints from '2026-09-24_11-58-12_n1_sims_scal'
+    if True:
+        assert not crop_size_available
+        assert distance_std_available
+        instance_dir = pathlib.Path("experimental_results/program_truncation") / "2026-09-24_11-58-12_n1_sims_scal"
+        extra_df = pd.concat([  #
+            pd.read_parquet(element)  #
+            for element in instance_dir.iterdir()  #
+            if element.stem.startswith("data") and element.suffix == ".parquet"  #
+        ], ignore_index=True)
+        specific_rows = extra_df[extra_df["sim_metric"] == "gradient_correlation"]
+        df = pd.concat([df.drop(columns=["ct_path"]), specific_rows.drop(columns=["ct_path"])], ignore_index=True)
 
     if False:
         # -----
