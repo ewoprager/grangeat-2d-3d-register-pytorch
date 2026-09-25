@@ -3,10 +3,7 @@ import os
 import pathlib
 import pprint
 
-import matplotlib
-
-matplotlib.use("QtAgg")
-
+# import matplotlib
 import torch
 import yaml
 
@@ -20,6 +17,9 @@ from reg23_experiments.io.command_line import get_string_required
 from reg23_experiments.io.serialize import serialize_recursive
 from reg23_experiments.io.sitk import DCMSeriesInfo, find_ct_series
 from reg23_experiments.utils import logs_setup, pushover
+
+
+# matplotlib.use("QtAgg")
 
 
 def acquire_ct_series_uid(ct_path: pathlib.Path) -> str | Error:
@@ -80,21 +80,24 @@ def main(  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
             "downsample_level": Constant(1),  #
-            "truncation_percent": Constant(80),  #
+            "truncation_percent": Cartesian([50, 80]),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
             # ----- scaling
-            "apply_scaling": Constant(False),  #
+            "apply_scaling": Zipped([False, False, True, True, False, False]),  #
             # ----- similarity & weighting
             "weighting_method": Constant("none"),  # Zipped(["linear", "gaussian", "gaussian", "gaussian"]),  #
             "weight_alpha": Constant(0.0),  # Zipped([1.0, 1.0, 1.5, 2.0]),  #
             "iterations_per_weight_update": Constant(1000),  #
-            "sim_metric": Zipped(["gradient_correlation", "zncc", "zncc", "zncc", "zncc", "zncc"]),  #
+            "sim_metric": Zipped(["zncc", "mutual_information", "zncc", "mutual_information", "gradient_correlation",
+                                  "gradient_difference"]),
+            # Zipped(["gradient_correlation", "zncc", "zncc", "zncc", "zncc", "zncc"]),  #
             # ----- frequency domain filtering
-            "filter_method": Zipped(["none", "none", "gradient_like", "highpass", "highpass", "highpass"]),  #
+            "filter_method": Constant("none"),
+            # Zipped(["none", "none", "gradient_like", "highpass", "highpass", "highpass"]),  #
             "lowpass_threshold": Constant(1.0),  #
-            "highpass_threshold": Zipped([1.0, 1.0, 1.0, 1.0 / 10.0, 1.0 / 20.0, 1.0 / 40.0]),  #
+            "highpass_threshold": Constant(2.0),  # Zipped([1.0, 1.0, 1.0, 1.0 / 10.0, 1.0 / 20.0, 1.0 / 40.0]),  #
             # ----- registration
             "starting_distance": Constant(5.0),  #
             "sample_count_per_distance": Constant(20),  #

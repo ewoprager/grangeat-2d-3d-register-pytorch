@@ -27,7 +27,6 @@ def refresh_scaling_images(  #
         fixed_image_size: torch.Size,  #
         fixed_image_offset: Float64[torch.Tensor, "2"],  #
         cropped_target: Float32[torch.Tensor, "n m"],  #
-        apply_scaling: bool,  #
 ) -> dict[str, Any]:
     ts: list[Transformation] = [mapping_parameters_to_transformation(p) for p in parameters]
     h_invs: torch.Tensor = torch.stack([  #
@@ -45,10 +44,7 @@ def refresh_scaling_images(  #
         detector_spacing=fixed_image_spacing  #
     )
     # Generate the fixed images
-    if apply_scaling:
-        fixed_images = scaling_images * cropped_target.unsqueeze(0)
-    else:
-        fixed_images = cropped_target.unsqueeze(0)
+    fixed_images = cropped_target.unsqueeze(0)
     return {  #
         "scaling_images": scaling_images,  #
         "fixed_images": fixed_images,  #
