@@ -340,8 +340,14 @@ def main(  #
             for element in instance_dir.iterdir()  #
             if element.stem.startswith("data") and element.suffix == ".parquet"  #
         ], ignore_index=True)
+        extra_df = extra_df.drop(columns=["apply_scaling", "ct_path"])
+        extra_df["xray_path"] = extra_df["xray_path"].apply(lambda p: pathlib.Path(p).name)
         specific_rows = extra_df[extra_df["sim_metric"] == "gradient_correlation"]
-        df = pd.concat([df.drop(columns=["ct_path"]), specific_rows.drop(columns=["ct_path"])], ignore_index=True)
+        #
+        df = df.drop(columns=["ct_path"])
+        df["xray_path"] = df["xray_path"].apply(lambda p: pathlib.Path(p).name)
+        #
+        df = pd.concat([df, specific_rows], ignore_index=True)
 
     if False:
         # -----
