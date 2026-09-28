@@ -94,15 +94,15 @@ def frequency_filter(  #
     :param spacing: A tensor of size (3,): the spacing of the image pixels (w, h, d).
     :param function: A function that maps, element-wise, frequencies to filter weights.
     """
-    f_volume = torch.fft.fftshift(torch.fft.fftn(volume, dim=(-3, -2, -1)), dim=(-3, -2, -1))
+    f_volume = torch.fft.fftshift(torch.fft.rfftn(volume, dim=(-3, -2, -1)), dim=(-3, -2))
 
     fz = torch.fft.fftshift(torch.fft.fftfreq(volume.size()[-3], d=spacing[2], device=volume.device))
     fy = torch.fft.fftshift(torch.fft.fftfreq(volume.size()[-2], d=spacing[1], device=volume.device))
-    fx = torch.fft.fftshift(torch.fft.fftfreq(volume.size()[-1], d=spacing[0], device=volume.device))
+    fx = torch.fft.rfftfreq(volume.size()[-1], d=spacing[0], device=volume.device)
     fz, fy, fx = torch.meshgrid(fz, fy, fx, indexing="ij")
 
     radii = (fx.square() + fy.square() + fz.square()).sqrt()
     mask = function(radii)
-    result = torch.fft.ifftn(torch.fft.ifftshift(f_volume * mask, dim=(-3, -2, -1)), dim=(-3, -2, -1))
+    result = torch.fft.irfftn(torch.fft.ifftshift(f_volume * mask, dim=(-3, -2)), dim=(-3, -2, -1))
 
     return result.real
