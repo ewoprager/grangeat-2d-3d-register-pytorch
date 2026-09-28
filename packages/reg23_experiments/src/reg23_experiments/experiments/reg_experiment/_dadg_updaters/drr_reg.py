@@ -20,11 +20,14 @@ from reg23_experiments.io.image import XrayDICOM, load_cached_drr, read_dicom
 from reg23_experiments.io.sitk import load_one_ct_series
 from reg23_experiments.ops import ct, drr, geometry, volume
 from reg23_experiments.ops.data_manager import dadg_updater
+from reg23_experiments.ops.volume import frequency_filter as frequency_filter3d
+from reg23_experiments.ops.image import frequency_filter as frequency_filter2d
 
 __all__ = ["load_ground_truth", "load_base_cropping", "combine_croppings", "truncation_percent_for_desired_h_valid",
-           "load_untruncated_ct", "apply_truncation", "set_xray_target_image", "set_xray_target_image_with_no_gt",
-           "set_synthetic_target_image", "refresh_image_2d_scale_factor", "refresh_hyperparameter_dependent",
-           "refresh_scaling_image", "refresh_weight_image", "project_drr", "project_fiducials", "apply_sim_metric"]
+           "load_untruncated_ct", "apply_filter_ct", "apply_truncation", "set_xray_target_image",
+           "set_xray_target_image_with_no_gt", "set_synthetic_target_image", "refresh_image_2d_scale_factor",
+           "refresh_hyperparameter_dependent", "refresh_scaling_image", "refresh_weight_image", "project_drr",
+           "project_fiducials", "apply_sim_metric"]
 
 logger = logging.getLogger(__name__)
 
@@ -134,17 +137,48 @@ def load_untruncated_ct(  #
     return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing, "ct_series_uid": uid}
 
 
+@dadg_updater(names_returned=["filtered_ct_volume"])
+def apply_filter_ct(  #
+        *,  #
+        untruncated_ct_volume: Float32[torch.Tensor, "p q r"],  #
+        ct_spacing: torch.Tensor,  #
+        filter_method: str,  #
+        lowpass_threshold: float,  #
+        highpass_threshold: float,  #
+) -> dict[str, Any]:
+    if filter_method == "none":
+        return {  #
+            "filtered_ct_volume": untruncated_ct_volume,  #
+        }
+    if filter_method == "highpass":
+        function = lambda freq: 1.0 - (-0.5 * freq.square() / (highpass_threshold * highpass_threshold)).exp()
+    elif filter_method == "bandpass":
+        function = lambda freq: (-0.5 * freq.square() / (lowpass_threshold * lowpass_threshold)).exp() - (
+                -0.5 * freq.square() / (highpass_threshold * highpass_threshold)).exp()
+    else:
+        # filter_method == "gradient_like"
+        function = lambda freq: freq.abs()
+
+    return {  #
+        "filtered_ct_volume": frequency_filter3d(  #
+            untruncated_ct_volume,  #
+            ct_spacing,  #
+            function,  #
+        ),  #
+    }
+
+
 @dadg_updater(names_returned=["ct_volumes"])
 def apply_truncation(  #
         *,  #
-        untruncated_ct_volume: Float32[torch.Tensor, "p q r"],  #
+        filtered_ct_volume: Float32[torch.Tensor, "p q r"],  #
         truncation_percent: int  #
 ) -> dict[str, Any]:
     # truncate the volume
     truncation_fraction = 0.01 * float(truncation_percent)
-    top_bottom_chop = int(round(0.5 * truncation_fraction * float(untruncated_ct_volume.size()[0])))
-    ct_volume = untruncated_ct_volume[
-        top_bottom_chop:max(top_bottom_chop + 1, untruncated_ct_volume.size()[0] - top_bottom_chop)]
+    top_bottom_chop = int(round(0.5 * truncation_fraction * float(filtered_ct_volume.size()[0])))
+    ct_volume = filtered_ct_volume[
+        top_bottom_chop:max(top_bottom_chop + 1, filtered_ct_volume.size()[0] - top_bottom_chop)]
     # mipmap the volume
     ct_volumes = [ct_volume]
     level: int = 1
@@ -226,23 +260,55 @@ def refresh_image_2d_scale_factor(  #
             "fixed_image_spacing": image_2d_full_spacing / image_2d_scale_factor}
 
 
+@dadg_updater(names_returned=["filtered_image_2d"])
+@jaxtyped(typechecker=typechecker)
+def apply_filter_2d(  #
+        *,  #
+        image_2d_full: Float32[torch.Tensor, "n m"],  #
+        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+        filter_method: str,  #
+        lowpass_threshold: float,  #
+        highpass_threshold: float,  #
+) -> dict[str, Any]:
+    if filter_method == "none":
+        return {  #
+            "filtered_image_2d": image_2d_full,  #
+        }
+    if filter_method == "highpass":
+        function = lambda freq: 1.0 - (-0.5 * freq.square() / (highpass_threshold * highpass_threshold)).exp()
+    elif filter_method == "bandpass":
+        function = lambda freq: (-0.5 * freq.square() / (lowpass_threshold * lowpass_threshold)).exp() - (
+                -0.5 * freq.square() / (highpass_threshold * highpass_threshold)).exp()
+    else:
+        # filter_method == "gradient_like"
+        function = lambda freq: freq.abs()
+
+    return {  #
+        "filtered_image_2d": frequency_filter2d(  #
+            image_2d_full,  #
+            image_2d_full_spacing,  #
+            function,  #
+        ),  #
+    }
+
+
 @dadg_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset", "fixed_image_size"])
 @jaxtyped(typechecker=typechecker)
 def refresh_hyperparameter_dependent(  #
         *,  #
-        image_2d_full: Float32[torch.Tensor, "n m"],  #
+        filtered_image_2d: Float32[torch.Tensor, "n m"],  #
         image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
         cropping: Cropping | None,  #
         target_flipped: bool,  #
         source_offset: Float64[torch.Tensor, "2"],  #
         image_2d_scale_factor: float  #
 ) -> dict[str, Any]:
-    device = image_2d_full.device
+    device = filtered_image_2d.device
     assert source_offset.device == device
     assert image_2d_full_spacing.device == device
 
     # Flip the image 2d if necessary
-    flipped_image_2d = image_2d_full.flip(dims=(1,)) if target_flipped else image_2d_full
+    flipped_image_2d = filtered_image_2d.flip(dims=(1,)) if target_flipped else filtered_image_2d
 
     # Downsampling the image 2d
     scaled_image_2d = torch.nn.functional.interpolate(  #
@@ -261,7 +327,7 @@ def refresh_hyperparameter_dependent(  #
         cropped_target = cropping.apply(scaled_image_2d)
         offset_from_cropping = (image_2d_full_spacing  #
                                 * cropping.get_fractional_centre_offset(device=device)  #
-                                * torch.tensor(image_2d_full.size(), dtype=torch.float64, device=device).flip(
+                                * torch.tensor(filtered_image_2d.size(), dtype=torch.float64, device=device).flip(
                     dims=(0,)))
 
     # The fixed image is offset to adjust for the cropping, and according to the source offset

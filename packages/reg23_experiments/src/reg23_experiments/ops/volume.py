@@ -1,8 +1,13 @@
+from typing import Callable
+
 import torch
+from beartype import beartype as typechecker
+from jaxtyping import Float, jaxtyped
 
 from reg23_experiments.ops.signal import gaussian_kernel_1d
 
-__all__ = ["gaussian_blur_3d", "downsample_trilinear_antialiased", "fit_line_3d", "point_line_distance_3d"]
+__all__ = ["gaussian_blur_3d", "downsample_trilinear_antialiased", "fit_line_3d", "point_line_distance_3d",
+           "frequency_filter"]
 
 
 def gaussian_blur_3d(volume: torch.Tensor, *, sigma: float | tuple[float, ...]) -> torch.Tensor:
@@ -72,3 +77,32 @@ def point_line_distance_3d(*, points: torch.Tensor, line_point: torch.Tensor,
     projected_points = dots.unsqueeze(-1) * line_direction  # size = (N, 3)
     line_offsets = from_points - projected_points  # size = (N, 3)
     return torch.linalg.vector_norm(line_offsets, dim=-1)  # size = (N,)
+
+
+@jaxtyped(typechecker=typechecker)
+def frequency_filter(  #
+        volume: Float[torch.Tensor, "... p q r"],  #
+        spacing: Float[torch.Tensor, "3"],  #
+        function: Callable[[torch.Tensor], torch.Tensor],  #
+) -> torch.Tensor:
+    """
+    Apply a radial frequency-domain filter to a 3D volume.
+
+    Radial distance is measured in cycles per mm (assuming spacing is given in mm).
+
+    :param volume:
+    :param spacing: A tensor of size (3,): the spacing of the image pixels (w, h, d).
+    :param function: A function that maps, element-wise, frequencies to filter weights.
+    """
+    f_volume = torch.fft.fftshift(torch.fft.fftn(volume, dim=(-3, -2, -1)), dim=(-3, -2, -1))
+
+    fz = torch.fft.fftshift(torch.fft.fftfreq(volume.size()[-3], d=spacing[2], device=volume.device))
+    fy = torch.fft.fftshift(torch.fft.fftfreq(volume.size()[-2], d=spacing[1], device=volume.device))
+    fx = torch.fft.fftshift(torch.fft.fftfreq(volume.size()[-1], d=spacing[0], device=volume.device))
+    fz, fy, fx = torch.meshgrid(fz, fy, fx, indexing="ij")
+
+    radii = (fx.square() + fy.square() + fz.square()).sqrt()
+    mask = function(radii)
+    result = torch.fft.ifftn(torch.fft.ifftshift(f_volume * mask, dim=(-3, -2, -1)), dim=(-3, -2, -1))
+
+    return result.real

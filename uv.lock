@@ -2695,6 +2695,7 @@ cuda = [
     { name = "reg23-core", extra = ["cuda"], marker = "(extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (extra == 'extra-10-reg23-core-cuda' and extra == 'extra-17-reg23-experiments-cuda') or (extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (extra != 'extra-17-reg23-experiments-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (extra != 'extra-10-reg23-core-cuda' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
 ]
 dev = [
+    { name = "pyqt6" },
     { name = "pytest" },
     { name = "reg23-core", extra = ["dev"] },
     { name = "scipy-stubs" },
@@ -2723,6 +2724,7 @@ requires-dist = [
     { name = "pylibjpeg", specifier = ">=2.1.0" },
     { name = "pylibjpeg-libjpeg", specifier = ">=2.4.0" },
     { name = "pynrrd", specifier = "==1.1.1" },
+    { name = "pyqt6", marker = "extra == 'dev'", specifier = ">=6.8.0" },
     { name = "pyswarms", specifier = ">=1.3.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4" },
     { name = "pyvista", specifier = ">=0.48.0" },

@@ -10,9 +10,7 @@ from reg23_experiments.experiments.experiment_set_config import Cartesian, Const
 from reg23_experiments.io.sitk import load_ct_series
 from reg23_experiments.ops.ct import convert_ct_to_mu_sitk
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, dadg_updater, data_manager
-
-from ._dadg_updaters import batched
-from ._dadg_updaters import drr_reg as updaters
+from ._dadg_updaters import batched, drr_reg as updaters
 from ._setup import ImageSpecificConfigurations
 
 __all__ = ["init_dadg"]
@@ -113,10 +111,14 @@ def init_dadg(  #
 
     # -----
     # Add updaters to the DADG
+    if isinstance(err := dadg.add_updater("apply_filter_ct", updaters.apply_filter_ct), Error):
+        return Error(f"Error adding updater: {err.description}")
     if isinstance(err := dadg.add_updater("apply_truncation", updaters.apply_truncation), Error):
         return Error(f"Error adding updater: {err.description}")
     if isinstance(err := dadg.add_updater(  #
             "refresh_image_2d_scale_factor", updaters.refresh_image_2d_scale_factor), Error):
+        return Error(f"Error adding updater: {err.description}")
+    if isinstance(err := dadg.add_updater("apply_filter_2d", updaters.apply_filter_2d), Error):
         return Error(f"Error adding updater: {err.description}")
     if isinstance(
             err := dadg.add_updater("refresh_hyperparameter_dependent", updaters.refresh_hyperparameter_dependent),
@@ -139,8 +141,6 @@ def init_dadg(  #
             return Error(f"Error adding updater: {err.description}")
     if True:
         if isinstance(err := dadg.add_updater("project_moving_images", batched.project_moving_images), Error):
-            return Error(f"Error adding updater: {err.description}")
-        if isinstance(err := dadg.add_updater("apply_filter", batched.apply_filter), Error):
             return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("apply_sim_metric", batched.apply_sim_metric), Error):
             return Error(f"Error adding updater: {err.description}")

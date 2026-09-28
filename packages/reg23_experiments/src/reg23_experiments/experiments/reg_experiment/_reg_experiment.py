@@ -241,13 +241,13 @@ def reg_experiment(  #
             axes[2].imshow(weighting_image[0].cpu().numpy())
             axes[2].set_title("weighting image")
         # Fixed image at gold-standard
-        fixed_image: torch.Tensor | Error = data_manager().get("filtered_fixed_images")
+        fixed_image: torch.Tensor | Error = data_manager().get("fixed_images")
         if isinstance(fixed_image, Error):
             raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
         axes[3].imshow(fixed_image[0].cpu().numpy())
         axes[3].set_title("f fixed image")
         # Moving image at gold-standard
-        moving_image: torch.Tensor | Error = data_manager().get("filtered_moving_images")
+        moving_image: torch.Tensor | Error = data_manager().get("moving_images")
         if isinstance(moving_image, Error):
             raise RuntimeError(f"Error getting moving image: {moving_image.description}")
         axes[4].imshow(moving_image[0].cpu().numpy())
