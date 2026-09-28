@@ -7,13 +7,11 @@ import pandas as pd
 import torch
 import yaml
 
-from reg23_experiments.analysis.helpers import dataframe_rectangular_columns_to_tensor
+from reg23_experiments.analysis.manipulation import CartesianZippedTensors, dataframe_to_cartesian_zipped_tensors
 
 RESULTS_DIR = pathlib.Path("experimental_results/program_truncation")
-CROPPING_RESULTS_DIR = RESULTS_DIR / "2026-08-13_11-40-04_gw-0-cropping"
-REEVAL_RESULTS_DIR = RESULTS_DIR / "2026-08-13_23-32-31_gw-1-reeval"
-MASKING_RESULTS_DIR = RESULTS_DIR / "2026-08-17_15-46-02_gw-2-masking"
-ALPHA_RESULTS_DIR = RESULTS_DIR / "2026-08-17_19-18-23_gw-3-alpha"
+N1_RESULTS_DIR = RESULTS_DIR / "2026-09-24_11-58-12_n1_sims_scal"
+N2_RESULTS_DIR = RESULTS_DIR / "2026-09-25_12-35-52_n2_cropping"
 OUTPUT_DIR = pathlib.Path("figures/geometric_weighting")
 
 
@@ -43,36 +41,70 @@ def var_to_string(variable_name: str, value: Any) -> str:
 
 def cartesian_plots(  #
         *,  #
-        independent_values: list[tuple[str, np.ndarray]],  #
+        cartesian_axes_values: list[tuple[str, np.ndarray]],  #
+        zipped_axis_values: list[tuple[str, np.ndarray]],  #
         dependent_variable: str,  #
         dependent_values: torch.Tensor,  #
         dependent_errors: torch.Tensor | None = None,  #
-        ylim: tuple[float, float] | None = None,  #
 ) -> list:
-    assert 2 <= len(independent_values)
-    assert dependent_values.size() == torch.Size([len(v) for _, v in independent_values])
+    axes_threshold = -1 if zipped_axis_values else -2
+    assert 1 <= len(cartesian_axes_values) <= 2 + abs(axes_threshold)
+    axes_lengths = [len(v) for _, v in cartesian_axes_values]
+    if zipped_axis_values:
+        zipped_length = len(zipped_axis_values[0][1])
+        assert all(len(t[1]) == zipped_length for t in zipped_axis_values)
+        axes_lengths += [zipped_length]
+    assert dependent_values.size() == torch.Size(axes_lengths)
     if dependent_errors is not None:
         assert dependent_errors.size() == dependent_values.size()
+
+    # getting the median largest distance value
+    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.9).item()) if len(
+        cartesian_axes_values) > 2 else None
+
+    x_label = cartesian_axes_values[-1][0]
+
     plots = []
-    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in independent_values[:-2]]):
-        axis_index = () if index_value_pairs == () else tuple(i for i, _ in index_value_pairs)
+    for index_value_pairs in itertools.product(*[enumerate(v) for _, v in cartesian_axes_values[:axes_threshold]]):
+        axis_index = tuple(i for i, _ in index_value_pairs)
         series = []
-        for j, v in enumerate(independent_values[-2][1]):
-            dependent_index = axis_index + (j,)
-            serie = {  #
-                "label": f"{independent_values[-2][0]}={var_to_string(independent_values[-2][0], v)}",  #
-                "xvalues": independent_values[-1][1].tolist(),  #
-                "yvalues": dependent_values[*dependent_index, :].tolist(),  #
-            }
-            if dependent_errors is not None:
-                serie["yerr"] = dependent_errors[*dependent_index, :].tolist()
-            series.append(serie)
+
+        if zipped_axis_values:
+            zipped_variables = [t[0] for t in reversed(zipped_axis_values)]
+            for i, zipped_values in enumerate(zip(*[t[1] for t in reversed(zipped_axis_values)])):
+                dependent_index = axis_index + (slice(None), i)
+                line_label = ";".join(  #
+                    f"{var}={var_to_string(var, val)}"  #
+                    for var, val in zip(zipped_variables, zipped_values)  #
+                )
+                serie = {  #
+                    "label": line_label,  #
+                    "xvalues": cartesian_axes_values[-1][1].tolist(),  #
+                    "yvalues": dependent_values[dependent_index].tolist(),  #
+                }
+                if dependent_errors is not None:
+                    serie["yerr"] = dependent_errors[dependent_index].tolist()
+                series.append(serie)
+        else:
+            line_variable = cartesian_axes_values[-2][0]
+            line_values = cartesian_axes_values[-2][1]
+            for j, line_value in enumerate(line_values):
+                dependent_index = axis_index + (j, slice(None))
+                serie = {  #
+                    "label": f"{line_variable}={var_to_string(line_variable, line_value)}",  #
+                    "xvalues": cartesian_axes_values[-1][1].tolist(),  #
+                    "yvalues": dependent_values[dependent_index].tolist(),  #
+                }
+                if dependent_errors is not None:
+                    serie["yerr"] = dependent_errors[dependent_index].tolist()
+                series.append(serie)
+
         plot = {  #
             "title": ";".join([  #
-                f"{independent_values[i][0]}={var_to_string(independent_values[i][0], w)}"  #
+                f"{cartesian_axes_values[i][0]}={var_to_string(cartesian_axes_values[i][0], w)}"  #
                 for i, w in enumerate([v for _, v in index_value_pairs])  #
             ]),  #
-            "xlabel": independent_values[-1][0],  #
+            "xlabel": x_label,  #
             "ylabel": dependent_variable,  #
             "series": series,  #
         }
@@ -95,7 +127,24 @@ def simple_shared_cartesian(directory, name):
         if element.stem.startswith("data") and element.suffix == ".parquet"  #
     ], ignore_index=True)
     distance_std_available = "distance_std" in df
-    crop_size_available = "crop_width" in df and "crop_height" in df
+
+    # -----
+    # Including extra datapoints from '2026-09-24_11-58-12_n1_sims_scal'
+    if directory != N1_RESULTS_DIR:
+        assert distance_std_available
+        extra_df = pd.concat([  #
+            pd.read_parquet(element)  #
+            for element in N1_RESULTS_DIR.iterdir()  #
+            if element.stem.startswith("data") and element.suffix == ".parquet"  #
+        ], ignore_index=True)
+        extra_df = extra_df.drop(columns=["apply_scaling", "ct_path"])
+        extra_df["xray_path"] = extra_df["xray_path"].apply(lambda p: pathlib.Path(p).name)
+        specific_rows = extra_df[extra_df["sim_metric"] == "gradient_correlation"]
+        #
+        df = df.drop(columns=["ct_path"])
+        df["xray_path"] = df["xray_path"].apply(lambda p: pathlib.Path(p).name)
+        #
+        df = pd.concat([df, specific_rows], ignore_index=True)
 
     # -----
     # Reading in the variables
@@ -106,44 +155,39 @@ def simple_shared_cartesian(directory, name):
     # assert "variables" in variables_config
     # variables: list[str] = list(variables_config["variables"].keys())
     assert "cartesian" in variables_config
-    variables: list[str] = list(variables_config["cartesian"].keys())
+    cartesian_variables: list[str] = list(variables_config["cartesian"].keys())
 
-    variable_hierarchy: list[str] = ["weighting", "weight_alpha", "iterations_per_crop_update", "cropping", "cropping_method",
-                                     "truncation_percent", "apply_scaling", "iterations_per_weight_update",
-                                     "crop_expand", "mask", "desired_h_valid", "xray_path"]  # most to least important
+    variable_hierarchy: list[str] = ["weighting", "weight_alpha", "iterations_per_crop_update", "cropping",
+                                     "cropping_method", "truncation_percent", "apply_scaling",
+                                     "iterations_per_weight_update", "crop_expand", "mask", "desired_h_valid",
+                                     "xray_path"]  # most to least important
     variable_importances = {name: importance for importance, name in enumerate(variable_hierarchy)}
-    variables = sorted(  #
-        variables,  #
+    cartesian_variables = sorted(  #
+        cartesian_variables,  #
         key=lambda name: variable_importances[name] if name in variable_importances else len(variable_hierarchy),  #
         reverse=True  #
     )
 
-    distances, axis_values = dataframe_rectangular_columns_to_tensor(  #
-        df,  #
-        ordered_axes=variables + ["iteration"],  #
-        value_column="distance"  #
-    )
+    dependent_variables = ["distance"]
     if distance_std_available:
-        distance_stds, _ = dataframe_rectangular_columns_to_tensor(  #
-            df,  #
-            ordered_axes=variables + ["iteration"],  #
-            value_column="distance_std"  #
-        )
+        dependent_variables.append("distance_std")
 
-    independent_variables = axis_values
+    czt: CartesianZippedTensors = dataframe_to_cartesian_zipped_tensors(  #
+        df,  #
+        cartesian_variables=cartesian_variables + ["iteration"],  #
+        dependent_variables=dependent_variables,  #
+    )
+
     dependent_variable = "distance from gold-standard"
-    dependent_values = distances
-    dependent_errors = distance_stds if distance_std_available else None
-
-    ylim: tuple[float, float] | None = (0.0, dependent_values.amax(dim=-1).quantile(q=0.75).item()) if len(
-        independent_variables) > 2 else None
+    dependent_values = czt.dependent_variable_tensors["distance"]
+    dependent_errors = czt.dependent_variable_tensors["distance_std"] if distance_std_available else None
 
     plots = cartesian_plots(  #
-        independent_values=independent_variables,  #
+        cartesian_axes_values=czt.cartesian_axes_values,  #
+        zipped_axis_values=czt.zipped_axis_values,  #
         dependent_variable=dependent_variable,  #
         dependent_values=dependent_values,  #
         dependent_errors=dependent_errors,  #
-        ylim=ylim,  #
     )
 
     with open(OUTPUT_DIR / f"{name}.yaml", 'w') as file:
@@ -151,18 +195,12 @@ def simple_shared_cartesian(directory, name):
 
 
 def main():
-    if False:
-        # 0: cropping
-        simple_shared_cartesian(CROPPING_RESULTS_DIR, "0_cropping")
-    if False:
-        # 1: reeval
-        simple_shared_cartesian(REEVAL_RESULTS_DIR, "1_reeval")
-    if False:
-        # 2: masking
-        simple_shared_cartesian(MASKING_RESULTS_DIR, "2_masking")
     if True:
-        # 3: alpha
-        simple_shared_cartesian(ALPHA_RESULTS_DIR, "3_alpha")
+        # 1: sims_scal
+        simple_shared_cartesian(N1_RESULTS_DIR, "n1_sims_scal")
+    if True:
+        # 2: cropping
+        simple_shared_cartesian(N2_RESULTS_DIR, "n2_cropping")
 
 
 if __name__ == "__main__":
