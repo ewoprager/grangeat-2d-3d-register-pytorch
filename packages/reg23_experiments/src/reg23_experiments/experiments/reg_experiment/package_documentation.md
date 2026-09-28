@@ -1,3 +1,5 @@
+## Normal DRR-based registration
+
 ```mermaid
 flowchart TD
     ct_spacing(ct_spacing)
@@ -101,4 +103,47 @@ flowchart TD
     filtered_moving_images ---> apply_sim_metric
     weight_images(weight_images) ---> apply_sim_metric
     apply_sim_metric ---> of_values(of_values)
+```
+
+## Grangeat-based registration
+
+```mermaid
+flowchart TD
+    refresh_vif[refresh_vif]
+    ct_volumes(ct_volumes) ---> refresh_vif
+    ct_spacing(ct_spacing) ---> refresh_vif
+    fixed_sinogram_size(fixed_sinogram_size) ---> refresh_vif
+    refresh_vif ---> ct_sinograms(ct_sinograms)
+%%
+
+    refresh_hyperparameter_dependent_grangeat[refresh_hyperparameter_dependent_grangeat]
+    fixed_image_spacing(fixed_image_spacing) ---> refresh_hyperparameter_dependent_grangeat
+    fixed_image_offset(fixed_image_offset) ---> refresh_hyperparameter_dependent_grangeat
+    downsample_level(downsample_level) ---> refresh_hyperparameter_dependent_grangeat
+    cropped_target(cropped_target) ---> refresh_hyperparameter_dependent_grangeat
+    refresh_hyperparameter_dependent_grangeat ---> sinogram2d_grid(sinogram2d_grid)
+    refresh_hyperparameter_dependent_grangeat ---> sinogram2d_grid_unshifted(sinogram2d_grid_unshifted)
+%%
+
+    refresh_mask_transformation_dependent_grangeat[refresh_mask_transformation_dependent_grangeat]
+    fixed_image(fixed_image) ---> refresh_mask_transformation_dependent_grangeat
+    fixed_image_spacing ---> refresh_mask_transformation_dependent_grangeat
+    image_2d_scale_factor(image_2d_scale_factor) ---> refresh_mask_transformation_dependent_grangeat
+    sinogram2d_grid_unshifted ---> refresh_mask_transformation_dependent_grangeat
+    source_distance(source_distance) ---> refresh_mask_transformation_dependent_grangeat
+    refresh_mask_transformation_dependent_grangeat ---> sinogram2d(sinogram2d)
+%%
+
+    resample_sinogram3d[resample_sinogram3d]
+    ct_sinograms ---> resample_sinogram3d
+    sinogram2d_grid ---> resample_sinogram3d
+    source_distance ---> resample_sinogram3d
+    parameters(parameters) ---> resample_sinogram3d
+    resample_sinogram3d ---> resampling(resampling)
+%%
+
+    apply_sim_metric[apply_sim_metric]
+    sinogram2d ---> apply_sim_metric
+    resampling ---> apply_sim_metric
+    apply_sim_metric ---> of_value(of_value)
 ```
