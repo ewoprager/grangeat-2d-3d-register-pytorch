@@ -103,6 +103,6 @@ def frequency_filter(  #
 
     radii = (fx.square() + fy.square() + fz.square()).sqrt()
     mask = function(radii)
-    result = torch.fft.irfftn(torch.fft.ifftshift(f_volume * mask, dim=(-3, -2)), dim=(-3, -2, -1))
+    result = torch.fft.irfftn(torch.fft.ifftshift(f_volume * mask, dim=(-3, -2)), s=volume.shape[-3:], dim=(-3, -2, -1))
 
     return result.real
