@@ -44,7 +44,7 @@ def refresh_vif(  #
     vif: sinogram.Sinogram | Error = cached_calculate_vif(  #
         cache_directory=pathlib.Path(cache_directory),  #
         volume=ct_volumes[downsample_level],  #
-        voxel_spacing=ct_spacing,  #
+        voxel_spacing=ct_spacing * float(downsample_factor),  #
         size=downsampled_sinogram_size,  #
         sinogram_type=sinogram_type,  #
         ct_series_uid=ct_series_uid,  #
@@ -70,7 +70,6 @@ def refresh_sinogram2d_grid(  #
         cropped_target: torch.Tensor,  #
         fixed_image_offset: torch.Tensor,  #
         fixed_image_spacing: torch.Tensor,  #
-        downsample_level: int,  #
 ) -> dict[str, Any]:
     device = cropped_target.device
     assert fixed_image_offset.device == device
@@ -78,8 +77,7 @@ def refresh_sinogram2d_grid(  #
 
     cropped_target_size = cropped_target.size()
     sinogram2d_counts = max(cropped_target_size[0], cropped_target_size[1])
-    fixed_image_spacing_at_current_level = fixed_image_spacing * 2.0 ** downsample_level
-    image_diag: float = (fixed_image_spacing_at_current_level.flip(dims=(0,)) *  #
+    image_diag: float = (fixed_image_spacing.flip(dims=(0,)) *  #
                          torch.tensor(cropped_target_size, device=device)).square().sum().sqrt().item()
     sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * image_diag, .5 * image_diag))
@@ -96,14 +94,12 @@ def refresh_sinogram2d(  #
         fixed_image: torch.Tensor,  #
         source_distance: float,  #
         fixed_image_spacing: torch.Tensor,  #
-        image_2d_scale_factor: float,  #
         sinogram2d_grid_unshifted: Sinogram2dGrid,  #
 ) -> dict[str, Any]:
-    fixed_image_spacing_at_current_level = fixed_image_spacing / image_2d_scale_factor
     sinogram2d = grangeat.calculate_fixed_image(  #
         fixed_image,  #
         source_distance=source_distance,  #
-        detector_spacing=fixed_image_spacing_at_current_level,  #
+        detector_spacing=fixed_image_spacing,  #
         output_grid=sinogram2d_grid_unshifted,  #
     )
 

@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import pprint
 import time
 from typing import Any, TypedDict, cast
 
@@ -116,5 +117,7 @@ def cached_calculate_vif(  #
         cached: _CachedVif = cast(_CachedVif, cached)
 
         sinogram_data = cached["sinogram_data"]
+
+        logger.info(f"VIF with desired params:\n{pprint.pformat(params)}\n loaded from cache.")
 
     return sinogram_type(sinogram_data, r_range)

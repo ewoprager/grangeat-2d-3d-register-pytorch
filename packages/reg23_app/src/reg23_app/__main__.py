@@ -85,7 +85,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
             translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
         target_ap_distance=5.0,  #
         fixed_sinogram_size=None,  #
-        sinogram_type=sinogram.SinogramClassic,  #
+        sinogram_type=sinogram.SinogramHEALPix,  #
     )
     if ct_path is not None:
         data_manager().set("ct_path", ct_path)
