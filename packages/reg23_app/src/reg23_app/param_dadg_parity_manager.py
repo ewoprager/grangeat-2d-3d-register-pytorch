@@ -9,8 +9,8 @@ from reg23_experiments.data.parameters import XrayParameters
 from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints2D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
-from reg23_experiments.experiments.reg_experiment import drr_reg_updaters as updaters
-from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, NoNodeData, capture_in_namespaces
+from reg23_experiments.experiments.reg_experiment import drr_reg_updaters, unbatched_updaters
+from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, capture_in_namespaces
 from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed
 
 __all__ = ["ParamDADGParityManager"]
@@ -34,7 +34,8 @@ class ParamDADGParityManager:
                                           "xray_sop_instance_uid", "fixed_image", "cropped_target", "scaling_image",
                                           "weight_image", "translation_offset", "image_2d_scale_factor",
                                           "source_offset", "of_value", "current_transformation", "cropping",
-                                          "electrode_points", "fiducial_points", "projected_fiducials"]
+                                          "electrode_points", "fiducial_points", "projected_fiducials",
+                                          "filtered_image_2d"]
 
     def __init__(  #
             self,  #
@@ -51,42 +52,23 @@ class ParamDADGParityManager:
         self._ct_fiducial_save_manager = ct_fiducial_save_manager
         self._xray_fiducial_save_manager = xray_fiducial_save_manager
 
-        # `ct_path` should be the same in the DADG and the state; the only necessary driving direction is state -> DADG
-        self._state.parameters.observe(lambda change: self._ct_path_changed(change.new), names=["ct_path"])
-        self._ct_path_changed(self._state.parameters.ct_path)
-
-        # `downsample_level` should be the same in the DADG and the state; the only necessary driving direction is
-        # state -> DADG
-        self._state.parameters.observe(lambda change: self._downsample_level_changed(change.new),
-                                       names=["downsample_level"])
-        self._downsample_level_changed(self._state.parameters.downsample_level)
-
-        # `truncation_percent` should be the same in the DADG and the state; the only necessary driving direction is
-        # state -> DADG
-        self._state.parameters.observe(lambda change: self._truncation_percent_changed(change.new),
-                                       names=["truncation_percent"])
-        self._truncation_percent_changed(self._state.parameters.truncation_percent)
-
-        # `sim_metric` should be the same in the DADG and the state; the only necessary driving direction is state ->
-        # DADG
-        self._state.parameters.observe(lambda change: self._sim_metric_changed(change.new), names=["sim_metric"])
-        self._sim_metric_changed(self._state.parameters.sim_metric)
-
-        # `apply_scaling` should be the same in the DADG and the state; the only necessary driving direction is state
-        # -> DADG
-        self._state.parameters.observe(lambda change: self._apply_scaling_changed(change.new), names=["apply_scaling"])
-        self._apply_scaling_changed(self._state.parameters.apply_scaling)
-
-        # `apply_weighting` should be the same in the DADG and the state; the only necessary driving direction is state
-        # -> DADG
-        self._state.parameters.observe(lambda change: self._apply_weighting_changed(change.new),
-                                       names=["apply_weighting"])
-        self._apply_weighting_changed(self._state.parameters.apply_weighting)
-
-        # `weight_alpha` should be the same in the DADG and the state; the only necessary driving direction is state
-        # -> DADG
-        self._state.parameters.observe(lambda change: self._weight_alpha_changed(change.new), names=["weight_alpha"])
-        self._weight_alpha_changed(self._state.parameters.weight_alpha)
+        # The following variables should be the same in the DADG and the state; the only necessary driving direction
+        # is state -> DADG
+        simple_only_state_drives = [  #
+            "ct_path",  #
+            "downsample_level",  #
+            "truncation_percent",  #
+            "weighting_method",  #
+            "weight_alpha",  #
+            "filter_method",  #
+            "lowpass_threshold",  #
+            "highpass_threshold",  #
+            "sim_metric",  #
+        ]
+        for p in simple_only_state_drives:
+            self._state.parameters.observe(lambda change, node=p: self._simple_state_driven_change(node, change.new),
+                                           names=["p"])
+            self._simple_state_driven_change(p, getattr(self._state.parameters, p))
 
         # X-ray specific nodes in the DADG should be consistent with the values in `xray_parameters` in the state; the
         # only necessary driving direction is state -> DADG
@@ -104,26 +86,8 @@ class ParamDADGParityManager:
         # eagerly save the ct fiducial points to the save manager
         self._dadg.observe("ct_fiducial_points", "saver", self._ct_fiducial_points_changed)
 
-    def _ct_path_changed(self, new_value: str) -> None:
-        self._dadg.set("ct_path", NoNodeData if new_value is None else new_value, check_equality=True)
-
-    def _downsample_level_changed(self, new_value: int) -> None:
-        self._dadg.set("downsample_level", new_value, check_equality=True)
-
-    def _truncation_percent_changed(self, new_value: int) -> None:
-        self._dadg.set("truncation_percent", new_value, check_equality=True)
-
-    def _sim_metric_changed(self, new_value: str) -> None:
-        self._dadg.set("sim_metric", new_value, check_equality=True)
-
-    def _apply_scaling_changed(self, new_value: bool) -> None:
-        self._dadg.set("apply_scaling", new_value, check_equality=True)
-
-    def _apply_weighting_changed(self, new_value: bool) -> None:
-        self._dadg.set("apply_weighting", new_value, check_equality=True)
-
-    def _weight_alpha_changed(self, new_value: float) -> None:
-        self._dadg.set("weight_alpha", new_value, check_equality=True)
+    def _simple_state_driven_change(self, node: str, new_value) -> None:
+        self._dadg.set(node, new_value, check_equality=True)
 
     def _target_flipped_changed(self, new_value: bool, *, namespace: str | None) -> None:
         self._dadg.set("target_flipped" if namespace is None else f"{namespace}__target_flipped", new_value,
@@ -228,37 +192,42 @@ class ParamDADGParityManager:
         namespace_captures = {key: name for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__refresh_image_2d_scale_factor",  #
-                capture_in_namespaces(namespace_captures)(updaters.refresh_image_2d_scale_factor)), Error):
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_image_2d_scale_factor)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__refresh_hyperparameter_dependent",  #
-                capture_in_namespaces(namespace_captures)(updaters.refresh_hyperparameter_dependent)), Error):
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_hyperparameter_dependent)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__refresh_scaling_image",  #
-                capture_in_namespaces(namespace_captures)(updaters.refresh_scaling_image)), Error):
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.refresh_scaling_image)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__project_drr",  #
-                capture_in_namespaces(namespace_captures)(updaters.project_drr)), Error):
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.project_drr)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__set_target_image",  #
-                capture_in_namespaces(namespace_captures)(updaters.set_xray_target_image_with_no_gt)), Error):
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.set_xray_target_image_with_no_gt)), Error):
+            logger.error(f"Error adding updater: {err.description}")
+
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__apply_filter_2d",  #
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.apply_filter_2d)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__project_fiducials",  #
-                capture_in_namespaces(namespace_captures)(updaters.project_fiducials)), Error):
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.project_fiducials)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__apply_sim_metric",  #
-                capture_in_namespaces(namespace_captures)(updaters.apply_sim_metric)), Error):
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.apply_sim_metric)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         # Create namespaced DADG nodes

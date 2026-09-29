@@ -23,7 +23,7 @@ from reg23_app.transformation_saver import TransformationSaver
 from reg23_app.worker_manager import WorkerManager
 from reg23_experiments.data.parameters import Context, Parameters, PsoParameters
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.experiments.reg_experiment import drr_reg_updaters as updaters
+from reg23_experiments.experiments.reg_experiment import drr_reg_updaters
 from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils import logs_setup, pushover
@@ -53,7 +53,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Updaters
     # -----
-    err = data_manager().add_updater("apply_truncation", updaters.apply_truncation)
+    err = data_manager().add_updater("apply_filter_ct", drr_reg_updaters.apply_filter_ct)
+    if isinstance(err, Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    err = data_manager().add_updater("apply_truncation", drr_reg_updaters.apply_truncation)
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -144,7 +148,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.info(f"total = "
                     f"{ct_spacing.cpu() * torch.tensor(ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
     else:
-        err = data_manager().add_updater("load_untruncated_ct", updaters.load_untruncated_ct)
+        err = data_manager().add_updater("load_untruncated_ct", drr_reg_updaters.load_untruncated_ct)
         if isinstance(err, Error):
             logger.error(f"Error adding updater: {err.description}")
             return
