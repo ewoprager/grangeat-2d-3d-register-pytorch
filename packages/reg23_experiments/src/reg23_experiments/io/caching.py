@@ -7,7 +7,7 @@ Cached data is stored in the following structure in the filesystem:
 cache/
 ├-- <type name>/  # Directory for a particular type of cached data, with a human-readable name
 │   ├-- spec.md  # Human-readable specification for contained parameter files `params.yaml`, and details of what data files are saved of what types.
-│   └-- <instance name>/  # Directory for a particular instance of cached data, with a human-readable name
+│   └-- YYYY-mm-dd_HH-MM-SS/  # Directory for a particular instance of cached data, named with the time and date of creation
 │       ├-- params.yaml  # Parametrisation that uniquely defines this cache instance, consistent with `spec.md`; if matched, the instance is loaded rather than re-calculated
 │       ├-- <data name>.pkl  # Files containing the pickles data of the instance, with human-readable names, consistent with `spec.md`.
 │       └-- ...
@@ -18,6 +18,7 @@ import logging
 import pathlib
 import pickle
 import pprint
+from datetime import datetime
 from typing import Any
 
 import yaml
@@ -51,7 +52,6 @@ def save_to_cache(  #
         *,  #
         cache_directory: pathlib.Path,  #
         type_name: str,  #
-        instance_name: str,  #
         params: JsonSerializable,  #
         data: dict[str, Any],  #
 ) -> None:
@@ -61,15 +61,11 @@ def save_to_cache(  #
     exists: pathlib.Path | None = _find_cache_instance(type_dir=type_dir, params=params)
 
     if exists is None:
-        instance_dir = type_dir / instance_name
+        instance_dir = type_dir / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         instance_dir.mkdir(parents=True, exist_ok=True)
     else:
-        if exists.name != instance_name:
-            note = f" under different instance name '{exists.name}'"
-        else:
-            note = ""
         logger.info(
-            f"Value already exists in '{str(type_dir)}' cache for params:\n{pprint.pformat(params)}\n{note}; overwriting.")
+            f"Value for params:\n{pprint.pformat(params)}\n already previously cached on {exists.name}; overwriting.")
         instance_dir = exists
 
     for k, v in data.items():

@@ -145,7 +145,7 @@ def init_dadg(  #
         if isinstance(err := dadg.add_updater("apply_sim_metric", batched.apply_sim_metric), Error):
             return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("refresh_scaling_images",
-                                              dadg_updater(names_returned=["scaling_images", "fixed_images"])(
+                                              dadg_updater(names_returned=["scaling_images", "fixed_image"])(
                                                   batched.refresh_scaling_images)), Error):
             return Error(f"Error adding updater: {err.description}")
     return None

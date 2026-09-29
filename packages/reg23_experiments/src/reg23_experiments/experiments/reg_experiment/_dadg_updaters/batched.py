@@ -13,7 +13,7 @@ from reg23_experiments.ops.optimisation import mapping_parameters_to_transformat
 __all__ = ["refresh_scaling_images", "refresh_weights", "project_moving_images", "apply_sim_metric", "refresh_cropping"]
 
 
-# @dadg_updater(names_returned=["scaling_images", "fixed_images"])
+# @dadg_updater(names_returned=["scaling_images", "fixed_image"])
 def refresh_scaling_images(  #
         *,  #
         parameters: Float64[torch.Tensor, "b 6"],  #
@@ -42,10 +42,10 @@ def refresh_scaling_images(  #
         detector_spacing=fixed_image_spacing  #
     )
     # Generate the fixed images
-    fixed_images = cropped_target.unsqueeze(0)
+    fixed_image = cropped_target.unsqueeze(0)
     return {  #
         "scaling_images": scaling_images,  #
-        "fixed_images": fixed_images,  #
+        "fixed_image": fixed_image,  #
     }
 
 
@@ -163,12 +163,12 @@ def apply_sim_metric(  #
         *,  #
         sim_metric: str,  #
         moving_images: Float32[torch.Tensor, "b n m"],  #
-        fixed_images: Float32[torch.Tensor, "#b n m"],  #
+        fixed_image: Float32[torch.Tensor, "n m"],  #
         weight_images: Float32[torch.Tensor, "#b n m"] | None,  #
 ) -> dict[str, Any]:
     return {  #
         "of_values": -string_to_sim_met(sim_metric)(  #
-            fixed_images,  #
+            fixed_image,  #
             moving_images,  #
             weights=weight_images,  #
         ),  #
