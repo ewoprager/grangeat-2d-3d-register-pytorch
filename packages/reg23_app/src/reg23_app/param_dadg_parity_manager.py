@@ -9,7 +9,7 @@ from reg23_experiments.data.parameters import XrayParameters
 from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints2D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
-from reg23_experiments.experiments.reg_experiment import drr_reg_updaters, unbatched_updaters
+from reg23_experiments.experiments.reg_experiment import drr_reg_updaters, grangeat_updaters, unbatched_updaters
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, capture_in_namespaces
 from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed
 
@@ -35,7 +35,8 @@ class ParamDADGParityManager:
                                           "weight_image", "translation_offset", "image_2d_scale_factor",
                                           "source_offset", "of_value", "current_transformation", "cropping",
                                           "electrode_points", "fiducial_points", "projected_fiducials",
-                                          "filtered_image_2d"]
+                                          "filtered_image_2d", "sinogram2d_grid_unshifted", "sinogram2d_grid",
+                                          "sinogram2d", "moving_image_grangeat", "of_value_grangeat"]
 
     def __init__(  #
             self,  #
@@ -54,21 +55,21 @@ class ParamDADGParityManager:
 
         # The following variables should be the same in the DADG and the state; the only necessary driving direction
         # is state -> DADG
-        simple_only_state_drives = [  #
-            "ct_path",  #
-            "downsample_level",  #
-            "truncation_percent",  #
-            "weighting_method",  #
-            "weight_alpha",  #
-            "filter_method",  #
-            "lowpass_threshold",  #
-            "highpass_threshold",  #
-            "sim_metric",  #
+        simple_only_state_drives: list[tuple[str, type]] = [  #
+            ("ct_path", str),  #
+            ("downsample_level", int),  #
+            ("truncation_percent", int),  #
+            ("weighting_method", str),  #
+            ("weight_alpha", float),  #
+            ("filter_method", str),  #
+            ("lowpass_threshold", float),  #
+            ("highpass_threshold", float),  #
+            ("sim_metric", str),  #
         ]
-        for p in simple_only_state_drives:
-            self._state.parameters.observe(lambda change, node=p: self._simple_state_driven_change(node, change.new),
-                                           names=["p"])
-            self._simple_state_driven_change(p, getattr(self._state.parameters, p))
+        for n, t in simple_only_state_drives:
+            self._state.parameters.observe(
+                lambda change, _n=n, _t=t: self._simple_state_driven_change(_n, _t, change.new), names=[n])
+            self._simple_state_driven_change(n, t, getattr(self._state.parameters, n))
 
         # X-ray specific nodes in the DADG should be consistent with the values in `xray_parameters` in the state; the
         # only necessary driving direction is state -> DADG
@@ -86,8 +87,8 @@ class ParamDADGParityManager:
         # eagerly save the ct fiducial points to the save manager
         self._dadg.observe("ct_fiducial_points", "saver", self._ct_fiducial_points_changed)
 
-    def _simple_state_driven_change(self, node: str, new_value) -> None:
-        self._dadg.set(node, new_value, check_equality=True)
+    def _simple_state_driven_change(self, node: str, _type: type, new_value) -> None:
+        self._dadg.set(node, _type(new_value), check_equality=True)
 
     def _target_flipped_changed(self, new_value: bool, *, namespace: str | None) -> None:
         self._dadg.set("target_flipped" if namespace is None else f"{namespace}__target_flipped", new_value,
@@ -229,6 +230,31 @@ class ParamDADGParityManager:
                 f"{name}__apply_sim_metric",  #
                 capture_in_namespaces(namespace_captures)(unbatched_updaters.apply_sim_metric)), Error):
             logger.error(f"Error adding updater: {err.description}")
+
+        # -- Grangeat --
+
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__refresh_sinogram2d_grid",  #
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d_grid)), Error):
+            logger.error(f"Error adding updater: {err.description}")
+
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__refresh_sinogram2d",  #
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d)), Error):
+            logger.error(f"Error adding updater: {err.description}")
+
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__resample_for_moving_image_grangeat",  #
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.resample_for_moving_image_grangeat)),
+                      Error):
+            logger.error(f"Error adding updater: {err.description}")
+
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__apply_sim_metric_grangeat",  #
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.apply_sim_metric_grangeat)), Error):
+            logger.error(f"Error adding updater: {err.description}")
+
+        # -- --
 
         # Create namespaced DADG nodes
         self._dadg.set(f"{name}__xray_path", params.file_path)

@@ -125,9 +125,6 @@ def init_dadg(  #
             Error):
         return Error(f"Error adding updater: {err.description}")
     if False:
-        if isinstance(err := dadg.add_updater("refresh_mask_transformation_dependent",
-                                              updaters.refresh_mask_transformation_dependent), Error):
-            return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("project_drr", updaters.project_drr), Error):
             return Error(f"Error adding updater: {err.description}")
     if isinstance(err := dadg.add_updater("load_base_cropping", updaters.load_base_cropping), Error):

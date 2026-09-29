@@ -23,10 +23,11 @@ from reg23_app.transformation_saver import TransformationSaver
 from reg23_app.worker_manager import WorkerManager
 from reg23_experiments.data.parameters import Context, Parameters, PsoParameters
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.experiments.reg_experiment import drr_reg_updaters
+from reg23_experiments.experiments.reg_experiment import drr_reg_updaters, grangeat_updaters
 from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils import logs_setup, pushover
+from reg23_experiments.data import sinogram
 
 
 # @args_from_dag(names_left=["transformation"])
@@ -61,6 +62,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     if isinstance(err, Error):
         logger.error(f"Error adding updater: {err.description}")
         return
+    # -- Grangeat --
+    err = data_manager().add_updater("refresh_vif", grangeat_updaters.refresh_vif)
+    if isinstance(err, Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
 
     # -----
     # Data nodes
@@ -78,6 +84,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
             rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
             translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
         target_ap_distance=5.0,  #
+        fixed_sinogram_size=None,  #
+        sinogram_type=sinogram.SinogramClassic,  #
     )
     if ct_path is not None:
         data_manager().set("ct_path", ct_path)
@@ -183,7 +191,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         # Setting the parameters
         context.dadg.set(prefix + "current_transformation", t)
         # Getting the result
-        ret: torch.Tensor | Error = context.dadg.get(prefix + "of_value")
+        ret: torch.Tensor | Error = context.dadg.get(prefix + "of_value_grangeat")
         if isinstance(ret, Error):
             logger.error(f"Failed to get o.f. value for objective function evaluation: {ret.description}")
             return torch.zeros(1, device=x.device)

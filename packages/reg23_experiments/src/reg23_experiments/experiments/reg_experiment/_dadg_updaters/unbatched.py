@@ -20,43 +20,6 @@ __all__ = ["refresh_mask_transformation_dependent", "refresh_scaling_image", "re
 logger = logging.getLogger(__name__)
 
 
-@dadg_updater(names_returned=["mask", "fixed_image"])
-def refresh_mask_transformation_dependent(  #
-        *,  #
-        ct_volumes: list[torch.Tensor],  #
-        ct_spacing: Float64[torch.Tensor, "3"],  #
-        cropped_target: Float32[torch.Tensor, "n m"],  #
-        mask_transformation: Transformation | None,  #
-        fixed_image_spacing: Float64[torch.Tensor, "2"],  #
-        fixed_image_offset: Float64[torch.Tensor, "2"],  #
-        source_distance: float  #
-) -> dict[str, Any]:
-    device = ct_volumes[0].device
-    assert ct_spacing.device == device
-    assert cropped_target.device == device
-    assert fixed_image_spacing.device == device
-    assert fixed_image_offset.device == device
-
-    if mask_transformation is None:
-        mask = torch.ones_like(cropped_target)
-        fixed_image = cropped_target
-    else:
-        assert mask_transformation.device == device
-        mask = reg23_core.project_drr_cuboid_mask(  #
-            volume_size=torch.tensor(ct_volumes[0].size(), device=device).flip(dims=(0,)),  #
-            voxel_spacing=ct_spacing,  #
-            homography_matrix_inverse=mask_transformation.inverse().get_h(device=device),  #
-            source_distance=source_distance,  #
-            output_width=cropped_target.size()[1],  #
-            output_height=cropped_target.size()[0],  #
-            output_offset=fixed_image_offset,  #
-            detector_spacing=fixed_image_spacing  #
-        )
-        fixed_image = mask * cropped_target
-
-    return {"mask": mask, "fixed_image": fixed_image}
-
-
 @dadg_updater(names_returned=["scaling_image", "fixed_image"])
 def refresh_scaling_image(  #
         *,  #
@@ -83,7 +46,7 @@ def refresh_scaling_image(  #
         detector_spacing=fixed_image_spacing  #
     )
     # Generate the fixed images
-    fixed_image = cropped_target.unsqueeze(0)
+    fixed_image = cropped_target
     return {  #
         "scaling_image": scaling_image,  #
         "fixed_image": fixed_image,  #

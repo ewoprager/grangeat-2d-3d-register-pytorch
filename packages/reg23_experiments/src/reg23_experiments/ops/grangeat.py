@@ -41,17 +41,20 @@ def calculate_fixed_image(  #
     device = drr_image.device
     assert output_grid.device_consistent()
     assert output_grid.phi.device == device
+    detector_spacing = detector_spacing.to(device=device)
 
     img_width = drr_image.size()[1]
     img_height = drr_image.size()[0]
 
     samples_per_line = int(torch.tensor(drr_image.size()).square().sum().sqrt().ceil().item())
 
-    xs = detector_spacing[0] * (torch.arange(0, img_width, 1, dtype=torch.float32) - 0.5 * float(img_width - 1))
-    ys = detector_spacing[1] * (torch.arange(0, img_height, 1, dtype=torch.float32) - 0.5 * float(img_height - 1))
+    xs = detector_spacing[0] * (
+                torch.arange(0, img_width, 1, device=device, dtype=torch.float32) - 0.5 * float(img_width - 1))
+    ys = detector_spacing[1] * (
+                torch.arange(0, img_height, 1, device=device, dtype=torch.float32) - 0.5 * float(img_height - 1))
     ys, xs = torch.meshgrid(ys, xs)
     cos_gamma = source_distance / torch.sqrt(xs.square() + ys.square() + source_distance * source_distance)
-    g_tilde = cos_gamma.to(device=device) * drr_image
+    g_tilde = cos_gamma * drr_image
 
     fixed_scaling = (output_grid.r / source_distance).square() + 1.
 

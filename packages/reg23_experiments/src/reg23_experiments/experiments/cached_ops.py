@@ -76,12 +76,8 @@ def cached_calculate_vif(  #
     if cached is None:
         # -----
         # Calculating a fresh value
-        s_type: type[sinogram.Sinogram] | Error = sinogram.string_to_type(params["sinogram_type"])
-        if isinstance(s_type, Error):
-            return Error(f"Failed to check VIF cache: {s_type.description}")
-
         try:
-            grid: Sinogram3dGrid = s_type.build_grid(  #
+            grid: Sinogram3dGrid = sinogram_type.build_grid(  #
                 sinogram_size=params["sinogram_size"],  #
                 r_range=r_range,  #
                 device=device  #
@@ -121,4 +117,4 @@ def cached_calculate_vif(  #
 
         sinogram_data = cached["sinogram_data"]
 
-    return s_type(sinogram_data, r_range)
+    return sinogram_type(sinogram_data, r_range)

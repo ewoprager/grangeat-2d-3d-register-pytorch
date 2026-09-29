@@ -10,12 +10,12 @@ from reg23_experiments.data import sinogram
 from reg23_experiments.data.structs import Error, LinearRange, SceneGeometry, Sinogram2dGrid, Sinogram2dRange, \
     Transformation
 from reg23_experiments.experiments.cached_ops import cached_calculate_vif
-from reg23_experiments.experiments.helpers import serialise_filter_method
+from reg23_experiments.experiments.helpers import serialise_filter_method, string_to_sim_met
 from reg23_experiments.ops import grangeat
 from reg23_experiments.ops.data_manager import dadg_updater
-from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 
-__all__ = ["refresh_vif", "refresh_hyperparameter_dependent_grangeat", "refresh_mask_transformation_dependent_grangeat"]
+__all__ = ["refresh_vif", "refresh_sinogram2d_grid", "refresh_sinogram2d", "resample_for_moving_image_grangeat",
+           "apply_sim_metric_grangeat"]
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 def refresh_vif(  #
         *,  #
         fixed_sinogram_size: int,  #
-        cache_directory: pathlib.Path,  #
+        cache_directory: str,  #
         ct_volumes: list[torch.Tensor],  #
         ct_spacing: torch.Tensor,  #
         sinogram_type: type[sinogram.Sinogram],  #
@@ -42,7 +42,7 @@ def refresh_vif(  #
     downsampled_sinogram_size = this_sinogram_size // downsample_factor
 
     vif: sinogram.Sinogram | Error = cached_calculate_vif(  #
-        cache_directory=cache_directory,  #
+        cache_directory=pathlib.Path(cache_directory),  #
         volume=ct_volumes[downsample_level],  #
         voxel_spacing=ct_spacing,  #
         size=downsampled_sinogram_size,  #
@@ -65,7 +65,7 @@ def refresh_vif(  #
 
 
 @dadg_updater(names_returned=["sinogram2d_grid_unshifted", "sinogram2d_grid"])
-def refresh_hyperparameter_dependent_grangeat(  #
+def refresh_sinogram2d_grid(  #
         *,  #
         cropped_target: torch.Tensor,  #
         fixed_image_offset: torch.Tensor,  #
@@ -91,7 +91,7 @@ def refresh_hyperparameter_dependent_grangeat(  #
 
 
 @dadg_updater(names_returned=["sinogram2d"])
-def refresh_mask_transformation_dependent_grangeat(  #
+def refresh_sinogram2d(  #
         *,  #
         fixed_image: torch.Tensor,  #
         source_distance: float,  #
@@ -110,10 +110,10 @@ def refresh_mask_transformation_dependent_grangeat(  #
     return {"sinogram2d": sinogram2d}
 
 
-@dadg_updater(names_returned=["moving_images_grangeat"])
-def resample_for_moving_images_grangeat(  #
+@dadg_updater(names_returned=["moving_image_grangeat"])
+def resample_for_moving_image_grangeat(  #
         *,  #
-        parameters: Float64[torch.Tensor, "b 6"],  #
+        current_transformation: Transformation,  #
         vif: sinogram.Sinogram,  #
         sinogram2d_grid: sinogram.Sinogram2dGrid,  #
         source_distance: float,  #
@@ -124,17 +124,22 @@ def resample_for_moving_images_grangeat(  #
     scene_geometry = SceneGeometry(source_distance=source_distance, fixed_image_offset=fixed_image_offset)
     p_matrix = SceneGeometry.projection_matrix(source_position=scene_geometry.source_position(device=device))
 
-    ts: list[Transformation] = [mapping_parameters_to_transformation(p) for p in parameters]
-    ph_matrices: torch.Tensor = torch.stack([  #
-        torch.matmul(  #
-            p_matrix,  #
-            t.with_translation_offset(translation_offset).get_h(device=device).to(dtype=torch.float32)  #
-        )  #
-        for t in ts  #
-    ], dim=0)
+    ph_matrix: torch.Tensor = torch.matmul(  #
+        p_matrix,  #
+        current_transformation.with_translation_offset(translation_offset).get_h(device=device)  #
+    ).to(dtype=torch.float32)
 
-    resampled: torch.Tensor = torch.stack([  #
-        vif.resample(ph_matrix, sinogram2d_grid)  #
-        for ph_matrix in ph_matrices  #
-    ], dim=0)
-    return {"moving_images_grangeat": resampled}
+    resampled: torch.Tensor = vif.resample(ph_matrix, sinogram2d_grid)
+    return {"moving_image_grangeat": resampled}
+
+
+@dadg_updater(names_returned=["of_value_grangeat"])
+def apply_sim_metric_grangeat(  #
+        *,  #
+        sim_metric: str,  #
+        moving_image_grangeat: torch.Tensor,  #
+        sinogram2d: torch.Tensor,  #
+) -> dict[str, Any]:
+    return {  #
+        "of_value_grangeat": -string_to_sim_met(sim_metric)(moving_image_grangeat, sinogram2d),  #
+    }

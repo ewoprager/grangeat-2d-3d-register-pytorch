@@ -104,8 +104,8 @@ class Parameters(HasTraits):
     Only contains data; either simple values, or other `HasTraits` instances that themselves just contain data.
     """
     ct_path: str | None = Unicode(allow_none=True, default_value=None).tag(ui=True)
-    downsample_level: int = Int(min=0).tag(ui=True)
-    truncation_percent: int = Int(min=0, max=100).tag(ui=True)
+    downsample_level: int = Int(min=0, default_value=0).tag(ui=True)
+    truncation_percent: int = Int(min=0, max=100, default_value=0).tag(ui=True)
     weighting_method: Literal["none", "linear", "smooth_step", "gaussian"] = Enum(values=[  #
         "none",  #
         "linear",  #
@@ -120,8 +120,8 @@ class Parameters(HasTraits):
         "bandpass",  #
         "gradient_like",  #
     ], default_value="none").tag(ui=True)
-    lowpass_threshold: float = Float(default_value=1.0)
-    highpass_threshold: float = Float(default_value=1.0)
+    lowpass_threshold: float = Float(default_value=1.0).tag(ui=True)
+    highpass_threshold: float = Float(default_value=1.0).tag(ui=True)
     sim_metric: Literal["zncc", "gradient_correlation", "mutual_information"] = Enum(values=[  #
         "zncc",  #
         "gradient_correlation",  #

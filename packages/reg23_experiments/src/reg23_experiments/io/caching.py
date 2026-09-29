@@ -6,10 +6,14 @@ Cached data is stored in the following structure in the filesystem:
 ```text
 cache/
 ├-- <type name>/  # Directory for a particular type of cached data, with a human-readable name
-│   ├-- spec.md  # Human-readable specification for contained parameter files `params.yaml`, and details of what data files are saved of what types.
-│   └-- YYYY-mm-dd_HH-MM-SS/  # Directory for a particular instance of cached data, named with the time and date of creation
-│       ├-- params.yaml  # Parametrisation that uniquely defines this cache instance, consistent with `spec.md`; if matched, the instance is loaded rather than re-calculated
-│       ├-- <data name>.pkl  # Files containing the pickles data of the instance, with human-readable names, consistent with `spec.md`.
+│   ├-- spec.md  # Human-readable specification for contained parameter files `params.yaml`, and details of what data
+files are saved of what types.
+│   └-- YYYY-mm-dd_HH-MM-SS/  # Directory for a particular instance of cached data, named with the time and date of
+creation
+│       ├-- params.yaml  # Parametrisation that uniquely defines this cache instance, consistent with `spec.md`; if
+matched, the instance is loaded rather than re-calculated
+│       ├-- <data name>.pkl  # Files containing the pickles data of the instance, with human-readable names,
+consistent with `spec.md`.
 │       └-- ...
 └-- ... # other types of cached data
 ```
@@ -42,7 +46,7 @@ def _find_cache_instance(  #
         if not params_file.is_file():
             logger.warning(f"No 'params.yaml' found in '{str(type_dir)}' cache directory.")
             continue
-        these_params = yaml.safe_load(str(params_file))
+        these_params = yaml.safe_load(params_file.read_text())
         if these_params == params:
             return element
     return None
@@ -68,6 +72,9 @@ def save_to_cache(  #
             f"Value for params:\n{pprint.pformat(params)}\n already previously cached on {exists.name}; overwriting.")
         instance_dir = exists
 
+    params_file = instance_dir / "params.yaml"
+    with open(params_file, 'w') as file:
+        yaml.safe_dump(params, file)
     for k, v in data.items():
         data_file = instance_dir / f"{k}.pkl"
         data_file.write_bytes(pickle.dumps(v))
@@ -89,7 +96,7 @@ def load_from_cache(  #
 
     ret = {}
     for element in exists.iterdir():
-        if not element.is_dir() or element.suffix != ".pkl":
+        if not element.is_file() or element.suffix != ".pkl":
             continue
         data = pickle.loads(element.read_bytes())
         ret[element.stem] = data
