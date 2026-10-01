@@ -33,6 +33,7 @@ class ExperimentParametrisation(traitlets.HasTraits):
             - otherwise, these images will only be updated every N iterations
     """
 
+    grangeat: bool = traitlets.Bool(default_value=False)
     # ----- images
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
@@ -142,7 +143,7 @@ def reg_experiment(  #
         err: Error | None = data_manager().set("parameters", parameters)
         if isinstance(err, Error):
             logger.warning(f"Error setting parameters in o.f.: {err.description}")
-        res: torch.Tensor | Error = data_manager().get("of_values")
+        res: torch.Tensor | Error = data_manager().get("of_values_grangeat" if params.grangeat else "of_values")
         if isinstance(res, Error):
             raise Exception(f"Objective function evaluation failed: {res}")
         return res

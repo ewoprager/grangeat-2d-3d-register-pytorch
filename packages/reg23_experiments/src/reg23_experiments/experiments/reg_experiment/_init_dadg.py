@@ -5,12 +5,13 @@ from collections.abc import Sequence
 import SimpleITK as sitk
 import torch
 
+from reg23_experiments.data import sinogram
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments.experiment_set_config import Cartesian, Constant, ExperimentSetConfig
 from reg23_experiments.io.sitk import load_ct_series
 from reg23_experiments.ops.ct import convert_ct_to_mu_sitk
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, dadg_updater, data_manager
-from ._dadg_updaters import batched, drr_reg as updaters
+from ._dadg_updaters import batched, drr_reg as updaters, grangeat
 from ._setup import ImageSpecificConfigurations
 
 __all__ = ["init_dadg"]
@@ -68,6 +69,7 @@ def init_dadg(  #
             device=device,  #
             untruncated_ct_volume=untruncated_ct_volume,  #
             ct_spacing=ct_spacing,  #
+            ct_series_uid=uid_config.value,  #
             cache_directory=cache_directory,  #
             save_to_cache=False,  #
             source_offset=torch.zeros(2, dtype=torch.float64, device=device),  #
@@ -77,6 +79,8 @@ def init_dadg(  #
             target_ap_distance=5.0,  #
             saved_transformations=image_specific_config.saved_transformations,  #
             saved_xray_reg_configs=image_specific_config.saved_xray_reg_configs,  #
+            fixed_sinogram_size=None,  #
+            sinogram_type=sinogram.SinogramClassic,  #
     ), Error):
         return Error(f"Error setting initial data values: {err.description}")
 
@@ -111,6 +115,19 @@ def init_dadg(  #
 
     # -----
     # Add updaters to the DADG
+    if True:
+        # - Grangeat
+        if isinstance(err := dadg.add_updater("refresh_vif", grangeat.refresh_vif), Error):
+            return Error(f"Error adding updater: {err.description}")
+        if isinstance(err := dadg.add_updater("refresh_sinogram2d_grid", grangeat.refresh_sinogram2d_grid), Error):
+            return Error(f"Error adding updater: {err.description}")
+        if isinstance(err := dadg.add_updater("refresh_sinogram2d", grangeat.refresh_sinogram2d), Error):
+            return Error(f"Error adding updater: {err.description}")
+        if isinstance(err := dadg.add_updater("resample_for_moving_image_grangeat",
+                                              batched.resample_for_moving_image_grangeat), Error):
+            return Error(f"Error adding updater: {err.description}")
+        if isinstance(err := dadg.add_updater("apply_sim_metric_grangeat", batched.apply_sim_metric_grangeat), Error):
+            return Error(f"Error adding updater: {err.description}")  # --
     if isinstance(err := dadg.add_updater("apply_filter_ct", updaters.apply_filter_ct), Error):
         return Error(f"Error adding updater: {err.description}")
     if isinstance(err := dadg.add_updater("apply_truncation", updaters.apply_truncation), Error):

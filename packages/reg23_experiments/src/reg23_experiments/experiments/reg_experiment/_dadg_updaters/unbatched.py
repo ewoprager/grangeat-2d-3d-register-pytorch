@@ -14,8 +14,7 @@ from reg23_experiments.experiments.helpers import string_to_sim_met
 from reg23_experiments.ops import geometry
 from reg23_experiments.ops.data_manager import dadg_updater
 
-__all__ = ["refresh_mask_transformation_dependent", "refresh_scaling_image", "refresh_weight_image", "project_drr",
-           "project_fiducials"]
+__all__ = ["apply_sim_metric", "refresh_scaling_image", "refresh_weight_image", "project_drr", "project_fiducials"]
 
 logger = logging.getLogger(__name__)
 
