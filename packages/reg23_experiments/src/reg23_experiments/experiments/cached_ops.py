@@ -13,6 +13,11 @@ from reg23_experiments.data.structs import Error, LinearRange, Sinogram3dGrid
 from reg23_experiments.io import caching
 from reg23_experiments.ops import grangeat
 
+_VIF_PLOT = False
+
+if _VIF_PLOT:
+    import plotly.graph_objects as pgo
+
 __all__ = ["cached_calculate_vif"]
 
 logger = logging.getLogger(__name__)
@@ -119,5 +124,26 @@ def cached_calculate_vif(  #
         sinogram_data = cached["sinogram_data"]
 
         logger.info(f"VIF with desired params:\n{pprint.pformat(params)}\n loaded from cache.")
+
+    if _VIF_PLOT and sinogram_type == sinogram.SinogramClassic:
+        counts = params["sinogram_size"]
+        counts = (int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())),
+                  int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())), counts)
+        phis = sinogram.SinogramClassic.phi_range.generate_tex_coord_grid(counts[0])
+        thetas = sinogram.SinogramClassic.theta_range.generate_tex_coord_grid(counts[1])
+        rs = r_range.generate_tex_coord_grid(counts[2])
+
+        phis, thetas, rs = torch.meshgrid(phis, thetas, rs)
+        fig = pgo.Figure(data=pgo.Volume(  #
+            x=rs.flatten(),  #
+            y=thetas.flatten(),  #
+            z=phis.flatten(),  #
+            value=sinogram_data.cpu().flatten(),  #
+            isomin=sinogram_data.min().item(),  #
+            isomax=sinogram_data.max().item(),  #
+            opacity=.2,  #
+            surface_count=21  #
+        ))
+        fig.show(renderer="browser")
 
     return sinogram_type(sinogram_data, r_range)

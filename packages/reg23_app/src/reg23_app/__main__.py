@@ -85,7 +85,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
             translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
         target_ap_distance=5.0,  #
         fixed_sinogram_size=None,  #
-        sinogram_type=sinogram.SinogramHEALPix,  #
+        sinogram_type=sinogram.SinogramClassic,  #
     )
     if ct_path is not None:
         data_manager().set("ct_path", ct_path)
@@ -187,7 +187,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
         prefix = "" if context.namespace is None else f"{context.namespace}__"
-        t = mapping_parameters_to_transformation(x)
+        t = mapping_parameters_to_transformation(x.squeeze())
         # Setting the parameters
         context.dadg.set(prefix + "current_transformation", t)
         # Getting the result
@@ -195,7 +195,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         if isinstance(ret, Error):
             logger.error(f"Failed to get o.f. value for objective function evaluation: {ret.description}")
             return torch.zeros(1, device=x.device)
-        return ret
+        return ret.unsqueeze(0)
 
     # -----
     # Modules

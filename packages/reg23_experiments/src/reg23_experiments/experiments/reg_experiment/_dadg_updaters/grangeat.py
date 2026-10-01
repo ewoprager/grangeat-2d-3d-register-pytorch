@@ -67,18 +67,16 @@ def refresh_vif(  #
 @dadg_updater(names_returned=["sinogram2d_grid_unshifted", "sinogram2d_grid"])
 def refresh_sinogram2d_grid(  #
         *,  #
-        cropped_target: torch.Tensor,  #
+        fixed_image_size: torch.Size,  #
         fixed_image_offset: torch.Tensor,  #
         fixed_image_spacing: torch.Tensor,  #
 ) -> dict[str, Any]:
-    device = cropped_target.device
+    device = fixed_image_spacing.device
     assert fixed_image_offset.device == device
-    assert fixed_image_spacing.device == device
 
-    cropped_target_size = cropped_target.size()
-    sinogram2d_counts = max(cropped_target_size[0], cropped_target_size[1])
+    sinogram2d_counts = max(fixed_image_size[0], fixed_image_size[1])
     image_diag: float = (fixed_image_spacing.flip(dims=(0,)) *  #
-                         torch.tensor(cropped_target_size, device=device)).square().sum().sqrt().item()
+                         torch.tensor(fixed_image_size, device=device)).square().sum().sqrt().item()
     sinogram2d_range = Sinogram2dRange(LinearRange(-.5 * torch.pi, .5 * torch.pi),
                                        LinearRange(-.5 * image_diag, .5 * image_diag))
     sinogram2d_grid_unshifted = Sinogram2dGrid.linear_from_range(sinogram2d_range, sinogram2d_counts, device=device)
@@ -119,13 +117,12 @@ def resample_for_moving_image_grangeat(  #
     device = vif.device
     scene_geometry = SceneGeometry(source_distance=source_distance, fixed_image_offset=fixed_image_offset)
     p_matrix = SceneGeometry.projection_matrix(source_position=scene_geometry.source_position(device=device))
-
     ph_matrix: torch.Tensor = torch.matmul(  #
         p_matrix,  #
         current_transformation.with_translation_offset(translation_offset).get_h(device=device)  #
     ).to(dtype=torch.float32)
 
-    resampled: torch.Tensor = vif.resample(ph_matrix, sinogram2d_grid)
+    resampled: torch.Tensor = vif.resample_cuda_texture(ph_matrix, sinogram2d_grid)
     return {"moving_image_grangeat": resampled}
 
 
