@@ -44,7 +44,7 @@ def refresh_scaling_images(  #
         detector_spacing=fixed_image_spacing  #
     )
     # Generate the fixed images
-    fixed_image = cropped_target.unsqueeze(0)
+    fixed_image = cropped_target
     return {  #
         "scaling_images": scaling_images,  #
         "fixed_image": fixed_image,  #
@@ -170,7 +170,7 @@ def apply_sim_metric(  #
 ) -> dict[str, Any]:
     return {  #
         "of_values": -string_to_sim_met(sim_metric)(  #
-            fixed_image,  #
+            fixed_image.unsqueeze(0),  #
             moving_images,  #
             weights=weight_images,  #
         ),  #
@@ -191,14 +191,20 @@ def resample_for_moving_image_grangeat(  #
     scene_geometry = SceneGeometry(source_distance=source_distance, fixed_image_offset=fixed_image_offset)
     p_matrix = SceneGeometry.projection_matrix(source_position=scene_geometry.source_position(device=device))
 
-    resampleds = torch.empty((parameters.size()[0], *sinogram2d_grid.phi.size()))
+    resampleds = torch.empty((parameters.size()[0], *sinogram2d_grid.phi.size()), dtype=torch.float32, device=device)
     for i, p in enumerate(parameters):
         ph_matrix: torch.Tensor = torch.matmul(  #
             p_matrix,  #
             mapping_parameters_to_transformation(p).with_translation_offset(translation_offset).get_h(device=device)  #
         ).to(dtype=torch.float32)
 
-        resampleds[i] = vif.resample_cuda_texture(ph_matrix, sinogram2d_grid)
+        resampleds[i] = vif.resample_cuda_texture(  #
+            ph_matrix,  #
+            sinogram2d_grid  #
+        ) if device == torch.device("cuda") else vif.resample(  #
+            ph_matrix,  #
+            sinogram2d_grid  #
+        )
     return {"moving_images_grangeat": resampleds}
 
 
