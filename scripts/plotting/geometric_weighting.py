@@ -10,8 +10,12 @@ import yaml
 from reg23_experiments.analysis.manipulation import CartesianZippedTensors, dataframe_to_cartesian_zipped_tensors
 
 RESULTS_DIR = pathlib.Path("experimental_results/program_truncation")
+OLORIN_RESULTS_DIR = pathlib.Path("experimental_results/from_olorin/program_truncation")
 N1_RESULTS_DIR = RESULTS_DIR / "2026-09-24_11-58-12_n1_sims_scal"
 N2_RESULTS_DIR = RESULTS_DIR / "2026-09-25_12-35-52_n2_cropping"
+N3_RESULTS_DIR = OLORIN_RESULTS_DIR / "2026-09-25_12-43-02_n3_weighting"
+N4_RESULTS_DIR = OLORIN_RESULTS_DIR / "2026-09-25_16-51-10_n4_weighting_grad"
+N5_RESULTS_DIR = RESULTS_DIR / "2026-09-28_18-17-11_n5_filtering"
 OUTPUT_DIR = pathlib.Path("figures/geometric_weighting")
 
 
@@ -129,6 +133,17 @@ def simple_shared_cartesian(directory, name):
     distance_std_available = "distance_std" in df
 
     # -----
+    # Reading in the variables
+    variables_path = instance_dirs[0] / "variables.txt"
+    assert variables_path.is_file()
+    with open(variables_path, 'r') as file:
+        variables_config = yaml.safe_load(file)
+    # assert "variables" in variables_config
+    # variables: list[str] = list(variables_config["variables"].keys())
+    assert "cartesian" in variables_config
+    cartesian_variables: list[str] = list(variables_config["cartesian"].keys())
+
+    # -----
     # Including extra datapoints from '2026-09-24_11-58-12_n1_sims_scal'
     if directory != N1_RESULTS_DIR:
         assert distance_std_available
@@ -145,17 +160,11 @@ def simple_shared_cartesian(directory, name):
         df["xray_path"] = df["xray_path"].apply(lambda p: pathlib.Path(p).name)
         #
         df = pd.concat([df, specific_rows], ignore_index=True)
-
-    # -----
-    # Reading in the variables
-    variables_path = instance_dirs[0] / "variables.txt"
-    assert variables_path.is_file()
-    with open(variables_path, 'r') as file:
-        variables_config = yaml.safe_load(file)
-    # assert "variables" in variables_config
-    # variables: list[str] = list(variables_config["variables"].keys())
-    assert "cartesian" in variables_config
-    cartesian_variables: list[str] = list(variables_config["cartesian"].keys())
+        #
+        if "sim_metric" in cartesian_variables:
+            cartesian_variables.remove("sim_metric")
+        if "weighting_method" in cartesian_variables:
+            cartesian_variables.remove("weighting_method")
 
     variable_hierarchy: list[str] = ["weighting", "weight_alpha", "iterations_per_crop_update", "cropping",
                                      "cropping_method", "truncation_percent", "apply_scaling",
@@ -201,6 +210,15 @@ def main():
     if True:
         # 2: cropping
         simple_shared_cartesian(N2_RESULTS_DIR, "n2_cropping")
+    if True:
+        # 3: weighting
+        simple_shared_cartesian(N3_RESULTS_DIR, "n3_weighting")
+    if True:
+        # 4: weighting grad
+        simple_shared_cartesian(N4_RESULTS_DIR, "n4_weighting_grad")
+    if True:
+        # 5: filtering
+        simple_shared_cartesian(N5_RESULTS_DIR, "n5_filtering")
 
 
 if __name__ == "__main__":

@@ -329,26 +329,6 @@ def main(  #
     distance_std_available = "distance_std" in df
     crop_size_available = "crop_width" in df and "crop_height" in df
 
-    # -----
-    # Including extra datapoints from '2026-09-24_11-58-12_n1_sims_scal'
-    if True:
-        assert not crop_size_available
-        assert distance_std_available
-        instance_dir = pathlib.Path("experimental_results/program_truncation") / "2026-09-24_11-58-12_n1_sims_scal"
-        extra_df = pd.concat([  #
-            pd.read_parquet(element)  #
-            for element in instance_dir.iterdir()  #
-            if element.stem.startswith("data") and element.suffix == ".parquet"  #
-        ], ignore_index=True)
-        extra_df = extra_df.drop(columns=["apply_scaling", "ct_path"])
-        extra_df["xray_path"] = extra_df["xray_path"].apply(lambda p: pathlib.Path(p).name)
-        specific_rows = extra_df[extra_df["sim_metric"] == "gradient_correlation"]
-        #
-        df = df.drop(columns=["ct_path"])
-        df["xray_path"] = df["xray_path"].apply(lambda p: pathlib.Path(p).name)
-        #
-        df = pd.concat([df, specific_rows], ignore_index=True)
-
     if False:
         # -----
         # Reading in parquet data and concatenating
@@ -379,6 +359,31 @@ def main(  #
     # cartesian_variables.append("sim_metric")
     # cartesian_variables.append("xray_path")
     ## !!!
+
+    # -----
+    # Including extra datapoints from '2026-09-24_11-58-12_n1_sims_scal'
+    extra_dir = pathlib.Path("experimental_results/program_truncation") / "2026-09-24_11-58-12_n1_sims_scal"
+    if extra_dir not in instance_dirs:
+        assert not crop_size_available
+        assert distance_std_available
+        extra_df = pd.concat([  #
+            pd.read_parquet(element)  #
+            for element in extra_dir.iterdir()  #
+            if element.stem.startswith("data") and element.suffix == ".parquet"  #
+        ], ignore_index=True)
+        extra_df = extra_df.drop(columns=["apply_scaling", "ct_path"])
+        extra_df["xray_path"] = extra_df["xray_path"].apply(lambda p: pathlib.Path(p).name)
+        specific_rows = extra_df[extra_df["sim_metric"] == "gradient_correlation"]
+        #
+        df = df.drop(columns=["ct_path"])
+        df["xray_path"] = df["xray_path"].apply(lambda p: pathlib.Path(p).name)
+        #
+        df = pd.concat([df, specific_rows], ignore_index=True)
+        #
+        if "sim_metric" in cartesian_variables:
+            cartesian_variables.remove("sim_metric")
+        if "weighting_method" in cartesian_variables:
+            cartesian_variables.remove("weighting_method")
 
     variable_hierarchy: list[str] = ["starting_distance", "sim_metric", "weighting", "weight_alpha", "weighting_method",
                                      "iterations_per_crop_update", "cropping", "cropping_method", "apply_scaling",
