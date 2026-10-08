@@ -96,14 +96,15 @@ class XRayRegSaveManager:
         return Cropping(right=row["crop_right"], top=row["crop_top"], left=row["crop_left"], bottom=row["crop_bottom"])
 
     def set(self, *, uid: str, flipped: bool, cropping: Cropping) -> None | Error:
-        change = _SetXRayRegData(  #
+        change = Change(value=_SetXRayRegData(  #
+            action="set",  #
             xray_sop_instance_uid=uid,  #
             horizontal_flip=flipped,  #
             crop_left=cropping.left,  #
             crop_right=cropping.right,  #
             crop_top=cropping.top,  #
             crop_bottom=cropping.bottom,  #
-        )
+        ))
         if isinstance(err := self._state.apply_change(change), Error):
             return err
         return None

@@ -122,16 +122,18 @@ class TransformationSaveManager:
 
     def set(self, *, uid: str, name: str, transformation: Transformation) -> None | Error:
         t: torch.Tensor = transformation.vectorised()
-        change = _SetTransformation(  #
+        change = Change(value=_SetTransformation(  #
+            action="set",  #
             xray_sop_instance_uid=uid,  #
             name=name,  #
             **{f"x{i}": float(t[i].item()) for i in range(6)},  #
-        )
+        ))
         return self._state.apply_change(change)
 
     def remove(self, *, uid: str, name: str) -> None | Error:
-        change = _RemoveTransformation(  #
+        change = Change(value=_RemoveTransformation(  #
+            action="remove",  #
             xray_sop_instance_uid=uid,  #
             name=name,  #
-        )
+        ))
         return self._state.apply_change(change)
