@@ -1,25 +1,30 @@
 import gc
 import logging
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Tuple, TypeVar
+from typing import Literal, NamedTuple, Tuple
 
 import matplotlib.pyplot as plt
 import torch
+from bidict import bidict
 
 import reg23_core
 from reg23_experiments.analysis.plot import visualise_planes_as_points
-from reg23_experiments.data.structs import LinearMapping, LinearRange, SceneGeometry, Sinogram2dGrid, Sinogram3dGrid, \
-    Transformation
+from reg23_experiments.data.structs import Error, LinearMapping, LinearRange, SceneGeometry, Sinogram2dGrid, \
+    Sinogram3dGrid, Transformation
 from reg23_experiments.ops import geometry
 
-__all__ = ["SinogramType", "Sinogram", "SinogramClassic", "SinogramHEALPix", "VolumeSpec", "DrrSpec"]
+__all__ = ["Sinogram", "SinogramClassic", "SinogramHEALPix", "VolumeSpec", "DrrSpec", "SinogramTypeName",
+           "type_to_string", "string_to_type"]
 
 logger = logging.getLogger(__name__)
 
-SinogramType = TypeVar('SinogramType')
-
 
 class Sinogram(ABC):
+    @staticmethod
+    @abstractmethod
+    def build_grid(*, sinogram_size: int, r_range: LinearRange, device: torch.device) -> Sinogram3dGrid:
+        pass
+
     @abstractmethod
     def to(self, **kwargs) -> 'Sinogram':
         pass
@@ -57,8 +62,8 @@ class SinogramClassic(Sinogram):
     theta_range = LinearRange(-0.5 * torch.pi, 0.5 * torch.pi)
 
     @staticmethod
-    def build_grid(*, counts: int | Tuple[int, int, int] | torch.Size, r_range: LinearRange,
-                   device=torch.device("cpu")) -> Sinogram3dGrid:
+    def build_grid(*, sinogram_size: int, r_range: LinearRange, device=torch.device("cpu")) -> Sinogram3dGrid:
+        counts = sinogram_size
         if isinstance(counts, int):
             counts = (int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())),
                       int(torch.ceil(float(counts) * torch.tensor(0.5 * torch.pi).sqrt())), counts)
@@ -472,7 +477,9 @@ class SinogramHEALPix(Sinogram):
         return Sinogram3dGrid(phi=phi, theta=theta, r=r_)
 
     @staticmethod
-    def build_grid(*, n_side: int, r_range: LinearRange, r_count: int, device=torch.device("cpu")) -> Sinogram3dGrid:
+    def build_grid(*, sinogram_size: int, r_range: LinearRange, device=torch.device("cpu")) -> Sinogram3dGrid:
+        r_count = sinogram_size
+        n_side = int(torch.ceil(torch.tensor(float(sinogram_size)) / torch.tensor(6.).sqrt()).item())
         u = LinearRange(0.0, 3.0 * float(n_side)).generate_tex_coord_grid(3 * n_side, device=device)
         v = LinearRange(0.0, 2.0 * float(n_side)).generate_tex_coord_grid(2 * n_side, device=device)
         r = r_range.generate_grid(r_count, device=device)
@@ -736,6 +743,25 @@ class SinogramHEALPix(Sinogram):
 #
 #     def resample_python(self, ph_matrix: torch.Tensor, fixed_image_grid: Sinogram2dGrid) -> torch.Tensor:
 #         raise Exception("Not yet implemented")
+
+SinogramTypeName = Literal["classic", "healpix"]
+
+_type_to_string: bidict[type[Sinogram], SinogramTypeName] = bidict({  #
+    SinogramClassic: "classic",  #
+    SinogramHEALPix: "healpix",  #
+})
+
+
+def type_to_string(sinogram_type: type[Sinogram]) -> SinogramTypeName | Error:
+    if sinogram_type in _type_to_string:
+        return _type_to_string[sinogram_type]
+    return Error(f"Unrecognized sinogram type: {sinogram_type}")
+
+
+def string_to_type(sinogram_type_string: SinogramTypeName) -> type[Sinogram] | Error:
+    if sinogram_type_string in _type_to_string.inverse:
+        return _type_to_string.inverse[sinogram_type_string]
+    return Error(f"Unrecognized sinogram type string: {sinogram_type_string}")
 
 
 class VolumeSpec(NamedTuple):
