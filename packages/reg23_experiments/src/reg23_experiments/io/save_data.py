@@ -21,7 +21,6 @@ On loading of saved data (e.g. on program startup), the most recent snapshot is 
 applied in order such that the data is restored to the same state it was in when the program was last run.
 """
 
-import json
 import pathlib
 from datetime import datetime
 from typing import Callable
@@ -30,9 +29,8 @@ import pandas as pd
 import pydantic
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.io.serialize import serialize_recursive
 
-__all__ = ["SaveType", "SavedObject"]
+__all__ = ["SaveConfig", "SaveState"]
 
 
 def _snapshot_file_path(*, snapshot_dir: pathlib.Path) -> pathlib.Path:
@@ -57,20 +55,17 @@ def _find_latest_snapshot_dir(save_dir: pathlib.Path) -> pathlib.Path | Error:
     return save_dir / latest
 
 
-ChangeSpec = dict[str, type[pydantic.BaseModel]]
-
-
-class ChangeBase(pydantic.BaseModel):
+class _LogEntry(pydantic.BaseModel):
     action: str
-    parameters: dict
+    parameters: pydantic.BaseModel
 
 
-class SaveType:
+class SaveConfig:
     def __init__(  #
             self,  #
             *,  #
             save_path: pathlib.Path,  #
-            change_spec: ChangeSpec,  #
+            change_spec: dict[str, type[pydantic.BaseModel]],  #
             incorporate_change: Callable[[pd.DataFrame, pydantic.BaseModel], pd.DataFrame | Error],  #
             default_value: pd.DataFrame,  #
             changes_per_snapshot: int = 32,  #
@@ -82,7 +77,11 @@ class SaveType:
         self._changes_per_snapshot = changes_per_snapshot
 
     @property
-    def incorporate_change(self) -> Callable[[pd.DataFrame, pydantic.BaseModel], pd.DataFrame]:
+    def change_spec(self) -> dict[str, type[pydantic.BaseModel]]:
+        return self._change_spec
+
+    @property
+    def incorporate_change(self) -> Callable[[pd.DataFrame, pydantic.BaseModel], pd.DataFrame | Error]:
         return self._incorporate_change
 
     @property
@@ -110,7 +109,7 @@ class SaveType:
             return Error(
                 f"Error loading specific save: invalid change count: '{change_count}'; use the value -1 to indicate "
                 f"all changes, or any non-negative integer to indicate the number of changes to load.")
-        ret = pd.read_parquet(_snapshot_file_path(snapshot_dir=snapshot_dir))
+        ret: pd.DataFrame = pd.read_parquet(_snapshot_file_path(snapshot_dir=snapshot_dir))
         log_file = _log_file_path(snapshot_dir=snapshot_dir)
         change_i = 0
         if log_file.is_file():
@@ -119,22 +118,16 @@ class SaveType:
                     if -1 < change_count <= change_i:
                         break
                     try:
-                        change: ChangeBase = ChangeBase.model_validate_json(line)
+                        log_entry: _LogEntry = _LogEntry.model_validate_json(line)
                     except pydantic.ValidationError as e:
                         return Error(
                             f"Change at line '{line}' in log file '{str(log_file)}' did not conform to schema: {e}")
                     except ValueError as e:
                         return Error(f"Error parsing line: '{line}' as JSON from log file '{str(log_file)}': {e}")
-                    if change.action not in self._change_spec:
+                    if log_entry.action not in self._change_spec:
                         return Error(
-                            f"Unrecognised action '{change.action}' in lin e'{line}', log file '{str(log_file)}'")
-                    model = self._change_spec[change.action]
-                    try:
-                        change: model = model.model_validate(change.parameters)
-                    except pydantic.ValidationError as e:
-                        return Error(
-                            f"Change at line '{line}' in log file '{str(log_file)}' did not conform to schema: {e}")
-                    ret: pd.DataFrame | Error = self._incorporate_change(ret, change)
+                            f"Unrecognised action '{log_entry.action}' in line '{line}', log file '{str(log_file)}'")
+                    ret: pd.DataFrame | Error = self._incorporate_change(ret, log_entry.parameters)
                     if isinstance(ret, Error):
                         return ret
                     change_i += 1
@@ -163,8 +156,8 @@ class SaveType:
         return snapshot_dir
 
 
-class SavedObject:
-    def __init__(self, object_type: SaveType):
+class SaveState:
+    def __init__(self, object_type: SaveConfig):
         """
         Constructor. Loads any existing data from the save directory `directory`.
 
@@ -185,27 +178,40 @@ class SavedObject:
     def get(self) -> pd.DataFrame:
         return self._current_state
 
-    def _start_from_new_snapshot(self) -> None:
-        self._current_snapshot_dir = self._object_type.create_new_snapshot()
-        self._current_state.to_parquet(_snapshot_file_path(snapshot_dir=self._current_snapshot_dir))
-        self._change_count: int = 0
-
-    def _apply_change(self, change_object: SchemaType) -> None | Error:
+    def apply_change(self, change_object: pydantic.BaseModel) -> None | Error:
         """
         Apply the given change to the data and save the change to log.jsonl. If at least `changes_per_snapshot` changes
         have been logged, save a new snapshot.
         :param change_object: The change to apply and save.
         :return: The error if one occurs.
         """
+        # Check that the change object is valid, and find its action name
+        action = [k for k, v in self._object_type.change_spec.items() if isinstance(change_object, v)]
+        if not action:
+            return Error(f"Unrecognised change type: {change_object.__class__.__name__}")
+        if len(action) > 1:
+            return Error(f"The same type should not be reused for different actions; found multiple of '"
+                         f"{change_object.__class__.__name__}'")
+        action = action[0]
+
+        # Apply the change
         res: pd.DataFrame | Error = self._object_type.incorporate_change(self._current_state, change_object)
         if isinstance(res, Error):
             return res
         self._current_state = res
-        schema_value_name, trait = next(iter(change_object.traits().items()))
-        change_value = getattr(change_object, schema_value_name)
+
+        # Log the change
+        log_entry = _LogEntry(action=action, parameters=change_object)
         with open(_log_file_path(snapshot_dir=self._current_snapshot_dir), 'a', encoding='utf-8') as f:
-            f.write(json.dumps(serialize_recursive(change_value, trait=trait)) + "\n")
+            f.write(log_entry.model_dump_json() + "\n")
         self._change_count += 1
+        # Save a new snapshot if log threshold exceeded
         if self._change_count >= self._object_type.changes_per_snapshot:
             self._start_from_new_snapshot()
+
         return None
+
+    def _start_from_new_snapshot(self) -> None:
+        self._current_snapshot_dir = self._object_type.create_new_snapshot()
+        self._current_state.to_parquet(_snapshot_file_path(snapshot_dir=self._current_snapshot_dir))
+        self._change_count: int = 0
