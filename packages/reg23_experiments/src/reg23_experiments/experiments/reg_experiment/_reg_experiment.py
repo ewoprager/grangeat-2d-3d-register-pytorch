@@ -33,6 +33,7 @@ class ExperimentParametrisation(traitlets.HasTraits):
             - otherwise, these images will only be updated every N iterations
     """
 
+    grangeat: bool = traitlets.Bool(default_value=False)
     # ----- images
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
@@ -142,7 +143,7 @@ def reg_experiment(  #
         err: Error | None = data_manager().set("parameters", parameters)
         if isinstance(err, Error):
             logger.warning(f"Error setting parameters in o.f.: {err.description}")
-        res: torch.Tensor | Error = data_manager().get("of_values")
+        res: torch.Tensor | Error = data_manager().get("of_values_grangeat" if params.grangeat else "of_values")
         if isinstance(res, Error):
             raise Exception(f"Objective function evaluation failed: {res}")
         return res
@@ -241,10 +242,10 @@ def reg_experiment(  #
             axes[2].imshow(weighting_image[0].cpu().numpy())
             axes[2].set_title("weighting image")
         # Fixed image at gold-standard
-        fixed_image: torch.Tensor | Error = data_manager().get("fixed_images")
+        fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
         if isinstance(fixed_image, Error):
             raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
-        axes[3].imshow(fixed_image[0].cpu().numpy())
+        axes[3].imshow(fixed_image.cpu().numpy())
         axes[3].set_title("f fixed image")
         # Moving image at gold-standard
         moving_image: torch.Tensor | Error = data_manager().get("moving_images")

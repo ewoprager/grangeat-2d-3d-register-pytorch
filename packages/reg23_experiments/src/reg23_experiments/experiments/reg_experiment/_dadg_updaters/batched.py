@@ -4,16 +4,18 @@ import torch
 from jaxtyping import Float32, Float64
 
 import reg23_core
-from reg23_experiments.data.structs import Transformation
+from reg23_experiments.data import sinogram
+from reg23_experiments.data.structs import SceneGeometry, Transformation
 from reg23_experiments.experiments.helpers import string_to_sim_met
 from reg23_experiments.ops.data_manager import dadg_updater
 from reg23_experiments.ops.geometry import get_crop_full_depth_drr, get_crop_nonzero_drr
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 
-__all__ = ["refresh_scaling_images", "refresh_weights", "project_moving_images", "apply_sim_metric", "refresh_cropping"]
+__all__ = ["refresh_scaling_images", "refresh_weights", "project_moving_images", "apply_sim_metric", "refresh_cropping",
+           "resample_for_moving_image_grangeat", "apply_sim_metric_grangeat"]
 
 
-# @dadg_updater(names_returned=["scaling_images", "fixed_images"])
+# @dadg_updater(names_returned=["scaling_images", "fixed_image"])
 def refresh_scaling_images(  #
         *,  #
         parameters: Float64[torch.Tensor, "b 6"],  #
@@ -42,10 +44,10 @@ def refresh_scaling_images(  #
         detector_spacing=fixed_image_spacing  #
     )
     # Generate the fixed images
-    fixed_images = cropped_target.unsqueeze(0)
+    fixed_image = cropped_target
     return {  #
         "scaling_images": scaling_images,  #
-        "fixed_images": fixed_images,  #
+        "fixed_image": fixed_image,  #
     }
 
 
@@ -163,13 +165,56 @@ def apply_sim_metric(  #
         *,  #
         sim_metric: str,  #
         moving_images: Float32[torch.Tensor, "b n m"],  #
-        fixed_images: Float32[torch.Tensor, "#b n m"],  #
+        fixed_image: Float32[torch.Tensor, "n m"],  #
         weight_images: Float32[torch.Tensor, "#b n m"] | None,  #
 ) -> dict[str, Any]:
     return {  #
         "of_values": -string_to_sim_met(sim_metric)(  #
-            fixed_images,  #
+            fixed_image.unsqueeze(0),  #
             moving_images,  #
             weights=weight_images,  #
         ),  #
+    }
+
+
+@dadg_updater(names_returned=["moving_images_grangeat"])
+def resample_for_moving_image_grangeat(  #
+        *,  #
+        parameters: Float64[torch.Tensor, "b 6"],  #
+        vif: sinogram.Sinogram,  #
+        sinogram2d_grid: sinogram.Sinogram2dGrid,  #
+        source_distance: float,  #
+        translation_offset: Float64[torch.Tensor, "2"],  #
+        fixed_image_offset: Float64[torch.Tensor, "2"],  #
+) -> dict[str, Any]:
+    device = vif.device
+    scene_geometry = SceneGeometry(source_distance=source_distance, fixed_image_offset=fixed_image_offset)
+    p_matrix = SceneGeometry.projection_matrix(source_position=scene_geometry.source_position(device=device))
+
+    resampleds = torch.empty((parameters.size()[0], *sinogram2d_grid.phi.size()), dtype=torch.float32, device=device)
+    for i, p in enumerate(parameters):
+        ph_matrix: torch.Tensor = torch.matmul(  #
+            p_matrix,  #
+            mapping_parameters_to_transformation(p).with_translation_offset(translation_offset).get_h(device=device)  #
+        ).to(dtype=torch.float32)
+
+        resampleds[i] = vif.resample_cuda_texture(  #
+            ph_matrix,  #
+            sinogram2d_grid  #
+        ) if device == torch.device("cuda") else vif.resample(  #
+            ph_matrix,  #
+            sinogram2d_grid  #
+        )
+    return {"moving_images_grangeat": resampleds}
+
+
+@dadg_updater(names_returned=["of_values_grangeat"])
+def apply_sim_metric_grangeat(  #
+        *,  #
+        sim_metric: str,  #
+        moving_images_grangeat: torch.Tensor,  #
+        sinogram2d: torch.Tensor,  #
+) -> dict[str, Any]:
+    return {  #
+        "of_values_grangeat": -string_to_sim_met(sim_metric)(moving_images_grangeat, sinogram2d.unsqueeze(0)),  #
     }

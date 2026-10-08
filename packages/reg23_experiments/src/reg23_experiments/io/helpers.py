@@ -1,6 +1,5 @@
 import hashlib
 import logging
-from typing import Type
 
 from reg23_experiments.data import sinogram
 
@@ -28,7 +27,7 @@ def deterministic_hash_combo(*hex_digests: str) -> str:
     return hashlib.sha256(combined).hexdigest()
 
 
-def deterministic_hash_sinogram(path: str, sinogram_type: Type[sinogram.SinogramType], sinogram_size: int,
+def deterministic_hash_sinogram(path: str, sinogram_type: type[sinogram.Sinogram], sinogram_size: int,
                                 downsample_factor: int) -> str:
     return deterministic_hash_combo(deterministic_hash_string(path), deterministic_hash_type(sinogram_type),
                                     deterministic_hash_int(sinogram_size), deterministic_hash_int(downsample_factor))

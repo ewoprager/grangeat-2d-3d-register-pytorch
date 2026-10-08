@@ -33,6 +33,7 @@ dependencies = [
     "pylibjpeg-libjpeg>=2.4.0",
     "scikit-learn>=1.9.0",
     "reg23-core",
+    "bidict>=0.24.1",
 ]
 
 # sets of optional dependencies (distinct from the normal dependencies above) are defined
@@ -49,6 +50,7 @@ dev = [
     "torchviz>=0.0.3",
     "scipy-stubs>=1.17.1.4",
     "pyqt6>=6.8.0",
+    "plotly>=7.1.0",
 ]
 
 [dependency-groups]
