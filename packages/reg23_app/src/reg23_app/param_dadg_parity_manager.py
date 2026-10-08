@@ -181,14 +181,6 @@ class ParamDADGParityManager:
         )
         self._target_flipped_changed(params.target_flipped, namespace=name)
 
-        # for eagerly saving the `electrode_points`
-        self._dadg.observe(f"{name}__electrode_points", "saver",
-                           lambda new_value, _name=name: self._xray_electrode_points_changed(new_value,
-                                                                                             namespace=_name))
-        # for eagerly saving the `fiducial_points`
-        self._dadg.observe(f"{name}__fiducial_points", "saver",
-                           lambda new_value, _name=name: self._xray_fiducial_points_changed(new_value, namespace=_name))
-
         # Add namespaced DADG updaters
         namespace_captures = {key: name for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}
         if isinstance(err := self._dadg.add_updater(  #
@@ -276,3 +268,11 @@ class ParamDADGParityManager:
                        if (res := self._xray_fiducial_save_manager.get(uid)) is None  #
                        else NamedPoints2D(names=res[0], data=res[1])  #
                        )
+
+        # for eagerly saving the `electrode_points`, after setting the initial value
+        self._dadg.observe(f"{name}__electrode_points", "saver",
+                           lambda new_value, _name=name: self._xray_electrode_points_changed(new_value,
+                                                                                             namespace=_name))
+        # for eagerly saving the `fiducial_points`, after setting the initial value
+        self._dadg.observe(f"{name}__fiducial_points", "saver",
+                           lambda new_value, _name=name: self._xray_fiducial_points_changed(new_value, namespace=_name))

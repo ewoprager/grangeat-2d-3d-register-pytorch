@@ -2146,10 +2146,10 @@ name = "pydantic"
 version = "2.11.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "annotated-types", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
-    { name = "pydantic-core", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
-    { name = "typing-extensions", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
-    { name = "typing-inspection", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+    { name = "annotated-types" },
+    { name = "pydantic-core" },
+    { name = "typing-extensions" },
+    { name = "typing-inspection" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ae/54/ecab642b3bed45f7d5f59b38443dcb36ef50f85af192e6ece103dbfe9587/pydantic-2.11.10.tar.gz", hash = "sha256:dc280f0982fbda6c38fada4e476dc0a4f3aeaf9c6ad4c28df68a666ec3c61423", size = 788494 }
 wheels = [
@@ -2173,7 +2173,7 @@ name = "pydantic-core"
 version = "2.33.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ad/88/5f2260bdfae97aabf98f1778d43f69574390ad787afb646292a638c923d4/pydantic_core-2.33.2.tar.gz", hash = "sha256:7cb8bc3605c29176e1b105350d2e6474142d7c1bd1d9327c4a9bdb46bf827acc", size = 435195 }
 wheels = [
@@ -2691,6 +2691,7 @@ dependencies = [
     { name = "pandas" },
     { name = "platformdirs" },
     { name = "pyarrow" },
+    { name = "pydantic" },
     { name = "pydicom" },
     { name = "pylibjpeg" },
     { name = "pylibjpeg-libjpeg" },
@@ -2746,6 +2747,7 @@ requires-dist = [
     { name = "platformdirs", specifier = "==4.3.6" },
     { name = "plotly", marker = "extra == 'dev'", specifier = ">=7.1.0" },
     { name = "pyarrow", specifier = ">=24.0.0" },
+    { name = "pydantic", specifier = ">=2.11.10" },
     { name = "pydicom", specifier = "==3.0.1" },
     { name = "pylibjpeg", specifier = ">=2.1.0" },
     { name = "pylibjpeg-libjpeg", specifier = ">=2.4.0" },
@@ -3577,7 +3579,7 @@ name = "typing-inspection"
 version = "0.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/55/e3/70399cb7dd41c10ac53367ae42139cf4b1ca5f36bb3dc6c9d33acdb43655/typing_inspection-0.4.2.tar.gz", hash = "sha256:ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464", size = 75949 }
 wheels = [
