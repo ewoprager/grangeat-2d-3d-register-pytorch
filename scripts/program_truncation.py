@@ -74,12 +74,13 @@ def main(  #
         # - Hardcoded script configuration -
         # ----------------------------------
         config = ExperimentSetConfig({  #
+            "grangeat": Constant(True),  #
             # ----- images
             "ct_path": Constant(ct_path),  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
             "downsample_level": Constant(1),  #
-            "truncation_percent": Cartesian([50, 80]),  #
+            "truncation_percent": Cartesian([0, 50, 80]),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
@@ -89,9 +90,9 @@ def main(  #
             "iterations_per_weight_update": Constant(1000),  #
             "sim_metric": Constant("zncc"),  #
             # ----- frequency domain filtering
-            "filter_method": Zipped(["none", "gradient_like", "highpass", "highpass", "highpass", "highpass"]),  #
+            "filter_method": Zipped(["gradient_like", "highpass", "highpass", "highpass"]),  #
             "lowpass_threshold": Constant(1.0),  #
-            "highpass_threshold": Zipped([1.0, 1.0, 2.0, 1.0, 1.0 / 10.0, 1.0 / 50.0]),  #
+            "highpass_threshold": Zipped([1.0, 1.0, 1.0 / 10.0, 1.0 / 50.0]),  #
             # ----- registration
             "starting_distance": Constant(5.0),  #
             "sample_count_per_distance": Constant(20),  #
