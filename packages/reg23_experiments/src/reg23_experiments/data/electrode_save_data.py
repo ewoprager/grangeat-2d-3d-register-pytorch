@@ -50,7 +50,7 @@ class _RemoveElectrode(pydantic.BaseModel):
     xray_sop_instance_uid: str
 
 
-def _incorporate_electrode_change(data: pd.DataFrame, change: pydantic.BaseModel) -> pd.DataFrame | Error:
+def _incorporate_change(data: pd.DataFrame, change: pydantic.BaseModel) -> pd.DataFrame | Error:
     if isinstance(change, _AddElectrode):
         # count how many electrodes already exist
         previous_count = (data.index.get_level_values("xray_sop_instance_uid") == change.xray_sop_instance_uid).sum()
@@ -87,7 +87,7 @@ def _compute_changes(  #
         uid: str,  #
         old_data: torch.Tensor,  #
         new_data: torch.Tensor,  #
-        tol: float = 1e-8  #
+        tol: float = 1e-8,  #
 ) -> list[pydantic.BaseModel]:
     uid = str(uid)
     ret: list[pydantic.BaseModel] = []
@@ -128,7 +128,7 @@ class ElectrodeSaveManager:
                 "move": _MoveElectrode,  #
                 "remove": _RemoveElectrode,  #
             },  #
-            incorporate_change=_incorporate_electrode_change,  #
+            incorporate_change=_incorporate_change,  #
             default_value=pd.DataFrame(  #
                 index=pd.MultiIndex.from_arrays([[], []], names=["xray_sop_instance_uid", "index"]),  #
                 columns=["x", "y"],  #

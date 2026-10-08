@@ -5,10 +5,9 @@ from typing import NamedTuple
 import pandas as pd
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.data.transformation_save_data import TransformationSaveData
-from reg23_experiments.data.xray_reg_save_data import XRayRegSaveData
+from reg23_experiments.data.transformation_save_data import TransformationSaveManager
+from reg23_experiments.data.xray_reg_save_data import XRayRegSaveManager
 from reg23_experiments.io.image import XrayDICOM, read_dicom
-from reg23_experiments.io.save_data import load_latest_save
 
 __all__ = ["ImageSpecificConfigurations"]
 
@@ -23,26 +22,16 @@ class ImageSpecificConfigurations(NamedTuple):
     def load() -> 'ImageSpecificConfigurations':
         # -----
         # Load all saved transformations; these are searched through for ground truth alignments
-        res: tuple[pathlib.Path, TransformationSaveData, int] | Error = load_latest_save(  #
-            TransformationSaveData,  #
-            save_directory=pathlib.Path("data/app_transformation_save_data")  #
-        )
-        if isinstance(res, Error):
-            raise RuntimeError(f"Failed to load saved transformation: {res.description}")
-        _, transformation_save_data, _ = res
-        saved_transformations: pd.DataFrame = transformation_save_data.get_data()
+        saved_transformations: pd.DataFrame = TransformationSaveManager(  #
+            directory=pathlib.Path("data/app_transformation_save_data"),  #
+        ).get_all()
         logger.info(f"Saved transformation data:\n{saved_transformations.to_string()}")
 
         # -----
         # Load all saved X-ray configs; these are used for manual X-ray configurations
-        res: tuple[pathlib.Path, XRayRegSaveData, int] | Error = load_latest_save(  #
-            XRayRegSaveData,  #
-            save_directory=pathlib.Path("data/xray_reg_save_data")  #
-        )
-        if isinstance(res, Error):
-            raise RuntimeError(f"Failed to load saved X-ray reg configs: {res.description}")
-        _, xray_reg_save_data, _ = res
-        saved_xray_reg_configs: pd.DataFrame = xray_reg_save_data.get_data()
+        saved_xray_reg_configs: pd.DataFrame = XRayRegSaveManager(  #
+            directory=pathlib.Path("data/xray_reg_save_data"),  #
+        ).get_all()
         logger.info(f"Saved X-ray reg configs:\n{saved_xray_reg_configs.to_string()}")
 
         return ImageSpecificConfigurations(saved_transformations, saved_xray_reg_configs)
