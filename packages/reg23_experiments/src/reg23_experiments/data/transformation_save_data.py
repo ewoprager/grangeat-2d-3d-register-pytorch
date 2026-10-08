@@ -19,6 +19,7 @@ Changes are expressed as dicts with the following keys:
 
 import logging
 import pathlib
+from typing import Literal
 
 import pandas as pd
 import pydantic
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 class _SetTransformation(pydantic.BaseModel):
+    action: Literal["set"]
     xray_sop_instance_uid: str
     name: str
     x0: float
@@ -44,27 +46,33 @@ class _SetTransformation(pydantic.BaseModel):
 
 
 class _RemoveTransformation(pydantic.BaseModel):
+    action: Literal["remove"]
     xray_sop_instance_uid: str
     name: str
 
 
-def _incorporate_change(data: pd.DataFrame, change: pydantic.BaseModel) -> pd.DataFrame | Error:
-    if isinstance(change, _SetTransformation):
+class Change(pydantic.BaseModel):
+    value: _SetTransformation | _RemoveTransformation = pydantic.Field(discriminator="action")
+
+
+def _incorporate_change(data: pd.DataFrame, change: Change) -> pd.DataFrame | Error:
+    c = change.value
+    if isinstance(c, _SetTransformation):
         # update / insert into the dataframe
-        idx = (change.xray_sop_instance_uid, change.name)
+        idx = (c.xray_sop_instance_uid, c.name)
         for col in (f"x{i}" for i in range(6)):
-            data.loc[idx, col] = getattr(change, col)
+            data.loc[idx, col] = getattr(c, col)
         return data
-    elif isinstance(change, _RemoveTransformation):
+    elif isinstance(c, _RemoveTransformation):
         # check if the idx exists in the dataframe
-        idx = (change.xray_sop_instance_uid, change.name)
+        idx = (c.xray_sop_instance_uid, c.name)
         if idx in data.index:
             data = data.drop(idx)
         else:
             logger.warning(f"Tried to remove non-existent transformation '{idx}' from save data.")
         return data
     else:
-        return Error(f"Unrecognized change type '{type(change).__name__}'")
+        return Error(f"Unrecognized change type '{type(c).__name__}'")
 
 
 class TransformationSaveManager:
@@ -72,10 +80,7 @@ class TransformationSaveManager:
         directory.mkdir(exist_ok=True, parents=True)
         self._config = SaveConfig(  #
             save_path=directory,  #
-            change_spec={  #
-                "set": _SetTransformation,  #
-                "remove": _RemoveTransformation,  #
-            },  #
+            change_schema=Change,  #
             incorporate_change=_incorporate_change,  #
             default_value=pd.DataFrame(index=pd.MultiIndex.from_arrays(  #
                 [[], []],  #

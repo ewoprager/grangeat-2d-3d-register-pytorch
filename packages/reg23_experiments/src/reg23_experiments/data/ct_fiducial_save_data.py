@@ -20,6 +20,7 @@ Changes are expressed as dicts with the following keys:
 """
 
 import pathlib
+from typing import Literal
 
 import pandas as pd
 import pydantic
@@ -32,6 +33,7 @@ __all__ = ["CTFiducialSaveManager"]
 
 
 class _SetFiducial(pydantic.BaseModel):
+    action: Literal["set"]
     ct_series_uid: str
     name: str
     x: float
@@ -40,26 +42,32 @@ class _SetFiducial(pydantic.BaseModel):
 
 
 class _RemoveFiducial(pydantic.BaseModel):
+    action: Literal["remove"]
     ct_series_uid: str
     name: str
 
 
-def _incorporate_change(data: pd.DataFrame, change: pydantic.BaseModel) -> pd.DataFrame | Error:
-    if isinstance(change, _SetFiducial):
+class Change(pydantic.BaseModel):
+    value: _SetFiducial | _RemoveFiducial = pydantic.Field(discriminator="action")
+
+
+def _incorporate_change(data: pd.DataFrame, change: Change) -> pd.DataFrame | Error:
+    c = change.value
+    if isinstance(c, _SetFiducial):
         # Update / insert into the dataframe
-        idx = (change.ct_series_uid, change.name)
-        data.loc[idx, ["x", "y", "z"]] = [change.x, change.y, change.z]
+        idx = (c.ct_series_uid, c.name)
+        data.loc[idx, ["x", "y", "z"]] = [c.x, c.y, c.z]
         return data
-    elif isinstance(change, _RemoveFiducial):
+    elif isinstance(c, _RemoveFiducial):
         # check if the idx exists in the dataframe
-        idx = (change.ct_series_uid, change.name)
+        idx = (c.ct_series_uid, c.name)
         if idx in data.index:
             data = data.drop(idx)
         else:
             return Error(f"Tried to remove non-existent fiducial '{idx}' from save data.")
         return data
     else:
-        return Error(f"Unrecognized change type '{type(change).__name__}'")
+        return Error(f"Unrecognized change type '{type(c).__name__}'")
 
 
 def compute_changes(  #
@@ -68,7 +76,7 @@ def compute_changes(  #
         old_data: tuple[list[str], torch.Tensor],  #
         new_data: tuple[list[str], torch.Tensor],  #
         tol: float = 1e-8,  #
-) -> list[pydantic.BaseModel]:
+) -> list[Change]:
     assert len(old_data[0]) == old_data[1].size()[0]
     assert len(new_data[0]) == new_data[1].size()[0]
     assert len(old_data[1].size()) == 2
@@ -76,40 +84,43 @@ def compute_changes(  #
     assert len(new_data[1].size()) == 2
     assert new_data[1].size()[1] == 3
     uid = str(uid)
-    ret: list[pydantic.BaseModel] = []
+    ret: list[Change] = []
     old_set = set(old_data[0])
     new_set = set(new_data[0])
 
     # Points that have been removed
     for old_name in old_set - new_set:
-        ret.append(_RemoveFiducial(  #
+        ret.append(Change(value=_RemoveFiducial(  #
+            action="remove",  #
             ct_series_uid=uid,  #
             name=old_name,  #
-        ))
+        )))
 
     # New points
     for new_name in new_set - old_set:
         index = new_data[0].index(new_name)
-        ret.append(_SetFiducial(  #
+        ret.append(Change(value=_SetFiducial(  #
+            action="set",  #
             ct_series_uid=uid,  #
             name=new_name,  #
             x=new_data[1][index, 0].item(),  #
             y=new_data[1][index, 1].item(),  #
             z=new_data[1][index, 2].item(),  #
-        ))
+        )))
 
     # Existing points that have moved
     for name in old_set & new_set:
         old_index = old_data[0].index(name)
         new_index = new_data[0].index(name)
         if (new_data[1][new_index] - old_data[1][old_index]).abs().max() > tol:
-            ret.append(_SetFiducial(  #
+            ret.append(Change(value=_SetFiducial(  #
+                action="set",  #
                 ct_series_uid=uid,  #
                 name=name,  #
                 x=new_data[1][new_index, 0].item(),  #
                 y=new_data[1][new_index, 1].item(),  #
                 z=new_data[1][new_index, 2].item(),  #
-            ))
+            )))
     return ret
 
 
@@ -118,10 +129,7 @@ class CTFiducialSaveManager:
         directory.mkdir(exist_ok=True, parents=True)
         self._config = SaveConfig(  #
             save_path=directory,  #
-            change_spec={  #
-                "set": _SetFiducial,  #
-                "remove": _RemoveFiducial,  #
-            },  #
+            change_schema=Change,  #
             incorporate_change=_incorporate_change,  #
             default_value=pd.DataFrame(index=pd.MultiIndex.from_arrays(  #
                 [[], []],  #

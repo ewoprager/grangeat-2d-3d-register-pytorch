@@ -22,6 +22,7 @@ Changes are expressed as dicts with the following keys:
 """
 
 import pathlib
+from typing import Literal
 
 import pandas as pd
 import pydantic
@@ -34,12 +35,14 @@ __all__ = ["ElectrodeSaveManager"]
 
 
 class _AddElectrode(pydantic.BaseModel):
+    action: Literal["add"]
     xray_sop_instance_uid: str
     x: float
     y: float
 
 
 class _MoveElectrode(pydantic.BaseModel):
+    action: Literal["move"]
     xray_sop_instance_uid: str
     index: int
     x: float
@@ -47,39 +50,45 @@ class _MoveElectrode(pydantic.BaseModel):
 
 
 class _RemoveElectrode(pydantic.BaseModel):
+    action: Literal["remove"]
     xray_sop_instance_uid: str
 
 
-def _incorporate_change(data: pd.DataFrame, change: pydantic.BaseModel) -> pd.DataFrame | Error:
-    if isinstance(change, _AddElectrode):
+class Change(pydantic.BaseModel):
+    value: _AddElectrode | _MoveElectrode | _RemoveElectrode = pydantic.Field(discriminator="action")
+
+
+def _incorporate_change(data: pd.DataFrame, change: Change) -> pd.DataFrame | Error:
+    c = change.value
+    if isinstance(c, _AddElectrode):
         # count how many electrodes already exist
-        previous_count = (data.index.get_level_values("xray_sop_instance_uid") == change.xray_sop_instance_uid).sum()
+        previous_count = (data.index.get_level_values("xray_sop_instance_uid") == c.xray_sop_instance_uid).sum()
         index = pd.MultiIndex.from_tuples([(  #
-            change.xray_sop_instance_uid,  #
+            c.xray_sop_instance_uid,  #
             previous_count  #
         )], names=["xray_sop_instance_uid", "index"])
-        data = pd.concat([data, pd.DataFrame([{"x": change.x, "y": change.y}], index=index)])
+        data = pd.concat([data, pd.DataFrame([{"x": c.x, "y": c.y}], index=index)])
         return data
-    elif isinstance(change, _MoveElectrode):
+    elif isinstance(c, _MoveElectrode):
         # check if the electrode exists
-        idx = (change.xray_sop_instance_uid, change.index)
+        idx = (c.xray_sop_instance_uid, c.index)
         if idx not in data.index:
             return Error(f"Tried to move non-existent electrode with index '{idx}'.")
         # make the changes
-        data.loc[idx, "x"] = change.x
-        data.loc[idx, "y"] = change.y
+        data.loc[idx, "x"] = c.x
+        data.loc[idx, "y"] = c.y
         return data
-    elif isinstance(change, _RemoveElectrode):
+    elif isinstance(c, _RemoveElectrode):
         # count how many electrodes already exist
-        previous_count = (data.index.get_level_values("xray_sop_instance_uid") == change.xray_sop_instance_uid).sum()
+        previous_count = (data.index.get_level_values("xray_sop_instance_uid") == c.xray_sop_instance_uid).sum()
         # the electrode at the top index should exist
-        idx = (change.xray_sop_instance_uid, previous_count - 1)
+        idx = (c.xray_sop_instance_uid, previous_count - 1)
         if idx not in data.index:
             return Error(f"Tried to remove last electrode, but it doesn't exist at expected index '{idx}'.")
         data = data.drop(idx)
         return data
     else:
-        return Error(f"Unrecognized change type '{type(change).__name__}'")
+        return Error(f"Unrecognized change type '{type(c).__name__}'")
 
 
 def _compute_changes(  #
@@ -88,33 +97,35 @@ def _compute_changes(  #
         old_data: torch.Tensor,  #
         new_data: torch.Tensor,  #
         tol: float = 1e-8,  #
-) -> list[pydantic.BaseModel]:
+) -> list[Change]:
     uid = str(uid)
-    ret: list[pydantic.BaseModel] = []
+    ret: list[Change] = []
     if old_data.size()[0] > new_data.size()[0]:
         # have lost some points
         for i in range(old_data.size()[0] - new_data.size()[0]):
-            ret.append(_RemoveElectrode(xray_sop_instance_uid=uid))
+            ret.append(Change(value=_RemoveElectrode(action="remove", xray_sop_instance_uid=uid)))
         old_data = old_data[:new_data.size()[0]]
     elif new_data.size()[0] > old_data.size()[0]:
         # have gained some points
         for i in range(old_data.size()[0], new_data.size()[0]):
-            ret.append(_AddElectrode(  #
+            ret.append(Change(value=_AddElectrode(  #
+                action="add",  #
                 xray_sop_instance_uid=uid,  #
                 x=new_data[i, 0].item(),  #
                 y=new_data[i, 1].item(),  #
-            ))
+            )))
         new_data = new_data[:old_data.size()[0]]
     if new_data.size()[0]:
         diff_mask = (new_data - old_data).abs().max(dim=1).values > tol
         idx = torch.nonzero(diff_mask, as_tuple=True)[0]
         for i in idx.tolist():
-            ret.append(_MoveElectrode(  #
+            ret.append(Change(value=_MoveElectrode(  #
+                action="move",  #
                 xray_sop_instance_uid=uid,  #
                 index=i,  #
                 x=new_data[i, 0].item(),  #
                 y=new_data[i, 1].item(),  #
-            ))
+            )))
     return ret
 
 
@@ -123,11 +134,7 @@ class ElectrodeSaveManager:
         directory.mkdir(exist_ok=True, parents=True)
         self._config = SaveConfig(  #
             save_path=directory,  #
-            change_spec={  #
-                "add": _AddElectrode,  #
-                "move": _MoveElectrode,  #
-                "remove": _RemoveElectrode,  #
-            },  #
+            change_schema=Change,  #
             incorporate_change=_incorporate_change,  #
             default_value=pd.DataFrame(  #
                 index=pd.MultiIndex.from_arrays([[], []], names=["xray_sop_instance_uid", "index"]),  #
@@ -149,7 +156,7 @@ class ElectrodeSaveManager:
 
     def set(self, uid: str, tensor: torch.Tensor) -> None | Error:
         old: torch.Tensor | None = self.get(uid)
-        changes: list[pydantic.BaseModel] = _compute_changes(  #
+        changes: list[Change] = _compute_changes(  #
             uid=uid,  #
             old_data=torch.empty((0, 2)) if old is None else old,  #
             new_data=tensor,  #

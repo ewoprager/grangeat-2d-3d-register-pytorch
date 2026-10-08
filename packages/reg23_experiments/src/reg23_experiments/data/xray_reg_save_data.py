@@ -20,6 +20,7 @@ Changes are expressed as dicts with the following keys:
 """
 
 import pathlib
+from typing import Literal
 
 import pandas as pd
 import pydantic
@@ -31,6 +32,7 @@ __all__ = ["XRayRegSaveManager"]
 
 
 class _SetXRayRegData(pydantic.BaseModel):
+    action: Literal["set"]
     xray_sop_instance_uid: str
     horizontal_flip: bool
     crop_left: float
@@ -40,25 +42,30 @@ class _SetXRayRegData(pydantic.BaseModel):
 
 
 class _RemoveXRayRegData(pydantic.BaseModel):
+    action: Literal["remove"]
     xray_sop_instance_uid: str
 
 
-def _incorporate_change(data: pd.DataFrame, change: pydantic.BaseModel) -> pd.DataFrame | Error:
-    if isinstance(change, _SetXRayRegData):
+class Change(pydantic.BaseModel):
+    value: _SetXRayRegData | _RemoveXRayRegData = pydantic.Field(discriminator="action")
+
+
+def _incorporate_change(data: pd.DataFrame, change: Change) -> pd.DataFrame | Error:
+    c = change.value
+    if isinstance(c, _SetXRayRegData):
         # Update / insert the row into the dataframe
         for col in ['horizontal_flip', 'crop_left', 'crop_right', 'crop_top', 'crop_bottom']:
-            data.loc[change.xray_sop_instance_uid, col] = getattr(change, col)
+            data.loc[c.xray_sop_instance_uid, col] = getattr(c, col)
         return data
-    elif isinstance(change, _RemoveXRayRegData):
+    elif isinstance(c, _RemoveXRayRegData):
         # check if the idx exists in the dataframe
-        if change.xray_sop_instance_uid in data.index:
-            data = data.drop(change.xray_sop_instance_uid)
+        if c.xray_sop_instance_uid in data.index:
+            data = data.drop(c.xray_sop_instance_uid)
         else:
-            return Error(
-                f"Tried to remove config for non-existent X-ray '{change.xray_sop_instance_uid}' from save data.")
+            return Error(f"Tried to remove config for non-existent X-ray '{c.xray_sop_instance_uid}' from save data.")
         return data
     else:
-        return Error(f"Unrecognized change type '{type(change).__name__}'")
+        return Error(f"Unrecognized change type '{type(c).__name__}'")
 
 
 class XRayRegSaveManager:
@@ -66,10 +73,7 @@ class XRayRegSaveManager:
         directory.mkdir(exist_ok=True, parents=True)
         self._config = SaveConfig(  #
             save_path=directory,  #
-            change_spec={  #
-                "set": _SetXRayRegData,  #
-                "remove": _RemoveXRayRegData,  #
-            },  #
+            change_schema=Change,  #
             incorporate_change=_incorporate_change,  #
             default_value=pd.DataFrame(  #
                 index=pd.Index([], name="xray_sop_instance_uid"),  #
