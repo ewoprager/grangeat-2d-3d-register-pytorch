@@ -1,138 +1,147 @@
+"""
+Stores a list 2D electrode positions as rows of a pd.DataFrame with the following index columns:
+Column name: 'xray_sop_instance_uid', 'index'
+Type: str, int
+and the following columns:
+Column name: 'x', 'y'
+Type: float, float
+
+Changes are expressed as dicts with the following keys:
+    'action': The string determining the action type. Possible values:
+        - 'add': Append a new point; additional keys required:
+            - 'xray_sop_instance_uid': The str SOPInstanceUID of the associated X-ray image
+            - 'x': The x position
+            - 'y': The y position
+        - 'move': Move an existing point; additional keys required:
+            - 'xray_sop_instance_uid': The str SOPInstanceUID of the associated X-ray image
+            - 'index': The index of the electrode to move
+            - 'x': The new x position
+            - 'y': The new y position
+        - 'remove': Remove the last point
+            - 'xray_sop_instance_uid': The str SOPInstanceUID of the associated X-ray
+"""
+
 import pathlib
+import pydantic
 
 import pandas as pd
 import torch
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.io.save_data import Change, SaveData, SaveDataManager
+from reg23_experiments.io.save_data import SaveType, SavedObject
 
 __all__ = ["ElectrodeSaveData", "ElectrodeSaveManager"]
 
 
-class ElectrodeSaveData(SaveData):
-    """
-    Stores a list 2D electrode positions as rows of a pd.DataFrame with the following index columns:
-    Column name: 'xray_sop_instance_uid', 'index'
-    Type: str, int
-    and the following columns:
-    Column name: 'x', 'y'
-    Type: float, float
+class _AddElectrode(pydantic.BaseModel):
+    xray_sop_instance_uid: str
+    x: float
+    y: float
 
-    Changes are expressed as dicts with the following keys:
-        'action': The string determining the action type. Possible values:
-            - 'add': Append a new point; additional keys required:
-                - 'xray_sop_instance_uid': The str SOPInstanceUID of the associated X-ray image
-                - 'x': The x position
-                - 'y': The y position
-            - 'move': Move an existing point; additional keys required:
-                - 'xray_sop_instance_uid': The str SOPInstanceUID of the associated X-ray image
-                - 'index': The index of the electrode to move
-                - 'x': The new x position
-                - 'y': The new y position
-            - 'remove': Remove the last point
-                - 'xray_sop_instance_uid': The str SOPInstanceUID of the associated X-ray
-    """
 
-    file_suffix = ".parquet"
+class _MoveElectrode(pydantic.BaseModel):
+    xray_sop_instance_uid: str
+    index: int
+    x: float
+    y: float
 
-    def __init__(self, contents: pd.DataFrame | None = None):
-        self._contents = pd.DataFrame() if contents is None else contents
 
-    def get_data(self) -> pd.DataFrame:
-        return self._contents
+class _RemoveElectrode(pydantic.BaseModel):
+    xray_sop_instance_uid: str
 
-    @staticmethod
-    def new_value() -> 'ElectrodeSaveData':
-        index = pd.MultiIndex.from_arrays([[], []], names=["xray_sop_instance_uid", "index"])
-        columns = ["x", "y"]
-        df = pd.DataFrame(index=index, columns=columns)
-        return ElectrodeSaveData(df)
 
-    @staticmethod
-    def load_from_file(file: pathlib.Path) -> 'ElectrodeSaveData':
-        return ElectrodeSaveData(pd.read_parquet(file))
+def _incorporate_electrode_change(self, change: Change) -> None | Error:
+    if "action" not in change:
+        return Error("Key 'action' not found in change.")
+    if change["action"] == "add":
+        # get the uid
+        if "xray_sop_instance_uid" not in change:
+            return Error("Key 'xray_sop_instance_uid' not found in 'add' action change.")
+        uid = change["xray_sop_instance_uid"]
+        if not isinstance(uid, str):
+            return Error("'xray_sop_instance_uid' value in 'add' action change should be a `str`.")
+        # get the x value
+        if "x" not in change:
+            return Error("Key 'x' not found in 'add' action change.")
+        x = change["x"]
+        if not isinstance(x, float):
+            return Error("'x' value in 'add' action change should be a `float`.")
+        # get the y value
+        if "y" not in change:
+            return Error("Key y' not found in 'add' action change.")
+        y = change["y"]
+        if not isinstance(y, float):
+            return Error("'y' value in 'add' action change should be a `float`.")
+        # count how many electrodes already exist
+        previous_count = (self._contents.index.get_level_values("xray_sop_instance_uid") == uid).sum()
+        index = pd.MultiIndex.from_tuples([(uid, previous_count)], names=["xray_sop_instance_uid", "index"])
+        self._contents = pd.concat([self._contents, pd.DataFrame([{"x": x, "y": y}], index=index)])
+        return None
+    elif change["action"] == "move":
+        # get the uid
+        if "xray_sop_instance_uid" not in change:
+            return Error("Key 'xray_sop_instance_uid' not found in 'move' action change.")
+        uid = change["xray_sop_instance_uid"]
+        if not isinstance(uid, str):
+            return Error("'xray_sop_instance_uid' value in 'move' action change should be a `str`.")
+        # get the index
+        if "index" not in change:
+            return Error("Key 'index' not found in 'move' action change.")
+        index = change["index"]
+        if not isinstance(index, int):
+            return Error("'index' value in 'move' action change should be an `int`.")
+        # get the x value
+        if "x" not in change:
+            return Error("Key 'x' not found in 'move' action change.")
+        x = change["x"]
+        if not isinstance(x, float):
+            return Error("'x' value in 'move' action change should be a `float`.")
+        # get the y value
+        if "y" not in change:
+            return Error("Key y' not found in 'move' action change.")
+        y = change["y"]
+        if not isinstance(y, float):
+            return Error("'y' value in 'move' action change should be a `float`.")
+        # check if the electrode exists
+        idx = (uid, index)
+        if idx not in self._contents.index:
+            return Error(f"Tried to move non-existent electrode with index '{idx}'.")
+        # make the changes
+        self._contents.loc[idx, "x"] = x
+        self._contents.loc[idx, "y"] = y
+        return None
+    elif change["action"] == "remove":
+        # get the uid
+        if "xray_sop_instance_uid" not in change:
+            return Error("Key 'xray_sop_instance_uid' not found in 'remove' action change.")
+        uid = change["xray_sop_instance_uid"]
+        if not isinstance(uid, str):
+            return Error("'xray_sop_instance_uid' value in 'remove' action change should be a `str`.")
+        # count how many electrodes already exist
+        previous_count = (self._contents.index.get_level_values("xray_sop_instance_uid") == uid).sum()
+        # the electrode at the top index should exist
+        idx = (uid, previous_count - 1)
+        if idx not in self._contents.index:
+            return Error(f"Tried to remove last electrode, but it doesn't exist at expected index '{idx}'.")
+        self._contents = self._contents.drop(idx)
+        return None
+    else:
+        return Error(f"Unrecognised action '{change["action"]}'.")
 
-    def apply_change(self, change: Change) -> None | Error:
-        if "action" not in change:
-            return Error("Key 'action' not found in change.")
-        if change["action"] == "add":
-            # get the uid
-            if "xray_sop_instance_uid" not in change:
-                return Error("Key 'xray_sop_instance_uid' not found in 'add' action change.")
-            uid = change["xray_sop_instance_uid"]
-            if not isinstance(uid, str):
-                return Error("'xray_sop_instance_uid' value in 'add' action change should be a `str`.")
-            # get the x value
-            if "x" not in change:
-                return Error("Key 'x' not found in 'add' action change.")
-            x = change["x"]
-            if not isinstance(x, float):
-                return Error("'x' value in 'add' action change should be a `float`.")
-            # get the y value
-            if "y" not in change:
-                return Error("Key y' not found in 'add' action change.")
-            y = change["y"]
-            if not isinstance(y, float):
-                return Error("'y' value in 'add' action change should be a `float`.")
-            # count how many electrodes already exist
-            previous_count = (self._contents.index.get_level_values("xray_sop_instance_uid") == uid).sum()
-            index = pd.MultiIndex.from_tuples([(uid, previous_count)], names=["xray_sop_instance_uid", "index"])
-            self._contents = pd.concat([self._contents, pd.DataFrame([{"x": x, "y": y}], index=index)])
-            return None
-        elif change["action"] == "move":
-            # get the uid
-            if "xray_sop_instance_uid" not in change:
-                return Error("Key 'xray_sop_instance_uid' not found in 'move' action change.")
-            uid = change["xray_sop_instance_uid"]
-            if not isinstance(uid, str):
-                return Error("'xray_sop_instance_uid' value in 'move' action change should be a `str`.")
-            # get the index
-            if "index" not in change:
-                return Error("Key 'index' not found in 'move' action change.")
-            index = change["index"]
-            if not isinstance(index, int):
-                return Error("'index' value in 'move' action change should be an `int`.")
-            # get the x value
-            if "x" not in change:
-                return Error("Key 'x' not found in 'move' action change.")
-            x = change["x"]
-            if not isinstance(x, float):
-                return Error("'x' value in 'move' action change should be a `float`.")
-            # get the y value
-            if "y" not in change:
-                return Error("Key y' not found in 'move' action change.")
-            y = change["y"]
-            if not isinstance(y, float):
-                return Error("'y' value in 'move' action change should be a `float`.")
-            # check if the electrode exists
-            idx = (uid, index)
-            if idx not in self._contents.index:
-                return Error(f"Tried to move non-existent electrode with index '{idx}'.")
-            # make the changes
-            self._contents.loc[idx, "x"] = x
-            self._contents.loc[idx, "y"] = y
-            return None
-        elif change["action"] == "remove":
-            # get the uid
-            if "xray_sop_instance_uid" not in change:
-                return Error("Key 'xray_sop_instance_uid' not found in 'remove' action change.")
-            uid = change["xray_sop_instance_uid"]
-            if not isinstance(uid, str):
-                return Error("'xray_sop_instance_uid' value in 'remove' action change should be a `str`.")
-            # count how many electrodes already exist
-            previous_count = (self._contents.index.get_level_values("xray_sop_instance_uid") == uid).sum()
-            # the electrode at the top index should exist
-            idx = (uid, previous_count - 1)
-            if idx not in self._contents.index:
-                return Error(f"Tried to remove last electrode, but it doesn't exist at expected index '{idx}'.")
-            self._contents = self._contents.drop(idx)
-            return None
-        else:
-            return Error(f"Unrecognised action '{change["action"]}'.")
 
-    def save_to_file(self, file: pathlib.Path) -> None:
-        self._contents.to_parquet(file)
-
+electrode_save_config = SaveType(  #
+    save_path=pathlib.Path("data/app_electrode_save_data"),  #
+    change_spec={  #
+        "add": _AddElectrode,  #
+        "move": _MoveElectrode,  #
+        "remove": _RemoveElectrode,  #
+    },  #
+    incorporate_change=_incorporate_electrode_change,  #
+    default_value=pd.DataFrame(  #
+        index=pd.MultiIndex.from_arrays([[], []], names=["xray_sop_instance_uid", "index"]),  #
+        columns=["x", "y"],  #
+    )),  #
+)
 
 def compute_changes(uid: str, old_data: torch.Tensor, new_data: torch.Tensor, tol: float = 1e-8) -> list[Change]:
     uid = str(uid)

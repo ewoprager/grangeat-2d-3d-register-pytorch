@@ -27,7 +27,7 @@ from datetime import datetime
 from typing import Callable
 
 import pandas as pd
-import traitlets
+import pydantic
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.io.serialize import serialize_recursive
@@ -57,40 +57,43 @@ def _find_latest_snapshot_dir(save_dir: pathlib.Path) -> pathlib.Path | Error:
     return save_dir / latest
 
 
-class SaveType[ObjectType, SchemaType: traitlets.HasTraits]:
+ChangeSpec = dict[str, type[pydantic.BaseModel]]
+
+
+class ChangeBase(pydantic.BaseModel):
+    action: str
+    parameters: dict
+
+
+class SaveType:
     def __init__(  #
             self,  #
+            *,  #
             save_path: pathlib.Path,  #
-            object_type: type[ObjectType],  #
-            change_schema: type[SchemaType],  #
-            incorporate_change: Callable[[ObjectType, SchemaType], ObjectType],  #
-            default_value: ObjectType,  #
+            change_spec: ChangeSpec,  #
+            incorporate_change: Callable[[pd.DataFrame, pydantic.BaseModel], pd.DataFrame | Error],  #
+            default_value: pd.DataFrame,  #
             changes_per_snapshot: int = 32,  #
     ):
         self._save_path = save_path
-        self._object_type = object_type
-        self._change_schema = change_schema
+        self._change_spec = change_spec
         self._incorporate_change = incorporate_change
         self._default_value = default_value
         self._changes_per_snapshot = changes_per_snapshot
 
     @property
-    def object_type(self) -> type[ObjectType]:
-        return self._object_type
-
-    @property
-    def incorporate_change(self) -> Callable[[ObjectType, SchemaType], ObjectType]:
+    def incorporate_change(self) -> Callable[[pd.DataFrame, pydantic.BaseModel], pd.DataFrame]:
         return self._incorporate_change
 
     @property
-    def default_value(self) -> ObjectType:
+    def default_value(self) -> pd.DataFrame:
         return self._default_value
 
     @property
     def changes_per_snapshot(self) -> int:
         return self._changes_per_snapshot
 
-    def load_specific_save(self, *, snapshot: str, change_count: int = -1) -> tuple[ObjectType, int] | Error:
+    def load_specific_save(self, *, snapshot: str, change_count: int = -1) -> tuple[pd.DataFrame, int] | Error:
         """
         Load a specific save, optionally specifying a change count to load.
         :param snapshot:
@@ -116,19 +119,28 @@ class SaveType[ObjectType, SchemaType: traitlets.HasTraits]:
                     if -1 < change_count <= change_i:
                         break
                     try:
-                        change = json.loads(line)
-                    except Exception as e:
-                        return Error(f"Error parsing line: '{line}' as JSON from log file '{str(log_file)}': {e}")
-                    try:
-                        change_object = self._change_schema(change)
-                    except Exception as e:
+                        change: ChangeBase = ChangeBase.model_validate_json(line)
+                    except pydantic.ValidationError as e:
                         return Error(
                             f"Change at line '{line}' in log file '{str(log_file)}' did not conform to schema: {e}")
-                    ###
+                    except ValueError as e:
+                        return Error(f"Error parsing line: '{line}' as JSON from log file '{str(log_file)}': {e}")
+                    if change.action not in self._change_spec:
+                        return Error(
+                            f"Unrecognised action '{change.action}' in lin e'{line}', log file '{str(log_file)}'")
+                    model = self._change_spec[change.action]
+                    try:
+                        change: model = model.model_validate(change.parameters)
+                    except pydantic.ValidationError as e:
+                        return Error(
+                            f"Change at line '{line}' in log file '{str(log_file)}' did not conform to schema: {e}")
+                    ret: pd.DataFrame | Error = self._incorporate_change(ret, change)
+                    if isinstance(ret, Error):
+                        return ret
                     change_i += 1
         return ret, change_i
 
-    def load_latest_save(self) -> tuple[pathlib.Path, ObjectType, int] | Error:
+    def load_latest_save(self) -> tuple[pathlib.Path, pd.DataFrame, int] | Error:
         """
         Load the latest data save in the given directory.
         :return: (the snapshot directory loaded from, the new instance of `cls` with the loaded data, the number of
@@ -151,8 +163,8 @@ class SaveType[ObjectType, SchemaType: traitlets.HasTraits]:
         return snapshot_dir
 
 
-class SavedObject[ObjectType, SchemaType: traitlets.HasTraits]:
-    def __init__(self, object_type: SaveType[ObjectType, SchemaType]):
+class SavedObject:
+    def __init__(self, object_type: SaveType):
         """
         Constructor. Loads any existing data from the save directory `directory`.
 
@@ -162,15 +174,15 @@ class SavedObject[ObjectType, SchemaType: traitlets.HasTraits]:
         """
         self._object_type = object_type
         # load from the latest save directory, if there is one
-        res: tuple[pathlib.Path, ObjectType, int] | Error = self._object_type.load_latest_save()
+        res: tuple[pathlib.Path, pd.DataFrame, int] | Error = self._object_type.load_latest_save()
         if isinstance(res, Error):
-            self._current_state: ObjectType = self._object_type.default_value
+            self._current_state: pd.DataFrame = self._object_type.default_value
             self._start_from_new_snapshot()
         else:
             self._current_snapshot_dir, self._current_state, self._change_count = res
             _log_file_path(snapshot_dir=self._current_snapshot_dir).touch()
 
-    def get(self) -> ObjectType:
+    def get(self) -> pd.DataFrame:
         return self._current_state
 
     def _start_from_new_snapshot(self) -> None:
@@ -185,7 +197,7 @@ class SavedObject[ObjectType, SchemaType: traitlets.HasTraits]:
         :param change_object: The change to apply and save.
         :return: The error if one occurs.
         """
-        res: ObjectType | Error = self._object_type.incorporate_change(self._current_state, change_object)
+        res: pd.DataFrame | Error = self._object_type.incorporate_change(self._current_state, change_object)
         if isinstance(res, Error):
             return res
         self._current_state = res
