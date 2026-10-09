@@ -49,7 +49,7 @@ def ct_xray_to_h_linear(  #
         theta = theta_cache[xray_path]
     else:
         xray_sop_instance_uid = read_dicom(xray_path)["uid"]
-        idx = (xray_sop_instance_uid, "gold_standard")
+        idx = (ct_series_uid, xray_sop_instance_uid, "gold_standard")
         row = saved_transformations.loc[idx]
         t = Transformation.from_vector(  #
             torch.tensor([row[f"x{i}"] for i in range(6)], dtype=torch.float64)  #

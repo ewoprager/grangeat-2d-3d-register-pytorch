@@ -32,10 +32,11 @@ logger = logging.getLogger(__name__)
 def load_ground_truth(  #
         *,  #
         saved_transformations: pd.DataFrame,  #
+        ct_series_uid: str,  #
         xray_sop_instance_uid: str,  #
         device: torch.device  #
 ) -> dict[str, Any]:
-    idx = (xray_sop_instance_uid, "gold_standard")
+    idx = (ct_series_uid, xray_sop_instance_uid, "gold_standard")
     try:
         row = saved_transformations.loc[idx]
     except KeyError:

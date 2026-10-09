@@ -36,20 +36,25 @@ class ImageSpecificConfigurations(NamedTuple):
 
         return ImageSpecificConfigurations(saved_transformations, saved_xray_reg_configs)
 
-    def check_xray_path(self, p: str | pathlib.Path) -> Error | None:
+    def check_xray_path(  #
+            self,  #
+            *,  #
+            ct_series_uid: str,  #
+            xray_path: str | pathlib.Path,  #
+    ) -> Error | None:
         """
         Check that all X-rays exist, have ground truth transformations available, and have reg configs available
         :param p:
         :return:
         """
-        p = pathlib.Path(p)
-        if not p.is_file():
-            return Error(f"X-ray file '{str(p)}' doesn't exist.")
+        xray_path = pathlib.Path(xray_path)
+        if not xray_path.is_file():
+            return Error(f"X-ray file '{str(xray_path)}' doesn't exist.")
         try:
-            dicom: XrayDICOM = read_dicom(p)
+            dicom: XrayDICOM = read_dicom(xray_path)
         except Exception as e:
             return Error(f"Failed to read X-ray file: {e}")
-        idx = (dicom["uid"], "gold_standard")
+        idx = (ct_series_uid, dicom["uid"], "gold_standard")
         try:
             self.saved_transformations.loc[idx]
         except KeyError:

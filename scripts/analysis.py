@@ -18,8 +18,13 @@ def get_uid(path: str | pathlib.Path) -> str:
     return dicom["uid"]
 
 
-def load_ground_truth(xray_sop_instance_uid: str, saved_transformations: pd.DataFrame) -> Transformation:
-    idx = (xray_sop_instance_uid, "gold_standard")
+def load_ground_truth(  #
+        *,  #
+        ct_series_uid: str,  #
+        xray_sop_instance_uid: str,  #
+        saved_transformations: pd.DataFrame,  #
+) -> Transformation:
+    idx = (ct_series_uid, xray_sop_instance_uid, "gold_standard")
     row = saved_transformations.loc[idx]
     return Transformation.from_vector(torch.tensor([row[f"x{i}"] for i in range(6)], dtype=torch.float64))
 
