@@ -17,7 +17,7 @@ import yaml
 from matplotlib import rcParams
 
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.data.transformation_save_data import TransformationSaveData
+from reg23_experiments.data.save_data.transformations import TransformationSaveData
 from reg23_experiments.io.image import read_dicom
 from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.io.sitk import load_ct_series

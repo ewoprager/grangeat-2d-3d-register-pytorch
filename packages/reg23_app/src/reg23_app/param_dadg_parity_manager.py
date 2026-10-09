@@ -3,12 +3,12 @@ import logging
 import torch
 
 from reg23_app.state import AppState
-from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
-from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.parameters import XrayParameters
+from reg23_experiments.data.save_data.ct_fiducials import CTFiducialSaveManager
+from reg23_experiments.data.save_data.xray_electrodes import ElectrodeSaveManager
+from reg23_experiments.data.save_data.xray_fiducials import XRayFiducialSaveManager
 from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints2D
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
 from reg23_experiments.experiments.reg_experiment import drr_reg_updaters, grangeat_updaters, unbatched_updaters
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, capture_in_namespaces
 from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed

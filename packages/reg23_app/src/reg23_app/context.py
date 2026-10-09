@@ -9,12 +9,12 @@ from reg23_app.gui.input_manager import InputManager
 from reg23_app.gui.reg_config_manager import RegConfigManager
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_app.state import AppState
-from reg23_experiments.data.ct_fiducial_save_data import CTFiducialSaveManager
-from reg23_experiments.data.electrode_save_data import ElectrodeSaveManager
 from reg23_experiments.data.parameters import Parameters
-from reg23_experiments.data.transformation_save_data import TransformationSaveManager
-from reg23_experiments.data.xray_fiducial_save_data import XRayFiducialSaveManager
-from reg23_experiments.data.xray_reg_save_data import XRayRegSaveManager
+from reg23_experiments.data.save_data.ct_fiducials import CTFiducialSaveManager
+from reg23_experiments.data.save_data.transformations import TransformationSaveManager
+from reg23_experiments.data.save_data.xray_electrodes import ElectrodeSaveManager
+from reg23_experiments.data.save_data.xray_fiducials import XRayFiducialSaveManager
+from reg23_experiments.data.save_data.xray_regs import XRayRegSaveManager
 from reg23_experiments.io.serialize import deserialize_recursive, serialize_recursive
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.utils.data import observe_all_traits_recursively

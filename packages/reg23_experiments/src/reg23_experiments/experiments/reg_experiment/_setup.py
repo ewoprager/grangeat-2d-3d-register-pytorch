@@ -4,9 +4,9 @@ from typing import NamedTuple
 
 import pandas as pd
 
+from reg23_experiments.data.save_data.transformations import TransformationSaveManager
+from reg23_experiments.data.save_data.xray_regs import XRayRegSaveManager
 from reg23_experiments.data.structs import Error
-from reg23_experiments.data.transformation_save_data import TransformationSaveManager
-from reg23_experiments.data.xray_reg_save_data import XRayRegSaveManager
 from reg23_experiments.io.image import XrayDICOM, read_dicom
 
 __all__ = ["ImageSpecificConfigurations"]
