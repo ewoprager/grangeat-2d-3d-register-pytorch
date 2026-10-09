@@ -10,7 +10,7 @@ import torch
 
 from reg23_experiments.ops import similarity_metric
 
-__all__ = ["configs_to_dict", "save_dict", "instance_output_directory", "string_to_sim_met"]
+__all__ = ["configs_to_dict", "save_dict", "instance_output_directory", "serialise_filter_method", "string_to_sim_met"]
 
 
 def configs_to_dict(*vargs) -> dict[str, Any]:
@@ -31,6 +31,33 @@ def instance_output_directory(script_output_directory: str | pathlib.Path, name:
     ret: pathlib.Path = pathlib.Path(script_output_directory) / dir_name
     ret.mkdir(parents=True, exist_ok=True)
     return ret
+
+
+def serialise_filter_method(  #
+        *,  #
+        filter_method: str,  #
+        lowpass_threshold: float,  #
+        highpass_threshold: float,  #
+) -> dict[str, Any]:
+    if filter_method == "none":
+        return {  #
+            "method": "none",  #
+        }
+    if filter_method == "highpass":
+        return {  #
+            "method": "highpass",  #
+            "threshold": highpass_threshold,  #
+        }
+    if filter_method == "bandpass":
+        return {  #
+            "method": "highpass",  #
+            "high_threshold": highpass_threshold,  #
+            "low_threshold": lowpass_threshold,  #
+        }
+    # filter_method == "gradient_like"
+    return {  #
+        "method": "gradient_like",  #
+    }
 
 
 STRING_TO_SIM_MET = {  #

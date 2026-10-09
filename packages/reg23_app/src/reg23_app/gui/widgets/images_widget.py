@@ -15,6 +15,7 @@ from reg23_app.gui.layers.mask_layer import add_mask_layer
 from reg23_app.gui.layers.moving_image_layer import add_moving_image_layer
 from reg23_app.gui.layers.projected_fiducials_layer import add_projected_fiducials_layer
 from reg23_app.gui.layers.xray_fiducial_layer import add_xray_fiducial_layer
+from reg23_app.gui.layers.grangeat_moving_image_layer import add_grangeat_moving_image_layer
 
 __all__ = ["ImagesWidget"]
 
@@ -57,9 +58,17 @@ class ImagesWidget(widgets.Container):
                 # Fixed image
                 show_fixed_image_button = widgets.PushButton(label="Show fixed image")
                 show_fixed_image_button.changed.connect(lambda _, name=key: self._on_show_fixed_image_layer(name))
+                # Grangeat fixed image
+                show_grangeat_fixed_image_button = widgets.PushButton(label="Show grangeat fixed image")
+                show_grangeat_fixed_image_button.changed.connect(
+                    lambda _, name=key: self._on_show_grangeat_fixed_image_layer(name))
                 # Moving image
                 show_moving_image_button = widgets.PushButton(label="Show moving image")
                 show_moving_image_button.changed.connect(lambda _, name=key: self._on_show_moving_image_layer(name))
+                # Grangeat moving image
+                show_grangeat_moving_image_button = widgets.PushButton(label="Show grangeat moving image")
+                show_grangeat_moving_image_button.changed.connect(
+                    lambda _, name=key: self._on_show_grangeat_moving_image_layer(name))
                 # Mask
                 show_mask_button = widgets.PushButton(label="Show mask")
                 show_mask_button.changed.connect(lambda _, name=key: self._on_show_mask_layer(name))
@@ -80,7 +89,9 @@ class ImagesWidget(widgets.Container):
                 self.append(widgets.Container(widgets=[  #
                     show_image_2d_full_button,  #
                     show_fixed_image_button,  #
+                    show_grangeat_fixed_image_button,  #
                     show_moving_image_button,  #
+                    show_grangeat_moving_image_button,  #
                     show_mask_button,  #
                     show_electrodes_button,  #
                     show_xray_fiducials_button,  #
@@ -106,9 +117,19 @@ class ImagesWidget(widgets.Container):
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__fixed_image",
                               spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
+    def _on_show_grangeat_fixed_image_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show grangeat_fixed_image for '{xray_name}' clicked")
+        add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__sinogram2d",
+                              spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+
     def _on_show_moving_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show moving_image for '{xray_name}' clicked")
         add_moving_image_layer(ctx=self._ctx, namespace=xray_name, spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+
+    def _on_show_grangeat_moving_image_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show grangeat_moving_image for '{xray_name}' clicked")
+        add_grangeat_moving_image_layer(ctx=self._ctx, namespace=xray_name,
+                                        spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
     def _on_show_mask_layer(self, xray_name: str) -> None:
         logger.debug(f"Show mask for '{xray_name}' clicked")

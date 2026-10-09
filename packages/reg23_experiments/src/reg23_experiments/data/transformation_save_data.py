@@ -1,119 +1,99 @@
+"""
+Stores a list of 6 d.o.f. transformations as rows of a pd.DataFrame, with the following columns:
+Index column name: 'xray_sop_instance_uid', 'name'
+Index column type: str, str
+Column name: 'x0', 'x1', 'x2', 'x3', 'x4', 'x5'
+Type: float, float, float, float, float, float
+
+Changes are expressed as dicts with the following keys:
+    'action': The string determining the action type. Possible values:
+        - 'set': Add or change a named transformation to/in the list; additional keys required:
+            - 'xray_sop_instance_uid': The str SOPInstanceUID of the X-ray associated with the transformation
+            - 'name': The string name for the transformation
+            - 'x0' ... 'x5': The float param values
+        - 'remove': Remove a named transformation from the list; additional keys required:
+            - 'xray_sop_instance_uid': The str SOPInstanceUID of the X-ray associated with the transformation to
+            remove
+            - 'name': The name of the transformation to remove
+"""
+
 import logging
 import pathlib
+from typing import Literal
 
 import pandas as pd
+import pydantic
 import torch
 
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.io.save_data import Change, SaveData, SaveDataManager
-from reg23_experiments.io.serialize import JsonSerializable
+from reg23_experiments.io.save_data import SaveConfig, SaveState
 
-__all__ = ["TransformationSaveData", "TransformationSaveManager"]
+__all__ = ["TransformationSaveManager"]
 
 logger = logging.getLogger(__name__)
 
 
-class TransformationSaveData(SaveData):
-    """
-    Stores a list of 6 d.o.f. transformations as rows of a pd.DataFrame, with the following columns:
-    Index column name: 'xray_sop_instance_uid', 'name'
-    Index column type: str, str
-    Column name: 'x0', 'x1', 'x2', 'x3', 'x4', 'x5'
-    Type: float, float, float, float, float, float
+class _SetTransformation(pydantic.BaseModel):
+    action: Literal["set"]
+    xray_sop_instance_uid: str
+    name: str
+    x0: float
+    x1: float
+    x2: float
+    x3: float
+    x4: float
+    x5: float
 
-    Changes are expressed as dicts with the following keys:
-        'action': The string determining the action type. Possible values:
-            - 'set': Add or change a named transformation to/in the list; additional keys required:
-                - 'xray_sop_instance_uid': The str SOPInstanceUID of the X-ray associated with the transformation
-                - 'name': The string name for the transformation
-                - 'x0' ... 'x5': The float param values
-            - 'remove': Remove a named transformation from the list; additional keys required:
-                - 'xray_sop_instance_uid': The str SOPInstanceUID of the X-ray associated with the transformation to
-                remove
-                - 'name': The name of the transformation to remove
-    """
 
-    file_suffix = ".parquet"
+class _RemoveTransformation(pydantic.BaseModel):
+    action: Literal["remove"]
+    xray_sop_instance_uid: str
+    name: str
 
-    def __init__(self, contents: pd.DataFrame | None = None):
-        self._contents = pd.DataFrame() if contents is None else contents
 
-    def get_data(self) -> pd.DataFrame:
-        return self._contents
+class Change(pydantic.BaseModel):
+    value: _SetTransformation | _RemoveTransformation = pydantic.Field(discriminator="action")
 
-    @staticmethod
-    def new_value() -> 'TransformationSaveData':
-        index = pd.MultiIndex.from_arrays([[], []], names=["xray_sop_instance_uid", "name"])
-        columns = [f"x{i}" for i in range(6)]
-        df = pd.DataFrame(index=index, columns=columns)
-        return TransformationSaveData(df)
 
-    @staticmethod
-    def load_from_file(file: pathlib.Path) -> 'TransformationSaveData':
-        return TransformationSaveData(pd.read_parquet(file))
-
-    def apply_change(self, change: Change) -> None | Error:
-        if "action" not in change:
-            return Error("Key 'action' not found in change.")
-        if change["action"] == "set":
-            # get the uid
-            if "xray_sop_instance_uid" not in change:
-                return Error("Key 'xray_sop_instance_uid' not found in 'set' action change.")
-            uid = change["xray_sop_instance_uid"]
-            if not isinstance(uid, str):
-                return Error("'xray_sop_instance_uid' value in 'set' action change should be a `str`.")
-            # get the name
-            if "name" not in change:
-                return Error("Key 'name' not found in 'set' action change.")
-            name = change["name"]
-            if not isinstance(name, str):
-                return Error("'name' value in 'set' action change should be a `str`.")
-            # get the column values
-            new_values = {}
-            for i in range(6):
-                key = f"x{i}"
-                if key not in change:
-                    return Error(f"Key '{key}' not found in 'set' action change.")
-                new_values[key] = change[key]
-            # update / insert into the dataframe
-            idx = (uid, name)
-            self._contents.loc[idx, list(new_values.keys())] = pd.Series(new_values)
-            return None
-        elif change["action"] == "remove":
-            # get the uid
-            if "xray_sop_instance_uid" not in change:
-                return Error("Key 'xray_sop_instance_uid' not found in 'remove' action change.")
-            uid = change["xray_sop_instance_uid"]
-            if not isinstance(uid, str):
-                return Error("'xray_sop_instance_uid' value in 'remove' action change should be a `str`.")
-            # get the name
-            if "name" not in change:
-                return Error("Key 'name' not found in 'remove' action change.")
-            name = change["name"]
-            if not isinstance(name, str):
-                return Error("'name' value in 'remove' action change should be a `str`.")
-            # check if the idx exists in the dataframe
-            idx = (uid, name)
-            if idx in self._contents.index:
-                self._contents = self._contents.drop(idx)
-            else:
-                logger.warning(f"Tried to remove non-existent transformation '{idx}' from save data.")
-            return None
+def _incorporate_change(data: pd.DataFrame, change: Change) -> pd.DataFrame | Error:
+    c = change.value
+    if isinstance(c, _SetTransformation):
+        # update / insert into the dataframe
+        idx = (c.xray_sop_instance_uid, c.name)
+        for col in (f"x{i}" for i in range(6)):
+            data.loc[idx, col] = getattr(c, col)
+        return data
+    elif isinstance(c, _RemoveTransformation):
+        # check if the idx exists in the dataframe
+        idx = (c.xray_sop_instance_uid, c.name)
+        if idx in data.index:
+            data = data.drop(idx)
         else:
-            return Error(f"Unrecognised action '{change["action"]}'.")
-
-    def save_to_file(self, file: pathlib.Path) -> None:
-        self._contents.to_parquet(file)
+            logger.warning(f"Tried to remove non-existent transformation '{idx}' from save data.")
+        return data
+    else:
+        return Error(f"Unrecognized change type '{type(c).__name__}'")
 
 
 class TransformationSaveManager:
     def __init__(self, directory: pathlib.Path):
         directory.mkdir(exist_ok=True, parents=True)
-        self._save_data_manager = SaveDataManager[TransformationSaveData](cls=TransformationSaveData,
-                                                                          save_directory=directory)
+        self._config = SaveConfig(  #
+            save_path=directory,  #
+            change_schema=Change,  #
+            incorporate_change=_incorporate_change,  #
+            default_value=pd.DataFrame(index=pd.MultiIndex.from_arrays(  #
+                [[], []],  #
+                names=["xray_sop_instance_uid", "name"]  #
+            ), columns=[f"x{i}" for i in range(6)]),  #
+        )
+        self._state = SaveState(self._config)
+
+    def get_all(self) -> pd.DataFrame:
+        return self._state.get()
 
     def get_names(self, uid: str) -> list[str]:
-        df: pd.DataFrame = self._save_data_manager.get_data()
+        df: pd.DataFrame = self._state.get()
         if df.empty:
             return []
         if uid in df.index.get_level_values("xray_sop_instance_uid"):
@@ -122,7 +102,7 @@ class TransformationSaveManager:
             return []
 
     def get_as_dict(self, uid: str, *, device: torch.device = torch.device("cpu")) -> dict[str, Transformation]:
-        df: pd.DataFrame = self._save_data_manager.get_data()
+        df: pd.DataFrame = self._state.get()
         df_for_xray = df.xs(uid, level="xray_sop_instance_uid")
         return {  #
             str(name): Transformation.from_vector(
@@ -132,7 +112,7 @@ class TransformationSaveManager:
 
     def get_transformation(self, *, uid: str, name: str,
                            device: torch.device = torch.device("cpu")) -> Transformation | Error:
-        df: pd.DataFrame = self._save_data_manager.get_data()
+        df: pd.DataFrame = self._state.get()
         idx = (uid, name)
         if idx not in df.index:
             return Error(f"No transformation saved at idx '{idx}'.")
@@ -141,20 +121,19 @@ class TransformationSaveManager:
         return Transformation.from_vector(torch.tensor(values, dtype=torch.float64, device=device))
 
     def set(self, *, uid: str, name: str, transformation: Transformation) -> None | Error:
-        change: dict[str, JsonSerializable] = {  #
-            "action": "set",  #
-            "xray_sop_instance_uid": uid,  #
-            "name": name,  #
-        }
         t: torch.Tensor = transformation.vectorised()
-        for i in range(6):
-            change[f"x{i}"] = float(t[i].item())
-        return self._save_data_manager.apply_change(change)
+        change = Change(value=_SetTransformation(  #
+            action="set",  #
+            xray_sop_instance_uid=uid,  #
+            name=name,  #
+            **{f"x{i}": float(t[i].item()) for i in range(6)},  #
+        ))
+        return self._state.apply_change(change)
 
     def remove(self, *, uid: str, name: str) -> None | Error:
-        change: dict[str, JsonSerializable] = {  #
-            "action": "remove",  #
-            "xray_sop_instance_uid": uid,  #
-            "name": name,  #
-        }
-        return self._save_data_manager.apply_change(change)
+        change = Change(value=_RemoveTransformation(  #
+            action="remove",  #
+            xray_sop_instance_uid=uid,  #
+            name=name,  #
+        ))
+        return self._state.apply_change(change)
