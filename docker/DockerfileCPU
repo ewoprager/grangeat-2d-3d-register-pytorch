@@ -118,7 +118,7 @@ set -e
 if [ -z "${DISPLAY:-}" ]; then
     export DISPLAY=:99
     rm -f /tmp/.X99-lock
-    Xvfb "$DISPLAY" -screen 0 "${SCREEN_RESOLUTION:-1600x900x24}" -nolisten tcp +extension GLX +render -noreset \
+    Xvfb "$DISPLAY" -screen 0 "${SCREEN_RESOLUTION:-3840x2160x24}" -nolisten tcp +extension GLX +render -noreset \
         >/tmp/xvfb.log 2>&1 &
     for _ in $(seq 1 100); do
         [ -e /tmp/.X11-unix/X99 ] && break

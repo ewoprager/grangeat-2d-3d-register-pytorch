@@ -1,19 +1,17 @@
 services:
   reg23-app-cpu:
-    #    platform: linux/amd64
+    platform: linux/amd64
     image: eprager/reg23-app:cpu
     build:
       context: .
       dockerfile: docker/DockerfileCPU
+    environment:
+      SCREEN_RESOLUTION: "3840x2160x24"
     profiles:
       - cpu
-    environment:
-      DISPLAY: ${DISPLAY}
-      QT_API: PyQt6
-      QT_X11_NO_MITSHM: "1"
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-    #      - data:/app/data
+      - ./data:/app/data
     network_mode: host
 
   reg23-app-cuda:
