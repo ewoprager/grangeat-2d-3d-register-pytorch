@@ -119,6 +119,10 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                              xray_reg_save_directory=pathlib.Path("data/xray_reg_save_data"),
                              cache=external_dataset is None)
 
+    viewer().window._qt_viewer.console.push({  #
+        "ctx": app_context,  #
+    })
+
     # -----
     # External datasets
     # -----

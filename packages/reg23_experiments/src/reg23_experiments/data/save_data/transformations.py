@@ -109,7 +109,7 @@ class TransformationSaveManager:
         return df[(  #
                 (df.index.get_level_values("src_uid") == source_uid)  #
                 & (df.index.get_level_values("dest_uid") == destination_uid)  #
-        )].get_level_values("name").tolist()
+        )].index.get_level_values("name").tolist()
 
     def get_name_dict(  #
             self,  #
