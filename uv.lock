@@ -580,7 +580,7 @@ name = "donfig"
 version = "0.8.1.post1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyyaml", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+    { name = "pyyaml" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/25/71/80cc718ff6d7abfbabacb1f57aaa42e9c1552bfdd01e64ddd704e4a03638/donfig-0.8.1.post1.tar.gz", hash = "sha256:3bef3413a4c1c601b585e8d297256d0c1470ea012afa6e8461dc28bfb7c23f52", size = 19506 }
 wheels = [
@@ -1480,8 +1480,8 @@ name = "numcodecs"
 version = "0.16.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
-    { name = "typing-extensions", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+    { name = "numpy" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f6/48/6188e359b90a9d8a1850f2bc888c023e66f4a8b2b496820babbea414f008/numcodecs-0.16.3.tar.gz", hash = "sha256:53d705865faaf0a7927c973af3777532001c8fbb653de119c1e844608614d799", size = 6275704 }
 wheels = [
@@ -1499,7 +1499,7 @@ wheels = [
 
 [package.optional-dependencies]
 crc32c = [
-    { name = "crc32c", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+    { name = "crc32c" },
 ]
 
 [[package]]
@@ -2611,6 +2611,7 @@ dependencies = [
     { name = "napari", extra = ["optional", "pyqt6"], marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine != 'aarch64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
     { name = "pyqt6" },
     { name = "reg23-experiments" },
+    { name = "zarr" },
 ]
 
 [package.optional-dependencies]
@@ -2635,6 +2636,7 @@ requires-dist = [
     { name = "reg23-experiments", extras = ["cpu"], marker = "extra == 'cpu'", editable = "packages/reg23_experiments" },
     { name = "reg23-experiments", extras = ["cuda"], marker = "extra == 'cuda'", editable = "packages/reg23_experiments" },
     { name = "reg23-experiments", extras = ["dev"], marker = "extra == 'dev'", editable = "packages/reg23_experiments" },
+    { name = "zarr", specifier = ">=3.1.3" },
 ]
 
 [[package]]
@@ -3767,11 +3769,11 @@ name = "zarr"
 version = "3.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "donfig", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
-    { name = "numcodecs", extra = ["crc32c"], marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
-    { name = "numpy", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
-    { name = "packaging", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
-    { name = "typing-extensions", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
+    { name = "donfig" },
+    { name = "numcodecs", extra = ["crc32c"] },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d6/67/14be68a7bad15eecda09b1e81fca2420f7533645fe187bf4d6104c1aad52/zarr-3.1.3.tar.gz", hash = "sha256:01342f3e26a02ed5670db608a5576fbdb8d76acb5c280bd2d0082454b1ba6f79", size = 349125 }
 wheels = [
