@@ -2,7 +2,7 @@ import logging
 import pathlib
 from typing import Any
 
-from reg23_app.cache_manager import CacheManager
+from reg23_app.cache_manager import CacheManager, ZarrManager
 from reg23_app.gui.drr_manager import DRRManager
 from reg23_app.gui.fiducials_manager import FiducialsManager
 from reg23_app.gui.input_manager import InputManager
@@ -47,6 +47,7 @@ class AppContext:
             ct_fiducial_save_directory: pathlib.Path,  #
             xray_fiducial_save_directory: pathlib.Path,  #
             xray_reg_save_directory: pathlib.Path,  #
+            micro_ct_zarr_path: pathlib.Path,  #
             cache: bool = True  #
     ):
         logger.debug("Initialising AppContext")
@@ -60,6 +61,7 @@ class AppContext:
         self._xray_reg_save_manager = XRayRegSaveManager(xray_reg_save_directory)
         self._drr_manager = DRRManager(self._state, self._dadg)
         self._fiducials_manager = FiducialsManager(self._state, self._dadg)
+        self._zarr_manager = ZarrManager(state=self._state, micro_ct_zarr_path=micro_ct_zarr_path)
         self._cache = cache
 
         if self._cache:
@@ -107,6 +109,10 @@ class AppContext:
     @property
     def xray_fiducial_save_manager(self) -> XRayFiducialSaveManager:
         return self._xray_fiducial_save_manager
+
+    @property
+    def zarr_manager(self) -> ZarrManager:
+        return self._zarr_manager
 
     def _any_parameter_changed(self, change) -> None:
         if self._cache:

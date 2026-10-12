@@ -8,6 +8,7 @@ from magicgui import widgets
 from reg23_app.context import AppContext
 from reg23_app.gui.layers.ct_fiducial_layer import add_ct_fiducial_layer
 from reg23_app.gui.layers.ct_layer import add_ct_layer
+from reg23_app.gui.layers.micro_ct_layer import add_micro_ct_layer
 from reg23_app.gui.layers.debug_layer import add_debug_layer
 from reg23_app.gui.layers.electrode_layer import add_electrode_layer
 from reg23_app.gui.layers.fixed_image_layer import add_fixed_image_layer
@@ -27,11 +28,17 @@ class ImagesWidget(widgets.Container):
         super().__init__(labels=True)
         self._ctx = ctx
 
-        self._ctx.state.parameters.observe(self._on_xray_parameters_change, names=["xray_parameters"])
-        self._on_xray_parameters_change()
+        self._ctx.state.parameters.observe(self._images_changed, names=[  #
+            "xray_parameters",  #
+            "ct_path",  #
+        ])
+        self._ctx.state.observe(self._images_changed, names=[  #
+            "micro_ct_slice_path",  #
+        ])
+        self._images_changed()
 
-    def _on_xray_parameters_change(self, *args) -> None:
-        logger.debug("X-ray parameters changed; rebuilding ImagesWidget")
+    def _images_changed(self, *args) -> None:
+        logger.debug("Loaded images changed; rebuilding ImagesWidget")
         self.clear()
 
         if self._ctx.state.parameters.ct_path is not None:
@@ -46,6 +53,15 @@ class ImagesWidget(widgets.Container):
                 show_ct_button,  #
                 show_ct_fiducials_button,  #
             ], label="CT volume:"))
+
+        if self._ctx.state.micro_ct_slice_path is not None:
+            logger.debug("MicroCT present; adding microCT buttons to ImagesWidget")
+            # Slice view
+            show_micro_ct_button = widgets.PushButton(label="Show volume")
+            show_micro_ct_button.changed.connect(lambda _: self._on_show_micro_ct_layer())
+            self.append(widgets.Container(widgets=[  #
+                show_micro_ct_button,  #
+            ], label="MicroCT volume:"))
 
         if self._ctx.state.parameters.xray_parameters:
             logger.debug("X-rays present:")
@@ -100,11 +116,15 @@ class ImagesWidget(widgets.Container):
                 ], label=key))
 
     def _on_show_ct_layer(self) -> None:
-        logger.debug(f"Show ct clicked")
+        logger.debug("Show ct clicked")
         add_ct_layer(ctx=self._ctx)
 
+    def _on_show_micro_ct_layer(self) -> None:
+        logger.debug("Show microCT clicked")
+        add_micro_ct_layer(ctx=self._ctx)
+
     def _on_show_ct_fiducials_layer(self) -> None:
-        logger.debug(f"Show ct_fiducials clicked")
+        logger.debug("Show ct_fiducials clicked")
         add_ct_fiducial_layer(dadg=self._ctx.dadg)
 
     def _on_show_image_2d_full_layer(self, xray_name: str) -> None:

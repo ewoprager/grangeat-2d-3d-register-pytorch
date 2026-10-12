@@ -32,6 +32,11 @@ def contents_based_hash(image: sitk.Image) -> str:
 
 
 def contents_based_hash_slices(a_slice_file_path: pathlib.Path) -> str | Error:
+    # Get all the slice files
+    if not a_slice_file_path.is_file():
+        return Error(f"File '{a_slice_file_path}' does not exist.")
+    directory = a_slice_file_path.parent
+
     # Load the cache
     cache_dir = pathlib.Path(user_cache_dir(appname="reg23_experiments"))
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -43,13 +48,10 @@ def contents_based_hash_slices(a_slice_file_path: pathlib.Path) -> str | Error:
         cache = yaml.safe_load(cache_file_path.read_text())
 
     # Return cached value if present
-    if str(a_slice_file_path) in cache:
-        return cache[str(a_slice_file_path)]
+    if str(directory) in cache:
+        return cache[str(directory)]
 
     # Calculate new value
-    # Get all the slice files
-    if not a_slice_file_path.is_file():
-        return Error(f"File '{a_slice_file_path}' does not exist.")
     slice_file_paths = slice_files_from_one(a_slice_file_path)
     # Loop through each slice, accumulating the hash
     hasher = hashlib.sha256()
@@ -62,7 +64,7 @@ def contents_based_hash_slices(a_slice_file_path: pathlib.Path) -> str | Error:
     ret = hasher.hexdigest()
 
     # Add new value to the cache
-    cache[str(a_slice_file_path)] = ret
+    cache[str(directory)] = ret
     cache_file_path.write_text(yaml.safe_dump(cache))
 
     return ret

@@ -1,16 +1,12 @@
 import logging
 import pathlib
 
-import zarr
 from magicgui.widgets import request_values
 from traitlets import TraitError
 
 from reg23_app.gui.viewer_singleton import viewer
 from reg23_app.state import AppState
 from reg23_experiments.data.parameters import XrayParameters
-from reg23_experiments.data.structs import Error
-from reg23_experiments.io.helpers import contents_based_hash_slices
-from reg23_experiments.io.large import large_volume_to_zarr
 
 __all__ = ["FileManager"]
 
@@ -24,9 +20,8 @@ class FileManager:
     Reads from and write to the state only
     """
 
-    def __init__(self, *, state: AppState, micro_ct_zarr_path: pathlib.Path):
+    def __init__(self, state: AppState):
         self._state = state
-        self._micro_ct_zarr_group = zarr.open_group(micro_ct_zarr_path)
 
         self._state.observe(self._button_open_ct_file, names=["button_open_ct_file"])
         self._state.observe(self._button_open_ct_dir, names=["button_open_ct_dir"])
@@ -68,41 +63,20 @@ class FileManager:
             logger.warning(f"CT path not valid: '{path}'")
             return
 
-    def _open_micro_ct(self, change) -> None:
+    def _button_open_micro_ct(self, change) -> None:
         if not change.new:
             return
         self._state.button_open_micro_ct = False
 
         from qtpy.QtWidgets import QFileDialog
-        file, _ = QFileDialog.getOpenFileName(viewer().window._qt_window,
-                                              "Open a micro CT; select one of its slice files")
+        file, _ = QFileDialog.getOpenFileName(  #
+            viewer().window._qt_window,  #
+            "Open a micro CT; select one of its slice files",  #
+        )
         if not file:
             return
-
-        logger.info(f"Opening micro CT volume based on slice file '{file}'")
-        file = pathlib.Path(file)
-        if not file.is_file():
-            logger.error(f"Selected file '{str(file)}' doesn't exist.")
-            return
-        logger.info(f"Hashing microCT volume contents...")
-        uid: str | Error = contents_based_hash_slices(file)
-        if isinstance(uid, Error):
-            logger.error(f"\tFailed: {uid.description}")
-            return
-        logger.info(f"\tDone; UID = '{uid}'")
-        if uid in self._micro_ct_zarr_group.array_keys():
-            logger.info(f"\tArray already present in zarr cache")
-        else:
-            logger.info(f"\tArray not present in zarr cache; streaming in...")
-            res: zarr.Array | Error = large_volume_to_zarr(  #
-                group=self._micro_ct_zarr_group,  #
-                volume_id=uid,  #
-                a_slice_file_path=file,  #
-            )
-            if isinstance(res, Error):
-                logger.error(f"\t\tFailed: {res.description}")
-                return
-            logger.info(f"\t\tDone; zarr cache entry created for volume '{uid}'")
+        logger.info(f"Micro CT volume selected; based on slice file '{file}'")
+        self._state.micro_ct_slice_path = file
 
     def _button_open_xray_file(self, change) -> None:
         if not change.new:

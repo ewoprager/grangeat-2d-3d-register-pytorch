@@ -111,13 +111,17 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # parameters.op_algo_parameters.particle_count = 5
     # test = clone_has_traits(parameters)
 
-    app_context = AppContext(parameters=parameters, dadg=data_manager(),
-                             transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
-                             electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),
-                             ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),
-                             xray_fiducial_save_directory=pathlib.Path("data/xray_fiducial_save_data"),
-                             xray_reg_save_directory=pathlib.Path("data/xray_reg_save_data"),
-                             cache=external_dataset is None)
+    app_context = AppContext(  #
+        parameters=parameters,  #
+        dadg=data_manager(),  #
+        transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),  #
+        electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),  #
+        ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),  #
+        xray_fiducial_save_directory=pathlib.Path("data/xray_fiducial_save_data"),  #
+        xray_reg_save_directory=pathlib.Path("data/xray_reg_save_data"),  #
+        micro_ct_zarr_path=pathlib.Path("cache/zarr/microct.zarr"),  #
+        cache=external_dataset is None,  #
+    )
 
     viewer().window._qt_viewer.console.push({  #
         "ctx": app_context,  #
@@ -207,7 +211,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     logger.debug("Initialising modules")
     worker_manager = WorkerManager(ctx=app_context, objective_function=objective_function)
     transformation_saver = TransformationSaver(app_context)
-    file_manager = FileManager(state=app_context.state, micro_ct_zarr_path=pathlib.Path("cache/zarr/microct.zarr"))
+    file_manager = FileManager(app_context.state)
 
     # value = data_manager().get("a__moving_image")
     # if isinstance(value, Error):
