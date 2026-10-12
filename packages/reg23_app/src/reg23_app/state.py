@@ -31,6 +31,9 @@ class AppState(HasTraits):
     button_open_ct_file: bool = Bool(default_value=False)
     button_open_ct_dir: bool = Bool(default_value=False)
 
+    button_open_micro_ct: bool = Bool(default_value=False)
+    micro_ct_path: str | None = Unicode(allow_none=True, default_value=None)
+
     button_open_xray_file: bool = Bool(default_value=False)
     button_unload_xray_file: bool = Bool(default_value=False)
     unload_xray_choice: str | None = Unicode(allow_none=True, default_value=None)

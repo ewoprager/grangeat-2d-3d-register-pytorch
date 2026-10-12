@@ -207,7 +207,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     logger.debug("Initialising modules")
     worker_manager = WorkerManager(ctx=app_context, objective_function=objective_function)
     transformation_saver = TransformationSaver(app_context)
-    file_manager = FileManager(app_context.state)
+    file_manager = FileManager(state=app_context.state, micro_ct_zarr_path=pathlib.Path("cache/zarr/microct.zarr"))
 
     # value = data_manager().get("a__moving_image")
     # if isinstance(value, Error):

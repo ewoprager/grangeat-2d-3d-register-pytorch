@@ -47,6 +47,11 @@ class ParametersWidget(widgets.Container):
                 self._open_ct_dir_button  #
             ], layout="horizontal", labels=False))
 
+            # microCT opening
+            self._open_micro_ct_button = widgets.PushButton(label="Open microCT")
+            self._open_micro_ct_button.changed.connect(self._on_open_micro_ct)
+            self.append(self._open_micro_ct_button)
+
             # X-ray file opening
             self._open_xray_file_button = widgets.PushButton(label="Open X-ray file")
             self._open_xray_file_button.changed.connect(self._on_open_xray_file)
@@ -94,6 +99,9 @@ class ParametersWidget(widgets.Container):
 
     def _on_open_ct_dir(self, *args) -> None:
         self._ctx.state.button_open_ct_dir = True
+
+    def _on_open_micro_ct(self, *args) -> None:
+        self._ctx.state.button_open_micro_ct = True
 
     def _on_open_xray_file(self, *args) -> None:
         self._ctx.state.button_open_xray_file = True
