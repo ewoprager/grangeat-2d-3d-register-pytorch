@@ -51,8 +51,13 @@ def add_ct_layer(*, ctx: AppContext) -> napari.layers.Image | None:
     if isinstance(spacing, Error):
         raise RuntimeError(f"Error softly getting 'ct_spacing' from DADG: {spacing.description}.")
     initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((200, 500, 500))
-    layer: napari.layers.Image = viewer().add_image(initial_image.cpu().numpy(), colormap="blue", blending="additive",
-                                                    interpolation2d="linear", name=name,
-                                                    scale=spacing.flip(dims=(0,)).cpu().numpy())
+    layer: napari.layers.Image = viewer().add_image(  #
+        initial_image.cpu().numpy(),  #
+        colormap="blue",  #
+        blending="additive",  #
+        interpolation2d="linear",  #
+        name=name,  #
+        scale=spacing.flip(dims=(0,)).cpu().numpy(),  #
+    )
     layer.my_plugin = _CTLayerManager(ctx=ctx, layer=layer)
     return layer

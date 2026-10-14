@@ -3,6 +3,7 @@ import weakref
 from typing import Callable
 
 import napari.layers
+import numpy as np
 import zarr
 
 from reg23_app.context import AppContext
@@ -20,6 +21,10 @@ class _MicroCTLayerManager:
         self._layer: Callable[[], napari.layers.Image | None] = weakref.ref(layer)
 
         self._ctx.dadg.observe("micro_ct_array", "layer", self._micro_ct_changed)
+        self._ctx.dadg.set_evaluation_laziness("micro_ct_array", lazily_evaluated=False)
+
+    def __del__(self):
+        self._ctx.dadg.set_evaluation_laziness("micro_ct_array", lazily_evaluated=True)
 
     def _micro_ct_changed(self, new_value: zarr.Array | None) -> None:
         if (layer := self._layer()) is None:
@@ -29,6 +34,7 @@ class _MicroCTLayerManager:
             layer.data = None
             return
         layer.data = new_value
+        layer.scale = np.flip(np.array(new_value.attrs["spacing"]))
 
 
 def add_micro_ct_layer(*, ctx: AppContext) -> napari.layers.Image | None:
@@ -51,6 +57,7 @@ def add_micro_ct_layer(*, ctx: AppContext) -> napari.layers.Image | None:
         blending="additive",  #
         interpolation2d="linear",  #
         name=name,  #
+        scale=res.attrs["spacing"],  #
     )
     layer.my_plugin = _MicroCTLayerManager(ctx=ctx, layer=layer)
     return layer

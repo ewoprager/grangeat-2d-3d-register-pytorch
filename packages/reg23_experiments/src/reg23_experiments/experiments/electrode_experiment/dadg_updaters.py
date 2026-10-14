@@ -41,7 +41,9 @@ def get_micro_ct_array(  #
         micro_ct_zarr_path: str | pathlib.Path,  #
 ) -> dict[str, Any] | Error:
     if micro_ct_uid is None:
-        return {"micro_ct_array": None}
+        return {  #
+            "micro_ct_array": None,  #
+        }
     # micro_ct_slice_path should not be None if micro_ct_uid is not None; see `get_micro_ct_uid`
     assert micro_ct_slice_path is not None
 

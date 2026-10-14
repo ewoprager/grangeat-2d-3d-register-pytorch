@@ -1,3 +1,5 @@
+import configparser
+import logging
 import pathlib
 
 import SimpleITK as sitk
@@ -7,6 +9,8 @@ from reg23_experiments.data.structs import Error
 from reg23_experiments.io.helpers import slice_files_from_one
 
 __all__ = ["large_volume_to_zarr"]
+
+logger = logging.getLogger(__name__)
 
 
 def large_volume_to_zarr(  #
@@ -46,5 +50,20 @@ def large_volume_to_zarr(  #
                 f"was of "
                 f"dtype {first.dtype}")
         array[i, :, :] = slice_array
+
+    # If there's an xtekVolume file, read the spacing from it
+    xtek_volume_path = [e for e in a_slice_file_path.parent.iterdir() if e.is_file() and e.suffix == ".xtekVolume"]
+    if len(xtek_volume_path) == 1:
+        c = configparser.ConfigParser()
+        c.read(xtek_volume_path[0])
+        spacing = [  #
+            float(c["XTekCT"][f"VoxelSize{axis}"])  #
+            for axis in ("X", "Y", "Z")  #
+        ]
+    else:
+        logger.warning(f"Found {len(xtek_volume_path)} xtekVolume files in directory of slice, so can't load spacing")
+        spacing = None
+
+    array.attrs["spacing"] = spacing
 
     return array
