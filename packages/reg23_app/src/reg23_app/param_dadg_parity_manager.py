@@ -57,6 +57,7 @@ class ParamDADGParityManager:
         # is state -> DADG
         simple_only_state_drives: list[tuple[str, type]] = [  #
             ("ct_path", str),  #
+            ("micro_ct_slice_path", str),  #
             ("downsample_level", int),  #
             ("truncation_percent", int),  #
             ("weighting_method", str),  #
@@ -86,6 +87,14 @@ class ParamDADGParityManager:
 
         # eagerly save the ct fiducial points to the save manager
         self._dadg.observe("ct_fiducial_points", "saver", self._ct_fiducial_points_changed)
+
+        # load microCT fiducial points from save manager
+        self._dadg.observe("micro_ct_uid", "fiducial_point_loader", self._micro_ct_uid_changed)
+        if not isinstance(micro_uid := self._dadg.get("micro_ct_uid"), Error):
+            self._micro_ct_uid_changed(micro_uid)
+
+        # eagerly save the microCT fiducial points to the save manager
+        self._dadg.observe("micro_fiducial_points", "saver", self._micro_fiducial_points_changed)
 
     def _simple_state_driven_change(self, node: str, _type: type, new_value) -> None:
         self._dadg.set(node, _type(new_value), check_equality=True)
@@ -121,8 +130,10 @@ class ParamDADGParityManager:
 
     def _ct_series_uid_changed(self, new_value: str) -> None:
         loaded: tuple[list[str], torch.Tensor] | None = self._ct_fiducial_save_manager.get(new_value)
-        self._dadg.set("ct_fiducial_points",
-                       NamedPoints3D() if loaded is None else NamedPoints3D(names=loaded[0], data=loaded[1]))
+        self._dadg.set(  #
+            "ct_fiducial_points",  #
+            NamedPoints3D() if loaded is None else NamedPoints3D(names=loaded[0], data=loaded[1]),  #
+        )
 
     def _ct_fiducial_points_changed(self, new_value: NamedPoints3D) -> None:
         uid: str | Error = self._dadg.get("ct_series_uid")
@@ -136,6 +147,26 @@ class ParamDADGParityManager:
         )
         if isinstance(err, Error):
             logger.error(f"Error saving CT fiducial point data: {err.description}")
+
+    def _micro_ct_uid_changed(self, new_value: str) -> None:
+        loaded: tuple[list[str], torch.Tensor] | None = self._ct_fiducial_save_manager.get(new_value)
+        self._dadg.set(  #
+            "micro_fiducial_points",  #
+            NamedPoints3D() if loaded is None else NamedPoints3D(names=loaded[0], data=loaded[1]),  #
+        )
+
+    def _micro_fiducial_points_changed(self, new_value: NamedPoints3D) -> None:
+        uid: str | Error = self._dadg.get("micro_ct_uid")
+        if isinstance(uid, Error):
+            logger.error(f"Failed to get microCT UID on fiducial change: {uid.description}")
+            return
+        err = self._ct_fiducial_save_manager.set(  #
+            uid=uid,  #
+            names=new_value.names,  #
+            points=new_value.data  #
+        )
+        if isinstance(err, Error):
+            logger.error(f"Error saving microCT fiducial point data: {err.description}")
 
     def _xray_parameters_changed(self, new_value: dict[str, XrayParameters]) -> None:
         for key, value in new_value.items():

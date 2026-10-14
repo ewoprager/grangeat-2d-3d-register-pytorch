@@ -2,3 +2,12 @@
 {"action": "set", "ct_series_uid": "1.2.826.0.1.3680043.8.498.38495142235923525851679407754915012350", "name": "chin_right", "x": 160.78355448525244, "y": 85.05426315364582, "z": 26.763614754877835}
 {"action": "set", "ct_series_uid": "1.2.826.0.1.3680043.8.498.38495142235923525851679407754915012350", "name": "top_right", "x": 183.22885011407922, "y": 115.02948382969798, "z": 213.26610635926562}
 {"action": "set", "ct_series_uid": "1.2.826.0.1.3680043.8.498.38495142235923525851679407754915012350", "name": "forhead_right", "x": 142.69133108270833, "y": 44.18075227883342, "z": 206.89670799743334}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_right", "x": 1494.1190814713277, "y": 631.1535972939402, "z": 218.0}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_left", "x": 747.4914193594209, "y": 912.1219749829876, "z": 404.0}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_left", "x": 540.407081590701, "y": 1380.6078538695997, "z": 661.0}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_right", "x": 1894.942340110688, "y": 1760.8282773138062, "z": 725.0}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_right", "x": 1816.9022571239925, "y": 506.2973109858221, "z": 2020.0}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_right", "x": 2074.9089730325613, "y": 1680.9068334116755, "z": 2384.0}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_left", "x": 1107.3837883754281, "y": 601.3524168468739, "z": 2416.0}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_left", "x": 659.2668607447557, "y": 1385.5570402005505, "z": 2463.0}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top", "x": 1507.9731630755746, "y": 1382.162214991227, "z": 2744.0}

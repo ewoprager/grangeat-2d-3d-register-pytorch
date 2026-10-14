@@ -76,7 +76,7 @@ class FileManager:
         if not file:
             return
         logger.info(f"Micro CT volume selected; based on slice file '{file}'")
-        self._state.micro_ct_slice_path = file
+        self._state.parameters.micro_ct_slice_path = file
 
     def _button_open_xray_file(self, change) -> None:
         if not change.new:

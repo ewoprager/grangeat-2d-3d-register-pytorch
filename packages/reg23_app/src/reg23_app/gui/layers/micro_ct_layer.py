@@ -19,19 +19,16 @@ class _MicroCTLayerManager:
         self._ctx = ctx
         self._layer: Callable[[], napari.layers.Image | None] = weakref.ref(layer)
 
-        self._ctx.state.observe(self._micro_ct_changed, names=["micro_ct_slice_path"])
+        self._ctx.dadg.observe("micro_ct_array", "layer", self._micro_ct_changed)
 
-    def _micro_ct_changed(self, *args) -> None:
+    def _micro_ct_changed(self, new_value: zarr.Array | None) -> None:
         if (layer := self._layer()) is None:
             return
-        res: zarr.Array | None | Error = self._ctx.zarr_manager.get_micro_ct()
-        if isinstance(res, Error):
-            logger.error(f"Failed to load microCT for layer: {res.description}")
+        if new_value is None:
+            logger.warning("MicroCT no longer available to render in layer.")
+            layer.data = None
             return
-        if res is None:
-            logger.warning(f"Cannot open microCT layer; no microCT selected.")
-            return
-        layer.data = res
+        layer.data = new_value
 
 
 def add_micro_ct_layer(*, ctx: AppContext) -> napari.layers.Image | None:
@@ -40,7 +37,7 @@ def add_micro_ct_layer(*, ctx: AppContext) -> napari.layers.Image | None:
         logger.warning(f"Layer {name} is already shown.")
         return None
 
-    res: zarr.Array | None | Error = ctx.zarr_manager.get_micro_ct()
+    res: zarr.Array | None | Error = ctx.dadg.get("micro_ct_array")
     if isinstance(res, Error):
         logger.error(f"Failed to load microCT for layer: {res.description}")
         return None

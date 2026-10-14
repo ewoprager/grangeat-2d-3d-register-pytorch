@@ -29,6 +29,7 @@ from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils import logs_setup, pushover
 from reg23_experiments.data import sinogram
+from reg23_experiments.experiments.electrode_experiment import dadg_updaters as electrode_updaters
 
 
 # @args_from_dag(names_left=["transformation"])
@@ -55,17 +56,22 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Updaters
     # -----
-    err = data_manager().add_updater("apply_filter_ct", drr_reg_updaters.apply_filter_ct)
-    if isinstance(err, Error):
+    if isinstance(err := data_manager().add_updater("apply_filter_ct", drr_reg_updaters.apply_filter_ct), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
-    err = data_manager().add_updater("apply_truncation", drr_reg_updaters.apply_truncation)
-    if isinstance(err, Error):
+    if isinstance(err := data_manager().add_updater("apply_truncation", drr_reg_updaters.apply_truncation), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
     # -- Grangeat --
-    err = data_manager().add_updater("refresh_vif", grangeat_updaters.refresh_vif)
-    if isinstance(err, Error):
+    if isinstance(err := data_manager().add_updater("refresh_vif", grangeat_updaters.refresh_vif), Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    # -- MicroCT --
+    if isinstance(err := data_manager().add_updater("get_micro_ct_uid", electrode_updaters.get_micro_ct_uid), Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    if isinstance(err := data_manager().add_updater("get_micro_ct_array", electrode_updaters.get_micro_ct_array),
+                  Error):
         logger.error(f"Error adding updater: {err.description}")
         return
 
@@ -87,6 +93,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         target_ap_distance=5.0,  #
         fixed_sinogram_size=None,  #
         sinogram_type=sinogram.SinogramClassic,  #
+        micro_ct_zarr_path="cache/zarr/microct.zarr",  #
     )
     if ct_path is not None:
         data_manager().set("ct_path", ct_path)
@@ -120,7 +127,6 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),  #
         xray_fiducial_save_directory=pathlib.Path("data/xray_fiducial_save_data"),  #
         xray_reg_save_directory=pathlib.Path("data/xray_reg_save_data"),  #
-        micro_ct_zarr_path=pathlib.Path("cache/zarr/microct.zarr"),  #
         cache=external_dataset is None,  #
     )
 

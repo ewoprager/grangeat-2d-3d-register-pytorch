@@ -32,8 +32,6 @@ class ImagesWidget(widgets.Container):
         self._ctx.state.parameters.observe(self._images_changed, names=[  #
             "xray_parameters",  #
             "ct_path",  #
-        ])
-        self._ctx.state.observe(self._images_changed, names=[  #
             "micro_ct_slice_path",  #
         ])
         self._images_changed()
@@ -55,13 +53,17 @@ class ImagesWidget(widgets.Container):
                 show_ct_fiducials_button,  #
             ], label="CT volume:"))
 
-        if self._ctx.state.micro_ct_slice_path is not None:
+        if self._ctx.state.parameters.micro_ct_slice_path is not None:
             logger.debug("MicroCT present; adding microCT buttons to ImagesWidget")
             # Slice view
             show_micro_ct_button = widgets.PushButton(label="Show volume")
             show_micro_ct_button.changed.connect(lambda _: self._on_show_micro_ct_layer())
+            # Fiducial points
+            show_micro_fiducials_button = widgets.PushButton(label="Show fiducials")
+            show_micro_fiducials_button.changed.connect(lambda _: self._on_show_micro_fiducials_layer())
             self.append(ExpandableWidget([  #
                 show_micro_ct_button,  #
+                show_micro_fiducials_button,  #
             ], label="MicroCT volume:"))
 
         if self._ctx.state.parameters.xray_parameters:
@@ -120,13 +122,17 @@ class ImagesWidget(widgets.Container):
         logger.debug("Show ct clicked")
         add_ct_layer(ctx=self._ctx)
 
+    def _on_show_ct_fiducials_layer(self) -> None:
+        logger.debug("Show CT fiducials clicked")
+        add_ct_fiducial_layer(dadg=self._ctx.dadg, dadg_key="ct_fiducial_points")
+
     def _on_show_micro_ct_layer(self) -> None:
         logger.debug("Show microCT clicked")
         add_micro_ct_layer(ctx=self._ctx)
 
-    def _on_show_ct_fiducials_layer(self) -> None:
-        logger.debug("Show ct_fiducials clicked")
-        add_ct_fiducial_layer(dadg=self._ctx.dadg)
+    def _on_show_micro_fiducials_layer(self) -> None:
+        logger.debug("Show microCT fiducials clicked")
+        add_ct_fiducial_layer(dadg=self._ctx.dadg, dadg_key="micro_fiducial_points")
 
     def _on_show_image_2d_full_layer(self, xray_name: str) -> None:
         logger.debug(f"Show image_2d_full for '{xray_name}' clicked")

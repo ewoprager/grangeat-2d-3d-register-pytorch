@@ -21,11 +21,19 @@ logger = logging.getLogger(__name__)
 
 
 class _CTFiducialLayerManager:
-    def __init__(self, *, dadg: DirectedAcyclicDataGraph, layer: napari.layers.Points):
-        self._dadg = dadg
+    def __init__(#
+            self, #
+            *, #
+            layer: napari.layers.Points,#
+            dadg: DirectedAcyclicDataGraph, #
+            dadg_key: str,#
+    ):
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
+        self._dadg = dadg
+        self._dadg_key = dadg_key
+        #
         layer.events.connect(self._on_layer_change)
-        self._dadg.observe("ct_fiducial_points", "layer", self._update_layer_from_dadg)
+        self._dadg.observe(self._dadg_key, "layer", self._update_layer_from_dadg)
         self._callback_loop_prevention: bool = False
 
     def _update_layer_from_dadg(self, new_value: NamedPoints3D) -> None:
@@ -51,7 +59,7 @@ class _CTFiducialLayerManager:
             logger.error(f"Error converting fiducial point data from layer: {e}")
             return
         self._callback_loop_prevention = True
-        err = self._dadg.set("ct_fiducial_points", fiducial_points)
+        err = self._dadg.set(self._dadg_key, fiducial_points)
         if isinstance(err, Error):
             logger.error(f"Error processing CT fiducial point data: {err.description}")
         self._callback_loop_prevention = False
@@ -80,17 +88,20 @@ class _CTFiducialLayerManager:
         self._update_dadg_from_layer()
 
 
-def add_ct_fiducial_layer(*, dadg: DirectedAcyclicDataGraph) -> napari.layers.Layer | None:
-    if "ct_fiducial_points" in viewer().layers:
-        logger.warning(f"Layer 'ct_fiducial_points' is already shown.")
+def add_ct_fiducial_layer(#
+        *,#
+        dadg: DirectedAcyclicDataGraph,#
+        dadg_key: str,#
+) -> napari.layers.Layer | None:
+    """
+    :param dadg:
+    :param dadg_key: This is "ct_fiducial_points" for clinical CT and "micro_fiducial_points" for microCT
+    :return:
+    """
+    if dadg_key in viewer().layers:
+        logger.warning(f"Layer '{dadg_key}' is already shown.")
         return None
-    if isinstance(uid := dadg.get("ct_series_uid"), Error):
-        logger.error(f"Failed to get CT UID for fiducial layer.")
-        return None
-    if not isinstance(uid, str):
-        logger.error(f"Expected UID to be a str, got: '{uid}'.")
-        return None
-    fiducial_points: NamedPoints3D | Error = dadg.get("ct_fiducial_points")
+    fiducial_points: NamedPoints3D | Error = dadg.get(dadg_key)
     if isinstance(fiducial_points, Error):
         logger.error(f"Failed to get CT fiducial point data for layer: {fiducial_points.description}")
         return None
@@ -102,9 +113,9 @@ def add_ct_fiducial_layer(*, dadg: DirectedAcyclicDataGraph) -> napari.layers.La
     layer = viewer().add_points(  #
         fiducial_points.data.flip(dims=(1,)).numpy(),  #
         size=8.0,  #
-        name="ct_fiducial_points",  #
+        name=dadg_key,  #
         features=features,  #
         text={"string": "{label}", "size": 16}  #
     )
-    layer.my_plugin = _CTFiducialLayerManager(dadg=dadg, layer=layer)
+    layer.my_plugin = _CTFiducialLayerManager(layer=layer, dadg=dadg, dadg_key=dadg_key)
     return layer

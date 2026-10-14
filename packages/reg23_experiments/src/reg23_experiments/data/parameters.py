@@ -104,6 +104,7 @@ class Parameters(HasTraits):
     Only contains data; either simple values, or other `HasTraits` instances that themselves just contain data.
     """
     ct_path: str | None = Unicode(allow_none=True, default_value=None).tag(ui=True)
+    micro_ct_slice_path: str | None = Unicode(allow_none=True, default_value=None).tag(ui=True)
     downsample_level: int = Int(min=0, default_value=0).tag(ui=True)
     truncation_percent: int = Int(min=0, max=100, default_value=0).tag(ui=True)
     weighting_method: Literal["none", "linear", "smooth_step", "gaussian"] = Enum(values=[  #
