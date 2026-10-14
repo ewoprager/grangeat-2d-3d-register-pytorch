@@ -29,6 +29,10 @@ class ExpandableWidget(widgets.Container):
     def expanded(self, value) -> None:
         self._expand_toggle.value = value
 
+    @property
+    def inner_container(self) -> widgets.Container:
+        return self._inner_container
+
     def _expand_toggled(self, *args) -> None:
         if self._expand_toggle.value:
             if self._inner_container not in self:

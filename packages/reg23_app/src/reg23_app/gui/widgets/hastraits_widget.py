@@ -4,7 +4,7 @@ from typing import Any
 import traitlets
 from magicgui.widgets import CheckBox, ComboBox, Container, FloatSpinBox, Label, SpinBox, Widget
 
-from reg23_app.gui.viewer_singleton import viewer
+from reg23_app.gui.widgets.expandable_widget import ExpandableWidget
 from reg23_experiments.data.structs import Error
 
 __all__ = ["HasTraitsWidget"]
@@ -24,17 +24,9 @@ def value_from_widget(widget: Widget) -> Any:
     return widget.value
 
 
-class HasTraitsWidget(Container):
+class HasTraitsWidget(ExpandableWidget):
     def __init__(self, hastraits: traitlets.HasTraits, **widget_kwargs):
-        super().__init__(widgets=[], layout="vertical", labels=False, **widget_kwargs)
-
-        self._expand_toggle = CheckBox(value=False, text="expand")
-        self._expand_toggle.changed.connect(self._expand_toggled)
-        self.append(self._expand_toggle)
-        self._inner_container = Container(widgets=[], layout="vertical", labels=True)
-        self.append(self._inner_container)
-
-        self._expand_toggled()
+        super().__init__([], layout="vertical", labels=False, **widget_kwargs)
 
         self._callback_loop_prevention: set = set({})  # just a flag keyed by widget name
         self._hastraits = hastraits
@@ -68,9 +60,12 @@ class HasTraitsWidget(Container):
                 self._callback_loop_prevention.add(_name)
                 if isinstance(_trait, traitlets.Instance) or isinstance(_trait, traitlets.Dict) or isinstance(widget,
                                                                                                               Container):
-                    self._inner_container.remove(_name)
-                    self._inner_container.append(
-                        HasTraitsWidget._construct_child_widget(name=_name, trait=_trait, value=change["new"]))
+                    self.inner_container.remove(_name)
+                    c: Widget | Error = HasTraitsWidget._construct_child_widget(name=_name, trait=_trait,
+                                                                                value=change["new"])
+                    if isinstance(c, Error):
+                        raise Exception(f"Failed to build child for HasTraitsWidget: {c}")
+                    self.inner_container.append(c)
                 else:
                     widget.value = change["new"]
                 self._callback_loop_prevention.remove(_name)
@@ -89,19 +84,11 @@ class HasTraitsWidget(Container):
                 for element_widget in child:
                     element_widget.changed.connect(update_dict_trait_from_widget)
 
-            self._inner_container.append(child)
+            self.inner_container.append(child)
 
     # Forward all members of the inner container
     def __getattr__(self, item):
-        return getattr(self._inner_container, item)
-
-    @property
-    def expanded(self) -> bool:
-        return self._expand_toggle.value
-
-    @expanded.setter
-    def expanded(self, value) -> None:
-        self._expand_toggle.value = value
+        return getattr(self.inner_container, item)
 
     @property
     def value(self) -> traitlets.HasTraits:
@@ -147,7 +134,7 @@ class HasTraitsWidget(Container):
             return ret
         # Unicode; ToDo: Currently read-only
         elif isinstance(trait, traitlets.Unicode):
-            ret = Label(name=name, value=value)
+            ret = Label(name=name, label=f"{name}: <hover to show>", tooltip=value)
             ret.native.setWordWrap(True)
             return ret
         # Sub-config
@@ -165,12 +152,3 @@ class HasTraitsWidget(Container):
         # Unsupported
         return Error(f"Unsupported trait class type '{trait.__class__.__name__}' encountered while building parameters "
                      f"widget.")
-
-    def _expand_toggled(self, *args) -> None:
-        if self._expand_toggle.value:
-            if self._inner_container not in self:
-                self.append(self._inner_container)
-        elif self._inner_container in self:
-            self.remove(self._inner_container)
-
-        # self._inner_container.visible = self._expand_toggle.value
