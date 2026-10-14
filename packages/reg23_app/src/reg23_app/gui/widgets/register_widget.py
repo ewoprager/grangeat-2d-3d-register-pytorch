@@ -8,9 +8,13 @@ from magicgui import widgets
 
 from reg23_app.context import AppContext
 from reg23_app.state import WorkerState
-from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation, \
     mapping_transformation_to_parameters
+from reg23_app.gui.widgets.expandable_widget import ExpandableWidget
+from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
+from reg23_experiments.data.structs import Error, Transformation
+from reg23_experiments.ops.data_manager import args_from_dadg
+from reg23_experiments.ops.geometry import get_crop_full_depth_drr, get_crop_nonzero_drr
 
 __all__ = ["RegisterWidget"]
 
@@ -91,7 +95,7 @@ class RegisterWidget(widgets.Container):
             )  #
             for i in range(6)  #
         ]
-        self.append(widgets.Container(widgets=self._x_widgets, layout="horizontal", labels=False, label="x"))
+        tr_x_widgets = widgets.Container(widgets=self._x_widgets, layout="horizontal", labels=False, label="x")
         for i in range(6):
             self._x_widgets[i].changed.connect(self._update_current_transformation_from_x)
         # Float spin boxes for the current transformation in native units
@@ -113,8 +117,8 @@ class RegisterWidget(widgets.Container):
             )  #
             for i in range(3)  #
         ]
-        self.append(widgets.Container(widgets=self._rotation_widgets + self._translation_widgets, layout="horizontal",
-                                      labels=False, label="T"))
+        tr_tr_widgets = widgets.Container(widgets=self._rotation_widgets + self._translation_widgets,
+                                          layout="horizontal", labels=False, label="T")
         for i in range(3):
             self._rotation_widgets[i].changed.connect(self._update_current_transformation_from_t)
             self._translation_widgets[i].changed.connect(self._update_current_transformation_from_t)
@@ -125,7 +129,6 @@ class RegisterWidget(widgets.Container):
         self._saved_transformations_select = widgets.Select(choices=self._get_saved_transformation_names,
                                                             label="Saved\nTrs.")
         self._ctx.state.observe(self._saved_transformation_names_changed, names=["saved_transformation_names"])
-        self.append(self._saved_transformations_select)
         self._transformation_name_input = widgets.LineEdit(value="")
         self._transformation_name_input.changed.connect(self._on_transformation_name_input)
         self._save_transformation = widgets.PushButton(label="Save current")
@@ -134,12 +137,19 @@ class RegisterWidget(widgets.Container):
         self._load_transformation.changed.connect(self._on_load_transformation)
         self._delete_transformation = widgets.PushButton(label="Delete selected")
         self._delete_transformation.changed.connect(self._on_delete_transformation)
-        self.append(widgets.Container(widgets=[  #
+        trs_widgets = widgets.Container(widgets=[  #
             self._transformation_name_input,  #
             self._save_transformation,  #
             self._load_transformation,  #
             self._delete_transformation,  #
-        ], layout="horizontal"))
+        ], layout="horizontal")
+
+        self.append(ExpandableWidget([  #
+            tr_x_widgets,  #
+            tr_tr_widgets,  #
+            self._saved_transformations_select,  #
+            trs_widgets,  #
+        ], layout="vertical"))
 
         # -----
         # Misc tools
@@ -153,6 +163,31 @@ class RegisterWidget(widgets.Container):
         ], layout="horizontal"))
 
         self._xray_selection_changed()
+
+        # Cropping
+        self._crop_nonzero_drr_button = widgets.PushButton(label="Crop to nonzero drr")
+        self._crop_nonzero_drr_button.changed.connect(self._on_crop_nonzero_drr)
+        self.append(self._crop_nonzero_drr_button)
+
+        self._crop_full_depth_drr_button = widgets.PushButton(label="Crop to full depth drr")
+        self._crop_full_depth_drr_button.changed.connect(self._on_crop_full_depth_drr)
+        self.append(self._crop_full_depth_drr_button)
+
+        # Transformations
+        self._set_to_ground_truth_button = widgets.PushButton(label="Set transformation to G.T.")
+        self._set_to_ground_truth_button.changed.connect(self._on_set_to_ground_truth)
+        self.append(self._set_to_ground_truth_button)
+
+        # X-ray reg config saving
+        self._save_xray_reg_config_button = widgets.PushButton(label="Save reg config for X-ray: ")
+        self._save_xray_reg_config_button.changed.connect(self._on_save_xray_reg_config)
+        self._save_xray_reg_config_select = widgets.ComboBox(choices=self._get_xray_choices)
+        self._save_xray_reg_config_select.changed.connect(self._on_save_xray_reg_config_choice_changed)
+        self._on_save_xray_reg_config_choice_changed()
+        self.append(widgets.Container(widgets=[  #
+            self._save_xray_reg_config_button,  #
+            self._save_xray_reg_config_select  #
+        ], layout="horizontal", labels=False))
 
     @property
     def _xray_selected(self) -> bool:
@@ -295,3 +330,33 @@ class RegisterWidget(widgets.Container):
         new_t = current_t.with_random_offset_at_distance(distance)
         if isinstance(err := self._ctx.dadg.set(self._c_t_key, new_t), Error):
             logger.error(f"Error setting transformation: {err.description}")
+
+    def _on_save_xray_reg_config_choice_changed(self, *args) -> None:
+        self._ctx.state.save_xray_reg_config_choice = self._save_xray_reg_config_select.value
+
+    def _on_crop_nonzero_drr(self, *args) -> None:
+        for k, v in self._ctx.state.parameters.xray_parameters.items():
+            v.cropping = "Fixed"
+            v.cropping_value = args_from_dadg(  #
+                dadg=self._ctx.dadg,  #
+                namespace_captures={e: k for e in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}  #
+            )(get_crop_nonzero_drr)()
+
+    def _on_crop_full_depth_drr(self, *args) -> None:
+        for k, v in self._ctx.state.parameters.xray_parameters.items():
+            v.cropping = "Fixed"
+            v.cropping_value = args_from_dadg(  #
+                dadg=self._ctx.dadg,  #
+                namespace_captures={e: k for e in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}  #
+            )(get_crop_full_depth_drr)()
+
+    def _on_set_to_ground_truth(self, *args) -> None:
+        for k, v in self._ctx.state.parameters.xray_parameters.items():
+            transformation_gt: Transformation | Error = self._ctx.dadg.get(f"{k}__transformation_gt")
+            if isinstance(transformation_gt, Error):
+                logger.warning(f"No ground truth transformation exists for X-ray {k}; can't set to it.")
+                return
+            self._ctx.dadg.set(f"{k}__current_transformation", transformation_gt.clone())
+
+    def _on_save_xray_reg_config(self, *args) -> None:
+        self._ctx.state.button_save_xray_reg_config = True

@@ -15,6 +15,7 @@ from reg23_app.gui.file_manager import FileManager
 from reg23_app.gui.viewer_singleton import init_viewer, viewer
 from reg23_app.gui.widgets.drr_widget import DRRWidget
 from reg23_app.gui.widgets.fiducials_widget import FiducialsWidget
+from reg23_app.gui.widgets.files_widget import FilesWidget
 from reg23_app.gui.widgets.hastraits_widget import HasTraitsWidget
 from reg23_app.gui.widgets.images_widget import ImagesWidget
 from reg23_app.gui.widgets.parameters_widget import ParametersWidget
@@ -173,7 +174,10 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # Widgets
     # -----
     logger.debug("Initialising widgets")
-    parameters_widget = ParametersWidget(app_context, external_dataset is None)
+    files_widget = FilesWidget(app_context, external_dataset is None)
+    viewer().window.add_dock_widget(files_widget, name="Files", area="right", menu=viewer().window.window_menu,
+                                    tabify=True)
+    parameters_widget = ParametersWidget(app_context)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
                                     tabify=True)
     viewer().window.add_dock_widget(HasTraitsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",

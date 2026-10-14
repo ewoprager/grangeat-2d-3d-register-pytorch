@@ -13,12 +13,12 @@ from reg23_experiments.data.segmentation import OrderedPoints2D
 from reg23_experiments.data.structs import Error
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 
-__all__ = ["add_electrode_layer"]
+__all__ = ["add_xray_electrode_layer"]
 
 logger = logging.getLogger(__name__)
 
 
-class _ElectrodeLayerManager:
+class _XRayElectrodeLayerManager:
     def __init__(self, *, dadg: DirectedAcyclicDataGraph, layer: napari.layers.Points, dadg_key: str,
                  xray_uid_dadg_key: str):
         self._dadg = dadg
@@ -48,7 +48,8 @@ class _ElectrodeLayerManager:
         self._update_dadg_from_layer()
 
 
-def add_electrode_layer(*, dadg: DirectedAcyclicDataGraph, namespace: str | None = None) -> napari.layers.Layer | None:
+def add_xray_electrode_layer(*, dadg: DirectedAcyclicDataGraph,
+                             namespace: str | None = None) -> napari.layers.Layer | None:
     dadg_key = "electrode_points" if namespace is None else f"{namespace}__electrode_points"
     if dadg_key in viewer().layers:
         logger.warning(f"Layer '{dadg_key}' is already shown.")
@@ -71,5 +72,6 @@ def add_electrode_layer(*, dadg: DirectedAcyclicDataGraph, namespace: str | None
         features=pd.DataFrame([{"label": f"{i}"} for i in range(1, electrode_points.count + 1)]),  #
         text={"string": "{label}", "size": 16}  #
     )
-    layer.my_plugin = _ElectrodeLayerManager(dadg=dadg, layer=layer, dadg_key=dadg_key, xray_uid_dadg_key=uid_dadg_key)
+    layer.my_plugin = _XRayElectrodeLayerManager(dadg=dadg, layer=layer, dadg_key=dadg_key,
+                                                 xray_uid_dadg_key=uid_dadg_key)
     return layer
