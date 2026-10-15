@@ -18,6 +18,7 @@ from reg23_app.gui.layers.projected_fiducials_layer import add_projected_fiducia
 from reg23_app.gui.layers.xray_fiducial_layer import add_xray_fiducial_layer
 from reg23_app.gui.layers.grangeat_moving_image_layer import add_grangeat_moving_image_layer
 from reg23_app.gui.widgets.expandable_widget import ExpandableWidget
+from reg23_app.gui.layers.ct_electrode_layer import add_ct_electrode_layer
 
 __all__ = ["ImagesWidget"]
 
@@ -48,6 +49,7 @@ class ImagesWidget(widgets.Container):
             # Fiducial points
             show_ct_fiducials_button = widgets.PushButton(label="Show fiducials")
             show_ct_fiducials_button.changed.connect(lambda _: self._on_show_ct_fiducials_layer())
+            # appending
             self.append(ExpandableWidget([  #
                 show_ct_button,  #
                 show_ct_fiducials_button,  #
@@ -61,6 +63,10 @@ class ImagesWidget(widgets.Container):
             # Fiducial points
             show_micro_fiducials_button = widgets.PushButton(label="Show fiducials")
             show_micro_fiducials_button.changed.connect(lambda _: self._on_show_micro_fiducials_layer())
+            # Electrode points
+            show_electrodes_button = widgets.PushButton(label="Show electrodes")
+            show_electrodes_button.changed.connect(lambda _: self._on_show_ct_electrode_layer())
+            # appending
             self.append(ExpandableWidget([  #
                 show_micro_ct_button,  #
                 show_micro_fiducials_button,  #
@@ -133,6 +139,10 @@ class ImagesWidget(widgets.Container):
     def _on_show_micro_fiducials_layer(self) -> None:
         logger.debug("Show microCT fiducials clicked")
         add_ct_fiducial_layer(dadg=self._ctx.dadg, dadg_key="micro_fiducial_points")
+
+    def _on_show_ct_electrode_layer(self) -> None:
+        logger.debug("Show CT electrodes clicked")
+        add_ct_electrode_layer(dadg=self._ctx.dadg, dadg_key="micro_electrodes_points", image_uid_dadg_key="micro_ct_uid")
 
     def _on_show_image_2d_full_layer(self, xray_name: str) -> None:
         logger.debug(f"Show image_2d_full for '{xray_name}' clicked")

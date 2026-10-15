@@ -3,7 +3,9 @@ import logging
 import pathlib
 
 import SimpleITK as sitk
+import numpy as np
 import zarr
+from tqdm import tqdm
 
 from reg23_experiments.data.structs import Error
 from reg23_experiments.io.helpers import slice_files_from_one
@@ -14,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 def large_volume_to_zarr(  #
-        *,  #
-        group: zarr.Group,  #
-        volume_id: str,  #
-        a_slice_file_path: pathlib.Path,  #
+    *,  #
+    group: zarr.Group,  #
+    volume_id: str,  #
+    a_slice_file_path: pathlib.Path,  #
 ) -> zarr.Array | Error:
     # Check id not already present
     if volume_id in group.keys():
@@ -37,7 +39,7 @@ def large_volume_to_zarr(  #
         dtype=first.dtype,  #
     )
     # Read the slices into the array one by one
-    for i, slice_path in enumerate(slice_file_paths):
+    for i, slice_path in tqdm(enumerate(slice_file_paths), desc="Streaming image into Zarr array"):
         slice_array = sitk.GetArrayFromImage(sitk.ReadImage(slice_path))
         if slice_array.shape != first.shape:
             return Error(
@@ -49,7 +51,7 @@ def large_volume_to_zarr(  #
                 f"Not all slices shared the same dtype; slice {i} was of dtype {slice_array.dtype}, but first slice "
                 f"was of "
                 f"dtype {first.dtype}")
-        array[i, :, :] = slice_array
+        array[i, :, :] = np.flip(slice_array, axis=1)
 
     # If there's an xtekVolume file, read the spacing from it
     xtek_volume_path = [e for e in a_slice_file_path.parent.iterdir() if e.is_file() and e.suffix == ".xtekVolume"]

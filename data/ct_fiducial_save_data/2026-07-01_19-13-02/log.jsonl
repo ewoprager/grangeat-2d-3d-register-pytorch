@@ -11,3 +11,22 @@
 {"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_left", "x": 1107.3837883754281, "y": 601.3524168468739, "z": 2416.0}
 {"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_left", "x": 659.2668607447557, "y": 1385.5570402005505, "z": 2463.0}
 {"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top", "x": 1507.9731630755746, "y": 1382.162214991227, "z": 2744.0}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_right"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_right"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_left"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_left"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_left"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_right"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_right"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_left"}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_right", "x": 135.9190859102157, "y": 57.961061170844296, "z": 22.000946}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_left", "x": 68.25255086314091, "y": 82.9179201045563, "z": 38.18346}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_left", "x": 49.47058486148137, "y": 125.8848834234213, "z": 61.548100999999996}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_right", "x": 172.96844350253048, "y": 160.36136896071415, "z": 66.911968}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_right", "x": 165.5071145429671, "y": 46.64042412874812, "z": 183.82608599999998}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_right", "x": 188.92025024366598, "y": 152.90004000115076, "z": 216.100201}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_left", "x": 100.9280259619185, "y": 54.87361470481807, "z": 219.827634}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_left", "x": 59.762073081568786, "y": 126.1421706289235, "z": 223.00958899999998}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top", "x": 136.94823473222448, "y": 126.39945783442566, "z": 248.556142}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "opps", "x": 105.98985203343543, "y": 85.64975350400499, "z": 103.12133560836627}

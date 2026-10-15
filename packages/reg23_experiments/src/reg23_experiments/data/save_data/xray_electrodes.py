@@ -31,7 +31,7 @@ import torch
 from reg23_experiments.data.structs import Error
 from reg23_experiments.io.save_data import SaveConfig, SaveState
 
-__all__ = ["ElectrodeSaveManager"]
+__all__ = ["XRayElectrodeSaveManager"]
 
 
 class _AddElectrode(pydantic.BaseModel):
@@ -65,7 +65,7 @@ def _incorporate_change(data: pd.DataFrame, change: Change) -> pd.DataFrame | Er
         previous_count = (data.index.get_level_values("xray_sop_instance_uid") == c.xray_sop_instance_uid).sum()
         index = pd.MultiIndex.from_tuples([(  #
             c.xray_sop_instance_uid,  #
-            previous_count  #
+            previous_count,  #
         )], names=["xray_sop_instance_uid", "index"])
         data = pd.concat([data, pd.DataFrame([{"x": c.x, "y": c.y}], index=index)])
         return data
@@ -92,11 +92,11 @@ def _incorporate_change(data: pd.DataFrame, change: Change) -> pd.DataFrame | Er
 
 
 def _compute_changes(  #
-        *,  #
-        uid: str,  #
-        old_data: torch.Tensor,  #
-        new_data: torch.Tensor,  #
-        tol: float = 1e-8,  #
+    *,  #
+    uid: str,  #
+    old_data: torch.Tensor,  #
+    new_data: torch.Tensor,  #
+    tol: float = 1e-8,  #
 ) -> list[Change]:
     uid = str(uid)
     ret: list[Change] = []
@@ -113,7 +113,7 @@ def _compute_changes(  #
                 xray_sop_instance_uid=uid,  #
                 x=new_data[i, 0].item(),  #
                 y=new_data[i, 1].item(),  #
-            )))
+            ), ), )
         new_data = new_data[:old_data.size()[0]]
     if new_data.size()[0]:
         diff_mask = (new_data - old_data).abs().max(dim=1).values > tol
@@ -125,11 +125,11 @@ def _compute_changes(  #
                 index=i,  #
                 x=new_data[i, 0].item(),  #
                 y=new_data[i, 1].item(),  #
-            )))
+            ), ), )
     return ret
 
 
-class ElectrodeSaveManager:
+class XRayElectrodeSaveManager:
     def __init__(self, directory: pathlib.Path):
         directory.mkdir(exist_ok=True, parents=True)
         self._config = SaveConfig(  #

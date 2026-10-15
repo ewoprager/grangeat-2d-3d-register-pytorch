@@ -5,6 +5,7 @@ import pathlib
 import SimpleITK as sitk
 import yaml
 from platformdirs import user_cache_dir
+from tqdm import tqdm
 
 from reg23_experiments.data.structs import Error
 
@@ -18,8 +19,8 @@ def slice_files_from_one(a_slice_file_path: pathlib.Path) -> list[pathlib.Path]:
     directory = a_slice_file_path.parent
     return sorted(  #
         e  #
-        for e in directory.iterdir()  #
-        if e.is_file() and e.suffix == suffix  #
+            for e in directory.iterdir()  #
+            if e.is_file() and e.suffix == suffix  #
     )
 
 
@@ -55,7 +56,7 @@ def contents_based_hash_slices(a_slice_file_path: pathlib.Path) -> str | Error:
     slice_file_paths = slice_files_from_one(a_slice_file_path)
     # Loop through each slice, accumulating the hash
     hasher = hashlib.sha256()
-    for slice_file_path in slice_file_paths:
+    for slice_file_path in tqdm(slice_file_paths, desc="Accumulating hash"):
         try:
             image = sitk.ReadImage(slice_file_path)
         except Exception as e:

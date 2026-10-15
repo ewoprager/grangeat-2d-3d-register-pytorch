@@ -10,9 +10,10 @@ from reg23_app.gui.reg_config_manager import RegConfigManager
 from reg23_app.param_dadg_parity_manager import ParamDADGParityManager
 from reg23_app.state import AppState
 from reg23_experiments.data.parameters import Parameters
+from reg23_experiments.data.save_data.ct_electrodes import CTElectrodeSaveManager
 from reg23_experiments.data.save_data.ct_fiducials import CTFiducialSaveManager
 from reg23_experiments.data.save_data.transformations import TransformationSaveManager
-from reg23_experiments.data.save_data.xray_electrodes import ElectrodeSaveManager
+from reg23_experiments.data.save_data.xray_electrodes import XRayElectrodeSaveManager
 from reg23_experiments.data.save_data.xray_fiducials import XRayFiducialSaveManager
 from reg23_experiments.data.save_data.xray_regs import XRayRegSaveManager
 from reg23_experiments.io.serialize import deserialize_recursive, serialize_recursive
@@ -38,22 +39,24 @@ class AppContext:
     """
 
     def __init__(  #
-            self,  #
-            *,  #
-            parameters: Parameters,  #
-            dadg: DirectedAcyclicDataGraph,  #
-            electrode_save_directory: pathlib.Path,  #
-            transformation_save_directory: pathlib.Path,  #
-            ct_fiducial_save_directory: pathlib.Path,  #
-            xray_fiducial_save_directory: pathlib.Path,  #
-            xray_reg_save_directory: pathlib.Path,  #
-            cache: bool = True  #
+        self,  #
+        *,  #
+        parameters: Parameters,  #
+        dadg: DirectedAcyclicDataGraph,  #
+        xray_electrode_save_directory: pathlib.Path,  #
+        ct_electrode_save_directory: pathlib.Path,  #
+        transformation_save_directory: pathlib.Path,  #
+        ct_fiducial_save_directory: pathlib.Path,  #
+        xray_fiducial_save_directory: pathlib.Path,  #
+        xray_reg_save_directory: pathlib.Path,  #
+        cache: bool = True  #
     ):
         logger.debug("Initialising AppContext")
         self._input_manager = InputManager()
         self._state = AppState(parameters=parameters)
         self._dadg = dadg
-        self._electrode_save_manager = ElectrodeSaveManager(electrode_save_directory)
+        self._xray_electrode_save_manager = XRayElectrodeSaveManager(xray_electrode_save_directory)
+        self._ct_electrode_save_manager = CTElectrodeSaveManager(ct_electrode_save_directory)
         self._transformation_save_manager = TransformationSaveManager(transformation_save_directory)
         self._ct_fiducial_save_manager = CTFiducialSaveManager(ct_fiducial_save_directory)
         self._xray_fiducial_save_manager = XRayFiducialSaveManager(xray_fiducial_save_directory)
@@ -67,15 +70,19 @@ class AppContext:
             # load params from the cache
             res: dict[str, Any] | None = self._cache_manager.last_params
             if res is not None:
-                self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters,
-                                                              trait=self.state.traits()["parameters"])
+                self.state.parameters = deserialize_recursive(
+                    value=res, old_value=self.state.parameters, trait=self.state.traits()["parameters"], )
 
         self._param_dadg_parity_manager = ParamDADGParityManager(  #
-            state=self._state, dadg=self._dadg, electrode_save_manager=self._electrode_save_manager,
-            ct_fiducial_save_manager=self._ct_fiducial_save_manager,
-            xray_fiducial_save_manager=self._xray_fiducial_save_manager)
-        self._reg_config_manager = RegConfigManager(self._state, self._dadg,
-                                                    xray_reg_save_manager=self._xray_reg_save_manager)
+            state=self._state,  #
+            dadg=self._dadg,  #
+            xray_electrode_save_manager=self._xray_electrode_save_manager,  #
+            ct_electrode_save_manager=self._ct_electrode_save_manager,  #
+            ct_fiducial_save_manager=self._ct_fiducial_save_manager,  #
+            xray_fiducial_save_manager=self._xray_fiducial_save_manager,  #
+        )
+        self._reg_config_manager = RegConfigManager(
+            self._state, self._dadg, xray_reg_save_manager=self._xray_reg_save_manager, )
 
         # observing all the parameter widgets
         observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)
@@ -93,8 +100,8 @@ class AppContext:
         return self._dadg
 
     @property
-    def electrode_save_manager(self) -> ElectrodeSaveManager:
-        return self._electrode_save_manager
+    def electrode_save_manager(self) -> XRayElectrodeSaveManager:
+        return self._xray_electrode_save_manager
 
     @property
     def transformation_save_manager(self) -> TransformationSaveManager:
@@ -110,5 +117,5 @@ class AppContext:
 
     def _any_parameter_changed(self, change) -> None:
         if self._cache:
-            self._cache_manager.last_params = serialize_recursive(self.state.parameters,
-                                                                  trait=self.state.traits()["parameters"])
+            self._cache_manager.last_params = serialize_recursive(
+                self.state.parameters, trait=self.state.traits()["parameters"], )

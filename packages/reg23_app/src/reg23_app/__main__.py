@@ -44,7 +44,7 @@ from reg23_experiments.experiments.electrode_experiment import dadg_updaters as 
 
 
 def main(*, ct_path: str | None = None, xray_path: str | None = None,
-         external_dataset: Literal["gold_hip"] | None = None, cache_directory: str):
+    external_dataset: Literal["gold_hip"] | None = None, cache_directory: str):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # -----
@@ -71,7 +71,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.error(f"Error adding updater: {err.description}")
         return
     if isinstance(err := data_manager().add_updater("get_micro_ct_array", electrode_updaters.get_micro_ct_array),
-                  Error):
+            Error, ):
         logger.error(f"Error adding updater: {err.description}")
         return
 
@@ -89,7 +89,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         truncation_percent=0.0,  #
         ap_transformation=Transformation(
             rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
-            translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
+            translation=torch.zeros(3, dtype=torch.float64, device=device), ),  #
         target_ap_distance=5.0,  #
         fixed_sinogram_size=None,  #
         sinogram_type=sinogram.SinogramClassic,  #
@@ -123,7 +123,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         parameters=parameters,  #
         dadg=data_manager(),  #
         transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),  #
-        electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),  #
+        xray_electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),  #
+        ct_electrode_save_directory=pathlib.Path("data/ct_electrode_save_data"),  #
         ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),  #
         xray_fiducial_save_directory=pathlib.Path("data/xray_fiducial_save_data"),  #
         xray_reg_save_directory=pathlib.Path("data/xray_reg_save_data"),  #
@@ -160,8 +161,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                     source_distance=xray_data["scene_geometry"].source_distance,  #
                     image_2d_full=xray_data["image"],  #
                     fixed_image_spacing=xray_data["spacing"],  #
-                    transformation_gt=xray_data["transformation"]  #
-                )}  #
+                    transformation_gt=xray_data["transformation"],  #
+                )},  #
         )
         if isinstance(res, Error):
             logger.error(f"Failed to set gold_hip CT dadg nodes: {res.description}")
@@ -169,7 +170,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.info(f"ct spacing = {ct_spacing.cpu()}")
         logger.info(f"ct size = {ct_volume.size()}")
         logger.info(f"total = "
-                    f"{ct_spacing.cpu() * torch.tensor(ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
+                    f"{ct_spacing.cpu() * torch.tensor(ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}", )
     else:
         err = data_manager().add_updater("load_untruncated_ct", drr_reg_updaters.load_untruncated_ct)
         if isinstance(err, Error):
@@ -182,23 +183,23 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     logger.debug("Initialising widgets")
     files_widget = FilesWidget(app_context, external_dataset is None)
     viewer().window.add_dock_widget(files_widget, name="Files", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
+        tabify=True, )
     parameters_widget = ParametersWidget(app_context)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
+        tabify=True, )
     viewer().window.add_dock_widget(HasTraitsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
-                                    menu=viewer().window.window_menu)
+        menu=viewer().window.window_menu, )
     images_widget = ImagesWidget(app_context)
     viewer().window.add_dock_widget(images_widget, name="Images", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
+        tabify=True, )
     register_widget = RegisterWidget(app_context)
     viewer().window.add_dock_widget(register_widget, name="Register", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
+        tabify=True, )
     drr_widget = DRRWidget(app_context)
     viewer().window.add_dock_widget(drr_widget, name="DRR", area="right", menu=viewer().window.window_menu, tabify=True)
     fiducials_widget = FiducialsWidget(app_context)
     viewer().window.add_dock_widget(fiducials_widget, name="Fiducials", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
+        tabify=True, )
 
     # -----
     # The universal objective function
@@ -237,19 +238,19 @@ if __name__ == "__main__":
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
     parser.add_argument("-c", "--cache-directory", type=str, default="cache",
-                        help="Set the directory where data that is expensive to calculate will be saved. The default "
-                             "is 'cache'.")
+        help="Set the directory where data that is expensive to calculate will be saved. The default "
+             "is 'cache'.", )
     parser.add_argument("-p", "--ct-path", type=str, default=None,
-                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
-                             "process.")
+        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
+             "process.", )
     parser.add_argument("--external-gold-hip", action="store_true",
-                        help="Load data from the external dataset '2D-3D registration gold-standard dataset for the "
-                             "hip joint based on uncertainty modeling'")
+        help="Load data from the external dataset '2D-3D registration gold-standard dataset for the "
+             "hip joint based on uncertainty modeling'", )
     parser.add_argument("-x", "--xray-path", type=str, default=None,
-                        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
-                             "this is provided, the X-ray will by used instead of any DRR.")
+        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
+             "this is provided, the X-ray will by used instead of any DRR.", )
     parser.add_argument("-l", "--log-level", type=str, default=None,
-                        help=f"Set the log level; options: [{", ".join(logging._nameToLevel.keys())}]; default = INFO.")
+        help=f"Set the log level; options: [{", ".join(logging._nameToLevel.keys())}]; default = INFO.", )
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")
     # parser.add_argument(

@@ -15,6 +15,10 @@ __all__ = ["add_micro_ct_layer"]
 logger = logging.getLogger(__name__)
 
 
+def micro_ct_spacing(attribute: list[float]) -> np.ndarray:
+    return np.flip(np.array(attribute))
+
+
 class _MicroCTLayerManager:
     def __init__(self, *, ctx: AppContext, layer: napari.layers.Image):
         self._ctx = ctx
@@ -34,7 +38,7 @@ class _MicroCTLayerManager:
             layer.data = None
             return
         layer.data = new_value
-        layer.scale = np.flip(np.array(new_value.attrs["spacing"]))
+        layer.scale = micro_ct_spacing(new_value.attrs["spacing"])
 
 
 def add_micro_ct_layer(*, ctx: AppContext) -> napari.layers.Image | None:
@@ -57,7 +61,7 @@ def add_micro_ct_layer(*, ctx: AppContext) -> napari.layers.Image | None:
         blending="additive",  #
         interpolation2d="linear",  #
         name=name,  #
-        scale=res.attrs["spacing"],  #
+        scale=micro_ct_spacing(res.attrs["spacing"]),  #
     )
     layer.my_plugin = _MicroCTLayerManager(ctx=ctx, layer=layer)
     return layer

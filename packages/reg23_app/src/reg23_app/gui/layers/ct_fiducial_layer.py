@@ -21,12 +21,12 @@ logger = logging.getLogger(__name__)
 
 
 class _CTFiducialLayerManager:
-    def __init__(#
-            self, #
-            *, #
-            layer: napari.layers.Points,#
-            dadg: DirectedAcyclicDataGraph, #
-            dadg_key: str,#
+    def __init__(  #
+            self,  #
+            *,  #
+            layer: napari.layers.Points,  #
+            dadg: DirectedAcyclicDataGraph,  #
+            dadg_key: str,  #
     ):
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         self._dadg = dadg
@@ -80,7 +80,7 @@ class _CTFiducialLayerManager:
 
             name = get_string_required(message="Enter a unique name for the point", validator=validator)
             new_features = layer.features.copy()
-            new_features.iloc[-1]["label"] = name
+            new_features.iloc[new_features.index[-1], "label"] = name
             layer.features = new_features
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
@@ -88,10 +88,10 @@ class _CTFiducialLayerManager:
         self._update_dadg_from_layer()
 
 
-def add_ct_fiducial_layer(#
-        *,#
-        dadg: DirectedAcyclicDataGraph,#
-        dadg_key: str,#
+def add_ct_fiducial_layer(  #
+        *,  #
+        dadg: DirectedAcyclicDataGraph,  #
+        dadg_key: str,  #
 ) -> napari.layers.Layer | None:
     """
     :param dadg:
