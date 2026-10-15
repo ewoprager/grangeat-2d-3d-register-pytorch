@@ -113,6 +113,11 @@ class FiducialsManager:
         else:
             logger.info(f"Optimisation failed; status = {result.status}; {result.message}")
 
+    def _button_fiducial_register3d(self, change) -> None:
+        if not change.new:
+            return
+        self._state.button_fiducial_register3d = False
+
     def _button_ct_fiducial_refine(self, change) -> None:
         if not change.new:
             return
@@ -179,7 +184,7 @@ class FiducialsManager:
             aaa = clamp_index(((point - diag) / spacing).floor().to(torch.int64))
             bbb = clamp_index(((point + diag) / spacing).ceil().to(torch.int64))
             index = tuple(slice(a, b) for a, b in zip(aaa, bbb))
-
+            ## Todo
             new_data[i] = refine_spherical_fiducial_3d(  #
                 volume=volume,  #
                 spacing=spacing,  #

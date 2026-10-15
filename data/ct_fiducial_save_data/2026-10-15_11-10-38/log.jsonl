@@ -1,1 +1,19 @@
 {"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "opps"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_right"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_left"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_right"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_right"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_right"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_left"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_left"}
+{"action": "remove", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_left"}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_left", "x": 125.95216725816998, "y": 57.10216820851896, "z": 20.182686}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "chin_right", "x": 193.73637684884807, "y": 82.25479944028001, "z": 38.001633999999996}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_right", "x": 211.21533152236054, "y": 125.6247181155344, "z": 58.911623999999996}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "jaw_left", "x": 89.81548125620535, "y": 160.36990353587464, "z": 66.275577}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_left", "x": 96.38601876185106, "y": 46.2500415957121, "z": 182.371478}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_left", "x": 72.52459308345345, "y": 153.10773050331883, "z": 216.282027}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "forhead_right", "x": 160.70812276448814, "y": 54.89548568208803, "z": 218.64576499999998}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top_right", "x": 201.5146188521826, "y": 126.47976271728089, "z": 223.73689299999998}
+{"action": "set", "ct_series_uid": "f48748738b9efa97e246c5576d4a1fe6d01dede365cf75f7aa9d802d93dcb8f2", "name": "top", "x": 124.74307536516417, "y": 126.47976271728089, "z": 247.919751}
