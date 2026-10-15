@@ -8,17 +8,17 @@ from jaxtyping import Float32, Float64, jaxtyped
 from reg23_experiments.ops.optimisation import local_search
 
 __all__ = ["ball_bearing_marker_function", "construct_synthetic_fiducial_3d", "refine_spherical_fiducial_2d",
-           "refine_spherical_fiducial_3d", "refine_disk_fiducial_2d"]
+    "refine_spherical_fiducial_3d", "refine_disk_fiducial_2d"]
 
 logger = logging.getLogger(__name__)
 
 
 @jaxtyped(typechecker=typechecker)
 def ball_bearing_marker_function(  #
-        coordinates: Float64[torch.Tensor, "... 3"],  #
-        *,  #
-        value=30000,  #
-        radius=2.5) -> Float32[torch.Tensor, "..."]:
+    coordinates: Float64[torch.Tensor, "... 3"],  #
+    *,  #
+    value=30000,  #
+    radius=2.5) -> Float32[torch.Tensor, "..."]:
     """
     Maps positions given in 3D Cartesian coordinates at mm scale to intensities
     :param coordinates: tensor of size (..., 3)
@@ -30,12 +30,12 @@ def ball_bearing_marker_function(  #
 
 @jaxtyped(typechecker=typechecker)
 def construct_synthetic_fiducial_3d(  #
-        *,  #
-        size: torch.Size,  #
-        spacing: Float64[torch.Tensor, "3"],  #
-        origin: Float64[torch.Tensor, "3"],  #
-        marker_function: Callable[[Float64[torch.Tensor, "... 3"]], Float32[torch.Tensor, "..."]],  #
-        marker_positions: list[Float64[torch.Tensor, "3"]]) -> Float32[torch.Tensor, "p q r"]:
+    *,  #
+    size: torch.Size,  #
+    spacing: Float64[torch.Tensor, "3"],  #
+    origin: Float64[torch.Tensor, "3"],  #
+    marker_function: Callable[[Float64[torch.Tensor, "... 3"]], Float32[torch.Tensor, "..."]],  #
+    marker_positions: list[Float64[torch.Tensor, "3"]]) -> Float32[torch.Tensor, "p q r"]:
     """
     Constructs a tensor of the given size as the sum of the given markers.
     :param size: (z, y, x)
@@ -52,7 +52,7 @@ def construct_synthetic_fiducial_3d(  #
     voxel_y_positions = origin[1] + torch.arange(size[1], dtype=torch.float64) * spacing[1]
     voxel_z_positions = origin[2] + torch.arange(size[0], dtype=torch.float64) * spacing[2]
     voxel_z_positions, voxel_y_positions, voxel_x_positions = torch.meshgrid(voxel_z_positions, voxel_y_positions,
-                                                                             voxel_x_positions)
+        voxel_x_positions)
     voxel_positions = torch.stack((voxel_x_positions, voxel_y_positions, voxel_z_positions), dim=-1)
 
     ret = torch.zeros(size=size, dtype=torch.float32)
@@ -63,7 +63,7 @@ def construct_synthetic_fiducial_3d(  #
 
 @jaxtyped(typechecker=typechecker)
 def refine_spherical_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing: Float64[torch.Tensor, "2"],
-                                 position: Float64[torch.Tensor, "2"], radius: float) -> Float64[torch.Tensor, "2"]:
+    position: Float64[torch.Tensor, "2"], radius: float) -> Float64[torch.Tensor, "2"]:
     """
     Refines the segmented position of a highly attenuating spherical fiducial marker (e.g. a steel ball bearing) in a 2D
     image, given an initial segmented position and a known sphere radius.
@@ -122,7 +122,7 @@ def refine_spherical_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing
 
 @jaxtyped(typechecker=typechecker)
 def refine_disk_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing: Float64[torch.Tensor, "2"],
-                            position: Float64[torch.Tensor, "2"], radius: float) -> Float64[torch.Tensor, "2"]:
+    position: Float64[torch.Tensor, "2"], radius: float) -> Float64[torch.Tensor, "2"]:
     assert radius > 0.0
     image = image.cpu()
     spacing = spacing.cpu()
@@ -133,7 +133,7 @@ def refine_disk_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing: Flo
     sq_inner_rad = (radius - border_thickness) * (radius - border_thickness)
     sq_outer_rad = (radius + border_thickness) * (radius + border_thickness)
     image_gradients = torch.stack(torch.gradient(image, spacing=tuple(s.item() for s in spacing.flip(dims=(0,)))),
-                                  dim=-1).flip(dims=(-1,))
+        dim=-1).flip(dims=(-1,))
     image_gradients /= image_gradients.max()
 
     def objective(pos: torch.Tensor) -> torch.Tensor:
@@ -177,8 +177,13 @@ def refine_disk_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing: Flo
 
 
 @jaxtyped(typechecker=typechecker)
-def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spacing: Float64[torch.Tensor, "3"],
-                                 position: Float64[torch.Tensor, "3"], radius: float) -> Float64[torch.Tensor, "3"]:
+def refine_spherical_fiducial_3d(  #
+    *,  #
+    volume: Float32[torch.Tensor, "p q r"],  #
+    spacing: Float64[torch.Tensor, "3"],  #
+    position: Float64[torch.Tensor, "3"],  #
+    radius: float,  #
+) -> Float64[torch.Tensor, "3"]:
     assert radius > 0.0
     volume = volume.cpu()
     spacing = spacing.cpu()
@@ -189,7 +194,7 @@ def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spac
     sq_inner_rad = (radius - border_thickness) * (radius - border_thickness)
     sq_outer_rad = (radius + border_thickness) * (radius + border_thickness)
     volume_gradients = torch.stack(torch.gradient(volume, spacing=tuple(s.item() for s in spacing.flip(dims=(0,)))),
-                                   dim=-1).flip(dims=(-1,))
+        dim=-1).flip(dims=(-1,))
     volume_gradients /= volume_gradients.max()
 
     def objective(pos: torch.Tensor) -> torch.Tensor:
@@ -209,7 +214,7 @@ def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spac
         patch_pixel_ys = spacing[1] * torch.arange(j0, j1, dtype=torch.float64) - pos[1]
         patch_pixel_zs = spacing[2] * torch.arange(k0, k1, dtype=torch.float64) - pos[2]
         patch_pixel_positions = torch.stack(torch.meshgrid(patch_pixel_zs, patch_pixel_ys, patch_pixel_xs),
-                                            dim=-1).flip(dims=(-1,))  # (p, q, r, 3)
+            dim=-1).flip(dims=(-1,))  # (p, q, r, 3)
         square_distances = patch_pixel_positions.square().sum(dim=-1)  # (p, q, r)
         patch_mask = torch.logical_and(square_distances > sq_inner_rad, square_distances < sq_outer_rad)
         unit_directions = -(

@@ -2,6 +2,7 @@ import logging
 import pathlib
 from typing import Any
 
+import torch
 import zarr
 
 from reg23_experiments.data.structs import Error
@@ -16,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 @dadg_updater(names_returned=["micro_ct_uid"])
 def get_micro_ct_uid(  #
-        *,  #
-        micro_ct_slice_path: str | pathlib.Path | None,  #
+    *,  #
+    micro_ct_slice_path: str | pathlib.Path | None,  #
 ) -> dict[str, Any] | Error:
     if micro_ct_slice_path is None:
         return {"micro_ct_uid": None}
@@ -33,16 +34,17 @@ def get_micro_ct_uid(  #
     return {"micro_ct_uid": uid}
 
 
-@dadg_updater(names_returned=["micro_ct_array"])
+@dadg_updater(names_returned=["micro_ct_array", "micro_ct_spacing"])
 def get_micro_ct_array(  #
-        *,  #
-        micro_ct_slice_path: str | pathlib.Path | None,  #
-        micro_ct_uid: str | None,  #
-        micro_ct_zarr_path: str | pathlib.Path,  #
+    *,  #
+    micro_ct_slice_path: str | pathlib.Path | None,  #
+    micro_ct_uid: str | None,  #
+    micro_ct_zarr_path: str | pathlib.Path,  #
 ) -> dict[str, Any] | Error:
     if micro_ct_uid is None:
         return {  #
             "micro_ct_array": None,  #
+            "micro_ct_spacing": None,  #
         }
     # micro_ct_slice_path should not be None if micro_ct_uid is not None; see `get_micro_ct_uid`
     assert micro_ct_slice_path is not None
@@ -50,16 +52,19 @@ def get_micro_ct_array(  #
     group = zarr.open_group(micro_ct_zarr_path)
     if micro_ct_uid in group.array_keys():
         logger.info(f"Get microCT by UID: Array already present in zarr cache")
-        return {"micro_ct_array": group[micro_ct_uid]}
-
-    logger.info(f"Get microCT by UID: Array not present in zarr cache; streaming in...")
-    res: zarr.Array | Error = large_volume_to_zarr(  #
-        group=group,  #
-        volume_id=micro_ct_uid,  #
-        a_slice_file_path=pathlib.Path(micro_ct_slice_path),  #
-    )
-    if isinstance(res, Error):
-        logger.error(f"\tFailed: {res.description}")
-        return res
-    logger.info(f"\tDone; zarr cache entry created for volume '{micro_ct_uid}'")
-    return {"micro_ct_array": res}
+        array = group[micro_ct_uid]
+    else:
+        logger.info(f"Get microCT by UID: Array not present in zarr cache; streaming in...")
+        array: zarr.Array | Error = large_volume_to_zarr(  #
+            group=group,  #
+            volume_id=micro_ct_uid,  #
+            a_slice_file_path=pathlib.Path(micro_ct_slice_path),  #
+        )
+        if isinstance(array, Error):
+            logger.error(f"\tFailed: {array.description}")
+            return array
+        logger.info(f"\tDone; zarr cache entry created for volume '{micro_ct_uid}'")
+    return {  #
+        "micro_ct_array": array,  #
+        "micro_ct_spacing": torch.tensor(array.attrs["spacing"]),  #
+    }

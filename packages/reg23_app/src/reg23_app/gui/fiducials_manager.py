@@ -3,6 +3,7 @@ import logging
 import numpy as np
 import scipy as sp
 import torch
+from jaxtyping import Int64
 
 from reg23_app.state import AppState
 from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D
@@ -29,7 +30,9 @@ class FiducialsManager:
         self._dadg = dadg
 
         self._state.observe(self._button_fiducial_register, names=["button_fiducial_register"])
+        self._state.observe(self._button_fiducial_register3d, names=["button_fiducial_register3d"])
         self._state.observe(self._button_ct_fiducial_refine, names=["button_refine_ct_fiducials"])
+        self._state.observe(self._button_micro_fiducial_refine, names=["button_refine_micro_fiducials"])
         self._state.observe(self._button_xray_fiducial_refine, names=["button_refine_xray_fiducials"])
 
     def _button_fiducial_register(self, change) -> None:
@@ -83,7 +86,7 @@ class FiducialsManager:
         # ToDo: Speed this up
         def residuals(pose: np.ndarray) -> np.ndarray:
             self._dadg.set(dadg_key_prefix + "current_transformation",
-                           mapping_parameters_to_transformation(torch.tensor(pose, device=device)))
+                mapping_parameters_to_transformation(torch.tensor(pose, device=device)))
             projected_points: NamedPoints2D | Error = self._dadg.get(dadg_key_prefix + "projected_fiducials")
             if isinstance(projected_points, Error):
                 raise Exception(
@@ -106,7 +109,7 @@ class FiducialsManager:
         if result.success:
             logger.info(f"Optimisation succeeded; x = {result.x}, loss = {result.fun}")
             self._dadg.set(dadg_key_prefix + "current_transformation",
-                           mapping_parameters_to_transformation(torch.tensor(result.x, device=image_2d_full.device)))
+                mapping_parameters_to_transformation(torch.tensor(result.x, device=image_2d_full.device)))
         else:
             logger.info(f"Optimisation failed; status = {result.status}; {result.message}")
 
@@ -115,35 +118,77 @@ class FiducialsManager:
             return
         self._state.button_refine_ct_fiducials = False
 
-        logger.info(f"Refining fiducial segmentation for CT")
+        self._ct_fiducial_refine(  #
+            image_dadg_key="untruncated_ct_volume",  #
+            spacing_dadg_key="ct_spacing",  #
+            points_dadg_key="ct_fiducial_points",  #
+        )
 
-        untruncated_ct_volume: torch.Tensor | Error = self._dadg.get("untruncated_ct_volume")
-        if isinstance(untruncated_ct_volume, Error):
-            logger.error(
-                f"Couldn't get 'untruncated_ct_volume' for fiducial refinement: {untruncated_ct_volume.description}")
+    def _button_micro_fiducial_refine(self, change) -> None:
+        if not change.new:
+            return
+        self._state.button_refine_micro_fiducials = False
+
+        self._ct_fiducial_refine(  #
+            image_dadg_key="micro_ct_array",  #
+            spacing_dadg_key="micro_ct_spacing",  #
+            points_dadg_key="micro_fiducial_points",  #
+        )
+
+    def _ct_fiducial_refine(  #
+        self,  #
+        *,  #
+        image_dadg_key: str,  #
+        spacing_dadg_key: str,  #
+        points_dadg_key: str,  #
+    ) -> None:
+        logger.info(f"Refining fiducial segmentation for CT '{image_dadg_key}'")
+
+        chunk_size: float = 20.0  # [mm]
+
+        volume: torch.Tensor | Error = self._dadg.get(image_dadg_key)
+        if isinstance(volume, Error):
+            logger.error(f"Couldn't get '{image_dadg_key}' for fiducial refinement: {volume.description}")
             return
 
-        ct_spacing: torch.Tensor | Error = self._dadg.get("ct_spacing")
-        if isinstance(ct_spacing, Error):
-            logger.error(f"Couldn't get 'ct_spacing' for fiducial refinement: {ct_spacing.description}")
+        spacing: torch.Tensor | Error = self._dadg.get(spacing_dadg_key)
+        if isinstance(spacing, Error):
+            logger.error(f"Couldn't get '{spacing_dadg_key}' for fiducial refinement: {spacing.description}")
             return
 
-        fiducial_points: NamedPoints3D | Error = self._dadg.get("ct_fiducial_points")
+        fiducial_points: NamedPoints3D | Error = self._dadg.get(points_dadg_key)
         if isinstance(fiducial_points, Error):
-            logger.error(f"Couldn't get 'ct_fiducial_points' for fiducial refinement: {fiducial_points.description}")
+            logger.error(f"Couldn't get '{points_dadg_key}' for fiducial refinement: {fiducial_points.description}")
             return
+
+        min_index = torch.zeros(3, dtype=torch.int64)
+        max_index = torch.tensor(volume.size(), dtype=torch.int64) - 1
+
+        def clamp_index(index: Int64[torch.Tensor, "3"]) -> Int64[torch.Tensor, "3"]:
+            return torch.minimum(  #
+                max_index,  #
+                torch.maximum(  #
+                    min_index,  #
+                    index,  #
+                ),  #
+            )
 
         new_data = torch.empty_like(fiducial_points.data)
         for i, point in enumerate(fiducial_points.data):
+            diag = torch.full_like(point, chunk_size)
+            aaa = clamp_index(((point - diag) / spacing).floor().to(torch.int64))
+            bbb = clamp_index(((point + diag) / spacing).ceil().to(torch.int64))
+            index = tuple(slice(a, b) for a, b in zip(aaa, bbb))
+
             new_data[i] = refine_spherical_fiducial_3d(  #
-                volume=untruncated_ct_volume,  #
-                spacing=ct_spacing,  #
+                volume=volume,  #
+                spacing=spacing,  #
                 position=point,  #
                 radius=0.5 * self._state.assumed_fiducial_diameter,  #
             )
-        self._dadg.set("ct_fiducial_points", NamedPoints3D(names=fiducial_points.names, data=new_data))
+        self._dadg.set(points_dadg_key, NamedPoints3D(names=fiducial_points.names, data=new_data))
 
-        logger.info("CT fiducial segmentation refined.")
+        logger.info(f"CT '{image_dadg_key}' fiducial segmentation refined.")
 
     def _button_xray_fiducial_refine(self, change) -> None:
         if not change.new:
