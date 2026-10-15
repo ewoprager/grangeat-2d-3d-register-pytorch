@@ -66,5 +66,5 @@ def get_micro_ct_array(  #
         logger.info(f"\tDone; zarr cache entry created for volume '{micro_ct_uid}'")
     return {  #
         "micro_ct_array": array,  #
-        "micro_ct_spacing": torch.tensor(array.attrs["spacing"]),  #
+        "micro_ct_spacing": torch.tensor(array.attrs["spacing"], dtype=torch.float64),  #
     }

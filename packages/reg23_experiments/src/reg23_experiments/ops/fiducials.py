@@ -183,21 +183,26 @@ def refine_spherical_fiducial_3d(  #
     spacing: Float64[torch.Tensor, "3"],  #
     position: Float64[torch.Tensor, "3"],  #
     radius: float,  #
-) -> Float64[torch.Tensor, "3"]:
+) -> Float64[torch.Tensor, "3"] | str:
     assert radius > 0.0
     volume = volume.cpu()
     spacing = spacing.cpu()
     output_device = position.device
     position = position.cpu()
 
-    border_thickness = spacing.max()
+    border_thickness = 0.05 * radius
     sq_inner_rad = (radius - border_thickness) * (radius - border_thickness)
     sq_outer_rad = (radius + border_thickness) * (radius + border_thickness)
-    volume_gradients = torch.stack(torch.gradient(volume, spacing=tuple(s.item() for s in spacing.flip(dims=(0,)))),
-        dim=-1).flip(dims=(-1,))
-    volume_gradients /= volume_gradients.max()
+    volume_gradients = torch.stack(  #
+        torch.gradient(volume, spacing=tuple(  #
+            s.item()  #
+                for s in spacing.flip(dims=(0,))  #
+        )),  #
+        dim=-1,  #
+    ).flip(dims=(-1,))
+    volume_gradients /= torch.linalg.norm(volume_gradients, dim=-1).max()
 
-    def objective(pos: torch.Tensor) -> torch.Tensor:
+    def objective(pos: torch.Tensor) -> torch.Tensor | str:
         pos_nograd = pos.detach()
         i0: int = max(0, int(((pos_nograd[0] - radius) / spacing[0]).floor().item()))
         i1: int = min(volume.size()[2] - 1, int(((pos_nograd[0] + radius) / spacing[0]).ceil().item()))
@@ -206,7 +211,7 @@ def refine_spherical_fiducial_3d(  #
         k0: int = max(0, int(((pos_nograd[2] - radius) / spacing[2]).floor().item()))
         k1: int = min(volume.size()[0] - 1, int(((pos_nograd[2] + radius) / spacing[2]).ceil().item()))
         if i1 <= i0 or j1 <= j0 or k1 <= k0:
-            return pos.sum() * 0.0 + 1.0
+            return "position out of bounds"
         i1 += 1
         j1 += 1
         k1 += 1
@@ -217,10 +222,9 @@ def refine_spherical_fiducial_3d(  #
             dim=-1).flip(dims=(-1,))  # (p, q, r, 3)
         square_distances = patch_pixel_positions.square().sum(dim=-1)  # (p, q, r)
         patch_mask = torch.logical_and(square_distances > sq_inner_rad, square_distances < sq_outer_rad)
-        unit_directions = -(
-                patch_pixel_positions[patch_mask] / square_distances[patch_mask].sqrt().unsqueeze(-1)).flatten()
-        vol_grad_patch = volume_gradients[k0:k1, j0:j1, i0:i1, :][patch_mask].flatten().to(dtype=torch.float64)
-        return -(unit_directions * vol_grad_patch).mean()
+        unit_directions = -(patch_pixel_positions[patch_mask] / square_distances.unsqueeze(-1)[patch_mask].sqrt())
+        vol_grad_patch = volume_gradients[k0:k1, j0:j1, i0:i1, :][patch_mask].to(dtype=torch.float64)
+        return -(unit_directions * vol_grad_patch).sum(dim=-1).mean()
 
     if False:
         return local_search(  #
@@ -229,13 +233,31 @@ def refine_spherical_fiducial_3d(  #
             objective_function=objective  #
         ).to(device=output_device)
 
-    x = position.clone().detach().requires_grad_(True)
+    logger.debug(  #
+        "Running gradient-descent for fiducial refinement; start = ({:.2f},{:.2f},{:.2f})".format(  #
+            *position.tolist(),  #
+        ),  #
+    )
+    x: torch.Tensor = position.clone().detach().requires_grad_(True)
     lr = 10.0
-    for _ in range(200):
+    for i in range(200):
         if x.grad is not None:
             x.grad.zero_()
-        loss = objective(x)
+        loss: torch.Tensor | str = objective(x)
+        if isinstance(loss, str):
+            return f"Failed to converge; encountered the following issue at iteration {i}: {loss}"
         loss.backward()
         with torch.no_grad():
-            x -= lr * x.grad
+            delta = lr * x.grad
+            if delta.sum().abs() < 1.0e-10:
+                logger.debug(f"Converged at iteration {i}")
+                break
+            x -= delta
+            logger.debug(  #
+                "\titeration {}: loss={:.3E} @ ({:.2f},{:.2f},{:.2f})".format(  #
+                    i,  #
+                    loss.item(),  #
+                    *x.tolist(),  #
+                ),  #
+            )
     return x.detach().to(device=output_device)

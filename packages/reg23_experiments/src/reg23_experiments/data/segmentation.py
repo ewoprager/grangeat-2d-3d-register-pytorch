@@ -57,6 +57,12 @@ class NamedPoints2D(traitlets.HasTraits):
         default_value=torch.empty((0, 2), dtype=torch.float64)  #
     )
 
+    def __len__(self) -> int:
+        return len(self.names)
+
+    def __iter__(self):
+        return zip(self.names, self.data)
+
     @traitlets.validate("data")
     def _validate_data(self, proposal):
         if proposal["value"].dtype != torch.float64:
@@ -75,6 +81,12 @@ class NamedPoints3D(traitlets.HasTraits):
         allow_none=False,  #
         default_value=torch.empty((0, 3), dtype=torch.float64)  #
     )
+
+    def __len__(self) -> int:
+        return len(self.names)
+
+    def __iter__(self):
+        return zip(self.names, self.data)
 
     @traitlets.validate("data")
     def _validate_data(self, proposal):

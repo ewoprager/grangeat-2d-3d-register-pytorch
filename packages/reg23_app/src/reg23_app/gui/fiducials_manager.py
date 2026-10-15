@@ -3,6 +3,7 @@ import logging
 import numpy as np
 import scipy as sp
 import torch
+import zarr
 from jaxtyping import Int64
 
 from reg23_app.state import AppState
@@ -151,15 +152,15 @@ class FiducialsManager:
 
         chunk_size: float = 20.0  # [mm]
 
-        volume: torch.Tensor | Error = self._dadg.get(image_dadg_key)
+        volume: torch.Tensor | zarr.Array | Error = self._dadg.get(image_dadg_key)
         if isinstance(volume, Error):
             logger.error(f"Couldn't get '{image_dadg_key}' for fiducial refinement: {volume.description}")
             return
-
         spacing: torch.Tensor | Error = self._dadg.get(spacing_dadg_key)
         if isinstance(spacing, Error):
             logger.error(f"Couldn't get '{spacing_dadg_key}' for fiducial refinement: {spacing.description}")
             return
+        spacing: torch.Tensor = spacing.cpu()
 
         fiducial_points: NamedPoints3D | Error = self._dadg.get(points_dadg_key)
         if isinstance(fiducial_points, Error):
@@ -167,7 +168,7 @@ class FiducialsManager:
             return
 
         min_index = torch.zeros(3, dtype=torch.int64)
-        max_index = torch.tensor(volume.size(), dtype=torch.int64) - 1
+        max_index = torch.tensor(volume.shape, dtype=torch.int64) - 1
 
         def clamp_index(index: Int64[torch.Tensor, "3"]) -> Int64[torch.Tensor, "3"]:
             return torch.minimum(  #
@@ -179,18 +180,26 @@ class FiducialsManager:
             )
 
         new_data = torch.empty_like(fiducial_points.data)
-        for i, point in enumerate(fiducial_points.data):
+        for i, (name, point) in enumerate(fiducial_points):
             diag = torch.full_like(point, chunk_size)
-            aaa = clamp_index(((point - diag) / spacing).floor().to(torch.int64))
-            bbb = clamp_index(((point + diag) / spacing).ceil().to(torch.int64))
-            index = tuple(slice(a, b) for a, b in zip(aaa, bbb))
-            ## Todo
-            new_data[i] = refine_spherical_fiducial_3d(  #
-                volume=volume,  #
+            aaa = clamp_index(((point - diag) / spacing).floor().to(torch.int64).flip(dims=(0,)))
+            bbb = clamp_index(((point + diag) / spacing).ceil().to(torch.int64).flip(dims=(0,)))
+            indices = tuple(slice(a, b) for a, b in zip(aaa, bbb))
+            offset = aaa.flip(dims=(0,)).to(dtype=torch.float64) * spacing
+            chunk = volume[indices]
+            if not isinstance(chunk, torch.Tensor):
+                chunk = torch.tensor(chunk, dtype=torch.float32)
+            res: torch.Tensor | str = refine_spherical_fiducial_3d(  #
+                volume=chunk,  #
                 spacing=spacing,  #
-                position=point,  #
+                position=point - offset,  #
                 radius=0.5 * self._state.assumed_fiducial_diameter,  #
             )
+            if isinstance(res, str):
+                logger.warning(f"Failed to refine fiducial segmentation '{name}': {res}")
+                new_data[i] = fiducial_points.data[i]
+                continue
+            new_data[i] = offset + res
         self._dadg.set(points_dadg_key, NamedPoints3D(names=fiducial_points.names, data=new_data))
 
         logger.info(f"CT '{image_dadg_key}' fiducial segmentation refined.")

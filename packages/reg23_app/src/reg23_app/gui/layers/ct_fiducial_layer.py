@@ -112,7 +112,7 @@ def add_ct_fiducial_layer(  #
         features = pd.DataFrame(columns=["label"])
     layer = viewer().add_points(  #
         fiducial_points.data.flip(dims=(1,)).numpy(),  #
-        size=8.0,  #
+        size=3.0,  #
         name=dadg_key,  #
         features=features,  #
         text={"string": "{label}", "size": 16}  #
