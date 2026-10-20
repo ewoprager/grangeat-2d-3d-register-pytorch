@@ -74,24 +74,30 @@ class ParamDADGParityManager:
 
         # X-ray specific nodes in the DADG should be consistent with the values in `xray_parameters` in the state; the
         # only necessary driving direction is state -> DADG
-        self._state.parameters.observe(
-            lambda change: self._xray_parameters_changed(change.new), names=["xray_parameters"], )
+        self._state.parameters.observe(lambda change: self._xray_parameters_changed(change.new),
+            names=["xray_parameters"], )
         # Need to keep track of previous set of X-rays that have been loaded
         self._current_xrays: list[str] = []
         self._xray_parameters_changed(self._state.parameters.xray_parameters)
 
-        # load ct fiducial points from save manager
-        self._dadg.observe("ct_series_uid", "fiducial_point_loader", self._ct_series_uid_changed)
-        if not isinstance(ct_uid := self._dadg.get("ct_series_uid"), Error):
+        # load CT fiducial points from save manager
+        ct_uid: str | None | Error = self._dadg.get("ct_series_uid")
+        if isinstance(ct_uid, Error):
+            logger.error(f"No CT series UID node in graph")
+        else:
             self._ct_series_uid_changed(ct_uid)
+        self._dadg.observe("ct_series_uid", "fiducial_point_loader", self._ct_series_uid_changed)
 
         # eagerly save the ct fiducial points to the save manager
         self._dadg.observe("ct_fiducial_points", "saver", self._ct_fiducial_points_changed)
 
         # load microCT fiducial points from save manager
-        self._dadg.observe("micro_ct_uid", "fiducial_point_loader", self._micro_ct_uid_changed)
-        if not isinstance(micro_uid := self._dadg.get("micro_ct_uid"), Error):
+        micro_uid: str | None | Error = self._dadg.get("micro_ct_uid")
+        if isinstance(micro_uid, Error):
+            logger.error(f"No microCT series UID node in graph")
+        else:
             self._micro_ct_uid_changed(micro_uid)
+        self._dadg.observe("micro_ct_uid", "fiducial_point_loader", self._micro_ct_uid_changed)
 
         # eagerly save the microCT fiducial points to the save manager
         self._dadg.observe("micro_fiducial_points", "saver", self._micro_fiducial_points_changed)
@@ -100,8 +106,8 @@ class ParamDADGParityManager:
         self._dadg.set(node, _type(new_value), check_equality=True)
 
     def _target_flipped_changed(self, new_value: bool, *, namespace: str | None) -> None:
-        self._dadg.set(
-            "target_flipped" if namespace is None else f"{namespace}__target_flipped", new_value, check_equality=True, )
+        self._dadg.set("target_flipped" if namespace is None else f"{namespace}__target_flipped", new_value,
+            check_equality=True, )
 
     def _xray_electrode_points_changed(self, new_value: OrderedPoints2D, *, namespace: str) -> None:
         uid: str | Error = self._dadg.get(f"{namespace}__xray_sop_instance_uid")
@@ -128,12 +134,15 @@ class ParamDADGParityManager:
         if isinstance(err, Error):
             logger.error(f"Error saving X-ray '{namespace}' fiducial point data: {err.description}")
 
-    def _ct_series_uid_changed(self, new_value: str) -> None:
-        loaded: tuple[list[str], torch.Tensor] | None = self._ct_fiducial_save_manager.get(new_value)
-        self._dadg.set(  #
-            "ct_fiducial_points",  #
-            NamedPoints3D() if loaded is None else NamedPoints3D(names=loaded[0], data=loaded[1]),  #
-        )
+    def _ct_series_uid_changed(self, new_value: str | None) -> None:
+        if isinstance(new_value, str):
+            loaded: tuple[list[str], torch.Tensor] | None = self._ct_fiducial_save_manager.get(new_value)
+            self._dadg.set(  #
+                "ct_fiducial_points",  #
+                NamedPoints3D() if loaded is None else NamedPoints3D(names=loaded[0], data=loaded[1]),  #
+            )
+        else:
+            self._dadg.set("ct_fiducial_points", None)
 
     def _ct_fiducial_points_changed(self, new_value: NamedPoints3D) -> None:
         uid: str | Error = self._dadg.get("ct_series_uid")
@@ -148,22 +157,26 @@ class ParamDADGParityManager:
         if isinstance(err, Error):
             logger.error(f"Error saving CT fiducial point data: {err.description}")
 
-    def _micro_ct_uid_changed(self, new_value: str) -> None:
-        # Electrode points
-        self._dadg.set(  #
-            f"micro_electrode_points",  #
-            OrderedPoints3D()  #
-            if (data := self._ct_electrode_save_manager.get(new_value)) is None  #
-            else OrderedPoints3D(data=data),  #
-        )
-        # Fiducial points
-        loaded: tuple[list[str], torch.Tensor] | None = self._ct_fiducial_save_manager.get(new_value)
-        self._dadg.set(  #
-            "micro_fiducial_points",  #
-            NamedPoints3D()  #
-            if loaded is None  #
-            else NamedPoints3D(names=loaded[0], data=loaded[1]),  #
-        )
+    def _micro_ct_uid_changed(self, new_value: str | None) -> None:
+        if isinstance(new_value, str):
+            # Electrode points
+            self._dadg.set(  #
+                "micro_electrode_points",  #
+                OrderedPoints3D()  #
+                if (data := self._ct_electrode_save_manager.get(new_value)) is None  #
+                else OrderedPoints3D(data=data),  #
+            )
+            # Fiducial points
+            loaded: tuple[list[str], torch.Tensor] | None = self._ct_fiducial_save_manager.get(new_value)
+            self._dadg.set(  #
+                "micro_fiducial_points",  #
+                NamedPoints3D()  #
+                if loaded is None  #
+                else NamedPoints3D(names=loaded[0], data=loaded[1]),  #
+            )
+        else:
+            self._dadg.set("micro_electrode_points", None)
+            self._dadg.set("micro_fiducial_points", None)
 
     def _micro_fiducial_points_changed(self, new_value: NamedPoints3D) -> None:
         uid: str | Error = self._dadg.get("micro_ct_uid")
@@ -224,82 +237,69 @@ class ParamDADGParityManager:
 
         # Add namespaced DADG updaters
         namespace_captures = {key: name for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__refresh_image_2d_scale_factor",  #
-                    capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_image_2d_scale_factor), ),
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__refresh_image_2d_scale_factor",  #
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_image_2d_scale_factor), ), Error, ):
+            logger.error(f"Error adding updater: {err.description}")
+
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__refresh_hyperparameter_dependent",  #
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_hyperparameter_dependent), ),
                 Error, ):
             logger.error(f"Error adding updater: {err.description}")
 
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__refresh_hyperparameter_dependent",  #
-                    capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_hyperparameter_dependent), ),
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__refresh_scaling_image",  #
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.refresh_scaling_image), ), Error, ):
+            logger.error(f"Error adding updater: {err.description}")
+
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__project_drr",  #
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.project_drr), ), Error, ):
+            logger.error(f"Error adding updater: {err.description}")
+
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__set_target_image",  #
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.set_xray_target_image_with_no_gt), ),
                 Error, ):
             logger.error(f"Error adding updater: {err.description}")
 
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__refresh_scaling_image",  #
-                    capture_in_namespaces(namespace_captures)(unbatched_updaters.refresh_scaling_image), ), Error, ):
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__apply_filter_2d",  #
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.apply_filter_2d), ), Error, ):
             logger.error(f"Error adding updater: {err.description}")
 
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__project_drr",  #
-                    capture_in_namespaces(namespace_captures)(unbatched_updaters.project_drr), ), Error, ):
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__project_fiducials",  #
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.project_fiducials), ), Error, ):
             logger.error(f"Error adding updater: {err.description}")
 
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__set_target_image",  #
-                    capture_in_namespaces(namespace_captures)(drr_reg_updaters.set_xray_target_image_with_no_gt), ),
-                Error, ):
-            logger.error(f"Error adding updater: {err.description}")
-
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__apply_filter_2d",  #
-                    capture_in_namespaces(namespace_captures)(drr_reg_updaters.apply_filter_2d), ), Error, ):
-            logger.error(f"Error adding updater: {err.description}")
-
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__project_fiducials",  #
-                    capture_in_namespaces(namespace_captures)(unbatched_updaters.project_fiducials), ), Error, ):
-            logger.error(f"Error adding updater: {err.description}")
-
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__apply_sim_metric",  #
-                    capture_in_namespaces(namespace_captures)(unbatched_updaters.apply_sim_metric), ), Error, ):
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__apply_sim_metric",  #
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.apply_sim_metric), ), Error, ):
             logger.error(f"Error adding updater: {err.description}")
 
         # -- Grangeat --
 
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__refresh_sinogram2d_grid",  #
-                    capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d_grid), ), Error, ):
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__refresh_sinogram2d_grid",  #
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d_grid), ), Error, ):
             logger.error(f"Error adding updater: {err.description}")
 
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__refresh_sinogram2d",  #
-                    capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d), ), Error, ):
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__refresh_sinogram2d",  #
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d), ), Error, ):
             logger.error(f"Error adding updater: {err.description}")
 
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__resample_for_moving_image_grangeat",  #
-                    capture_in_namespaces(namespace_captures)(grangeat_updaters.resample_for_moving_image_grangeat), ),
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__resample_for_moving_image_grangeat",  #
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.resample_for_moving_image_grangeat), ),
                 Error, ):
             logger.error(f"Error adding updater: {err.description}")
 
-        if isinstance(
-                err := self._dadg.add_updater(  #
-                    f"{name}__apply_sim_metric_grangeat",  #
-                    capture_in_namespaces(namespace_captures)(grangeat_updaters.apply_sim_metric_grangeat), ), Error, ):
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__apply_sim_metric_grangeat",  #
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.apply_sim_metric_grangeat), ), Error, ):
             logger.error(f"Error adding updater: {err.description}")
 
         # -- --
@@ -328,10 +328,8 @@ class ParamDADGParityManager:
         )
 
         # for eagerly saving the `electrode_points`, after setting the initial value
-        self._dadg.observe(
-            f"{name}__electrode_points", "saver", lambda new_value, _name=name: self._xray_electrode_points_changed(
-                new_value, namespace=_name, ), )
+        self._dadg.observe(f"{name}__electrode_points", "saver",
+            lambda new_value, _name=name: self._xray_electrode_points_changed(new_value, namespace=_name, ), )
         # for eagerly saving the `fiducial_points`, after setting the initial value
-        self._dadg.observe(
-            f"{name}__fiducial_points", "saver",
+        self._dadg.observe(f"{name}__fiducial_points", "saver",
             lambda new_value, _name=name: self._xray_fiducial_points_changed(new_value, namespace=_name), )

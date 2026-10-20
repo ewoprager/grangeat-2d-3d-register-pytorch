@@ -41,7 +41,7 @@ class AppContext:
     def __init__(  #
         self,  #
         *,  #
-        parameters: Parameters,  #
+        default_parameters: Parameters,  #
         dadg: DirectedAcyclicDataGraph,  #
         xray_electrode_save_directory: pathlib.Path,  #
         ct_electrode_save_directory: pathlib.Path,  #
@@ -53,7 +53,7 @@ class AppContext:
     ):
         logger.debug("Initialising AppContext")
         self._input_manager = InputManager()
-        self._state = AppState(parameters=parameters)
+        self._state = AppState(parameters=default_parameters)
         self._dadg = dadg
         self._xray_electrode_save_manager = XRayElectrodeSaveManager(xray_electrode_save_directory)
         self._ct_electrode_save_manager = CTElectrodeSaveManager(ct_electrode_save_directory)
@@ -70,8 +70,8 @@ class AppContext:
             # load params from the cache
             res: dict[str, Any] | None = self._cache_manager.last_params
             if res is not None:
-                self.state.parameters = deserialize_recursive(
-                    value=res, old_value=self.state.parameters, trait=self.state.traits()["parameters"], )
+                self.state.parameters = deserialize_recursive(value=res, old_value=self.state.parameters,
+                    trait=self.state.traits()["parameters"], )
 
         self._param_dadg_parity_manager = ParamDADGParityManager(  #
             state=self._state,  #
@@ -81,8 +81,8 @@ class AppContext:
             ct_fiducial_save_manager=self._ct_fiducial_save_manager,  #
             xray_fiducial_save_manager=self._xray_fiducial_save_manager,  #
         )
-        self._reg_config_manager = RegConfigManager(
-            self._state, self._dadg, xray_reg_save_manager=self._xray_reg_save_manager, )
+        self._reg_config_manager = RegConfigManager(self._state, self._dadg,
+            xray_reg_save_manager=self._xray_reg_save_manager, )
 
         # observing all the parameter widgets
         observe_all_traits_recursively(self._any_parameter_changed, self._state.parameters)
@@ -117,5 +117,5 @@ class AppContext:
 
     def _any_parameter_changed(self, change) -> None:
         if self._cache:
-            self._cache_manager.last_params = serialize_recursive(
-                self.state.parameters, trait=self.state.traits()["parameters"], )
+            self._cache_manager.last_params = serialize_recursive(self.state.parameters,
+                trait=self.state.traits()["parameters"], )

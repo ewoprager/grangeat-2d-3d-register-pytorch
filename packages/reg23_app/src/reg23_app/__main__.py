@@ -56,6 +56,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Updaters
     # -----
+    if external_dataset is None:
+        if isinstance(err := data_manager().add_updater("load_untruncated_ct", drr_reg_updaters.load_untruncated_ct),
+                Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
     if isinstance(err := data_manager().add_updater("apply_filter_ct", drr_reg_updaters.apply_filter_ct), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
@@ -101,15 +106,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Parameters
     # -----
-    parameters = Parameters(  #
-        ct_path=None,  #
-        downsample_level=0,  #
-        truncation_percent=0,  #
-        mask="None",  #
-        sim_metric="zncc",  #
-        sim_metric_parameters=None,  #
+    default_parameters = Parameters(  #
+        ct_path=ct_path,  #
         starting_distance=0.0,  #
         sample_count_per_distance=1,  #
+        sim_metric="zncc",  #
         optimisation_algorithm="pso",  #
         op_algo_parameters=PsoParameters(),  #
         iteration_count=10,  #
@@ -120,7 +121,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # test = clone_has_traits(parameters)
 
     app_context = AppContext(  #
-        parameters=parameters,  #
+        default_parameters=default_parameters,  #
         dadg=data_manager(),  #
         transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),  #
         xray_electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),  #
@@ -171,11 +172,6 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.info(f"ct size = {ct_volume.size()}")
         logger.info(f"total = "
                     f"{ct_spacing.cpu() * torch.tensor(ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}", )
-    else:
-        err = data_manager().add_updater("load_untruncated_ct", drr_reg_updaters.load_untruncated_ct)
-        if isinstance(err, Error):
-            logger.error(f"Error adding updater: {err.description}")
-            return
 
     # -----
     # Widgets

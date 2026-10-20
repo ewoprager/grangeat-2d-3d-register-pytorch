@@ -70,6 +70,7 @@ class ImagesWidget(widgets.Container):
             self.append(ExpandableWidget([  #
                 show_micro_ct_button,  #
                 show_micro_fiducials_button,  #
+                show_electrodes_button,  #
             ], label="MicroCT volume:"))
 
         if self._ctx.state.parameters.xray_parameters:
@@ -142,22 +143,23 @@ class ImagesWidget(widgets.Container):
 
     def _on_show_ct_electrode_layer(self) -> None:
         logger.debug("Show CT electrodes clicked")
-        add_ct_electrode_layer(dadg=self._ctx.dadg, dadg_key="micro_electrodes_points", image_uid_dadg_key="micro_ct_uid")
+        add_ct_electrode_layer(dadg=self._ctx.dadg, dadg_key="micro_electrode_points",
+            image_uid_dadg_key="micro_ct_uid")
 
     def _on_show_image_2d_full_layer(self, xray_name: str) -> None:
         logger.debug(f"Show image_2d_full for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__image_2d_full",
-                              spacing_dadg_key=f"{xray_name}__image_2d_full_spacing")
+            spacing_dadg_key=f"{xray_name}__image_2d_full_spacing")
 
     def _on_show_fixed_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show fixed_image for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__fixed_image",
-                              spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
     def _on_show_grangeat_fixed_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show grangeat_fixed_image for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__sinogram2d",
-                              spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
     def _on_show_moving_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show moving_image for '{xray_name}' clicked")
@@ -166,7 +168,7 @@ class ImagesWidget(widgets.Container):
     def _on_show_grangeat_moving_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show grangeat_moving_image for '{xray_name}' clicked")
         add_grangeat_moving_image_layer(ctx=self._ctx, namespace=xray_name,
-                                        spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
     def _on_show_mask_layer(self, xray_name: str) -> None:
         logger.debug(f"Show mask for '{xray_name}' clicked")

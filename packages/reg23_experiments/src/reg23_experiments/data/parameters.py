@@ -2,13 +2,13 @@ import pathlib
 from typing import Any, Literal
 
 from traitlets import (Bool, Dict, Enum, Float, HasTraits, Instance, Int, TraitError, Undefined, Unicode, Union,
-                       observe, validate)
+    observe, validate)
 
 from reg23_experiments.data.structs import Cropping
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 
 __all__ = ["DRRParams", "PsoParameters", "LocalZnccParameters", "LocalSearchParameters", "Parameters", "Context",
-           "XrayParameters"]
+    "XrayParameters"]
 
 
 class DRRParams(HasTraits):
@@ -114,7 +114,7 @@ class Parameters(HasTraits):
         "gaussian",  #
     ], default_value="none").tag(ui=True)
     weight_alpha: float = Float(min=0.0, default_value=0.0).tag(ui=True)
-    iterations_per_weight_update: int = Int(min=0, default_value=Undefined).tag(ui=True)  # 0 means every o.f. eval.
+    iterations_per_weight_update: int = Int(min=0, default_value=1000).tag(ui=True)  # 0 means every o.f. eval.
     filter_method: Literal["none", "highpass", "bandpass", "gradient_like"] = Enum(values=[  #
         "none",  #
         "highpass",  #
@@ -129,17 +129,18 @@ class Parameters(HasTraits):
         "mutual_information",  #
     ], default_value=Undefined).tag(ui=True)
     sim_metric_parameters: LocalZnccParameters | None = Instance(LocalZnccParameters, allow_none=True,
-                                                                 default_value=None).tag(ui=True)
-    starting_distance: float = Float(min=0.0)
-    sample_count_per_distance: int = Int(min=1)
+        default_value=None).tag(ui=True)
+    starting_distance: float = Float(min=0.0, default_value=Undefined)
+    sample_count_per_distance: int = Int(min=1, default_value=Undefined)
     optimisation_algorithm: Literal["pso", "local_search"] = Enum(values=[  #
         "pso",  #
         "local_search",  #
         # "cmaes",  #
     ], default=Undefined).tag(ui=True)
-    op_algo_parameters: PsoParameters | LocalSearchParameters = Union(
-        trait_types=[Instance(PsoParameters, allow_none=False), Instance(LocalSearchParameters, allow_none=False)]).tag(
-        ui=True)
+    op_algo_parameters: PsoParameters | LocalSearchParameters = Union(trait_types=[  #
+        Instance(PsoParameters, allow_none=False),  #
+        Instance(LocalSearchParameters, allow_none=False),  #
+    ]).tag(ui=True)
     iteration_count: int = Int(min=0).tag(ui=True)
     xray_parameters: dict[str, XrayParameters] = Dict(  #
         key_trait=Unicode(allow_none=False),  #
