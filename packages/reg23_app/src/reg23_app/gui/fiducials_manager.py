@@ -47,22 +47,11 @@ class FiducialsManager:
 
         dadg_key_prefix = self._state.register_fiducial_xray_choice + "__"
 
-        image_2d_full: torch.Tensor | Error = self._dadg.get(dadg_key_prefix + "image_2d_full")
-        if isinstance(image_2d_full, Error):
-            logger.error(f"Could not find 'image_2d_full' for X-ray '{self._state.register_fiducial_xray_choice}': "
-                         f"{image_2d_full.description}")
-            return
-
         fixed_image_spacing: torch.Tensor | Error = self._dadg.get(dadg_key_prefix + "fixed_image_spacing")
         if isinstance(fixed_image_spacing, Error):
             logger.error(
                 f"Could not find 'fixed_image_spacing' for X-ray '{self._state.register_fiducial_xray_choice}': "
                 f"{fixed_image_spacing.description}")
-            return
-
-        ct_volume: torch.Tensor | Error = self._dadg.get("untruncated_ct_volume")
-        if isinstance(ct_volume, Error):
-            logger.error(f"Could not find 'ct_volume': {ct_volume.description}")
             return
 
         ct_spacing: torch.Tensor | Error = self._dadg.get("ct_spacing")
@@ -110,7 +99,7 @@ class FiducialsManager:
         if result.success:
             logger.info(f"Optimisation succeeded; x = {result.x}, loss = {result.fun}")
             self._dadg.set(dadg_key_prefix + "current_transformation",
-                mapping_parameters_to_transformation(torch.tensor(result.x, device=image_2d_full.device)))
+                mapping_parameters_to_transformation(torch.tensor(result.x, device=fixed_image_spacing.device)))
         else:
             logger.info(f"Optimisation failed; status = {result.status}; {result.message}")
 
@@ -118,6 +107,54 @@ class FiducialsManager:
         if not change.new:
             return
         self._state.button_fiducial_register3d = False
+
+        ct_spacing: torch.Tensor | Error = self._dadg.get("ct_spacing")
+        if isinstance(ct_spacing, Error):
+            logger.error(f"Could not find 'ct_spacing': {ct_spacing.description}")
+            return
+
+        ct_fiducial_points: NamedPoints3D | Error = self._dadg.get("ct_fiducial_points")
+        if isinstance(ct_fiducial_points, Error):
+            logger.warning(f"Can't find fiducial points for X-ray '{self._state.register_fiducial_xray_choice}': "
+                           f"{ct_fiducial_points.description}")
+            return
+
+        if len(ct_fiducial_points.names) < 3:
+            logger.warning(f"Cannot register using fiducials with fewer than 3 markers.")
+            return
+
+        device: torch.device | Error = self._dadg.get("device")
+        if isinstance(device, Error):
+            raise Exception("Failed to get device from DADG")
+
+        # ToDo: Speed this up
+        def residuals(pose: np.ndarray) -> np.ndarray:
+            self._dadg.set("micro_ct_transformation",
+                mapping_parameters_to_transformation(torch.tensor(pose, device=device)))
+            transformed_points: NamedPoints3D | Error = self._dadg.get("transformed_micro_fiducials")
+            if isinstance(transformed_points, Error):
+                raise Exception(
+                    f"Failed to get transformed_points fiducials during optimisation: {transformed_points.description}")
+            transformed_name_to_index = {name: index for index, name in enumerate(transformed_points.names)}
+            ordered = transformed_points.data[
+                torch.tensor([transformed_name_to_index[name] for name in ct_fiducial_points.names])]
+            return (ordered - ct_fiducial_points.data).flatten().numpy()
+
+        current_transformation: Transformation | Error = self._dadg.get("micro_ct_transformation")
+        if isinstance(current_transformation, Error):
+            logger.warning(f"Found no current transformation: {current_transformation.description}")
+            initial_pose = np.zeros(6)
+        else:
+            initial_pose = mapping_transformation_to_parameters(current_transformation).cpu().numpy()
+
+        result: sp.optimize.OptimizeResult = sp.optimize.least_squares(residuals, initial_pose, method="lm")
+
+        if result.success:
+            logger.info(f"Optimisation succeeded; x = {result.x}, loss = {result.fun}")
+            self._dadg.set("micro_ct_transformation",
+                mapping_parameters_to_transformation(torch.tensor(result.x, device=ct_spacing.device)))
+        else:
+            logger.info(f"Optimisation failed; status = {result.status}; {result.message}")
 
     def _button_ct_fiducial_refine(self, change) -> None:
         if not change.new:

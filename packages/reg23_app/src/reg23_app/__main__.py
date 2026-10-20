@@ -76,9 +76,13 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.error(f"Error adding updater: {err.description}")
         return
     if isinstance(err := data_manager().add_updater("get_micro_ct_array", electrode_updaters.get_micro_ct_array),
-            Error, ):
+            Error):
         logger.error(f"Error adding updater: {err.description}")
         return
+    if isinstance(
+            err := data_manager().add_updater(f"transform_fiducials", electrode_updaters.transform_micro_fiducials),
+            Error):
+        logger.error(f"Error adding updater: {err.description}")
 
     # -----
     # Data nodes
@@ -90,7 +94,7 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         save_to_cache=True,  # a
         new_drr_size=torch.Size([500, 500]),  #
         device=device,  #
-        current_transformation=Transformation.zero(device),  #
+        micro_ct_transformation=Transformation.zero(device),  #
         truncation_percent=0.0,  #
         ap_transformation=Transformation(
             rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
