@@ -100,10 +100,6 @@ class AppContext:
         return self._dadg
 
     @property
-    def electrode_save_manager(self) -> XRayElectrodeSaveManager:
-        return self._xray_electrode_save_manager
-
-    @property
     def transformation_save_manager(self) -> TransformationSaveManager:
         return self._transformation_save_manager
 

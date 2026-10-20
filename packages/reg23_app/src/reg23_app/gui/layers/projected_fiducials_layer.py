@@ -127,6 +127,8 @@ def add_projected_fiducials_layer(*, ctx: AppContext, namespace: str | None = No
     layer = viewer().add_points(  #
         initial_points.cpu().numpy(),  #
         ndim=2,  #
+        size=3.0,  #
+        symbol="ring",  #
         name=projected_fiducials_key,  #
         features=pd.DataFrame([{"label": name} for name in points.names]),  #
         text={"string": "{label}", "size": 16}  #

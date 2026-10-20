@@ -102,6 +102,9 @@ class ParamDADGParityManager:
         # eagerly save the microCT fiducial points to the save manager
         self._dadg.observe("micro_fiducial_points", "saver", self._micro_fiducial_points_changed)
 
+        # eagerly save the microCT electrode points to the save manager
+        self._dadg.observe("micro_electrode_points", "saver", self._micro_electrode_points_changed)
+
     def _simple_state_driven_change(self, node: str, _type: type, new_value) -> None:
         self._dadg.set(node, _type(new_value), check_equality=True)
 
@@ -120,6 +123,18 @@ class ParamDADGParityManager:
         )
         if isinstance(err, Error):
             logger.error(f"Error saving X-ray '{namespace}' electrode point data: {err.description}")
+
+    def _micro_electrode_points_changed(self, new_value: OrderedPoints3D) -> None:
+        uid: str | Error = self._dadg.get("micro_ct_uid")
+        if isinstance(uid, Error):
+            logger.error(f"Failed to get microCT UID on electrode change: {uid.description}")
+            return
+        err = self._ct_electrode_save_manager.set(  #
+            uid=uid,  #
+            tensor=new_value.data,  #
+        )
+        if isinstance(err, Error):
+            logger.error(f"Error saving microCT electrode point data: {err.description}")
 
     def _xray_fiducial_points_changed(self, new_value: NamedPoints2D, *, namespace: str) -> None:
         uid: str | Error = self._dadg.get(f"{namespace}__xray_sop_instance_uid")
@@ -329,7 +344,7 @@ class ParamDADGParityManager:
 
         # for eagerly saving the `electrode_points`, after setting the initial value
         self._dadg.observe(f"{name}__electrode_points", "saver",
-            lambda new_value, _name=name: self._xray_electrode_points_changed(new_value, namespace=_name, ), )
+            lambda new_value, _name=name: self._xray_electrode_points_changed(new_value, namespace=_name))
         # for eagerly saving the `fiducial_points`, after setting the initial value
         self._dadg.observe(f"{name}__fiducial_points", "saver",
-            lambda new_value, _name=name: self._xray_fiducial_points_changed(new_value, namespace=_name), )
+            lambda new_value, _name=name: self._xray_fiducial_points_changed(new_value, namespace=_name))

@@ -113,6 +113,7 @@ def add_ct_fiducial_layer(  #
     layer = viewer().add_points(  #
         fiducial_points.data.flip(dims=(1,)).numpy(),  #
         size=3.0,  #
+        symbol="disc",  #
         name=dadg_key,  #
         features=features,  #
         text={"string": "{label}", "size": 16}  #

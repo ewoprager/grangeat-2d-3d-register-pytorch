@@ -75,7 +75,8 @@ def add_ct_electrode_layer(  #
         return None
     layer = viewer().add_points(  #
         electrode_points.data.numpy(),  #
-        size=4.0,  #
+        size=1.0,  #
+        symbol="diamond",  #
         name=dadg_key,  #
         features=pd.DataFrame([{"label": f"{i}"} for i in range(1, electrode_points.count + 1)]),  #
         text={"string": "{label}", "size": 16},  #

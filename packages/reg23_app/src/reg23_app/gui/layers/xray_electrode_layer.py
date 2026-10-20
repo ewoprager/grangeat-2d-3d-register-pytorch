@@ -19,8 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 class _XRayElectrodeLayerManager:
-    def __init__(self, *, dadg: DirectedAcyclicDataGraph, layer: napari.layers.Points, dadg_key: str,
-                 xray_uid_dadg_key: str):
+    def __init__(  #
+        self,  #
+        *,  #
+        dadg: DirectedAcyclicDataGraph,  #
+        layer: napari.layers.Points,  #
+        dadg_key: str,  #
+        xray_uid_dadg_key: str,  #
+    ):
         self._dadg = dadg
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         self._dadg_key = dadg_key
@@ -48,8 +54,11 @@ class _XRayElectrodeLayerManager:
         self._update_dadg_from_layer()
 
 
-def add_xray_electrode_layer(*, dadg: DirectedAcyclicDataGraph,
-                             namespace: str | None = None) -> napari.layers.Layer | None:
+def add_xray_electrode_layer(  #
+    *,  #
+    dadg: DirectedAcyclicDataGraph,  #
+    namespace: str | None = None,  #
+) -> napari.layers.Layer | None:
     dadg_key = "electrode_points" if namespace is None else f"{namespace}__electrode_points"
     if dadg_key in viewer().layers:
         logger.warning(f"Layer '{dadg_key}' is already shown.")
@@ -67,11 +76,16 @@ def add_xray_electrode_layer(*, dadg: DirectedAcyclicDataGraph,
         return None
     layer = viewer().add_points(  #
         electrode_points.data.numpy(),  #
-        size=4.0,  #
+        size=1.0,  #
+        symbol="diamond",  #
         name=dadg_key,  #
         features=pd.DataFrame([{"label": f"{i}"} for i in range(1, electrode_points.count + 1)]),  #
         text={"string": "{label}", "size": 16}  #
     )
-    layer.my_plugin = _XRayElectrodeLayerManager(dadg=dadg, layer=layer, dadg_key=dadg_key,
-                                                 xray_uid_dadg_key=uid_dadg_key)
+    layer.my_plugin = _XRayElectrodeLayerManager(  #
+        dadg=dadg,  #
+        layer=layer,  #
+        dadg_key=dadg_key,  #
+        xray_uid_dadg_key=uid_dadg_key,  #
+    )
     return layer
