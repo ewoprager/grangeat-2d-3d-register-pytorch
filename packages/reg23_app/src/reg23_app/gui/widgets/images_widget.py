@@ -20,6 +20,7 @@ from reg23_app.gui.layers.grangeat_moving_image_layer import add_grangeat_moving
 from reg23_app.gui.widgets.expandable_widget import ExpandableWidget
 from reg23_app.gui.layers.ct_electrode_layer import add_ct_electrode_layer
 from reg23_app.gui.layers.transformed_fiducials_layer import add_transformed_fiducials_layer
+from reg23_app.gui.layers.transformed_electrodes_layer import add_transformed_electrodes_layer
 
 __all__ = ["ImagesWidget"]
 
@@ -70,12 +71,16 @@ class ImagesWidget(widgets.Container):
             # Electrode points
             show_electrodes_button = widgets.PushButton(label="Show electrodes")
             show_electrodes_button.changed.connect(lambda _: self._on_show_ct_electrode_layer())
+            # Transformed electrode points
+            show_transformed_electrodes_button = widgets.PushButton(label="Show transformed electrodes")
+            show_transformed_electrodes_button.changed.connect(lambda _: self._on_show_transformed_electrodes_layer())
             # appending
             self.append(ExpandableWidget([  #
                 show_micro_ct_button,  #
                 show_micro_fiducials_button,  #
                 show_transformed_fiducials_button,  #
                 show_electrodes_button,  #
+                show_transformed_electrodes_button,  #
             ], label="MicroCT volume:"))
 
         if self._ctx.state.parameters.xray_parameters:
@@ -149,6 +154,10 @@ class ImagesWidget(widgets.Container):
     def _on_show_transformed_fiducials_layer(self) -> None:
         logger.debug("Show transformed fiducials clicked")
         add_transformed_fiducials_layer(ctx=self._ctx)
+
+    def _on_show_transformed_electrodes_layer(self) -> None:
+        logger.debug("Show transformed electrodes clicked")
+        add_transformed_electrodes_layer(ctx=self._ctx)
 
     def _on_show_ct_electrode_layer(self) -> None:
         logger.debug("Show CT electrodes clicked")

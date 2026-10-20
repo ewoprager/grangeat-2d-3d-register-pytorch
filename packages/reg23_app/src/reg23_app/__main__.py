@@ -83,6 +83,10 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
             err := data_manager().add_updater(f"transform_fiducials", electrode_updaters.transform_micro_fiducials),
             Error):
         logger.error(f"Error adding updater: {err.description}")
+    if isinstance(
+            err := data_manager().add_updater(f"transform_electrodes", electrode_updaters.transform_micro_electrodes),
+            Error):
+        logger.error(f"Error adding updater: {err.description}")
 
     # -----
     # Data nodes

@@ -37,7 +37,9 @@ class _CTElectrodeLayerManager:
         if (layer := self._layer()) is None:
             return
         try:
-            electrode_points = OrderedPoints3D(data=torch.tensor(layer.data, dtype=torch.float64))
+            electrode_points = OrderedPoints3D(  #
+                data=torch.tensor(layer.data, dtype=torch.float64).flip(dims=(1,)),  #
+            )
         except traitlets.TraitError as e:
             logger.error(f"Error converting electrode point data from layer: {e}")
             return
@@ -74,7 +76,7 @@ def add_ct_electrode_layer(  #
         logger.error(f"Failed to get electrode point data for layer: {electrode_points.description}.")
         return None
     layer = viewer().add_points(  #
-        electrode_points.data.numpy(),  #
+        electrode_points.data.flip(dims=(1,)).numpy(),  #
         size=1.0,  #
         symbol="diamond",  #
         name=dadg_key,  #

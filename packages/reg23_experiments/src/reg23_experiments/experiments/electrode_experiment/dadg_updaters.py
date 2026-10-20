@@ -5,13 +5,13 @@ from typing import Any
 import torch
 import zarr
 
-from reg23_experiments.data.segmentation import NamedPoints3D
+from reg23_experiments.data.segmentation import NamedPoints3D, OrderedPoints3D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.io.helpers import contents_based_hash_slices
 from reg23_experiments.io.large import large_volume_to_zarr
 from reg23_experiments.ops.data_manager import dadg_updater
 
-__all__ = ["get_micro_ct_uid", "get_micro_ct_array", "transform_micro_fiducials"]
+__all__ = ["get_micro_ct_uid", "get_micro_ct_array", "transform_micro_fiducials", "transform_micro_electrodes"]
 
 logger = logging.getLogger(__name__)
 
@@ -87,3 +87,21 @@ def transform_micro_fiducials(  #
     outputs_homogeneous = torch.einsum("ji,...i->...j", transformation.get_h(device), inputs_homogeneous)
     output_points = outputs_homogeneous[..., 0:3]
     return {"transformed_micro_fiducials": NamedPoints3D(names=micro_fiducial_points.names, data=output_points)}
+
+
+@dadg_updater(names_returned=["transformed_micro_electrodes"])
+def transform_micro_electrodes(  #
+    *,  #
+    micro_ct_transformation: Transformation,  #
+    micro_electrode_points: OrderedPoints3D,  #
+) -> dict[str, Any]:
+    device = torch.device("cpu")
+    transformation = micro_ct_transformation.to(device=device)
+    input_vectors = micro_electrode_points.data.cpu()
+    inputs_homogeneous = torch.cat((  #
+        input_vectors,  #
+        torch.ones(input_vectors.size()[:-1], dtype=torch.float64, device=device).unsqueeze(-1),  #
+    ), dim=-1)
+    outputs_homogeneous = torch.einsum("ji,...i->...j", transformation.get_h(device), inputs_homogeneous)
+    output_points = outputs_homogeneous[..., 0:3]
+    return {"transformed_micro_electrodes": OrderedPoints3D(data=output_points)}
