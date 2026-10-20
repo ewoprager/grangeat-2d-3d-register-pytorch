@@ -5,7 +5,7 @@ from typing import Any
 import torch
 import zarr
 
-from reg23_experiments.data.segmentation import NamedPoints3D, OrderedPoints3D
+from reg23_experiments.data.segmentation import NamedPoints3D, OrderedPoints2D, OrderedPoints3D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.io.helpers import contents_based_hash_slices
 from reg23_experiments.io.large import large_volume_to_zarr
@@ -15,6 +15,10 @@ __all__ = ["get_micro_ct_uid", "get_micro_ct_array", "transform_micro_fiducials"
 
 logger = logging.getLogger(__name__)
 
+
+# -----
+# Images
+# -----
 
 @dadg_updater(names_returned=["micro_ct_uid"])
 def get_micro_ct_uid(  #
@@ -71,6 +75,10 @@ def get_micro_ct_array(  #
     }
 
 
+# -----
+# Validation: Electrodes mapped into the space of the clinical CT
+# -----
+
 @dadg_updater(names_returned=["transformed_micro_fiducials"])
 def transform_micro_fiducials(  #
     *,  #
@@ -79,7 +87,7 @@ def transform_micro_fiducials(  #
 ) -> dict[str, Any]:
     device = torch.device("cpu")
     transformation = micro_ct_transformation.to(device=device)
-    input_vectors = micro_fiducial_points.data.cpu()
+    input_vectors = micro_fiducial_points.data.to(device=device)
     inputs_homogeneous = torch.cat((  #
         input_vectors,  #
         torch.ones(input_vectors.size()[:-1], dtype=torch.float64, device=device).unsqueeze(-1),  #
@@ -97,7 +105,7 @@ def transform_micro_electrodes(  #
 ) -> dict[str, Any]:
     device = torch.device("cpu")
     transformation = micro_ct_transformation.to(device=device)
-    input_vectors = micro_electrode_points.data.cpu()
+    input_vectors = micro_electrode_points.data.to(device=device)
     inputs_homogeneous = torch.cat((  #
         input_vectors,  #
         torch.ones(input_vectors.size()[:-1], dtype=torch.float64, device=device).unsqueeze(-1),  #
@@ -105,3 +113,17 @@ def transform_micro_electrodes(  #
     outputs_homogeneous = torch.einsum("ji,...i->...j", transformation.get_h(device), inputs_homogeneous)
     output_points = outputs_homogeneous[..., 0:3]
     return {"transformed_micro_electrodes": OrderedPoints3D(data=output_points)}
+
+
+@dadg_updater(names_returned=["backprojected_electrodes"])
+def backproject_direct(  #
+    *,  #
+    electrode_points_a: OrderedPoints2D,  #
+    electrode_points_b: OrderedPoints2D,  #
+    transformation_a: Transformation,  #
+    transformation_b: Transformation,  #
+    source_distance: float,  #
+) -> dict[str, Any]:
+    device = torch.device("cpu")
+
+    return {"backprojected_electrodes": None}
