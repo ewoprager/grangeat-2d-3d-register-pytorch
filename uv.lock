@@ -2611,7 +2611,6 @@ dependencies = [
     { name = "napari", extra = ["optional", "pyqt6"], marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine != 'aarch64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
     { name = "pyqt6" },
     { name = "reg23-experiments" },
-    { name = "zarr" },
 ]
 
 [package.optional-dependencies]
@@ -2636,7 +2635,6 @@ requires-dist = [
     { name = "reg23-experiments", extras = ["cpu"], marker = "extra == 'cpu'", editable = "packages/reg23_experiments" },
     { name = "reg23-experiments", extras = ["cuda"], marker = "extra == 'cuda'", editable = "packages/reg23_experiments" },
     { name = "reg23-experiments", extras = ["dev"], marker = "extra == 'dev'", editable = "packages/reg23_experiments" },
-    { name = "zarr", specifier = ">=3.1.3" },
 ]
 
 [[package]]
@@ -2708,9 +2706,9 @@ dependencies = [
     { name = "send2trash" },
     { name = "setuptools" },
     { name = "simpleitk" },
-    { name = "tifffile" },
     { name = "tqdm" },
     { name = "traitlets" },
+    { name = "zarr" },
 ]
 
 [package.optional-dependencies]
@@ -2770,10 +2768,10 @@ requires-dist = [
     { name = "send2trash", specifier = "==1.8.3" },
     { name = "setuptools", specifier = "==75.8.0" },
     { name = "simpleitk", specifier = "==2.4.1" },
-    { name = "tifffile", specifier = ">=2025.10.16" },
     { name = "torchviz", marker = "extra == 'dev'", specifier = ">=0.0.3" },
     { name = "tqdm", specifier = "==4.67.1" },
     { name = "traitlets", specifier = "==5.14.3" },
+    { name = "zarr", specifier = ">=3.1.3" },
 ]
 
 [package.metadata.requires-dev]
@@ -3228,7 +3226,7 @@ name = "tifffile"
 version = "2025.10.16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy" },
+    { name = "numpy", marker = "(platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (platform_machine != 'aarch64' and platform_machine != 'x86_64' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or sys_platform == 'darwin' or (sys_platform != 'linux' and extra == 'extra-10-reg23-core-cpu' and extra == 'extra-10-reg23-core-cuda') or (sys_platform != 'linux' and extra == 'extra-17-reg23-experiments-cpu' and extra == 'extra-17-reg23-experiments-cuda') or (sys_platform != 'linux' and extra == 'extra-9-reg23-app-cpu' and extra == 'extra-9-reg23-app-cuda')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/2d/b5/0d8f3d395f07d25ec4cafcdfc8cab234b2cc6bf2465e9d7660633983fe8f/tifffile-2025.10.16.tar.gz", hash = "sha256:425179ec7837ac0e07bc95d2ea5bea9b179ce854967c12ba07fc3f093e58efc1", size = 371848 }
 wheels = [
