@@ -3,6 +3,7 @@ import logging
 import pathlib
 import pprint
 
+import SimpleITK as sitk
 import plotly
 import plotly.express as px
 import torch
@@ -12,9 +13,9 @@ from reg23_experiments.data.save_data.transformations import TransformationSaveM
 from reg23_experiments.data.save_data.xray_electrodes import XRayElectrodeSaveManager
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.io.command_line import get_string_required
-from reg23_experiments.io.image import read_dicom
+from reg23_experiments.io.image import XrayDICOM, read_dicom
 from reg23_experiments.io.serialize import serialize_recursive
-from reg23_experiments.io.sitk import DCMSeriesInfo, find_ct_series
+from reg23_experiments.io.sitk import DCMSeriesInfo, find_ct_series, load_ct_series
 from reg23_experiments.ops.backprojection import ordered_points_to_rays, ray_sphere_intersection
 from reg23_experiments.utils import logs_setup
 
@@ -46,8 +47,8 @@ def main(  #
         logger.error(f"Failed to acquire CT series UID from path '{ct_path}': {ct_series_uid.description}")
         return 1
 
-    xray_uids: list[str] = [  #
-        read_dicom(xray_path)["uid"]  #
+    xray_images: list[XrayDICOM] = [  #
+        read_dicom(xray_path)  #
         for xray_path in xray_paths  #
     ]
 
@@ -60,14 +61,19 @@ def main(  #
         logger.error(f"No ground truth CT electrode positions found for {ct_series_uid}")
         return 1
 
+    volume_image: sitk.Image | Error = load_ct_series(ct_path, ct_series_uid)
+    if isinstance(volume_image, Error):
+        logger.error(f"Failed to load CT volume from path '{ct_path}': {volume_image.description}")
+        return 1
+    volume_diag = torch.tensor(volume_image.GetSize()).flip(dims=(0,)) * torch.tensor(volume_image.GetSpacing())
+    logger.info("Volume diagonal = ({:.3f}, {:.3f}, {:.3f}".format(*volume_diag.tolist()))
+
+    # ToDo: Figure out
+    ground_truth -= 0.5 * volume_diag.unsqueeze(0)
+
     centre = ground_truth.mean(dim=0)
     # radius = 2.0 * torch.linalg.vector_norm(ground_truth - centre.unsqueeze(0), dim=1).max()
     radius = 200.0
-
-    xray_electrodes: dict[str, torch.Tensor | None] = {  #
-        xray_uid: xray_electrode_save_manager.get(xray_uid)  #
-        for xray_uid in xray_uids  #
-    }
 
     figure = plotly.graph_objs.Figure()
 
@@ -79,10 +85,16 @@ def main(  #
         name="ground truth",  #
     )
 
-    for j, (uid, tensor) in enumerate(xray_electrodes.items()):
+    for j, image in enumerate(xray_images):
+        uid = image["uid"]
+        source_distance = image["scene_geometry"].source_position(torch.device("cpu"))[2].item()
+        tensor = xray_electrode_save_manager.get(uid)
         if tensor is None:
             logger.warning(f"No electrodes found for X-ray UID '{uid}'.")
             continue
+        xray_diag = image["spacing"] * torch.tensor(image["image"].size(), dtype=torch.float64).flip(dims=(0,))
+        # ToDo: Figure out
+        tensor -= 0.5 * xray_diag.unsqueeze(0)
 
         tr: Transformation | Error = transformation_save_manager.get_transformation(  #
             source_uid=ct_series_uid,  #
@@ -96,7 +108,7 @@ def main(  #
         ray_points, ray_unit_dirs = ordered_points_to_rays(  #
             tensor,  #
             tr,  #
-            1000.0,  #
+            source_distance,  #
         )
         for i, (ray_point, ray_unit_dir) in enumerate(zip(ray_points, ray_unit_dirs)):
             intersections = ray_sphere_intersection(ray_point, ray_unit_dir, centre, radius)
