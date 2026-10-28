@@ -37,6 +37,16 @@ class FiducialsWidget(widgets.Container):
         self._refine_micro_fiducials_button.changed.connect(self._on_refine_micro_fiducials)
         self.append(self._refine_micro_fiducials_button)
 
+        # Register microCT to clinical CT using fiducials
+        self._register3d_button = widgets.PushButton(label="Register CTs using fiducials")
+        self._register3d_button.changed.connect(self._on_register3d)
+        self.append(self._register3d_button)
+
+        # Save transformed electrode positions
+        self._save_transformed_electrodes_button = widgets.PushButton(label="Save transformed electrodes")
+        self._save_transformed_electrodes_button.changed.connect(self._on_save_transformed_electrodes)
+        self.append(self._save_transformed_electrodes_button)
+
         # -----
         # X-ray specific
         # -----
@@ -56,11 +66,6 @@ class FiducialsWidget(widgets.Container):
         self._register_button = widgets.PushButton(label="Register CT to X-ray using fiducials")
         self._register_button.changed.connect(self._on_register)
         self.append(self._register_button)
-
-        # Register microCT to clinical CT using fiducials
-        self._register3d_button = widgets.PushButton(label="Register CTs using fiducials")
-        self._register3d_button.changed.connect(self._on_register3d)
-        self.append(self._register3d_button)
 
     def _on_register(self, *args) -> None:
         self._ctx.state.button_fiducial_register = True
@@ -88,3 +93,6 @@ class FiducialsWidget(widgets.Container):
 
     def _on_diameter(self, *args) -> None:
         self._ctx.state.assumed_fiducial_diameter = self._fiducial_diameter_box.value
+
+    def _on_save_transformed_electrodes(self, *args) -> None:
+        self._ctx.state.button_save_transformed_electrodes = True

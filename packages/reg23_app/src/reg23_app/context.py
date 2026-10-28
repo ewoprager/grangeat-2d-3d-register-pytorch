@@ -62,7 +62,11 @@ class AppContext:
         self._xray_fiducial_save_manager = XRayFiducialSaveManager(xray_fiducial_save_directory)
         self._xray_reg_save_manager = XRayRegSaveManager(xray_reg_save_directory)
         self._drr_manager = DRRManager(self._state, self._dadg)
-        self._fiducials_manager = FiducialsManager(self._state, self._dadg)
+        self._fiducials_manager = FiducialsManager(  #
+            state=self._state,  #
+            dadg=self._dadg,  #
+            ct_electrode_save_manager=self._ct_electrode_save_manager,  #
+        )
         self._cache = cache
 
         if self._cache:

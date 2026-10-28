@@ -7,7 +7,8 @@ import zarr
 from jaxtyping import Int64
 
 from reg23_app.state import AppState
-from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D
+from reg23_experiments.data.save_data.ct_electrodes import CTElectrodeSaveManager
+from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints3D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.ops.fiducials import refine_disk_fiducial_2d, refine_spherical_fiducial_3d
@@ -26,15 +27,23 @@ class FiducialsManager:
     Reads from and write to the state and DADG only
     """
 
-    def __init__(self, state: AppState, dadg: DirectedAcyclicDataGraph):
+    def __init__(  #
+        self,  #
+        *,  #
+        state: AppState,  #
+        dadg: DirectedAcyclicDataGraph,  #
+        ct_electrode_save_manager: CTElectrodeSaveManager,  #
+    ):
         self._state = state
         self._dadg = dadg
+        self._ct_electrode_save_manager = ct_electrode_save_manager
 
         self._state.observe(self._button_fiducial_register, names=["button_fiducial_register"])
         self._state.observe(self._button_fiducial_register3d, names=["button_fiducial_register3d"])
         self._state.observe(self._button_ct_fiducial_refine, names=["button_refine_ct_fiducials"])
         self._state.observe(self._button_micro_fiducial_refine, names=["button_refine_micro_fiducials"])
         self._state.observe(self._button_xray_fiducial_refine, names=["button_refine_xray_fiducials"])
+        self._state.observe(self._button_save_transformed_electrodes, names=["button_save_transformed_electrodes"])
 
     def _button_fiducial_register(self, change) -> None:
         if not change.new:
@@ -279,3 +288,24 @@ class FiducialsManager:
         self._dadg.set(dadg_key_prefix + "fiducial_points", NamedPoints2D(names=fiducial_points.names, data=new_data))
 
         logger.info("X-ray fiducial segmentation refined.")
+
+    def _button_save_transformed_electrodes(self, change) -> None:
+        if not change.new:
+            return
+        self._state.button_save_transformed_electrodes = False
+
+        ct_uid: str | Error = self._dadg.get("ct_series_uid")
+        if isinstance(ct_uid, Error):
+            logger.warning(f"Couldn't save transformed electrodes: failed to get CT series UID: {ct_uid.description}")
+            return
+
+        points: OrderedPoints3D | Error = self._dadg.get("transformed_micro_electrodes")
+        if isinstance(points, Error):
+            logger.warning(f"Couldn't save transformed electrodes: failed to get points: {points.description}")
+            return
+
+        if isinstance(err := self._ct_electrode_save_manager.set(ct_uid, points.data), Error):
+            logger.warning(f"Failed to save transformed electrodes: {err.description}")
+            return
+
+        logger.info(f"Transformed electrodes saved for CT series '{ct_uid}'.")

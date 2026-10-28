@@ -66,3 +66,4 @@ class AppState(HasTraits):
     button_refine_micro_fiducials: bool = Bool(default_value=False)
     button_refine_xray_fiducials: bool = Bool(default_value=False)
     assumed_fiducial_diameter: float = Float(default_value=5.0, min=0.0)
+    button_save_transformed_electrodes: bool = Bool(default_value=False)
