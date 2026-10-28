@@ -4,6 +4,7 @@ import pathlib
 import pprint
 
 import plotly
+import plotly.express as px
 import torch
 
 from reg23_experiments.data.save_data.ct_electrodes import CTElectrodeSaveManager
@@ -78,7 +79,7 @@ def main(  #
         name="ground truth",  #
     )
 
-    for uid, tensor in xray_electrodes.items():
+    for j, (uid, tensor) in enumerate(xray_electrodes.items()):
         if tensor is None:
             logger.warning(f"No electrodes found for X-ray UID '{uid}'.")
             continue
@@ -107,7 +108,7 @@ def main(  #
                 y=intersections[:, 1].numpy(),  #
                 z=intersections[:, 2].numpy(),  #
                 mode="lines",  #
-                line=dict(width=3),  #
+                line=dict(width=3, color=px.colors.qualitative.Plotly[1 + j]),  #
                 name=f"{i} of {uid[-5:]}",  #
             )
 
