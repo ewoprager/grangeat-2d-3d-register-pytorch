@@ -71,8 +71,7 @@ def main(  #
     ground_truth: torch.Tensor = ct_layer_points - 0.5 * volume_diag.unsqueeze(0)
 
     centre = ground_truth.mean(dim=0)
-    # radius = 2.0 * torch.linalg.vector_norm(ground_truth - centre.unsqueeze(0), dim=1).max()
-    radius = 200.0
+    radius = 2.0 * torch.linalg.vector_norm(ground_truth - centre.unsqueeze(0), dim=1).max()
 
     figure = plotly.graph_objs.Figure()
 
