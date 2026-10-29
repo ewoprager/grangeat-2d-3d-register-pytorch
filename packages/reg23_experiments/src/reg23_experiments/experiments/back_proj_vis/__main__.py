@@ -56,20 +56,19 @@ def main(  #
     xray_electrode_save_manager = XRayElectrodeSaveManager(pathlib.Path("data/app_electrode_save_data"))
     transformation_save_manager = TransformationSaveManager(pathlib.Path("data/app_transformation_save_data"))
 
-    ground_truth: torch.Tensor | None = ct_electrode_save_manager.get(ct_series_uid)
-    if ground_truth is None:
-        logger.error(f"No ground truth CT electrode positions found for {ct_series_uid}")
-        return 1
-
+    # Get the volume size and spacing to determine the coordinate system offset
     volume_image: sitk.Image | Error = load_ct_series(ct_path, ct_series_uid)
     if isinstance(volume_image, Error):
         logger.error(f"Failed to load CT volume from path '{ct_path}': {volume_image.description}")
         return 1
-    volume_diag = torch.tensor(volume_image.GetSize()).flip(dims=(0,)) * torch.tensor(volume_image.GetSpacing())
-    logger.info("Volume diagonal = ({:.3f}, {:.3f}, {:.3f}".format(*volume_diag.tolist()))
+    volume_diag = torch.tensor(volume_image.GetSize(), dtype=torch.float64) * torch.tensor(volume_image.GetSpacing())
+    logger.info("Volume diagonal = ({:.3f}, {:.3f}, {:.3f})".format(*volume_diag.tolist()))
 
-    # ToDo: Figure out
-    ground_truth -= 0.5 * volume_diag.unsqueeze(0)
+    ct_layer_points: torch.Tensor | None = ct_electrode_save_manager.get(ct_series_uid)
+    if ct_layer_points is None:
+        logger.error(f"No ground truth CT electrode positions found for {ct_series_uid}")
+        return 1
+    ground_truth: torch.Tensor = ct_layer_points - 0.5 * volume_diag.unsqueeze(0)
 
     centre = ground_truth.mean(dim=0)
     # radius = 2.0 * torch.linalg.vector_norm(ground_truth - centre.unsqueeze(0), dim=1).max()
@@ -87,14 +86,16 @@ def main(  #
 
     for j, image in enumerate(xray_images):
         uid = image["uid"]
-        source_distance = image["scene_geometry"].source_position(torch.device("cpu"))[2].item()
-        tensor = xray_electrode_save_manager.get(uid)
-        if tensor is None:
+        source_position = image["scene_geometry"].source_position(torch.device("cpu"))
+        logger.info(
+            "Source position for X-ray UID '{}' is ({:.3f}, {:.3f}, {:.3f}) mm".format(uid, *source_position.tolist()))
+        xray_layer_points = xray_electrode_save_manager.get(uid)
+        if xray_layer_points is None:
             logger.warning(f"No electrodes found for X-ray UID '{uid}'.")
             continue
+        # get the length of the image diagonal to determine the coordinate system offset
         xray_diag = image["spacing"] * torch.tensor(image["image"].size(), dtype=torch.float64).flip(dims=(0,))
-        # ToDo: Figure out
-        tensor -= 0.5 * xray_diag.unsqueeze(0)
+        tensor = xray_layer_points - 0.5 * xray_diag.unsqueeze(0)
 
         tr: Transformation | Error = transformation_save_manager.get_transformation(  #
             source_uid=ct_series_uid,  #
@@ -106,12 +107,17 @@ def main(  #
             continue
 
         ray_points, ray_unit_dirs = ordered_points_to_rays(  #
-            tensor,  #
-            tr,  #
-            source_distance,  #
+            points=tensor,  #
+            transformation=tr,  #
+            source_position=source_position,  #
         )
         for i, (ray_point, ray_unit_dir) in enumerate(zip(ray_points, ray_unit_dirs)):
-            intersections = ray_sphere_intersection(ray_point, ray_unit_dir, centre, radius)
+            intersections = ray_sphere_intersection(  #
+                ray_point=ray_point,  #
+                ray_unit_dir=ray_unit_dir,  #
+                sphere_centre=centre,  #
+                sphere_radius=radius,  #
+            )
             if len(intersections) < 2:
                 logger.warning(f"Ray {i} of X-ray UID '{uid}' didn't intersect the view sphere.")
                 continue
