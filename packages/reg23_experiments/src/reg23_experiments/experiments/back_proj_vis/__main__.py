@@ -41,6 +41,7 @@ def main(  #
     *,  #
     ct_path: str,  #
     xray_paths: list[str],  #
+    transformation_name: str,  #
 ) -> int:
     ct_series_uid: str | Error = acquire_ct_series_uid(ct_path)
     if isinstance(ct_series_uid, Error):
@@ -99,10 +100,11 @@ def main(  #
         tr: Transformation | Error = transformation_save_manager.get_transformation(  #
             source_uid=ct_series_uid,  #
             destination_uid=uid,  #
-            name="gold_standard",  #
+            name=transformation_name,  #
         )
         if isinstance(tr, Error):
-            logger.error(f"Failed to get transformation 'gold-standard' for X-ray UID '{uid}'; {tr.description}")
+            logger.error(
+                f"Failed to get transformation '{transformation_name}' for X-ray UID '{uid}'; {tr.description}")
             continue
 
         ray_points, ray_unit_dirs = ordered_points_to_rays(  #
@@ -143,6 +145,8 @@ if __name__ == "__main__":
     parser.add_argument("-x", "--xray-paths", type=str, nargs='*',  #
         help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If this is provided, "
              "the X-ray will by used instead of any DRR.")
+    parser.add_argument("-n", "--transformation-name", type=str, default="gold_standard",
+        help="The name of the transformation to use.")
     parser.add_argument("-l", "--log-level", type=str, default=None,  #
         help=f"Set the log level; options: [{", ".join(logging._nameToLevel.keys())}]; default = INFO.")
 
@@ -153,4 +157,5 @@ if __name__ == "__main__":
     exit(main(  #
         ct_path=args.ct_path,  #
         xray_paths=args.xray_paths,  #
+        transformation_name=args.transformation_name,  #
     ))

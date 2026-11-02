@@ -118,7 +118,7 @@ class RegisterWidget(widgets.Container):
             for i in range(3)  #
         ]
         tr_tr_widgets = widgets.Container(widgets=self._rotation_widgets + self._translation_widgets,
-                                          layout="horizontal", labels=False, label="T")
+            layout="horizontal", labels=False, label="T")
         for i in range(3):
             self._rotation_widgets[i].changed.connect(self._update_current_transformation_from_t)
             self._translation_widgets[i].changed.connect(self._update_current_transformation_from_t)
@@ -127,7 +127,7 @@ class RegisterWidget(widgets.Container):
         # Saving and loading transformations
         # -----
         self._saved_transformations_select = widgets.Select(choices=self._get_saved_transformation_names,
-                                                            label="Saved\nTrs.")
+            label="Saved\nTrs.")
         self._ctx.state.observe(self._saved_transformation_names_changed, names=["saved_transformation_names"])
         self._transformation_name_input = widgets.LineEdit(value="")
         self._transformation_name_input.changed.connect(self._on_transformation_name_input)
@@ -226,16 +226,19 @@ class RegisterWidget(widgets.Container):
             if change.new.iteration == "finished":
                 self._job_state_description_label.value = ("Optimisation finished all {} iterations;\nBest f found = {"
                                                            ":.3f}\nat x = {}").format(change.new.max_iterations,
-                                                                                      change.new.current_best_f,
-                                                                                      change.new.current_best_x)
+                    change.new.current_best_f, change.new.current_best_x)
             elif change.new.iteration == "initialising":
                 self._job_state_description_label.value = "Optimisation initialising..."
             else:
                 assert isinstance(change.new.iteration, int)
                 self._job_state_description_label.value = (
-                    "Optimisation running; {}/{} iterations complete;\nBest f found = {"
-                    ":.3f}\nat x = {}").format(change.new.iteration, change.new.max_iterations,
-                                               change.new.current_best_f, change.new.current_best_x)
+                        "Optimisation running; {}/{} iterations complete;\nBest f found = {"
+                        ":.3f}\nat x = (" + ", ".join(["{:.2f}"] * len(change.new.current_best_x)) + ")").format(  #
+                    change.new.iteration,  #
+                    change.new.max_iterations,  #
+                    change.new.current_best_f,  #
+                    *change.new.current_best_x.cpu().tolist(),  #
+                )
 
     def _on_one_iteration(self, *args) -> None:
         self._ctx.state.button_run_one_iteration = True
@@ -297,9 +300,9 @@ class RegisterWidget(widgets.Container):
             return
         current_t: Transformation = self._ctx.dadg.get(self._c_t_key)
         rotation = torch.tensor([widget.value for widget in self._rotation_widgets], dtype=current_t.rotation.dtype,
-                                device=current_t.rotation.device)
+            device=current_t.rotation.device)
         translation = torch.tensor([widget.value for widget in self._translation_widgets],
-                                   dtype=current_t.rotation.dtype, device=current_t.rotation.device)
+            dtype=current_t.rotation.dtype, device=current_t.rotation.device)
         self._ctx.dadg.set(self._c_t_key, Transformation(rotation=rotation, translation=translation))
         self._t_loop_preventer = False
 

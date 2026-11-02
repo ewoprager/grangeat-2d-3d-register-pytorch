@@ -208,17 +208,30 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # The universal objective function
     # -----
-    def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
-        prefix = "" if context.namespace is None else f"{context.namespace}__"
-        t = mapping_parameters_to_transformation(x.squeeze())
-        # Setting the parameters
-        context.dadg.set(prefix + "current_transformation", t)
-        # Getting the result
-        ret: torch.Tensor | Error = context.dadg.get(prefix + "of_value_grangeat")
-        if isinstance(ret, Error):
-            logger.error(f"Failed to get o.f. value for objective function evaluation: {ret.description}")
-            return torch.zeros(1, device=x.device)
-        return ret.unsqueeze(0)
+    if True:
+        def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
+            prefix = "" if context.namespace is None else f"{context.namespace}__"
+            t = mapping_parameters_to_transformation(x.squeeze())
+            # Setting the parameters
+            context.dadg.set(prefix + "current_transformation", t)
+            # Getting the result
+            ret: torch.Tensor | Error = context.dadg.get(prefix + "of_value")
+            if isinstance(ret, Error):
+                logger.error(f"Failed to get o.f. value for objective function evaluation: {ret.description}")
+                return torch.zeros(1, device=x.device)
+            return ret.unsqueeze(0)
+    else:
+        def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
+            prefix = "" if context.namespace is None else f"{context.namespace}__"
+            t = mapping_parameters_to_transformation(x.squeeze())
+            # Setting the parameters
+            context.dadg.set(prefix + "current_transformation", t)
+            # Getting the result
+            ret: torch.Tensor | Error = context.dadg.get(prefix + "of_value_grangeat")
+            if isinstance(ret, Error):
+                logger.error(f"Failed to get o.f. value for objective function evaluation: {ret.description}")
+                return torch.zeros(1, device=x.device)
+            return ret.unsqueeze(0)
 
     # -----
     # Modules
