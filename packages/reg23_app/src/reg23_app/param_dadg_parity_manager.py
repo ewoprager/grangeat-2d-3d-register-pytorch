@@ -1,4 +1,5 @@
 import logging
+import pathlib
 
 import torch
 
@@ -11,12 +12,20 @@ from reg23_experiments.data.save_data.xray_fiducials import XRayFiducialSaveMana
 from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints2D, OrderedPoints3D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments.reg_experiment import drr_reg_updaters, grangeat_updaters, unbatched_updaters
+from reg23_experiments.experiments.sim_met_figures import updaters as sim_met_figure_updaters
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, capture_in_namespaces
 from ._gui_param_to_dag_node import cropping_changed, cropping_value_changed
 
 __all__ = ["ParamDADGParityManager"]
 
 logger = logging.getLogger(__name__)
+
+_XRAY_SPECIFIC_DADG_KEYS_PATH = pathlib.Path(__file__).parent / "xray_specific_dadg_keys.txt"
+
+
+def _load_xray_specific_dadg_keys() -> list[str]:
+    lines = (l.strip() for l in _XRAY_SPECIFIC_DADG_KEYS_PATH.read_text().splitlines())
+    return [l for l in lines if l and not l.startswith("#")]
 
 
 class ParamDADGParityManager:
@@ -29,12 +38,7 @@ class ParamDADGParityManager:
     DADG.
     """
 
-    XRAY_SPECIFIC_DADG_KEYS: list[str] = ["image_2d_full", "image_2d_full_spacing", "fixed_image_spacing",
-        "transformation_gt", "source_distance", "xray_path", "target_flipped", "moving_image", "fixed_image_size",
-        "fixed_image_offset", "xray_sop_instance_uid", "fixed_image", "cropped_target", "scaling_image", "weight_image",
-        "translation_offset", "image_2d_scale_factor", "source_offset", "of_value", "current_transformation",
-        "cropping", "electrode_points", "fiducial_points", "projected_fiducials", "filtered_image_2d",
-        "sinogram2d_grid_unshifted", "sinogram2d_grid", "sinogram2d", "moving_image_grangeat", "of_value_grangeat"]
+    XRAY_SPECIFIC_DADG_KEYS: list[str] = _load_xray_specific_dadg_keys()
 
     def __init__(  #
         self,  #
@@ -254,67 +258,64 @@ class ParamDADGParityManager:
         namespace_captures = {key: name for key in ParamDADGParityManager.XRAY_SPECIFIC_DADG_KEYS}
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__refresh_image_2d_scale_factor",  #
-                capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_image_2d_scale_factor), ), Error, ):
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_image_2d_scale_factor)), Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__refresh_hyperparameter_dependent",  #
-                capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_hyperparameter_dependent), ),
-                Error, ):
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.refresh_hyperparameter_dependent)), Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__refresh_scaling_image",  #
-                capture_in_namespaces(namespace_captures)(unbatched_updaters.refresh_scaling_image), ), Error, ):
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.refresh_scaling_image)), Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__project_drr",  #
-                capture_in_namespaces(namespace_captures)(unbatched_updaters.project_drr), ), Error, ):
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.project_drr)), Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__set_target_image",  #
-                capture_in_namespaces(namespace_captures)(drr_reg_updaters.set_xray_target_image_with_no_gt), ),
-                Error, ):
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.set_xray_target_image_with_no_gt)), Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__apply_filter_2d",  #
-                capture_in_namespaces(namespace_captures)(drr_reg_updaters.apply_filter_2d), ), Error, ):
+                capture_in_namespaces(namespace_captures)(drr_reg_updaters.apply_filter_2d)), Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__project_fiducials",  #
-                capture_in_namespaces(namespace_captures)(unbatched_updaters.project_fiducials), ), Error, ):
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.project_fiducials)), Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__apply_sim_metric",  #
-                capture_in_namespaces(namespace_captures)(unbatched_updaters.apply_sim_metric), ), Error, ):
+                capture_in_namespaces(namespace_captures)(unbatched_updaters.apply_sim_metric)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         # -- Grangeat --
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__refresh_sinogram2d_grid",  #
-                capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d_grid), ), Error, ):
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d_grid)), Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__refresh_sinogram2d",  #
-                capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d), ), Error, ):
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.refresh_sinogram2d)), Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__resample_for_moving_image_grangeat",  #
-                capture_in_namespaces(namespace_captures)(grangeat_updaters.resample_for_moving_image_grangeat), ),
-                Error, ):
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.resample_for_moving_image_grangeat)),
+                Error):
             logger.error(f"Error adding updater: {err.description}")
-
         if isinstance(err := self._dadg.add_updater(  #
                 f"{name}__apply_sim_metric_grangeat",  #
-                capture_in_namespaces(namespace_captures)(grangeat_updaters.apply_sim_metric_grangeat), ), Error, ):
+                capture_in_namespaces(namespace_captures)(grangeat_updaters.apply_sim_metric_grangeat)), Error):
+            logger.error(f"Error adding updater: {err.description}")
+            
+        # -- Similarity metric figures --
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__update_ncc_sim_met_image",  #
+                capture_in_namespaces(namespace_captures)(sim_met_figure_updaters.update_ncc_sim_met_image)), Error):
+            logger.error(f"Error adding updater: {err.description}")
+        if isinstance(err := self._dadg.add_updater(  #
+                f"{name}__update_gc_sim_met_image",  #
+                capture_in_namespaces(namespace_captures)(sim_met_figure_updaters.update_gc_sim_met_image)), Error):
             logger.error(f"Error adding updater: {err.description}")
 
         # -- --

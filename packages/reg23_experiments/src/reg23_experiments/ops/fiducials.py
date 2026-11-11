@@ -226,6 +226,7 @@ def refine_spherical_fiducial_3d(  #
         vol_grad_patch = volume_gradients[k0:k1, j0:j1, i0:i1, :][patch_mask].to(dtype=torch.float64)
         return -(unit_directions * vol_grad_patch).sum(dim=-1).mean()
 
+
     if False:
         return local_search(  #
             starting_position=position,  #

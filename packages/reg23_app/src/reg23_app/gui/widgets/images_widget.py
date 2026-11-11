@@ -121,6 +121,10 @@ class ImagesWidget(widgets.Container):
                 # Debug image
                 show_debug_button = widgets.PushButton(label="Show debug image")
                 show_debug_button.changed.connect(lambda _, name=key: self._on_show_debug_layer(name))
+                show_ncc_button = widgets.PushButton(label="Show NCC image")
+                show_ncc_button.changed.connect(lambda _, name=key: self._on_show_ncc_layer(name))
+                show_gc_button = widgets.PushButton(label="Show GC image")
+                show_gc_button.changed.connect(lambda _, name=key: self._on_show_gc_layer(name))
                 # appending
                 self.append(ExpandableWidget([  #
                     show_image_2d_full_button,  #
@@ -132,7 +136,9 @@ class ImagesWidget(widgets.Container):
                     show_electrodes_button,  #
                     show_xray_fiducials_button,  #
                     show_projected_fiducials_button,  #
-                    show_debug_button  #
+                    show_debug_button,  #
+                    show_ncc_button,  #
+                    show_gc_button,  #
                 ], label=key))
 
     def _on_show_ct_layer(self) -> None:
@@ -207,3 +213,13 @@ class ImagesWidget(widgets.Container):
     def _on_show_debug_layer(self, xray_name: str) -> None:
         logger.debug(f"Show debug for '{xray_name}' clicked")
         add_debug_layer(ctx=self._ctx, namespace=xray_name)
+
+    def _on_show_ncc_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show NCC image for '{xray_name}' clicked")
+        add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__ncc_sim_met_image",
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+
+    def _on_show_gc_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show GC image for '{xray_name}' clicked")
+        add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__gc_sim_met_image",
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
