@@ -3,6 +3,8 @@ import os
 
 os.environ["QT_API"] = "PyQt6"
 
+import numpy as np
+import napari
 from magicgui import widgets
 
 from reg23_app.context import AppContext
@@ -217,9 +219,14 @@ class ImagesWidget(widgets.Container):
     def _on_show_ncc_layer(self, xray_name: str) -> None:
         logger.debug(f"Show NCC image for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__ncc_sim_met_image",
-            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing", contrast_limits=(-3.0, 3.0),
+            colormap=napari.utils.Colormap(np.array([  #
+                [253.0 / 256.0, 231.0 / 256.0, 37.0 / 256.0, 1.0],  #
+                [1.0, 1.0, 1.0, 1.0],  #
+                [68.0 / 256.0, 1.0 / 256.0, 84.0 / 256.0, 1.0],  #
+            ])))
 
     def _on_show_gc_layer(self, xray_name: str) -> None:
         logger.debug(f"Show GC image for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__gc_sim_met_image",
-            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing", contrast_limits=(-3.0, 3.0))

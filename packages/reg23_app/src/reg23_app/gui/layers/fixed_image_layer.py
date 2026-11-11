@@ -40,8 +40,14 @@ class _FixedImageLayerManager:
         layer.scale = new_value.flip(dims=(0,)).cpu().numpy()
 
 
-def add_fixed_image_layer(*, ctx: AppContext, dadg_key: str, spacing_dadg_key: str,
-                          colormap: str = "yellow") -> napari.layers.Layer | None:
+def add_fixed_image_layer(  #
+    *,  #
+    ctx: AppContext,  #
+    dadg_key: str,  #
+    spacing_dadg_key: str,  #
+    colormap: str = "yellow",  #
+    contrast_limits: tuple[float, float] | None = None,  #
+) -> napari.layers.Layer | None:
     if dadg_key in viewer().layers:
         logger.warning(f"Layer '{dadg_key}' is already shown.")
         return None
@@ -49,12 +55,18 @@ def add_fixed_image_layer(*, ctx: AppContext, dadg_key: str, spacing_dadg_key: s
     if isinstance(value, Error):
         raise RuntimeError(f"Error softly getting '{dadg_key}' from DADG: {value.description}.")
     initial_image = value if isinstance(value, torch.Tensor) else torch.zeros((500, 500))
-    layer: napari.layers.Layer = viewer().add_image(initial_image.cpu().numpy(), colormap=colormap, blending="additive",
-                                                    interpolation2d="linear", name=dadg_key)
+    layer: napari.layers.Layer = viewer().add_image(  #
+        initial_image.cpu().numpy(),  #
+        colormap=colormap,  #
+        contrast_limits=contrast_limits,  #
+        blending="additive",  #
+        interpolation2d="linear",  #
+        name=dadg_key,  #
+    )
     spacing: torch.Tensor | Error = ctx.dadg.get(spacing_dadg_key, soft=True)
     if isinstance(spacing, Error):
         raise RuntimeError(f"Error softly getting '{spacing_dadg_key}' from DADG: {spacing.description}.")
     layer.scale = spacing.flip(dims=(0,)).cpu().numpy()
     layer.my_plugin = _FixedImageLayerManager(ctx=ctx, layer=layer, dadg_key=dadg_key,
-                                              spacing_dadg_key=spacing_dadg_key)
+        spacing_dadg_key=spacing_dadg_key)
     return layer
