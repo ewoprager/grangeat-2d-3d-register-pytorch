@@ -18,3 +18,9 @@ This library is a PyTorch extension, providing a number of functions for:
   the [README](https://github.com/ewoprager/grangeat-2d-3d-register-pytorch/tree/main/reg23)).
 
 The functions are documented here: \ref pytorch_functions
+
+<h2> Overviews </h2>
+
+- [Backend overview](src/backend/backend_overview.md): how the C++ and CUDA code is organised.
+- [Operators overview](src/backend/operators_overview.md): what each operator computes.
+- [Python layer overview](src/reg23_core/python_overview.md): the Python package that wraps the operators.

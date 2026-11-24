@@ -6,6 +6,8 @@ Documentation for the Python libraries in this repo, as well as for the `reg23_c
 
 [https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/](https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/)
 
+High-level overviews of every part of the repository are indexed in [docs/README.md](docs/README.md).
+
 The registration method using Grangeat's relation is from this paper:
 
 Frysch R, Pfeiffer T, Rose G. A novel approach to 2D/3D registration of X-ray images using Grangeat's relation. Med

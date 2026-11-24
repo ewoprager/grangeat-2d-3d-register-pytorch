@@ -56,12 +56,12 @@ data_manager().set_multiple(ct_path="/my_ct_volume.nrrd", downsample_ratio=3)
 
 
 @dadg_updater(names_returned=["ct_volume"])
-def load_ct_volume(ct_path: str) -> dict[str, Any]:
+def load_ct_volume(*, ct_path: str) -> dict[str, Any]:
     return {"ct_volume": load_from_file(ct_path)}
 
 
 @dadg_updater(names_returned=["ct_volume_downsampled"])
-def downsample_ct(ct_volume: torch.Tensor, downsample_ratio: int) -> dict[str, Any]:
+def downsample_ct(*, ct_volume: torch.Tensor, downsample_ratio: int) -> dict[str, Any]:
     return {"ct_volume_downsampled": torch.nn.functional.avg_pool3d(ct_volume, downsample_ratio)}
 
 
@@ -74,7 +74,7 @@ use_ct_volume(data_manager().get("ct_volume_downsampled"))
 ...
 use_ct_volume_again(data_manager().get("ct_volume_downsampled"))
 ...
-data_manager().set("downsample_ratio", 3)
+data_manager().set("downsample_ratio", 2)
 use_ct_volume_again(data_manager().get("ct_volume_downsampled"))
 ```
 
@@ -100,3 +100,55 @@ A walk through the above code:
   changed since the value of `"ct_volume_downsampled"` was last evaluated.
 - The third call will result in `downsample_ct` being called once more, as the value of `"downsample_ratio"` has changed
   since `"ct_volume_downsampled"` was last evaluated.
+
+## What is in this package
+
+| Name                              | Purpose                                                                            |
+|-----------------------------------|------------------------------------------------------------------------------------|
+| `StandaloneDADG`                  | A graph that owns all of its nodes                                                 |
+| `ChildDADG`                       | A graph that starts as a copy of a parent, sharing nodes until either side changes  |
+| `data_manager`                    | Returns the singleton `StandaloneDADG` used by scripts                             |
+| `Updater`, `dadg_updater`         | A function with the names of the nodes that it reads and writes                    |
+| `args_from_dadg`                  | Fills a function's arguments from a graph when it is called                        |
+| `capture_in_namespaces`           | Renames nodes used by a function or updater                                        |
+| `NoNodeData`                      | Marks a node that exists but has never been given a value                          |
+
+## How evaluation works
+
+Each node holds a value, a *dirty* flag, the name of the updater that produces it (if any), and the names of the nodes that
+depend on it. Setting a node marks everything downstream as dirty. Getting a dirty node runs its updater, which first gets
+each of its arguments in the same way, so only the stale part of the graph is evaluated.
+
+Rules to keep in mind:
+
+- A node is written by at most one updater, and the graph must not contain cycles.
+- Updater functions must take keyword-only arguments (put `*` first). Arguments with defaults are optional, and are left
+  out when the graph cannot provide them.
+- An updater must return exactly the names that it promised, as a dictionary, or an `Error`.
+- `get` and `set` return an `Error` on failure instead of raising, so check their results.
+
+### Eager nodes
+
+Nodes are lazy by default. `set_evaluation_laziness(name, lazily_evaluated=False)` makes a node re-evaluate as soon as it
+becomes dirty, provided its inputs are available. The app does this for images that are on display.
+
+### Equality checks
+
+Setting a node normally counts as a change. With `check_equality=True` the new value is compared with the old one using `==`,
+and an equal value leaves the graph untouched. Use this for plain values such as paths and numbers, not for tensors.
+
+### Observers
+
+`observe` registers a callback that runs whenever a node's value is set, including when its updater runs.
+
+## Child graphs
+
+A `ChildDADG` reads through to its parent until one of them changes a node. At that point the child takes its own copy, so each
+can be modified without affecting the other. A registration running in a worker thread uses one so that it can move the
+transformation around without disturbing the interface. Observers are not copied to children.
+
+## Namespaces
+
+To run the same updaters for several X-rays in one graph, each X-ray's nodes are stored with a prefix: `<namespace>__<name>`.
+`capture_in_namespaces({"fixed_image": "xray_a"})` converts an updater to use `xray_a__fixed_image` in place of
+`fixed_image`, leaving any names not listed as shared nodes.

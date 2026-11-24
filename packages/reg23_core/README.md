@@ -6,6 +6,13 @@ The documentation for this extension is available here:
 
 [https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/reg23](https://ewoprager.github.io/grangeat-2d-3d-register-pytorch/reg23)
 
+Overviews of each part of this package:
+
+- [Backend overview](src/backend/backend_overview.md): how the C++ and CUDA code is organised
+- [Operators overview](src/backend/operators_overview.md): what each operator computes
+- [Python layer overview](src/reg23_core/python_overview.md): the Python wrappers
+- [Tests](tests/README.md)
+
 # Package contents
 
 ```text
@@ -76,7 +83,7 @@ See the names listed in the `__all__` variables in `ops.py` and `structs.py` for
 ### Functions
 
 The following functions are provided. These map (almost) directly to the C++ functions documented at the link above. The
-mappings are given in [ops.py](ops.py). Unless stated otherwise, all functions are implemented for both CPU and CUDA.
+mappings are given in [ops.py](src/reg23_core/ops.py). Unless stated otherwise, all functions are implemented for both CPU and CUDA.
 Unless stated otherwise, backward passes for functions have not yet been implemented.
 
 - `radon2d`
@@ -95,7 +102,7 @@ Unless stated otherwise, backward passes for functions have not yet been impleme
 
 ### Structures
 
-The following structures are provided. These are defined in [structs.py](structs.py), and are almost direct mappings to
+The following structures are provided. These are defined in [structs.py](src/reg23_core/structs.py), and are almost direct mappings to
 C++ structures documented at the link above.
 
 - `CUDATexture2D`
