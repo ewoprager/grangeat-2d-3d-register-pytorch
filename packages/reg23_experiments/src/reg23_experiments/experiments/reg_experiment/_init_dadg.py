@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 def load_untruncated_ct(  #
-        ct_path: pathlib.Path,  #
-        ct_series_uid: str,  #
-        device: torch.device,  #
-        ct_permutation: Sequence[int] | None = None  #
+    ct_path: pathlib.Path,  #
+    ct_series_uid: str,  #
+    device: torch.device,  #
+    ct_permutation: Sequence[int] | None = None  #
 ) -> tuple[torch.Tensor, torch.Tensor] | Error:
     volume: sitk.Image | Error = load_ct_series(ct_path, ct_series_uid)
     if isinstance(volume, Error):
@@ -45,12 +45,12 @@ def load_untruncated_ct(  #
 
 
 def init_dadg(  #
-        *,  #
-        config: ExperimentSetConfig,  #
-        image_specific_config: ImageSpecificConfigurations,  #
-        cache_directory: str,  #
-        device: torch.device,  #
-        dadg: DirectedAcyclicDataGraph | None = None,  #
+    *,  #
+    config: ExperimentSetConfig,  #
+    image_specific_config: ImageSpecificConfigurations,  #
+    cache_directory: str,  #
+    device: torch.device,  #
+    dadg: DirectedAcyclicDataGraph | None = None,  #
 ) -> Error | None:
     if dadg is None:
         dadg = data_manager()
@@ -101,7 +101,7 @@ def init_dadg(  #
     else:
         if isinstance(c := config.values["xray_path"], Cartesian) and len(c.values) > 1 and any(  #
                 e is None  #
-                for e in c.values  #
+                        for e in c.values  #
         ):
             raise ValueError(f"Cannot run experiments over DRRs and X-ray images.")
 
@@ -124,13 +124,15 @@ def init_dadg(  #
         if isinstance(err := dadg.add_updater("refresh_sinogram2d", grangeat.refresh_sinogram2d), Error):
             return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("resample_for_moving_image_grangeat",
-                                              batched.resample_for_moving_image_grangeat), Error):
+                batched.resample_for_moving_image_grangeat), Error):
             return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("apply_sim_metric_grangeat", batched.apply_sim_metric_grangeat), Error):
             return Error(f"Error adding updater: {err.description}")  # --
+    if isinstance(err := dadg.add_updater("apply_truncation", updaters.apply_truncation), Error):
+        return Error(f"Error adding updater: {err.description}")
     if isinstance(err := dadg.add_updater("apply_filter_ct", updaters.apply_filter_ct), Error):
         return Error(f"Error adding updater: {err.description}")
-    if isinstance(err := dadg.add_updater("apply_truncation", updaters.apply_truncation), Error):
+    if isinstance(err := dadg.add_updater("mipmap_ct", updaters.mipmap_ct), Error):
         return Error(f"Error adding updater: {err.description}")
     if isinstance(err := dadg.add_updater(  #
             "refresh_image_2d_scale_factor", updaters.refresh_image_2d_scale_factor), Error):
@@ -151,7 +153,7 @@ def init_dadg(  #
     # Optional
     if False:
         if isinstance(err := dadg.add_updater("truncation_from_h_valid", truncation_percent_for_desired_h_valid),
-                      Error):
+                Error):
             return Error(f"Error adding updater: {err.description}")
     if True:
         if isinstance(err := dadg.add_updater("project_moving_images", batched.project_moving_images), Error):
@@ -159,7 +161,6 @@ def init_dadg(  #
         if isinstance(err := dadg.add_updater("apply_sim_metric", batched.apply_sim_metric), Error):
             return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("refresh_scaling_images",
-                                              dadg_updater(names_returned=["scaling_images", "fixed_image"])(
-                                                  batched.refresh_scaling_images)), Error):
+                dadg_updater(names_returned=["scaling_images", "fixed_image"])(batched.refresh_scaling_images)), Error):
             return Error(f"Error adding updater: {err.description}")
     return None

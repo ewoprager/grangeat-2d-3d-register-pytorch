@@ -21,20 +21,20 @@ from reg23_experiments.ops.volume import frequency_filter as frequency_filter3d
 from reg23_experiments.ops.image import frequency_filter as frequency_filter2d
 
 __all__ = ["load_ground_truth", "load_base_cropping", "combine_croppings", "truncation_percent_for_desired_h_valid",
-           "load_untruncated_ct", "apply_filter_ct", "apply_truncation", "set_xray_target_image",
-           "set_xray_target_image_with_no_gt", "set_synthetic_target_image", "refresh_image_2d_scale_factor",
-           "refresh_hyperparameter_dependent"]
+    "load_untruncated_ct", "apply_filter_ct", "apply_truncation", "set_xray_target_image",
+    "set_xray_target_image_with_no_gt", "set_synthetic_target_image", "refresh_image_2d_scale_factor",
+    "refresh_hyperparameter_dependent", "mipmap_ct"]
 
 logger = logging.getLogger(__name__)
 
 
 @dadg_updater(names_returned=["transformation_gt"])
 def load_ground_truth(  #
-        *,  #
-        saved_transformations: pd.DataFrame,  #
-        ct_series_uid: str,  #
-        xray_sop_instance_uid: str,  #
-        device: torch.device  #
+    *,  #
+    saved_transformations: pd.DataFrame,  #
+    ct_series_uid: str,  #
+    xray_sop_instance_uid: str,  #
+    device: torch.device  #
 ) -> dict[str, Any]:
     idx = (ct_series_uid, xray_sop_instance_uid, "gold_standard")
     try:
@@ -50,9 +50,9 @@ def load_ground_truth(  #
 
 @dadg_updater(names_returned=["base_cropping", "target_flipped"])
 def load_base_cropping(  #
-        *,  #
-        saved_xray_reg_configs: pd.DataFrame,  #
-        xray_sop_instance_uid: str,  #
+    *,  #
+    saved_xray_reg_configs: pd.DataFrame,  #
+    xray_sop_instance_uid: str,  #
 ) -> dict[str, Any]:
     try:
         row = saved_xray_reg_configs.loc[xray_sop_instance_uid]
@@ -71,9 +71,9 @@ def load_base_cropping(  #
 
 @dadg_updater(names_returned=["cropping"])
 def combine_croppings(  #
-        *,  #
-        base_cropping: Cropping | None,  #
-        further_cropping: Cropping | None,  #
+    *,  #
+    base_cropping: Cropping | None,  #
+    further_cropping: Cropping | None,  #
 ) -> dict[str, Any]:
     if base_cropping is None:
         if further_cropping is None:
@@ -89,11 +89,11 @@ def combine_croppings(  #
 
 @dadg_updater(names_returned=["truncation_percent"])
 def truncation_percent_for_desired_h_valid(  #
-        *,  #
-        transformation_gt: Transformation | None,  #
-        untruncated_ct_volume: torch.Tensor,  #
-        ct_spacing: torch.Tensor,  #
-        desired_h_valid: float,  #
+    *,  #
+    transformation_gt: Transformation | None,  #
+    untruncated_ct_volume: torch.Tensor,  #
+    ct_spacing: torch.Tensor,  #
+    desired_h_valid: float,  #
 ) -> dict[str, Any]:
     if transformation_gt is None:
         raise Exception("Need transformation gold standard for h_valid")
@@ -108,10 +108,10 @@ def truncation_percent_for_desired_h_valid(  #
 
 @dadg_updater(names_returned=["untruncated_ct_volume", "ct_spacing", "ct_series_uid"])
 def load_untruncated_ct(  #
-        *,  #
-        ct_path: str,  #
-        device: torch.device,  #
-        ct_permutation: Sequence[int] | None = None  #
+    *,  #
+    ct_path: str,  #
+    device: torch.device,  #
+    ct_permutation: Sequence[int] | None = None  #
 ) -> dict[str, Any]:
     res: tuple[str, sitk.Image] | Error = load_one_ct_series(ct_path)
     if isinstance(res, Error):
@@ -134,18 +134,32 @@ def load_untruncated_ct(  #
     return {"untruncated_ct_volume": ct_volume, "ct_spacing": ct_spacing, "ct_series_uid": uid}
 
 
+@dadg_updater(names_returned=["truncated_ct_volume"])
+def apply_truncation(  #
+    *,  #
+    untruncated_ct_volume: Float32[torch.Tensor, "p q r"],  #
+    truncation_percent: int  #
+) -> dict[str, Any]:
+    # truncate the volume
+    truncation_fraction = 0.01 * float(truncation_percent)
+    top_bottom_chop = int(round(0.5 * truncation_fraction * float(untruncated_ct_volume.size()[0])))
+    ct_volume = untruncated_ct_volume[
+        top_bottom_chop:max(top_bottom_chop + 1, untruncated_ct_volume.size()[0] - top_bottom_chop)]
+    return {"truncated_ct_volume": ct_volume}
+
+
 @dadg_updater(names_returned=["filtered_ct_volume"])
 def apply_filter_ct(  #
-        *,  #
-        untruncated_ct_volume: Float32[torch.Tensor, "p q r"],  #
-        ct_spacing: torch.Tensor,  #
-        filter_method: str,  #
-        lowpass_threshold: float,  #
-        highpass_threshold: float,  #
+    *,  #
+    truncated_ct_volume: Float32[torch.Tensor, "p q r"],  #
+    ct_spacing: torch.Tensor,  #
+    filter_method: str,  #
+    lowpass_threshold: float,  #
+    highpass_threshold: float,  #
 ) -> dict[str, Any]:
     if filter_method == "none":
         return {  #
-            "filtered_ct_volume": untruncated_ct_volume,  #
+            "filtered_ct_volume": truncated_ct_volume,  #
         }
     if filter_method == "highpass":
         function = lambda freq: 1.0 - (-0.5 * freq.square() / (highpass_threshold * highpass_threshold)).exp()
@@ -158,7 +172,7 @@ def apply_filter_ct(  #
 
     return {  #
         "filtered_ct_volume": frequency_filter3d(  #
-            untruncated_ct_volume,  #
+            truncated_ct_volume,  #
             ct_spacing,  #
             function,  #
         ),  #
@@ -166,18 +180,11 @@ def apply_filter_ct(  #
 
 
 @dadg_updater(names_returned=["ct_volumes"])
-def apply_truncation(  #
-        *,  #
-        filtered_ct_volume: Float32[torch.Tensor, "p q r"],  #
-        truncation_percent: int  #
+def mipmap_ct(  #
+    *,  #
+    filtered_ct_volume: Float32[torch.Tensor, "p q r"],  #
 ) -> dict[str, Any]:
-    # truncate the volume
-    truncation_fraction = 0.01 * float(truncation_percent)
-    top_bottom_chop = int(round(0.5 * truncation_fraction * float(filtered_ct_volume.size()[0])))
-    ct_volume = filtered_ct_volume[
-        top_bottom_chop:max(top_bottom_chop + 1, filtered_ct_volume.size()[0] - top_bottom_chop)]
-    # mipmap the volume
-    ct_volumes = [ct_volume]
+    ct_volumes = [filtered_ct_volume]
     level: int = 1
     while torch.tensor(ct_volumes[-1].size()).min() > 5:
         ct_volumes.append(volume.downsample_trilinear_antialiased(ct_volumes[0], scale_factor=0.5 ** float(level)))
@@ -199,7 +206,7 @@ def set_xray_target_image(*, xray_path: str, device: torch.device) -> dict[str, 
 
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "xray_sop_instance_uid",
-                              "transformation_gt"])
+    "transformation_gt"])
 def set_xray_target_image_with_no_gt(*, xray_path: str, device: torch.device) -> dict[str, Any]:
     dicom: XrayDICOM = read_dicom(xray_path)
     image_2d_full = dicom["image"].to(device=device, dtype=torch.float32)
@@ -215,16 +222,16 @@ def set_xray_target_image_with_no_gt(*, xray_path: str, device: torch.device) ->
 
 @dadg_updater(names_returned=["source_distance", "image_2d_full", "image_2d_full_spacing", "transformation_gt"])
 def set_synthetic_target_image(  #
-        *,  #
-        ct_path: str,  #
-        ct_spacing: torch.Tensor,  #
-        untruncated_ct_volume: torch.Tensor,  #
-        new_drr_size: torch.Size,  #
-        regenerate_drr: bool,  #
-        save_to_cache: bool,  #
-        cache_directory: str,  #
-        ap_transformation: Transformation,  #
-        target_ap_distance: float  #
+    *,  #
+    ct_path: str,  #
+    ct_spacing: torch.Tensor,  #
+    untruncated_ct_volume: torch.Tensor,  #
+    new_drr_size: torch.Size,  #
+    regenerate_drr: bool,  #
+    save_to_cache: bool,  #
+    cache_directory: str,  #
+    ap_transformation: Transformation,  #
+    target_ap_distance: float  #
 ) -> dict[str, Any]:
     # generate a DRR through the volume
     drr_spec = None
@@ -234,38 +241,38 @@ def set_synthetic_target_image(  #
     if drr_spec is None:
         tr = ap_transformation.with_random_offset_at_distance(target_ap_distance)
         drr_spec = drr.generate_drr_as_target(cache_directory, ct_path, untruncated_ct_volume, ct_spacing,
-                                              save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
+            save_to_cache=save_to_cache, size=new_drr_size, transformation=tr)
 
     image_2d_full_spacing, scene_geometry, image_2d_full, transformation_ground_truth = drr_spec
     del drr_spec
 
     return {"source_distance": scene_geometry.source_distance, "image_2d_full": image_2d_full,
-            "image_2d_full_spacing": image_2d_full_spacing, "transformation_gt": transformation_ground_truth}
+        "image_2d_full_spacing": image_2d_full_spacing, "transformation_gt": transformation_ground_truth}
 
 
 @dadg_updater(names_returned=["image_2d_scale_factor", "fixed_image_spacing"])
 def refresh_image_2d_scale_factor(  #
-        *,  #
-        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
-        downsample_level: int,  #
-        ct_spacing: Float64[torch.Tensor, "3"]  #
+    *,  #
+    image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+    downsample_level: int,  #
+    ct_spacing: Float64[torch.Tensor, "3"]  #
 ) -> dict[str, Any]:
     assert ct_spacing.device == image_2d_full_spacing.device
     downsampled_ct_spacing = ct_spacing * 2.0 ** float(downsample_level)
     image_2d_scale_factor = (image_2d_full_spacing.mean() / downsampled_ct_spacing.mean()).item()
     return {"image_2d_scale_factor": image_2d_scale_factor,
-            "fixed_image_spacing": image_2d_full_spacing / image_2d_scale_factor}
+        "fixed_image_spacing": image_2d_full_spacing / image_2d_scale_factor}
 
 
 @dadg_updater(names_returned=["filtered_image_2d"])
 @jaxtyped(typechecker=typechecker)
 def apply_filter_2d(  #
-        *,  #
-        image_2d_full: Float32[torch.Tensor, "n m"],  #
-        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
-        filter_method: str,  #
-        lowpass_threshold: float,  #
-        highpass_threshold: float,  #
+    *,  #
+    image_2d_full: Float32[torch.Tensor, "n m"],  #
+    image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+    filter_method: str,  #
+    lowpass_threshold: float,  #
+    highpass_threshold: float,  #
 ) -> dict[str, Any]:
     if filter_method == "none":
         return {  #
@@ -292,13 +299,13 @@ def apply_filter_2d(  #
 @dadg_updater(names_returned=["cropped_target", "fixed_image_offset", "translation_offset", "fixed_image_size"])
 @jaxtyped(typechecker=typechecker)
 def refresh_hyperparameter_dependent(  #
-        *,  #
-        filtered_image_2d: Float32[torch.Tensor, "n m"],  #
-        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
-        cropping: Cropping | None,  #
-        target_flipped: bool,  #
-        source_offset: Float64[torch.Tensor, "2"],  #
-        image_2d_scale_factor: float  #
+    *,  #
+    filtered_image_2d: Float32[torch.Tensor, "n m"],  #
+    image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+    cropping: Cropping | None,  #
+    target_flipped: bool,  #
+    source_offset: Float64[torch.Tensor, "2"],  #
+    image_2d_scale_factor: float  #
 ) -> dict[str, Any]:
     device = filtered_image_2d.device
     assert source_offset.device == device
@@ -336,4 +343,4 @@ def refresh_hyperparameter_dependent(  #
     translation_offset = -source_offset
 
     return {"cropped_target": cropped_target, "fixed_image_offset": fixed_image_offset,
-            "translation_offset": translation_offset, "fixed_image_size": cropped_target.size()}
+        "translation_offset": translation_offset, "fixed_image_size": cropped_target.size()}
