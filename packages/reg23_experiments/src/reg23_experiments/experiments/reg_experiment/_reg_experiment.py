@@ -272,7 +272,7 @@ def reg_experiment(  #
             logger.error(f"Failed to get X-ray UID which which to find starting_positions: {xray_uid.description}")
             return None
 
-        p = pathlib.Path(params.starting_positions_dir) / f"{xray_uid}.pt"
+        p = pathlib.Path(params.starting_positions_dir) / f"{xray_uid}_{params.starting_distance:.4f}.pt"
         try:
             starting_positions: torch.Tensor = torch.load(p)
         except FileNotFoundError:

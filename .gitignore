@@ -20,3 +20,4 @@ data/register_plot_data/
 **/.zed/
 experimental_results/
 .env
+justfile.local

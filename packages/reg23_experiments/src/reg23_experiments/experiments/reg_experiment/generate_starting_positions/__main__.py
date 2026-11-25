@@ -3,7 +3,6 @@ import logging
 import pathlib
 import pprint
 
-import pydicom
 import torch
 
 from reg23_experiments.data.save_data.transformations import TransformationSaveManager
@@ -52,7 +51,7 @@ def main(  #
 
     xray_uid: str = read_dicom(xray_path)["uid"]
 
-    output_path = output_dir / f"{xray_uid}.pt"
+    output_path = output_dir / f"{xray_uid}_{distance:.4f}.pt"
 
     ct_series_uid: str | Error = acquire_ct_series_uid(ct_path)
     if isinstance(ct_series_uid, Error):

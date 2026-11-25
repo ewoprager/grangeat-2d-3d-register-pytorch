@@ -21,6 +21,10 @@ runapp platform="cuda":
 devapp platform="cuda":
     uv run --extra {{ platform }} --extra dev -m reg23_app
 
-gen_starting_positions ctpath xraypath count=50:
-    uv run --extra dev -m reg23_experiments.experiments.reg_experiment.generate_starting_positions \
-        --ct-path "{{ ctpath }}"
+gen_starting_positions ctpath xraypath distance count="50":
+    uv run --extra cpu --extra dev -m reg23_experiments.experiments.reg_experiment.generate_starting_positions \
+        --ct-path "{{ ctpath }}" \
+        --xray-path "{{ xraypath }}" \
+        --distance {{ distance }} \
+        --count {{ count }} \
+        --output-dir "data/starting_positions"

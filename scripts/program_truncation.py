@@ -8,7 +8,7 @@ import torch
 import yaml
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.experiments.experiment_set_config import Cartesian, Constant, ExperimentSetConfig, Zipped
+from reg23_experiments.experiments.experiment_set_config import Cartesian, Constant, ExperimentSetConfig
 from reg23_experiments.experiments.helpers import instance_output_directory
 from reg23_experiments.experiments.reg_experiment import ExperimentParametrisation, ImageSpecificConfigurations, \
     init_dadg, reg_experiment
@@ -39,14 +39,14 @@ def acquire_ct_series_uid(ct_path: pathlib.Path) -> str | Error:
 
 
 def main(  #
-        *,  #
-        cache_directory: str,  #
-        ct_path: str,  #
-        xray_path: str | pathlib.Path | None,  #
-        data_output_dir: str | pathlib.Path,  #
-        show: bool = False,  #
-        fill_gaps: str | None = None,  #
-        name: str | None = None,  #
+    *,  #
+    cache_directory: str,  #
+    ct_path: str,  #
+    xray_path: str | pathlib.Path | None,  #
+    data_output_dir: str | pathlib.Path,  #
+    show: bool = False,  #
+    fill_gaps: str | None = None,  #
+    name: str | None = None,  #
 ):
     torch.autograd.set_detect_anomaly(True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -74,13 +74,13 @@ def main(  #
         # - Hardcoded script configuration -
         # ----------------------------------
         config = ExperimentSetConfig({  #
-            "grangeat": Constant(True),  #
+            "grangeat": Constant(False),  #
             # ----- images
             "ct_path": Constant(ct_path),  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
-            "downsample_level": Constant(1),  #
-            "truncation_percent": Cartesian([0, 50, 80]),  #
+            "downsample_level": Constant(2),  #
+            "truncation_percent": Cartesian([0, 80]),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
@@ -90,12 +90,12 @@ def main(  #
             "iterations_per_weight_update": Constant(1000),  #
             "sim_metric": Constant("zncc"),  #
             # ----- frequency domain filtering
-            "filter_method": Zipped(["gradient_like", "highpass", "highpass", "highpass"]),  #
+            "filter_method": Constant("none"),  # Zipped(["gradient_like", "highpass", "highpass", "highpass"]),  #
             "lowpass_threshold": Constant(1.0),  #
-            "highpass_threshold": Zipped([1.0, 1.0, 1.0 / 10.0, 1.0 / 50.0]),  #
+            "highpass_threshold": Constant(1.0),  # Zipped([1.0, 1.0, 1.0 / 10.0, 1.0 / 50.0]),  #
             # ----- registration
             "starting_distance": Constant(5.0),  #
-            "sample_count_per_distance": Constant(20),  #
+            "sample_count_per_distance": Constant(1),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
             "particle_initialisation_spread": Constant(2.5),  # Constant(2.5)
@@ -108,7 +108,7 @@ def main(  #
             # "level_090",  #
             "up_000",  #
             # "up_090",  #
-            "down_000",  #
+            # "down_000",  #
             # "down_090",  #
         ]
 
@@ -141,19 +141,29 @@ def main(  #
         variables = yaml.safe_load(variables_path.read_text())
         assert isinstance(variables, dict)
         config = ExperimentSetConfig.deserialize(variables)
+        assert "ct_series_uid" in config.values
+        o = config.values["ct_series_uid"]
+        assert isinstance(o, Constant)
+        ct_series_uid: str = o.value
 
         logger.info(f"Filling gaps in experiment output directory '{str(instance_output_dir)}'.")
 
     # -----
     # Check that all X-rays exist, have ground truth transformations available, and have reg configs available
     if isinstance(c := config.values["xray_path"], Constant):
-        if isinstance(err := image_specific_config.check_xray_path(c.value), Error):
+        if isinstance(err := image_specific_config.check_xray_path(  #
+                ct_series_uid=ct_series_uid,  #
+                xray_path=c.value,  #
+        ), Error):
             logger.error(f"Invalid X-ray path '{c.value}': {err.description}")
             return
     else:
         assert isinstance(l := config.values["xray_path"], Cartesian)
         for v in l.values:
-            if isinstance(err := image_specific_config.check_xray_path(v), Error):
+            if isinstance(err := image_specific_config.check_xray_path(  #
+                    ct_series_uid=ct_series_uid,  #
+                    xray_path=v,  #
+            ), Error):
                 logger.error(f"Invalid X-ray path '{v}': {err.description}")
                 return
 
@@ -205,27 +215,27 @@ if __name__ == "__main__":
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
     parser.add_argument("-c", "--cache-directory", type=str, default="cache",
-                        help="Set the directory where data that is expensive to calculate will be saved. The default "
-                             "is 'cache'.")
+        help="Set the directory where data that is expensive to calculate will be saved. The default "
+             "is 'cache'.")
     parser.add_argument("-p", "--ct-path", type=str, required=True,
-                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
-                             "process. If not provided, some simple synthetic data will be used instead - note that "
-                             "in this case, data will not be saved to the cache.")
+        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
+             "process. If not provided, some simple synthetic data will be used instead - note that "
+             "in this case, data will not be saved to the cache.")
     parser.add_argument("-x", "--xray-path", type=str, default=None,
-                        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
-                             "this is provided, the X-ray will by used instead of any DRR.")
+        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
+             "this is provided, the X-ray will by used instead of any DRR.")
     parser.add_argument("-d", "--xray-dir", type=str, default=None,
-                        help="Give a path to directory of DICOM X-ray images to register the CT image to. If "
-                             "this is provided, the X-rays will by used instead of any DRR.")
+        help="Give a path to directory of DICOM X-ray images to register the CT image to. If "
+             "this is provided, the X-rays will by used instead of any DRR.")
     parser.add_argument("-n", "--notify", action="store_true", help="Send notification on completion.")
     parser.add_argument("-s", "--show", action="store_true", help="Show images at the G.T. alignment.")
     parser.add_argument("-o", "--data-output-dir", type=str, default="experimental_results/program_truncation",
-                        help="Directory in which to save output data.")
+        help="Directory in which to save output data.")
     parser.add_argument("-f", "--fill-gaps", type=str, default=None,
-                        help="Give a path to an existing results directory and run all experiments specified by "
-                             "variables.txt whose results are not present.")
+        help="Give a path to an existing results directory and run all experiments specified by "
+             "variables.txt whose results are not present.")
     parser.add_argument("--name", type=str, default=None,
-                        help="Name to give the experiment; this will just be used in the name of the output directory.")
+        help="Name to give the experiment; this will just be used in the name of the output directory.")
     args = parser.parse_args()
 
     if args.xray_path is None:
@@ -252,7 +262,7 @@ if __name__ == "__main__":
 
     try:
         main(cache_directory=args.cache_directory, ct_path=args.ct_path, xray_path=xray,
-             data_output_dir=args.data_output_dir, show=args.show, fill_gaps=args.fill_gaps, name=args.name)
+            data_output_dir=args.data_output_dir, show=args.show, fill_gaps=args.fill_gaps, name=args.name)
         if args.notify:
             pushover.send_notification(__file__, "Script finished.")
     except Exception as e:
