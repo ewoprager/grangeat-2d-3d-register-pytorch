@@ -21,16 +21,16 @@ logger = logging.getLogger(__name__)
 
 @dadg_updater(names_returned=["scaling_image", "fixed_image"])
 def refresh_scaling_image(  #
-        *,  #
-        current_transformation: Transformation,  #
-        ct_volumes: list[torch.Tensor],  #
-        ct_spacing: Float64[torch.Tensor, "3"],  #
-        translation_offset: Float64[torch.Tensor, "2"],  #
-        source_distance: float,  #
-        fixed_image_spacing: Float64[torch.Tensor, "2"],  #
-        fixed_image_size: torch.Size,  #
-        fixed_image_offset: Float64[torch.Tensor, "2"],  #
-        cropped_target: Float32[torch.Tensor, "n m"],  #
+    *,  #
+    current_transformation: Transformation,  #
+    ct_volumes: list[torch.Tensor],  #
+    ct_spacing: Float64[torch.Tensor, "3"],  #
+    translation_offset: Float64[torch.Tensor, "2"],  #
+    source_distance: float,  #
+    fixed_image_spacing: Float64[torch.Tensor, "2"],  #
+    fixed_image_size: torch.Size,  #
+    fixed_image_offset: Float64[torch.Tensor, "2"],  #
+    cropped_target: Float32[torch.Tensor, "n m"],  #
 ) -> dict[str, Any]:
     h_inv: torch.Tensor = current_transformation.with_translation_offset(translation_offset).inverse().get_h(
         device=ct_volumes[0].device)
@@ -53,11 +53,11 @@ def refresh_scaling_image(  #
 
 
 def refresh_weight_image(  #
-        *,  #
-        apply_weighting: bool,  #
-        weight_alpha: float,  #
-        scaling_image: Float32[torch.Tensor, "n m"],  #
-        weight_epsilon: float = 1e-5,  #
+    *,  #
+    apply_weighting: bool,  #
+    weight_alpha: float,  #
+    scaling_image: Float32[torch.Tensor, "n m"],  #
+    weight_epsilon: float = 1e-5,  #
 ) -> dict[str, Any]:
     if apply_weighting:
         if weight_alpha < 1e-2:
@@ -75,16 +75,16 @@ def refresh_weight_image(  #
 
 @dadg_updater(names_returned=["moving_image"])
 def project_drr(  #
-        *,  #
-        ct_volumes: list[torch.Tensor],  #
-        ct_spacing: Float64[torch.Tensor, "3"],  #
-        current_transformation: Transformation,  #
-        fixed_image_size: torch.Size,  #
-        source_distance: float,  #
-        fixed_image_spacing: Float64[torch.Tensor, "2"],  #
-        downsample_level: int,  #
-        translation_offset: Float64[torch.Tensor, "2"],  #
-        fixed_image_offset: Float64[torch.Tensor, "2"]  #
+    *,  #
+    ct_volumes: list[torch.Tensor],  #
+    ct_spacing: Float64[torch.Tensor, "3"],  #
+    current_transformation: Transformation,  #
+    fixed_image_size: torch.Size,  #
+    source_distance: float,  #
+    fixed_image_spacing: Float64[torch.Tensor, "2"],  #
+    downsample_level: int,  #
+    translation_offset: Float64[torch.Tensor, "2"],  #
+    fixed_image_offset: Float64[torch.Tensor, "2"]  #
 ) -> dict[str, Any]:
     return {"moving_image": geometry.generate_drr(  #
         ct_volumes[downsample_level],  #
@@ -98,11 +98,11 @@ def project_drr(  #
 
 @dadg_updater(names_returned=["of_value"])
 def apply_sim_metric(  #
-        *,  #
-        sim_metric: str,  #
-        moving_image: Float32[torch.Tensor, "n m"],  #
-        fixed_image: Float32[torch.Tensor, "n m"],  #
-        weight_image: Float32[torch.Tensor, "n m"] | None,  #
+    *,  #
+    sim_metric: str,  #
+    moving_image: Float32[torch.Tensor, "n m"],  #
+    fixed_image: Float32[torch.Tensor, "n m"],  #
+    weight_image: Float32[torch.Tensor, "n m"] | None,  #
 ) -> dict[str, Any]:
     return {  #
         "of_value": -string_to_sim_met(sim_metric)(moving_image, fixed_image, weights=weight_image),  #
@@ -111,23 +111,22 @@ def apply_sim_metric(  #
 
 @dadg_updater(names_returned=["projected_fiducials"])
 def project_fiducials(  #
-        *,  #
-        current_transformation: Transformation,  #
-        untruncated_ct_volume: Float32[torch.Tensor, "p q r"],  #
-        ct_spacing: Float64[torch.Tensor, "3"],  #
-        image_2d_full: Float32[torch.Tensor, "n m"],  #
-        fixed_image_offset: Float64[torch.Tensor, "2"],  #
-        translation_offset: Float64[torch.Tensor, "2"],  #
-        image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
-        ct_fiducial_points: NamedPoints3D,  #
-        source_distance: float,  #
+    *,  #
+    current_transformation: Transformation,  #
+    untruncated_ct_volume: Float32[torch.Tensor, "p q r"],  #
+    ct_spacing: Float64[torch.Tensor, "3"],  #
+    image_2d_full: Float32[torch.Tensor, "n m"],  #
+    fixed_image_offset: Float64[torch.Tensor, "2"],  #
+    translation_offset: Float64[torch.Tensor, "2"],  #
+    image_2d_full_spacing: Float64[torch.Tensor, "2"],  #
+    ct_fiducial_points: NamedPoints3D,  #
+    source_distance: float,  #
 ) -> dict[str, Any]:
     device = torch.device("cpu")
     transformation = current_transformation.to(device=device).with_translation_offset(translation_offset)
-    input_vectors = ct_fiducial_points.data.cpu() - 0.5 * ct_spacing.cpu() * torch.tensor(untruncated_ct_volume.size(),
-                                                                                          dtype=torch.float64).flip(
-        dims=(0,))
+    input_vectors = ct_fiducial_points.data.cpu() - 0.5 * ct_spacing.cpu() * (
+            torch.tensor(untruncated_ct_volume.size(), dtype=torch.float64).flip(dims=(0,)) - 1.0)
     projected = geometry.project_vectors(input_vectors, source_distance=source_distance, transformation=transformation)
     size_tensor = torch.tensor(image_2d_full.size(), dtype=torch.float64).flip(dims=(0,))
-    output_points_2d = projected + 0.5 * image_2d_full_spacing.cpu() * size_tensor
+    output_points_2d = projected + 0.5 * image_2d_full_spacing.cpu() * (size_tensor - 1.0)
     return {"projected_fiducials": NamedPoints2D(names=ct_fiducial_points.names, data=output_points_2d)}

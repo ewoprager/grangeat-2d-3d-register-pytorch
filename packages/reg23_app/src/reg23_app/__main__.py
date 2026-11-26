@@ -67,6 +67,9 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     if isinstance(err := data_manager().add_updater("apply_truncation", drr_reg_updaters.apply_truncation), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
+    if isinstance(err := data_manager().add_updater("mipmap_ct", drr_reg_updaters.mipmap_ct), Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
     # -- Grangeat --
     if isinstance(err := data_manager().add_updater("refresh_vif", grangeat_updaters.refresh_vif), Error):
         logger.error(f"Error adding updater: {err.description}")

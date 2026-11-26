@@ -62,7 +62,8 @@ def main(  #
     if isinstance(volume_image, Error):
         logger.error(f"Failed to load CT volume from path '{ct_path}': {volume_image.description}")
         return 1
-    volume_diag = torch.tensor(volume_image.GetSize(), dtype=torch.float64) * torch.tensor(volume_image.GetSpacing())
+    volume_diag = (torch.tensor(volume_image.GetSize(), dtype=torch.float64) - 1.0) * torch.tensor(
+        volume_image.GetSpacing())
     logger.info("Volume diagonal = ({:.3f}, {:.3f}, {:.3f})".format(*volume_diag.tolist()))
 
     ct_layer_points: torch.Tensor | None = ct_electrode_save_manager.get(ct_series_uid)
@@ -94,7 +95,7 @@ def main(  #
             logger.warning(f"No electrodes found for X-ray UID '{uid}'.")
             continue
         # get the length of the image diagonal to determine the coordinate system offset
-        xray_diag = image["spacing"] * torch.tensor(image["image"].size(), dtype=torch.float64).flip(dims=(0,))
+        xray_diag = image["spacing"] * (torch.tensor(image["image"].size(), dtype=torch.float64).flip(dims=(0,)) - 1.0)
         tensor = xray_layer_points - 0.5 * xray_diag.unsqueeze(0)
 
         tr: Transformation | Error = transformation_save_manager.get_transformation(  #
