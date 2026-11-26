@@ -5,14 +5,13 @@ from collections.abc import Sequence
 import SimpleITK as sitk
 import torch
 
+from reg23_experiments.data import sinogram
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.experiments.experiment_set_config import Cartesian, Constant, ExperimentSetConfig
 from reg23_experiments.io.sitk import load_ct_series
 from reg23_experiments.ops.ct import convert_ct_to_mu_sitk
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph, dadg_updater, data_manager
-
-from ._dadg_updaters import batched
-from ._dadg_updaters import drr_reg as updaters
+from ._dadg_updaters import batched, drr_reg as updaters, grangeat
 from ._setup import ImageSpecificConfigurations
 
 __all__ = ["init_dadg"]
@@ -21,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 def load_untruncated_ct(  #
-        ct_path: pathlib.Path,  #
-        ct_series_uid: str,  #
-        device: torch.device,  #
-        ct_permutation: Sequence[int] | None = None  #
+    ct_path: pathlib.Path,  #
+    ct_series_uid: str,  #
+    device: torch.device,  #
+    ct_permutation: Sequence[int] | None = None  #
 ) -> tuple[torch.Tensor, torch.Tensor] | Error:
     volume: sitk.Image | Error = load_ct_series(ct_path, ct_series_uid)
     if isinstance(volume, Error):
@@ -46,12 +45,12 @@ def load_untruncated_ct(  #
 
 
 def init_dadg(  #
-        *,  #
-        config: ExperimentSetConfig,  #
-        image_specific_config: ImageSpecificConfigurations,  #
-        cache_directory: str,  #
-        device: torch.device,  #
-        dadg: DirectedAcyclicDataGraph | None = None,  #
+    *,  #
+    config: ExperimentSetConfig,  #
+    image_specific_config: ImageSpecificConfigurations,  #
+    cache_directory: str,  #
+    device: torch.device,  #
+    dadg: DirectedAcyclicDataGraph | None = None,  #
 ) -> Error | None:
     if dadg is None:
         dadg = data_manager()
@@ -70,6 +69,7 @@ def init_dadg(  #
             device=device,  #
             untruncated_ct_volume=untruncated_ct_volume,  #
             ct_spacing=ct_spacing,  #
+            ct_series_uid=uid_config.value,  #
             cache_directory=cache_directory,  #
             save_to_cache=False,  #
             source_offset=torch.zeros(2, dtype=torch.float64, device=device),  #
@@ -79,6 +79,8 @@ def init_dadg(  #
             target_ap_distance=5.0,  #
             saved_transformations=image_specific_config.saved_transformations,  #
             saved_xray_reg_configs=image_specific_config.saved_xray_reg_configs,  #
+            fixed_sinogram_size=None,  #
+            sinogram_type=sinogram.SinogramClassic,  #
     ), Error):
         return Error(f"Error setting initial data values: {err.description}")
 
@@ -99,7 +101,7 @@ def init_dadg(  #
     else:
         if isinstance(c := config.values["xray_path"], Cartesian) and len(c.values) > 1 and any(  #
                 e is None  #
-                for e in c.values  #
+                        for e in c.values  #
         ):
             raise ValueError(f"Cannot run experiments over DRRs and X-ray images.")
 
@@ -113,19 +115,35 @@ def init_dadg(  #
 
     # -----
     # Add updaters to the DADG
+    if True:
+        # - Grangeat
+        if isinstance(err := dadg.add_updater("refresh_vif", grangeat.refresh_vif), Error):
+            return Error(f"Error adding updater: {err.description}")
+        if isinstance(err := dadg.add_updater("refresh_sinogram2d_grid", grangeat.refresh_sinogram2d_grid), Error):
+            return Error(f"Error adding updater: {err.description}")
+        if isinstance(err := dadg.add_updater("refresh_sinogram2d", grangeat.refresh_sinogram2d), Error):
+            return Error(f"Error adding updater: {err.description}")
+        if isinstance(err := dadg.add_updater("resample_for_moving_image_grangeat",
+                batched.resample_for_moving_image_grangeat), Error):
+            return Error(f"Error adding updater: {err.description}")
+        if isinstance(err := dadg.add_updater("apply_sim_metric_grangeat", batched.apply_sim_metric_grangeat), Error):
+            return Error(f"Error adding updater: {err.description}")  # --
     if isinstance(err := dadg.add_updater("apply_truncation", updaters.apply_truncation), Error):
+        return Error(f"Error adding updater: {err.description}")
+    if isinstance(err := dadg.add_updater("apply_filter_ct", updaters.apply_filter_ct), Error):
+        return Error(f"Error adding updater: {err.description}")
+    if isinstance(err := dadg.add_updater("mipmap_ct", updaters.mipmap_ct), Error):
         return Error(f"Error adding updater: {err.description}")
     if isinstance(err := dadg.add_updater(  #
             "refresh_image_2d_scale_factor", updaters.refresh_image_2d_scale_factor), Error):
+        return Error(f"Error adding updater: {err.description}")
+    if isinstance(err := dadg.add_updater("apply_filter_2d", updaters.apply_filter_2d), Error):
         return Error(f"Error adding updater: {err.description}")
     if isinstance(
             err := dadg.add_updater("refresh_hyperparameter_dependent", updaters.refresh_hyperparameter_dependent),
             Error):
         return Error(f"Error adding updater: {err.description}")
     if False:
-        if isinstance(err := dadg.add_updater("refresh_mask_transformation_dependent",
-                                              updaters.refresh_mask_transformation_dependent), Error):
-            return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("project_drr", updaters.project_drr), Error):
             return Error(f"Error adding updater: {err.description}")
     if isinstance(err := dadg.add_updater("load_base_cropping", updaters.load_base_cropping), Error):
@@ -135,17 +153,14 @@ def init_dadg(  #
     # Optional
     if False:
         if isinstance(err := dadg.add_updater("truncation_from_h_valid", truncation_percent_for_desired_h_valid),
-                      Error):
+                Error):
             return Error(f"Error adding updater: {err.description}")
     if True:
         if isinstance(err := dadg.add_updater("project_moving_images", batched.project_moving_images), Error):
             return Error(f"Error adding updater: {err.description}")
-        if isinstance(err := dadg.add_updater("apply_filter", batched.apply_filter), Error):
-            return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("apply_sim_metric", batched.apply_sim_metric), Error):
             return Error(f"Error adding updater: {err.description}")
         if isinstance(err := dadg.add_updater("refresh_scaling_images",
-                                              dadg_updater(names_returned=["scaling_images", "fixed_images"])(
-                                                  batched.refresh_scaling_images)), Error):
+                dadg_updater(names_returned=["scaling_images", "fixed_image"])(batched.refresh_scaling_images)), Error):
             return Error(f"Error adding updater: {err.description}")
     return None

@@ -155,33 +155,32 @@ newgrp docker
 The main script is an interface based on `napari`:
 
 ```bash
-uv run --extra <platform> scripts/app.py
+uv run --extra <platform> --package reg23_app -m reg23_app
 ```
 
-Most of the implementation of the app is contained in the `py-lib` library in
-the [app](py-lib/src/reg23_experiments/app) directory.
+Most of the implementation of the app is contained here: [reg23_app](packages/reg23_app).
 
 The basic layout of the app is as follows:
 
 - The state of the app is stored in a single `traitlets.HasTraits` struct called `AppState`, implemented
-  in [state.py](py-lib/src/reg23_experiments/app/state.py).
+  in [state.py](packages/reg23_app/src/reg23_app/state.py).
     - Within this is an instance of a further `traitlets.HasTraits` struct called `Parameters`, implemented
-      in [parameters.py](py-lib/src/reg23_experiments/experiments/parameters.py).
+      in [parameters.py](packages/reg23_experiments/src/reg23_experiments/data/parameters.py).
     - This `Parameters` struct contains all experimental/registration configuration for the app.
     - A serialised copy of this data is maintained eagerly in a cache file (at `platformdirs.user_cache_dir`).
     - When the app is started, it deserializes this value to restore the `Parameters` config.
     - The parameters can be configured in the interface within the `Params` tab on the right.
         - This widget is implemented
-          in [parameters_widget.py](py-lib/src/reg23_experiments/app/gui/widgets/parameters_widget.py).
+          in [parameters_widget.py](packages/reg23_app/src/reg23_app/gui/widgets/parameters_widget.py).
         - The parameter configuration widget within is auto-generated via reflection from the `Parameters` class. This
-          is implemented in [hastraits_widget.py](py-lib/src/reg23_experiments/app/gui/widgets/hastraits_widget.py).
+          is implemented in [hastraits_widget.py](packages/reg23_app/src/reg23_app/gui/widgets/hastraits_widget.py).
 - Additionally within the *'Params'* tab are buttons to open X-ray images and CT volumes.
     - Only one CT volume may be loaded at a time; opening a CT volume while one is already loaded will replace the
       loaded volume.
     - Multiple X-ray images may be loaded simultaneously; opening an X-ray image will not affect previously-loaded
       images.
 - The image data and derived images may be shown using the *'Images'* tab on the right.
-    - This widget is implemented is [images_widget.py](py-lib/src/reg23_experiments/app/gui/widgets/images_widget.py).
+    - This widget is implemented is [images_widget.py](packages/reg23_app/src/reg23_app/gui/widgets/images_widget.py).
     - The interface currently provides no way of rendering a CT volume other than as a DRR. As X-ray projection
       geometry is required to parametrise the projection of a DRR, DRRs can only be viewed with a loaded X-ray, and
       are available one per X-ray.
@@ -190,11 +189,11 @@ The basic layout of the app is as follows:
     - Once added the layers will appear in the layers interface on the left, and the rendering parameters can be
       configured there.
     - The behaviours of the images in these layers are implemented in objects that are stored as 'plugins' to the
-      `napari` layer objects. Their implementations are in the [layers](py-lib/src/reg23_experiments/app/gui/layers)
+      `napari` layer objects. Their implementations are in the [layers](packages/reg23_app/src/reg23_app/gui/layers)
       directory.
 - Registration of a loaded CT volume to a loaded X-ray image may be done via the *'Register'* tab on the right.
     - This widget is implemented
-      is [register_widget.py](py-lib/src/reg23_experiments/app/gui/widgets/register_widget.py).
+      is [register_widget.py](packages/reg23_app/src/reg23_app/gui/widgets/register_widget.py).
     - The transformation parameters are shown in two forms:
         - T: a 3-component rotation with units of Radians, and a 3-component translation with units of mm.
         - x: a 6-component vector comprised of scaled versions of the 6 values above. The scaling coefficients are
@@ -238,7 +237,7 @@ The basic layout of the app is as follows:
 ### How are the images processed? Why does it lag when I show the moving image, but not when I open the CT file?
 
 All image processing is done within a directed acyclic graph framework, which is implemented in
-the [data_manager](py-lib/src/reg23_experiments/ops/data_manager) directory.
+the [data_manager](packages/reg23_experiments/src/reg23_experiments/ops/data_manager) directory.
 
 The main ideas are as follows:
 
@@ -258,7 +257,8 @@ The main ideas are as follows:
       metadata of the X-ray DICOM, etc...
 - As you can see, many mappings may be expensive to compute, so the number of times they must be run is minimised by
   only evaluating nodes **lazily**.
-- When using the [data_manager](py-lib/src/reg23_experiments/ops/data_manager) in a script that doesn't contain an
+- When using the [data_manager](packages/reg23_experiments/src/reg23_experiments/ops/data_manager) in a script that
+  doesn't contain an
   interface, all nodes can be evaluated lazily.
 - When rendering an interface, the user will want to see images update live as parameters change, so such nodes are set
   to evaluate eagerly in this case.
@@ -269,9 +269,9 @@ The main ideas are as follows:
   metadata, loading of the whole CT volume, and then projection of the moving image through the CT volume, which will
   cause a small amount of lag.
 - Mappings are created as functions decorated with `dadg_updater`, which can be found in [data_manager/__init
-  __.py](py-lib/src/reg23_experiments/ops/data_manager/__init__.py). The mapping implementations themselves can be found
-  in [updaters.py](py-lib/src/reg23_experiments/experiments/updaters.py)
-  and [multi_xray_truncation_updaters.py](py-lib/src/reg23_experiments/experiments/multi_xray_truncation_updaters.py).
+  __.py](packages/reg23_experiments/src/reg23_experiments/ops/data_manager/__init__.py). The mapping implementations
+  themselves can be found
+  in [_dadg_updaters](packages/reg23_experiments/src/reg23_experiments/experiments/reg_experiment/_dadg_updaters).
 
 ## Other scripts
 

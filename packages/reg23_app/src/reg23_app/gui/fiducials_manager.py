@@ -3,9 +3,12 @@ import logging
 import numpy as np
 import scipy as sp
 import torch
+import zarr
+from jaxtyping import Int64
 
 from reg23_app.state import AppState
-from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D
+from reg23_experiments.data.save_data.ct_electrodes import CTElectrodeSaveManager
+from reg23_experiments.data.segmentation import NamedPoints2D, NamedPoints3D, OrderedPoints3D
 from reg23_experiments.data.structs import Error, Transformation
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 from reg23_experiments.ops.fiducials import refine_disk_fiducial_2d, refine_spherical_fiducial_3d
@@ -24,13 +27,23 @@ class FiducialsManager:
     Reads from and write to the state and DADG only
     """
 
-    def __init__(self, state: AppState, dadg: DirectedAcyclicDataGraph):
+    def __init__(  #
+        self,  #
+        *,  #
+        state: AppState,  #
+        dadg: DirectedAcyclicDataGraph,  #
+        ct_electrode_save_manager: CTElectrodeSaveManager,  #
+    ):
         self._state = state
         self._dadg = dadg
+        self._ct_electrode_save_manager = ct_electrode_save_manager
 
         self._state.observe(self._button_fiducial_register, names=["button_fiducial_register"])
+        self._state.observe(self._button_fiducial_register3d, names=["button_fiducial_register3d"])
         self._state.observe(self._button_ct_fiducial_refine, names=["button_refine_ct_fiducials"])
+        self._state.observe(self._button_micro_fiducial_refine, names=["button_refine_micro_fiducials"])
         self._state.observe(self._button_xray_fiducial_refine, names=["button_refine_xray_fiducials"])
+        self._state.observe(self._button_save_transformed_electrodes, names=["button_save_transformed_electrodes"])
 
     def _button_fiducial_register(self, change) -> None:
         if not change.new:
@@ -43,22 +56,11 @@ class FiducialsManager:
 
         dadg_key_prefix = self._state.register_fiducial_xray_choice + "__"
 
-        image_2d_full: torch.Tensor | Error = self._dadg.get(dadg_key_prefix + "image_2d_full")
-        if isinstance(image_2d_full, Error):
-            logger.error(f"Could not find 'image_2d_full' for X-ray '{self._state.register_fiducial_xray_choice}': "
-                         f"{image_2d_full.description}")
-            return
-
         fixed_image_spacing: torch.Tensor | Error = self._dadg.get(dadg_key_prefix + "fixed_image_spacing")
         if isinstance(fixed_image_spacing, Error):
             logger.error(
                 f"Could not find 'fixed_image_spacing' for X-ray '{self._state.register_fiducial_xray_choice}': "
                 f"{fixed_image_spacing.description}")
-            return
-
-        ct_volume: torch.Tensor | Error = self._dadg.get("untruncated_ct_volume")
-        if isinstance(ct_volume, Error):
-            logger.error(f"Could not find 'ct_volume': {ct_volume.description}")
             return
 
         ct_spacing: torch.Tensor | Error = self._dadg.get("ct_spacing")
@@ -83,7 +85,7 @@ class FiducialsManager:
         # ToDo: Speed this up
         def residuals(pose: np.ndarray) -> np.ndarray:
             self._dadg.set(dadg_key_prefix + "current_transformation",
-                           mapping_parameters_to_transformation(torch.tensor(pose, device=device)))
+                mapping_parameters_to_transformation(torch.tensor(pose, device=device)))
             projected_points: NamedPoints2D | Error = self._dadg.get(dadg_key_prefix + "projected_fiducials")
             if isinstance(projected_points, Error):
                 raise Exception(
@@ -106,7 +108,60 @@ class FiducialsManager:
         if result.success:
             logger.info(f"Optimisation succeeded; x = {result.x}, loss = {result.fun}")
             self._dadg.set(dadg_key_prefix + "current_transformation",
-                           mapping_parameters_to_transformation(torch.tensor(result.x, device=image_2d_full.device)))
+                mapping_parameters_to_transformation(torch.tensor(result.x, device=fixed_image_spacing.device)))
+        else:
+            logger.info(f"Optimisation failed; status = {result.status}; {result.message}")
+
+    def _button_fiducial_register3d(self, change) -> None:
+        if not change.new:
+            return
+        self._state.button_fiducial_register3d = False
+
+        ct_spacing: torch.Tensor | Error = self._dadg.get("ct_spacing")
+        if isinstance(ct_spacing, Error):
+            logger.error(f"Could not find 'ct_spacing': {ct_spacing.description}")
+            return
+
+        ct_fiducial_points: NamedPoints3D | Error = self._dadg.get("ct_fiducial_points")
+        if isinstance(ct_fiducial_points, Error):
+            logger.warning(f"Can't find fiducial points for X-ray '{self._state.register_fiducial_xray_choice}': "
+                           f"{ct_fiducial_points.description}")
+            return
+
+        if len(ct_fiducial_points.names) < 3:
+            logger.warning(f"Cannot register using fiducials with fewer than 3 markers.")
+            return
+
+        device: torch.device | Error = self._dadg.get("device")
+        if isinstance(device, Error):
+            raise Exception("Failed to get device from DADG")
+
+        # ToDo: Speed this up
+        def residuals(pose: np.ndarray) -> np.ndarray:
+            self._dadg.set("micro_ct_transformation",
+                mapping_parameters_to_transformation(torch.tensor(pose, device=device)))
+            transformed_points: NamedPoints3D | Error = self._dadg.get("transformed_micro_fiducials")
+            if isinstance(transformed_points, Error):
+                raise Exception(
+                    f"Failed to get transformed_points fiducials during optimisation: {transformed_points.description}")
+            transformed_name_to_index = {name: index for index, name in enumerate(transformed_points.names)}
+            ordered = transformed_points.data[
+                torch.tensor([transformed_name_to_index[name] for name in ct_fiducial_points.names])]
+            return (ordered - ct_fiducial_points.data).flatten().numpy()
+
+        current_transformation: Transformation | Error = self._dadg.get("micro_ct_transformation")
+        if isinstance(current_transformation, Error):
+            logger.warning(f"Found no current transformation: {current_transformation.description}")
+            initial_pose = np.zeros(6)
+        else:
+            initial_pose = mapping_transformation_to_parameters(current_transformation).cpu().numpy()
+
+        result: sp.optimize.OptimizeResult = sp.optimize.least_squares(residuals, initial_pose, method="lm")
+
+        if result.success:
+            logger.info(f"Optimisation succeeded; x = {result.x}, loss = {result.fun}")
+            self._dadg.set("micro_ct_transformation",
+                mapping_parameters_to_transformation(torch.tensor(result.x, device=ct_spacing.device)))
         else:
             logger.info(f"Optimisation failed; status = {result.status}; {result.message}")
 
@@ -115,35 +170,85 @@ class FiducialsManager:
             return
         self._state.button_refine_ct_fiducials = False
 
-        logger.info(f"Refining fiducial segmentation for CT")
+        self._ct_fiducial_refine(  #
+            image_dadg_key="untruncated_ct_volume",  #
+            spacing_dadg_key="ct_spacing",  #
+            points_dadg_key="ct_fiducial_points",  #
+        )
 
-        untruncated_ct_volume: torch.Tensor | Error = self._dadg.get("untruncated_ct_volume")
-        if isinstance(untruncated_ct_volume, Error):
-            logger.error(
-                f"Couldn't get 'untruncated_ct_volume' for fiducial refinement: {untruncated_ct_volume.description}")
+    def _button_micro_fiducial_refine(self, change) -> None:
+        if not change.new:
             return
+        self._state.button_refine_micro_fiducials = False
 
-        ct_spacing: torch.Tensor | Error = self._dadg.get("ct_spacing")
-        if isinstance(ct_spacing, Error):
-            logger.error(f"Couldn't get 'ct_spacing' for fiducial refinement: {ct_spacing.description}")
+        self._ct_fiducial_refine(  #
+            image_dadg_key="micro_ct_array",  #
+            spacing_dadg_key="micro_ct_spacing",  #
+            points_dadg_key="micro_fiducial_points",  #
+        )
+
+    def _ct_fiducial_refine(  #
+        self,  #
+        *,  #
+        image_dadg_key: str,  #
+        spacing_dadg_key: str,  #
+        points_dadg_key: str,  #
+    ) -> None:
+        logger.info(f"Refining fiducial segmentation for CT '{image_dadg_key}'")
+
+        chunk_size: float = 20.0  # [mm]
+
+        volume: torch.Tensor | zarr.Array | Error = self._dadg.get(image_dadg_key)
+        if isinstance(volume, Error):
+            logger.error(f"Couldn't get '{image_dadg_key}' for fiducial refinement: {volume.description}")
             return
+        spacing: torch.Tensor | Error = self._dadg.get(spacing_dadg_key)
+        if isinstance(spacing, Error):
+            logger.error(f"Couldn't get '{spacing_dadg_key}' for fiducial refinement: {spacing.description}")
+            return
+        spacing: torch.Tensor = spacing.cpu()
 
-        fiducial_points: NamedPoints3D | Error = self._dadg.get("ct_fiducial_points")
+        fiducial_points: NamedPoints3D | Error = self._dadg.get(points_dadg_key)
         if isinstance(fiducial_points, Error):
-            logger.error(f"Couldn't get 'ct_fiducial_points' for fiducial refinement: {fiducial_points.description}")
+            logger.error(f"Couldn't get '{points_dadg_key}' for fiducial refinement: {fiducial_points.description}")
             return
+
+        min_index = torch.zeros(3, dtype=torch.int64)
+        max_index = torch.tensor(volume.shape, dtype=torch.int64) - 1
+
+        def clamp_index(index: Int64[torch.Tensor, "3"]) -> Int64[torch.Tensor, "3"]:
+            return torch.minimum(  #
+                max_index,  #
+                torch.maximum(  #
+                    min_index,  #
+                    index,  #
+                ),  #
+            )
 
         new_data = torch.empty_like(fiducial_points.data)
-        for i, point in enumerate(fiducial_points.data):
-            new_data[i] = refine_spherical_fiducial_3d(  #
-                volume=untruncated_ct_volume,  #
-                spacing=ct_spacing,  #
-                position=point,  #
+        for i, (name, point) in enumerate(fiducial_points):
+            diag = torch.full_like(point, chunk_size)
+            aaa = clamp_index(((point - diag) / spacing).floor().to(torch.int64).flip(dims=(0,)))
+            bbb = clamp_index(((point + diag) / spacing).ceil().to(torch.int64).flip(dims=(0,)))
+            indices = tuple(slice(a, b) for a, b in zip(aaa, bbb))
+            offset = aaa.flip(dims=(0,)).to(dtype=torch.float64) * spacing
+            chunk = volume[indices]
+            if not isinstance(chunk, torch.Tensor):
+                chunk = torch.tensor(chunk, dtype=torch.float32)
+            res: torch.Tensor | str = refine_spherical_fiducial_3d(  #
+                volume=chunk,  #
+                spacing=spacing,  #
+                position=point - offset,  #
                 radius=0.5 * self._state.assumed_fiducial_diameter,  #
             )
-        self._dadg.set("ct_fiducial_points", NamedPoints3D(names=fiducial_points.names, data=new_data))
+            if isinstance(res, str):
+                logger.warning(f"Failed to refine fiducial segmentation '{name}': {res}")
+                new_data[i] = fiducial_points.data[i]
+                continue
+            new_data[i] = offset + res
+        self._dadg.set(points_dadg_key, NamedPoints3D(names=fiducial_points.names, data=new_data))
 
-        logger.info("CT fiducial segmentation refined.")
+        logger.info(f"CT '{image_dadg_key}' fiducial segmentation refined.")
 
     def _button_xray_fiducial_refine(self, change) -> None:
         if not change.new:
@@ -183,3 +288,24 @@ class FiducialsManager:
         self._dadg.set(dadg_key_prefix + "fiducial_points", NamedPoints2D(names=fiducial_points.names, data=new_data))
 
         logger.info("X-ray fiducial segmentation refined.")
+
+    def _button_save_transformed_electrodes(self, change) -> None:
+        if not change.new:
+            return
+        self._state.button_save_transformed_electrodes = False
+
+        ct_uid: str | Error = self._dadg.get("ct_series_uid")
+        if isinstance(ct_uid, Error):
+            logger.warning(f"Couldn't save transformed electrodes: failed to get CT series UID: {ct_uid.description}")
+            return
+
+        points: OrderedPoints3D | Error = self._dadg.get("transformed_micro_electrodes")
+        if isinstance(points, Error):
+            logger.warning(f"Couldn't save transformed electrodes: failed to get points: {points.description}")
+            return
+
+        if isinstance(err := self._ct_electrode_save_manager.set(ct_uid, points.data), Error):
+            logger.warning(f"Failed to save transformed electrodes: {err.description}")
+            return
+
+        logger.info(f"Transformed electrodes saved for CT series '{ct_uid}'.")

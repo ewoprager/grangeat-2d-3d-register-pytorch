@@ -29,19 +29,35 @@ class TransformationSaver:
         return self._ctx.state.register_xray_choice is not None
 
     @property
-    def _uid_key(self) -> str:
-        return f"{self._ctx.state.register_xray_choice}__xray_sop_instance_uid"
-
-    @property
     def _c_t_key(self) -> str:
         return f"{self._ctx.state.register_xray_choice}__current_transformation"
+
+    def _get_ct_xray_uids(self) -> tuple[str, str] | Error:
+        xray_uid_key = f"{self._ctx.state.register_xray_choice}__xray_sop_instance_uid"
+        ct_uid_key = "ct_series_uid"
+
+        ct_uid: str | Error = self._ctx.dadg.get(ct_uid_key)
+        if isinstance(ct_uid, Error):
+            return ct_uid
+        xray_uid: str | Error = self._ctx.dadg.get(xray_uid_key)
+        if isinstance(xray_uid, Error):
+            return xray_uid
+
+        return ct_uid, xray_uid
 
     def _update_saved_transformation_names(self) -> None:
         if not self._xray_selected:
             self._ctx.state.saved_transformation_names = []
             return
-        self._ctx.state.saved_transformation_names = self._ctx.transformation_save_manager.get_names(
-            self._ctx.dadg.get(self._uid_key))
+        res: tuple[str, str] | Error = self._get_ct_xray_uids()
+        if isinstance(res, Error):
+            logger.error(f"Failed to update saved transformation names: {res.description}")
+            return
+        ct_uid, xray_uid = res
+        self._ctx.state.saved_transformation_names = self._ctx.transformation_save_manager.get_list_of_names(  #
+            source_uid=ct_uid,  #
+            destination_uid=xray_uid,  #
+        )
 
     def _register_xray_choice_changed(self, change) -> None:
         self._update_saved_transformation_names()
@@ -57,12 +73,24 @@ class TransformationSaver:
         if not self._ctx.state.text_input_transformation_name:
             logger.warning("Cannot save transformation: no name given.")
             return
-        uid = self._ctx.dadg.get(self._uid_key)
+        res: tuple[str, str] | Error = self._get_ct_xray_uids()
+        if isinstance(res, Error):
+            logger.error(f"Failed to save transformation: {res.description}")
+            return
+        ct_uid, xray_uid = res
+        curr_tr: Transformation | Error = self._ctx.dadg.get(self._c_t_key)
+        if isinstance(curr_tr, Error):
+            logger.error(f"Failed to save transformation: {curr_tr.description}")
+            return
         name = self._ctx.state.text_input_transformation_name
-        err = self._ctx.transformation_save_manager.set(uid=uid, name=name,
-                                                        transformation=self._ctx.dadg.get(self._c_t_key))
+        err = self._ctx.transformation_save_manager.set(  #
+            source_uid=ct_uid,  #
+            destination_uid=xray_uid,  #
+            name=name,  #
+            transformation=curr_tr,  #
+        )
         if isinstance(err, Error):
-            logger.error(f"Error saving transformation '{uid}; {name}' to save "
+            logger.error(f"Error saving transformation to idx ({ct_uid}, {xray_uid}, {name})' to save "
                          f"manager: {err.description}")
         self._update_saved_transformation_names()
 
@@ -75,12 +103,25 @@ class TransformationSaver:
         if not self._xray_selected:
             logger.warning("Cannot load transformation: no X-ray selected.")
             return
-        uid = self._ctx.dadg.get(self._uid_key)
-        tr: Transformation | Error = self._ctx.transformation_save_manager.get_transformation(uid=uid, name=name)
-        if isinstance(tr, Error):
-            logger.error(f"Error loading transformation '{uid}; {name}' from save manager: {tr.description}")
+        res: tuple[str, str] | Error = self._get_ct_xray_uids()
+        if isinstance(res, Error):
+            logger.error(f"Failed to load transformation: {res.description}")
             return
-        device = self._ctx.dadg.get(self._c_t_key).rotation.device
+        ct_uid, xray_uid = res
+        tr: Transformation | Error = self._ctx.transformation_save_manager.get_transformation(  #
+            source_uid=ct_uid,  #
+            destination_uid=xray_uid,  #
+            name=name,  #
+        )
+        if isinstance(tr, Error):
+            logger.error(f"Error loading transformation of idx '({ct_uid}, {xray_uid}, {name})' from save manager: "
+                         f"{tr.description}")
+            return
+        curr_tr: Transformation | Error = self._ctx.dadg.get(self._c_t_key)
+        if isinstance(curr_tr, Error):
+            logger.error(f"No current transformation whose device to copy: {curr_tr.description}")
+            return
+        device = curr_tr.rotation.device
         self._ctx.dadg.set(self._c_t_key, tr.to(device=device))
 
     def _button_delete_transformation_of_name(self, change) -> None:
@@ -92,8 +133,17 @@ class TransformationSaver:
         if not self._xray_selected:
             logger.warning("Cannot delete transformation: no X-ray selected.")
             return
-        uid = self._ctx.dadg.get(self._uid_key)
-        err = self._ctx.transformation_save_manager.remove(uid=uid, name=name)
+        res: tuple[str, str] | Error = self._get_ct_xray_uids()
+        if isinstance(res, Error):
+            logger.error(f"Failed to delete transformation: {res.description}")
+            return
+        ct_uid, xray_uid = res
+        err = self._ctx.transformation_save_manager.remove(  #
+            source_uid=ct_uid,  #
+            destination_uid=xray_uid,  #
+            name=name,  #
+        )
         if isinstance(err, Error):
-            logger.error(f"Error deleting transformation '{uid}; {name}' from save manager: {err.description}")
+            logger.error(f"Error deleting transformation of idx '({ct_uid}, {xray_uid}, {name})' from save manager: "
+                         f"{err.description}")
         self._update_saved_transformation_names()

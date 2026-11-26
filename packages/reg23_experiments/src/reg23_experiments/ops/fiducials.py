@@ -8,17 +8,17 @@ from jaxtyping import Float32, Float64, jaxtyped
 from reg23_experiments.ops.optimisation import local_search
 
 __all__ = ["ball_bearing_marker_function", "construct_synthetic_fiducial_3d", "refine_spherical_fiducial_2d",
-           "refine_spherical_fiducial_3d", "refine_disk_fiducial_2d"]
+    "refine_spherical_fiducial_3d", "refine_disk_fiducial_2d"]
 
 logger = logging.getLogger(__name__)
 
 
 @jaxtyped(typechecker=typechecker)
 def ball_bearing_marker_function(  #
-        coordinates: Float64[torch.Tensor, "... 3"],  #
-        *,  #
-        value=30000,  #
-        radius=2.5) -> Float32[torch.Tensor, "..."]:
+    coordinates: Float64[torch.Tensor, "... 3"],  #
+    *,  #
+    value=30000,  #
+    radius=2.5) -> Float32[torch.Tensor, "..."]:
     """
     Maps positions given in 3D Cartesian coordinates at mm scale to intensities
     :param coordinates: tensor of size (..., 3)
@@ -30,12 +30,12 @@ def ball_bearing_marker_function(  #
 
 @jaxtyped(typechecker=typechecker)
 def construct_synthetic_fiducial_3d(  #
-        *,  #
-        size: torch.Size,  #
-        spacing: Float64[torch.Tensor, "3"],  #
-        origin: Float64[torch.Tensor, "3"],  #
-        marker_function: Callable[[Float64[torch.Tensor, "... 3"]], Float32[torch.Tensor, "..."]],  #
-        marker_positions: list[Float64[torch.Tensor, "3"]]) -> Float32[torch.Tensor, "p q r"]:
+    *,  #
+    size: torch.Size,  #
+    spacing: Float64[torch.Tensor, "3"],  #
+    origin: Float64[torch.Tensor, "3"],  #
+    marker_function: Callable[[Float64[torch.Tensor, "... 3"]], Float32[torch.Tensor, "..."]],  #
+    marker_positions: list[Float64[torch.Tensor, "3"]]) -> Float32[torch.Tensor, "p q r"]:
     """
     Constructs a tensor of the given size as the sum of the given markers.
     :param size: (z, y, x)
@@ -52,7 +52,7 @@ def construct_synthetic_fiducial_3d(  #
     voxel_y_positions = origin[1] + torch.arange(size[1], dtype=torch.float64) * spacing[1]
     voxel_z_positions = origin[2] + torch.arange(size[0], dtype=torch.float64) * spacing[2]
     voxel_z_positions, voxel_y_positions, voxel_x_positions = torch.meshgrid(voxel_z_positions, voxel_y_positions,
-                                                                             voxel_x_positions)
+        voxel_x_positions)
     voxel_positions = torch.stack((voxel_x_positions, voxel_y_positions, voxel_z_positions), dim=-1)
 
     ret = torch.zeros(size=size, dtype=torch.float32)
@@ -63,7 +63,7 @@ def construct_synthetic_fiducial_3d(  #
 
 @jaxtyped(typechecker=typechecker)
 def refine_spherical_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing: Float64[torch.Tensor, "2"],
-                                 position: Float64[torch.Tensor, "2"], radius: float) -> Float64[torch.Tensor, "2"]:
+    position: Float64[torch.Tensor, "2"], radius: float) -> Float64[torch.Tensor, "2"]:
     """
     Refines the segmented position of a highly attenuating spherical fiducial marker (e.g. a steel ball bearing) in a 2D
     image, given an initial segmented position and a known sphere radius.
@@ -122,7 +122,7 @@ def refine_spherical_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing
 
 @jaxtyped(typechecker=typechecker)
 def refine_disk_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing: Float64[torch.Tensor, "2"],
-                            position: Float64[torch.Tensor, "2"], radius: float) -> Float64[torch.Tensor, "2"]:
+    position: Float64[torch.Tensor, "2"], radius: float) -> Float64[torch.Tensor, "2"]:
     assert radius > 0.0
     image = image.cpu()
     spacing = spacing.cpu()
@@ -133,7 +133,7 @@ def refine_disk_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing: Flo
     sq_inner_rad = (radius - border_thickness) * (radius - border_thickness)
     sq_outer_rad = (radius + border_thickness) * (radius + border_thickness)
     image_gradients = torch.stack(torch.gradient(image, spacing=tuple(s.item() for s in spacing.flip(dims=(0,)))),
-                                  dim=-1).flip(dims=(-1,))
+        dim=-1).flip(dims=(-1,))
     image_gradients /= image_gradients.max()
 
     def objective(pos: torch.Tensor) -> torch.Tensor:
@@ -177,22 +177,32 @@ def refine_disk_fiducial_2d(*, image: Float32[torch.Tensor, "n m"], spacing: Flo
 
 
 @jaxtyped(typechecker=typechecker)
-def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spacing: Float64[torch.Tensor, "3"],
-                                 position: Float64[torch.Tensor, "3"], radius: float) -> Float64[torch.Tensor, "3"]:
+def refine_spherical_fiducial_3d(  #
+    *,  #
+    volume: Float32[torch.Tensor, "p q r"],  #
+    spacing: Float64[torch.Tensor, "3"],  #
+    position: Float64[torch.Tensor, "3"],  #
+    radius: float,  #
+) -> Float64[torch.Tensor, "3"] | str:
     assert radius > 0.0
     volume = volume.cpu()
     spacing = spacing.cpu()
     output_device = position.device
     position = position.cpu()
 
-    border_thickness = spacing.max()
+    border_thickness = 0.05 * radius
     sq_inner_rad = (radius - border_thickness) * (radius - border_thickness)
     sq_outer_rad = (radius + border_thickness) * (radius + border_thickness)
-    volume_gradients = torch.stack(torch.gradient(volume, spacing=tuple(s.item() for s in spacing.flip(dims=(0,)))),
-                                   dim=-1).flip(dims=(-1,))
-    volume_gradients /= volume_gradients.max()
+    volume_gradients = torch.stack(  #
+        torch.gradient(volume, spacing=tuple(  #
+            s.item()  #
+                for s in spacing.flip(dims=(0,))  #
+        )),  #
+        dim=-1,  #
+    ).flip(dims=(-1,))
+    volume_gradients /= torch.linalg.norm(volume_gradients, dim=-1).max()
 
-    def objective(pos: torch.Tensor) -> torch.Tensor:
+    def objective(pos: torch.Tensor) -> torch.Tensor | str:
         pos_nograd = pos.detach()
         i0: int = max(0, int(((pos_nograd[0] - radius) / spacing[0]).floor().item()))
         i1: int = min(volume.size()[2] - 1, int(((pos_nograd[0] + radius) / spacing[0]).ceil().item()))
@@ -201,7 +211,7 @@ def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spac
         k0: int = max(0, int(((pos_nograd[2] - radius) / spacing[2]).floor().item()))
         k1: int = min(volume.size()[0] - 1, int(((pos_nograd[2] + radius) / spacing[2]).ceil().item()))
         if i1 <= i0 or j1 <= j0 or k1 <= k0:
-            return pos.sum() * 0.0 + 1.0
+            return "position out of bounds"
         i1 += 1
         j1 += 1
         k1 += 1
@@ -209,13 +219,13 @@ def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spac
         patch_pixel_ys = spacing[1] * torch.arange(j0, j1, dtype=torch.float64) - pos[1]
         patch_pixel_zs = spacing[2] * torch.arange(k0, k1, dtype=torch.float64) - pos[2]
         patch_pixel_positions = torch.stack(torch.meshgrid(patch_pixel_zs, patch_pixel_ys, patch_pixel_xs),
-                                            dim=-1).flip(dims=(-1,))  # (p, q, r, 3)
+            dim=-1).flip(dims=(-1,))  # (p, q, r, 3)
         square_distances = patch_pixel_positions.square().sum(dim=-1)  # (p, q, r)
         patch_mask = torch.logical_and(square_distances > sq_inner_rad, square_distances < sq_outer_rad)
-        unit_directions = -(
-                patch_pixel_positions[patch_mask] / square_distances[patch_mask].sqrt().unsqueeze(-1)).flatten()
-        vol_grad_patch = volume_gradients[k0:k1, j0:j1, i0:i1, :][patch_mask].flatten().to(dtype=torch.float64)
-        return -(unit_directions * vol_grad_patch).mean()
+        unit_directions = -(patch_pixel_positions[patch_mask] / square_distances.unsqueeze(-1)[patch_mask].sqrt())
+        vol_grad_patch = volume_gradients[k0:k1, j0:j1, i0:i1, :][patch_mask].to(dtype=torch.float64)
+        return -(unit_directions * vol_grad_patch).sum(dim=-1).mean()
+
 
     if False:
         return local_search(  #
@@ -224,13 +234,31 @@ def refine_spherical_fiducial_3d(*, volume: Float32[torch.Tensor, "p q r"], spac
             objective_function=objective  #
         ).to(device=output_device)
 
-    x = position.clone().detach().requires_grad_(True)
+    logger.debug(  #
+        "Running gradient-descent for fiducial refinement; start = ({:.2f},{:.2f},{:.2f})".format(  #
+            *position.tolist(),  #
+        ),  #
+    )
+    x: torch.Tensor = position.clone().detach().requires_grad_(True)
     lr = 10.0
-    for _ in range(200):
+    for i in range(200):
         if x.grad is not None:
             x.grad.zero_()
-        loss = objective(x)
+        loss: torch.Tensor | str = objective(x)
+        if isinstance(loss, str):
+            return f"Failed to converge; encountered the following issue at iteration {i}: {loss}"
         loss.backward()
         with torch.no_grad():
-            x -= lr * x.grad
+            delta = lr * x.grad
+            if delta.sum().abs() < 1.0e-10:
+                logger.debug(f"Converged at iteration {i}")
+                break
+            x -= delta
+            logger.debug(  #
+                "\titeration {}: loss={:.3E} @ ({:.2f},{:.2f},{:.2f})".format(  #
+                    i,  #
+                    loss.item(),  #
+                    *x.tolist(),  #
+                ),  #
+            )
     return x.detach().to(device=output_device)

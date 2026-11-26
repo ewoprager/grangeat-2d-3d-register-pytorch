@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class _XRayFiducialLayerManager:
     def __init__(self, *, dadg: DirectedAcyclicDataGraph, layer: napari.layers.Points, dadg_key: str,
-                 xray_uid_dadg_key: str):
+        xray_uid_dadg_key: str):
         self._dadg = dadg
         self._layer: Callable[[], napari.layers.Points | None] = weakref.ref(layer)
         self._dadg_key = dadg_key
@@ -75,7 +75,7 @@ class _XRayFiducialLayerManager:
 
             name = get_string_required(message="Enter a unique name for the point", validator=validator)
             new_features = layer.features.copy()
-            new_features.iloc[-1]["label"] = name
+            new_features.loc[new_features.index[-1], "label"] = name
             layer.features = new_features
         elif event.action == ActionType.REMOVED:
             layer.features = layer.features.head(layer.data.shape[0])
@@ -84,7 +84,7 @@ class _XRayFiducialLayerManager:
 
 
 def add_xray_fiducial_layer(*, dadg: DirectedAcyclicDataGraph,
-                            namespace: str | None = None) -> napari.layers.Layer | None:
+    namespace: str | None = None) -> napari.layers.Layer | None:
     dadg_key = "fiducial_points" if namespace is None else f"{namespace}__fiducial_points"
     if dadg_key in viewer().layers:
         logger.warning(f"Layer '{dadg_key}' is already shown.")
@@ -104,11 +104,12 @@ def add_xray_fiducial_layer(*, dadg: DirectedAcyclicDataGraph,
         features = pd.DataFrame(columns=["label"])
     layer = viewer().add_points(  #
         res.data.flip(dims=(1,)).numpy(),  #
-        size=8.0,  #
+        size=3.0,  #
+        symbol="disc",  #
         name=dadg_key,  #
         features=features,  #
         text={"string": "{label}", "size": 16}  #
     )
     layer.my_plugin = _XRayFiducialLayerManager(dadg=dadg, layer=layer, dadg_key=dadg_key,
-                                                xray_uid_dadg_key=uid_dadg_key)
+        xray_uid_dadg_key=uid_dadg_key)
     return layer

@@ -15,6 +15,7 @@ from reg23_app.gui.file_manager import FileManager
 from reg23_app.gui.viewer_singleton import init_viewer, viewer
 from reg23_app.gui.widgets.drr_widget import DRRWidget
 from reg23_app.gui.widgets.fiducials_widget import FiducialsWidget
+from reg23_app.gui.widgets.files_widget import FilesWidget
 from reg23_app.gui.widgets.hastraits_widget import HasTraitsWidget
 from reg23_app.gui.widgets.images_widget import ImagesWidget
 from reg23_app.gui.widgets.parameters_widget import ParametersWidget
@@ -23,10 +24,12 @@ from reg23_app.transformation_saver import TransformationSaver
 from reg23_app.worker_manager import WorkerManager
 from reg23_experiments.data.parameters import Context, Parameters, PsoParameters
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.experiments.reg_experiment import drr_reg_updaters as updaters
+from reg23_experiments.experiments.reg_experiment import drr_reg_updaters, grangeat_updaters
 from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils import logs_setup, pushover
+from reg23_experiments.data import sinogram
+from reg23_experiments.experiments.electrode_experiment import dadg_updaters as electrode_updaters
 
 
 # @args_from_dag(names_left=["transformation"])
@@ -41,7 +44,7 @@ from reg23_experiments.utils import logs_setup, pushover
 
 
 def main(*, ct_path: str | None = None, xray_path: str | None = None,
-         external_dataset: Literal["gold_hip"] | None = None, cache_directory: str):
+    external_dataset: Literal["gold_hip"] | None = None, cache_directory: str):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # -----
@@ -53,10 +56,40 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Updaters
     # -----
-    err = data_manager().add_updater("apply_truncation", updaters.apply_truncation)
-    if isinstance(err, Error):
+    if external_dataset is None:
+        if isinstance(err := data_manager().add_updater("load_untruncated_ct", drr_reg_updaters.load_untruncated_ct),
+                Error):
+            logger.error(f"Error adding updater: {err.description}")
+            return
+    if isinstance(err := data_manager().add_updater("apply_filter_ct", drr_reg_updaters.apply_filter_ct), Error):
         logger.error(f"Error adding updater: {err.description}")
         return
+    if isinstance(err := data_manager().add_updater("apply_truncation", drr_reg_updaters.apply_truncation), Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    if isinstance(err := data_manager().add_updater("mipmap_ct", drr_reg_updaters.mipmap_ct), Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    # -- Grangeat --
+    if isinstance(err := data_manager().add_updater("refresh_vif", grangeat_updaters.refresh_vif), Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    # -- MicroCT --
+    if isinstance(err := data_manager().add_updater("get_micro_ct_uid", electrode_updaters.get_micro_ct_uid), Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    if isinstance(err := data_manager().add_updater("get_micro_ct_array", electrode_updaters.get_micro_ct_array),
+            Error):
+        logger.error(f"Error adding updater: {err.description}")
+        return
+    if isinstance(
+            err := data_manager().add_updater(f"transform_fiducials", electrode_updaters.transform_micro_fiducials),
+            Error):
+        logger.error(f"Error adding updater: {err.description}")
+    if isinstance(
+            err := data_manager().add_updater(f"transform_electrodes", electrode_updaters.transform_micro_electrodes),
+            Error):
+        logger.error(f"Error adding updater: {err.description}")
 
     # -----
     # Data nodes
@@ -68,12 +101,15 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         save_to_cache=True,  # a
         new_drr_size=torch.Size([500, 500]),  #
         device=device,  #
-        current_transformation=Transformation.zero(device),  #
+        micro_ct_transformation=Transformation.zero(device),  #
         truncation_percent=0.0,  #
         ap_transformation=Transformation(
             rotation=torch.tensor([0.5 * torch.pi, 0.0, 0.0], dtype=torch.float64, device=device),
-            translation=torch.zeros(3, dtype=torch.float64, device=device)),  #
+            translation=torch.zeros(3, dtype=torch.float64, device=device), ),  #
         target_ap_distance=5.0,  #
+        fixed_sinogram_size=None,  #
+        sinogram_type=sinogram.SinogramClassic,  #
+        micro_ct_zarr_path="cache/zarr/microct.zarr",  #
     )
     if ct_path is not None:
         data_manager().set("ct_path", ct_path)
@@ -81,15 +117,11 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # -----
     # Parameters
     # -----
-    parameters = Parameters(  #
-        ct_path=None,  #
-        downsample_level=0,  #
-        truncation_percent=0,  #
-        mask="None",  #
-        sim_metric="zncc",  #
-        sim_metric_parameters=None,  #
+    default_parameters = Parameters(  #
+        ct_path=ct_path,  #
         starting_distance=0.0,  #
         sample_count_per_distance=1,  #
+        sim_metric="zncc",  #
         optimisation_algorithm="pso",  #
         op_algo_parameters=PsoParameters(),  #
         iteration_count=10,  #
@@ -99,13 +131,21 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
     # parameters.op_algo_parameters.particle_count = 5
     # test = clone_has_traits(parameters)
 
-    app_context = AppContext(parameters=parameters, dadg=data_manager(),
-                             transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),
-                             electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),
-                             ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),
-                             xray_fiducial_save_directory=pathlib.Path("data/xray_fiducial_save_data"),
-                             xray_reg_save_directory=pathlib.Path("data/xray_reg_save_data"),
-                             cache=external_dataset is None)
+    app_context = AppContext(  #
+        default_parameters=default_parameters,  #
+        dadg=data_manager(),  #
+        transformation_save_directory=pathlib.Path("data/app_transformation_save_data"),  #
+        xray_electrode_save_directory=pathlib.Path("data/app_electrode_save_data"),  #
+        ct_electrode_save_directory=pathlib.Path("data/ct_electrode_save_data"),  #
+        ct_fiducial_save_directory=pathlib.Path("data/ct_fiducial_save_data"),  #
+        xray_fiducial_save_directory=pathlib.Path("data/xray_fiducial_save_data"),  #
+        xray_reg_save_directory=pathlib.Path("data/xray_reg_save_data"),  #
+        cache=external_dataset is None,  #
+    )
+
+    viewer().window._qt_viewer.console.push({  #
+        "ctx": app_context,  #
+    })
 
     # -----
     # External datasets
@@ -133,8 +173,8 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
                     source_distance=xray_data["scene_geometry"].source_distance,  #
                     image_2d_full=xray_data["image"],  #
                     fixed_image_spacing=xray_data["spacing"],  #
-                    transformation_gt=xray_data["transformation"]  #
-                )}  #
+                    transformation_gt=xray_data["transformation"],  #
+                )},  #
         )
         if isinstance(res, Error):
             logger.error(f"Failed to set gold_hip CT dadg nodes: {res.description}")
@@ -142,48 +182,59 @@ def main(*, ct_path: str | None = None, xray_path: str | None = None,
         logger.info(f"ct spacing = {ct_spacing.cpu()}")
         logger.info(f"ct size = {ct_volume.size()}")
         logger.info(f"total = "
-                    f"{ct_spacing.cpu() * torch.tensor(ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}")
-    else:
-        err = data_manager().add_updater("load_untruncated_ct", updaters.load_untruncated_ct)
-        if isinstance(err, Error):
-            logger.error(f"Error adding updater: {err.description}")
-            return
+                    f"{ct_spacing.cpu() * torch.tensor(ct_volume.size(), dtype=torch.float64).flip(dims=(0,))}", )
 
     # -----
     # Widgets
     # -----
     logger.debug("Initialising widgets")
-    parameters_widget = ParametersWidget(app_context, external_dataset is None)
+    files_widget = FilesWidget(app_context, external_dataset is None)
+    viewer().window.add_dock_widget(files_widget, name="Files", area="right", menu=viewer().window.window_menu,
+        tabify=True, )
+    parameters_widget = ParametersWidget(app_context)
     viewer().window.add_dock_widget(parameters_widget, name="Params", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
+        tabify=True, )
     viewer().window.add_dock_widget(HasTraitsWidget(app_context.state.gui_settings), name="GUI Settings", area="left",
-                                    menu=viewer().window.window_menu)
+        menu=viewer().window.window_menu, )
     images_widget = ImagesWidget(app_context)
     viewer().window.add_dock_widget(images_widget, name="Images", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
+        tabify=True, )
     register_widget = RegisterWidget(app_context)
     viewer().window.add_dock_widget(register_widget, name="Register", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
+        tabify=True, )
     drr_widget = DRRWidget(app_context)
     viewer().window.add_dock_widget(drr_widget, name="DRR", area="right", menu=viewer().window.window_menu, tabify=True)
     fiducials_widget = FiducialsWidget(app_context)
     viewer().window.add_dock_widget(fiducials_widget, name="Fiducials", area="right", menu=viewer().window.window_menu,
-                                    tabify=True)
+        tabify=True, )
 
     # -----
     # The universal objective function
     # -----
-    def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
-        prefix = "" if context.namespace is None else f"{context.namespace}__"
-        t = mapping_parameters_to_transformation(x)
-        # Setting the parameters
-        context.dadg.set(prefix + "current_transformation", t)
-        # Getting the result
-        ret: torch.Tensor | Error = context.dadg.get(prefix + "of_value")
-        if isinstance(ret, Error):
-            logger.error(f"Failed to get o.f. value for objective function evaluation: {ret.description}")
-            return torch.zeros(1, device=x.device)
-        return ret
+    if True:
+        def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
+            prefix = "" if context.namespace is None else f"{context.namespace}__"
+            t = mapping_parameters_to_transformation(x.squeeze())
+            # Setting the parameters
+            context.dadg.set(prefix + "current_transformation", t)
+            # Getting the result
+            ret: torch.Tensor | Error = context.dadg.get(prefix + "of_value")
+            if isinstance(ret, Error):
+                logger.error(f"Failed to get o.f. value for objective function evaluation: {ret.description}")
+                return torch.zeros(1, device=x.device)
+            return ret.unsqueeze(0)
+    else:
+        def objective_function(context: Context, x: torch.Tensor) -> torch.Tensor:
+            prefix = "" if context.namespace is None else f"{context.namespace}__"
+            t = mapping_parameters_to_transformation(x.squeeze())
+            # Setting the parameters
+            context.dadg.set(prefix + "current_transformation", t)
+            # Getting the result
+            ret: torch.Tensor | Error = context.dadg.get(prefix + "of_value_grangeat")
+            if isinstance(ret, Error):
+                logger.error(f"Failed to get o.f. value for objective function evaluation: {ret.description}")
+                return torch.zeros(1, device=x.device)
+            return ret.unsqueeze(0)
 
     # -----
     # Modules
@@ -207,19 +258,19 @@ if __name__ == "__main__":
     # parse arguments
     parser = argparse.ArgumentParser(description="", epilog="")
     parser.add_argument("-c", "--cache-directory", type=str, default="cache",
-                        help="Set the directory where data that is expensive to calculate will be saved. The default "
-                             "is 'cache'.")
+        help="Set the directory where data that is expensive to calculate will be saved. The default "
+             "is 'cache'.", )
     parser.add_argument("-p", "--ct-path", type=str, default=None,
-                        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
-                             "process.")
+        help="Give a path to a .nrrd file, .nii file or directory of .dcm files containing CT data to "
+             "process.", )
     parser.add_argument("--external-gold-hip", action="store_true",
-                        help="Load data from the external dataset '2D-3D registration gold-standard dataset for the "
-                             "hip joint based on uncertainty modeling'")
+        help="Load data from the external dataset '2D-3D registration gold-standard dataset for the "
+             "hip joint based on uncertainty modeling'", )
     parser.add_argument("-x", "--xray-path", type=str, default=None,
-                        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
-                             "this is provided, the X-ray will by used instead of any DRR.")
+        help="Give a path to a DICOM file containing an X-ray image to register the CT image to. If "
+             "this is provided, the X-ray will by used instead of any DRR.", )
     parser.add_argument("-l", "--log-level", type=str, default=None,
-                        help=f"Set the log level; options: [{", ".join(logging._nameToLevel.keys())}]; default = INFO.")
+        help=f"Set the log level; options: [{", ".join(logging._nameToLevel.keys())}]; default = INFO.", )
     # parser.add_argument("-i", "--no-load", action='store_true',
     #                     help="Do not load any pre-calculated data from the cache.")
     # parser.add_argument(

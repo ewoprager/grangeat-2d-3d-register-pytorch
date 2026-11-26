@@ -25,6 +25,9 @@ class FileManager:
 
         self._state.observe(self._button_open_ct_file, names=["button_open_ct_file"])
         self._state.observe(self._button_open_ct_dir, names=["button_open_ct_dir"])
+
+        self._state.observe(self._button_open_micro_ct, names=["button_open_micro_ct"])
+
         self._state.observe(self._button_open_xray_file, names=["button_open_xray_file"])
         self._state.observe(self._button_unload_xray_file, names=["button_unload_xray_file"])
 
@@ -60,6 +63,21 @@ class FileManager:
             logger.warning(f"CT path not valid: '{path}'")
             return
 
+    def _button_open_micro_ct(self, change) -> None:
+        if not change.new:
+            return
+        self._state.button_open_micro_ct = False
+
+        from qtpy.QtWidgets import QFileDialog
+        file, _ = QFileDialog.getOpenFileName(  #
+            viewer().window._qt_window,  #
+            "Open a micro CT; select one of its slice files",  #
+        )
+        if not file:
+            return
+        logger.info(f"Micro CT volume selected; based on slice file '{file}'")
+        self._state.parameters.micro_ct_slice_path = file
+
     def _button_open_xray_file(self, change) -> None:
         if not change.new:
             return
@@ -91,8 +109,10 @@ class FileManager:
                 name = values["name"]
 
         # Append it to the parameter state
-        self._state.parameters.xray_parameters = {**self._state.parameters.xray_parameters,
-                                                  name: XrayParameters(file_path=file)}
+        self._state.parameters.xray_parameters = {  #
+            **self._state.parameters.xray_parameters,  #
+            name: XrayParameters(file_path=file),  #
+        }
 
     def _button_unload_xray_file(self, change) -> None:
         if not change.new:

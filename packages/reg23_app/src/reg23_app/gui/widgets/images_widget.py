@@ -3,18 +3,26 @@ import os
 
 os.environ["QT_API"] = "PyQt6"
 
+import numpy as np
+import napari
 from magicgui import widgets
 
 from reg23_app.context import AppContext
 from reg23_app.gui.layers.ct_fiducial_layer import add_ct_fiducial_layer
 from reg23_app.gui.layers.ct_layer import add_ct_layer
+from reg23_app.gui.layers.micro_ct_layer import add_micro_ct_layer
 from reg23_app.gui.layers.debug_layer import add_debug_layer
-from reg23_app.gui.layers.electrode_layer import add_electrode_layer
+from reg23_app.gui.layers.xray_electrode_layer import add_xray_electrode_layer
 from reg23_app.gui.layers.fixed_image_layer import add_fixed_image_layer
 from reg23_app.gui.layers.mask_layer import add_mask_layer
 from reg23_app.gui.layers.moving_image_layer import add_moving_image_layer
 from reg23_app.gui.layers.projected_fiducials_layer import add_projected_fiducials_layer
 from reg23_app.gui.layers.xray_fiducial_layer import add_xray_fiducial_layer
+from reg23_app.gui.layers.grangeat_moving_image_layer import add_grangeat_moving_image_layer
+from reg23_app.gui.widgets.expandable_widget import ExpandableWidget
+from reg23_app.gui.layers.ct_electrode_layer import add_ct_electrode_layer
+from reg23_app.gui.layers.transformed_fiducials_layer import add_transformed_fiducials_layer
+from reg23_app.gui.layers.transformed_electrodes_layer import add_transformed_electrodes_layer
 
 __all__ = ["ImagesWidget"]
 
@@ -26,11 +34,15 @@ class ImagesWidget(widgets.Container):
         super().__init__(labels=True)
         self._ctx = ctx
 
-        self._ctx.state.parameters.observe(self._on_xray_parameters_change, names=["xray_parameters"])
-        self._on_xray_parameters_change()
+        self._ctx.state.parameters.observe(self._images_changed, names=[  #
+            "xray_parameters",  #
+            "ct_path",  #
+            "micro_ct_slice_path",  #
+        ])
+        self._images_changed()
 
-    def _on_xray_parameters_change(self, *args) -> None:
-        logger.debug("X-ray parameters changed; rebuilding ImagesWidget")
+    def _images_changed(self, *args) -> None:
+        logger.debug("Loaded images changed; rebuilding ImagesWidget")
         self.clear()
 
         if self._ctx.state.parameters.ct_path is not None:
@@ -41,10 +53,37 @@ class ImagesWidget(widgets.Container):
             # Fiducial points
             show_ct_fiducials_button = widgets.PushButton(label="Show fiducials")
             show_ct_fiducials_button.changed.connect(lambda _: self._on_show_ct_fiducials_layer())
-            self.append(widgets.Container(widgets=[  #
+            # appending
+            self.append(ExpandableWidget([  #
                 show_ct_button,  #
                 show_ct_fiducials_button,  #
             ], label="CT volume:"))
+
+        if self._ctx.state.parameters.micro_ct_slice_path is not None:
+            logger.debug("MicroCT present; adding microCT buttons to ImagesWidget")
+            # Slice view
+            show_micro_ct_button = widgets.PushButton(label="Show volume")
+            show_micro_ct_button.changed.connect(lambda _: self._on_show_micro_ct_layer())
+            # Fiducial points
+            show_micro_fiducials_button = widgets.PushButton(label="Show fiducials")
+            show_micro_fiducials_button.changed.connect(lambda _: self._on_show_micro_fiducials_layer())
+            # Transformed fiducial points
+            show_transformed_fiducials_button = widgets.PushButton(label="Show transformed fiducials")
+            show_transformed_fiducials_button.changed.connect(lambda _: self._on_show_transformed_fiducials_layer())
+            # Electrode points
+            show_electrodes_button = widgets.PushButton(label="Show electrodes")
+            show_electrodes_button.changed.connect(lambda _: self._on_show_ct_electrode_layer())
+            # Transformed electrode points
+            show_transformed_electrodes_button = widgets.PushButton(label="Show transformed electrodes")
+            show_transformed_electrodes_button.changed.connect(lambda _: self._on_show_transformed_electrodes_layer())
+            # appending
+            self.append(ExpandableWidget([  #
+                show_micro_ct_button,  #
+                show_micro_fiducials_button,  #
+                show_transformed_fiducials_button,  #
+                show_electrodes_button,  #
+                show_transformed_electrodes_button,  #
+            ], label="MicroCT volume:"))
 
         if self._ctx.state.parameters.xray_parameters:
             logger.debug("X-rays present:")
@@ -57,15 +96,23 @@ class ImagesWidget(widgets.Container):
                 # Fixed image
                 show_fixed_image_button = widgets.PushButton(label="Show fixed image")
                 show_fixed_image_button.changed.connect(lambda _, name=key: self._on_show_fixed_image_layer(name))
+                # Grangeat fixed image
+                show_grangeat_fixed_image_button = widgets.PushButton(label="Show grangeat fixed image")
+                show_grangeat_fixed_image_button.changed.connect(
+                    lambda _, name=key: self._on_show_grangeat_fixed_image_layer(name))
                 # Moving image
                 show_moving_image_button = widgets.PushButton(label="Show moving image")
                 show_moving_image_button.changed.connect(lambda _, name=key: self._on_show_moving_image_layer(name))
+                # Grangeat moving image
+                show_grangeat_moving_image_button = widgets.PushButton(label="Show grangeat moving image")
+                show_grangeat_moving_image_button.changed.connect(
+                    lambda _, name=key: self._on_show_grangeat_moving_image_layer(name))
                 # Mask
                 show_mask_button = widgets.PushButton(label="Show mask")
                 show_mask_button.changed.connect(lambda _, name=key: self._on_show_mask_layer(name))
                 # Electrode points
                 show_electrodes_button = widgets.PushButton(label="Show electrodes")
-                show_electrodes_button.changed.connect(lambda _, name=key: self._on_show_electrode_layer(name))
+                show_electrodes_button.changed.connect(lambda _, name=key: self._on_show_xray_electrode_layer(name))
                 # Fiducial points
                 show_xray_fiducials_button = widgets.PushButton(label="Show fiducials")
                 show_xray_fiducials_button.changed.connect(lambda _, name=key: self._on_show_xray_fiducials_layer(name))
@@ -76,47 +123,86 @@ class ImagesWidget(widgets.Container):
                 # Debug image
                 show_debug_button = widgets.PushButton(label="Show debug image")
                 show_debug_button.changed.connect(lambda _, name=key: self._on_show_debug_layer(name))
+                show_ncc_button = widgets.PushButton(label="Show NCC image")
+                show_ncc_button.changed.connect(lambda _, name=key: self._on_show_ncc_layer(name))
+                show_gc_button = widgets.PushButton(label="Show GC image")
+                show_gc_button.changed.connect(lambda _, name=key: self._on_show_gc_layer(name))
                 # appending
-                self.append(widgets.Container(widgets=[  #
+                self.append(ExpandableWidget([  #
                     show_image_2d_full_button,  #
                     show_fixed_image_button,  #
+                    show_grangeat_fixed_image_button,  #
                     show_moving_image_button,  #
+                    show_grangeat_moving_image_button,  #
                     show_mask_button,  #
                     show_electrodes_button,  #
                     show_xray_fiducials_button,  #
                     show_projected_fiducials_button,  #
-                    show_debug_button  #
+                    show_debug_button,  #
+                    show_ncc_button,  #
+                    show_gc_button,  #
                 ], label=key))
 
     def _on_show_ct_layer(self) -> None:
-        logger.debug(f"Show ct clicked")
+        logger.debug("Show ct clicked")
         add_ct_layer(ctx=self._ctx)
 
     def _on_show_ct_fiducials_layer(self) -> None:
-        logger.debug(f"Show ct_fiducials clicked")
-        add_ct_fiducial_layer(dadg=self._ctx.dadg)
+        logger.debug("Show CT fiducials clicked")
+        add_ct_fiducial_layer(dadg=self._ctx.dadg, dadg_key="ct_fiducial_points")
+
+    def _on_show_micro_ct_layer(self) -> None:
+        logger.debug("Show microCT clicked")
+        add_micro_ct_layer(ctx=self._ctx)
+
+    def _on_show_micro_fiducials_layer(self) -> None:
+        logger.debug("Show microCT fiducials clicked")
+        add_ct_fiducial_layer(dadg=self._ctx.dadg, dadg_key="micro_fiducial_points")
+
+    def _on_show_transformed_fiducials_layer(self) -> None:
+        logger.debug("Show transformed fiducials clicked")
+        add_transformed_fiducials_layer(ctx=self._ctx)
+
+    def _on_show_transformed_electrodes_layer(self) -> None:
+        logger.debug("Show transformed electrodes clicked")
+        add_transformed_electrodes_layer(ctx=self._ctx)
+
+    def _on_show_ct_electrode_layer(self) -> None:
+        logger.debug("Show CT electrodes clicked")
+        add_ct_electrode_layer(dadg=self._ctx.dadg, dadg_key="micro_electrode_points",
+            image_uid_dadg_key="micro_ct_uid")
 
     def _on_show_image_2d_full_layer(self, xray_name: str) -> None:
         logger.debug(f"Show image_2d_full for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__image_2d_full",
-                              spacing_dadg_key=f"{xray_name}__image_2d_full_spacing")
+            spacing_dadg_key=f"{xray_name}__image_2d_full_spacing")
 
     def _on_show_fixed_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show fixed_image for '{xray_name}' clicked")
         add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__fixed_image",
-                              spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+
+    def _on_show_grangeat_fixed_image_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show grangeat_fixed_image for '{xray_name}' clicked")
+        add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__sinogram2d",
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
     def _on_show_moving_image_layer(self, xray_name: str) -> None:
         logger.debug(f"Show moving_image for '{xray_name}' clicked")
         add_moving_image_layer(ctx=self._ctx, namespace=xray_name, spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
+    def _on_show_grangeat_moving_image_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show grangeat_moving_image for '{xray_name}' clicked")
+        add_grangeat_moving_image_layer(ctx=self._ctx, namespace=xray_name,
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
+
     def _on_show_mask_layer(self, xray_name: str) -> None:
         logger.debug(f"Show mask for '{xray_name}' clicked")
         add_mask_layer(ctx=self._ctx, namespace=xray_name, spacing_dadg_key=f"{xray_name}__fixed_image_spacing")
 
-    def _on_show_electrode_layer(self, xray_name: str) -> None:
+    def _on_show_xray_electrode_layer(self, xray_name: str) -> None:
         logger.debug(f"Show electrodes for '{xray_name}' clicked")
-        add_electrode_layer(dadg=self._ctx.dadg, namespace=xray_name)
+        add_xray_electrode_layer(dadg=self._ctx.dadg, namespace=xray_name)
 
     def _on_show_xray_fiducials_layer(self, xray_name: str) -> None:
         logger.debug(f"Show xray_fiducials for '{xray_name}' clicked")
@@ -129,3 +215,18 @@ class ImagesWidget(widgets.Container):
     def _on_show_debug_layer(self, xray_name: str) -> None:
         logger.debug(f"Show debug for '{xray_name}' clicked")
         add_debug_layer(ctx=self._ctx, namespace=xray_name)
+
+    def _on_show_ncc_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show NCC image for '{xray_name}' clicked")
+        add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__ncc_sim_met_image",
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing", contrast_limits=(-3.0, 3.0),
+            colormap=napari.utils.Colormap(np.array([  #
+                [253.0 / 256.0, 231.0 / 256.0, 37.0 / 256.0, 1.0],  #
+                [1.0, 1.0, 1.0, 1.0],  #
+                [68.0 / 256.0, 1.0 / 256.0, 84.0 / 256.0, 1.0],  #
+            ])))
+
+    def _on_show_gc_layer(self, xray_name: str) -> None:
+        logger.debug(f"Show GC image for '{xray_name}' clicked")
+        add_fixed_image_layer(ctx=self._ctx, dadg_key=f"{xray_name}__gc_sim_met_image",
+            spacing_dadg_key=f"{xray_name}__fixed_image_spacing", contrast_limits=(-3.0, 3.0))

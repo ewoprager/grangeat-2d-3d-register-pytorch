@@ -5,10 +5,9 @@ import matplotlib.pyplot as plt
 import torch
 import traitlets
 
-import reg23_core
 from reg23_experiments.data.structs import Error
 from reg23_experiments.ops import swarm as pso
-from reg23_experiments.ops.data_manager import args_from_dadg, data_manager
+from reg23_experiments.ops.data_manager import data_manager
 from reg23_experiments.ops.optimisation import mapping_parameters_to_transformation
 from reg23_experiments.utils.console_logging import indentation_prefix, tqdm
 
@@ -64,7 +63,7 @@ def register(  #
             err: Error | None = data_manager().set("parameters", starting_params.unsqueeze(0))
             if isinstance(err, Error):
                 logger.warning(f"Error setting parameters in o.f.: {err.description}")
-            moving_image: torch.Tensor | Error = data_manager().get("filtered_moving_images")
+            moving_image: torch.Tensor | Error = data_manager().get("moving_images")
             if isinstance(moving_image, Error):
                 raise Exception(f"Objective function evaluation failed: {moving_image}")
             axes[0].clear()
@@ -127,7 +126,7 @@ def register(  #
                 err: Error | None = data_manager().set("parameters", swarm.current_optimum_position.unsqueeze(0))
                 if isinstance(err, Error):
                     logger.warning(f"Error setting parameters in o.f.: {err.description}")
-                moving_image: torch.Tensor | Error = data_manager().get("filtered_moving_images")
+                moving_image: torch.Tensor | Error = data_manager().get("moving_images")
                 if isinstance(moving_image, Error):
                     raise Exception(f"Objective function evaluation failed: {moving_image}")
                 axes[0].imshow(moving_image[0].cpu().numpy())

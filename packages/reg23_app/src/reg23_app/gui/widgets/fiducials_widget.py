@@ -31,6 +31,23 @@ class FiducialsWidget(widgets.Container):
         self.append(self._refine_ct_fiducials_button)
 
         # -----
+        # MicroCT
+        # -----
+        self._refine_micro_fiducials_button = widgets.PushButton(label="Auto-refine microCT fiducial seg.")
+        self._refine_micro_fiducials_button.changed.connect(self._on_refine_micro_fiducials)
+        self.append(self._refine_micro_fiducials_button)
+
+        # Register microCT to clinical CT using fiducials
+        self._register3d_button = widgets.PushButton(label="Register CTs using fiducials")
+        self._register3d_button.changed.connect(self._on_register3d)
+        self.append(self._register3d_button)
+
+        # Save transformed electrode positions
+        self._save_transformed_electrodes_button = widgets.PushButton(label="Save transformed electrodes")
+        self._save_transformed_electrodes_button.changed.connect(self._on_save_transformed_electrodes)
+        self.append(self._save_transformed_electrodes_button)
+
+        # -----
         # X-ray specific
         # -----
         # X-ray selection
@@ -46,12 +63,15 @@ class FiducialsWidget(widgets.Container):
         self.append(self._refine_xray_fiducials_button)
 
         # Register using fiducials
-        self._register_button = widgets.PushButton(label="Register using fiducials")
+        self._register_button = widgets.PushButton(label="Register CT to X-ray using fiducials")
         self._register_button.changed.connect(self._on_register)
         self.append(self._register_button)
 
     def _on_register(self, *args) -> None:
         self._ctx.state.button_fiducial_register = True
+
+    def _on_register3d(self, *args) -> None:
+        self._ctx.state.button_fiducial_register3d = True
 
     def _get_xray_choices(self, *args) -> list[str]:
         return list(self._ctx.state.parameters.xray_parameters.keys())
@@ -65,8 +85,14 @@ class FiducialsWidget(widgets.Container):
     def _on_refine_ct_fiducials(self, *args) -> None:
         self._ctx.state.button_refine_ct_fiducials = True
 
+    def _on_refine_micro_fiducials(self, *args) -> None:
+        self._ctx.state.button_refine_micro_fiducials = True
+
     def _on_refine_xray_fiducials(self, *args) -> None:
         self._ctx.state.button_refine_xray_fiducials = True
 
     def _on_diameter(self, *args) -> None:
         self._ctx.state.assumed_fiducial_diameter = self._fiducial_diameter_box.value
+
+    def _on_save_transformed_electrodes(self, *args) -> None:
+        self._ctx.state.button_save_transformed_electrodes = True

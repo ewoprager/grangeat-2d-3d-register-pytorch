@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class CacheManager:
-    def __init__(self, app_name: str = "reg23 Experiments"):
+    def __init__(self, app_name: str = "reg23_experiments"):
         self._cache = pathlib.Path(user_cache_dir(app_name))
         self._cache.mkdir(parents=True, exist_ok=True)
         logger.info(f"Loading/saving cached data in '{str(self._cache)}'")

@@ -22,188 +22,160 @@ applied in order such that the data is restored to the same state it was in when
 """
 
 import json
+import logging
 import pathlib
-from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, ClassVar, Generic, TypeVar
+from typing import Callable
+
+import pandas as pd
+import pydantic
 
 from reg23_experiments.data.structs import Error
-from reg23_experiments.io.serialize import JsonSerializable
 
-__all__ = ["Change", "SaveData", "SaveDataManager", "load_specific_save", "load_latest_save"]
+__all__ = ["SaveConfig", "SaveState"]
 
-type Change = dict[str, JsonSerializable]
-
-
-class SaveData(ABC):
-    """
-    An interface to be implemented by a class that wishes to store and manage the serialisation of some data.
-    """
-    file_suffix: ClassVar[str]
-
-    @staticmethod
-    @abstractmethod
-    def new_value() -> 'SaveData':
-        """
-        This is used when there is no existing snapshot file to load from.
-        :return: A default-initialised instance of this class, with default-initialised data (e.g. an empty data
-        structure).
-        """
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def load_from_file(file: pathlib.Path) -> 'SaveData':
-        """
-        This is used to load snapshot files.
-        :param file: Path to the file to load. Can be expected to have the suffix `file_suffix`
-        :return: An instance of this class, initialised with the data loaded from the given file.
-        """
-        pass
-
-    @abstractmethod
-    def apply_change(self, change: Change) -> None | Error:
-        """
-        Apply the given change to the data. This is used when changes are applied.
-        :param change: A trivially JSON-serializable object that described a change to make to the data.
-        :return: The error, if one has occurred.
-        """
-        pass
-
-    @abstractmethod
-    def get_data(self) -> Any:
-        """
-        :return: The data currently stored by this object.
-        """
-        pass
-
-    @abstractmethod
-    def save_to_file(self, file: pathlib.Path) -> None:
-        """
-        Save the data stored in this object to the given file. This is used for saving snapshots.
-        :param file: Path to the file to save to. Can be expected to the have the suffix `file_suffix`.
-        """
-        pass
+logger = logging.getLogger(__name__)
 
 
-T_SaveData = TypeVar("T_SaveData", bound=SaveData)
+def _snapshot_file_path(*, snapshot_dir: pathlib.Path) -> pathlib.Path:
+    return snapshot_dir / "snapshot.parquet"
 
 
-def _get_snapshot_file(cls: type[T_SaveData], *, snapshot_dir: pathlib.Path) -> pathlib.Path:
-    return snapshot_dir / ("snapshot" + cls.file_suffix)
-
-
-def _get_change_log_file(snapshot_dir: pathlib.Path) -> pathlib.Path:
+def _log_file_path(*, snapshot_dir: pathlib.Path) -> pathlib.Path:
     return snapshot_dir / "log.jsonl"
 
 
-def _is_valid_snapshot_directory(cls: type[T_SaveData], snapshot_dir: pathlib.Path) -> bool:
-    return snapshot_dir.is_dir() and _get_snapshot_file(cls, snapshot_dir=snapshot_dir).is_file()
+def _is_valid_snapshot_dir(snapshot_dir: pathlib.Path) -> bool:
+    return snapshot_dir.is_dir() and _snapshot_file_path(snapshot_dir=snapshot_dir).is_file()
 
 
-def _find_latest_snapshot_dir(cls: type[T_SaveData], *, save_directory: pathlib.Path) -> pathlib.Path | Error:
+def _find_latest_snapshot_dir(save_dir: pathlib.Path) -> pathlib.Path | Error:
     latest = ""
-    for element in save_directory.iterdir():
-        if _is_valid_snapshot_directory(cls, element) and element.stem > latest:
+    for element in save_dir.iterdir():
+        if _is_valid_snapshot_dir(element) and element.stem > latest:
             latest = element.stem
     if not latest:
-        return Error(f"No valid snapshot directories found in save directory '{str(save_directory)}'.")
-    return save_directory / latest
+        return Error(f"No valid snapshot directories found in save directory '{str(save_dir)}'.")
+    return save_dir / latest
 
 
-def load_specific_save(  #
-        cls: type[T_SaveData], *, snapshot_dir: pathlib.Path, change_count: int = -1) -> tuple[T_SaveData, int] | Error:
-    """
-    Load a specific save, specifying the snapshot and change count to load.
-    :param cls: The user-implemented class derived from SaveData.
-    :param snapshot_dir: The snapshot directory (containing the snapshot file, and potentially change log file).
-    :param change_count: The number of changes to load. Pass -1 (the default) to load all changes for the snapshot. If
-    more changes are requested that exist, only existing changes will be loaded, and no error will be thrown. The number
-    of changes actually loaded is returned, so this can easily be detected.
-    :return: (the new instance of `cls` with the loaded data, the number of changes actually loaded), or the error if
-    one occurred.
-    """
-    if not _is_valid_snapshot_directory(cls, snapshot_dir):
-        return Error(f"Error loading specific save: '{str(snapshot_dir)}' is not a valid snapshot directory.")
-    if change_count < -1:
-        return Error(
-            f"Error loading specific save: invalid change count: '{change_count}'; use the value -1 to indicate all "
-            f"changes, or any non-negative integer to indicate the number of changes to load.")
-    ret = cls.load_from_file(_get_snapshot_file(cls, snapshot_dir=snapshot_dir))
-    log_file = _get_change_log_file(snapshot_dir)
-    change_i = 0
-    if log_file.is_file():
-        with open(log_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                if -1 < change_count <= change_i:
-                    break
-                try:
-                    change = json.loads(line)
-                    assert isinstance(change, dict)
-                except Exception as e:
-                    return Error(f"Error parsing line: '{line}' as JSON from log file '{str(log_file)}': {e}")
-                res = ret.apply_change(change)
-                if isinstance(res, Error):
-                    return Error(f"Error applying change loaded from line '{line}' of log file '{str(log_file)}': "
-                                 f"{res.description}")
-                change_i += 1
-    return ret, change_i
+class SaveConfig[Change: pydantic.BaseModel]:
+    def __init__(  #
+            self,  #
+            *,  #
+            save_path: pathlib.Path,  #
+            change_schema: type[Change],  #
+            incorporate_change: Callable[[pd.DataFrame, Change], pd.DataFrame | Error],  #
+            default_value: pd.DataFrame,  #
+            changes_per_snapshot: int = 32,  #
+    ):
+        self._save_path = save_path
+        self._change_schema = change_schema
+        self._incorporate_change = incorporate_change
+        self._default_value = default_value
+        self._changes_per_snapshot = changes_per_snapshot
+
+    @property
+    def change_schema(self) -> type[Change]:
+        return self._change_schema
+
+    @property
+    def incorporate_change(self) -> Callable[[pd.DataFrame, Change], pd.DataFrame | Error]:
+        return self._incorporate_change
+
+    @property
+    def default_value(self) -> pd.DataFrame:
+        return self._default_value
+
+    @property
+    def changes_per_snapshot(self) -> int:
+        return self._changes_per_snapshot
+
+    def load_specific_save(self, *, snapshot: str, change_count: int = -1) -> tuple[pd.DataFrame, int] | Error:
+        """
+        Load a specific save, optionally specifying a change count to load.
+        :param snapshot:
+        :param change_count: The number of changes to load. Pass -1 (the default) to load all changes for the
+        snapshot. If more changes are requested that exist, only existing changes will be loaded, and no error will be
+        thrown. The number of changes actually loaded is returned, so this can easily be detected.
+        :return: (the new snapshot of `cls` with the loaded data, the number of changes actually loaded),
+        or the error if one occurred.
+        """
+        snapshot_dir = self._save_path / snapshot
+        if not _is_valid_snapshot_dir(snapshot_dir):
+            return Error(f"Error loading specific save: '{str(snapshot_dir)}' is not a valid snapshot directory.")
+        if change_count < -1:
+            return Error(
+                f"Error loading specific save: invalid change count: '{change_count}'; use the value -1 to indicate "
+                f"all changes, or any non-negative integer to indicate the number of changes to load.")
+        ret: pd.DataFrame = pd.read_parquet(_snapshot_file_path(snapshot_dir=snapshot_dir))
+        log_file = _log_file_path(snapshot_dir=snapshot_dir)
+        change_i = 0
+        if log_file.is_file():
+            with open(log_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if -1 < change_count <= change_i:
+                        break
+                    try:
+                        value = json.loads(line)
+                    except Exception as e:
+                        return Error(f"Error parsing line: '{line}' as JSON from log file '{str(log_file)}': {e}")
+                    try:
+                        change: Change = self._change_schema.model_validate({"value": value})
+                    except pydantic.ValidationError as e:
+                        return Error(
+                            f"Change at line '{line}' in log file '{str(log_file)}' did not conform to schema: {e}")
+                    ret: pd.DataFrame | Error = self._incorporate_change(ret, change)
+                    if isinstance(ret, Error):
+                        return ret
+                    change_i += 1
+        return ret, change_i
+
+    def load_latest_save(self) -> tuple[pathlib.Path, pd.DataFrame, int] | Error:
+        """
+        Load the latest data save in the given directory.
+        :return: (the snapshot directory loaded from, the new instance of `cls` with the loaded data, the number of
+        changes loaded since the last snapshot), or the error if one occurred.
+        """
+        snapshot_dir: pathlib.Path | Error = _find_latest_snapshot_dir(save_dir=self._save_path)
+        if isinstance(snapshot_dir, Error):
+            return Error(f"Error loading latest save: {snapshot_dir.description}.")
+        res = self.load_specific_save(snapshot=snapshot_dir.name)
+        if isinstance(res, Error):
+            return Error(f"Error loading latest save: {res.description}.")
+        save_data, change_count = res
+        return snapshot_dir, save_data, change_count
+
+    def create_new_snapshot(self) -> pathlib.Path:
+        timestamp: str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        snapshot_dir: pathlib.Path = self._save_path / timestamp
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
+        _log_file_path(snapshot_dir=snapshot_dir).touch()
+        return snapshot_dir
 
 
-def load_latest_save(  #
-        cls: type[T_SaveData], *, save_directory: pathlib.Path) -> tuple[pathlib.Path, T_SaveData, int] | Error:
-    """
-    Load the latest data save in the given directory.
-    :param cls: The user-implemented class derived from SaveData.
-    :param save_directory: The directory containing snapshots, assumed to be named with timestamps.
-    :return: (the snapshot directory loaded from, the new instance of `cls` with the loaded data, the number of
-    changes loaded since the last snapshot), or the error if one occurred.
-    """
-    snapshot_dir: pathlib.Path | Error = _find_latest_snapshot_dir(cls, save_directory=save_directory)
-    if isinstance(snapshot_dir, Error):
-        return Error(f"Error loading latest save: {snapshot_dir.description}.")
-    res = load_specific_save(cls, snapshot_dir=snapshot_dir)
-    if isinstance(res, Error):
-        return Error(f"Error loading latest save: {res.description}.")
-    save_data, change_count = res
-    return snapshot_dir, save_data, change_count
-
-
-class SaveDataManager(Generic[T_SaveData]):
-    """
-    Object parametrised by a user-implemented class type derived from `SaveData`. Manages saving and loading of data
-    change-by-change between snapshots according to the methods implemented by the user's class.
-    """
-
-    def __init__(self, *, cls: type[T_SaveData], save_directory: pathlib.Path, changes_per_snapshot: int = 32):
+class SaveState[Change: pydantic.BaseModel]:
+    def __init__(self, config: SaveConfig[Change]):
         """
         Constructor. Loads any existing data from the save directory `directory`.
 
         Each snapshot is stored in its own directory with the given `directory`, named with a timestamp:
         YYYY-MM-DD_hh-mm-ss. Subsequent changes are stored as lines of a file `log.jsonl` saved in the same directory.
-
-        :param cls: User-implemented class derived from `SaveData` used for interpretation of `Change` objects.
-        :param save_directory: The save directory from which to load and to which to save data.
-        :param changes_per_snapshot: The number of changes to save between snapshots. Does not affect previous saves.
+        :param config: The type of the data stored
         """
-        # store the class type; must be done first
-        self._cls = cls
-        self._save_directory = save_directory
-        self._changes_per_snapshot = changes_per_snapshot
+        self._config = config
         # load from the latest save directory, if there is one
-        res = load_latest_save(self._cls, save_directory=self._save_directory)
+        res: tuple[pathlib.Path, pd.DataFrame, int] | Error = self._config.load_latest_save()
         if isinstance(res, Error):
-            self._current_state: T_SaveData = self._cls.new_value()
+            logger.error(f"Error loading latest save: {res.description}")
+            self._current_state: pd.DataFrame = self._config.default_value
             self._start_from_new_snapshot()
         else:
             self._current_snapshot_dir, self._current_state, self._change_count = res
-            _get_change_log_file(self._current_snapshot_dir).touch()
+            _log_file_path(snapshot_dir=self._current_snapshot_dir).touch()
 
-    def get_data(self) -> Any:
-        """
-        :return: The data currently stored.
-        """
-        return self._current_state.get_data()
+    def get(self) -> pd.DataFrame:
+        return self._current_state
 
     def apply_change(self, change: Change) -> None | Error:
         """
@@ -212,20 +184,24 @@ class SaveDataManager(Generic[T_SaveData]):
         :param change: The change to apply and save.
         :return: The error if one occurs.
         """
-        res: None | Error = self._current_state.apply_change(change)
+        # Apply the change
+        res: pd.DataFrame | Error = self._config.incorporate_change(self._current_state, change)
         if isinstance(res, Error):
             return res
-        with open(_get_change_log_file(self._current_snapshot_dir), 'a', encoding='utf-8') as f:
-            f.write(json.dumps(change) + "\n")
+        self._current_state = res
+
+        # Log the change
+        with open(_log_file_path(snapshot_dir=self._current_snapshot_dir), 'a', encoding='utf-8') as f:
+            outer = change.model_dump()
+            f.write(json.dumps(outer["value"]) + "\n")
         self._change_count += 1
-        if self._change_count >= self._changes_per_snapshot:
+        # Save a new snapshot if log threshold exceeded
+        if self._change_count >= self._config.changes_per_snapshot:
             self._start_from_new_snapshot()
+
         return None
 
     def _start_from_new_snapshot(self) -> None:
-        timestamp: str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self._current_snapshot_dir: pathlib.Path = self._save_directory / timestamp
-        self._current_snapshot_dir.mkdir(parents=True, exist_ok=True)
-        self._current_state.save_to_file(_get_snapshot_file(self._cls, snapshot_dir=self._current_snapshot_dir))
+        self._current_snapshot_dir = self._config.create_new_snapshot()
+        self._current_state.to_parquet(_snapshot_file_path(snapshot_dir=self._current_snapshot_dir))
         self._change_count: int = 0
-        _get_change_log_file(self._current_snapshot_dir).touch()

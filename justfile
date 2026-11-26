@@ -16,7 +16,15 @@ experiment ctpath xraydir name="" platform="cuda":
         {{ if name == "" { "" } else { "--name \"" + name + "\"" } }}
 
 runapp platform="cuda":
-    uv run --extra {{ platform }} scripts/app.py
+    uv run --extra {{ platform }} -m reg23_app
 
 devapp platform="cuda":
-    uv run --extra {{ platform }} --extra dev scripts/app.py
+    uv run --extra {{ platform }} --extra dev -m reg23_app
+
+gen_starting_positions ctpath xraypath distance count="50":
+    uv run --extra cpu --extra dev -m reg23_experiments.experiments.reg_experiment.generate_starting_positions \
+        --ct-path "{{ ctpath }}" \
+        --xray-path "{{ xraypath }}" \
+        --distance {{ distance }} \
+        --count {{ count }} \
+        --output-dir "data/starting_positions"

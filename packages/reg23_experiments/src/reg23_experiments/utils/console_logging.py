@@ -50,10 +50,10 @@ class ColourFormatter(logging.Formatter):
 
         message_lines = record.message.split("\n")
         lines = [prefix + "\\"] + message_lines if len(message_lines) > 1 else [prefix + message_lines[0]]
-        lines.append("└ " + suffix0 + suffix1 + suffix2)
+        lines.append("└" + suffix0 + suffix1 + suffix2)
         space = available_width - _len_in_terminal(lines[-1])
-        if space >= 0:
-            lines[-1] = " " * space + "└" + suffix0 + suffix1 + suffix2
+        if space > 0:
+            lines[-1] = " " * space + lines[-1]
         else:
             lines[-1] = "└" + suffix0
             lines.append("    " + suffix1)

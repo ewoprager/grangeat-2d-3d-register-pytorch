@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 
 import reg23_core
-from reg23_experiments.data.structs import *
+from reg23_experiments.data.structs import Sinogram2dGrid, Sinogram3dGrid
 from reg23_experiments.ops import geometry
 
 __all__ = ["calculate_radon_volume", "calculate_fixed_image", "directly_calculate_radon_slice"]
@@ -12,31 +12,49 @@ __all__ = ["calculate_radon_volume", "calculate_fixed_image", "directly_calculat
 logger = logging.getLogger(__name__)
 
 
-def calculate_radon_volume(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, samples_per_direction: int = 128,
-                           output_grid: Sinogram3dGrid):
+def calculate_radon_volume(  #
+        volume_data: torch.Tensor,  #
+        *,  #
+        voxel_spacing: torch.Tensor,  #
+        samples_per_direction: int = 128,  #
+        output_grid: Sinogram3dGrid,  #
+) -> torch.Tensor:
     assert output_grid.device_consistent()
     assert volume_data.device == output_grid.phi.device
-    return reg23_core.d_radon3d_dr(volume_data, voxel_spacing, output_grid.phi.to(device=volume_data.device),
-                                   output_grid.theta.to(device=volume_data.device),
-                                   output_grid.r.to(device=volume_data.device), samples_per_direction)
+    return reg23_core.d_radon3d_dr(  #
+        volume_data,  #
+        voxel_spacing,  #
+        output_grid.phi.to(device=volume_data.device),  #
+        output_grid.theta.to(device=volume_data.device),  #
+        output_grid.r.to(device=volume_data.device),  #
+        samples_per_direction,  #
+    )
 
 
-def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, detector_spacing: torch.Tensor,
-                          output_grid: Sinogram2dGrid) -> torch.Tensor:
+def calculate_fixed_image(  #
+        drr_image: torch.Tensor,  #
+        *,  #
+        source_distance: float,  #
+        detector_spacing: torch.Tensor,  #
+        output_grid: Sinogram2dGrid,  #
+) -> torch.Tensor:
     device = drr_image.device
     assert output_grid.device_consistent()
     assert output_grid.phi.device == device
+    detector_spacing = detector_spacing.to(device=device)
 
     img_width = drr_image.size()[1]
     img_height = drr_image.size()[0]
 
     samples_per_line = int(torch.tensor(drr_image.size()).square().sum().sqrt().ceil().item())
 
-    xs = detector_spacing[0] * (torch.arange(0, img_width, 1, dtype=torch.float32) - 0.5 * float(img_width - 1))
-    ys = detector_spacing[1] * (torch.arange(0, img_height, 1, dtype=torch.float32) - 0.5 * float(img_height - 1))
+    xs = detector_spacing[0] * (
+                torch.arange(0, img_width, 1, device=device, dtype=torch.float32) - 0.5 * float(img_width - 1))
+    ys = detector_spacing[1] * (
+                torch.arange(0, img_height, 1, device=device, dtype=torch.float32) - 0.5 * float(img_height - 1))
     ys, xs = torch.meshgrid(ys, xs)
     cos_gamma = source_distance / torch.sqrt(xs.square() + ys.square() + source_distance * source_distance)
-    g_tilde = cos_gamma.to(device=device) * drr_image
+    g_tilde = cos_gamma * drr_image
 
     fixed_scaling = (output_grid.r / source_distance).square() + 1.
 
@@ -61,8 +79,13 @@ def calculate_fixed_image(drr_image: torch.Tensor, *, source_distance: float, de
     # plt.colorbar(mesh)
     ##
 
-    return fixed_scaling * reg23_core.d_radon2d_dr(g_tilde, detector_spacing, output_grid.phi, output_grid.r,
-                                                   samples_per_line)
+    return fixed_scaling * reg23_core.d_radon2d_dr(  #
+        g_tilde,  #
+        detector_spacing,  #
+        output_grid.phi,  #
+        output_grid.r,  #
+        samples_per_line,  #
+    )
 
 
 def directly_calculate_radon_slice(volume_data: torch.Tensor, *, voxel_spacing: torch.Tensor, ph_matrix: torch.Tensor,

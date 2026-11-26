@@ -1,5 +1,6 @@
 import copy
 import logging
+import pathlib
 import pprint
 from typing import Any, Literal
 
@@ -33,6 +34,7 @@ class ExperimentParametrisation(traitlets.HasTraits):
             - otherwise, these images will only be updated every N iterations
     """
 
+    grangeat: bool = traitlets.Bool(default_value=False)
     # ----- images
     ct_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
     xray_path: str = traitlets.Unicode(default_value=traitlets.Undefined)
@@ -47,7 +49,7 @@ class ExperimentParametrisation(traitlets.HasTraits):
     ], default_value=traitlets.Undefined)
     crop_min_size: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     iterations_per_crop_update: int = traitlets.Int(min=0,
-                                                    default_value=traitlets.Undefined)  # 0 means every o.f. eval.
+        default_value=traitlets.Undefined)  # 0 means every o.f. eval.
     # ----- similarity & weighting
     weighting_method: Literal["none", "linear", "smooth_step", "gaussian"] = traitlets.Enum(values=[  #
         "none",  #
@@ -57,7 +59,7 @@ class ExperimentParametrisation(traitlets.HasTraits):
     ], default_value=traitlets.Undefined)
     weight_alpha: float = traitlets.Float(min=0.0, default_value=traitlets.Undefined)
     iterations_per_weight_update: int = traitlets.Int(min=0,
-                                                      default_value=traitlets.Undefined)  # 0 means every o.f. eval.
+        default_value=traitlets.Undefined)  # 0 means every o.f. eval.
     sim_metric: Literal["zncc", "gradient_correlation", "gradient_difference", "mutual_information"] = traitlets.Enum(
         values=[  #
             "zncc",  #
@@ -75,10 +77,11 @@ class ExperimentParametrisation(traitlets.HasTraits):
     lowpass_threshold: float = traitlets.Float(default_value=traitlets.Undefined)
     highpass_threshold: float = traitlets.Float(default_value=traitlets.Undefined)
     # ----- registration
+    load_starting_positions: bool = traitlets.Bool(default_value=False)
     starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
     reg_config: RegistrationConfig = traitlets.Instance(RegistrationConfig, allow_none=False,
-                                                        default_value=traitlets.Undefined)
+        default_value=traitlets.Undefined)
 
     @staticmethod
     def dict_constructor(dict_config: dict[str, Any]) -> 'ExperimentParametrisation | Error':
@@ -103,10 +106,10 @@ class ExperimentParametrisation(traitlets.HasTraits):
 
 
 def reg_experiment(  #
-        config: ExperimentConfig[ExperimentParametrisation],  #
-        *,  #
-        batch_size: int = 1,  #
-        plot: bool = False,  #
+    config: ExperimentConfig[ExperimentParametrisation],  #
+    *,  #
+    batch_size: int = 1,  #
+    plot: bool = False,  #
 ) -> pd.DataFrame | None:
     """
     Run multiple (`sample_count_per_distance`) registrations according to the given parameters, and return the average
@@ -142,7 +145,7 @@ def reg_experiment(  #
         err: Error | None = data_manager().set("parameters", parameters)
         if isinstance(err, Error):
             logger.warning(f"Error setting parameters in o.f.: {err.description}")
-        res: torch.Tensor | Error = data_manager().get("of_values")
+        res: torch.Tensor | Error = data_manager().get("of_values_grangeat" if params.grangeat else "of_values")
         if isinstance(res, Error):
             raise Exception(f"Objective function evaluation failed: {res}")
         return res
@@ -241,13 +244,13 @@ def reg_experiment(  #
             axes[2].imshow(weighting_image[0].cpu().numpy())
             axes[2].set_title("weighting image")
         # Fixed image at gold-standard
-        fixed_image: torch.Tensor | Error = data_manager().get("filtered_fixed_images")
+        fixed_image: torch.Tensor | Error = data_manager().get("fixed_image")
         if isinstance(fixed_image, Error):
             raise RuntimeError(f"Error getting fixed image: {fixed_image.description}")
-        axes[3].imshow(fixed_image[0].cpu().numpy())
+        axes[3].imshow(fixed_image.cpu().numpy())
         axes[3].set_title("f fixed image")
         # Moving image at gold-standard
-        moving_image: torch.Tensor | Error = data_manager().get("filtered_moving_images")
+        moving_image: torch.Tensor | Error = data_manager().get("moving_images")
         if isinstance(moving_image, Error):
             raise RuntimeError(f"Error getting moving image: {moving_image.description}")
         axes[4].imshow(moving_image[0].cpu().numpy())
@@ -260,8 +263,30 @@ def reg_experiment(  #
     # Running repeated registrations with configured parameters
     dimensionality = 6
     distance_samples = torch.empty([int(params.sample_count_per_distance), int(params.reg_config.iteration_count)],
-                                   dtype=torch.float64, device=config.device)  # size = (sample count, iteration count)
+        dtype=torch.float64, device=config.device)  # size = (sample count, iteration count)
     transformation_gt: Transformation | None | Error = data_manager().get("transformation_gt")
+    if params.load_starting_positions:
+        xray_uid: str | Error = data_manager().get("xray_sop_instance_uid")
+        if isinstance(xray_uid, Error):
+            logger.error(f"Failed to get X-ray UID which which to find starting_positions: {xray_uid.description}")
+            return None
+
+        p = pathlib.Path("data/starting_positions") / f"{xray_uid}_{params.starting_distance:.4f}.pt"
+        try:
+            starting_positions: torch.Tensor = torch.load(p)
+        except FileNotFoundError:
+            logger.error(f"Starting position file path '{str(p)}' not valid.")
+            return None
+        starting_positions: list[Transformation] = [  #
+            Transformation(  #
+                rotation=row[0:3].to(dtype=torch.float64, device=config.device),  #
+                translation=row[3:6].to(dtype=torch.float64, device=config.device),  #
+            )  #
+            for row in starting_positions  #
+        ]
+        if len(starting_positions) < params.sample_count_per_distance:
+            logger.error(f"Starting position file does not have enough positions.")
+            return None
     if isinstance(transformation_gt, Error):
         raise Exception(f"Failed to get ground truth transformation: {transformation_gt.description}")
     if transformation_gt is None:
@@ -272,7 +297,10 @@ def reg_experiment(  #
             position=config.tqdm_position,  #
             leave=None  #
     ):
-        starting_tr = transformation_gt.with_random_offset_at_distance(params.starting_distance)
+        if params.load_starting_positions:
+            starting_tr = starting_positions[i]
+        else:
+            starting_tr = transformation_gt.with_random_offset_at_distance(params.starting_distance)
         starting_params = mapping_transformation_to_parameters(starting_tr)
         # -----
         # Registration
@@ -310,6 +338,9 @@ def reg_experiment(  #
         "iteration": torch.arange(params.reg_config.iteration_count).numpy(),  # size = (iteration count,)
         "distance": distance_samples.mean(dim=0).cpu().numpy(),  # size = (iteration count,)
         "distance_std": distance_samples.std(dim=0).cpu().numpy(),  #
+        "distance_q1": distance_samples.quantile(0.25, dim=0).cpu().numpy(),  #
+        "distance_q2": distance_samples.quantile(0.5, dim=0).cpu().numpy(),  #
+        "distance_q3": distance_samples.quantile(0.75, dim=0).cpu().numpy(),  #
     })
 
 

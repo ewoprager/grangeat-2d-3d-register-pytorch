@@ -3,13 +3,13 @@ import sys
 
 import pandas as pd
 import torch
+from scipy.spatial.transform import Rotation as R
+
+from reg23_experiments.data.save_data.transformations import TransformationSaveData
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.data.transformation_save_data import \
-    TransformationSaveData
 from reg23_experiments.io.image import XrayDICOM, read_dicom
 from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.utils import logs_setup
-from scipy.spatial.transform import Rotation as R
 
 
 def get_uid(path: str | pathlib.Path) -> str:
@@ -18,8 +18,13 @@ def get_uid(path: str | pathlib.Path) -> str:
     return dicom["uid"]
 
 
-def load_ground_truth(xray_sop_instance_uid: str, saved_transformations: pd.DataFrame) -> Transformation:
-    idx = (xray_sop_instance_uid, "gold_standard")
+def load_ground_truth(  #
+        *,  #
+        ct_series_uid: str,  #
+        xray_sop_instance_uid: str,  #
+        saved_transformations: pd.DataFrame,  #
+) -> Transformation:
+    idx = (ct_series_uid, xray_sop_instance_uid, "gold_standard")
     row = saved_transformations.loc[idx]
     return Transformation.from_vector(torch.tensor([row[f"x{i}"] for i in range(6)], dtype=torch.float64))
 

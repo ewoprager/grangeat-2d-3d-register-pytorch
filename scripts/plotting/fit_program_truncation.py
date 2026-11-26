@@ -17,7 +17,7 @@ import yaml
 from matplotlib import rcParams
 
 from reg23_experiments.data.structs import Error, Transformation
-from reg23_experiments.data.transformation_save_data import TransformationSaveData
+from reg23_experiments.data.save_data.transformations import TransformationSaveData
 from reg23_experiments.io.image import read_dicom
 from reg23_experiments.io.save_data import load_latest_save
 from reg23_experiments.io.sitk import load_ct_series
@@ -70,7 +70,7 @@ def ct_xray_to_h_linear(  #
         theta = theta_cache[xray_path]
     else:
         xray_sop_instance_uid = read_dicom(xray_path)["uid"]
-        idx = (xray_sop_instance_uid, "gold_standard")
+        idx = (ct_series_uid, xray_sop_instance_uid, "gold_standard")
         row = saved_transformations.loc[idx]
         t = Transformation.from_vector(  #
             torch.tensor([row[f"x{i}"] for i in range(6)], dtype=torch.float64)  #

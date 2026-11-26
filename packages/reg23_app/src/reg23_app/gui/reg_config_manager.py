@@ -1,8 +1,8 @@
 import logging
 
 from reg23_app.state import AppState
+from reg23_experiments.data.save_data.xray_regs import XRayRegSaveManager
 from reg23_experiments.data.structs import Cropping, Error
-from reg23_experiments.data.xray_reg_save_data import XRayRegSaveManager
 from reg23_experiments.ops.data_manager import DirectedAcyclicDataGraph
 
 __all__ = ["RegConfigManager"]
