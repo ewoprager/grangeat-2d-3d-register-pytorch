@@ -79,8 +79,8 @@ def main(  #
             "ct_path": Constant(ct_path),  #
             "ct_series_uid": Constant(ct_series_uid),  #
             # ----- preprocessing
-            "downsample_level": Constant(2),  #
-            "truncation_percent": Cartesian([0, 80]),  #
+            "downsample_level": Constant(1),  #
+            "truncation_percent": Cartesian([0, 40, 80]),  #
             # ----- cropping
             "cropping_method": Constant("bounding_box"),  #
             "iterations_per_crop_update": Constant(1000),  #
@@ -88,7 +88,7 @@ def main(  #
             "weighting_method": Constant("none"),  #
             "weight_alpha": Constant(0.0),  #
             "iterations_per_weight_update": Constant(1000),  #
-            "sim_metric": Constant("zncc"),  #
+            "sim_metric": Cartesian(["zncc", "gradient_correlation"]),  #
             # ----- frequency domain filtering
             "filter_method": Constant("none"),  # Zipped(["gradient_like", "highpass", "highpass", "highpass"]),  #
             "lowpass_threshold": Constant(1.0),  #
@@ -109,7 +109,7 @@ def main(  #
             # "level_090",  #
             "up_000",  #
             # "up_090",  #
-            # "down_000",  #
+            "down_000",  #
             # "down_090",  #
         ]
 
