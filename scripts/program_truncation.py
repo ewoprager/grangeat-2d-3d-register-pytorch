@@ -96,6 +96,7 @@ def main(  #
             # ----- registration
             "starting_distance": Constant(5.0),  #
             "sample_count_per_distance": Constant(1),  #
+            "load_starting_positions": Constant(True),  #
             # ----- PSO config
             "particle_count": Constant(2000),  #
             "particle_initialisation_spread": Constant(2.5),  # Constant(2.5)

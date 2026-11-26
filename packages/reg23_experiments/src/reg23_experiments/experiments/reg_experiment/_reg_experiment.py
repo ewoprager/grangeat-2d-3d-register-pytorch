@@ -78,7 +78,6 @@ class ExperimentParametrisation(traitlets.HasTraits):
     highpass_threshold: float = traitlets.Float(default_value=traitlets.Undefined)
     # ----- registration
     load_starting_positions: bool = traitlets.Bool(default_value=False)
-    starting_positions_dir: str = traitlets.Unicode(default_value=traitlets.Undefined)
     starting_distance: float = traitlets.Float(default_value=traitlets.Undefined)
     sample_count_per_distance: int = traitlets.Int(min=1, default_value=traitlets.Undefined)
     reg_config: RegistrationConfig = traitlets.Instance(RegistrationConfig, allow_none=False,
@@ -272,7 +271,7 @@ def reg_experiment(  #
             logger.error(f"Failed to get X-ray UID which which to find starting_positions: {xray_uid.description}")
             return None
 
-        p = pathlib.Path(params.starting_positions_dir) / f"{xray_uid}_{params.starting_distance:.4f}.pt"
+        p = pathlib.Path("data/starting_positions") / f"{xray_uid}_{params.starting_distance:.4f}.pt"
         try:
             starting_positions: torch.Tensor = torch.load(p)
         except FileNotFoundError:
